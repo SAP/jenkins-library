@@ -38,7 +38,7 @@ func mtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonP
 }
 
 func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner) error {
+	e envExecRunner) error {
 
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
@@ -130,22 +130,42 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", mtaCall)
 
-	// REVISIT: when we have the possibility to provide environment variables from outside we can
-	// do the export this way.
-	script := fmt.Sprintf(`#!/bin/bash
-	export PATH=./node_modules/.bin:$PATH
-	echo "[DEBUG] PATH: ${PATH}"
-	%s`, mtaCall)
+	path := "./node_modules/.bin"
+	oldPath := getEnvironmentVariable("PATH")
+	if len(oldPath) > 0 {
+		path = path + ":" + strings.TrimPrefix(oldPath, "PATH=")
+	}
+	e.Env(append(os.Environ(), "PATH=" + path))
 
-	_ = script
-
-	if err := e.RunExecutable("mbt", "build" ); err != nil {
+	if err := e.RunExecutable(call[0], strings.Join(call[1:], " ")); err != nil {
 		return err
 	}
 
 	mtarFilePath := "dummy.mtar"
 	commonPipelineEnvironment.mtarFilePath = mtarFilePath
 	return nil
+}
+
+func getEnvironmentVariable(name string) string {
+
+	// in case we have the same name twice we have to take the latest one.
+	// hence we reverse the slice in order to get the latest entry first.
+	for _, e := range reverse(os.Environ()) {
+		if strings.HasPrefix(e, name + "=") {
+			return e
+		}
+	}
+	return ""
+}
+
+func reverse(s []string) []string {
+
+	// REVISIT: fits better into some string utils
+
+    if len(s) == 0 {
+        return s
+    }
+    return append(reverse(s[1:]), s[0])
 }
 
 func generateMta(id, name, version string) (string, error) {
