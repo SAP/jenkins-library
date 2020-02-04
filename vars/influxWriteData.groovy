@@ -1,3 +1,5 @@
+import com.sap.piper.JenkinsUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -71,6 +73,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
         def script = checkScript(this, parameters)
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         if (script == null)
             script = this
 
@@ -118,21 +121,21 @@ InfluxDB data map tags: ${config.customDataMapTags}
         if(config.wrapInNode){
             node(''){
                 try{
-                    writeToInflux(config, script)
+                    writeToInflux(config, jenkinsUtils, script)
                 }finally{
                     deleteDir()
                 }
             }
         } else {
-            writeToInflux(config, script)
+            writeToInflux(config, jenkinsUtils, script)
         }
     }
 }
 
-private void writeToInflux(config, script){
+private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
     if (config.influxServer) {
 
-        def influxPluginVersion = new com.sap.piper.JenkinsUtils().getPluginVersion('influxdb')
+        def influxPluginVersion = jenkinsUtils.getPluginVersion('influxdb')
         def influxClassName = (!influxPluginVersion || influxPluginVersion.startsWith('1.')) ? 'InfluxDbPublisher': 'InfluxDbGlobalConfig'
         try {
             step([
