@@ -29,17 +29,19 @@ void call(Map parameters = [:], body) {
         .use()
 
     stageLocking(config) {
-        def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
-        if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
-            DebugReport.instance.environment.put("environment", "Kubernetes")
-            withEnv(["POD_NAME=${stageName}"]) {
-                dockerExecuteOnKubernetes(script: script, containerMap: containerMap) {
+        handlePipelineStepErrors(stepName: stageName, stepParameters: parameters) {
+            def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
+            if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
+                DebugReport.instance.environment.put("environment", "Kubernetes")
+                withEnv(["POD_NAME=${stageName}"]) {
+                    dockerExecuteOnKubernetes(script: script, containerMap: containerMap) {
+                        executeStage(script, body, stageName, config, utils)
+                    }
+                }
+            } else {
+                node(config.nodeLabel) {
                     executeStage(script, body, stageName, config, utils)
                 }
-            }
-        } else {
-            node(config.nodeLabel) {
-                executeStage(script, body, stageName, config, utils)
             }
         }
     }
