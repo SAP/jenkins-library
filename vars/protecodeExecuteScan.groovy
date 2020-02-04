@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
 
                 def configDirPath = Paths.get(FILE_PATH).getParent().getFileName();
                 withEnv([
-                    "DOCKER_CONFIG="configDirPath,
+                    "DOCKER_CONFIG=${configDirPath}",
                 ]) {
                     sh "./piper protecodeExecuteScan"
                 }
