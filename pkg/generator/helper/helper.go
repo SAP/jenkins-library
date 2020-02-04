@@ -32,15 +32,24 @@ type stepInfo struct {
 const stepGoTemplate = `package cmd
 
 import (
-	{{ if .OSImport }}"os"{{ end }}
-	{{ if .OutputResources }}"fmt"{{ end }}
-	{{ if .OutputResources }}"path/filepath"{{ end }}
+	"fmt"
+	{{ if .OSImport -}}
+	"os"
+	{{ end -}}
+	{{ if .OutputResources -}}
+	"path/filepath"
+	{{ end -}}
+	"time"
 
-	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}
+	{{ if .ExportPrefix -}}
+	{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	{{ if .OutputResources -}}
+	"github.com/SAP/jenkins-library/pkg/piperenv"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	{{ if .OutputResources }}"github.com/SAP/jenkins-library/pkg/piperenv"{{ end }}
 	"github.com/spf13/cobra"
 )
 
@@ -53,11 +62,11 @@ type {{ .StepName }}Options struct {
 {{ index $oRes "def"}}
 {{ end }}
 
-var my{{ .StepName | title}}Options {{.StepName}}Options
-
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
 	metadata := {{ .StepName }}Metadata()
+	var stepConfig {{.StepName}}Options
+	var startTime time.Time
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 
@@ -66,32 +75,35 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
+			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			{{ if .OutputResources -}}
+		Run: func(cmd *cobra.Command, args []string) {
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			{{- end }}
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "{{ .StepName }}")
-			telemetry.Send(&telemetry.CustomData{})
-			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, "{{ .StepName }}")
+			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	{{.FlagsFunc}}({{.CreateCmdVar}})
+	{{.FlagsFunc}}({{.CreateCmdVar}}, &stepConfig)
 	return {{.CreateCmdVar}}
 }
 
-func {{.FlagsFunc}}(cmd *cobra.Command) {
+func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	{{- range $key, $value := .Metadata }}
-	cmd.Flags().{{ $value.Type | flagType }}(&my{{ $.StepName | title }}Options.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
+	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .Metadata }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
@@ -142,9 +154,10 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 const stepGoImplementationTemplate = `package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func {{.StepName}}(config {{ .StepName }}Options{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
+func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("customKey", "customValue").Info("This is how you write a log message with a custom field ...")
 	return nil
 }

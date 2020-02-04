@@ -6,22 +6,22 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions) error {
+func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	runDetect(myDetectExecuteScanOptions, &c)
-	return nil
+	runDetect(config, &c)
 }
 
-func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shellRunner) {
+func runDetect(config detectExecuteScanOptions, command shellRunner) {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
-	args = addDetectArgs(args, myDetectExecuteScanOptions)
+	args = addDetectArgs(args, config)
 	script := strings.Join(args, " ")
 
 	command.Dir(".")
@@ -30,32 +30,31 @@ func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shel
 	if err != nil {
 		log.Entry().
 			WithError(err).
-			WithField("command", myKarmaExecuteTestsOptions.InstallCommand).
 			Fatal("failed to execute detect scan")
 	}
 }
 
-func addDetectArgs(args []string, myDetectExecuteScanOptions detectExecuteScanOptions) []string {
+func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
-	args = append(args, myDetectExecuteScanOptions.ScanProperties...)
+	args = append(args, config.ScanProperties...)
 
-	args = append(args, fmt.Sprintf("--blackduck.url=%v", myDetectExecuteScanOptions.ServerURL))
-	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", myDetectExecuteScanOptions.APIToken))
+	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
+	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
 
-	args = append(args, fmt.Sprintf("--detect.project.name=%v", myDetectExecuteScanOptions.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", myDetectExecuteScanOptions.ProjectVersion))
-	codeLocation := myDetectExecuteScanOptions.CodeLocation
-	if len(codeLocation) == 0 && len(myDetectExecuteScanOptions.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", myDetectExecuteScanOptions.ProjectName, myDetectExecuteScanOptions.ProjectVersion)
+	args = append(args, fmt.Sprintf("--detect.project.name=%v", config.ProjectName))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", config.ProjectVersion))
+	codeLocation := config.CodeLocation
+	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
+		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, config.ProjectVersion)
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
 
-	if sliceContains(myDetectExecuteScanOptions.Scanners, "signature") {
-		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(myDetectExecuteScanOptions.ScanPaths, ",")))
+	if sliceContains(config.Scanners, "signature") {
+		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if sliceContains(myDetectExecuteScanOptions.Scanners, "source") {
-		args = append(args, fmt.Sprintf("--detect.source.path=%v", myDetectExecuteScanOptions.ScanPaths[0]))
+	if sliceContains(config.Scanners, "source") {
+		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 	return args
 }

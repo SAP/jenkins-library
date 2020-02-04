@@ -162,7 +162,34 @@ def getPlugin(name){
 @NonCPS
 String getPluginVersion(name) {
     return getPlugin(name)?.getVersion()
+}
 
+void handleStepResults(String stepName, boolean failOnMissingReports, boolean failOnMissingLinks) {
+    def reportsFileName = "${stepName}_reports.json"
+    def reportsFileExists = fileExists(file: reportsFileName)
+    if (failOnMissingReports && !reportsFileExists) {
+        error "Expected to find ${reportsFileName} in workspace but it is not there"
+    } else if (reportsFileExists) {
+        def reports = readJSON(file: reportsFileName)
+        for (report in reports) {
+            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+        }
+    }
+
+    def linksFileName = "${stepName}_links.json"
+    def linksFileExists = fileExists(file: linksFileName)
+    if (failOnMissingLinks && !linksFileExists) {
+        error "Expected to find ${linksFileName} in workspace but it is not there"
+    } else if (linksFileExists) {
+        def links = readJSON(file: linksFileName)
+        for (link in links) {
+            if(link['scope'] == 'job') {
+                removeJobSideBarLinks(link['target'])
+                addJobSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+            }
+            addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+        }
+    }
 }
 
 def getInstance() {
