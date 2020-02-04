@@ -86,7 +86,7 @@ Use Docker:
 
 You can extract the binary using Docker means to your local filesystem:
 
-```
+```sh
 docker create --name piper piper:latest
 docker cp piper:/piper .
 docker rm piper
@@ -124,7 +124,7 @@ There are certain extensions:
 Logging is done through [sirupsen/logrus](https://github.com/sirupsen/logrus) framework.
 It can conveniently be accessed through:
 
-```
+```golang
 import (
     "github.com/SAP/jenkins-library/pkg/log"
 )
@@ -137,7 +137,8 @@ func myStep ...
 ```
 
 If a fatal error occurs your code should act similar to:
-```
+
+```golang
     ...
     if err != nil {
         log.Entry().
@@ -145,6 +146,7 @@ If a fatal error occurs your code should act similar to:
             Fatal("failed to execute step ...")
     }
 ```
+
 Calling `Fatal` results in an `os.Exit(0)` and before exiting some cleanup actions (e.g. writing output data, writing telemetry data if not deactivated by the user, ...) are performed.
 
 ## Error handling
