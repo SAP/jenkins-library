@@ -16,7 +16,7 @@ import (
 )
 
 func TestPiperGithubPublishRelease(t *testing.T) {
-	token := os.Getenv("GITHUB_TOKEN")
+	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {
 		t.Fatal("No GitHub token maintained")
 	}
@@ -25,7 +25,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	if len(owner) == 0 {
 		owner = "OliverNocon"
 	}
-	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
+	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
