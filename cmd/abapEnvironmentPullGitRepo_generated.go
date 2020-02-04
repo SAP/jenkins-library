@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +28,7 @@ var myAbapEnvironmentPullGitRepoOptions abapEnvironmentPullGitRepoOptions
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 	metadata := abapEnvironmentPullGitRepoMetadata()
+	var startTime time.Time
 
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
 		Use:   "abapEnvironmentPullGitRepo",
@@ -36,13 +39,25 @@ Please provide either of the following options:
   * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
   * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("abapEnvironmentPullGitRepo")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &myAbapEnvironmentPullGitRepoOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return abapEnvironmentPullGitRepo(myAbapEnvironmentPullGitRepoOptions)
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "abapEnvironmentPullGitRepo")
+			// ToDo: pass telemetryData to step
+			err := abapEnvironmentPullGitRepo(myAbapEnvironmentPullGitRepoOptions)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 
