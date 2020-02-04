@@ -109,11 +109,9 @@ void call(Map parameters = [:]) {
             )
             
             def resultFileSize = 0
-            File file = new File(pwd(), configuration.reportFile)
-            echo "${file.getAbsolutePath()} exists: ${file.exists()}"
-            if (file.exists()) {
+            if (fileExists(configuration.reportFile)) {
                 echo "File exists"
-                resultFileSize = file.length()
+                resultFileSize = readFile(configuration.reportFile).length()
             }
             
             echo "Result file size is ${resultFileSize}"
