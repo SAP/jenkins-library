@@ -282,8 +282,8 @@ func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
 	}{
 		{"scanImage", "", "", "scanImage"},
 		{"scanImage", "", "filePath", "daemon://filePath"},
-		{"scanImage", "registryURL", "", "remote://registryURL/scanImage"},
-		{"containerScanImage", "containerRegistryUrl", "", "remote://containerRegistryUrl/containerScanImage"},
+		{"scanImage", "http://registryURL", "", "remote://registryURL/scanImage"},
+		{"containerScanImage", "https://containerRegistryUrl", "", "remote://containerRegistryUrl/containerScanImage"},
 		{"containerScanImage", "registryURL", "", "remote://registryURL/containerScanImage"},
 	}
 

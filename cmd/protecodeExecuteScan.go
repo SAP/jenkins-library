@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -160,6 +161,12 @@ func getURLAndFileNameFromDockerImage(scanImage string, registryURL string, file
 	completeURL := scanImage
 
 	if len(registryURL) > 0 && len(filePath) <= 0 {
+
+		url, _ := url.Parse(registryURL)
+		if len(url.Scheme) > 0 {
+			registryURL = strings.Replace(registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
+		}
+
 		if strings.HasSuffix(registryURL, "/") {
 			completeURL = fmt.Sprintf("remote://%v%v", registryURL, scanImage)
 		} else {
