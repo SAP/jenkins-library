@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
             )
 
             if (result != 0) {
-                error "HaDoLint failed to scan file ${configuration.dockerFile}, please check the log for details."   
+                error "HaDoLint scan on file ${configuration.dockerFile} detected issues, please check the log and report for details."   
             }
         }
     }
