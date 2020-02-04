@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:    
     secrets:
-      - name: credentialsId
+      - name: cfcredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
     params:
@@ -69,4 +69,5 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
+      dockerWorkspace: '/home/piper'
       imagePullPolicy: Never

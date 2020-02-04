@@ -153,7 +153,7 @@ void call(Map parameters = [:]) {
                     usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
                 ]) {*/
                 withCredentials([usernamePassword(
-                    credentialsId: config.credentialsId,
+                    credentialsId: config.cfCredentialsId,
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {

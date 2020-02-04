@@ -156,9 +156,6 @@ steps:
         fail:
           high: '0'
     archive: false
-  cloudFoundryDeleteService:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
