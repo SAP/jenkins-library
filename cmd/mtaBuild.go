@@ -38,10 +38,10 @@ func mtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonP
 }
 
 func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	s shellRunner) error {
+	e execRunner) error {
 
-	s.Stdout(os.Stderr) // keep stdout clear.
-	s.Stderr(os.Stderr)
+	e.Stdout(os.Stderr) // keep stdout clear.
+	e.Stderr(os.Stderr)
 
 	//
 	//mtaBuildTool := "classic"
@@ -77,7 +77,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	if len(defaultNpmRegistry) > 0 {
 		// REVISIT: would be possible to do this below in the same shell call like the mtar build itself
-		s.RunShell("/bin/bash", fmt.Sprintf("npm config set registry %s", defaultNpmRegistry))
+		e.RunExecutable("npm", "config", "set", "registry", defaultNpmRegistry)
 	}
 
 	mtaYamlFile := "mta.yaml"
@@ -137,7 +137,9 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	echo "[DEBUG] PATH: ${PATH}"
 	%s`, mtaCall)
 
-	if err := s.RunShell("/bin/bash", script); err != nil {
+	_ = script
+
+	if err := e.RunExecutable("mbt", "build" ); err != nil {
 		return err
 	}
 
