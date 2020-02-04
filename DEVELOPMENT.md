@@ -115,7 +115,7 @@ There are certain extensions:
 
   * Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
   * Sharing data via `commonPipelineEnvironment` which can be used by another step as input
-  
+
 * **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 
 ## Logging
