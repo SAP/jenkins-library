@@ -1,6 +1,4 @@
 version: "2"
-exclude_patterns:
-- "**/testdata/**"
 checks:
   return-statements:
     enabled: false
