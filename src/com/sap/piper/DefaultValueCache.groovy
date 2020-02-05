@@ -33,6 +33,8 @@ class DefaultValueCache implements Serializable {
         return defaultValues
     }
 
+    // The reset method is only used for unit tests, in which case the persistence is mocked,
+    // that is why no files need to be deleted with this reset.
     static reset(){
         instance = null
     }
