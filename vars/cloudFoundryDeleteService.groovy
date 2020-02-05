@@ -19,10 +19,6 @@ void call(Map parameters = [:]) {
 
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
 
         script.commonPipelineEnvironment.writeToDisk(script)
 
