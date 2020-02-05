@@ -27,7 +27,7 @@ jobs:
     - name: report-coverage
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
-        GIT_COMMIT_SHA: ${{ GITHUB_SHA }}
+        GIT_COMMIT_SHA: $GITHUB_SHA
         #GIT_BRANCH: ${{ GITHUB_REF##*/ }}
       run: |
         ./code-climate format-coverage cover.out --input-type gocov --prefix github.com/SAP/jenkins-library/
