@@ -46,7 +46,7 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 			WithError(err).
 			Fatal("Failed to delete Service")
 	}
-	log.Entry().Info("Deletion of Service is finished")
+	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
 	return err
 }
 
