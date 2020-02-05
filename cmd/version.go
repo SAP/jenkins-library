@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 // GitCommit ...
@@ -10,7 +12,7 @@ var GitCommit string
 // GitTag ...
 var GitTag string
 
-func version(myVersionOptions versionOptions) error {
+func version(config versionOptions, telemetryData *telemetry.CustomData) {
 
 	gitCommit, gitTag := "<n/a>", "<n/a>"
 
@@ -22,7 +24,5 @@ func version(myVersionOptions versionOptions) error {
 		gitTag = GitTag
 	}
 
-	_, err := fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
-
-	return err
+	fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
 }

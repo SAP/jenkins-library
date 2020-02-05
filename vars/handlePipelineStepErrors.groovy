@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DebugReport
 import com.sap.piper.analytics.InfluxData
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
@@ -77,7 +78,11 @@ void call(Map parameters = [:], body) {
         if (config.echoDetails)
             message += formatErrorMessage(config, ex)
         writeErrorToInfluxData(config, ex)
-        if (config.failOnError || config.stepName in config.mandatorySteps) {
+
+        boolean failOnError = config.failOnError || config.stepName in config.mandatorySteps
+        DebugReport.instance.storeStepFailure(config.stepName, ex, failOnError)
+
+        if (failOnError) {
             throw ex
         }
 
@@ -95,9 +100,6 @@ void call(Map parameters = [:], body) {
         }
 
         List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-        if(!unstableSteps) {
-            unstableSteps = []
-        }
 
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
@@ -108,6 +110,9 @@ void call(Map parameters = [:], body) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
         writeErrorToInfluxData(config, error)
+
+        DebugReport.instance.storeStepFailure(config.stepName, error, true)
+
         throw error
     } finally {
         if (config.echoDetails)
