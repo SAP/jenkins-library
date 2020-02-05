@@ -18,11 +18,10 @@ class DefaultValueCache implements Serializable {
     }
 
     static getInstance(script){
-        if (instance) {
-            return instance
-        } else {
-            return readDefaults(script)
+        if (!instance && script) {
+            createInstanceFromPersistence(script)
         }
+        return instance
     }
 
     static boolean hasInstance(){
@@ -69,16 +68,14 @@ class DefaultValueCache implements Serializable {
             }
             DefaultValueCache.createInstance(defaultValues, customDefaults)
 
-            persistDefaults(script, defaultValues, customDefaults)
+            if (script) {
+                persistDefaults(script, defaultValues, customDefaults)
+            }
 
         }
     }
 
-    static def persistDefaults(Script script, Map defaultValues, List customDefaults = []) {
-        if (!script) {
-            return null
-        }
-
+    static void persistDefaults(Script script, Map defaultValues, List customDefaults = []) {
         def defaultValuesAbsolutePath = "${script.WORKSPACE}/${defaultValuesRelativePath}"
         def customDefaultsAbsolutePath = "${script.WORKSPACE}/${customDefaultsRelativePath}"
 
@@ -92,11 +89,7 @@ class DefaultValueCache implements Serializable {
         }
     }
 
-    static def readDefaults(Script script) {
-        if (!script) {
-            return null
-        }
-
+    static void createInstanceFromPersistence(Script script) {
         def defaultValues = [:]
         def customDefaults = []
         def defaultValuesAbsolutePath = "${script.WORKSPACE}/${defaultValuesRelativePath}"
@@ -109,8 +102,6 @@ class DefaultValueCache implements Serializable {
         }
         if (defaultValues) {
             createInstance(defaultValues, customDefaults)
-            return instance
         }
-        return null
     }
 }

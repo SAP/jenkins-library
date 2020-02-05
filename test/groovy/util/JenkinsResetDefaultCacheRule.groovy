@@ -28,12 +28,12 @@ class JenkinsResetDefaultCacheRule implements TestRule {
             void evaluate() throws Throwable {
                 DefaultValueCache.reset()
 
-                MetaMethod oldReadDefaults = DefaultValueCache.metaClass.
-                    getStaticMetaMethod("readDefaults", Script)
+                MetaMethod oldCreateInstanceFromPersistence = DefaultValueCache.metaClass.
+                    getStaticMetaMethod("createInstanceFromPersistence", Script)
                 MetaMethod oldPersistDefaults = DefaultValueCache.metaClass.
                     getStaticMetaMethod("persistDefaults", [Script, Map, List])
 
-                DefaultValueCache.metaClass.static.readDefaults = { Script s ->
+                DefaultValueCache.metaClass.static.createInstanceFromPersistence = { Script s ->
                     return null
                 }
                 DefaultValueCache.metaClass.static.persistDefaults = { Script s, Map dv, List cd ->
@@ -42,7 +42,7 @@ class JenkinsResetDefaultCacheRule implements TestRule {
 
                 base.evaluate()
 
-                DefaultValueCache.metaClass.static.readDefaults = oldReadDefaults
+                DefaultValueCache.metaClass.static.createInstanceFromPersistence = oldCreateInstanceFromPersistence
                 DefaultValueCache.metaClass.static.persistDefaults = oldPersistDefaults
             }
         }
