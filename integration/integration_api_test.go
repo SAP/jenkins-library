@@ -16,6 +16,7 @@ import (
 )
 
 func TestPiperGithubPublishRelease(t *testing.T) {
+	t.Parallel()
 	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
 	if len(token) == 0 {
 		t.Fatal("No GitHub token maintained")

@@ -5,7 +5,10 @@ package main
 
 import (
 	"context"
+	"io"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -16,20 +19,40 @@ import (
 
 func TestKarmaIntegration(t *testing.T) {
 
+	t.Parallel()
 	ctx := context.Background()
 
-	dir, err := os.Getwd()
+	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")
-	dir = filepath.Dir(dir)
+	pwd = filepath.Dir(pwd)
+
+	tempDir, err := ioutil.TempDir("", "")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
+
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", t.Name()), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
+
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript := `#!/bin/sh
+cd /test
+/piperbin/piper karmaExecuteTests
+`
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	networkName := "sidecar-" + uuid.New().String()
 
 	reqNode := testcontainers.ContainerRequest{
-		Image:          "node:latest",
-		Cmd:            []string{"tail", "-f"},
-		BindMounts:     map[string]string{dir: "/data"},
+		Image: "node:latest",
+		Cmd:   []string{"tail", "-f"},
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
 		Networks:       []string{networkName},
-		NetworkAliases: map[string][]string{networkName: []string{"node"}},
+		NetworkAliases: map[string][]string{networkName: []string{"karma"}},
 	}
 
 	reqSel := testcontainers.ContainerRequest{
@@ -65,12 +88,74 @@ func TestKarmaIntegration(t *testing.T) {
 	}
 	defer selContainer.Terminate(ctx)
 
-	piperOptions := []string{
-		"karmaExecuteTests",
-		"--help",
-	}
+	// cannot use piper command directly since it is not possible to set Workdir for Exec call
+	// workaround use shell call in container (see above)
+	//piperOptions := []string{
+	//		"karmaExecuteTests",
+	//	"--help",
+	//}
+	//code, err := nodeContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
 
-	code, err := nodeContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
+}
+
+// Dir copies a directory
+func copyDir(source string, target string) error {
+	var err error
+	var fileInfo []os.FileInfo
+	var sourceInfo os.FileInfo
+
+	if sourceInfo, err = os.Stat(source); err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(target, sourceInfo.Mode()); err != nil {
+		return err
+	}
+
+	if fileInfo, err = ioutil.ReadDir(source); err != nil {
+		return err
+	}
+	for _, info := range fileInfo {
+		sourcePath := path.Join(source, info.Name())
+		targetPath := path.Join(target, info.Name())
+
+		if info.IsDir() {
+			if err = copyDir(sourcePath, targetPath); err != nil {
+				return err
+			}
+		} else {
+			if err = copyFile(sourcePath, targetPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func copyFile(source, target string) error {
+	var err error
+	var sourceFile *os.File
+	var targetFile *os.File
+	var sourceInfo os.FileInfo
+
+	if sourceFile, err = os.Open(source); err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	if targetFile, err = os.Create(target); err != nil {
+		return err
+	}
+	defer targetFile.Close()
+
+	if _, err = io.Copy(targetFile, sourceFile); err != nil {
+		return err
+	}
+	if sourceInfo, err = os.Stat(source); err != nil {
+		return err
+	}
+	return os.Chmod(target, sourceInfo.Mode())
 }

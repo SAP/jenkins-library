@@ -13,6 +13,7 @@ import (
 )
 
 func TestPiperHelp(t *testing.T) {
+	t.Parallel()
 	piperHelpCmd := command.Command{}
 
 	var commandOutput bytes.Buffer
