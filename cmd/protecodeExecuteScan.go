@@ -12,10 +12,12 @@ import (
 	"strings"
 	"time"
 
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/protecode"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/google/go-containerregistry/pkg/legacy/tarball"
 	"github.com/google/go-containerregistry/pkg/name"
 )
@@ -41,7 +43,7 @@ var cachePath = "./cache"
 var cacheProtecodeImagePath = "/protecode/Image"
 var cacheProtecodePath = "/protecode"
 
-func protecodeExecuteScan(config protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux) error {
+func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) error {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
