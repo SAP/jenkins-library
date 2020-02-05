@@ -316,7 +316,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 			}
 
-			if !(fileExists(config.FilePath())) {
+			if !(fileExists(config.FilePath)) {
 				log.Entry().Fatalf("There is no file for upload: %v", config.FilePath)
 			}
 
