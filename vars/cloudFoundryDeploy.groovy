@@ -6,9 +6,6 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
-import java.util.stream.Collectors
-import java.util.stream.Stream
-
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
@@ -434,10 +431,10 @@ private checkIfAppNameIsAvailable(config) {
 }
 
 def deployCfNative(config) {
-    // the deployStatement is complex and has lot of options; using Stream.of(...).filter() allows to put each option
-    // as a single Stream element; if a option is not set (= null) this removed by .filter() before every element is joined
+    // the deployStatement is complex and has lot of options; using a list and findAll allows to put each option
+    // as a single list element; if a option is not set (= null or '') this removed before every element is joined
     // via a single whitespace; results in a single line deploy statement
-    def deployStatement = Stream.of(
+    def deployStatement = [
         'cf',
         config.deployCommand,
         config.cloudFoundry.appName,
@@ -447,7 +444,7 @@ def deployCfNative(config) {
         binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : null,
         config.smokeTest,
         config.cfNativeDeployParameters
-    ).filter { s -> s != null && s != '' }.collect(Collectors.joining(' '))
+    ].findAll { s -> s != null && s != '' }.join(" ")
     deploy(null, deployStatement, config, { c -> stopOldAppIfRunning(c) })
 }
 
