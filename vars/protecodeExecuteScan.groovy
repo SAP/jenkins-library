@@ -40,13 +40,15 @@ void call(Map parameters = [:]) {
             // execute step
             withCredentials(creds) {
 
-                if (FILE_PATH) {
-                    File file = new File(FILE_PATH);
-                    def configDirPath = file.getAbsoluteFile().getParent();
-                    withEnv([
-                        "DOCKER_CONFIG=${configDirPath}",
-                    ]) {
-                        sh "./piper protecodeExecuteScan"
+                if(config.dockerCredentialsId) {
+                    if (FILE_PATH) {
+                        File file = new File(FILE_PATH);
+                        def configDirPath = file.getAbsoluteFile().getParent();
+                        withEnv([
+                            "DOCKER_CONFIG=${configDirPath}",
+                        ]) {
+                            sh "./piper protecodeExecuteScan"
+                        }
                     }
                 }
                 else {
