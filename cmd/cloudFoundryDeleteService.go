@@ -14,6 +14,7 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	c.Stderr(log.Entry().Writer())
 
 	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
+
 	err := cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
 	if err != nil {
 		cloudFoundryLogout(&c)
@@ -22,6 +23,7 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 			Fatal("Failed to delete Service!")
 		return err
 	}
+
 	cloudFoundryLogout(&c)
 
 	return nil
