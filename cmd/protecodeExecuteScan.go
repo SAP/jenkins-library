@@ -158,32 +158,33 @@ func tarImageData(tarFileName string, image pkgutil.Image) {
 
 func getURLAndFileNameFromDockerImage(scanImage string, registryURL string, filePath string) string {
 
-	completeURL := scanImage
+	pathToImage := scanImage
 
 	if len(registryURL) > 0 && len(filePath) <= 0 {
+		registry := registryURL
 
 		url, _ := url.Parse(registryURL)
 		if len(url.Scheme) > 0 {
-			registryURL = strings.Replace(registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
+			registry = strings.Replace(registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
 		}
 
-		if strings.HasSuffix(registryURL, "/") {
-			completeURL = fmt.Sprintf("remote://%v%v", registryURL, scanImage)
+		if strings.HasSuffix(registry, "/") {
+			pathToImage = fmt.Sprintf("remote://%v%v", registry, scanImage)
 		} else {
-			completeURL = fmt.Sprintf("remote://%v/%v", registryURL, scanImage)
+			pathToImage = fmt.Sprintf("remote://%v/%v", registry, scanImage)
 		}
 	} else if len(filePath) > 0 {
-		completeURL = filePath
+		pathToImage = filePath
 		if !pkgutil.IsTar(filePath) {
-			completeURL = fmt.Sprintf("daemon://%v", filePath)
+			pathToImage = fmt.Sprintf("daemon://%v", filePath)
 		}
 	}
 
-	if len(completeURL) <= 0 {
+	if len(pathToImage) <= 0 {
 		log.Entry().Fatal("There is no scan image configured")
 	}
 
-	return completeURL
+	return pathToImage
 }
 
 func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) map[string]int {
