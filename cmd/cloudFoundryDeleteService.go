@@ -14,7 +14,14 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	c.Stderr(log.Entry().Writer())
 
 	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
-	cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
+	err := cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
+	if err != nil {
+		log.Entry().
+			WithError(err).
+			Fatal("Failed to delete Service")
+		cloudFoundryLogout(&c)
+		return err
+	}
 	cloudFoundryLogout(&c)
 
 	return nil
@@ -42,9 +49,7 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 
 	err := c.RunExecutable("cf", cfdeleteServiceScript...)
 	if err != nil {
-		log.Entry().
-			WithError(err).
-			Fatal("Failed to delete Service")
+		return err
 	}
 	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
 	return err
