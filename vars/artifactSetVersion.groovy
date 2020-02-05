@@ -120,6 +120,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
  * If this option is chosen, git credentials and the repository URL needs to be provided.
  * Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the `commitVersion` parameter as described below.
  * If you require strict reproducibility of your builds, this should be used.
+ * In case you use maven ci-friendly versioning the property `revision` will be set to the value of the updated version.
  */
 @GenerateDocumentation
 void call(Map parameters = [:], Closure body = null) {
