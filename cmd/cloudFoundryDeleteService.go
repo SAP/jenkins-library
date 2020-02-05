@@ -19,7 +19,7 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 		cloudFoundryLogout(&c)
 		log.Entry().
 			WithError(err).
-			Fatal("Failed to delete Service")
+			Fatal("Failed to delete Service!")
 		return err
 	}
 	cloudFoundryLogout(&c)
