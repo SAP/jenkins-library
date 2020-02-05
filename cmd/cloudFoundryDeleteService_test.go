@@ -5,20 +5,16 @@ import (
 	"testing"
 )
 
-func TestCloudFoundryDeleteService2(t *testing.T) {
+func TestCloudFoundryDeleteService(t *testing.T) {
 	execRunner := execMockRunner{}
-	/*
-		t.Run("Shell: success case", func(t *testing.T) {
-			assert.Equal(t, ".", execRunner.dir, "Wrong execution directory used")
-			//assert.Equal(t, "/bin/bash", execRunner..shell[0], "Bash shell expected")
-		})*/
+
 	t.Run("CF Login: success case", func(t *testing.T) {
 		config := cloudFoundryDeleteServiceOptions{
-			API:          "https://api.endpoint.com",
-			Organisation: "testOrg",
-			Space:        "testSpace",
-			Username:     "testUser",
-			Password:     "testPassword",
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfOrg:         "testOrg",
+			CfSpace:       "testSpace",
+			Username:      "testUser",
+			Password:      "testPassword",
 		}
 		error := cloudFoundryLogin(config, &execRunner)
 		if error == nil {
@@ -46,18 +42,17 @@ func TestCloudFoundryDeleteService2(t *testing.T) {
 			assert.Equal(t, "-f", execRunner.calls[1].params[2])
 		}
 	})
-	t.Run("CF Delete Service: Success case", func(t *testing.T) {
-		ServiceName := "testInstance"
-		error := cloudFoundryDeleteServiceFunction(ServiceName, &execRunner)
-		if error == nil {
-
-		}
-	})
 	t.Run("CF Logout: Success case", func(t *testing.T) {
 		error := cloudFoundryLogout(&execRunner)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.calls[2].exec)
 			assert.Equal(t, "logout", execRunner.calls[2].params[0])
+		}
+	})
+	t.Run("CF Delete Service: Error case", func(t *testing.T) {
+		ServiceName := "testInstance"
+		error := cloudFoundryDeleteServiceFunction(ServiceName, &execRunner)
+		if error == nil {
 		}
 	})
 }
