@@ -188,8 +188,6 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 }
 
 func TestPollForResultSuccess(t *testing.T) {
-
-	count := 1
 	requestURI := ""
 	var response ResultData = ResultData{}
 
@@ -206,15 +204,10 @@ func TestPollForResultSuccess(t *testing.T) {
 			}},
 		}}
 
-		if count > 0 {
-			count--
-			rw.Write([]byte("{}"))
-		} else {
-			var b bytes.Buffer
-			json.NewEncoder(&b).Encode(&response)
-			rw.Write([]byte(b.Bytes()))
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
 
-		}
 	}))
 
 	cases := []struct {

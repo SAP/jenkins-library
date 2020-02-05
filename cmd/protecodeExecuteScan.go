@@ -118,7 +118,8 @@ func getDockerImage(scanImage string, registryURL string, path string, includeLa
 func createImageTar(image pkgutil.Image, fileName string, path string, artifactVersion string) (string, string) {
 
 	if !pkgutil.IsTar(fileName) {
-		fileName = fmt.Sprintf("%v%v.tar", strings.ReplaceAll(fileName, "/", "_"), artifactVersion)
+
+		fileName = fmt.Sprintf("%v%v.tar", strings.ReplaceAll(fileName, "/", "_"), strings.ReplaceAll(artifactVersion, ":", "_"))
 		tarFileName := filepath.Join(cachePath, fileName)
 
 		tarImageData(tarFileName, image)
