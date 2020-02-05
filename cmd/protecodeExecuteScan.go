@@ -315,12 +315,25 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			if len(config.FilePath) <= 0 {
 				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 			}
+
+			if !(fileExists(config.FilePath())) {
+				log.Entry().Fatalf("There is no file for upload: %v", config.FilePath)
+			}
+
 			resultData := client.UploadScanFile(config.CleanupMode, config.Group, config.FilePath, filaName)
 			productID = resultData.Result.ProductID
 		}
 	}
 
 	return productID
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 func hasExisting(productID int, reuseExisting bool) bool {
