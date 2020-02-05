@@ -18,7 +18,7 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
       with:
-        ref: ${GITHUB_SHA}
+        ref: ${{ GITHUB_SHA }}
     - name: setup-coverage
       run: |
         curl -L --output code-climate https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
