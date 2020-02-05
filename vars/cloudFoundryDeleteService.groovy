@@ -36,7 +36,7 @@ void call(Map parameters = [:]) {
                 dockerWorkspace: config.dockerWorkspace
             ) {
                 withCredentials([usernamePassword(
-                    credentialsId: config.cfcredentialsId,
+                    credentialsId: config.cfCredentialsId,
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
