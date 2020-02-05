@@ -13,11 +13,10 @@ import (
 type versionOptions struct {
 }
 
-var myVersionOptions versionOptions
-
 // VersionCommand Returns the version of the piper binary
 func VersionCommand() *cobra.Command {
 	metadata := versionMetadata()
+	var stepConfig versionOptions
 	var startTime time.Time
 
 	var createVersionCmd = &cobra.Command{
@@ -28,9 +27,9 @@ func VersionCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("version")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "version", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -40,18 +39,16 @@ func VersionCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "version")
-			// ToDo: pass telemetryData to step
-			err := version(myVersionOptions)
+			version(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 
-	addVersionFlags(createVersionCmd)
+	addVersionFlags(createVersionCmd, &stepConfig)
 	return createVersionCmd
 }
 
-func addVersionFlags(cmd *cobra.Command) {
+func addVersionFlags(cmd *cobra.Command, stepConfig *versionOptions) {
 
 }
 
