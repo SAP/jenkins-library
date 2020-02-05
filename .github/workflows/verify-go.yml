@@ -17,8 +17,6 @@ jobs:
         go-version: '1.13.x'
     - name: checkout
       uses: actions/checkout@v2
-      with:
-        ref: ${{ env.GITHUB_SHA }}
     - name: setup-coverage
       run: |
         curl -L --output code-climate https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
@@ -29,6 +27,8 @@ jobs:
     - name: report-coverage
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+        GIT_COMMIT_SHA: ${{ GITHUB_SHA }}
+        #GIT_BRANCH: ${{ GITHUB_REF##*/ }}
       run: |
         ./code-climate format-coverage cover.out --input-type gocov --prefix github.com/SAP/jenkins-library/
         ./code-climate upload-coverage
