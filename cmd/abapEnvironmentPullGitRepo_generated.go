@@ -34,9 +34,10 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 		Short: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
 		Long: `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
-  * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
-  * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
-  * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
+
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+* Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("abapEnvironmentPullGitRepo")
