@@ -30,8 +30,8 @@ jobs:
         GIT_COMMIT_SHA: $GITHUB_SHA
         #GIT_BRANCH: ${{ GITHUB_REF##*/ }}
       run: |
-        ECHO "GIT-SHA $GIT_COMMIT_SHA"
-        ECHO "GITHUB-SHA $GITHUB_SHA"
+        echo "GIT-SHA $GIT_COMMIT_SHA"
+        echo "GITHUB-SHA $GITHUB_SHA"
         ./code-climate format-coverage cover.out --input-type gocov --prefix github.com/SAP/jenkins-library/
         ./code-climate upload-coverage
   format:
