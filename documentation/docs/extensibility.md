@@ -1,86 +1,199 @@
 # Extensibility
 
-There are several possibilities for extensibility besides the **[very powerful configuration](configuration.md)**:
+When using one of the ready-made pipelines project "Piper" provides, the basic idea is to not write custom pipeline code.
+The pipelines are centrally maintained, and can be used with a small amount of [configuration](configuration.md).
 
-## 1. Stage Exits
+For the large majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement a production-ready CI/CD workflow with little effort.
 
-  You have to create a file like `<StageName>.groovy` (for example, `Acceptance.groovy`) and store it in folder `.pipeline/extensions/` in your source code repository.
+This approach allows you to focus on what you need to get done while implementing [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) in a best-practice compliant way.
 
-!!! note "Cloud SDK Pipeline"
-    If you use the Cloud SDK Pipeline, the folder is named `pipeline/extensions/` (without the dot). For more information, please refer to [the Cloud SDK Pipeline documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/extensibility.md).
+If a feature you need is missing, or you discovered a bug in one of the ready-made pipelines, please see if there is already an [issue in our GitHub repository](https://github.com/SAP/jenkins-library/issues), and open a new one if that is not the case.
 
-  The pipeline template checks if such a file exists and executes it, if present.
-  A parameter that contains the following keys is passed to the extension:
+In some cases, specialised features might not be desirable for inclusion in the ready-made pipelines.
+You can still benefit from the qualities they provide if you can address your requirements via an **Extension**.
 
-  * `script`: defines the global script environment of the Jenkinsfile run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and also allows access to for example the `commonPipelineEnvironment`.
-  * `originalStage`: this will allow you to execute the "original" stage at any place in your script. If omitting a call to `originalStage()` only your code will be executed instead.
-  * `stageName`: name of the current stage
-  * `config`: configuration of the stage (including all defaults)
+Extensions are custom bits of pipeline coding that you can use to implement special requirements.
 
-  Here a simple example for such an extension:
+Before building extensions, please make sure that no better alternative works for you.
 
-  ``` groovy
-  void call(Map params) {
-      //access stage name
-      echo "Start - Extension for stage: ${params.stageName}"
+Options for extensibility, in the order in which we recommend considering them:
 
-      //access config
-      echo "Current stage config: ${params.config}"
+## 1) Extend individual stages
 
-      //execute original stage as defined in the template
-      params.originalStage()
+In this option, you use the centrally maintained pipeline, but can change individual stages if required.
 
-      //access overall pipeline script object
-      echo "Branch: ${params.script.commonPipelineEnvironment.gitBranch}"
+To do so, create a file called `<StageName>.groovy` (for example, `Acceptance.groovy` or `lint.groovy`) in `.pipeline/extensions/` in your source code repository.
 
-      echo "End - Extension for stage: ${params.stageName}"
-  }
-  return this
-  ```
+For this, you need to know the technical identifiers for stage names.
+
+* For the general purpose pipeline, you can find them in [the pipeline source file](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy).
+* For SAP Cloud SDK Pipeline, you can find them in [this GitHub search query](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/search?q=%22def+stageName+%3D%22).
+
+The centrally maintained pipeline checks if such a file exists and executes it, if present.
+A parameter of type `Map` that contains the following keys is passed to the extension:
+
+* `script`: defines the global script environment of the `Jenkinsfile` run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and allows access to for example the `commonPipelineEnvironment`.
+* `originalStage`: this will allow you to execute the "original" stage at any place in your script. If omitting a call to `originalStage()` only your code will be executed instead.
+* `stageName`: name of the current stage
+* `config`: configuration of the stage and general config (including all defaults)
+
+Here is a simple example for such an extension, which you can use as a starting point:
+
+```groovy
+void call(Map params) {
+  //access stage name
+  echo "Start - Extension for stage: ${params.stageName}"
+
+  //access config
+  echo "Current stage config: ${params.config}"
+
+  //execute original stage as defined in the template
+  params.originalStage()
+
+  //access overall pipeline script object
+  echo "Branch: ${params.script.commonPipelineEnvironment.gitBranch}"
+
+  echo "End - Extension for stage: ${params.stageName}"
+}
+return this
+```
+
+!!! note "`return this`"
+    Don't forget the `return this` which is required at the end of _all_ extension scripts.
+    This is due to how Groovy loads scripts internally.
 
 !!! note "Init stage cannot be extended"
-    Please note, the `Init` stage among other things also checks out your current repository.<br />Thus it is not possible to use extensions on this stage.
+    Please note, the `Init` stage among other things also checks out your current repository including your extensions.<br />
+    Thus it is not possible to use extensions on this stage.
 
-## 2. Central Custom Template
+### Practical example
 
-If you have multiple projects where you want to use a custom template, you could implement this similarly to [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy).
+For a more practical example, you can use extensions in SAP Cloud SDK Pipeline to add custom linters to the pipeline.
 
-!!! note "How to not get decoupled"
-    Typically, providing a custom template decouples you from centrally provided updates to your template including the stages.<br />
-    Where applicable, you can re-use the stage implementations. This means, you will call e.g. `piperPipelineStageBuild()` as you can see in [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy).
+A linter is a tool that can check the source code for certain stylistic criteria, and many teams chose to use a linter to ensure a common programming style.
 
-    Using this approach you can at least benefit from innovations done in individual project "Piper" stages.
+As an example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/) in your codebase, you might use an extension similar to this one in a file called `.pipeline/extensions/lint.groovy` in your project:
 
-!!! note "When to go with a custom template"
-    If the configuration possibilities are not sufficient for you and if _1. Stage Exits_ is not applicable.
+```groovy
+def call(Map parameters) {
 
-## 3. Custom Jenkinsfile
+    parameters.originalStage.call() // Runs the built in linters
 
-Since project "Piper" fully builds on [Jenkins Pipelines as Code](https://jenkins.io/doc/book/pipeline-as-code/), you can also go with your complete custom `Jenkinsfile`.
+    mavenExecute(
+        script: parameters.script,
+        flags: '--batch-mode',
+        pomPath: 'application/pom.xml',
+        m2Path: s4SdkGlobals.m2Directory,
+        goals: 'checkstyle:checkstyle',
+    )
 
-!!! warning "Decoupling"
-    If you go this route you will be decoupled from the innovations provided with project "Piper", unless you re-use for example stages (as indicated above under _2. Central Custom Templates_).
+    recordIssues blameDisabled: true,
+        enabledForFailure: true,
+        aggregatingResults: false,
+        tool: checkStyle()
+}
 
-    **We recommend to use this only as last option for extensibility.**
+return this
+```
+
+This example can be adopted for other linters of your choice.
 
 
-## Further tips and information
+## 2) Modified ready-made pipeline
 
-When you consider to add additional capabilities your first stop should be the [Jenkins Pipeline Steps Reference](https://jenkins.io/doc/pipeline/steps/).
-Here you get an overview about what kind of capabilities are already available and a list of related parameters which you can use to customize the existing implementation. The provided information should help you to understand and extend the functionality of your pipeline.
+This option describes how you can copy and paste one of the centrally maintained pipelines to make changes not possible otherwise.
 
-!!! tip
-    If you consider extensions we recommend you to do it using a custom library according to the [Jenkins shared libraries](https://jenkins.io/doc/book/pipeline/shared-libraries/) concept instead of adding groovy coding to the `Jenkinsfile`.
-    Your custom library can easily live next to the provided pipeline library.
+For example, you can't change the order of stages, change which stages run in parallel or add new stages to a centrally maintained pipeline.
 
-    Your Jenkinsfile would then start like
+This might be done for an individual project (in the `Jenkinsfile`), or in a separate git repository so it can be used for multiple projects.
 
-    ```
-    @Library(['piper-lib-os', 'your-custom-lib']) _
+### Single project
 
-    ```
+The default `Jenkinsfile` of centrally maintained pipelines does nothing except for loading the pipeline and running it.
+This is comfortable, but limits which aspects of the pipeline are modifiable.
 
-<!-- ## Examples
+If you have one project using the pipeline, the easiest way to do this modification is to copy the pipeline into your Jenkinsfile.
 
-work in progress
--->
+The basic structure of your `Jenkinsfile` should be like this:
+
+```groovy
+@Library(/* The libraries you need depends on the pipeline you use */) _
+
+call script: this
+
+void call(parameters) {
+ // your pipeline based on one of the provided pipelines
+}
+```
+
+The actual pipeline code (the `call` method in the listing above) can be found here:
+
+* [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
+    * For this pipeline, you need to load this library: `'piper-lib-os@vINSERT_VERSION_HERE'`
+* [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
+    * For this pipeline, you need to load this library: `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`
+
+### Multiple projects
+
+Similar to what you can do in an individual `Jenkinsfile`, you can also copy the pipeline to a file in a separate git repository and modify it.
+
+To do this, create a new git repository in your preferred git hosting service.
+It must be compliant to [how Jenkins shared libraries are built](https://jenkins.io/doc/book/pipeline/shared-libraries/).
+In a nutshell, this means you need a `vars` directory inside which you can place a copy of your preferred pipeline.
+
+A minimal example of such a library could have this directory structure:
+
+```
+./vars/myCustomPipeline.groovy
+./README.md
+```
+
+where `myCustomPipeline.groovy` contains the modified pipeline code.
+
+!!! note
+    Your custom pipeline _must_ be named differently from the other pipelines provided by project "Piper", because Jenkins requires names across multiple libraries to be unique.
+
+This library needs to be placed in a git repository which is available for Jenkins and must be configured in Jenkins [as documented here](https://jenkins.io/doc/book/pipeline/shared-libraries/#using-libraries).
+
+![Library Setup](images/customPipelineLib.png "Library Setup")
+
+The `Jenkinsfile` would look similar to this:
+
+```groovy
+@Library(['piper-lib-os@vINSERT_VERSION_HERE','my-own-pipeline@vINSERT_VERSION_HERE']) _
+
+myCustomPipeline script: this
+```
+
+Be sure to adapt the names and version identifiers accordingly.
+
+### How to stay up-to-date
+
+Regardless which of the above options you choose, one downside of this approach is that your pipeline will be out of sync with the centrally maintained pipelines at some point in time.
+We strongly recommend doing _as little modification as possible_ to fulfil your requirements.
+Please be aware that stages may have dependencies on each other.
+Your pipeline should treat _stages_ as a black box, the implementation of stages is no published API and may be subject to change at any time.
+
+!!! warning "Beware of breaking changes"
+    Please be aware that when using the `master` branch of a library, it might always happen that breaking changes occur.
+    We recommend to always fix versions to a released version like in this example: `@Library('my-shared-library@1.0') _`<br />
+    Find the most recent release for [jenkins-library](https://github.com/SAP/jenkins-library/releases) and for [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline/releases) on GitHub.
+    We do recommend to ["watch" releases for those repositories on GitHub](https://help.github.com/en/github/receiving-notifications-about-activity-on-github/watching-and-unwatching-releases-for-a-repository).
+
+!!! note "When to go with a modified ready-made pipeline"
+    This option is right for you, when none of the provided ready-made pipelines serves your purpose, and individual stage extensions don't provide enough flexibility.
+
+### Advanced tips and information
+
+When you consider adding additional capabilities, your first stop should be the [Jenkins Pipeline Steps Reference](https://jenkins.io/doc/pipeline/steps/).
+Here you get an overview about what kind of capabilities are already available, and a list of related parameters which you can use to customize the existing implementation.
+The provided information should help you to understand and extend the functionality of your pipeline.
+
+## 3) New pipeline from scratch
+
+Since project "Piper" fully builds on [Jenkins Pipelines as Code](https://jenkins.io/doc/book/pipeline-as-code/), you can also go with your own pipeline from scratch in a `Jenkinsfile`.
+
+!!! danger "Decoupling"
+    If you go this route you will be decoupled from the innovations provided with project "Piper", unless you re-use for example stages (as indicated above under _2) Modified ready-made pipelines_).
+
+    **We recommend to use this only when none of the other provided options suit your use-case.**
