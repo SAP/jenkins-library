@@ -292,14 +292,15 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath string, fileName string) *ResultData {
+func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
-	url := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
-	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
+	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
+
+	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Error during %v upload request", url)
+		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
 	} else {
 		pc.logger.Info("Upload successful")
 	}

@@ -5,12 +5,14 @@ import (
 
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
@@ -150,6 +152,15 @@ func TestWriteReportDataToJSONFile(t *testing.T) {
 }
 
 func TestUploadScanOrDeclareFetch(t *testing.T) {
+
+	testFile, err := ioutil.TempFile("", "testFileUpload")
+	if err != nil {
+		t.FailNow()
+	}
+	defer os.RemoveAll(testFile.Name()) // clean up
+	fileName := filepath.Base(testFile.Name())
+	path := strings.ReplaceAll(testFile.Name(), fileName, "")
+
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
@@ -160,7 +171,8 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(&response)
 			rw.Write([]byte(b.Bytes()))
-		} else {
+		}
+		if requestURI == fmt.Sprintf("/api/upload/%v", fileName) || requestURI == fmt.Sprintf("/api/upload/PR_4711_%v", fileName) {
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 
 			var b bytes.Buffer
@@ -175,11 +187,6 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	po := protecode.Options{ServerURL: server.URL}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
-	testFile, err := ioutil.TempFile("", "testFileUpload")
-	if err != nil {
-		t.FailNow()
-	}
-	defer os.RemoveAll(testFile.Name()) // clean up
 
 	cases := []struct {
 		reuse    bool
@@ -187,16 +194,18 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		group    string
 		fetchURL string
 		filePath string
+		prName   string
 		want     int
 	}{
-		{false, "test", "group1", "/api/fetch/", "", 4711},
-		{false, "test", "group1", "", testFile.Name(), 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", 4711},
+		{false, "test", "group1", "", path, "", 4711},
+		{false, "test", "group1", "", path, "PR_4711", 4711},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
 
-		got := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
+		got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
 
 		assert.Equal(t, c.want, got)
 	}

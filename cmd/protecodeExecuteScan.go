@@ -127,13 +127,10 @@ func createImageTar(image pkgutil.Image, fileName string, path string, artifactV
 		tarImageData(tarFileName, image)
 	}
 
-	var resultFilePath string
+	resultFilePath := path
 
 	if len(path) <= 0 {
-		resultFilePath = filepath.Join(cachePath, fileName)
-		if len(resultFilePath) <= 0 {
-			log.Entry().Fatalf("There is no file path configured: %v (filename:%v, PSPath: %v)", path, fileName, image.FSPath)
-		}
+		resultFilePath = cachePath
 	}
 
 	return fileName, resultFilePath
@@ -301,7 +298,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	return pc
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, filaName string) int {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
 
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
 	if !hasExisting(productID, config.ReuseExisting) {
@@ -315,12 +312,17 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			if len(config.FilePath) <= 0 {
 				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 			}
-
-			if !(fileExists(config.FilePath)) {
-				log.Entry().Fatalf("There is no file for upload: %v", config.FilePath)
+			pathToFile := filepath.Join(config.FilePath, fileName)
+			if !(fileExists(pathToFile)) {
+				log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
 			}
 
-			resultData := client.UploadScanFile(config.CleanupMode, config.Group, config.FilePath, filaName)
+			combinedFileName := fileName
+			if len(config.PullRequestName) > 0 {
+				combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
+			}
+
+			resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
 			productID = resultData.Result.ProductID
 		}
 	}
