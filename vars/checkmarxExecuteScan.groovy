@@ -42,17 +42,7 @@ void call(Map parameters = [:]) {
                 sh "./piper checkmarxExecuteScan"
             }
 
-            def reports = readJSON (file: 'reports.json')
-            for (report in reports) {
-                archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
-            }
-
-            if (fileExists(file: 'links.json')) {
-                def links = readJSON(file: 'links.json')
-                for (link in links) {
-                    jenkinsUtils.addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
-                }
-            }
+            jenkinsUtils.handleStepResults(STEP_NAME, true, false)
         }
     }
 }
