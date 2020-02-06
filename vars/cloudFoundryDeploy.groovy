@@ -285,7 +285,7 @@ private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
         List applications = manifest.applications
         if(applications) {
             if(applications.size()>1){
-                error "[${STEP_NAME}] Your manifest contains more than 1 applications and blue green deployments are only possible for one application."
+                error "[${STEP_NAME}] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application."
             }
             if(applications.size==1 && applications[0]['no-route']){
                 echo '[WARNING] Blue green deployment is not possible for application without route. Using  deployment type "standard" instead.'
