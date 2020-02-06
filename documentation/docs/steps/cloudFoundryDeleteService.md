@@ -20,7 +20,7 @@ In this example, the Cloud Foundry configuration is directly provided with the r
 
 ```groovy
 cloudFoundryDeleteService(
-    cfapiEndpoint : 'https://test.server.com',
+    cfApiEndpoint : 'https://test.server.com',
     cfOrg : 'cforg',
     cfspace: 'cfspace',
     cfserviceInstance: 'cfserviceInstance',
