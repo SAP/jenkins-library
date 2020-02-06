@@ -80,21 +80,35 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
-	projectSettingsFileDest, err := getProjectSettingsFileDest()
-	if err != nil {
-		return err
-	}
-	globalSettingsFileDest, err := getGlobalSettingsFileDest()
-	if err != nil {
-		return err
+	if len(config.ProjectSettingsFile) > 0 {
+
+		projectSettingsFileDest, err := getProjectSettingsFileDest()
+		if err != nil {
+			return err
+		}
+
+		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest); err != nil {
+			return err
+		}
+
+	} else {
+
+		log.Entry().Debugf("Project settings file not provided via configuation.")
 	}
 
-	if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest); err != nil {
-		return err
-	}
+	if len(config.GlobalSettingsFile) {
 
-	if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest); err != nil {
-		return err
+		globalSettingsFileDest, err := getGlobalSettingsFileDest()
+		if err != nil {
+			return err
+		}
+
+		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest); err != nil {
+			return err
+		}
+	} else {
+
+		log.Entry().Debugf("Global settings file not provided via configuation."
 	}
 
 	if len(config.DefaultNpmRegistry) > 0 {
