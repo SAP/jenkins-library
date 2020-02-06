@@ -27,11 +27,11 @@ type ClientOptions struct {
 	IncludeLayers bool
 }
 
-//Download interface for download an image to a local path
-type Download interface {
+//Downloader interface for download an image to a local path
+type Downloader interface {
 	GetImageSource() (string, error)
 	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
-	TarImage(options ClientOptions)
+	TarImage(writer io.Writer, image pkgutil.Image) error
 }
 
 // SetOptions sets options used for the docker client
