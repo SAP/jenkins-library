@@ -358,7 +358,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         fileExistsRule.registerExistingFile('test.yml')
 
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("[cloudFoundryDeploy] Your manifest contains more than 1 applications and blue green deployments are only possible for one application.")
+        thrown.expectMessage("[cloudFoundryDeploy] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application.")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
