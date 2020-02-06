@@ -96,7 +96,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		log.Entry().Debugf("Project settings file not provided via configuation.")
 	}
 
-	if len(config.GlobalSettingsFile) {
+	if len(config.GlobalSettingsFile) > 0 {
 
 		globalSettingsFileDest, err := getGlobalSettingsFileDest()
 		if err != nil {
