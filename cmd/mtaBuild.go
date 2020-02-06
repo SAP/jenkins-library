@@ -75,7 +75,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	if len(defaultNpmRegistry) > 0 {
-		// REVISIT: would be possible to do this below in the same shell call like the mtar build itself
 		e.RunExecutable("npm", "config", "set", "registry", defaultNpmRegistry)
 	}
 
