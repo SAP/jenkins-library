@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -43,6 +42,11 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.localPath = options.LocalPath
 }
 
+const (
+	daemonPrefix = "daemon://"
+	remotePrefix = "remote://"
+)
+
 //GetImageSource get the image source from client attributes (localPath, imageName, registryURL)
 func (c *Client) GetImageSource() (string, error) {
 
@@ -58,14 +62,14 @@ func (c *Client) GetImageSource() (string, error) {
 		}
 
 		if strings.HasSuffix(registry, "/") {
-			imageSource = fmt.Sprintf("remote://%v%v", registry, c.imageName)
+			imageSource = fmt.Sprintf("%v%v%v", remotePrefix, registry, c.imageName)
 		} else {
-			imageSource = fmt.Sprintf("remote://%v/%v", registry, c.imageName)
+			imageSource = fmt.Sprintf("%v%v/%v", remotePrefix, registry, c.imageName)
 		}
 	} else if len(c.localPath) > 0 {
 		imageSource = c.localPath
 		if !pkgutil.IsTar(c.localPath) {
-			imageSource = fmt.Sprintf("daemon://%v", c.localPath)
+			imageSource = fmt.Sprintf("%v%v", daemonPrefix, c.localPath)
 		}
 	}
 
