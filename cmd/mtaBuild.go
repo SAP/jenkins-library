@@ -38,37 +38,36 @@ modules:
 type MTABuildTarget int
 
 const (
-        // NEO ...
-        NEO MTABuildTarget = iota
-        // CF ...
-        CF MTABuildTarget = iota
-        //XSA ...
-        XSA MTABuildTarget = iota
+	// NEO ...
+	NEO MTABuildTarget = iota
+	// CF ...
+	CF MTABuildTarget = iota
+	//XSA ...
+	XSA MTABuildTarget = iota
 )
 
 // ValueOfBuildTarget ...
 func ValueOfBuildTarget(str string) (MTABuildTarget, error) {
-        switch str {
-        case "NEO":
-                return NEO, nil
-        case "CF":
-                return CF, nil
-        case "XSA":
-                return XSA, nil
-        default:
-                return -1, fmt.Errorf("Unknown BuildTarget: '%s'", str)
-        }
+	switch str {
+	case "NEO":
+		return NEO, nil
+	case "CF":
+		return CF, nil
+	case "XSA":
+		return XSA, nil
+	default:
+		return -1, fmt.Errorf("Unknown BuildTarget: '%s'", str)
+	}
 }
 
 // String ...
 func (m MTABuildTarget) String() string {
-        return [...]string{
-                "NEO",
-                "CF",
-                "XSA",
-        }[m]
+	return [...]string{
+		"NEO",
+		"CF",
+		"XSA",
+	}[m]
 }
-
 
 func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
 	log.Entry().Info("Launching mta build")
@@ -136,12 +135,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	var mtaJar = "mta.jar"
 	var call []string
 
-
 	switch config.MtaBuildTool {
 	case "classic":
 
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
-		if(err != nil) {
+		if err != nil {
 			return err
 		}
 
@@ -152,7 +150,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	case "cloudMbt":
 
 		platform, err := ValueOfBuildTarget(config.Platform)
-		if(err != nil) {
+		if err != nil {
 			return err
 		}
 
