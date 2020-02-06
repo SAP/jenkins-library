@@ -80,23 +80,20 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
-	projectSettingsFileSrc := "http://example.org"
 	projectSettingsFileDest, err := getProjectSettingsFileDest()
 	if err != nil {
 		return err
 	}
-	globalSettingsFileSrc := "http://example.org"
 	globalSettingsFileDest, err := getGlobalSettingsFileDest()
 	if err != nil {
 		return err
 	}
-	//
 
-	if err = materialize(projectSettingsFileSrc, projectSettingsFileDest); err != nil {
+	if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest); err != nil {
 		return err
 	}
 
-	if err = materialize(globalSettingsFileSrc, globalSettingsFileDest); err != nil {
+	if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest); err != nil {
 		return err
 	}
 
