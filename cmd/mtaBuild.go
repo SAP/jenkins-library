@@ -108,7 +108,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		}
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuation."
+		log.Entry().Debugf("Global settings file not provided via configuation.")
 	}
 
 	if len(config.DefaultNpmRegistry) > 0 {
