@@ -54,6 +54,7 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
+            'cloudSdkPipeline',
         ]
 
         List steps = getSteps().stream()
