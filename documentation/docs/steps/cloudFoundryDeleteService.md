@@ -16,7 +16,7 @@ Furthermore you will need to provide the Cloud Foundry Login Credentials, which 
 
 ## Example
 
-In this example, the Cloud Foundry configuration is directly provided with the respective credentials for the used user/account.
+In this example, the Cloud Foundry Configuration is directly provided with the respective Credentials for the used User/Account.
 
 ```groovy
 cloudFoundryDeleteService(
