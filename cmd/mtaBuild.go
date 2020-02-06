@@ -46,8 +46,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stderr(os.Stderr)
 
 	//
-	//mtaBuildTool := "classic"
-	mtaBuildTool := "cloudMbt"
 	buildTarget := "buildTarget"
 	extensions := "ext"
 	platform := "platform"
@@ -110,7 +108,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	var mtaJar = "mta.jar"
 	var call []string
 
-	switch mtaBuildTool {
+	switch config.MtaBuildTool {
 	case "classic":
 		call = append(call, "java", "-jar", mtaJar, fmt.Sprintf("--build-target=%s", buildTarget))
 		if len(extensions) != 0 {
@@ -123,7 +121,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		}
 		call = append(call, "--target", "./")
 	default:
-		return fmt.Errorf("Unknown mta build tool: \"${%s}\"", mtaBuildTool)
+		return fmt.Errorf("Unknown mta build tool: \"${%s}\"", config.MtaBuildTool)
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
