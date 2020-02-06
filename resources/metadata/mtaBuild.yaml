@@ -60,7 +60,7 @@ spec:
         - STEPS
         mandatory: false
         default:
-      - name: projectSettingsFileSrc
+      - name: projectSettingsFile
         type: string
         description: Lorem ipsum
         scope:
@@ -69,7 +69,7 @@ spec:
         - STEPS
         mandatory: false
         default:
-      - name: globalSettingsFileSrc
+      - name: globalSettingsFile
         type: string
         description: Lorem ipsum
         scope:

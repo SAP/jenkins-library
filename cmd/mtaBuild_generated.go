@@ -14,14 +14,14 @@ import (
 )
 
 type mtaBuildOptions struct {
-	BuildTarget            string `json:"buildTarget,omitempty"`
-	MtaBuildTool           string `json:"mtaBuildTool,omitempty"`
-	Extensions             string `json:"extensions,omitempty"`
-	Platform               string `json:"platform,omitempty"`
-	ApplicationName        string `json:"applicationName,omitempty"`
-	DefaultNpmRegistry     string `json:"defaultNpmRegistry,omitempty"`
-	ProjectSettingsFileSrc string `json:"projectSettingsFileSrc,omitempty"`
-	GlobalSettingsFileSrc  string `json:"globalSettingsFileSrc,omitempty"`
+	BuildTarget         string `json:"buildTarget,omitempty"`
+	MtaBuildTool        string `json:"mtaBuildTool,omitempty"`
+	Extensions          string `json:"extensions,omitempty"`
+	Platform            string `json:"platform,omitempty"`
+	ApplicationName     string `json:"applicationName,omitempty"`
+	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -94,8 +94,8 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Lorem ipsum")
-	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFileSrc, "projectSettingsFileSrc", os.Getenv("PIPER_projectSettingsFileSrc"), "Lorem ipsum")
-	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFileSrc, "globalSettingsFileSrc", os.Getenv("PIPER_globalSettingsFileSrc"), "Lorem ipsum")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Lorem ipsum")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Lorem ipsum")
 
 	cmd.MarkFlagRequired("buildTarget")
 }
@@ -155,7 +155,7 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "projectSettingsFileSrc",
+						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -163,7 +163,7 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "globalSettingsFileSrc",
+						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
