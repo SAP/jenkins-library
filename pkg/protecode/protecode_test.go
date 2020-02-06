@@ -298,7 +298,7 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 			}
 		}
 
-		response := Result{ProductID: 111, ReportURL: requestURI}
+		response := ResultData{Result: Result{ProductID: 111, ReportURL: requestURI}}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)

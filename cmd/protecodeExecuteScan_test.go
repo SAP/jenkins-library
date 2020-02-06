@@ -104,27 +104,38 @@ func TestRunProtecodeScan(t *testing.T) {
 		requestURI = req.RequestURI
 		var b bytes.Buffer
 
-		if requestURI == "/api/product/4711/" {
+		if requestURI == "/api/product/4486/" || requestURI == "/api/product/4711/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
 			byteContent, err := ioutil.ReadFile(violations)
 			if err != nil {
 				t.Fatalf("failed reading %v", violations)
 			}
-			response := protecode.ResultData{}
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
 
 			json.NewEncoder(&b).Encode(response)
 
-		} else if requestURI == "/api/product/4711/pdf-report" {
+		} else if requestURI == "/api/fetch/" {
+			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
+			byteContent, err := ioutil.ReadFile(violations)
+			if err != nil {
+				t.Fatalf("failed reading %v", violations)
+			}
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
+			err = json.Unmarshal(byteContent, &response)
 
-		} else if requestURI == fmt.Sprint("/api/upload/t.tar") {
-			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
+			json.NewEncoder(&b).Encode(response)
+
+		} else if requestURI == "/api/product/4486/pdf-report" {
+
+		} else if requestURI == "/api/upload/t.tar" {
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(&response)
 			rw.Write([]byte(b.Bytes()))
 		} else {
-			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
+			response := protecode.Result{ProductID: 4486, ReportURL: requestURI}
 			json.NewEncoder(&b).Encode(&response)
 		}
 
@@ -251,8 +262,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		requestURI = req.RequestURI
 
 		if requestURI == "/api/fetch/" {
-			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
-
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(&response)
 			rw.Write([]byte(b.Bytes()))
@@ -320,7 +330,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		} else if requestURI == "/api/product/4711/pdf-report" {
 
 		} else {
-			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			json.NewEncoder(&b).Encode(&response)
 		}
 

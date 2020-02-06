@@ -278,7 +278,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
-			productID = resultData.ProductID
+			productID = resultData.Result.ProductID
 
 		} else {
 			log.Entry().Debugf("Upload file path: %v", config.FilePath)

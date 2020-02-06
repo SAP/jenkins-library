@@ -148,7 +148,6 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	newStr := buf.String()
-
 	if len(newStr) > 0 {
 
 		unquoted, err := strconv.Unquote(newStr)
@@ -312,7 +311,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Result {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
 
@@ -322,7 +321,7 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
 	}
 
-	result := new(Result)
+	result := new(ResultData)
 	pc.mapResponse(*r, result)
 
 	return result
