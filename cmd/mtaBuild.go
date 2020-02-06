@@ -65,26 +65,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 	//
 
-	// project settings file
-	if len(projectSettingsFileSrc) > 0 {
-		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
-			if e := materialize(projectSettingsFileSrc, projectSettingsFileDest); e != nil {
-				return e
-			}
-		} else {
-			piperutils.Copy(projectSettingsFileSrc, projectSettingsFileDest)
-		}
+	if err = materialize(projectSettingsFileSrc, projectSettingsFileDest); err != nil {
+		return err
 	}
-
-	// global settings file
-	if len(globalSettingsFileSrc) > 0 {
-		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
-			if e := materialize(globalSettingsFileSrc, globalSettingsFileDest); e != nil {
-				return e
-			}
-		} else {
-			piperutils.Copy(globalSettingsFileSrc, globalSettingsFileDest)
-		}
+	if err = materialize(globalSettingsFileSrc, globalSettingsFileDest); err != nil {
+		return err
 	}
 
 	if len(defaultNpmRegistry) > 0 {
@@ -227,7 +212,23 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(url, file string) error {
+func materialize(src, dest string) error {
+
+	if len(src) > 0 {
+		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
+			if e := materializeURL(src, dest); e != nil {
+				return e
+			}
+		} else {
+			if _, e := piperutils.Copy(src, dest); e != nil {
+				return e
+			}
+		}
+	}
+	return nil
+}
+
+func materializeURL(url, file string) error {
 
 	var e error
 	client := &piperhttp.Client{}
