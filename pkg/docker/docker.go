@@ -27,8 +27,8 @@ type ClientOptions struct {
 	IncludeLayers bool
 }
 
-//Downloader interface for download an image to a local path
-type Downloader interface {
+//Download interface for download an image to a local path
+type Download interface {
 	GetImageSource() (string, error)
 	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
 	TarImage(writer io.Writer, image pkgutil.Image) error
