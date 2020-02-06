@@ -61,7 +61,9 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	// project settings file
 	if len(projectSettingsFileSrc) > 0 {
 		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
-			materialize(projectSettingsFileSrc, projectSettingsFileDest)
+			if e := materialize(projectSettingsFileSrc, projectSettingsFileDest); e != nil {
+				return e
+			}
 		} else {
 			piperutils.Copy(projectSettingsFileSrc, projectSettingsFileDest)
 		}
@@ -70,7 +72,9 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	// global settings file
 	if len(globalSettingsFileSrc) > 0 {
 		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
-			materialize(globalSettingsFileSrc, globalSettingsFileDest)
+			if e := materialize(globalSettingsFileSrc, globalSettingsFileDest); e != nil {
+				return e
+			}
 		} else {
 			piperutils.Copy(globalSettingsFileSrc, globalSettingsFileDest)
 		}
