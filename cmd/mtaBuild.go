@@ -81,8 +81,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
-	defaultNpmRegistry := "npmReg"
-
 	projectSettingsFileSrc := "http://example.org"
 	projectSettingsFileDest, err := getProjectSettingsFileDest()
 	if err != nil {
@@ -103,8 +101,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		return err
 	}
 
-	if len(defaultNpmRegistry) > 0 {
-		if err := e.RunExecutable("npm", "config", "set", "registry", defaultNpmRegistry); err != nil {
+	if len(config.DefaultNpmRegistry) > 0 {
+		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
 			return err
 		}
 	}
