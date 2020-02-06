@@ -1,0 +1,62 @@
+metadata:
+  name: hadolintExecute
+  description: Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
+  longDescription: |-
+    Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
+    The linter is parsing the Dockerfile into an abstract syntax tree (AST) and performs rules on top of the AST.
+spec:
+  inputs:
+    params:
+    - name: configurationUrl
+      type: string
+      description: URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: dockerFile
+      type: string
+      description: Dockerfile to be used for the assessment.
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ./Dockerfile
+    - name: configurationFile
+      type: string
+      description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: .hadolint.yaml
+    - name: qualityGates
+      type: string
+      description: Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+      conditions:
+      - conditionRef: strings-equal
+        params:
+        - name: null
+          value: null
+    - name: reportFile
+      type: string
+      description: Name of the result file used locally within the step.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: hadolint.xml
+  containers:
+  - image: hadolint/hadolint:latest-debian
