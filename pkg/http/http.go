@@ -17,19 +17,22 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	timeout  time.Duration
-	username string
-	password string
-	token    string
-	logger   *logrus.Entry
+	timeout   time.Duration
+	username  string
+	password  string
+	token     string
+	logger    *logrus.Entry
+	cookieJar http.CookieJar
 }
 
 // ClientOptions defines the options to be set on the client
 type ClientOptions struct {
-	Timeout  time.Duration
-	Username string
-	Password string
-	Token    string
+	Timeout   time.Duration
+	Username  string
+	Password  string
+	Token     string
+	Logger    *logrus.Entry
+	CookieJar http.CookieJar
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -41,12 +44,23 @@ type Sender interface {
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
 	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	SetOptions(options ClientOptions)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fieldName, header, cookies)
+}
+
+// UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
+func (c *Client) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	if method != http.MethodPost && method != http.MethodPut {
+		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", method, http.MethodPost, http.MethodPut))
+	}
+
 	httpClient := c.initialize()
 
 	bodyBuffer := &bytes.Buffer{}
@@ -69,7 +83,6 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 	}
 	err = bodyWriter.Close()
 
-	method := http.MethodPost
 	request, err := c.createRequest(method, url, bodyBuffer, &header, cookies)
 	if err != nil {
 		c.logger.Debugf("New %v request to %v", method, url)
@@ -114,16 +127,18 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
-	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
+	c.logger = options.Logger
+	c.cookieJar = options.CookieJar
 }
 
 func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
+	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	var httpClient = &http.Client{
 		Timeout: c.timeout,
+		Jar:     c.cookieJar,
 	}
-
 	c.logger.Debugf("Timeout set to %v", c.timeout)
 
 	return httpClient
@@ -185,5 +200,8 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 func (c *Client) applyDefaults() {
 	if c.timeout == 0 {
 		c.timeout = time.Second * 10
+	}
+	if c.logger == nil {
+		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
 }

@@ -1,7 +1,7 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-
+import hudson.Functions
 import hudson.tasks.junit.TestResultAction
 
 import jenkins.model.Jenkins
@@ -126,6 +126,50 @@ def getLibrariesInfo() {
     }
 
     return libraries
+}
+
+@NonCPS
+void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        if (relativeUrl != null && displayName != null) {
+            def run = getRawBuild()
+            def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
+            def action = linkActionClass.newInstance(relativeUrl, displayName, iconPath)
+            echo "Added run level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+            run.getActions().add(action)
+        }
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+void handleStepResults(String stepName, boolean failOnMissingReports, boolean failOnMissingLinks) {
+    def reportsFileName = "${stepName}_reports.json"
+    def reportsFileExists = fileExists(file: reportsFileName)
+    if (failOnMissingReports && !reportsFileExists) {
+        error "Expected to find ${reportsFileName} in workspace but it is not there"
+    } else if (reportsFileExists) {
+        def reports = readJSON(file: reportsFileName)
+        for (report in reports) {
+            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+        }
+    }
+
+    def linksFileName = "${stepName}_links.json"
+    def linksFileExists = fileExists(file: linksFileName)
+    if (failOnMissingLinks && !linksFileExists) {
+        error "Expected to find ${linksFileName} in workspace but it is not there"
+    } else if (linksFileExists) {
+        def links = readJSON(file: linksFileName)
+        for (link in links) {
+            if(link['scope'] == 'job') {
+                removeJobSideBarLinks(link['target'])
+                addJobSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+            }
+            addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+        }
+    }
 }
 
 def getInstance() {

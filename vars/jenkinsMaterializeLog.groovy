@@ -67,7 +67,7 @@ def getFilePath(logFileName, jenkinsUtils) {
             return new FilePath(file);
         }
         def channel = computer.getChannel()
-        return new FilePath(channel, file)
+        return new FilePath(channel, logFileName)
     }
 }
 

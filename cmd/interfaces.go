@@ -11,6 +11,11 @@ type execRunner interface {
 	Stderr(err io.Writer)
 }
 
+type envExecRunner interface {
+	execRunner
+	Env(e []string)
+}
+
 type shellRunner interface {
 	RunShell(s string, c string) error
 	Dir(d string)
