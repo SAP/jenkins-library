@@ -81,8 +81,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
-	//
-	platform := "platform"
 	//	applicationName := ""
 	applicationName := "myApp"
 	defaultNpmRegistry := "npmReg"
@@ -142,19 +140,27 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	var mtaJar = "mta.jar"
 	var call []string
 
-	buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
-	if(err != nil) {
-		return err
-	}
 
 	switch config.MtaBuildTool {
 	case "classic":
+
+		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
+		if(err != nil) {
+			return err
+		}
+
 		call = append(call, "java", "-jar", mtaJar, fmt.Sprintf("--build-target=%s", buildTarget))
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extension=%s", config.Extensions))
 		}
 	case "cloudMbt":
-		call = append(call, "mbt", "build", "--platform", platform)
+
+		platform, err := ValueOfBuildTarget(config.Platform)
+		if(err != nil) {
+			return err
+		}
+
+		call = append(call, "mbt", "build", "--platform", platform.String())
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 		}
