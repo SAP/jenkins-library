@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -10,10 +11,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
-	"path/filepath"
-	"errors"
 )
 
 const templateMtaYml = `_schema-version: "2.0.0"
@@ -167,7 +167,7 @@ func getEnvironmentVariable(name string) string {
 
 	// in case we have the same name twice we have to take the latest one.
 	// hence we reverse the slice in order to get the latest entry first.
-	prefix := name+"="
+	prefix := name + "="
 	for _, e := range reverse(os.Environ()) {
 		if strings.HasPrefix(e, prefix) {
 			return strings.TrimPrefix(e, prefix)
@@ -236,8 +236,8 @@ func materialize(src, dest string) error {
 				return err
 			}
 
-			if ! exists {
-				if err = os.MkdirAll(parent, 0664 	); err != nil {
+			if !exists {
+				if err = os.MkdirAll(parent, 0664); err != nil {
 					return err
 				}
 			}
@@ -266,7 +266,6 @@ func materializeURL(url, file string) error {
 	if response.StatusCode != 200 {
 		fmt.Errorf("Got %d reponse from download attemtp for \"%s\"", response.StatusCode, url)
 	}
-
 
 	body, e := ioutil.ReadAll(response.Body)
 	if e != nil {
