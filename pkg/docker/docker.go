@@ -31,7 +31,7 @@ type ClientOptions struct {
 type Download interface {
 	GetImageSource() (string, error)
 	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
-	TarImage(options ClientOptions)
+	TarImage(writer io.Writer, image pkgutil.Image) error
 }
 
 // SetOptions sets options used for the docker client
