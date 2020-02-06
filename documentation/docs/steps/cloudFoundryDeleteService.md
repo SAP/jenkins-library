@@ -4,9 +4,9 @@
 
 ## Prerequisites
 
-This step is for deleting an exisiting service on Cloud Foundry.
-You need to provide the Cloud Foundry API Endpoint, the Organisation as well as the space and the respective Service instance name you want to delete. 
-Furhtermore you will need to provide the Cloud Foudnry Login credentials, which must be stored in the Jenkins configuration.
+This step is for deleting an existing service on Cloud Foundry.
+You need to provide the Cloud Foundry API Endpoint, the Organisation as well as the Space and the respective Service Instance Name you want to delete. 
+Furthermore you will need to provide the Cloud Foundry Login Credentials, which must be stored in the Jenkins Configuration.
 
 ## ${docGenParameters}
 
@@ -21,9 +21,9 @@ In this example, the Cloud Foundry configuration is directly provided with the r
 ```groovy
 cloudFoundryDeleteService(
     cfapiEndpoint : 'https://test.server.com',
-    cfOrg : 'cfOrg',
-    space: 'cfSpace',
-    serviceInstance: 'cfServiceInstance',
-    cfCredentialsId: 'cfCredentialsId',
+    cfOrg : 'cforg',
+    cfspace: 'cfspace',
+    cfserviceInstance: 'cfserviceInstance',
+    cfCredentialsId: 'cfcredentialsId',
 ) 
 ```
