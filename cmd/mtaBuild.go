@@ -54,15 +54,13 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	defaultNpmRegistry := "npmReg"
 
 	projectSettingsFileSrc := "http://example.org"
-	projectSettingsFileDest := "project-settings.xml" // needs to be $HOME/.m2/settings.xml finally
+	projectSettingsFileDest := getProjectSettingsFileDest()
 	globalSettingsFileSrc := "http://example.org"
-	globalSettingsFileDest := "global-settings.txt" // needs to be $M2_HOME/conf/settings.xml finally
+	globalSettingsFileDest := getGlobalSettingsFileDest()
 	//
 
 	// project settings file
 	if len(projectSettingsFileSrc) > 0 {
-		projectSettingsFileParent := filepath.Dir("/home/me/.m2/settings.xml")
-		fmt.Printf("ProjectSettingsfileParent: \"%s\"\n", projectSettingsFileParent)
 		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
 			materialize(projectSettingsFileSrc, projectSettingsFileDest)
 		} else {
@@ -72,7 +70,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	// global settings file
 	if len(globalSettingsFileSrc) > 0 {
-		materialize(globalSettingsFileSrc, globalSettingsFileDest)
+		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
+			materialize(globalSettingsFileSrc, globalSettingsFileDest)
+		} else {
+			piperutils.Copy(globalSettingsFileSrc, globalSettingsFileDest)
+		}
 	}
 
 	if len(defaultNpmRegistry) > 0 {
@@ -143,13 +145,23 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	return nil
 }
 
+func getGlobalSettingsFileDest() string {
+	return "global-settings.txt" // needs to be $M2_HOME/conf/settings.xml finally
+}
+
+func getProjectSettingsFileDest() string {
+	return "project-settings.xml" // needs to be $HOME/.m2/settings.xml finally
+
+}
+
 func getEnvironmentVariable(name string) string {
 
 	// in case we have the same name twice we have to take the latest one.
 	// hence we reverse the slice in order to get the latest entry first.
+	prefix := name+"="
 	for _, e := range reverse(os.Environ()) {
-		if strings.HasPrefix(e, name+"=") {
-			return e
+		if strings.HasPrefix(e, prefix) {
+			return strings.TrimPrefix(e, prefix)
 		}
 	}
 	return ""
