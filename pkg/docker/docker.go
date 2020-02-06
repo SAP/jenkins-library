@@ -28,6 +28,7 @@ type ClientOptions struct {
 	IncludeLayers bool
 }
 
+//Download interface for download an image to a local path
 type Download interface {
 	GetImageSource() (string, error)
 	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
@@ -42,6 +43,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.localPath = options.LocalPath
 }
 
+//GetImageSource get the image source from client attributes (localPath, imageName, registryURL)
 func (c *Client) GetImageSource() (string, error) {
 
 	imageSource := c.imageName
@@ -68,17 +70,19 @@ func (c *Client) GetImageSource() (string, error) {
 	}
 
 	if len(imageSource) <= 0 {
-		return imageSource, errors.New(fmt.Sprintf("There is no image source for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath))
+		return imageSource, fmt.Errorf("There is no image source for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
 	}
 
 	return imageSource, nil
 }
 
+//DownloadImageToPath download the image to the specified path
 func (c *Client) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
 
 	return pkgutil.GetImage(imageSource, c.includeLayers, filePath)
 }
 
+//TarImage write a tar from the given image
 func (c *Client) TarImage(writer io.Writer, image pkgutil.Image) error {
 
 	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
