@@ -249,12 +249,12 @@ def findMtar(){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
+        error "[${STEP_NAME}] Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
     }
-    error 'No *.mtar file found!'
+    error "[${STEP_NAME}] No *.mtar file found!"
 }
 
 def deployMta (config) {
@@ -276,8 +276,27 @@ def deployMta (config) {
     deploy(apiStatement, deployStatement, config, null)
 }
 
+private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
+    String manifestFile = config.cloudFoundry.manifest ?: 'manifest.yml'
+    if(config.deployType == 'blue-green' && fileExists(manifestFile)){
+        Map manifest = readYaml file: manifestFile
+        List applications = manifest.applications
+        if(applications) {
+            if(applications.size()>1){
+                error "[${STEP_NAME}] Your manifest contains more than 1 applications and blue green deployments are only possible for one application."
+            }
+            if(applications.size==1 && applications[0]['no-route']){
+                echo '[WARNING] Blue green deployment is not possible for application without route. Using  deployment type "standard" instead.'
+                config.deployType = 'standard'
+            }
+        }
+    }
+}
+
 private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = ''
+
+    checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
     if (config.deployType == 'blue-green') {
         prepareBlueGreenCfNativeDeploy(config,script)

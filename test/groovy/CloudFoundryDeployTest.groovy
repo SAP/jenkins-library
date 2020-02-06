@@ -352,6 +352,50 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testCfNativeBlueGreenMultipleApplications() {
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName1'],[name: 'manifestAppName2']]")
+        fileExistsRule.registerExistingFile('test.yml')
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("[cloudFoundryDeploy] Your manifest contains more than 1 applications and blue green deployments are only possible for one application.")
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+    }
+
+    @Test
+    void testCfNativeBlueGreenWithNoRoute() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName1', no-route: true]]")
+        fileExistsRule.registerExistingFile('test.yml')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+    }
+
+    @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
 
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
