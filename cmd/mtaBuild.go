@@ -207,6 +207,8 @@ func generateMta(id, name, version string) (string, error) {
 }
 
 func materialize(url, file string) error {
+
+	var e error
 	client := &piperhttp.Client{}
 	//CHECK:
 	// - how does this work with a proxy inbetween?
@@ -220,12 +222,16 @@ func materialize(url, file string) error {
 		fmt.Errorf("Got %d reponse from download attemtp for \"%s\"", response.StatusCode, url)
 	}
 
+
 	body, e := ioutil.ReadAll(response.Body)
 	if e != nil {
 		return e
 	}
 
-	ioutil.WriteFile(file, body, 0644)
+	e = ioutil.WriteFile(file, body, 0644)
+	if e != nil {
+		return e
+	}
 
 	return nil
 }
