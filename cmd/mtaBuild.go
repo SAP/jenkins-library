@@ -75,7 +75,9 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	if len(defaultNpmRegistry) > 0 {
-		e.RunExecutable("npm", "config", "set", "registry", defaultNpmRegistry)
+		if err := e.RunExecutable("npm", "config", "set", "registry", defaultNpmRegistry); err != nil {
+			return err
+		}
 	}
 
 	mtaYamlFile := "mta.yaml"
