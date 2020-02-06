@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -18,38 +20,48 @@ type cloudFoundryDeleteServiceOptions struct {
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
 }
 
-var myCloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions
-
 // CloudFoundryDeleteServiceCommand DeleteCloudFoundryService
 func CloudFoundryDeleteServiceCommand() *cobra.Command {
 	metadata := cloudFoundryDeleteServiceMetadata()
+	var stepConfig cloudFoundryDeleteServiceOptions
+	var startTime time.Time
 
 	var createCloudFoundryDeleteServiceCmd = &cobra.Command{
 		Use:   "cloudFoundryDeleteService",
 		Short: "DeleteCloudFoundryService",
 		Long:  `Delete CloudFoundryService`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("cloudFoundryDeleteService")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "cloudFoundryDeleteService", &myCloudFoundryDeleteServiceOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "cloudFoundryDeleteService", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return cloudFoundryDeleteService(myCloudFoundryDeleteServiceOptions)
+		Run: func(cmd *cobra.Command, args []string) {
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "cloudFoundryDeleteService")
+			cloudFoundryDeleteService(stepConfig, &telemetryData)
+			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addCloudFoundryDeleteServiceFlags(createCloudFoundryDeleteServiceCmd)
+	addCloudFoundryDeleteServiceFlags(createCloudFoundryDeleteServiceCmd, &stepConfig)
 	return createCloudFoundryDeleteServiceCmd
 }
 
-func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
+func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command, stepConfig *cloudFoundryDeleteServiceOptions) {
+	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
+	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
+	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
