@@ -88,7 +88,7 @@ func MtaBuildCommand() *cobra.Command {
 }
 
 func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", os.Getenv("PIPER_buildTarget"), "Lorem ipsum")
+	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", os.Getenv("PIPER_buildTarget"), "For mtaBuildTool classic only. Valid values: CF, NEO, XSA")
 	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", "cloudMbt", "Valid values: 'classic', 'cloudMbt' (default)")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Lorem ipsum")
@@ -97,6 +97,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFileSrc, "projectSettingsFileSrc", os.Getenv("PIPER_projectSettingsFileSrc"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFileSrc, "globalSettingsFileSrc", os.Getenv("PIPER_globalSettingsFileSrc"), "Lorem ipsum")
 
+	cmd.MarkFlagRequired("buildTarget")
 }
 
 // retrieve step metadata
@@ -110,7 +111,7 @@ func mtaBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{

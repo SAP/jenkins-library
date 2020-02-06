@@ -8,12 +8,12 @@ spec:
     params:
       - name: buildTarget
         type: string
-        description: Lorem ipsum
+        description: "For mtaBuildTool classic only. Valid values: CF, NEO, XSA"
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: false
+        mandatory: true
         default:
       - name: mtaBuildTool
         type: string

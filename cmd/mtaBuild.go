@@ -34,6 +34,42 @@ modules:
       builder: grunt
       build-result: dist`
 
+// MTABuildTarget ...
+type MTABuildTarget int
+
+const (
+        // NEO ...
+        NEO MTABuildTarget = iota
+        // CF ...
+        CF MTABuildTarget = iota
+        //XSA ...
+        XSA MTABuildTarget = iota
+)
+
+// ValueOfBuildTarget ...
+func ValueOfBuildTarget(str string) (MTABuildTarget, error) {
+        switch str {
+        case "NEO":
+                return NEO, nil
+        case "CF":
+                return CF, nil
+        case "XSA":
+                return XSA, nil
+        default:
+                return -1, fmt.Errorf("Unknown BuildTarget: '%s'", str)
+        }
+}
+
+// String ...
+func (m MTABuildTarget) String() string {
+        return [...]string{
+                "NEO",
+                "CF",
+                "XSA",
+        }[m]
+}
+
+
 func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
 	log.Entry().Info("Launching mta build")
 	return runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
@@ -46,7 +82,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stderr(os.Stderr)
 
 	//
-	buildTarget := "buildTarget"
 	extensions := "ext"
 	platform := "platform"
 	//	applicationName := ""
@@ -107,6 +142,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	var mtaJar = "mta.jar"
 	var call []string
+
+	buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
+	if(err != nil) {
+		return err
+	}
 
 	switch config.MtaBuildTool {
 	case "classic":
