@@ -131,7 +131,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	path := "./node_modules/.bin"
 	oldPath := getEnvironmentVariable("PATH")
 	if len(oldPath) > 0 {
-		path = path + ":" + strings.TrimPrefix(oldPath, "PATH=")
+		path = path + ":" + oldPath
 	}
 	e.Env(append(os.Environ(), "PATH="+path))
 
