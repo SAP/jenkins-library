@@ -26,7 +26,8 @@ func TestKarmaIntegration(t *testing.T) {
 	assert.NoError(t, err, "Getting current working directory failed.")
 	pwd = filepath.Dir(pwd)
 
-	tempDir, err := ioutil.TempDir("", "")
+	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
+	tempDir, err := createTmpDir("")
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
@@ -158,4 +159,18 @@ func copyFile(source, target string) error {
 		return err
 	}
 	return os.Chmod(target, sourceInfo.Mode())
+}
+
+func createTmpDir(prefix string) (string, error) {
+	dirName := os.TempDir()
+	tmpDir, err := filepath.EvalSymlinks(dirName)
+	if err != nil {
+		return "", err
+	}
+	tmpDir = filepath.Clean(tmpDir)
+	path, err := ioutil.TempDir(tmpDir, prefix)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
