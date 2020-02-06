@@ -13,13 +13,10 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
-	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
-	"github.com/google/go-containerregistry/pkg/legacy/tarball"
-	"github.com/google/go-containerregistry/pkg/name"
 )
 
 type protecodeData struct {
@@ -58,8 +55,9 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
 
+	dClient := createDockerClient(config)
 	log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
-	image := getDockerImage(config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
+	image := getDockerImage(dClient)
 
 	artifactVersion := handleArtifactVersion(config.ArtifactVersion)
 	fileName, filePath := createImageTar(image, config.ScanImage, config.FilePath, artifactVersion)
@@ -96,25 +94,24 @@ func handleArtifactVersion(artifactVersion string) string {
 	return artifactVersion
 }
 
-var getImage = func(scanImage string, registryURL string, filePath string, includeLayers bool) pkgutil.Image {
+func getDockerImage(dClient piperDocker.Client.Download) pkgutil.Image {
 
 	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	deletePath := filepath.Join(cachePath, cacheProtecodePath)
 	err := os.RemoveAll(deletePath)
-
+	
 	os.Mkdir(cacheImagePath, 600)
-
-	completeURL := getURLAndFileNameFromDockerImage(scanImage, registryURL, filePath)
-	image, err := pkgutil.GetImage(completeURL, includeLayers, cacheImagePath)
+	
+	imageSource, err := dClient.GetImageSource()
+	if err != nil {
+		log.Entry().WithErr(err).Fatal("Error during get docker image source")
+	}
+	image, err := dClient.DownloadImageToPath(imageSource, cacheImagePath)
 	if err != nil {
 		log.Entry().Fatalf("Error during get docker image: %v", err)
 	}
 
 	return image
-}
-
-func getDockerImage(scanImage string, registryURL string, path string, includeLayers bool) pkgutil.Image {
-	return getImage(scanImage, registryURL, path, includeLayers)
 }
 
 func createImageTar(image pkgutil.Image, fileName string, path string, artifactVersion string) (string, string) {
@@ -296,6 +293,14 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	pc.SetOptions(protecodeOptions)
 
 	return pc
+}
+func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Client.Download {
+
+	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.RegistryURL, path: config.FilePath, IncludeLayers: config.IncludeLayers}
+	dClient := piperDocker.Client{}
+	dClient.SetOptions(dClientOptions)
+
+	return dClient
 }
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
