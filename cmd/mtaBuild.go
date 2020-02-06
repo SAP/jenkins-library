@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"path/filepath"
 	"errors"
 )
 
@@ -68,6 +69,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	if err = materialize(projectSettingsFileSrc, projectSettingsFileDest); err != nil {
 		return err
 	}
+
 	if err = materialize(globalSettingsFileSrc, globalSettingsFileDest); err != nil {
 		return err
 	}
@@ -151,6 +153,7 @@ func getGlobalSettingsFileDest() (string, error) {
 }
 
 func getProjectSettingsFileDest() (string, error) {
+
 	home := getEnvironmentVariable("HOME")
 
 	if len(home) == 0 {
@@ -215,16 +218,35 @@ func generateMta(id, name, version string) (string, error) {
 func materialize(src, dest string) error {
 
 	if len(src) > 0 {
+
+		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
+
 		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-			if e := materializeURL(src, dest); e != nil {
-				return e
+			if err := materializeURL(src, dest); err != nil {
+				return err
 			}
 		} else {
-			if _, e := piperutils.Copy(src, dest); e != nil {
-				return e
+
+			parent := filepath.Dir(dest)
+
+			exists, err := piperutils.FileExists(parent)
+
+			if err != nil {
+				return err
+			}
+
+			if ! exists {
+				if err = os.MkdirAll(parent, 0664 	); err != nil {
+					return err
+				}
+			}
+
+			if _, err := piperutils.Copy(src, dest); err != nil {
+				return err
 			}
 		}
 	}
+	log.Entry().Debugf("File \"%s\" copied to \"%s\"", src, dest)
 	return nil
 }
 
