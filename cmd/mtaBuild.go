@@ -69,9 +69,15 @@ func (m MTABuildTarget) String() string {
 	}[m]
 }
 
-func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
+func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Info("Launching mta build")
-	return runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
+	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
+	if err != nil {
+		log.Entry().
+				WithError(err).
+				Fatal("failed to execute mta build")
+}
+
 }
 
 func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
@@ -112,9 +118,12 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	if len(config.DefaultNpmRegistry) > 0 {
+		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
 		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
 			return err
 		}
+	} else {
+		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
 	}
 
 	mtaYamlFile := "mta.yaml"
@@ -126,8 +135,15 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	if !mtaYamlFileExists {
 
+		log.Entry().Debugf("mta yaml file not found in project sources.")
+
 		if len(config.ApplicationName) == 0 {
-			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
+			return  fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
+		}
+
+		packageFileExists, err := piperutils.FileExists("package.json")
+		if ! packageFileExists {
+			return fmt.Errorf("package.json file does not exist")
 		}
 
 		mtaConfig, err := generateMta("myID", config.ApplicationName, "myVersion")
