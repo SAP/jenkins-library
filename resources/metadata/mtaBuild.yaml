@@ -15,6 +15,70 @@ spec:
         - STEPS
         mandatory: false
         default:
+      - name: mtaBuildTool
+        type: string
+        description: Valid values: 'classic', 'cloudMbt' (default)
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default: cloudMbt
+      - name: extensions
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: platform
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: applicationName
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: defaultNpmRegistry
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: projectSettingsFileSrc
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: globalSettingsFileSrc
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+
   outputs:
     resources:
       - name: commonPipelineEnvironment
