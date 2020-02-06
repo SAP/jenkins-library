@@ -159,7 +159,7 @@ func getProjectConfigFile(name string) string {
 	altExists, _ := piperutils.FileExists(altName)
 
 	// configured filename will always take precedence, even if not existing
-	if altExists && !fileExists {
+	if !fileExists && altExists {
 		return altName
 	}
 	return name
