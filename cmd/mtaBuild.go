@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"encoding/json"
+	"time"
 )
 
 const templateMtaYml = `_schema-version: "2.0.0"
@@ -146,7 +148,24 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return fmt.Errorf("package.json file does not exist")
 		}
 
-		mtaConfig, err := generateMta("myID", config.ApplicationName, "myVersion")
+		var result map[string]interface{}
+		p, err := ioutil.ReadFile("package.json")
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(p, &result)
+
+		version, ok := result["version"].(string)
+		if ! ok {
+			fmt.Errorf("Version not found in \"package.json\" (or wrong type)")
+		}
+
+		name, ok := result["name"].(string)
+		if ! ok {
+			fmt.Errorf("Name not found in \"package.json\" (or wrong type)")
+		}
+
+		mtaConfig, err := generateMta(name, config.ApplicationName, version)
 		if err != nil {
 			return err
 		}
@@ -159,6 +178,22 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
 	}
 
+	mtaYaml, err := ioutil.ReadFile(mtaYamlFile)
+	if err != nil {
+		return err
+	}
+
+	t := time.Now()
+	timestamp := fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	mtaYamlStr := string(mtaYaml)
+	mtaYamlTimestampReplaced := strings.ReplaceAll(mtaYamlStr, "${timestamp}", timestamp)
+
+	if strings.Compare(mtaYamlStr, mtaYamlTimestampReplaced) != 0 {
+		if err := ioutil.WriteFile(mtaYamlFile, []byte(mtaYamlTimestampReplaced), 0664); err != nil {
+			return err
+		}
+		log.Entry().Debugf("Timestamp replaced in \"%s\"", mtaYamlFile)
+	}
 	var mtaJar = "mta.jar"
 	var call []string
 
