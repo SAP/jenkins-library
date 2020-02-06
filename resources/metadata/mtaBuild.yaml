@@ -17,7 +17,7 @@ spec:
         default:
       - name: mtaBuildTool
         type: string
-        description: Valid values: 'classic', 'cloudMbt' (default)
+        description: "Valid values: 'classic', 'cloudMbt' (default)"
         scope:
         - PARAMETERS
         - STAGES
