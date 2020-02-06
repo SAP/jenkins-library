@@ -8,6 +8,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,7 +34,7 @@ modules:
       builder: grunt
       build-result: dist`
 
-func mtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
+func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
 	log.Entry().Info("Launching mta build")
 	return runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
 }
