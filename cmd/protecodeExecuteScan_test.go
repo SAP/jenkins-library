@@ -145,7 +145,7 @@ func TestRunProtecodeScan(t *testing.T) {
 	cachePath = dir
 
 	t.Run("With tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t.tar", FilePath: path, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
 		assert.Nil(t, err, "There should be no Error")
 	})

@@ -51,16 +51,20 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
+	var fileName, filePath string
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
 
-	log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
-	fileName, filePath := getDockerImage(dClient, config)
+	if len(config.FetchURL) <= 0 {
 
-	if len(config.FilePath) <= 0 {
-		(*config).FilePath = filePath
-		log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
+		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
+		fileName, filePath = getDockerImage(dClient, config)
+
+		if len(config.FilePath) <= 0 {
+			(*config).FilePath = filePath
+			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
+		}
 	}
 
 	log.Entry().Debug("Execute protecode scan")
