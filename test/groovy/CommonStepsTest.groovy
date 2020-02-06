@@ -108,6 +108,7 @@ public class CommonStepsTest extends BasePiperTest{
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
         'piperPipeline', // special step (infrastructure)
+        'cloudSdkPipeline', // special step (infrastructure)
         'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
         'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
         'pipelineStashFiles', // only forwards to before/after step
@@ -180,7 +181,8 @@ public class CommonStepsTest extends BasePiperTest{
         def whitelist = [
             'commonPipelineEnvironment',
             'piperPipeline',
-            'buildSetResult'
+            'cloudSdkPipeline',
+            'buildSetResult',
         ]
 
         def stepsWithWrongStepName = []
