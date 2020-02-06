@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -46,21 +45,18 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
-	return runProtecodeScan(&config, influx)
+	dClient := createDockerClient(&config)
+	return runProtecodeScan(&config, influx, dClient)
 }
 
-func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux) error {
+func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
 
-	dClient := createDockerClient(config)
 	log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
-	image := getDockerImage(dClient)
-
-	artifactVersion := handleArtifactVersion(config.ArtifactVersion)
-	fileName, filePath := createImageTar(image, config.ScanImage, config.FilePath, artifactVersion)
+	fileName, filePath := getDockerImage(dClient, config)
 
 	if len(config.FilePath) <= 0 {
 		(*config).FilePath = filePath
@@ -94,94 +90,62 @@ func handleArtifactVersion(artifactVersion string) string {
 	return artifactVersion
 }
 
-func getDockerImage(dClient piperDocker.Client.Download) pkgutil.Image {
+func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOptions) (string, string) {
 
 	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	deletePath := filepath.Join(cachePath, cacheProtecodePath)
 	err := os.RemoveAll(deletePath)
-	
+
 	os.Mkdir(cacheImagePath, 600)
-	
+
 	imageSource, err := dClient.GetImageSource()
 	if err != nil {
-		log.Entry().WithErr(err).Fatal("Error during get docker image source")
+		log.Entry().WithError(err).Fatal("Error during get docker image source")
 	}
 	image, err := dClient.DownloadImageToPath(imageSource, cacheImagePath)
 	if err != nil {
 		log.Entry().Fatalf("Error during get docker image: %v", err)
 	}
 
-	return image
-}
-
-func createImageTar(image pkgutil.Image, fileName string, path string, artifactVersion string) (string, string) {
-
-	if !pkgutil.IsTar(fileName) {
-
-		fileName = fmt.Sprintf("%v%v.tar", strings.ReplaceAll(fileName, "/", "_"), strings.ReplaceAll(artifactVersion, ":", "_"))
-		tarFileName := filepath.Join(cachePath, fileName)
-
-		tarImageData(tarFileName, image)
+	tarFile, fileName := tarImage(config)
+	if tarFile != nil {
+		defer tarFile.Close()
+		err = dClient.TarImage(tarFile, image)
+		if err != nil {
+			log.Entry().WithError(err).Fatal("Error during tar the docker image")
+		}
 	}
 
-	resultFilePath := path
+	resultFilePath := config.FilePath
 
-	if len(path) <= 0 {
+	if len(config.FilePath) <= 0 {
 		resultFilePath = cachePath
 	}
 
 	return fileName, resultFilePath
 }
 
-func tarImageData(tarFileName string, image pkgutil.Image) {
-	tarFile, err := os.Create(tarFileName)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-	}
-	if err := os.Chmod(tarFileName, 0644); err != nil {
-		log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-	}
-	defer tarFile.Close()
+func tarImage(config *protecodeExecuteScanOptions) (*os.File, string) {
+	if !(filepath.Ext(config.ScanImage) == ".tar" ||
+		filepath.Ext(config.ScanImage) == ".tar.gz" ||
+		filepath.Ext(config.ScanImage) == ".tgz") {
 
-	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("It is not possible to parse reference of docker image")
-	}
-	err = tarball.Write(reference, image.Image, tarFile)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Error during create tar archive of docker image via tarball")
-	}
-}
+		artifactVersion := handleArtifactVersion(config.ArtifactVersion)
+		fileName := fmt.Sprintf("%v%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"), strings.ReplaceAll(artifactVersion, ":", "_"))
+		tarFileName := filepath.Join(cachePath, fileName)
 
-func getURLAndFileNameFromDockerImage(scanImage string, registryURL string, filePath string) string {
-
-	pathToImage := scanImage
-
-	if len(registryURL) > 0 && len(filePath) <= 0 {
-		registry := registryURL
-
-		url, _ := url.Parse(registryURL)
-		if len(url.Scheme) > 0 {
-			registry = strings.Replace(registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
+		tarFile, err := os.Create(tarFileName)
+		if err != nil {
+			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
+		}
+		if err := os.Chmod(tarFileName, 0644); err != nil {
+			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
 		}
 
-		if strings.HasSuffix(registry, "/") {
-			pathToImage = fmt.Sprintf("remote://%v%v", registry, scanImage)
-		} else {
-			pathToImage = fmt.Sprintf("remote://%v/%v", registry, scanImage)
-		}
-	} else if len(filePath) > 0 {
-		pathToImage = filePath
-		if !pkgutil.IsTar(filePath) {
-			pathToImage = fmt.Sprintf("daemon://%v", filePath)
-		}
+		return tarFile, fileName
 	}
 
-	if len(pathToImage) <= 0 {
-		log.Entry().Fatal("There is no scan image configured")
-	}
-
-	return pathToImage
+	return nil, config.ScanImage
 }
 
 func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) map[string]int {
@@ -294,10 +258,10 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	return pc
 }
-func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Client.Download {
+func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Download {
 
-	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.RegistryURL, path: config.FilePath, IncludeLayers: config.IncludeLayers}
-	dClient := piperDocker.Client{}
+	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.DockerRegistryURL, LocalPath: config.FilePath, IncludeLayers: config.IncludeLayers}
+	dClient := &piperDocker.Client{}
 	dClient.SetOptions(dClientOptions)
 
 	return dClient

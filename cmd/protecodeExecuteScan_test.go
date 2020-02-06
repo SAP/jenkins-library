@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,15 +21,65 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockGetDocker struct {
+type DockerClientMock struct {
+	imageName     string
+	registryURL   string
+	localPath     string
+	includeLayers bool
 }
 
-func (p mockGetDocker) GetDockerImage(scanImage string, registryURL string, path string, includeLayers bool) pkgutil.Image {
-
-	return pkgutil.Image{}
+//Download interface for download an image to a local path
+type Download interface {
+	GetImageSource() (string, error)
+	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
+	TarImage(writer io.Writer, image pkgutil.Image) error
 }
 
-func (p mockGetDocker) writeReportToFile(resp io.ReadCloser, reportFileName string) error {
+const (
+	daemonPrefix = "daemon://"
+	remotePrefix = "remote://"
+)
+
+func (c *DockerClientMock) GetImageSource() (string, error) {
+
+	imageSource := c.imageName
+
+	if len(c.registryURL) > 0 && len(c.localPath) <= 0 {
+		registry := c.registryURL
+
+		url, _ := url.Parse(c.registryURL)
+		//remove protocoll from registryURL to get registry
+		if len(url.Scheme) > 0 {
+			registry = strings.Replace(c.registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
+		}
+
+		if strings.HasSuffix(registry, "/") {
+			imageSource = fmt.Sprintf("%v%v%v", remotePrefix, registry, c.imageName)
+		} else {
+			imageSource = fmt.Sprintf("%v%v/%v", remotePrefix, registry, c.imageName)
+		}
+	} else if len(c.localPath) > 0 {
+		imageSource = c.localPath
+		if !pkgutil.IsTar(c.localPath) {
+			imageSource = fmt.Sprintf("%v%v", daemonPrefix, c.localPath)
+		}
+	}
+
+	if len(imageSource) <= 0 {
+		return imageSource, fmt.Errorf("There is no image source for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
+	}
+
+	return imageSource, nil
+}
+
+//DownloadImageToPath download the image to the specified path
+func (c *DockerClientMock) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
+
+	return pkgutil.Image{}, nil
+}
+
+//TarImage write a tar from the given image
+func (c *DockerClientMock) TarImage(writer io.Writer, image pkgutil.Image) error {
 
 	return nil
 }
@@ -36,6 +87,19 @@ func (p mockGetDocker) writeReportToFile(resp io.ReadCloser, reportFileName stri
 func TestRunProtecodeScan(t *testing.T) {
 
 	requestURI := ""
+	dir, err := ioutil.TempDir("", "t")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+	testFile, err := ioutil.TempFile(dir, "t.tar")
+	if err != nil {
+		t.FailNow()
+	}
+	fileName := filepath.Base(testFile.Name())
+	path := strings.ReplaceAll(testFile.Name(), fileName, "")
+
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
 		var b bytes.Buffer
@@ -53,6 +117,12 @@ func TestRunProtecodeScan(t *testing.T) {
 
 		} else if requestURI == "/api/product/4711/pdf-report" {
 
+		} else if requestURI == fmt.Sprint("/api/upload/t.tar") {
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
+
+			var b bytes.Buffer
+			json.NewEncoder(&b).Encode(&response)
+			rw.Write([]byte(b.Bytes()))
 		} else {
 			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
 			json.NewEncoder(&b).Encode(&response)
@@ -63,31 +133,29 @@ func TestRunProtecodeScan(t *testing.T) {
 
 	// Close the server when test finishes
 	defer server.Close()
-	dir, err := ioutil.TempDir("", "t")
-	if err != nil {
-		t.Fatal("Failed to create temporary directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(dir)
-	testFile, err := ioutil.TempFile(dir, "t.tar")
-	if err != nil {
-		t.FailNow()
-	}
 
 	po := protecode.Options{ServerURL: server.URL}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
 
-	mockGetDocker := mockGetDocker{}
-	getImage = mockGetDocker.GetDockerImage
-	writeReportToFile = mockGetDocker.writeReportToFile
-	reportPath = dir
+	dClient := &DockerClientMock{imageName: "t", registryURL: "", localPath: path, includeLayers: false}
 
-	config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t.tar", FilePath: testFile.Name(), TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 	influx := protecodeExecuteScanInflux{}
+	reportPath = dir
+	cachePath = dir
 
-	err = runProtecodeScan(&config, &influx)
-	assert.Nil(t, err, "client should not be empty")
+	t.Run("With tar as scan image", func(t *testing.T) {
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t.tar", FilePath: path, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		err = runProtecodeScan(&config, &influx, dClient)
+		assert.Nil(t, err, "There should be no Error")
+	})
+
+	t.Run("Without tar as scan image", func(t *testing.T) {
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", FilePath: path, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		err = runProtecodeScan(&config, &influx, dClient)
+		assert.Nil(t, err, "There should be no Error")
+	})
+
 }
 
 func TestHandleArtifactVersion(t *testing.T) {
@@ -123,6 +191,23 @@ func TestCreateClient(t *testing.T) {
 		config := protecodeExecuteScanOptions{TimeoutMinutes: c.timeout}
 
 		client := createClient(&config)
+		assert.NotNil(t, client, "client should not be empty")
+	}
+}
+func TestCreateDockerClient(t *testing.T) {
+	cases := []struct {
+		scanImage         string
+		dockerRegistryURL string
+		filePath          string
+		includeLayers     bool
+	}{
+		{"test", "url", "path", false},
+		{"", "", "", true},
+	}
+
+	for _, c := range cases {
+		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.dockerRegistryURL, FilePath: c.filePath, IncludeLayers: c.includeLayers}
+		client := createDockerClient(&config)
 		assert.NotNil(t, client, "client should not be empty")
 	}
 }
@@ -279,28 +364,4 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 226, got["vulnerabilities"])
 	}
-}
-
-func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
-
-	cases := []struct {
-		scanImage   string
-		registryURL string
-		filePath    string
-		want        string
-	}{
-		{"scanImage", "", "", "scanImage"},
-		{"scanImage", "", "filePath", "daemon://filePath"},
-		{"scanImage", "http://registryURL", "", "remote://registryURL/scanImage"},
-		{"containerScanImage", "https://containerRegistryUrl", "", "remote://containerRegistryUrl/containerScanImage"},
-		{"containerScanImage", "registryURL", "", "remote://registryURL/containerScanImage"},
-	}
-
-	for _, c := range cases {
-
-		got := getURLAndFileNameFromDockerImage(c.scanImage, c.registryURL, c.filePath)
-
-		assert.Equal(t, c.want, got)
-	}
-
 }
