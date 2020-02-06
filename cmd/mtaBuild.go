@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"errors"
 )
 
 const templateMtaYml = `_schema-version: "2.0.0"
@@ -53,9 +54,15 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	defaultNpmRegistry := "npmReg"
 
 	projectSettingsFileSrc := "http://example.org"
-	projectSettingsFileDest := getProjectSettingsFileDest()
+	projectSettingsFileDest, err := getProjectSettingsFileDest()
+	if err != nil {
+		return err
+	}
 	globalSettingsFileSrc := "http://example.org"
-	globalSettingsFileDest := getGlobalSettingsFileDest()
+	globalSettingsFileDest, err := getGlobalSettingsFileDest()
+	if err != nil {
+		return err
+	}
 	//
 
 	// project settings file
@@ -148,13 +155,23 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	return nil
 }
 
-func getGlobalSettingsFileDest() string {
-	return "global-settings.txt" // needs to be $M2_HOME/conf/settings.xml finally
+func getGlobalSettingsFileDest() (string, error) {
+
+	m2Home := getEnvironmentVariable("M2_HOME")
+
+	if len(m2Home) == 0 {
+		return "", errors.New("Environment variable \"M2_HOME\" not set or empty")
+	}
+	return m2Home + "/conf/settings.xml", nil
 }
 
-func getProjectSettingsFileDest() string {
-	return "project-settings.xml" // needs to be $HOME/.m2/settings.xml finally
+func getProjectSettingsFileDest() (string, error) {
+	home := getEnvironmentVariable("HOME")
 
+	if len(home) == 0 {
+		return "", errors.New("Environment variable \"HOME\" not set or empty")
+	}
+	return home + "/.m2/settings.xml", nil
 }
 
 func getEnvironmentVariable(name string) string {
