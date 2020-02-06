@@ -142,7 +142,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppName() {
-        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName']}")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data

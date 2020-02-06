@@ -82,7 +82,7 @@ import groovy.transform.Field
     'deployTool',
     /**
      * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
-     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination your manifest.yaml may only contain one application.
+     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
      * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
@@ -288,7 +288,7 @@ private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
                 error "[${STEP_NAME}] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application."
             }
             if(applications.size==1 && applications[0]['no-route']){
-                echo '[WARNING] Blue green deployment is not possible for application without route. Using  deployment type "standard" instead.'
+                echo '[WARNING] Blue green deployment is not possible for application without route. Using deployment type "standard" instead.'
                 config.deployType = 'standard'
             }
         }
