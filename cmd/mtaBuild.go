@@ -81,8 +81,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
-	//	applicationName := ""
-	applicationName := "myApp"
 	defaultNpmRegistry := "npmReg"
 
 	projectSettingsFileSrc := "http://example.org"
@@ -120,11 +118,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	if !mtaYamlFileExists {
 
-		if len(applicationName) == 0 {
+		if len(config.ApplicationName) == 0 {
 			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
 		}
 
-		mtaConfig, err := generateMta("myID", applicationName, "myVersion")
+		mtaConfig, err := generateMta("myID", config.ApplicationName, "myVersion")
 		if err != nil {
 			return err
 		}
