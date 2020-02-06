@@ -174,7 +174,7 @@ Additionally we encourage you to use [github.com/stretchr/testify/assert](https:
 
 Debugging can be initiated with VS code fairly easily. Compile the binary with spcific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
 
-Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exatly to the binary that you just built with abobe command - must be an absolute path. In addition add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
+Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exatly to the binary that you just built with above command - must be an absolute path. In addition add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
 
 ```javascript
 {
