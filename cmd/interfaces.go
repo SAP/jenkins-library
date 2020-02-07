@@ -22,3 +22,8 @@ type shellRunner interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 }
+
+type fileUtils interface {
+	FileExists(filename string) (bool, error)
+	FileCopy(src, dest string) (int64, error)
+}

@@ -37,7 +37,7 @@ func TestCopy(t *testing.T) {
 	// clean up tmp dir
 	defer os.RemoveAll(dir)
 
-	result, err := Copy(file, filepath.Join(dir, "testFile2"))
+	result, err := FileCopy(file, filepath.Join(dir, "testFile2"))
 	assert.NoError(t, err, "Didn't expert error but got one")
 	assert.Equal(t, int64(3), result, "Expected true but got false")
 }

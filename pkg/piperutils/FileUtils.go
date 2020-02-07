@@ -6,8 +6,12 @@ import (
 	"os"
 )
 
+//FileUtils ...
+type FileUtils struct {
+}
+
 // FileExists ...
-func FileExists(filename string) (bool, error) {
+func (f FileUtils) FileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
 
 	if os.IsNotExist(err) {
@@ -20,10 +24,15 @@ func FileExists(filename string) (bool, error) {
 	return !info.IsDir(), nil
 }
 
-// Copy ...
-func Copy(src, dst string) (int64, error) {
+// FileExists ...
+func FileExists(filename string) (bool, error) {
+	return FileUtils{}.FileExists(filename)
+}
 
-	exists, err := FileExists(src)
+// Copy ...
+func (f FileUtils) FileCopy(src, dst string) (int64, error) {
+
+	exists, err := f.FileExists(src)
 
 	if err != nil {
 		return 0, err
@@ -46,4 +55,9 @@ func Copy(src, dst string) (int64, error) {
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+// Copy ...
+func FileCopy(src, dst string) (int64, error) {
+	return FileUtils{}.FileCopy(src, dst)
 }
