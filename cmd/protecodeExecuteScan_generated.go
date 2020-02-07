@@ -35,14 +35,14 @@ type protecodeExecuteScanOptions struct {
 }
 
 type protecodeExecuteScanInflux struct {
-	protecodeData struct {
+	protecode_data struct {
 		fields struct {
-			historicalVulnerabilities string
-			triagedVulnerabilities    string
-			excludedVulnerabilities   string
-			majorVulnerabilities      string
-			minorVulnerabilities      string
-			vulnerabilities           string
+			historical_vulnerabilities string
+			triaged_vulnerabilities    string
+			excluded_vulnerabilities   string
+			minor_vulnerabilities      string
+			major_vulnerabilities      string
+			vulnerabilities            string
 		}
 		tags struct {
 		}
@@ -56,12 +56,12 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       string
 	}{
-		{valType: config.InfluxField, measurement: "protecodeData", name: "historicalVulnerabilities", value: i.protecodeData.fields.historicalVulnerabilities},
-		{valType: config.InfluxField, measurement: "protecodeData", name: "triagedVulnerabilities", value: i.protecodeData.fields.triagedVulnerabilities},
-		{valType: config.InfluxField, measurement: "protecodeData", name: "excludedVulnerabilities", value: i.protecodeData.fields.excludedVulnerabilities},
-		{valType: config.InfluxField, measurement: "protecodeData", name: "majorVulnerabilities", value: i.protecodeData.fields.majorVulnerabilities},
-		{valType: config.InfluxField, measurement: "protecodeData", name: "minorVulnerabilities", value: i.protecodeData.fields.minorVulnerabilities},
-		{valType: config.InfluxField, measurement: "protecodeData", name: "vulnerabilities", value: i.protecodeData.fields.vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
 	}
 
 	errCount := 0

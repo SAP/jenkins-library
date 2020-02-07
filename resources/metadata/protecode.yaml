@@ -184,11 +184,11 @@ spec:
       - name: influx
         type: influx
         params:
-          - name: protecodeData
+          - name: protecode_data
             fields:
-              - name: historicalVulnerabilities
-              - name: triagedVulnerabilities
-              - name: excludedVulnerabilities
-              - name: majorVulnerabilities
-              - name: minorVulnerabilities
+              - name: historical_vulnerabilities
+              - name: triaged_vulnerabilities
+              - name: excluded_vulnerabilities
+              - name: minor_vulnerabilities
+              - name: major_vulnerabilities
               - name: vulnerabilities
