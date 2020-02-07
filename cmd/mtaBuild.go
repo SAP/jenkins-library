@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -9,13 +10,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
-	"encoding/json"
 	"time"
 )
 
@@ -76,9 +77,9 @@ func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commo
 	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
 	if err != nil {
 		log.Entry().
-				WithError(err).
-				Fatal("failed to execute mta build")
-}
+			WithError(err).
+			Fatal("failed to execute mta build")
+	}
 
 }
 
@@ -140,11 +141,11 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		log.Entry().Debugf("mta yaml file not found in project sources.")
 
 		if len(config.ApplicationName) == 0 {
-			return  fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
+			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
 		}
 
 		packageFileExists, err := piperutils.FileExists("package.json")
-		if ! packageFileExists {
+		if !packageFileExists {
 			return fmt.Errorf("package.json file does not exist")
 		}
 
@@ -156,12 +157,12 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		json.Unmarshal(p, &result)
 
 		version, ok := result["version"].(string)
-		if ! ok {
+		if !ok {
 			fmt.Errorf("Version not found in \"package.json\" (or wrong type)")
 		}
 
 		name, ok := result["name"].(string)
-		if ! ok {
+		if !ok {
 			fmt.Errorf("Name not found in \"package.json\" (or wrong type)")
 		}
 
@@ -194,8 +195,21 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		}
 		log.Entry().Debugf("Timestamp replaced in \"%s\"", mtaYamlFile)
 	}
-	var mtaJar = "mta.jar"
+
 	var call []string
+
+	mtarName := config.MtarName
+	if len(mtarName) == 0 {
+		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
+		mtaID, err := getMtaID(mtaYamlFile)
+		if err != nil {
+			return err
+		}
+		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
+		mtarName = mtaID + ".mtar"
+	}
+
+	var mtaJar = "mta.jar"
 
 	switch config.MtaBuildTool {
 	case "classic":
@@ -205,7 +219,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return err
 		}
 
-		call = append(call, "java", "-jar", mtaJar, fmt.Sprintf("--build-target=%s", buildTarget))
+		call = append(call, "java", "-jar", mtaJar, "--mtar", mtarName, fmt.Sprintf("--build-target=%s", buildTarget))
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extension=%s", config.Extensions))
 		}
@@ -238,8 +252,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		return err
 	}
 
-	mtarFilePath := "dummy.mtar"
-	commonPipelineEnvironment.mtarFilePath = mtarFilePath
+	commonPipelineEnvironment.mtarFilePath = mtarName
 	return nil
 }
 
@@ -378,4 +391,21 @@ func materializeURL(url, file string) error {
 	}
 
 	return nil
+}
+
+func getMtaID(mtaYamlFile string) (string, error) {
+
+	var result map[string]interface{}
+	p, err := ioutil.ReadFile(mtaYamlFile)
+	if err != nil {
+		return "", err
+	}
+	yaml.Unmarshal(p, &result)
+
+	id, ok := result["ID"].(string)
+	if !ok || len(id) == 0 {
+		fmt.Errorf("Id not found in mta yaml file (or wrong type)")
+	}
+
+	return id, nil
 }
