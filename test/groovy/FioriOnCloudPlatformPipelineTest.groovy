@@ -119,15 +119,18 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
+            platform: 'NEO',
+        )
 
         //
         // the mta build call:
+
         assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('java -jar /opt/sap/mta/lib/mta.jar'),  // default mtaJarLocation
+                                allOf(  containsString('mbt build'),
                                         containsString('--mtar test.mtar'),
-                                        containsString('--build-target=NEO'),
-                                        containsString('build'))))
+                                        containsString('--platform NEO'),
+                                        containsString('--target ./'))))
 
         //
         // the deployable is exchanged between the involved steps via this property:
