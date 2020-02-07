@@ -13,7 +13,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false
         default:
       - name: mtaBuildTool
         type: string
