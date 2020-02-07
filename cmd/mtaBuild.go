@@ -72,9 +72,12 @@ func (m MTABuildTarget) String() string {
 	}[m]
 }
 
-func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
+func mtaBuild(config mtaBuildOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Info("Launching mta build")
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{})
+	piperUtils := piperutils.FileUtils{}
+	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &piperUtils)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -83,8 +86,10 @@ func mtaBuild(config mtaBuildOptions, telemetryData *telemetry.CustomData, commo
 
 }
 
-func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e envExecRunner) error {
+func runMtaBuild(config mtaBuildOptions,
+	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
+	e envExecRunner,
+	p *piperutils.FileUtils) error {
 
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
@@ -96,7 +101,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return err
 		}
 
-		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest); err != nil {
+		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest, p); err != nil {
 			return err
 		}
 
@@ -112,7 +117,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return err
 		}
 
-		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest); err != nil {
+		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest, p); err != nil {
 			return err
 		}
 	} else {
@@ -130,7 +135,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	mtaYamlFile := "mta.yaml"
-	mtaYamlFileExists, err := piperutils.FileExists(mtaYamlFile)
+	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
 
 	if err != nil {
 		return err
@@ -144,7 +149,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
 		}
 
-		packageFileExists, err := piperutils.FileExists("package.json")
+		packageFileExists, err := p.FileExists("package.json")
 		if !packageFileExists {
 			return fmt.Errorf("package.json file does not exist")
 		}
@@ -329,7 +334,7 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(src, dest string) error {
+func materialize(src, dest string, p *piperutils.FileUtils) error {
 
 	if len(src) > 0 {
 
@@ -343,7 +348,7 @@ func materialize(src, dest string) error {
 
 			parent := filepath.Dir(dest)
 
-			exists, err := piperutils.FileExists(parent)
+			exists, err := p.FileExists(parent)
 
 			if err != nil {
 				return err
@@ -355,7 +360,7 @@ func materialize(src, dest string) error {
 				}
 			}
 
-			if _, err := piperutils.Copy(src, dest); err != nil {
+			if _, err := p.Copy(src, dest); err != nil {
 				return err
 			}
 		}
