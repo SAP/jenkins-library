@@ -199,6 +199,8 @@ steps:
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
+  debugReportArchive:
+    shareConfidentialInformation: false
   detectExecuteScan:
     detect:
       projectVersion: '1'
