@@ -230,7 +230,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 			return err
 		}
 
-		call = append(call, "mbt", "build", "--platform", platform.String())
+		call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String())
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 		}
