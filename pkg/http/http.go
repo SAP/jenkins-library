@@ -127,7 +127,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
-	c.logger = options.Logger
+
+	if options.Logger != nil {
+		c.logger = options.Logger
+	} else {
+		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
+	}
 	c.cookieJar = options.CookieJar
 }
 
