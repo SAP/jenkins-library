@@ -88,7 +88,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        stepRule.step.mtaBuild(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic', mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
         assert shellRule.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
     }
@@ -130,7 +130,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
 
-        stepRule.step.mtaBuild(script: nullScript,
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic',
                       buildTarget: 'NEO')
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /config/mta/mta.jar --mtar')}
@@ -139,7 +139,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationFromDefaultStepConfigurationTest() {
 
-        stepRule.step.mtaBuild(script: nullScript,
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic',
                       buildTarget: 'NEO')
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar')}
@@ -148,7 +148,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void buildTargetFromParametersTest() {
 
-        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic', buildTarget: 'NEO')
 
         assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -158,7 +158,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        stepRule.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic')
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -247,7 +247,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        stepRule.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic',)
 
         assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -255,7 +255,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void extensionFromParametersTest() {
 
-        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO', mtaBuildTool: 'classic', extension: 'param_extension')
 
         assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }
@@ -265,7 +265,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO', extension: 'config_extension']]]
 
-        stepRule.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript, mtaBuildTool: 'classic',)
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
