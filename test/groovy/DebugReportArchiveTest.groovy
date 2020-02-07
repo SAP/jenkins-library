@@ -53,6 +53,6 @@ class DebugReportArchiveTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Successfully archived debug report'))
         assertThat(loggingRule.log, containsString(debugReportSnippet))
 
-        assertThat(writeFileRule.files.values()[0] as String, containsString(debugReportSnippet))
+        assertThat(writeFileRule.files.find({ it.toString().contains('debug_log') }) as String, containsString(debugReportSnippet))
     }
 }
