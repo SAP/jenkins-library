@@ -19,6 +19,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type FortifyClient interface {
+	SetTransport()
+}
+
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 }
@@ -32,25 +36,29 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, endpoint, authToken string, requestTimeout time.Duration) *SystemInstance {
+func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Duration) *SystemInstance {
 	schemeHost := strings.Split(serverURL, "://")
 	hostEndpoint := strings.Split(schemeHost[1], "/")
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
+	clientInstance := ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
+		Host:     hostEndpoint[0],
+		Schemes:  []string{schemeHost[0]},
+		BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
+	)
 
-	sys := &SystemInstance{
+	return NewSystemInstanceForClient(clientInstance, authToken, timeout)
+}
+
+// NewSystemInstanceForClient - creates a new SystemInstance
+func NewSystemInstanceForClient(clientInstance *ff.Fortify, authToken string, requestTimeout time.Duration) *SystemInstance {
+	return &SystemInstance{
 		timeout: requestTimeout,
 		token:   authToken,
-		client: ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
-			Host:     hostEndpoint[0],
-			Schemes:  []string{schemeHost[0]},
-			BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
-		),
-		logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/fortify"),
+		client:  clientInstance,
+		logger:  log.Entry().WithField("package", "SAP/jenkins-library/pkg/fortify"),
 	}
-
-	return sys
 }
 
 // AuthenticateRequest authenticates the request
