@@ -117,7 +117,7 @@ If you have one project using the pipeline, the easiest way to do this modificat
 The basic structure of your `Jenkinsfile` should be like this:
 
 ```groovy
-@Library(/* The libraries you need depends on the pipeline you use */) _
+@Library(/* Which libraries you need depends on the pipeline you use */) _
 
 call script: this
 
