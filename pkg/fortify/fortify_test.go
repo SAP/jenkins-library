@@ -11,7 +11,7 @@ import (
 func TestGetProjectByName(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 
-		sys := NewSystemInstance("https://fortify.mo.sap.corp", "/ssc/api/v1", "N2VhMzMyMjctZmMwMi00ODJlLTk0NTQtZWZmZDI3NDAzMjMx", (60 * time.Second))
+		sys := NewSystemInstance("https://fortify.mo.sap.corp/ssc", "/api/v1", "N2VhMzMyMjctZmMwMi00ODJlLTk0NTQtZWZmZDI3NDAzMjMx", (60 * time.Second))
 
 		result, err := sys.GetProjectByName("python-test-sven")
 		assert.NoError(t, err, "GetProjectByName call not successful")

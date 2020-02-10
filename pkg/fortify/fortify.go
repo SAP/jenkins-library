@@ -9,6 +9,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/auth_entity_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_of_project_controller"
@@ -32,7 +33,8 @@ type SystemInstance struct {
 
 // NewSystemInstance - creates an returns a new SystemInstance
 func NewSystemInstance(serverURL, endpoint, authToken string, requestTimeout time.Duration) *SystemInstance {
-	parts := strings.Split(serverURL, "://")
+	schemeHost := strings.Split(serverURL, "://")
+	hostEndpoint := strings.Split(schemeHost[1], "/")
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
@@ -41,9 +43,9 @@ func NewSystemInstance(serverURL, endpoint, authToken string, requestTimeout tim
 		timeout: requestTimeout,
 		token:   authToken,
 		client: ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
-			Host:     parts[1],
-			Schemes:  []string{parts[0]},
-			BasePath: endpoint},
+			Host:     hostEndpoint[0],
+			Schemes:  []string{schemeHost[0]},
+			BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
 		),
 		logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/fortify"),
 	}
@@ -169,4 +171,92 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
 	}
 	return nil
+}
+
+//ProjectVersionCopyCurrentState copies the project version state of sourceID into the new project version addressed by targetID
+func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
+	enable := true
+	settings := models.ProjectVersionCopyCurrentStateRequest{
+		ProjectVersionID:         &targetID,
+		PreviousProjectVersionID: &sourceID,
+		CopyCurrentStateFpr:      &enable,
+	}
+	params := &project_version_controller.CopyCurrentStateForProjectVersionParams{Resource: &settings}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.CopyCurrentStateForProjectVersion(params, sys)
+	if err != nil {
+		return err
+	}
+	if result.GetPayload().ResponseCode != 200 {
+		return fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
+	}
+	if result.GetPayload().ErrorCode != 0 {
+		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
+	}
+	return nil
+}
+
+func (sys *SystemInstance) getAuthEntityOfProjectVersion(id int64) ([]*models.AuthenticationEntity, error) {
+	embed := "roles"
+	params := &auth_entity_of_project_version_controller.ListAuthEntityOfProjectVersionParams{Embed: &embed, ParentID: id}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.AuthEntityOfProjectVersionController.ListAuthEntityOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	if result.GetPayload().ResponseCode != 200 {
+		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
+	}
+	if result.GetPayload().ErrorCode != 0 {
+		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
+	}
+	return result.GetPayload().Data, nil
+}
+
+func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, data []*models.AuthenticationEntity) error {
+	params := &auth_entity_of_project_version_controller.UpdateCollectionAuthEntityOfProjectVersionParams{ParentID: id, Data: data}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.AuthEntityOfProjectVersionController.UpdateCollectionAuthEntityOfProjectVersion(params, sys)
+	if err != nil {
+		return err
+	}
+	if result.GetPayload().ResponseCode != 200 {
+		return fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
+	}
+	if result.GetPayload().ErrorCode != 0 {
+		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
+	}
+	return nil
+}
+
+//CopyProjectVersionPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
+func (sys *SystemInstance) CopyProjectVersionPermissions(sourceID, targetID int64) error {
+	result, err := sys.getAuthEntityOfProjectVersion(sourceID)
+	if err != nil {
+		return err
+	}
+	err = sys.updateCollectionAuthEntityOfProjectVersion(targetID, result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//CommitProjectVersion commits the project version with the provided id
+func (sys *SystemInstance) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
+	enabled := true
+	update := models.ProjectVersion{Committed: &enabled}
+	params := &project_version_controller.UpdateProjectVersionParams{ID: id, Resource: &update}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	if result.GetPayload().ResponseCode != 200 {
+		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
+	}
+	if result.GetPayload().ErrorCode != 0 {
+		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
+	}
+	return result.GetPayload().Data, nil
 }
