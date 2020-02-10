@@ -63,7 +63,7 @@ void call(Map parameters = [:]) {
             echo result.contents
         }
 
-        script.writeFile file: result.fileName, text: result
+        script.writeFile file: result.fileName, text: result.contents
         script.archiveArtifacts artifacts: result.fileName
         echo "Successfully archived debug report as '${result.fileName}'"
     } catch (Exception e) {
