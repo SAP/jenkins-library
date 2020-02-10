@@ -57,7 +57,7 @@ func (f FileUtils) FileCopy(src, dst string) (int64, error) {
 	return nBytes, err
 }
 
-// Copy ...
+// FileCopy ...
 func FileCopy(src, dst string) (int64, error) {
 	return FileUtils{}.FileCopy(src, dst)
 }
