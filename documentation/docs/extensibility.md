@@ -117,21 +117,21 @@ If you have one project using the pipeline, the easiest way to do this modificat
 The basic structure of your `Jenkinsfile` should be like this:
 
 ```groovy
-@Library(/* Which libraries you need depends on the pipeline you use */) _
+@Library(/* Which libraries you need depends on the pipeline you use, see ¹ */) _
 
 call script: this
 
 void call(parameters) {
- // your pipeline based on one of the provided pipelines
+  // your pipeline based on one of the provided pipelines, see ²
 }
 ```
 
 The actual pipeline code (the `call` method in the listing above) can be found here:
 
-* [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
-    * For this pipeline, you need to load this library: `'piper-lib-os@vINSERT_VERSION_HERE'`
-* [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
-    * For this pipeline, you need to load this library: `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`
+* ² [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
+    * ¹ For this pipeline, you need to load this library: `'piper-lib-os@vINSERT_VERSION_HERE'`
+* ² [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
+    * ¹ For this pipeline, you need to load this library: `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`
 
 ### Multiple projects
 
