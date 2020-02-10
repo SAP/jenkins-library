@@ -121,6 +121,7 @@ public class CommonStepsTest extends BasePiperTest{
         'kubernetesDeploy', //implementing new golang pattern without fields
         'protecodeExecuteScan', //implementing new golang pattern without fields
         'xsDeploy', //implementing new golang pattern without fields
+        'cloudFoundryDeleteService', //implementing new golang pattern without fields
     ]
 
     @Test
