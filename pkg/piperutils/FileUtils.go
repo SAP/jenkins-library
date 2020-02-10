@@ -29,7 +29,7 @@ func FileExists(filename string) (bool, error) {
 	return FileUtils{}.FileExists(filename)
 }
 
-// Copy ...
+// FileCopy ...
 func (f FileUtils) FileCopy(src, dst string) (int64, error) {
 
 	exists, err := f.FileExists(src)
