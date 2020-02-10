@@ -13,7 +13,8 @@ import (
 )
 
 type FileUtilsMock struct {
-	copiedFiles []string
+	copiedFiles  []string
+	removedFiles []string
 }
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
@@ -23,6 +24,11 @@ func (f *FileUtilsMock) FileExists(path string) (bool, error) {
 func (f *FileUtilsMock) FileCopy(src, dest string) (int64, error) {
 	f.copiedFiles = append(f.copiedFiles, fmt.Sprintf("%s->%s", src, dest))
 	return 0, nil
+}
+
+func (f *FileUtilsMock) FileDelete(path string) error {
+	f.removedFiles = append(f.removedFiles, path)
+	return nil
 }
 
 func TestDeploy(t *testing.T) {
@@ -43,14 +49,7 @@ func TestDeploy(t *testing.T) {
 
 	s := shellMockRunner{}
 
-	var removedFiles []string
-
 	fileUtilsMock := FileUtilsMock{}
-
-	fRemove := func(path string) error {
-		removedFiles = append(removedFiles, path)
-		return nil
-	}
 
 	var stdout string
 
@@ -58,7 +57,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 			stdout = ""
 		}()
@@ -75,7 +74,7 @@ func TestDeploy(t *testing.T) {
 			wg.Done()
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, wStdout)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, wStdout)
 
 		wStdout.Close()
 		wg.Wait()
@@ -90,8 +89,8 @@ func TestDeploy(t *testing.T) {
 			assert.Len(t, s.calls, 3)
 
 			// xs session file needs to be removed at end during a normal deployment
-			assert.Len(t, removedFiles, 1)
-			assert.Contains(t, removedFiles, ".xs_session")
+			assert.Len(t, fileUtilsMock.removedFiles, 1)
+			assert.Contains(t, fileUtilsMock.removedFiles, ".xs_session")
 
 			assert.Len(t, fileUtilsMock.copiedFiles, 2)
 			// We copy the xs session file to the workspace in order to be able to use the file later.
@@ -113,7 +112,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 		}()
 
@@ -126,7 +125,7 @@ func TestDeploy(t *testing.T) {
 		// this file is not denoted in the file exists mock
 		myXsDeployOptions.MtaPath = "doesNotExist"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
@@ -134,7 +133,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 		}()
 
@@ -143,7 +142,7 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = "NONE"
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
@@ -151,14 +150,14 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 			s.shouldFailWith = nil
 		}()
 
 		s.shouldFailWith = errors.New("Error from underlying process")
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "Error from underlying process")
 	})
 
@@ -166,7 +165,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 		}()
 
@@ -178,7 +177,7 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "")
 
 		assert.Contains(t, s.calls[0], "xs login")
@@ -190,7 +189,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 		}()
 
@@ -207,7 +206,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.OperationID = "12345"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "")
 
 		assert.Contains(t, s.calls[0], "xs bg-deploy -i 12345 -a abort")
@@ -219,7 +218,7 @@ func TestDeploy(t *testing.T) {
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
-			removedFiles = nil
+			fileUtilsMock.removedFiles = nil
 			s.calls = nil
 		}()
 
@@ -234,7 +233,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, ioutil.Discard)
 		checkErr(t, e, "OperationID was not provided")
 	})
 }

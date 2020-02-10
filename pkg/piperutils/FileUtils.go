@@ -61,3 +61,8 @@ func (f FileUtils) FileCopy(src, dst string) (int64, error) {
 func FileCopy(src, dst string) (int64, error) {
 	return FileUtils{}.FileCopy(src, dst)
 }
+
+// FileDelete ...
+func (f FileUtils) FileDelete(path string) error {
+	return os.Remove(path)
+}

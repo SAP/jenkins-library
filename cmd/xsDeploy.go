@@ -111,7 +111,7 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	fileUtils := piperutils.FileUtils{}
-	err := runXsDeploy(config, &c, fileUtils, os.Remove, os.Stdout)
+	err := runXsDeploy(config, &c, fileUtils, os.Stdout)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -121,7 +121,6 @@ func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	fileUtils fileUtils,
-	fRemove func(string) error,
 	stdout io.Writer) error {
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
@@ -235,7 +234,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 			// we delete the xs session file from workspace. From home directory it is deleted by the
 			// xs command itself.
-			if e := fRemove(xsSessionFile); e != nil {
+			if e := fileUtils.FileDelete(xsSessionFile); e != nil {
 				err = e
 			}
 			log.Entry().Debugf("xs session file '%s' has been deleted from workspace", xsSessionFile)
