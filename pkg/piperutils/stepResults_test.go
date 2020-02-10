@@ -13,9 +13,9 @@ import (
 func TestPersistReportAndLinks(t *testing.T) {
 	workspace, err := ioutil.TempDir("", "workspace5")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
 	reports := []Path{Path{Target: "testFile1.json", Mandatory: true}, Path{Target: "testFile2.json"}}
