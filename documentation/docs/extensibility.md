@@ -14,7 +14,7 @@ You can still benefit from the qualities they provide if you can address your re
 
 Extensions are custom bits of pipeline coding that you can use to implement special requirements.
 
-Before building extensions, please make sure that no better alternative works for you.
+Before building extensions, please make sure that there is no alternative which works better for you.
 
 Options for extensibility, in the order in which we recommend considering them:
 
@@ -169,7 +169,7 @@ Be sure to adapt the names and version identifiers accordingly.
 
 ### How to stay up-to-date
 
-Regardless which of the above options you choose, one downside of this approach is that your pipeline will be out of sync with the centrally maintained pipelines at some point in time.
+Regardless of which of the above options you choose, one downside of this approach is that your pipeline will be out of sync with the centrally maintained pipelines at some point in time.
 We strongly recommend doing _as little modification as possible_ to fulfil your requirements.
 Please be aware that stages may have dependencies on each other.
 Your pipeline should treat _stages_ as a black box, the implementation of stages is no published API and may be subject to change at any time.
