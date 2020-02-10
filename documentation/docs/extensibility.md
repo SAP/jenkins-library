@@ -9,7 +9,7 @@ This approach allows you to focus on what you need to get done while implementin
 
 If a feature you need is missing, or you discovered a bug in one of the ready-made pipelines, please see if there is already an [issue in our GitHub repository](https://github.com/SAP/jenkins-library/issues), and open a new one if that is not the case.
 
-In some cases, specialised features might not be desirable for inclusion in the ready-made pipelines.
+In some cases, specialized features might not be desirable for inclusion in the ready-made pipelines.
 You can still benefit from the qualities they provide if you can address your requirements via an **Extension**.
 
 Extensions are custom bits of pipeline coding that you can use to implement special requirements.
