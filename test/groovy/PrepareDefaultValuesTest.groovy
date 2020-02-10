@@ -6,12 +6,16 @@ import org.junit.rules.RuleChain
 import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
+import util.JenkinsEnvironmentRule
+import util.JenkinsErrorRule
+import util.JenkinsFileExistsRule
+import util.JenkinsInfluxDataRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadJsonRule
 import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
+import util.JenkinsSetupRule
 import util.JenkinsStepRule
-
-import util.Rules
+import util.JenkinsWriteJsonRule
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
 
@@ -20,15 +24,25 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
-    public RuleChain ruleChain = Rules
-        .getCommonRules(this)
+    public RuleChain ruleChain = RuleChain
+        .outerRule(new JenkinsSetupRule(this))
+        .around(new JenkinsInfluxDataRule())
+        .around(new JenkinsErrorRule(this))
+        .around(new JenkinsEnvironmentRule(this))
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
+        .around(new JenkinsReadJsonRule(this))
+        .around(new JenkinsWriteJsonRule(this))
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)
 
     @Before
     public void setup() {
+
+        DefaultValueCache.reset()
+
+        stepRule.step.prepareDefaultValues.binding.setVariable("WORKSPACE", '/path/to/workspace')
 
         helper.registerAllowedMethod("libraryResource", [String], { fileName ->
             switch(fileName) {
