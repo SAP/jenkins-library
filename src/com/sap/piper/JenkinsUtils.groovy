@@ -10,6 +10,11 @@ import org.apache.commons.io.IOUtils
 import org.jenkinsci.plugins.workflow.libs.LibrariesAction
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
+@NonCPS
+def getActiveJenkinsInstance() {
+    return Jenkins.getActiveInstance()
+}
+
 @API
 @NonCPS
 static def isPluginActive(pluginId) {
@@ -60,9 +65,15 @@ def nodeAvailable() {
     return true
 }
 
+
 @NonCPS
 def getCurrentBuildInstance() {
     return currentBuild
+}
+
+@NonCPS
+def getParentJob() {
+    return getRawBuild().getParent()
 }
 
 @NonCPS
@@ -139,6 +150,57 @@ void addRunSideBarLink(String relativeUrl, String displayName, String relativeIc
             echo "Added run level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
             run.getActions().add(action)
         }
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+@NonCPS
+def getPlugin(name){
+    for (plugin in getActiveJenkinsInstance().pluginManager.plugins) {
+        if (name == plugin.getShortName()) {
+            return plugin
+        }
+    }
+    return null
+}
+
+@NonCPS
+String getPluginVersion(name) {
+    return getPlugin(name)?.getVersion()
+}
+
+@NonCPS
+void addJobSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        if (relativeUrl != null && displayName != null) {
+            def parentJob = getParentJob()
+            def buildNumber = getCurrentBuildInstance().number
+            def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
+            def action = linkActionClass.newInstance("${buildNumber}/${relativeUrl}", displayName, iconPath)
+            echo "Added job level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+            parentJob.getActions().add(action)
+        }
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+@NonCPS
+void removeJobSideBarLinks(String relativeUrl = null) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        def parentJob = getParentJob()
+        def listToRemove = new ArrayList()
+        for (def action : parentJob.getActions()) {
+            if (linkActionClass.isAssignableFrom(action.getClass()) && (null == relativeUrl || action.getUrlName().endsWith(relativeUrl))) {
+                echo "Removing job level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+                listToRemove.add(action)
+            }
+        }
+        parentJob.getActions().removeAll(listToRemove)
+        echo "Removed Jenkins global sidebar links ${listToRemove}"
     } catch (e) {
         e.printStackTrace()
     }
