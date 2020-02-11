@@ -25,6 +25,10 @@ func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
 	return 0, nil
 }
 
+func (f * FileUtilsMock) FileRead(path string) ([]byte, error) {
+	return []byte{}, nil
+}
+
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",

@@ -3,6 +3,7 @@ package piperutils
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -60,4 +61,9 @@ func (f FileUtils) Copy(src, dst string) (int64, error) {
 // Copy ...
 func Copy(src, dst string) (int64, error) {
 	return FileUtils{}.Copy(src, dst)
+}
+
+//FileRead ...
+func (f FileUtils) FileRead(path string) ([]byte, error) {
+	return ioutil.ReadFile(path)
 }

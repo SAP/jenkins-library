@@ -26,4 +26,5 @@ type shellRunner interface {
 type fileUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
+	FileRead(path string) ([]byte, error)
 }

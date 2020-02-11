@@ -89,7 +89,7 @@ func mtaBuild(config mtaBuildOptions,
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	e envExecRunner,
-	p *piperutils.FileUtils) error {
+	p fileUtils) error {
 
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
@@ -155,7 +155,7 @@ func runMtaBuild(config mtaBuildOptions,
 		}
 
 		var result map[string]interface{}
-		p, err := ioutil.ReadFile("package.json")
+		p, err := p.FileRead("package.json")
 		if err != nil {
 			return err
 		}
@@ -334,7 +334,7 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(src, dest string, p *piperutils.FileUtils) error {
+func materialize(src, dest string, p fileUtils) error {
 
 	if len(src) > 0 {
 
