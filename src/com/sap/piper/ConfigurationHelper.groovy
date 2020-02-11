@@ -11,9 +11,9 @@ class ConfigurationHelper implements Serializable {
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:]) {
         DefaultValueCache.prepare(step)
-        this.config = ConfigurationLoader.defaultGeneralConfiguration()
+        this.config = ConfigurationLoader.defaultGeneralConfiguration(step)
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
-        mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
+        mixin(ConfigurationLoader.defaultStepConfiguration(step, name), null, compatibleParameters)
     }
 
     private Map config
