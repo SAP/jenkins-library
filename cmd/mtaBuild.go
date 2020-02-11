@@ -59,7 +59,7 @@ func ValueOfBuildTarget(str string) (MTABuildTarget, error) {
 	case "XSA":
 		return XSA, nil
 	default:
-		return -1, fmt.Errorf("Unknown BuildTarget: '%s'", str)
+		return -1, fmt.Errorf("Unknown BuildTarget/Platform: '%s'", str)
 	}
 }
 
