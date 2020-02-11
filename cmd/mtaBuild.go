@@ -155,11 +155,11 @@ func runMtaBuild(config mtaBuildOptions,
 		}
 
 		var result map[string]interface{}
-		p, err := p.FileRead("package.json")
+		pContent, err := p.FileRead("package.json")
 		if err != nil {
 			return err
 		}
-		json.Unmarshal(p, &result)
+		json.Unmarshal(pContent, &result)
 
 		version, ok := result["version"].(string)
 		if !ok {
