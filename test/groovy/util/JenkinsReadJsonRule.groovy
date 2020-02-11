@@ -31,8 +31,13 @@ class JenkinsReadJsonRule implements TestRule {
                         return js.parseText(m.text)
                     } else if(m.file) {
                         def js = new JsonSlurper()
-                        def reader = new BufferedReader(new FileReader( "${this.testRoot}${m.file}" ))
-                        return js.parse(reader)
+                        if (testInstance.binding.hasVariable('files')) {
+                            def files = testInstance.binding.getVariable('files')
+                            return js.parseText(files["${this.testRoot}${m.file}"])
+                        } else {
+                            def reader = new BufferedReader(new FileReader( "${this.testRoot}${m.file}" ))
+                            return js.parse(reader)
+                        }
                     } else {
                         throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
                     }

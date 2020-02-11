@@ -139,4 +139,29 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         assert loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
         assert loggingRule.log.contains("Loading configuration file 'custom.yml'")
     }
+
+    @Test
+    public void "Check that instance is re-created from files after reset"() {
+
+        DefaultValueCache.metaClass = null
+
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
+
+        // reset destroys our instance, similar to a Jenkins restart
+        DefaultValueCache.reset()
+
+        nullScript.binding.setVariable("WORKSPACE", '/path/to/workspace')
+
+        def newInstance = DefaultValueCache.getInstance(nullScript)
+
+        def defaultValues = newInstance.getDefaultValues()
+        def customDefaults = newInstance.getCustomDefaults()
+
+        assert defaultValues.size() == 2
+        assert defaultValues.default == 'config'
+        assert defaultValues.custom == 'myConfig'
+
+        assert customDefaults.size() == 1
+        assert customDefaults[0] == 'custom.yml'
+    }
 }

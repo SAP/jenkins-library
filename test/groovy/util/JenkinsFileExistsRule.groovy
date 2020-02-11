@@ -40,18 +40,29 @@ class JenkinsFileExistsRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s ->
-                    queriedFiles.add(s.toString())
-                    return s.toString() in existingFiles
+                    def fileName = s.toString()
+                    queriedFiles.add(fileName)
+                    return fileExists(fileName)
                 })
 
                 testInstance.helper.registerAllowedMethod('fileExists', [Map.class], {m ->
-                    queriedFiles.add(m.file.toString())
-                    return m.file.toString() in existingFiles}
-                )
+                    def fileName = m.file.toString()
+                    queriedFiles.add(fileName)
+                    return fileExists(fileName)
+                })
 
                 base.evaluate()
             }
         }
+    }
+
+    private boolean fileExists(String fileName) {
+        def fileExists = fileName in existingFiles
+        if (!fileExists && testInstance.binding.hasVariable('files')) {
+            Map files = testInstance.binding.getVariable('files')
+            fileExists = files.containsKey(fileName)
+        }
+        return fileExists
     }
 
 }
