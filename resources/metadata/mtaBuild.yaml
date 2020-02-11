@@ -33,6 +33,15 @@ spec:
         - STEPS
         mandatory: false
         default:
+      - name: mtaJarLocation
+        type: string
+        description: Lorem ispum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
       - name: extensions
         type: string
         description: Lorem ipsum
