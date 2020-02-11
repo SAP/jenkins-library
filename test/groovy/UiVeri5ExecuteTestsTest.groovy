@@ -84,6 +84,7 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
         assertThat(shellCommands, hasItem(containsString('uiveri5 --seleniumAddress=\'http://selenium:4444/wd/hub\'')))
         assertThat(seleniumMap.dockerImage, isEmptyOrNullString())
         assertThat(seleniumMap.dockerWorkspace, isEmptyOrNullString())
+        assertThat(seleniumMap.dockerEnvVars.PIPER_STEP_UIVERI5_EXECUTE_TESTS, is('true'))
     }
 
     @Test

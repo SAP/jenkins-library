@@ -110,6 +110,7 @@ void call(Map parameters = [:]) {
         config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
         config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
         config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
+        config.dockerEnvVars.PIPER_STEP_UIVERI5_EXECUTE_TESTS = "true"
 
         seleniumExecuteTests(
             script: script,
