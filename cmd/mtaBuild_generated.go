@@ -17,6 +17,7 @@ type mtaBuildOptions struct {
 	BuildTarget         string `json:"buildTarget,omitempty"`
 	MtaBuildTool        string `json:"mtaBuildTool,omitempty"`
 	MtarName            string `json:"mtarName,omitempty"`
+	MtaJarLocation      string `json:"mtaJarLocation,omitempty"`
 	Extensions          string `json:"extensions,omitempty"`
 	Platform            string `json:"platform,omitempty"`
 	ApplicationName     string `json:"applicationName,omitempty"`
@@ -92,6 +93,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", os.Getenv("PIPER_buildTarget"), "For mtaBuildTool classic only. Valid values: CF, NEO, XSA")
 	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", "cloudMbt", "Valid values: 'classic', 'cloudMbt' (default)")
 	cmd.Flags().StringVar(&stepConfig.MtarName, "mtarName", os.Getenv("PIPER_mtarName"), "Lorem ispum")
+	cmd.Flags().StringVar(&stepConfig.MtaJarLocation, "mtaJarLocation", os.Getenv("PIPER_mtaJarLocation"), "Lorem ispum")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Lorem ipsum")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Lorem ipsum")
@@ -125,6 +127,14 @@ func mtaBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "mtarName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "mtaJarLocation",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
