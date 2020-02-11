@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"os"
 )
 
 type FileUtilsMock struct {
@@ -28,6 +29,11 @@ func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
 func (f * FileUtilsMock) FileRead(path string) ([]byte, error) {
 	return []byte{}, nil
 }
+
+func (f *FileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode) error {
+	return nil
+}
+
 
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{

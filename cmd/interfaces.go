@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io"
+	"os"
 )
 
 type execRunner interface {
@@ -27,4 +28,5 @@ type fileUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
 }

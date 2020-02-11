@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"os"
 )
 
 func TestMtaApplicationNameNotSet(t *testing.T) {
@@ -118,4 +119,8 @@ func (f *MtaTestFileUtilsMock) Copy(src, dest string) (int64, error) {
 
 func (f *MtaTestFileUtilsMock) FileRead(path string) ([]byte, error) {
 	return []byte(f.existingFiles[path]), nil
+}
+
+func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode) error {
+	return nil
 }

@@ -67,3 +67,8 @@ func Copy(src, dst string) (int64, error) {
 func (f FileUtils) FileRead(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
+
+// FileWrite ...
+func (f FileUtils) FileWrite(path string, content []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(path, content, perm)
+}
