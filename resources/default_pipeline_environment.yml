@@ -199,6 +199,8 @@ steps:
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
+  debugReportArchive:
+    shareConfidentialInformation: false
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -337,7 +339,7 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaBuildTool: classic
+    mtaBuildTool: cloudMbt
     platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     classic:
