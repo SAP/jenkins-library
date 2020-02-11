@@ -19,10 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type FortifyClient interface {
-	SetTransport()
-}
-
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 }
@@ -77,15 +73,6 @@ func (sys *SystemInstance) GetProjectByName(name string) (*models.Project, error
 	if err != nil {
 		return nil, err
 	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
-	}
-	if len(result.GetPayload().Data) == 0 {
-		return nil, fmt.Errorf("Project with name %v not found in backend", name)
-	}
 	for _, project := range result.GetPayload().Data {
 		if *project.Name == name {
 			return project, nil
@@ -104,15 +91,6 @@ func (sys *SystemInstance) GetProjectVersionDetailsByNameAndProjectID(id int64, 
 	if err != nil {
 		return nil, err
 	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
-	}
-	if len(result.GetPayload().Data) == 0 {
-		return nil, fmt.Errorf("Project version with name %v not found in for project with ID %v", name, id)
-	}
 	for _, projectVersion := range result.GetPayload().Data {
 		if *projectVersion.Name == name {
 			return projectVersion, nil
@@ -129,12 +107,6 @@ func (sys *SystemInstance) GetProjectVersionAttributesByID(id int64) ([]*models.
 	if err != nil {
 		return nil, err
 	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
-	}
 	return result.GetPayload().Data, nil
 }
 
@@ -145,12 +117,6 @@ func (sys *SystemInstance) CreateProjectVersion(version *models.ProjectVersion) 
 	result, err := sys.client.ProjectVersionController.CreateProjectVersion(params, sys)
 	if err != nil {
 		return nil, err
-	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
 	}
 	return result.GetPayload().Data, nil
 }
@@ -168,15 +134,9 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 	}
 	params := &project_version_controller.CopyProjectVersionParams{Resource: &settings}
 	params.WithTimeout(sys.timeout)
-	result, err := sys.client.ProjectVersionController.CopyProjectVersion(params, sys)
+	_, err := sys.client.ProjectVersionController.CopyProjectVersion(params, sys)
 	if err != nil {
 		return err
-	}
-	if result.GetPayload().ResponseCode != 200 {
-		return fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
 	}
 	return nil
 }
@@ -191,15 +151,9 @@ func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int
 	}
 	params := &project_version_controller.CopyCurrentStateForProjectVersionParams{Resource: &settings}
 	params.WithTimeout(sys.timeout)
-	result, err := sys.client.ProjectVersionController.CopyCurrentStateForProjectVersion(params, sys)
+	_, err := sys.client.ProjectVersionController.CopyCurrentStateForProjectVersion(params, sys)
 	if err != nil {
 		return err
-	}
-	if result.GetPayload().ResponseCode != 200 {
-		return fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
 	}
 	return nil
 }
@@ -212,27 +166,15 @@ func (sys *SystemInstance) getAuthEntityOfProjectVersion(id int64) ([]*models.Au
 	if err != nil {
 		return nil, err
 	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
-	}
 	return result.GetPayload().Data, nil
 }
 
 func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, data []*models.AuthenticationEntity) error {
 	params := &auth_entity_of_project_version_controller.UpdateCollectionAuthEntityOfProjectVersionParams{ParentID: id, Data: data}
 	params.WithTimeout(sys.timeout)
-	result, err := sys.client.AuthEntityOfProjectVersionController.UpdateCollectionAuthEntityOfProjectVersion(params, sys)
+	_, err := sys.client.AuthEntityOfProjectVersionController.UpdateCollectionAuthEntityOfProjectVersion(params, sys)
 	if err != nil {
 		return err
-	}
-	if result.GetPayload().ResponseCode != 200 {
-		return fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
 	}
 	return nil
 }
@@ -250,21 +192,27 @@ func (sys *SystemInstance) CopyProjectVersionPermissions(sourceID, targetID int6
 	return nil
 }
 
-//CommitProjectVersion commits the project version with the provided id
-func (sys *SystemInstance) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
-	enabled := true
-	update := models.ProjectVersion{Committed: &enabled}
-	params := &project_version_controller.UpdateProjectVersionParams{ID: id, Resource: &update}
+func (sys *SystemInstance) updateProjectVersionDetails(id int64, details *models.ProjectVersion) (*models.ProjectVersion, error) {
+	params := &project_version_controller.UpdateProjectVersionParams{ID: id, Resource: details}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
 	if err != nil {
 		return nil, err
 	}
-	if result.GetPayload().ResponseCode != 200 {
-		return nil, fmt.Errorf("Backend returned HTTP response code %v", result.GetPayload().ResponseCode)
-	}
-	if result.GetPayload().ErrorCode != 0 {
-		return nil, fmt.Errorf("Backend returned error code %v with message %v", result.GetPayload().ErrorCode, result.GetPayload().Message)
-	}
 	return result.GetPayload().Data, nil
+}
+
+//CommitProjectVersion commits the project version with the provided id
+func (sys *SystemInstance) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
+	enabled := true
+	update := models.ProjectVersion{Committed: &enabled}
+	return sys.updateProjectVersionDetails(id, &update)
+}
+
+//InactivateProjectVersion inactivates the project version with the provided id
+func (sys *SystemInstance) InactivateProjectVersion(id int64) (*models.ProjectVersion, error) {
+	enabled := true
+	disabled := false
+	update := models.ProjectVersion{Committed: &enabled, Active: &disabled}
+	return sys.updateProjectVersionDetails(id, &update)
 }
