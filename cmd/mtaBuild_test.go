@@ -74,8 +74,7 @@ func TestMtaBuildClassicToolset(t *testing.T) {
 	}
 
 	assert.Equal(t, "java", e.calls[0].exec)
-	// REVISIT: why are all the params contained in the first and only entry of the string slice?
-	assert.Equal(t, []string {"-jar mta.jar --mtar myName.mtar --build-target=CF"}, e.calls[0].params)
+	assert.Equal(t, []string {"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
 }
 
 func TestMtaBuildMbtToolset(t *testing.T) {
@@ -96,8 +95,7 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 	}
 
 	assert.Equal(t, "mbt", e.calls[0].exec)
-	// REVISIT: why are all the params contained in the first and only entry of the string slice?
-	assert.Equal(t, []string {"build --mtar myName.mtar --platform CF --target ./"}, e.calls[0].params)
+	assert.Equal(t, []string {"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
 
 }
 

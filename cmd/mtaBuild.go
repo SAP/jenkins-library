@@ -253,7 +253,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 	e.Env(append(os.Environ(), "PATH="+path))
 
-	if err := e.RunExecutable(call[0], strings.Join(call[1:], " ")); err != nil {
+	if err := e.RunExecutable(call[0], call[1:]...); err != nil {
 		return err
 	}
 
