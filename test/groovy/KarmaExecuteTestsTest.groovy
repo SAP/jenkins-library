@@ -50,6 +50,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         assertThat(seleniumParams.dockerImage, is('node:lts-stretch'))
         assertThat(seleniumParams.dockerName, is('karma'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))
+        assertThat(seleniumParams.dockerEnvVars.PIPER_STEP_KARMA_EXECUTE_TESTS, is('true'))
         assertJobStatusSuccess()
     }
 
@@ -75,8 +76,10 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         
         assert expectedImage == seleniumParams.dockerImage
         assert expectedOptions == seleniumParams.dockerOptions
-        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
         assert expectedWorkspace == seleniumParams.dockerWorkspace
+        expectedEnvVars.each { key, value ->
+            assert seleniumParams.dockerEnvVars[key] == value
+        }
     }
 
     @Test

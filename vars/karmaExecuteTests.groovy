@@ -89,6 +89,9 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
+        config.dockerEnvVars = config.dockerEnvVars ?: [:]
+        config.dockerEnvVars.PIPER_STEP_KARMA_EXECUTE_TESTS = "true"
+
         def testJobs = [:]
         def options = [
             script: script,
