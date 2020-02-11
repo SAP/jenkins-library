@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"os"
+	"gopkg.in/yaml.v2"
 )
 
 func TestMtaApplicationNameNotSet(t *testing.T) {
@@ -58,6 +59,71 @@ func TestMtaPackageJsonDoesNotExist(t *testing.T) {
 	assert.Equal(t, "package.json file does not exist", err.Error())
 }
 
+func TestWriteMtaYamlFile(t *testing.T) {
+
+	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+
+	existingFiles := make(map[string]string)
+	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+	runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	type MtaResult struct {
+		Version string
+		ID string `yaml:"ID,omitempty"`
+		Parameters map[string]string
+		Modules []struct {
+			Name string
+			Type string
+			Parameters map[string]interface{}
+		}
+	}
+
+	assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
+
+	var result MtaResult
+	yaml.Unmarshal([]byte(fileUtils.writtenFiles["mta.yaml"]), &result)
+
+	assert.Equal(t, "myName", result.ID)
+	assert.Equal(t, "1.2.3", result.Version)
+	assert.NotContains(t, "${timestamp}", result.Modules[0].Parameters["version"])
+}
+
+func TestDontWriteMtaYamlFileWhenAlreadyPresentNoTimestampPlaceholder(t *testing.T) {
+
+	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+
+	existingFiles := make(map[string]string)
+	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+	existingFiles["mta.yaml"] = "already there"
+	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+	runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	assert.Empty(t, fileUtils.writtenFiles)
+}
+
+func TestWriteMtaYamlFileWhenAlreadyPresentWithTimestampPlaceholder(t *testing.T) {
+
+	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+
+	existingFiles := make(map[string]string)
+	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+	existingFiles["mta.yaml"] = "already there with-${timestamp}"
+	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+	runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
+}
+
 func TestMtaBuildClassicToolset(t *testing.T) {
 
 	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
@@ -103,6 +169,7 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 
 type MtaTestFileUtilsMock struct {
 	existingFiles map[string]string
+	writtenFiles map[string]string
 }
 
 func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
@@ -122,5 +189,14 @@ func (f *MtaTestFileUtilsMock) FileRead(path string) ([]byte, error) {
 }
 
 func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode) error {
+
+	if f.writtenFiles == nil {
+		f.writtenFiles = make(map[string]string)
+	}
+
+	if _, ok := f.writtenFiles[path]; ok {
+		delete(f.writtenFiles, path)
+	}
+	f.writtenFiles[path] = string(content)
 	return nil
 }

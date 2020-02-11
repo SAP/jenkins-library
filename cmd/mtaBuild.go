@@ -176,15 +176,14 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		// todo prepare for mocking
-		ioutil.WriteFile(mtaYamlFile, []byte(mtaConfig), 0644)
+		p.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
 		log.Entry().Infof("\"%s\" created.", mtaYamlFile)
 
 	} else {
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
 	}
 
-	mtaYaml, err := ioutil.ReadFile(mtaYamlFile)
+	mtaYaml, err := p.FileRead(mtaYamlFile)
 	if err != nil {
 		return err
 	}
@@ -192,13 +191,17 @@ func runMtaBuild(config mtaBuildOptions,
 	t := time.Now()
 	timestamp := fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	mtaYamlStr := string(mtaYaml)
+
 	mtaYamlTimestampReplaced := strings.ReplaceAll(mtaYamlStr, "${timestamp}", timestamp)
 
 	if strings.Compare(mtaYamlStr, mtaYamlTimestampReplaced) != 0 {
-		if err := ioutil.WriteFile(mtaYamlFile, []byte(mtaYamlTimestampReplaced), 0664); err != nil {
+
+		if err := p.FileWrite(mtaYamlFile, []byte(mtaYamlTimestampReplaced), 0644); err != nil {
 			return err
 		}
-		log.Entry().Debugf("Timestamp replaced in \"%s\"", mtaYamlFile)
+		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
+	} else {
+		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
 	}
 
 	var call []string
