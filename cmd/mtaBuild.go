@@ -414,7 +414,10 @@ func getMtaID(mtaYamlFile string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	yaml.Unmarshal(p, &result)
+	err = yaml.Unmarshal(p, &result)
+	if err != nil {
+		return "", err
+	}
 
 	id, ok := result["ID"].(string)
 	if !ok || len(id) == 0 {
