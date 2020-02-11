@@ -1,19 +1,14 @@
 # Extensibility
 
 When using one of the ready-made pipelines project "Piper" provides, the basic idea is to not write custom pipeline code.
-The pipelines are centrally maintained, and can be used with a small amount of [configuration](configuration.md).
+The pipelines are centrally maintained, and can be used with a small amount of declarative configuration as documented [here](configuration.md).
 
-For the large majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement a production-ready CI/CD workflow with little effort.
-
-This approach allows you to focus on what you need to get done while implementing [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) in a best-practice compliant way.
-
+For the large majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) in a best-practice compliant way with little effort.
 If a feature you need is missing, or you discovered a bug in one of the ready-made pipelines, please see if there is already an [issue in our GitHub repository](https://github.com/SAP/jenkins-library/issues), and open a new one if that is not the case.
 
 In some cases, specialized features might not be desirable for inclusion in the ready-made pipelines.
 You can still benefit from the qualities they provide if you can address your requirements via an **Extension**.
-
 Extensions are custom bits of pipeline coding that you can use to implement special requirements.
-
 Before building extensions, please make sure that there is no alternative which works better for you.
 
 Options for extensibility, in the order in which we recommend considering them:
@@ -22,7 +17,7 @@ Options for extensibility, in the order in which we recommend considering them:
 
 In this option, you use the centrally maintained pipeline, but can change individual stages if required.
 
-To do so, create a file called `<StageName>.groovy` (for example, `Acceptance.groovy` or `lint.groovy`) in `.pipeline/extensions/` in your source code repository.
+To do so, create a file called `<StageName>.groovy` (for example, `Acceptance.groovy` or `lint.groovy`) in `.pipeline/extensions/` in your application's source code repository.
 
 For this, you need to know the technical identifiers for stage names.
 
@@ -77,7 +72,7 @@ As an example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io
 ```groovy
 def call(Map parameters) {
 
-    parameters.originalStage.call() // Runs the built in linters
+    parameters.originalStage() // Runs the built in linters
 
     mavenExecute(
         script: parameters.script,
@@ -96,46 +91,46 @@ def call(Map parameters) {
 return this
 ```
 
-This example can be adopted for other linters of your choice.
-
+This example can be adapted for other linters of your choice.
 
 ## 2) Modified ready-made pipeline
 
 This option describes how you can copy and paste one of the centrally maintained pipelines to make changes not possible otherwise.
-
 For example, you can't change the order of stages, change which stages run in parallel or add new stages to a centrally maintained pipeline.
-
 This might be done for an individual project (in the `Jenkinsfile`), or in a separate git repository so it can be used for multiple projects.
 
 ### Single project
 
 The default `Jenkinsfile` of centrally maintained pipelines does nothing except for loading the pipeline and running it.
-This is comfortable, but limits which aspects of the pipeline are modifiable.
+This is convenient, but limits which aspects of the pipeline are modifiable.
 
-If you have one project using the pipeline, the easiest way to do this modification is to copy the pipeline into your Jenkinsfile.
+If you have one project using the pipeline, the easiest way to do this modification is to copy the pipeline into your `Jenkinsfile`.
 
 The basic structure of your `Jenkinsfile` should be like this:
 
 ```groovy
-@Library(/* Which libraries you need depends on the pipeline you use, see ¹ */) _
+@Library(/* Shared library definition, see ¹ */) _
 
 call script: this
 
 void call(parameters) {
-  // your pipeline based on one of the provided pipelines, see ²
+  // Your pipeline code based on our ready-made pipelines
 }
 ```
 
 The actual pipeline code (the `call` method in the listing above) can be found here:
 
-* ² [piperPipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
+* [General purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
     * ¹ For this pipeline, you need to load this library: `'piper-lib-os@vINSERT_VERSION_HERE'`
-* ² [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
+* [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
     * ¹ For this pipeline, you need to load this library: `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`
+
+For the version identifier, please see the section _How to stay up-to-date_ in this document.
 
 ### Multiple projects
 
-Similar to what you can do in an individual `Jenkinsfile`, you can also copy the pipeline to a file in a separate git repository and modify it.
+If you have multiple projects that share a similar architecture, it might be desirable to share one modified pipeline amongst them.
+Similar to what you can do in an individual `Jenkinsfile`, you can copy the pipeline to your own shared library and modify it.
 
 To do this, create a new git repository in your preferred git hosting service.
 It must be compliant to [how Jenkins shared libraries are built](https://jenkins.io/doc/book/pipeline/shared-libraries/).
@@ -148,16 +143,16 @@ A minimal example of such a library could have this directory structure:
 ./README.md
 ```
 
-where `myCustomPipeline.groovy` contains the modified pipeline code.
+Where `myCustomPipeline.groovy` contains the modified pipeline code of the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy) or [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy).
 
 !!! note
     Your custom pipeline _must_ be named differently from the other pipelines provided by project "Piper", because Jenkins requires names across multiple libraries to be unique.
 
-This library needs to be placed in a git repository which is available for Jenkins and must be configured in Jenkins [as documented here](https://jenkins.io/doc/book/pipeline/shared-libraries/#using-libraries).
+This library must be placed in a git repository which is available for Jenkins and must be configured in Jenkins [as documented here](https://jenkins.io/doc/book/pipeline/shared-libraries/#using-libraries).
 
 ![Library Setup](images/customPipelineLib.png "Library Setup")
 
-The `Jenkinsfile` would look similar to this:
+The `Jenkinsfile` of your individual projects would look similar to this:
 
 ```groovy
 @Library(['piper-lib-os@vINSERT_VERSION_HERE','my-own-pipeline@vINSERT_VERSION_HERE']) _
@@ -165,14 +160,16 @@ The `Jenkinsfile` would look similar to this:
 myCustomPipeline script: this
 ```
 
-Be sure to adapt the names and version identifiers accordingly.
+Be sure to adapt the names and version identifiers accordingly, as described in _How to stay up-to-date_.
 
 ### How to stay up-to-date
 
 Regardless of which of the above options you choose, one downside of this approach is that your pipeline will be out of sync with the centrally maintained pipelines at some point in time.
 We strongly recommend doing _as little modification as possible_ to fulfil your requirements.
 Please be aware that stages may have dependencies on each other.
-Your pipeline should treat _stages_ as a black box, the implementation of stages is no published API and may be subject to change at any time.
+
+!!! warning "Don't depend on stage implementation details"
+    Your pipeline should treat _stages_ as a black box, the implementation of stages is no published API and may be subject to change at any time.
 
 !!! warning "Beware of breaking changes"
     Please be aware that when using the `master` branch of a library, it might always happen that breaking changes occur.
