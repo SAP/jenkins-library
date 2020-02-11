@@ -121,7 +121,7 @@ If one of your projects uses the pipeline, the easiest way to do this modificati
 The basic structure of your `Jenkinsfile` should be the following:
 
 ```groovy
-@Library(/* Shared library definition, see ¹ */) _
+@Library(/* Shared library definition, see below */) _
 
 call script: this
 
@@ -133,9 +133,12 @@ void call(parameters) {
 The actual pipeline code (the `call` method in the listing above) can be found here:
 
 * [General purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
-    * ¹ For this pipeline, you need to load this library: `'piper-lib-os@vINSERT_VERSION_HERE'`
 * [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
-    * ¹ For this pipeline, you need to load this library: `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`
+
+!!! note "Use the correct shared library definition"
+    Which shared library you need depends on the pipeline you're using.<br />
+    For the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy), you need `'piper-lib-os@vINSERT_VERSION_HERE'`.<br />
+    For the [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy), you need `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`.
 
 For the version identifier, please see the section _How to stay up-to-date_ in this document.
 
