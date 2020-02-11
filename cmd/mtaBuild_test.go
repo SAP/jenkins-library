@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"os"
 	"gopkg.in/yaml.v2"
+	"os"
+	"testing"
 )
 
 func TestMtaApplicationNameNotSet(t *testing.T) {
@@ -39,7 +39,7 @@ func TestProvideDefaultNpmRegistry(t *testing.T) {
 	}
 
 	assert.Equal(t, "npm", e.calls[0].exec)
-	assert.Equal(t, []string {"config",  "set", "registry", "https://example.org/npm"}, e.calls[0].params)
+	assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)
 
 }
 
@@ -72,12 +72,12 @@ func TestWriteMtaYamlFile(t *testing.T) {
 	runMtaBuild(options, &cpe, &e, &fileUtils)
 
 	type MtaResult struct {
-		Version string
-		ID string `yaml:"ID,omitempty"`
+		Version    string
+		ID         string `yaml:"ID,omitempty"`
 		Parameters map[string]string
-		Modules []struct {
-			Name string
-			Type string
+		Modules    []struct {
+			Name       string
+			Type       string
 			Parameters map[string]interface{}
 		}
 	}
@@ -141,7 +141,7 @@ func TestMtaBuildClassicToolset(t *testing.T) {
 	}
 
 	assert.Equal(t, "java", e.calls[0].exec)
-	assert.Equal(t, []string {"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+	assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
 }
 
 func TestMtaBuildMbtToolset(t *testing.T) {
@@ -162,7 +162,7 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 	}
 
 	assert.Equal(t, "mbt", e.calls[0].exec)
-	assert.Equal(t, []string {"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
+	assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
 
 }
 
@@ -208,8 +208,8 @@ func TestCopyProjectSettingsFile(t *testing.T) {
 
 type MtaTestFileUtilsMock struct {
 	existingFiles map[string]string
-	writtenFiles map[string]string
-	copiedFiles map[string]string
+	writtenFiles  map[string]string
+	copiedFiles   map[string]string
 }
 
 func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
