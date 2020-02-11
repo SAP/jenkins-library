@@ -219,10 +219,10 @@ func runMtaBuild(config mtaBuildOptions,
 		mtarName = mtaID + ".mtar"
 	}
 
-	var mtaJar = "mta.jar"
-
 	switch config.MtaBuildTool {
 	case "classic":
+
+		var mtaJar = "mta.jar"
 
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
 		if err != nil {
