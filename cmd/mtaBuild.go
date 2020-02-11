@@ -337,21 +337,21 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(src, dest string, p fileUtils) error {
+func materialize(src, dest string, fileUtils fileUtils) error {
 
 	if len(src) > 0 {
 
 		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
 		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-			if err := materializeURL(src, dest); err != nil {
+			if err := materializeURL(src, dest, fileUtils); err != nil {
 				return err
 			}
 		} else {
 
 			parent := filepath.Dir(dest)
 
-			exists, err := p.FileExists(parent)
+			exists, err := fileUtils.FileExists(parent)
 
 			if err != nil {
 				return err
@@ -363,7 +363,7 @@ func materialize(src, dest string, p fileUtils) error {
 				}
 			}
 
-			if _, err := p.Copy(src, dest); err != nil {
+			if _, err := fileUtils.Copy(src, dest); err != nil {
 				return err
 			}
 		}
@@ -372,7 +372,7 @@ func materialize(src, dest string, p fileUtils) error {
 	return nil
 }
 
-func materializeURL(url, file string) error {
+func materializeURL(url, file string, fileUtils fileUtils) error {
 
 	var e error
 	client := &piperhttp.Client{}
@@ -393,7 +393,7 @@ func materializeURL(url, file string) error {
 		return e
 	}
 
-	e = ioutil.WriteFile(file, body, 0644)
+	e = fileUtils.FileWrite(file, body, 0644)
 	if e != nil {
 		return e
 	}
