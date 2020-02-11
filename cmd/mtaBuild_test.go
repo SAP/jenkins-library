@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -13,8 +14,9 @@ func TestMtaApplicationNameNotSet(t *testing.T) {
 	cpe := mtaBuildCommonPipelineEnvironment{}
 	e := execMockRunner{}
 	fileUtils := MtaTestFileUtilsMock{}
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err == nil {
 		t.Errorf("Error expected but not received.")
@@ -31,8 +33,9 @@ func TestProvideDefaultNpmRegistry(t *testing.T) {
 	existingFiles := make(map[string]string)
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err != nil {
 		t.Fatalf("Error received but not expected: '%s'", err.Error())
@@ -50,8 +53,9 @@ func TestMtaPackageJsonDoesNotExist(t *testing.T) {
 	e := execMockRunner{}
 
 	fileUtils := MtaTestFileUtilsMock{}
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err == nil {
 		t.Errorf("Error expected but not received.")
@@ -68,8 +72,9 @@ func TestWriteMtaYamlFile(t *testing.T) {
 	existingFiles := make(map[string]string)
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	runMtaBuild(options, &cpe, &e, &fileUtils)
+	runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	type MtaResult struct {
 		Version    string
@@ -102,8 +107,9 @@ func TestDontWriteMtaYamlFileWhenAlreadyPresentNoTimestampPlaceholder(t *testing
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	existingFiles["mta.yaml"] = "already there"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	runMtaBuild(options, &cpe, &e, &fileUtils)
+	runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	assert.Empty(t, fileUtils.writtenFiles)
 }
@@ -118,8 +124,9 @@ func TestWriteMtaYamlFileWhenAlreadyPresentWithTimestampPlaceholder(t *testing.T
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	existingFiles["mta.yaml"] = "already there with-${timestamp}"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	runMtaBuild(options, &cpe, &e, &fileUtils)
+	runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
 }
@@ -133,8 +140,9 @@ func TestMtaBuildClassicToolset(t *testing.T) {
 	existingFiles := make(map[string]string)
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err != nil {
 		t.Errorf("No Error expected but error received: '%s'", err.Error())
@@ -153,8 +161,9 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 	existingFiles := make(map[string]string)
 	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err != nil {
 		t.Fatalf("No Error expected but error received: '%s'", err.Error())
@@ -176,8 +185,9 @@ func TestCopyGlobalSettingsFile(t *testing.T) {
 	fileUtils := MtaTestFileUtilsMock{}
 	fileUtils.existingFiles = make(map[string]string)
 	fileUtils.existingFiles["mta.yaml"] = "already there"
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err != nil {
 		t.Fatalf("ERR: %s" + err.Error())
@@ -196,8 +206,9 @@ func TestCopyProjectSettingsFile(t *testing.T) {
 	fileUtils := MtaTestFileUtilsMock{}
 	fileUtils.existingFiles = make(map[string]string)
 	fileUtils.existingFiles["mta.yaml"] = "already there"
+	httpClient := piperhttp.Client{}
 
-	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
 	if err != nil {
 		t.Fatalf("ERR: %s" + err.Error())

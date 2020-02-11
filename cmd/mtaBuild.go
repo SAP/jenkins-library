@@ -77,7 +77,8 @@ func mtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Info("Launching mta build")
 	piperUtils := piperutils.FileUtils{}
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &piperUtils)
+	httpClient := piperhttp.Client{}
+	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &piperUtils, &httpClient)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -89,7 +90,8 @@ func mtaBuild(config mtaBuildOptions,
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	e envExecRunner,
-	p fileUtils) error {
+	p fileUtils,
+	httpClient piperhttp.Sender) error {
 
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
@@ -101,7 +103,7 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest, p); err != nil {
+		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest, p, httpClient); err != nil {
 			return err
 		}
 
@@ -117,7 +119,7 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest, p); err != nil {
+		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest, p, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -337,7 +339,7 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(src, dest string, fileUtils fileUtils) error {
+func materialize(src, dest string, fileUtils fileUtils, httpClient piperhttp.Sender) error {
 
 	if len(src) > 0 {
 
@@ -358,7 +360,7 @@ func materialize(src, dest string, fileUtils fileUtils) error {
 		}
 
 		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-			if err := materializeURL(src, dest, fileUtils); err != nil {
+			if err := materializeURL(src, dest, fileUtils, httpClient); err != nil {
 				return err
 			}
 		} else {
@@ -372,14 +374,14 @@ func materialize(src, dest string, fileUtils fileUtils) error {
 	return nil
 }
 
-func materializeURL(url, file string, fileUtils fileUtils) error {
+func materializeURL(url, file string, fileUtils fileUtils, httpClient piperhttp.Sender) error {
 
 	var e error
-	client := &piperhttp.Client{}
+
 	//CHECK:
 	// - how does this work with a proxy inbetween?
 	// - how does this work with http 302 (relocated) --> curl -L
-	response, e := client.SendRequest(http.MethodGet, url, nil, nil, nil)
+	response, e := httpClient.SendRequest(http.MethodGet, url, nil, nil, nil)
 	if e != nil {
 		return e
 	}
