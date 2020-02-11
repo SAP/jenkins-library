@@ -166,10 +166,50 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 
 }
 
+func TestCopyGlobalSettingsFile(t *testing.T) {
+
+	// Revisit: make independent of existing M2_HOME
+
+	options := mtaBuildOptions{GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+	fileUtils := MtaTestFileUtilsMock{}
+	fileUtils.existingFiles = make(map[string]string)
+	fileUtils.existingFiles["mta.yaml"] = "already there"
+
+	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	if err != nil {
+		t.Fatalf("ERR: %s" + err.Error())
+	}
+
+	assert.NotEmpty(t, fileUtils.copiedFiles["/opt/maven/settings.xml"])
+}
+
+func TestCopyProjectSettingsFile(t *testing.T) {
+
+	// Revisit: make independent of existing M2_HOME
+
+	options := mtaBuildOptions{ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+	fileUtils := MtaTestFileUtilsMock{}
+	fileUtils.existingFiles = make(map[string]string)
+	fileUtils.existingFiles["mta.yaml"] = "already there"
+
+	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	if err != nil {
+		t.Fatalf("ERR: %s" + err.Error())
+	}
+
+	assert.NotEmpty(t, fileUtils.copiedFiles["/my/project/settings.xml"])
+}
 
 type MtaTestFileUtilsMock struct {
 	existingFiles map[string]string
 	writtenFiles map[string]string
+	copiedFiles map[string]string
 }
 
 func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
@@ -181,6 +221,12 @@ func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
 }
 
 func (f *MtaTestFileUtilsMock) Copy(src, dest string) (int64, error) {
+
+	if f.copiedFiles == nil {
+		f.copiedFiles = make(map[string]string)
+	}
+	f.copiedFiles[src] = dest
+
 	return 0, nil
 }
 
