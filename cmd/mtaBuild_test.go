@@ -20,6 +20,26 @@ func TestMtaApplicationNameNotSet(t *testing.T) {
 	assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
 }
 
+func TestProvideDefaultNpmRegistry(t *testing.T) {
+
+	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+
+	existingFiles := make(map[string]string)
+	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+	err := runMtaBuild(options, &cpe, &e, &fileUtils)
+
+	if err != nil {
+		t.Fatalf("Error received but not expected: '%s'", err.Error())
+	}
+
+	assert.Equal(t, "npm", e.calls[0].exec)
+	assert.Equal(t, []string {"config",  "set", "registry", "https://example.org/npm"}, e.calls[0].params)
+
+}
 
 func TestMtaPackageJsonDoesNotExist(t *testing.T) {
 
@@ -56,7 +76,6 @@ func TestMtaBuildClassicToolset(t *testing.T) {
 	assert.Equal(t, "java", e.calls[0].exec)
 	// REVISIT: why are all the params contained in the first and only entry of the string slice?
 	assert.Equal(t, []string {"-jar mta.jar --mtar myName.mtar --build-target=CF"}, e.calls[0].params)
-
 }
 
 func TestMtaBuildMbtToolset(t *testing.T) {
