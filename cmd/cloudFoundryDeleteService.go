@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"bytes"
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -16,6 +19,11 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 
 	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
 
+	if CloudFoundryDeleteServiceOptions.CfServiceKeys == true {
+		log.Entry().WithField("Delete Service Bindings and Keys flag is set", CloudFoundryDeleteServiceOptions.CfServiceKeys).Info("Deleting inherent Service Bindings and Service Keys")
+		cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions, &c)
+	}
+
 	err := cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
 	if err != nil {
 		cloudFoundryLogout(&c)
@@ -30,10 +38,54 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	return nil
 }
 
+func cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
+
+	var cfFindServiceKeysScript = []string{"service-keys", CloudFoundryDeleteServiceOptions.CfServiceInstance}
+
+	var serviceKeyBytes bytes.Buffer
+	c.Stdout(&serviceKeyBytes)
+
+	err := c.RunExecutable("cf", cfFindServiceKeysScript...)
+	if err != nil {
+		cloudFoundryLogout(c)
+		log.Entry().
+			WithError(err).
+			Fatal("Failed to Delete Service Key, most likely your service doesn't exist")
+	}
+
+	if len(serviceKeyBytes.String()) > 0 {
+		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
+		if len(lines) <= 4 {
+			log.Entry().Info("No Service Keys active to be deleted")
+			return err
+		}
+		var numberOfServiceKeys = len(lines)
+		log.Entry().WithField("Number of service keys :", numberOfServiceKeys-4).Info("ServiceKey")
+
+		//Deleting all matched Service Keys for Service
+		for i := 3; i <= numberOfServiceKeys-2; i++ {
+			log.Entry().WithField("Deleting Service Key", lines[i]).Info("ServiceKeyDeletion")
+
+			var cfDeleteServiceKeyScript = []string{"delete-service-key", CloudFoundryDeleteServiceOptions.CfServiceInstance, lines[i], "-f"}
+
+			err := c.RunExecutable("cf", cfDeleteServiceKeyScript...)
+			if err != nil {
+				cloudFoundryLogout(c)
+				log.Entry().
+					WithError(err).
+					Fatal("Failed to login to Delete Service Key")
+			}
+		}
+	} else {
+		log.Entry().Info("No service key could be retrieved for your requested Service")
+	}
+	return err
+}
+
 func cloudFoundryLogin(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
 	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.CfAPIEndpoint, "-o", CloudFoundryDeleteServiceOptions.CfOrg, "-s", CloudFoundryDeleteServiceOptions.CfSpace, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
 
-	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.CfAPIEndpoint).WithField("cfOrg", CloudFoundryDeleteServiceOptions.CfOrg).WithField("space", CloudFoundryDeleteServiceOptions.CfSpace).WithField("password", CloudFoundryDeleteServiceOptions.Password).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.CfAPIEndpoint).WithField("cfOrg", CloudFoundryDeleteServiceOptions.CfOrg).WithField("space", CloudFoundryDeleteServiceOptions.CfSpace).Info("Logging into Cloud Foundry..")
 
 	err := c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {

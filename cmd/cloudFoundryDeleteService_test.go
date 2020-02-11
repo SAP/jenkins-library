@@ -8,6 +8,23 @@ import (
 func TestCloudFoundryDeleteService(t *testing.T) {
 	execRunner := execMockRunner{}
 
+	t.Run("CF Delete Service Keys: success case", func(t *testing.T) {
+		config := cloudFoundryDeleteServiceOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			Username:          "testUser",
+			Password:          "testPassword",
+			CfServiceInstance: "textInstance",
+		}
+		error := cloudFoundryDeleteServiceKeys(config, &execRunner)
+		if error == nil {
+			assert.Equal(t, "cf", execRunner.calls[0].exec)
+			assert.Equal(t, "service-keys", execRunner.calls[0].params[0])
+			assert.Equal(t, "testInstance", execRunner.calls[0].params[1])
+		}
+	})
+
 	t.Run("CF Login: success case", func(t *testing.T) {
 		config := cloudFoundryDeleteServiceOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
