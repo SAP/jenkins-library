@@ -43,15 +43,15 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             l.each {m ->
                 credentials.add(m)
                 if (m.credentialsId == 'MyCredentialId') {
-                    binding.setProperty('PIPER_SELENIUM_GRID_USER', 'seleniumUser')
-                    binding.setProperty('PIPER_SELENIUM_GRID_PASSWORD', '********')
+                    binding.setProperty('PIPER_SELENIUM_HUB_USER', 'seleniumUser')
+                    binding.setProperty('PIPER_SELENIUM_HUB_PASSWORD', '********')
                 }
             }
             try {
                 c()
             } finally {
-                binding.setProperty('PIPER_SELENIUM_GRID_USER', null)
-                binding.setProperty('PIPER_SELENIUM_GRID_PASSWORD', null)
+                binding.setProperty('PIPER_SELENIUM_HUB_USER', null)
+                binding.setProperty('PIPER_SELENIUM_HUB_PASSWORD', null)
             }
         })
     }
