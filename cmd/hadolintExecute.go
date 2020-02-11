@@ -60,7 +60,11 @@ func loadConfigurationFile(url, file string) {
 	}
 	if !exists {
 		log.Entry().WithField("file", url).Debug("Loading configuration from URL")
-		//TODO: add handling of configurationUrl file
-		//sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
+		if _, err := piperutils.Download(url, file); err != nil {
+			log.Entry().
+				WithError(err).
+				WithField("file", url).
+				Error("Failed to download configuration file from URL.")
+		}
 	}
 }

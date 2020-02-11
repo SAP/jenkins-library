@@ -61,7 +61,6 @@ func Download(src, dst string) (int64, error) {
 		return 0, err
 	}
 	defer destination.Close()
-
 	nBytes, err := io.Copy(destination, source.Body)
 	return nBytes, err
 }
