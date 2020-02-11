@@ -343,25 +343,25 @@ func materialize(src, dest string, fileUtils fileUtils) error {
 
 		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
+		parent := filepath.Dir(dest)
+
+		exists, err := fileUtils.FileExists(parent)
+
+		if err != nil {
+			return err
+		}
+
+		if !exists {
+			if err = os.MkdirAll(parent, 0664); err != nil {
+				return err
+			}
+		}
+
 		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
 			if err := materializeURL(src, dest, fileUtils); err != nil {
 				return err
 			}
 		} else {
-
-			parent := filepath.Dir(dest)
-
-			exists, err := fileUtils.FileExists(parent)
-
-			if err != nil {
-				return err
-			}
-
-			if !exists {
-				if err = os.MkdirAll(parent, 0664); err != nil {
-					return err
-				}
-			}
 
 			if _, err := fileUtils.Copy(src, dest); err != nil {
 				return err
