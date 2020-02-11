@@ -222,7 +222,11 @@ func runMtaBuild(config mtaBuildOptions,
 	switch config.MtaBuildTool {
 	case "classic":
 
-		var mtaJar = "mta.jar"
+		mtaJar := "mta.jar"
+
+		if len(config.MtaJarLocation) > 0 {
+			mtaJar = config.MtaJarLocation
+		}
 
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
 		if err != nil {
