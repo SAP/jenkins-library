@@ -91,7 +91,19 @@ def call(Map parameters) {
 return this
 ```
 
+This code snippet has three components, let's see what is happening here:
+
+Firstly, we run the original stage.
+This runs the SAP UI5 Best Practices linter as this is a standard feature of SAP Cloud SDK pipeline.
+
+Secondly, we run the checkstyle maven plugin using the `mavenExecute` Jenkins library step as provided by project "Piper".
+This serves as an example for how flexible you can re-use what project "Piper" already provides in your extension.
+
+Finally, we use the Jenkins [Warnings NG plugin](https://plugins.jenkins.io/warnings-ng/) and its step `recordIssues` to make the findings visible in the Jenkins user interface.
+
 This example can be adapted for other linters of your choice.
+Be sure to checkout the _Library steps_ section of this documentation if you want to do this.
+Project "Piper" provides some basic building blocks such as `dockerExecute` and the already mentioned `mavenExecute` which might be helpful.
 
 ## 2. Modified Ready-Made Pipeline
 
