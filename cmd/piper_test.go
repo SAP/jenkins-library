@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -194,4 +197,39 @@ func TestPrepareConfig(t *testing.T) {
 			assert.Error(t, err, "error expected but none occured")
 		})
 	})
+}
+
+func TestGetProjectConfigFile(t *testing.T) {
+
+	tt := []struct {
+		filename       string
+		filesAvailable []string
+		expected       string
+	}{
+		{filename: ".pipeline/config.yml", filesAvailable: []string{}, expected: ".pipeline/config.yml"},
+		{filename: ".pipeline/config.yml", filesAvailable: []string{".pipeline/config.yml"}, expected: ".pipeline/config.yml"},
+		{filename: ".pipeline/config.yml", filesAvailable: []string{".pipeline/config.yaml"}, expected: ".pipeline/config.yaml"},
+		{filename: ".pipeline/config.yaml", filesAvailable: []string{".pipeline/config.yml", ".pipeline/config.yaml"}, expected: ".pipeline/config.yaml"},
+		{filename: ".pipeline/config.yml", filesAvailable: []string{".pipeline/config.yml", ".pipeline/config.yaml"}, expected: ".pipeline/config.yml"},
+	}
+
+	for run, test := range tt {
+		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
+			dir, err := ioutil.TempDir("", "")
+			defer os.RemoveAll(dir) // clean up
+			assert.NoError(t, err)
+
+			if len(test.filesAvailable) > 0 {
+				configFolder := filepath.Join(dir, filepath.Dir(test.filesAvailable[0]))
+				err = os.MkdirAll(configFolder, 0700)
+				assert.NoError(t, err)
+			}
+
+			for _, file := range test.filesAvailable {
+				ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
+			}
+
+			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
+		})
+	}
 }

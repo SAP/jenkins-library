@@ -5,7 +5,6 @@ import groovy.text.SimpleTemplateEngine
 
 @Singleton
 class DebugReport {
-    String fileName
     String projectIdentifier = null
     Map environment = ['environment': 'custom']
     String buildTool = null
@@ -20,7 +19,6 @@ class DebugReport {
     String sharedConfigFilePath = null
     Set additionalSharedLibraries = []
     Map failedBuild = [:]
-    boolean shareConfidentialInformation
 
     /**
      * Initialize debug report information from the environment variables.
@@ -85,14 +83,10 @@ class DebugReport {
         failedBuild.put('step', stepName)
         failedBuild.put('reason', err)
         failedBuild.put('stack_trace', err.getStackTrace())
-        if (failedOnError) {
-            failedBuild.put('fatal', 'true')
-        } else {
-            failedBuild.remove('fatal')
-        }
+        failedBuild.put('fatal', failedOnError ? 'true' : 'false')
     }
 
-    String generateReport(Script script) {
+    Map generateReport(Script script, boolean shareConfidentialInformation) {
         String template = script.libraryResource 'debug_report.txt'
 
         if (!projectIdentifier) {
@@ -107,19 +101,34 @@ class DebugReport {
             script.echo "Failed to retrieve Jenkins plugins for debug report  (${t.getMessage()})"
         }
 
-        Map binding = getProperties()
         Date now = new Date()
 
-        binding.utcTimestamp = now.format('yyyy-MM-dd HH:mm', TimeZone.getTimeZone('UTC'))
+        Map binding = [
+            'projectIdentifier' : projectIdentifier,
+            'environment' : environment,
+            'buildTool': buildTool,
+            'modulesMap' : modulesMap,
+            'npmModules' : npmModules,
+            'plugins' : plugins,
+            'gitRepo' : gitRepo,
+            'localExtensions' : localExtensions,
+            'globalExtensionRepository' : globalExtensionRepository,
+            'globalExtensions' : globalExtensions,
+            'globalExtensionConfigurationFilePath' : globalExtensionConfigurationFilePath,
+            'sharedConfigFilePath' : sharedConfigFilePath,
+            'additionalSharedLibraries' : additionalSharedLibraries,
+            'failedBuild' : failedBuild,
+            'shareConfidentialInformation' : shareConfidentialInformation,
+            'utcTimestamp' : now.format('yyyy-MM-dd HH:mm', TimeZone.getTimeZone('UTC'))
+        ]
+
         String fileNameTimestamp = now.format('yyyy-MM-dd-HH-mm', TimeZone.getTimeZone('UTC'))
+        String fileNamePrefix = shareConfidentialInformation ? 'confidential' : 'redacted'
 
-        if (shareConfidentialInformation) {
-            fileName = "confidential_debug_log_${fileNameTimestamp}_${projectIdentifier}.txt"
-        } else {
-            fileName = "redacted_debug_log_${fileNameTimestamp}_${projectIdentifier}.txt"
-        }
-
-        return fillTemplate(template, binding)
+        Map result = [:]
+        result.fileName = "${fileNamePrefix}_debug_log_${fileNameTimestamp}_${projectIdentifier}.txt"
+        result.contents = fillTemplate(template, binding)
+        return result
     }
 
     @NonCPS
