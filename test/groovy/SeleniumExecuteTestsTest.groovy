@@ -16,6 +16,8 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
+    private List credentials = []
+
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -30,10 +32,27 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+        credentials = []
         bodyExecuted = false
         helper.registerAllowedMethod('stash', [String.class], null)
         helper.registerAllowedMethod('git', [Map.class], {m ->
             gitMap = m
+        })
+        helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
+        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
+            l.each {m ->
+                credentials.add(m)
+                if (m.credentialsId == 'MyCredentialId') {
+                    binding.setProperty('PIPER_SELENIUM_GRID_USER', 'seleniumUser')
+                    binding.setProperty('PIPER_SELENIUM_GRID_PASSWORD', '********')
+                }
+            }
+            try {
+                c()
+            } finally {
+                binding.setProperty('PIPER_SELENIUM_GRID_USER', null)
+                binding.setProperty('PIPER_SELENIUM_GRID_PASSWORD', null)
+            }
         })
     }
 
@@ -137,5 +156,22 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(gitMap, hasEntry('branch', 'test'))
         assertThat(gitMap, hasEntry('credentialsId', 'testCredentials'))
         assertThat(gitMap, hasEntry('url', 'git@test/test.git'))
+    }
+
+    @Test
+    void testSeleniumHubCredentials() {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
+            seleniumHubCredentialsId: 'MyCredentialId'
+        ]]]
+
+        stepRule.step.seleniumExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+        assertThat(credentials.size(), is(1))
     }
 }
