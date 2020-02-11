@@ -150,6 +150,9 @@ Where `myCustomPipeline.groovy` contains the modified pipeline code of the [gene
 
 This library must be placed in a git repository which is available for Jenkins and must be configured in Jenkins [as documented here](https://jenkins.io/doc/book/pipeline/shared-libraries/#using-libraries).
 
+This screenshot shows an example of the configuration in Jenkins.
+Note the name (1) must be the same you use in your `Jenkinsfile`.
+
 ![Library Setup](images/customPipelineLib.png "Library Setup")
 
 The `Jenkinsfile` of your individual projects would look similar to this:
