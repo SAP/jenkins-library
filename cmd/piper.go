@@ -43,16 +43,17 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
-	rootCmd.AddCommand(ConfigCommand())
-	rootCmd.AddCommand(VersionCommand())
-	rootCmd.AddCommand(DetectExecuteScanCommand())
-	rootCmd.AddCommand(KarmaExecuteTestsCommand())
-	rootCmd.AddCommand(KubernetesDeployCommand())
-	rootCmd.AddCommand(XsDeployCommand())
-	rootCmd.AddCommand(GithubPublishReleaseCommand())
-	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(ConfigCommand())
+	rootCmd.AddCommand(DetectExecuteScanCommand())
+	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(HadolintExecuteCommand())
+	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(KubernetesDeployCommand())
+	rootCmd.AddCommand(VersionCommand())
+	rootCmd.AddCommand(XsDeployCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

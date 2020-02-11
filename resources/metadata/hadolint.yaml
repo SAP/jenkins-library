@@ -1,5 +1,5 @@
 metadata:
-  name: hadolintExecute
+  name: hadolintExecuteScan
   description: Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
   longDescription: |-
     Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -35,6 +35,7 @@ spec:
       - STAGES
       - STEPS
       default: .hadolint.yaml
+      # only Groovy
     - name: qualityGates
       type: string
       description: Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
@@ -59,4 +60,5 @@ spec:
       - STEPS
       default: hadolint.xml
   containers:
-  - image: hadolint/hadolint:latest-debian
+  - name: hadolint
+    image: hadolint/hadolint:latest-debian
