@@ -152,6 +152,26 @@ func TestMtaBuildClassicToolset(t *testing.T) {
 	assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
 }
 
+func TestMtaBuildClassicToolsetWithConfiguredMtaJar(t *testing.T) {
+
+	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar"}
+	cpe := mtaBuildCommonPipelineEnvironment{}
+	e := execMockRunner{}
+
+	existingFiles := make(map[string]string)
+	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+	fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+	httpClient := piperhttp.Client{}
+
+	err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+
+	if err != nil {
+		t.Errorf("No Error expected but error received: '%s'", err.Error())
+	}
+
+	assert.Equal(t, "java", e.calls[0].exec)
+	assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+}
 func TestMtaBuildMbtToolset(t *testing.T) {
 
 	options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF"}
