@@ -13,6 +13,7 @@ type FileUtils interface {
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
 }
 
 // Files ...
@@ -79,4 +80,9 @@ func (f Files) FileRead(path string) ([]byte, error) {
 // FileWrite ...
 func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(path, content, perm)
+}
+
+// MkDirAll ...
+func (f Files) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
 }

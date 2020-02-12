@@ -8,9 +8,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/maven"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -95,14 +95,11 @@ func runMtaBuild(config mtaBuildOptions,
 	e.Stdout(os.Stderr) // keep stdout clear.
 	e.Stderr(os.Stderr)
 
+	var err error
+
 	if len(config.ProjectSettingsFile) > 0 {
 
-		projectSettingsFileDest, err := getProjectSettingsFileDest()
-		if err != nil {
-			return err
-		}
-
-		if err = maven.Materialize(config.ProjectSettingsFile, projectSettingsFileDest, p, httpClient); err != nil {
+		if err = maven.GetSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
 			return err
 		}
 
@@ -113,12 +110,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if len(config.GlobalSettingsFile) > 0 {
 
-		globalSettingsFileDest, err := getGlobalSettingsFileDest()
-		if err != nil {
-			return err
-		}
-
-		if err = maven.Materialize(config.GlobalSettingsFile, globalSettingsFileDest, p, httpClient); err != nil {
+		if err = maven.GetSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -341,7 +333,6 @@ func generateMta(id, name, version string) (string, error) {
 	tmpl.Execute(&script, props)
 	return script.String(), nil
 }
-
 
 func getMtaID(mtaYamlFile string) (string, error) {
 

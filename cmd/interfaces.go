@@ -22,4 +22,3 @@ type shellRunner interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 }
-
