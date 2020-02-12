@@ -1,0 +1,30 @@
+metadata:
+  name: nexusUpload
+  description: Upload to Nexus RM
+  longDescription: |
+    Upload to Nexus RM
+spec:
+  inputs:
+    secrets:
+      - name: credentialsId
+        description: Jenkins username/password credential for accessing xs endpoint.
+        type: jenkins
+    params:
+      - name: url
+        type: string
+        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: repository
+        type: string
+        description: Name of the nexus repository.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
