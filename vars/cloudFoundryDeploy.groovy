@@ -472,7 +472,7 @@ private void handleCfCliLog(String logFile){
     if(fileExists(file: logFile)) {
         echo  '### START OF CF CLI TRACE OUTPUT ###'
         // Would be nice to inline the two next lines, but that is not understood by the test framework
-        def cfTrace =  readFile(file: logFile)
+        def cfTrace = readFile(file: logFile)
         echo cfTrace
         echo '### END OF CF CLI TRACE OUTPUT ###'
     } else {
