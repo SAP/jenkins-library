@@ -277,3 +277,7 @@ func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.Fi
 	f.writtenFiles[path] = string(content)
 	return nil
 }
+
+func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
+	return nil
+}

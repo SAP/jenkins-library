@@ -34,6 +34,10 @@ func (f *FileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode)
 	return nil
 }
 
+func (f *FileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
+	return nil
+}
+
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
