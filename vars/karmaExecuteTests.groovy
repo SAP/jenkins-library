@@ -89,7 +89,6 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
-        config.dockerEnvVars = config.dockerEnvVars ?: [:]
 
         def testJobs = [:]
         def options = [
