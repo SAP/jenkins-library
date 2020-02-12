@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -247,7 +246,7 @@ func runMtaBuild(config mtaBuildOptions,
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	path := "./node_modules/.bin"
-	oldPath := getEnvironmentVariable("PATH")
+	oldPath := os.Getenv("PATH")
 	if len(oldPath) > 0 {
 		path = path + ":" + oldPath
 	}
@@ -259,49 +258,6 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 	return nil
-}
-
-func getGlobalSettingsFileDest() (string, error) {
-
-	m2Home := getEnvironmentVariable("M2_HOME")
-
-	if len(m2Home) == 0 {
-		return "", errors.New("Environment variable \"M2_HOME\" not set or empty")
-	}
-	return m2Home + "/conf/settings.xml", nil
-}
-
-func getProjectSettingsFileDest() (string, error) {
-
-	home := getEnvironmentVariable("HOME")
-
-	if len(home) == 0 {
-		return "", errors.New("Environment variable \"HOME\" not set or empty")
-	}
-	return home + "/.m2/settings.xml", nil
-}
-
-func getEnvironmentVariable(name string) string {
-
-	// in case we have the same name twice we have to take the latest one.
-	// hence we reverse the slice in order to get the latest entry first.
-	prefix := name + "="
-	for _, e := range reverse(os.Environ()) {
-		if strings.HasPrefix(e, prefix) {
-			return strings.TrimPrefix(e, prefix)
-		}
-	}
-	return ""
-}
-
-func reverse(s []string) []string {
-
-	// REVISIT: fits better into some string utils
-
-	if len(s) == 0 {
-		return s
-	}
-	return append(reverse(s[1:]), s[0])
 }
 
 func generateMta(id, name, version string) (string, error) {
