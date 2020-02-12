@@ -485,9 +485,9 @@ private void stopOldAppIfRunning(Map config) {
     String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
 
     if (config.keepOldInstance && config.deployType == 'blue-green') {
-        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-
-        if (cfStopReturncode > 0) {
+        try {
+            sh "cf stop $oldAppName  &> $cfStopOutputFileName"
+        } catch (e) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
