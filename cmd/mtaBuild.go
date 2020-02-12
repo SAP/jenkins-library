@@ -75,7 +75,7 @@ func (m MTABuildTarget) String() string {
 func mtaBuild(config mtaBuildOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
-	log.Entry().Info("Launching mta build")
+	log.Entry().Debugf("Launching mta build")
 	piperUtils := piperutils.FileUtils{}
 	httpClient := piperhttp.Client{}
 	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &piperUtils, &httpClient)
