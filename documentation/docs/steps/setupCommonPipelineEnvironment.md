@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* A **configuration file** with properties. The property values are used as default values in many pipeline steps.
+none
 
 ## ${docGenParameters}
 
@@ -14,7 +14,7 @@
 
 ## Side effects
 
-none
+* If no configuration file is provided, a `commonPipelineEnvironment` is created with an empty general configuration.
 
 ## Exceptions
 
