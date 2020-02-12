@@ -142,7 +142,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppName() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -169,7 +169,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppNameCustomApi() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -192,7 +192,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppNameCompatible() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -222,7 +222,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeAppNameFromManifest() {
         fileExistsRule.registerExistingFile('test.yml')
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -247,7 +247,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeWithoutAppName() {
         fileExistsRule.registerExistingFile('test.yml')
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -270,7 +270,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenDefaultDeleteOldInstance() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -297,7 +297,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenExplicitDeleteOldInstance() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -326,7 +326,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenKeepOldInstance() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -352,13 +352,57 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testCfNativeBlueGreenMultipleApplications() {
+
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName1'},{name: 'manifestAppName2'}]")
+        fileExistsRule.registerExistingFile('test.yml')
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("[cloudFoundryDeploy] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application.")
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+    }
+
+    @Test
+    void testCfNativeBlueGreenWithNoRoute() {
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName1', no-route: true}]")
+        fileExistsRule.registerExistingFile('test.yml')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+    }
+
+    @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
 
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
 
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         thrown.expect(hudson.AbortException)
         thrown.expectMessage("[cloudFoundryDeploy] ERROR: Could not stop application testAppName-old. Error: any error message")
@@ -388,7 +432,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeStandardShouldNotStopInstance() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -411,7 +455,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testCfNativeWithoutAppNameBlueGreen() {
 
         fileExistsRule.registerExistingFile('test.yml')
-        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)')
@@ -431,7 +475,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeFailureInShellCall() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -500,7 +544,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testInfluxReporting() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
@@ -532,7 +576,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromFile() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         fileExistsRule.registerExistingFile('test.yml')
         fileExistsRule.registerExistingFile('vars.yml')
 
@@ -561,7 +605,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromNotExistingFilePrintsWarning() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         fileExistsRule.registerExistingFile('test.yml')
 
         stepRule.step.cloudFoundryDeploy([
@@ -584,7 +628,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsList() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         List varsList = [["appName" : "testApplicationFromVarsList"]]
 
         stepRule.step.cloudFoundryDeploy([
@@ -613,7 +657,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsListNotAList() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
 
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
@@ -635,7 +679,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsListAndVarsFile() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         List varsList = [["appName" : "testApplicationFromVarsList"]]
         fileExistsRule.registerExistingFile('vars.yml')
 
@@ -664,7 +708,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfPushDeploymentWithoutVariableSubstitution() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -690,7 +734,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfBlueGreenDeploymentWithVariableSubstitution() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         readYamlRule.registerYaml('vars.yml', "[appName: 'testApplication']")
 
         fileExistsRule.registerExistingFile("test.yml")
@@ -722,7 +766,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // asserts
         assertTrue(testYamlWritten)
         assertNotNull(testYamlData)
-        assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplication"))
+        assertThat(testYamlData.get("applications").get(0).get("name"), is("testApplication"))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
@@ -734,7 +778,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfBlueGreenDeploymentWithVariableSubstitutionFromVarsList() {
-        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         readYamlRule.registerYaml('vars.yml', "[appName: 'testApplication']")
         List varsList = [["appName" : "testApplicationFromVarsList"]]
 
@@ -768,7 +812,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // asserts
         assertTrue(testYamlWritten)
         assertNotNull(testYamlData)
-        assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplicationFromVarsList"))
+        assertThat(testYamlData.get("applications").get(0).get("name"), is("testApplicationFromVarsList"))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
@@ -788,7 +832,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         new File(tmpDir, 'cf.log') << 'Hello SAP'
 
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -815,7 +859,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             'test.yml',
         )
 
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -835,7 +879,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testAdditionCfNativeOpts() {
 
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
