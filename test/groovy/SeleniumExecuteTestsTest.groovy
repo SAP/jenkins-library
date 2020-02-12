@@ -40,7 +40,6 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     @Test
     void testExecuteSeleniumDefault() {
         def expectedDefaultEnvVars = [
-            'PIPER_STEP_SELENIUM_EXECUTE_TESTS': 'true',
             // following env vars are expected in JSON format
             'PIPER_CONTAINER_PORT_MAPPING': '{"selenium/standalone-chrome":[{"containerPort":4444,"hostPort":4444}]}',
             'PIPER_DOCKER_NAME': '"npm"',
