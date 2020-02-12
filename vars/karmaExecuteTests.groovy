@@ -89,7 +89,6 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
-
         def testJobs = [:]
         def options = [
             script: script,
