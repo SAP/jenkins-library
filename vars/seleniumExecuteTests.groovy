@@ -102,7 +102,6 @@ void call(Map parameters = [:], Closure body) {
 
         // Inject config via env vars so that scripts running inside selenium can respond to that
         config.dockerEnvVars = config.dockerEnvVars ?: [:]
-        config.dockerEnvVars.PIPER_STEP_SELENIUM_EXECUTE_TESTS = "true"
         config.dockerEnvVars.PIPER_CONTAINER_PORT_MAPPING = new JsonOutput().toJson(config.containerPortMappings)
         config.dockerEnvVars.PIPER_DOCKER_NAME = new JsonOutput().toJson(config.dockerName)
         config.dockerEnvVars.PIPER_DOCKER_IMAGE = new JsonOutput().toJson(config.dockerImage)
