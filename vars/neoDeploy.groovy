@@ -238,13 +238,13 @@ private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, doc
                 if (warAction == WarAction.ROLLING_UPDATE) {
                     try {
                         sh neoCommandHelper.rollingUpdateCommand()
-                    } chatch (e) {
+                    } catch (e) {
                         error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
                     }
                 } else {
                     try {
                         sh neoCommandHelper.deployCommand()
-                    } chatch (e) {
+                    } catch (e) {
                         error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
                     }
                     sh neoCommandHelper.restartCommand()
