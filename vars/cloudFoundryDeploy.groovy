@@ -454,24 +454,29 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
         try {
             sh deployScript
         } catch (e) {
-            if(config.verbose) {
-                if(fileExists(file: cfTraceFile)) {
-                    echo  '### START OF CF CLI TRACE OUTPUT ###'
-                    // Would be nice to inline the two next lines, but that is not understood by the test framework
-                    def cfTrace =  readFile(file: cfTraceFile)
-                    echo cfTrace
-                    echo '### END OF CF CLI TRACE OUTPUT ###'
-                } else {
-                    echo "No trace file found at '${cfTraceFile}'"
-                }
-            }
+            handleCfCliLog(cfTraceFile)
 
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+        }
+        if(config.verbose) {
+            handleCfCliLog(cfTraceFile)
         }
 
         if(postDeployAction) postDeployAction(config)
 
         sh "cf logout"
+    }
+}
+
+private void handleCfCliLog(String logFile){
+    if(fileExists(file: logFile)) {
+        echo  '### START OF CF CLI TRACE OUTPUT ###'
+        // Would be nice to inline the two next lines, but that is not understood by the test framework
+        def cfTrace =  readFile(file: logFile)
+        echo cfTrace
+        echo '### END OF CF CLI TRACE OUTPUT ###'
+    } else {
+        echo "No trace file found at '${logFile}'"
     }
 }
 
