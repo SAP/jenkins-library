@@ -68,5 +68,7 @@ private loadConfigurationFromFile(script, String configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
     } else if (fileExists(defaultYamlConfigFile)) {
         script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
+    } else {
+        script.commonPipelineEnvironment.configuration = [general: [:]]
     }
 }

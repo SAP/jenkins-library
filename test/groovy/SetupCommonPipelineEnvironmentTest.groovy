@@ -65,5 +65,17 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
+
+    @Test
+    void "Without config file still sets up cpe with an empty general configuration"() throws Exception {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return false
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+
+        assertNotNull(nullScript.commonPipelineEnvironment.configuration.general)
+    }
 }
 
