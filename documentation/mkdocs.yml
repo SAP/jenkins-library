@@ -76,6 +76,7 @@ nav:
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
         - sonarExecuteScan: steps/sonarExecuteScan.md
+        - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
