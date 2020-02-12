@@ -10,11 +10,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -76,9 +75,9 @@ func mtaBuild(config mtaBuildOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
-	piperUtils := piperutils.FileUtils{}
+	files := piperutils.Files{}
 	httpClient := piperhttp.Client{}
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &piperUtils, &httpClient)
+	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &files, &httpClient)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -90,7 +89,7 @@ func mtaBuild(config mtaBuildOptions,
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	e envExecRunner,
-	p fileUtils,
+	p piperutils.FileUtils,
 	httpClient piperhttp.Sender) error {
 
 	e.Stdout(os.Stderr) // keep stdout clear.
@@ -103,7 +102,7 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		if err = materialize(config.ProjectSettingsFile, projectSettingsFileDest, p, httpClient); err != nil {
+		if err = maven.Materialize(config.ProjectSettingsFile, projectSettingsFileDest, p, httpClient); err != nil {
 			return err
 		}
 
@@ -119,7 +118,7 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		if err = materialize(config.GlobalSettingsFile, globalSettingsFileDest, p, httpClient); err != nil {
+		if err = maven.Materialize(config.GlobalSettingsFile, globalSettingsFileDest, p, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -343,69 +342,6 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func materialize(src, dest string, fileUtils fileUtils, httpClient piperhttp.Sender) error {
-
-	if len(src) > 0 {
-
-		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
-
-		parent := filepath.Dir(dest)
-
-		exists, err := fileUtils.FileExists(parent)
-
-		if err != nil {
-			return err
-		}
-
-		if !exists {
-			if err = os.MkdirAll(parent, 0664); err != nil {
-				return err
-			}
-		}
-
-		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-			if err := materializeURL(src, dest, fileUtils, httpClient); err != nil {
-				return err
-			}
-		} else {
-
-			if _, err := fileUtils.Copy(src, dest); err != nil {
-				return err
-			}
-		}
-	}
-	log.Entry().Debugf("File \"%s\" copied to \"%s\"", src, dest)
-	return nil
-}
-
-func materializeURL(url, file string, fileUtils fileUtils, httpClient piperhttp.Sender) error {
-
-	var e error
-
-	//CHECK:
-	// - how does this work with a proxy inbetween?
-	// - how does this work with http 302 (relocated) --> curl -L
-	response, e := httpClient.SendRequest(http.MethodGet, url, nil, nil, nil)
-	if e != nil {
-		return e
-	}
-
-	if response.StatusCode != 200 {
-		fmt.Errorf("Got %d reponse from download attemtp for \"%s\"", response.StatusCode, url)
-	}
-
-	body, e := ioutil.ReadAll(response.Body)
-	if e != nil {
-		return e
-	}
-
-	e = fileUtils.FileWrite(file, body, 0644)
-	if e != nil {
-		return e
-	}
-
-	return nil
-}
 
 func getMtaID(mtaYamlFile string) (string, error) {
 

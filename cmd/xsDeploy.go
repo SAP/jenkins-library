@@ -110,7 +110,7 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 
 func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
-	fileUtils := piperutils.FileUtils{}
+	fileUtils := piperutils.Files{}
 	err := runXsDeploy(config, &c, fileUtils, os.Remove, os.Stdout)
 	if err != nil {
 		log.Entry().
@@ -120,7 +120,7 @@ func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
-	fileUtils fileUtils,
+	fileUtils piperutils.FileUtils,
 	fRemove func(string) error,
 	stdout io.Writer) error {
 
@@ -435,7 +435,7 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	return nil
 }
 
-func copyFileFromHomeToPwd(xsSessionFile string, fileUtils fileUtils) error {
+func copyFileFromHomeToPwd(xsSessionFile string, fileUtils piperutils.FileUtils) error {
 	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), fmt.Sprintf("%s", xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
@@ -445,7 +445,7 @@ func copyFileFromHomeToPwd(xsSessionFile string, fileUtils fileUtils) error {
 	return nil
 }
 
-func copyFileFromPwdToHome(xsSessionFile string, fileUtils fileUtils) error {
+func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils) error {
 
 	//
 	// We rely on running inside a docker container which is discarded after a single use.
