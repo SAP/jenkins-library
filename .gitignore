@@ -23,3 +23,5 @@ consumer-test/**/workspace
 /piper
 /piper.exe
 .factorypath
+
+/cache/protecode

@@ -190,7 +190,7 @@ Modify the `launch.json` located in folder `.vscode` of your project root to poi
             "mode": "exec",
             "program": "C:/CF@HCP/git/jenkins-library-public/piper.exe",
             "env": {},
-            "args": ["checkmarxExecuteScan", "--password", "abcd", "--username", "1234", "--projectName", "testProject4711", "--serverUrl", "https://cx.wdf.sap.corp/"]
+            "args": ["checkmarxExecuteScan", "--password", "abcd", "--username", "1234", "--projectName", "testProject4711", "--serverUrl", "https://cx.server.com/"]
         }
     ]
 }

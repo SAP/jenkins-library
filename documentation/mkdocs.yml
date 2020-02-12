@@ -34,10 +34,12 @@ nav:
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
         - cloudFoundryCreateService: steps/cloudFoundryCreateService.md
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
+        - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
@@ -70,11 +72,13 @@ nav:
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
+        - protecodeExecuteScan: steps/protecodeExecuteScan.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
         - sonarExecuteScan: steps/sonarExecuteScan.md
+        - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
