@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -51,8 +53,10 @@ func Execute() {
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -100,20 +104,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
-			exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
+			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-			if e != nil {
-				return e
-			}
-
+			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
-				if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
+				if customConfig, err = openFile(projectConfigFile); err != nil {
+					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
-				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
+				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
 				customConfig = nil
 			}
+
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
@@ -144,4 +146,23 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func getProjectConfigFile(name string) string {
+
+	var altName string
+	if ext := filepath.Ext(name); ext == ".yml" {
+		altName = fmt.Sprintf("%v.yaml", strings.TrimSuffix(name, ext))
+	} else if ext == "yaml" {
+		altName = fmt.Sprintf("%v.yml", strings.TrimSuffix(name, ext))
+	}
+
+	fileExists, _ := piperutils.FileExists(name)
+	altExists, _ := piperutils.FileExists(altName)
+
+	// configured filename will always take precedence, even if not existing
+	if !fileExists && altExists {
+		return altName
+	}
+	return name
 }

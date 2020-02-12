@@ -7,6 +7,7 @@
 1. [Generating step framework](#generating-step-framework)
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
+1. [Debugging](#debugging)
 
 ## Getting started
 
@@ -168,3 +169,31 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 Unit tests are done using basic `golang` means.
 
 Additionally we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert) in order to have slimmer assertions if you like.
+
+## Debugging
+
+Debugging can be initiated with VS code fairly easily. Compile the binary with spcific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
+
+Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exatly to the binary that you just built with above command - must be an absolute path. In addition add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
+
+```javascript
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "go",
+            "request": "launch",
+            "mode": "exec",
+            "program": "C:/CF@HCP/git/jenkins-library-public/piper.exe",
+            "env": {},
+            "args": ["checkmarxExecuteScan", "--password", "abcd", "--username", "1234", "--projectName", "testProject4711", "--serverUrl", "https://cx.server.com/"]
+        }
+    ]
+}
+```
+
+Finally set your breakpoints and use the `Launch` button in the VS code UI to start debugging.

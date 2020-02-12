@@ -1,6 +1,6 @@
 package com.sap.piper
 
-import com.sun.org.apache.xerces.internal.dom.AbortException
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -157,5 +157,4 @@ class PiperGoUtilsTest extends BasePiperTest {
         piperGoUtils.unstashPiperBin()
     }
 }
-
 
