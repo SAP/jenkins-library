@@ -111,41 +111,9 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if !mtaYamlFileExists {
 
-		log.Entry().Debugf("mta yaml file not found in project sources.")
-
-		if len(config.ApplicationName) == 0 {
-			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
-		}
-
-		packageFileExists, err := p.FileExists("package.json")
-		if !packageFileExists {
-			return fmt.Errorf("package.json file does not exist")
-		}
-
-		var result map[string]interface{}
-		pContent, err := p.FileRead("package.json")
-		if err != nil {
+		if err = createMtaYamlFile(mtaYamlFile, config.ApplicationName, p); err != nil {
 			return err
 		}
-		json.Unmarshal(pContent, &result)
-
-		version, ok := result["version"].(string)
-		if !ok {
-			fmt.Errorf("Version not found in \"package.json\" (or wrong type)")
-		}
-
-		name, ok := result["name"].(string)
-		if !ok {
-			fmt.Errorf("Name not found in \"package.json\" (or wrong type)")
-		}
-
-		mtaConfig, err := generateMta(name, config.ApplicationName, version)
-		if err != nil {
-			return err
-		}
-
-		p.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
-		log.Entry().Infof("\"%s\" created.", mtaYamlFile)
 
 	} else {
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
@@ -236,6 +204,46 @@ func runMtaBuild(config mtaBuildOptions,
 	return nil
 }
 
+func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUtils) error {
+
+	log.Entry().Debugf("mta yaml file not found in project sources.")
+
+	if len(applicationName) == 0 {
+		return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
+	}
+
+	packageFileExists, err := p.FileExists("package.json")
+	if !packageFileExists {
+		return fmt.Errorf("package.json file does not exist")
+	}
+
+	var result map[string]interface{}
+	pContent, err := p.FileRead("package.json")
+	if err != nil {
+		return err
+	}
+	json.Unmarshal(pContent, &result)
+
+	version, ok := result["version"].(string)
+	if !ok {
+		return fmt.Errorf("Version not found in \"package.json\" (or wrong type)")
+	}
+
+	name, ok := result["name"].(string)
+	if !ok {
+		return fmt.Errorf("Name not found in \"package.json\" (or wrong type)")
+	}
+
+	mtaConfig, err := generateMta(name, applicationName, version)
+	if err != nil {
+		return err
+	}
+
+	p.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
+	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
+
+	return nil
+}
 
 func handleDefaultNpmRegistry(config mtaBuildOptions, e envExecRunner) error {
 
