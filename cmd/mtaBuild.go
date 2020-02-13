@@ -96,26 +96,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	var err error
 
-	if len(config.ProjectSettingsFile) > 0 {
-
-		if err = maven.GetSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-
-	} else {
-
-		log.Entry().Debugf("Project settings file not provided via configuation.")
-	}
-
-	if len(config.GlobalSettingsFile) > 0 {
-
-		if err = maven.GetSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-	} else {
-
-		log.Entry().Debugf("Global settings file not provided via configuation.")
-	}
+	handleSettingsFiles(config, p, httpClient)
 
 	if len(config.DefaultNpmRegistry) > 0 {
 		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
@@ -257,6 +238,35 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+	return nil
+}
+
+
+func handleSettingsFiles(config mtaBuildOptions,
+	p piperutils.FileUtils,
+	httpClient piperhttp.Sender) error {
+
+	if len(config.ProjectSettingsFile) > 0 {
+
+		if err := maven.GetSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
+			return err
+		}
+
+	} else {
+
+		log.Entry().Debugf("Project settings file not provided via configuation.")
+	}
+
+	if len(config.GlobalSettingsFile) > 0 {
+
+		if err := maven.GetSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
+			return err
+		}
+	} else {
+
+		log.Entry().Debugf("Global settings file not provided via configuation.")
+	}
+
 	return nil
 }
 
