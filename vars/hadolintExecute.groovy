@@ -5,6 +5,8 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/hadolint.yaml'
+
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Dockerfile to be used for the assessment.
@@ -53,69 +55,53 @@ void call(Map parameters = [:]) {
         final utils = parameters.juStabUtils ?: new Utils()
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
-            .use()
+        Map config
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
+        script.commonPipelineEnvironment.writeToDisk(script)
 
-        def existingStashes = utils.unstashAll(configuration.stashContent)
+        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
-        if (!fileExists(configuration.dockerFile)) {
-            error "[${STEP_NAME}] Dockerfile '${configuration.dockerFile}' is not found."
-        }
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+        ]) {
+            // get context configuration
+            config = readContextConfig()
 
-        if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
-            if(existingStashes) {
-                def stashName = 'hadolintConfiguration'
-                stash name: stashName, includes: configuration.configurationFile
-                existingStashes += stashName
-            }
-        }
+            // telemetry reporting
+            utils.pushToSWA([
+                step: STEP_NAME,
+                stepParamKey1: 'scriptMissing',
+                stepParam1: parameters?.script == null
+            ], config)
 
-        def options = [
-            "--config ${configuration.configurationFile}",
-            "--format checkstyle > ${configuration.reportFile}"
-        ]
+            utils.unstashAll(config.stashContent)
 
-        dockerExecute(
-            script: script,
-            dockerImage: configuration.dockerImage,
-            dockerOptions: configuration.dockerOptions,
-            stashContent: existingStashes
-        ) {
-            // HaDoLint status code is ignore, results will be handled by recordIssues / archiveArtifacts
-            def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
+            dockerExecute(
+                script: script,
+                dockerImage: config.dockerImage,
+                dockerOptions: config.dockerOptions
+            ) {
+                sh "./piper hadolintExecute"
 
-            archiveArtifacts configuration.reportFile
-            recordIssues(
-                tools: [checkStyle(
-                    name: configuration.reportName,
-                    pattern: configuration.reportFile,
-                    id: configuration.reportName
-                )],
-                qualityGates: configuration.qualityGates,
-                enabledForFailure: true,
-                blameDisabled: true
-            )
-
-            def resultFileSize = 0
-            if (fileExists(configuration.reportFile)) {
-                resultFileSize = readFile(configuration.reportFile).length()
-            }
-
-            if (result != 0 && resultFileSize == 0) {
-                error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."
+                jenkinsUtils.handleStepResults(STEP_NAME, true, false)
+                recordIssues(
+                    tools: [checkStyle(
+                        name: config.reportName,
+                        pattern: config.reportFile,
+                        id: config.reportName
+                    )],
+                    qualityGates: config.qualityGates,
+                    enabledForFailure: true,
+                    blameDisabled: true
+                )
             }
         }
     }
+}
+
+String readContextConfig(){
+    def configContent = sh returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'")
+    return readJSON text: configContent
 }
