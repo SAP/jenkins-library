@@ -125,15 +125,11 @@ func runMtaBuild(config mtaBuildOptions,
 
 	var call []string
 
-	mtarName := config.MtarName
-	if len(mtarName) == 0 {
-		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
-		mtaID, err := getMtaID(mtaYamlFile)
-		if err != nil {
-			return err
-		}
-		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
-		mtarName = mtaID + ".mtar"
+	mtarName, err := getMtarName(config, mtaYamlFile, p)
+
+	if err != nil {
+
+		return err
 	}
 
 	switch config.MtaBuildTool {
@@ -185,6 +181,32 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 	return nil
+}
+
+func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUtils) (string, error) {
+
+	mtarName := config.MtarName
+	if len(mtarName) == 0 {
+
+		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
+
+		mtaID, err := getMtaID(mtaYamlFile)
+
+		if err != nil {
+			return "", err
+		}
+
+		if len(mtaID) == 0 {
+			return "", fmt.Errorf("Invalid mtar name. Was empty")
+		}
+
+		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
+
+		mtarName = mtaID + ".mtar"
+	}
+
+	return mtarName, nil
+
 }
 
 func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {

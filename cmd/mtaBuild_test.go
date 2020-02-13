@@ -142,14 +142,13 @@ func TestMatBuild(t *testing.T) {
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.Nil(t, err)
-	
+
 		assert.Equal(t, "java", e.calls[0].exec)
 		assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
-			
 	})
 
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
@@ -166,10 +165,11 @@ func TestMatBuild(t *testing.T) {
 	
 		assert.Nil(t, err)
 	
-		assert.Equal(t, "java", e.calls[0].exec)
-		assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)			
+		if assert.Len(t, e.calls, 1) {
+			assert.Equal(t, "java", e.calls[0].exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+		}
 	})
-
 
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
 
@@ -184,10 +184,11 @@ func TestMatBuild(t *testing.T) {
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 	
 		assert.Nil(t, err)
-	
-		assert.Equal(t, "mbt", e.calls[0].exec)
-		assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
-			
+
+		if assert.Len(t, e.calls, 1) {
+			assert.Equal(t, "mbt", e.calls[0].exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
+		}
 	})
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
