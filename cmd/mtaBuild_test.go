@@ -44,8 +44,10 @@ func TestMatBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		assert.Equal(t, "npm", e.calls[0].exec)
-		assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)
+		if assert.Len(t, e.calls, 2) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.calls[0].exec)
+			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)
+		}
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
@@ -145,8 +147,11 @@ func TestMatBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		assert.Equal(t, "java", e.calls[0].exec)
-		assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+		if assert.Len(t, e.calls, 1) {
+			assert.Equal(t, "java", e.calls[0].exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+		}
+
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
