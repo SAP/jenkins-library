@@ -41,6 +41,7 @@ class MailSendNotificationTest extends BasePiperTest {
 user1@domain.com noreply+github@domain.com
 user3@domain.com noreply+github@domain.com
 user2@domain.com user1@domain.com
+user1@users.noreply.github.com
 user1@domain.com noreply+github@domain.com
 user3@domain.com noreply+github@domain.com
 user3@domain.com noreply+github@domain.com
