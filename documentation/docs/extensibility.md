@@ -11,6 +11,7 @@ However, you can still benefit from their qualities, if you address your require
 Extensions are custom bits of pipeline coding, which you can use to implement special requirements.
 
 This page explains extensibility options in project "Piper".
+For a high level overview of available options and how to interface with them, see this figure:
 
 ![Library Setup](images/levels-of-extensibility.png "Extensibility Options")
 
@@ -194,7 +195,7 @@ Please be aware that stages may have dependencies on each other.
 !!! warning "Don't depend on stage implementation details"
     Your pipeline should treat _stages_ as a black box, the stage implementations are not a published API and may be subject to change at any time.
 
-!!! warning "Beware of breaking changes"
+!!! tip "Avoid accidental breaking changes"
     By default, Jenkins uses the `master` branch of shared libraries.
     This way, you're always automatically using the latest and greatest version.
     The downside is that in rare cases, breaking changes might happen.
