@@ -2,9 +2,9 @@ package cmd
 
 import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"os"
 	"testing"
@@ -24,10 +24,10 @@ func TestMatBuild(t *testing.T) {
 		fileUtils := MtaTestFileUtilsMock{}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
-	
+
 	})
 
 	t.Run("Provide default npm registry", func(t *testing.T) {
@@ -35,17 +35,17 @@ func TestMatBuild(t *testing.T) {
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.Nil(t, err)
-	
+
 		assert.Equal(t, "npm", e.calls[0].exec)
-		assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)	
+		assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
@@ -53,15 +53,15 @@ func TestMatBuild(t *testing.T) {
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp"}
-	
+
 		fileUtils := MtaTestFileUtilsMock{}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.NotNil(t, err)
 
 		assert.Equal(t, "package.json file does not exist", err.Error())
-			
+
 	})
 
 	t.Run("Write yaml file", func(t *testing.T) {
@@ -69,13 +69,13 @@ func TestMatBuild(t *testing.T) {
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.Nil(t, err)
 
 		type MtaResult struct {
@@ -88,32 +88,31 @@ func TestMatBuild(t *testing.T) {
 				Parameters map[string]interface{}
 			}
 		}
-	
+
 		assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
-	
+
 		var result MtaResult
 		yaml.Unmarshal([]byte(fileUtils.writtenFiles["mta.yaml"]), &result)
-	
+
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)
-		assert.NotContains(t, "${timestamp}", result.Modules[0].Parameters["version"])		
+		assert.NotContains(t, "${timestamp}", result.Modules[0].Parameters["version"])
 	})
-
 
 	t.Run("Dont write mta yaml file when already present no timestamp placeholder", func(t *testing.T) {
 
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		existingFiles["mta.yaml"] = "already there"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
-		assert.Empty(t, fileUtils.writtenFiles)			
+
+		assert.Empty(t, fileUtils.writtenFiles)
 	})
 
 	t.Run("Write mta yaml file when already present with timestamp placeholder", func(t *testing.T) {
@@ -121,24 +120,23 @@ func TestMatBuild(t *testing.T) {
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		existingFiles["mta.yaml"] = "already there with-${timestamp}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
 	})
-
 
 	t.Run("Test mta build classic toolset", func(t *testing.T) {
 
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
@@ -152,19 +150,19 @@ func TestMatBuild(t *testing.T) {
 	})
 
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
-		
+
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar"}
-		
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.Nil(t, err)
-	
+
 		if assert.Len(t, e.calls, 1) {
 			assert.Equal(t, "java", e.calls[0].exec)
 			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
@@ -176,13 +174,13 @@ func TestMatBuild(t *testing.T) {
 		e := execMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF"}
-	
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-	
+
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-	
+
 		assert.Nil(t, err)
 
 		if assert.Len(t, e.calls, 1) {
@@ -195,42 +193,42 @@ func TestMatBuild(t *testing.T) {
 
 		var settingsFile string
 		var settingsFileType maven.SettingsFileType
-	
+
 		defer func() {
 			getSettingsFile = maven.GetSettingsFile
 		}()
-	
+
 		getSettingsFile = func(
 			sfType maven.SettingsFileType,
 			src string,
 			fileUtilsMock piperutils.FileUtils,
 			httpClientMock piperhttp.Sender) error {
-				settingsFile = src
-				settingsFileType = sfType	
-				return nil
+			settingsFile = src
+			settingsFileType = sfType
+			return nil
 		}
 
 		fileUtils := MtaTestFileUtilsMock{}
 		fileUtils.existingFiles = make(map[string]string)
 		fileUtils.existingFiles["mta.yaml"] = "already there"
-	
+
 		t.Run("Copy global settings file", func(t *testing.T) {
-	
+
 			defer func() {
 				settingsFile = ""
 				settingsFileType = -1
 			}()
-			
+
 			e := execMockRunner{}
-	
+
 			options := mtaBuildOptions{GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
-	
+
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-		
+
 			assert.Nil(t, err)
-		
+
 			assert.Equal(t, settingsFile, "/opt/maven/settings.xml")
-			assert.Equal(t, settingsFileType, maven.GlobalSettingsFile)		
+			assert.Equal(t, settingsFileType, maven.GlobalSettingsFile)
 		})
 
 		t.Run("Copy project settings file", func(t *testing.T) {
@@ -241,13 +239,13 @@ func TestMatBuild(t *testing.T) {
 			}()
 
 			e := execMockRunner{}
-	
+
 			options := mtaBuildOptions{ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
 
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
-		
+
 			assert.Nil(t, err)
-	
+
 			assert.Equal(t, "/my/project/settings.xml", settingsFile)
 			assert.Equal(t, maven.ProjectSettingsFile, settingsFileType)
 		})

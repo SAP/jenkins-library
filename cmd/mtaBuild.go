@@ -123,25 +123,22 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	var call []string
-
 	mtarName, err := getMtarName(config, mtaYamlFile, p)
 
 	if err != nil {
-
 		return err
 	}
 
+	var call []string
+
 	switch config.MtaBuildTool {
+
 	case "classic":
 
-		mtaJar := "mta.jar"
-
-		if len(config.MtaJarLocation) > 0 {
-			mtaJar = config.MtaJarLocation
-		}
+		mtaJar := getMarJarName(config)
 
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
+
 		if err != nil {
 			return err
 		}
@@ -150,6 +147,7 @@ func runMtaBuild(config mtaBuildOptions,
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extension=%s", config.Extensions))
 		}
+
 	case "cloudMbt":
 
 		platform, err := ValueOfBuildTarget(config.Platform)
@@ -162,24 +160,44 @@ func runMtaBuild(config mtaBuildOptions,
 			call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
 		}
 		call = append(call, "--target", "./")
+
 	default:
+
 		return fmt.Errorf("Unknown mta build tool: \"${%s}\"", config.MtaBuildTool)
 	}
 
-	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
-
-	path := "./node_modules/.bin"
-	oldPath := os.Getenv("PATH")
-	if len(oldPath) > 0 {
-		path = path + ":" + oldPath
+	if err = addNpmBinToPath(e); err != nil {
+		return err
 	}
-	e.Env(append(os.Environ(), "PATH="+path))
+
+	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	if err := e.RunExecutable(call[0], call[1:]...); err != nil {
 		return err
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+	return nil
+}
+
+func getMarJarName(config mtaBuildOptions) string {
+
+	mtaJar := "mta.jar"
+
+	if len(config.MtaJarLocation) > 0 {
+		mtaJar = config.MtaJarLocation
+	}
+
+	return mtaJar
+}
+
+func addNpmBinToPath(e envExecRunner) error {
+	path := "./node_modules/.bin"
+	oldPath := os.Getenv("PATH")
+	if len(oldPath) > 0 {
+		path = path + ":" + oldPath
+	}
+	e.Env(append(os.Environ(), "PATH="+path))
 	return nil
 }
 
