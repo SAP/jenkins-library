@@ -72,7 +72,7 @@ For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/)
 ```groovy
 def call(Map parameters) {
 
-    parameters.originalStage() // Runs the built in linters
+    parameters.originalStage() // Runs the built-in linters
 
     mavenExecute(
         script: parameters.script,
@@ -107,7 +107,7 @@ Project "Piper" provides some basic building blocks such as `dockerExecute` and 
 
 ## 2. Modified Ready-Made Pipeline
 
-This option describes how you can copy and paste one of the centrally maintained pipelines to make changes not possible otherwise.
+This option describes how you can copy and paste one of the centrally maintained pipelines to make changes to it that are not possible otherwise.
 For example, you can't change the order of stages and the stages that run in parallel or add new stages to a centrally maintained pipeline.
 This might be done for an individual project (in the `Jenkinsfile`), or in a separate Git repository so it can be used for multiple projects.
 
