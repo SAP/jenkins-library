@@ -4,7 +4,7 @@ When using one of the ready-made pipelines of project "Piper", you don't have to
 The pipelines are centrally maintained and can be used with only a small amount of declarative configuration as documented [here](configuration.md).
 
 For the vast majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) with little effort in a best-practice compliant way.
-If you miss a feature or discover a bug in one of our pipelines, please see if there is already an [issue in our GitHub repository](https://github.com/SAP/jenkins-library/issues) and if not, open a new one.
+If you miss a feature or discover a bug in one of our pipelines, please see if there is already an [open issue in our GitHub repository](https://github.com/SAP/jenkins-library/issues) and if not, open a new one.
 
 In some cases, it's not desirable to include specialized features in the ready-made pipelines.
 However, you can still benefit from their qualities, if you address your requirements through an **extension**.
@@ -58,7 +58,7 @@ return this
     This is due to how Groovy loads scripts internally.
 
 !!! note "Init stage cannot be extended"
-    Please note that the `Init` stage also checks your current repository including your extensions.<br />
+    Please note that the `Init` stage also checks out your current repository including your extensions.<br />
     Therefore, it is not possible to use extensions on this stage.
 
 ### Practical example
