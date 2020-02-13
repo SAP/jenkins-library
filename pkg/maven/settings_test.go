@@ -12,7 +12,7 @@ import (
 
 func TestSettings(t *testing.T) {
 
-	httpClient := httpMock{}
+	httpClient := httpMock{StatusCode: 200}
 
 	defer func() {
 		getenv = os.Getenv
@@ -68,6 +68,18 @@ func TestSettings(t *testing.T) {
 		assert.True(t, ok)
 	})
 
+	t.Run("Retrieve settings file via http with http code not found", func(t *testing.T) {
+
+		fileUtils := fileUtilsMock{}
+
+		err := GetSettingsFile(GlobalSettingsFile, "https://example.org/maven/global-settings.xml", &fileUtils, &httpClient)
+
+		assert.Nil(t, err)
+		_, ok := fileUtils.writtenFiles["/usr/share/maven/conf/settings.xml"]
+		assert.True(t, ok)
+	})
+
+
 	t.Run("Retrieve project settings file via http", func(t *testing.T) {
 
 		fileUtils := fileUtilsMock{}
@@ -81,15 +93,32 @@ func TestSettings(t *testing.T) {
 
 	t.Run("Retrieve project settings file via http invalid protocol", func(t *testing.T) {
 
-		fileUtils := fileUtilsMock{}
+		defer func() {
+			httpClient.StatusCode = 200
+		}()
 
-		err := GetSettingsFile(ProjectSettingsFile, "httpsss://example.org/maven/project-settings.xml", &fileUtils, &httpClient)
+		fileUtils := fileUtilsMock{}
+		httpClient.StatusCode = 404
+
+		err := GetSettingsFile(ProjectSettingsFile, "https://example.org/maven/project-settings.xml", &fileUtils, &httpClient)
 
 		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "Got 404 reponse from download attempt")
+	})
+
+	t.Run("Retrieve project settings file - file not found", func(t *testing.T) {
+
+		fileUtils := fileUtilsMock{}
+
+		err := GetSettingsFile(ProjectSettingsFile, "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
+
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "File \"/opt/sap/maven/project-settings.xml\" not found")
 	})
 }
 
 type httpMock struct {
+	StatusCode int
 }
 
 type httpMockResponse struct {
@@ -106,7 +135,7 @@ func (h *httpMockResponse) Read(p []byte) (n int, err error) {
 
 func (h *httpMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
-	res := http.Response{StatusCode: 200}
+	res := http.Response{StatusCode: h.StatusCode}
 	res.Body = &httpMockResponse{}
 	return &res, nil
 }

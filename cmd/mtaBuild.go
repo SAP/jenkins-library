@@ -85,7 +85,6 @@ func mtaBuild(config mtaBuildOptions,
 			WithError(err).
 			Fatal("failed to execute mta build")
 	}
-
 }
 
 func runMtaBuild(config mtaBuildOptions,
