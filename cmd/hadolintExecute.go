@@ -51,6 +51,11 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 			WithField("command", runCommand).
 			Fatal(errorBuffer.String())
 	}
+	// persist report information
+	piperutils.PersistReportsAndLinks(
+		"hadolintExecute", "./",
+		[]piperutils.Path{piperutils.Path{Target: config.ReportFile}},
+		[]piperutils.Path{})
 }
 
 func loadConfigurationFile(url, file string) {
