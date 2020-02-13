@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"bytes"
-	"strings"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"strings"
 )
 
 func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, telemetryData *telemetry.CustomData) error {
