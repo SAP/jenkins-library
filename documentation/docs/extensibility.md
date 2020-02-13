@@ -9,6 +9,11 @@ If you miss a feature or discover a bug in one of our pipelines, please see if t
 In some cases, it's not desirable to include specialized features in the ready-made pipelines.
 However, you can still benefit from their qualities, if you address your requirements through an **extension**.
 Extensions are custom bits of pipeline coding, which you can use to implement special requirements.
+
+This page explains extensibility options in project "Piper".
+
+![Library Setup](images/levels-of-extensibility.png "Extensibility Options")
+
 Before building extensions, please make sure that there is no alternative that works better for you.
 
 Options for extensibility, in the order in which we recommend considering them:
