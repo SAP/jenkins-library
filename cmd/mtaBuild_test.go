@@ -147,6 +147,7 @@ func TestMatBuild(t *testing.T) {
 
 		assert.Equal(t, "java", e.calls[0].exec)
 		assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF"}, e.calls[0].params)
+		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
@@ -187,6 +188,7 @@ func TestMatBuild(t *testing.T) {
 			assert.Equal(t, "mbt", e.calls[0].exec)
 			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
 		}
+		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
