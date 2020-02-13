@@ -139,6 +139,8 @@ func TestMatBuild(t *testing.T) {
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
 
+		cpe.mtarFilePath = ""
+
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
@@ -178,6 +180,8 @@ func TestMatBuild(t *testing.T) {
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
 
 		e := execMockRunner{}
+
+		cpe.mtarFilePath = ""
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF"}
 
