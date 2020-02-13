@@ -35,6 +35,9 @@ modules:
       builder: grunt
       build-result: dist`
 
+// for mocking
+var getSettingsFile = maven.GetSettingsFile
+
 // MTABuildTarget ...
 type MTABuildTarget int
 
@@ -248,7 +251,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	if len(config.ProjectSettingsFile) > 0 {
 
-		if err := maven.GetSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
+		if err := getSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
 			return err
 		}
 
@@ -259,7 +262,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	if len(config.GlobalSettingsFile) > 0 {
 
-		if err := maven.GetSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
+		if err := getSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
 			return err
 		}
 	} else {

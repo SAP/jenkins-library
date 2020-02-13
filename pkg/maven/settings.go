@@ -70,6 +70,16 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 
 			// for sake os symetry it would be better to use a file protocol prefix here (file:)
 
+			exists, err := fileUtils.FileExists(src)
+
+			if err != nil {
+				return err
+			}
+
+			if !exists {
+				return fmt.Errorf("File \"%s\" not found", src)
+			}
+
 			fmt.Printf("Copying file '%s' to '%s'", src, dest)
 			if _, err := fileUtils.Copy(src, dest); err != nil {
 				return err

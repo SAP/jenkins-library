@@ -3,6 +3,8 @@ package cmd
 import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"gopkg.in/yaml.v2"
 	"os"
 	"testing"
@@ -197,7 +199,22 @@ func TestMtaBuildMbtToolset(t *testing.T) {
 
 func TestCopyGlobalSettingsFile(t *testing.T) {
 
-	// Revisit: make independent of existing M2_HOME
+	var settingsFile string
+	var settingsFileType maven.SettingsFileType
+
+	defer func() {
+		getSettingsFile = maven.GetSettingsFile
+	}()
+
+	getSettingsFile = func(
+		sfType maven.SettingsFileType,
+		src string,
+		fileUtilsMock piperutils.FileUtils,
+		httpClientMock piperhttp.Sender) error {
+			settingsFile = src
+			settingsFileType = sfType	
+			return nil
+		}
 
 	options := mtaBuildOptions{GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
 	cpe := mtaBuildCommonPipelineEnvironment{}
@@ -213,12 +230,28 @@ func TestCopyGlobalSettingsFile(t *testing.T) {
 		t.Fatalf("ERR: %s" + err.Error())
 	}
 
-	assert.NotEmpty(t, fileUtils.copiedFiles["/opt/maven/settings.xml"])
+	assert.Equal(t, settingsFile, "/opt/maven/settings.xml")
+	assert.Equal(t, settingsFileType, maven.GlobalSettingsFile)
 }
 
 func TestCopyProjectSettingsFile(t *testing.T) {
 
-	// Revisit: make independent of existing M2_HOME
+	var settingsFile string
+	var settingsFileType maven.SettingsFileType
+
+	defer func() {
+		getSettingsFile = maven.GetSettingsFile
+	}()
+
+	getSettingsFile = func(
+		sfType maven.SettingsFileType,
+		src string,
+		fileUtilsMock piperutils.FileUtils,
+		httpClientMock piperhttp.Sender) error {
+			settingsFile = src
+			settingsFileType = sfType	
+			return nil
+	}
 
 	options := mtaBuildOptions{ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
 	cpe := mtaBuildCommonPipelineEnvironment{}
@@ -233,8 +266,8 @@ func TestCopyProjectSettingsFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ERR: %s" + err.Error())
 	}
-
-	assert.NotEmpty(t, fileUtils.copiedFiles["/my/project/settings.xml"])
+	assert.Equal(t, "/my/project/settings.xml", settingsFile)
+	assert.Equal(t, maven.ProjectSettingsFile, settingsFileType)
 }
 
 type MtaTestFileUtilsMock struct {
