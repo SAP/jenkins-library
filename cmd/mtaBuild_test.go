@@ -25,9 +25,7 @@ func TestMatBuild(t *testing.T) {
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 	
-		if err == nil {
-			t.Errorf("Error expected but not received.")
-		}
+		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
 	
 	})
@@ -44,9 +42,7 @@ func TestMatBuild(t *testing.T) {
 	
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 	
-		if err != nil {
-			t.Fatalf("Error received but not expected: '%s'", err.Error())
-		}
+		assert.Nil(t, err)
 	
 		assert.Equal(t, "npm", e.calls[0].exec)
 		assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)	
@@ -62,9 +58,8 @@ func TestMatBuild(t *testing.T) {
 	
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 	
-		if err == nil {
-			t.Errorf("Error expected but not received.")
-		}
+		assert.NotNil(t, err)
+
 		assert.Equal(t, "package.json file does not exist", err.Error())
 			
 	})
@@ -79,8 +74,10 @@ func TestMatBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 	
-		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 	
+		assert.Nil(t, err)
+
 		type MtaResult struct {
 			Version    string
 			ID         string `yaml:"ID,omitempty"`
