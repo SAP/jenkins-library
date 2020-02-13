@@ -22,30 +22,30 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 
 	c.Stdout(&outputBuffer)
 	c.Stderr(&errorBuffer)
-	//
-	if len(config.ConfigurationURL) > 0 {
+	// load config file from URL
+	if !hasConfigurationFile(config.ConfigurationFile) && len(config.ConfigurationURL) > 0 {
 		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile)
 	}
-
-	exists, err := piperutils.FileExists(config.ConfigurationFile)
-	if err != nil {
-		log.Entry().WithError(err).Error()
-	}
-	if exists {
+	// use config
+	if hasConfigurationFile(config.ConfigurationFile) {
 		options = append(options, fmt.Sprintf("--config %s", config.ConfigurationFile))
+		log.Entry().WithField("file", config.ConfigurationFile).Debug("Using configuration file")
+	} else {
+		log.Entry().Debug("No configuration file found.")
 	}
-
+	// execute scan command
 	runCommand := fmt.Sprintf("hadolint %s %s", config.DockerFile, strings.Join(options, " "))
 	runCommandTokens := tokenize(runCommand)
-	//command.Dir(config.ModulePath)
-	err = c.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
-
-	//TODO: mind https://github.com/hadolint/hadolint/pull/392
+	err := c.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
+	//TODO: incorporate https://github.com/hadolint/hadolint/pull/392 if merged
 	output := outputBuffer.String()
+	// hadolint exists with 1 if there are processing issues but also if there are findings
+	// thus check stdout first if a report was created
 	if len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
 		ioutil.WriteFile(config.ReportFile, []byte(output), 0755)
 	} else if err != nil {
+		// if stdout is empty a processing issue occured
 		log.Entry().
 			WithError(err).
 			WithField("command", runCommand).
@@ -58,18 +58,22 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 		[]piperutils.Path{})
 }
 
+// loadConfigurationFile loads a file from the provided url
 func loadConfigurationFile(url, file string) {
+	log.Entry().WithField("url", url).Debug("Loading configuration file from URL")
+	if _, err := piperutils.Download(url, file); err != nil {
+		log.Entry().
+			WithError(err).
+			WithField("file", url).
+			Error("Failed to load configuration file from URL.")
+	}
+}
+
+// hasConfigurationFile checks if the given file exists
+func hasConfigurationFile(file string) bool {
 	exists, err := piperutils.FileExists(file)
 	if err != nil {
 		log.Entry().WithError(err).Error()
 	}
-	if !exists {
-		log.Entry().WithField("file", url).Debug("Loading configuration from URL")
-		if _, err := piperutils.Download(url, file); err != nil {
-			log.Entry().
-				WithError(err).
-				WithField("file", url).
-				Error("Failed to download configuration file from URL.")
-		}
-	}
+	return exists
 }
