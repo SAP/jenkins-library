@@ -100,14 +100,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	handleSettingsFiles(config, p, httpClient)
 
-	if len(config.DefaultNpmRegistry) > 0 {
-		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
-		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
-	}
+	handleDefaultNpmRegistry(config, e)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -240,6 +233,22 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+	return nil
+}
+
+
+func handleDefaultNpmRegistry(config mtaBuildOptions, e envExecRunner) error {
+
+	if len(config.DefaultNpmRegistry) > 0 {
+
+		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
+		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
+			return err
+		}
+	} else {
+		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
+	}
+
 	return nil
 }
 
