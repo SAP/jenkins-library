@@ -75,8 +75,10 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         
         assert expectedImage == seleniumParams.dockerImage
         assert expectedOptions == seleniumParams.dockerOptions
-        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
         assert expectedWorkspace == seleniumParams.dockerWorkspace
+        expectedEnvVars.each { key, value ->
+            assert seleniumParams.dockerEnvVars[key] == value
+        }
     }
 
     @Test
