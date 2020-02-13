@@ -137,8 +137,8 @@ The actual pipeline code (the `call` method in the listing above) can be found h
 
 !!! note "Use the correct shared library definition"
     Which shared library you need depends on the pipeline you're using.<br />
-    For the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy), you need `'piper-lib-os@vINSERT_VERSION_HERE'`.<br />
-    For the [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy), you need `'s4sdk-pipeline-library@vINSERT_VERSION_HERE'`.
+    For the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy), you need `'piper-lib-os'`.<br />
+    For the [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy), you need `'s4sdk-pipeline-library'`.
 
 For the version identifier, please see the section _How to stay up-to-date_ in this document.
 
@@ -173,7 +173,7 @@ Note that the name (1) must be the same as the one you use in your `Jenkinsfile`
 The `Jenkinsfile` of your individual projects would look similar to the following:
 
 ```groovy
-@Library(['piper-lib-os@vINSERT_VERSION_HERE','my-own-pipeline@vINSERT_VERSION_HERE']) _
+@Library(['piper-lib-os','my-own-pipeline']) _
 
 myCustomPipeline script: this
 ```
@@ -190,10 +190,13 @@ Please be aware that stages may have dependencies on each other.
     Your pipeline should treat _stages_ as a black box, the stage implementations are not a published API and may be subject to change at any time.
 
 !!! warning "Beware of breaking changes"
-    Please be aware that when using the `master` branch of a library, it might always happen that breaking changes occur.
-    We recommend to always fix versions to a released version like in this example: `@Library('my-shared-library@v1.0') _`<br />
+    By default, Jenkins uses the `master` branch of shared libraries.
+    This way, you're always automatically using the latest and greatest version.
+    The downside is that in rare cases, breaking changes might happen.
+    Another potential issue is that your builds are not _repeatable_, that means building the same version of your application twice _might_ have a different result.
+    For those reasons, you might want to consider to fix versions to a released version like in this example: `@Library('my-shared-library@v1.0') _`<br />
     Find the most recent release for the [jenkins-library](https://github.com/SAP/jenkins-library/releases) and for the [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline/releases) on GitHub.
-    We do recommend to ["watch" releases for those repositories on GitHub](https://help.github.com/en/github/receiving-notifications-about-activity-on-github/watching-and-unwatching-releases-for-a-repository).
+    To stay up to date with the latest releases, you can ["watch" releases for those repositories on GitHub](https://help.github.com/en/github/receiving-notifications-about-activity-on-github/watching-and-unwatching-releases-for-a-repository).
 
 !!! note "When to go with a modified ready-made pipeline"
     This option is right for you if none of the provided ready-made pipelines serves your purpose, and individual stage extensions don't provide enough flexibility.
