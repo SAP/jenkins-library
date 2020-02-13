@@ -119,25 +119,8 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
 	}
 
-	mtaYaml, err := p.FileRead(mtaYamlFile)
-	if err != nil {
+	if err = setTimeStamp(mtaYamlFile, p); err != nil {
 		return err
-	}
-
-	t := time.Now()
-	timestamp := fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-	mtaYamlStr := string(mtaYaml)
-
-	mtaYamlTimestampReplaced := strings.ReplaceAll(mtaYamlStr, "${timestamp}", timestamp)
-
-	if strings.Compare(mtaYamlStr, mtaYamlTimestampReplaced) != 0 {
-
-		if err := p.FileWrite(mtaYamlFile, []byte(mtaYamlTimestampReplaced), 0644); err != nil {
-			return err
-		}
-		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
-	} else {
-		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
 	}
 
 	var call []string
@@ -202,6 +185,34 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 	return nil
+}
+
+func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
+
+	mtaYaml, err := p.FileRead(mtaYamlFile)
+	if err != nil {
+		return err
+	}
+
+	mtaYamlStr := string(mtaYaml)
+
+	timestampVar := "${timestamp}"
+	if strings.Contains(mtaYamlStr, timestampVar) {
+
+		if err := p.FileWrite(mtaYamlFile, []byte(strings.ReplaceAll(mtaYamlStr, timestampVar, getTimestamp())), 0644); err != nil {
+			return err
+		}
+		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
+	} else {
+		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
+	}
+
+	return nil
+}
+
+func getTimestamp() string {
+	t := time.Now()
+	return fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUtils) error {
