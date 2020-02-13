@@ -79,7 +79,6 @@ func TestSettings(t *testing.T) {
 		assert.True(t, ok)
 	})
 
-
 	t.Run("Retrieve project settings file via http", func(t *testing.T) {
 
 		fileUtils := fileUtilsMock{}

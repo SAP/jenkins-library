@@ -243,7 +243,6 @@ func runMtaBuild(config mtaBuildOptions,
 	return nil
 }
 
-
 func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Sender) error {
