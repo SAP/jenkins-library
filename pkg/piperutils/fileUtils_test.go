@@ -52,5 +52,5 @@ func TestDownload(t *testing.T) {
 
 	content, _ := ioutil.ReadFile(targetFile)
 	assert.NoError(t, err, "Didn't expert error but got one")
-	assert.Contains(t, string(content), "Project Piper Repository", "gfail")
+	assert.Contains(t, string(content), "Project Piper Repository")
 }
