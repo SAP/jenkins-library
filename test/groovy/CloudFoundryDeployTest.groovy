@@ -397,10 +397,12 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
-
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
+        helper.registerAllowedMethod("sh", [String], { cmd ->
+            if (cmd.toString().contains('cf stop testAppName-old'))
+                throw new Exception('fail')
+        })
 
         readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
@@ -480,11 +482,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
             generatedFile = parameters.file
             data = parameters.data
         })
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,/(cf login -u "test_cf")/,1)
+        helper.registerAllowedMethod("sh", [String], { cmd ->
+            if (cmd.toString().contains('cf login -u "test_cf"'))
+                throw new Exception('fail')
+        })
 
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: The execution of the deploy command failed, see the log for details.')
-
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
