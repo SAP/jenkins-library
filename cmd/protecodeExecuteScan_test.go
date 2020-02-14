@@ -243,7 +243,7 @@ func TestWriteReportDataToJSONFile(t *testing.T) {
 
 	config := protecodeExecuteScanOptions{ServerURL: "DUMMYURL", ReportFileName: "REPORTFILENAME"}
 
-	writeReportDataToJSONFile(&config, parsedResult, 4711, []protecode.Vuln{{"Vulnerability", 2.5, "5.5"}}, writeToFileMock)
+	writeReportDataToJSONFile(&config, parsedResult, 4711, []protecode.Vuln{{Cve: "Vulnerability", Cvss: 2.5, Cvss3Score: "5.5"}}, writeToFileMock)
 	assert.Equal(t, fileContent, expected, "content should be not empty")
 }
 
