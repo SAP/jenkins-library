@@ -5,6 +5,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
+import groovy.json.JsonOutput
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
@@ -102,6 +103,14 @@ void call(Map parameters = [:], Closure body) {
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], config)
+
+        // Inject config via env vars so that scripts running inside selenium can respond to that
+        config.dockerEnvVars = config.dockerEnvVars ?: [:]
+        config.dockerEnvVars.PIPER_CONTAINER_PORT_MAPPING = new JsonOutput().toJson(config.containerPortMappings)
+        config.dockerEnvVars.PIPER_DOCKER_NAME = new JsonOutput().toJson(config.dockerName)
+        config.dockerEnvVars.PIPER_DOCKER_IMAGE = new JsonOutput().toJson(config.dockerImage)
+        config.dockerEnvVars.PIPER_SIDECAR_NAME = new JsonOutput().toJson(config.sidecarName)
+        config.dockerEnvVars.PIPER_SIDECAR_IMAGE = new JsonOutput().toJson(config.sidecarImage)
 
         dockerExecute(
                 script: script,
