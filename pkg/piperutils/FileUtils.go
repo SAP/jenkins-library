@@ -50,6 +50,7 @@ func Copy(src, dst string) (int64, error) {
 	return nBytes, err
 }
 
+// Download ...
 func Download(url, filename string) (int64, error) {
 	response, err := http.Get(url)
 	if err != nil {
