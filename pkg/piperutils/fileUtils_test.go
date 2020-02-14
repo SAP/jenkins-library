@@ -11,9 +11,9 @@ import (
 func TestFileExists(t *testing.T) {
 	dir, err := ioutil.TempDir("", "dir")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(dir)
 
 	result, err := FileExists(dir)
@@ -32,12 +32,25 @@ func TestCopy(t *testing.T) {
 	file := filepath.Join(dir, "testFile")
 	err = ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(dir)
 
 	result, err := Copy(file, filepath.Join(dir, "testFile2"))
 	assert.NoError(t, err, "Didn't expert error but got one")
 	assert.Equal(t, int64(3), result, "Expected true but got false")
+}
+
+func TestDownload(t *testing.T) {
+	dir, err := ioutil.TempDir("", "dir3")
+	targetFile := filepath.Join(dir, "testfile")
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+
+	_, err = Download("https://raw.githubusercontent.com/SAP/jenkins-library/master/README.md", targetFile)
+
+	content, _ := ioutil.ReadFile(targetFile)
+	assert.NoError(t, err, "Didn't expert error but got one")
+	assert.Contains(t, string(content), "Project Piper Repository", "gfail")
 }
