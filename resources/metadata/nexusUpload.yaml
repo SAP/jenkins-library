@@ -2,14 +2,23 @@ metadata:
   name: nexusUpload
   description: Upload to Nexus RM
   longDescription: |
-    Upload to Nexus RM
+    Upload artifacts to Nexus Repository Manager
 spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins username/password credential for accessing xs endpoint.
+        description: Jenkins username/password credential for accessing the nexus endpoint.
         type: jenkins
     params:
+      - name: nexusVersion
+        type: int
+        description: The nexus Repository Manager version.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default: 3
       - name: url
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
@@ -19,6 +28,22 @@ spec:
         - STEPS
         mandatory: true
         default:
+      - name: groupId
+        type: string
+        description: Group ID of the artifacts.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: version
+        type: string
+        description: Version of the artifacts.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
       - name: repository
         type: string
         description: Name of the nexus repository.
@@ -28,3 +53,27 @@ spec:
         - STEPS
         mandatory: true
         default:
+      - name: artifacts
+        type: string
+        description: JSON encoded list of artifact descriptions.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: user
+        type: string
+        description: User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true

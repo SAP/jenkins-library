@@ -12,8 +12,14 @@ import (
 )
 
 type nexusUploadOptions struct {
-	Url        string `json:"url,omitempty"`
-	Repository string `json:"repository,omitempty"`
+	NexusVersion int    `json:"nexusVersion,omitempty"`
+	Url          string `json:"url,omitempty"`
+	GroupID      string `json:"groupId,omitempty"`
+	Version      string `json:"version,omitempty"`
+	Repository   string `json:"repository,omitempty"`
+	Artifacts    string `json:"artifacts,omitempty"`
+	User         string `json:"user,omitempty"`
+	Password     string `json:"password,omitempty"`
 }
 
 // NexusUploadCommand Upload to Nexus RM
@@ -25,7 +31,7 @@ func NexusUploadCommand() *cobra.Command {
 	var createNexusUploadCmd = &cobra.Command{
 		Use:   "nexusUpload",
 		Short: "Upload to Nexus RM",
-		Long:  `Upload to Nexus RM`,
+		Long:  `Upload artifacts to Nexus Repository Manager`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("nexusUpload")
@@ -52,11 +58,22 @@ func NexusUploadCommand() *cobra.Command {
 }
 
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
+	cmd.Flags().IntVar(&stepConfig.NexusVersion, "nexusVersion", 3, "The nexus Repository Manager version.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
+	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the artifacts.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the nexus repository.")
+	cmd.Flags().StringVar(&stepConfig.Artifacts, "artifacts", os.Getenv("PIPER_artifacts"), "JSON encoded list of artifact descriptions.")
+	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
 
 	cmd.MarkFlagRequired("url")
+	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("version")
 	cmd.MarkFlagRequired("repository")
+	cmd.MarkFlagRequired("artifacts")
+	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("password")
 }
 
 // retrieve step metadata
@@ -66,6 +83,14 @@ func nexusUploadMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
+						Name:        "nexusVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "url",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -74,7 +99,47 @@ func nexusUploadMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "groupId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "version",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "repository",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "artifacts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "user",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
