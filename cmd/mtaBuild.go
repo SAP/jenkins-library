@@ -143,7 +143,7 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 
-		call = append(call, "java", "-jar", mtaJar, "--mtar", mtarName, fmt.Sprintf("--build-target=%s", buildTarget))
+		call = append(call, "java", "-jar", mtaJar, "--mtar", mtarName, fmt.Sprintf("--build-target=%s", buildTarget), "build")
 		if len(config.Extensions) != 0 {
 			call = append(call, fmt.Sprintf("--extension=%s", config.Extensions))
 		}
