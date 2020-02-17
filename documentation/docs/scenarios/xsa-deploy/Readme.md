@@ -1,4 +1,4 @@
-# Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced
+# Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model
 
 Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result to SAP HANA extended application services, advanced model.
 
