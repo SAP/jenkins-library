@@ -158,6 +158,30 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
+	t.Run("Test mta build classic toolset, mtarName from already existing mta.yaml", func(t *testing.T) {
+
+		e := execMockRunner{}
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+
+		cpe.mtarFilePath = ""
+
+		existingFiles := make(map[string]string)
+		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+		existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
+		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+
+		assert.Nil(t, err)
+
+		if assert.Len(t, e.calls, 1) {
+			assert.Equal(t, "java", e.calls[0].exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.calls[0].params)
+		}
+	})
+
+
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
 
 		e := execMockRunner{}
