@@ -1,0 +1,73 @@
+metadata:
+  name: cloudFoundryDeleteService
+  description: DeleteCloudFoundryService
+  longDescription: |
+    Delete CloudFoundryService
+spec:
+  inputs:
+    secrets:
+      - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        type: jenkins
+    params:
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: User Password for CF User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: cfOrg
+        type: string
+        description: CF org
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/space
+      - name: cfServiceInstance
+        type: string
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/serviceInstance
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      dockerWorkspace: '/home/piper'
+      imagePullPolicy: Never

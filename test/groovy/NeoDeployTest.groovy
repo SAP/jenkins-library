@@ -618,7 +618,7 @@ class NeoDeployTest extends BasePiperTest {
     void dontSwallowExceptionWhenUnableToProvideLogsTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage('Something went wrong during neo deployment')
+        thrown.expectMessage('The execution of the deploy command failed, see the log for details.')
         thrown.expect(new BaseMatcher() {
 
             def expectedException = AbortException
@@ -644,22 +644,17 @@ class NeoDeployTest extends BasePiperTest {
                 f == 'archive.mtar'
             }
         )
-        helper.registerAllowedMethod('sh', [Map],
-            { m ->
-                if(m.script.toString().contains('neo.sh deploy-mta'))
-                    throw new AbortException('Something went wrong during neo deployment.')
-            }
-        )
 
         helper.registerAllowedMethod("sh", [String],
             { cmd ->
                 if (cmd == 'cat logs/neo/*')
                     throw new AbortException('Cannot provide logs.')
+                if (cmd.toString().contains('neo.sh deploy-mta'))
+                    throw new AbortException('Something went wrong during neo deployment.')
             }
         )
 
         stepRule.step.neoDeploy(script: nullScript,
-
             source: archiveName,
             neo:[credentialsId: 'myCredentialsId'],
             deployMode: 'mta',
