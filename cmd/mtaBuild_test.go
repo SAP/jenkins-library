@@ -181,7 +181,6 @@ func TestMarBuild(t *testing.T) {
 		}
 	})
 
-
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
 
 		e := execMockRunner{}
