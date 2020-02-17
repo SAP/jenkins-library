@@ -43,6 +43,10 @@ import groovy.text.GStringTemplateEngine
      * @possibleValues Jenkins credentials id
      */
     'gitSshKeyCredentialsId',
+    /**
+     * Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.
+     */
+    'seleniumHubCredentialsId',
     /** @see dockerExecute */
     'sidecarEnvVars',
     /** @see dockerExecute */
@@ -126,7 +130,13 @@ void call(Map parameters = [:], Closure body) {
                 config.stashContent = config.testRepository
                     ?[GitUtils.handleTestRepository(this, config)]
                     :utils.unstashAll(config.stashContent)
-                body()
+                if (config.seleniumHubCredentialsId) {
+                    withCredentials([usernamePassword(credentialsId: config.seleniumHubCredentialsId, passwordVariable: 'PIPER_SELENIUM_HUB_PASSWORD', usernameVariable: 'PIPER_SELENIUM_HUB_USER')]) {
+                        body()
+                    }
+                } else {
+                    body()
+                }
             } catch (err) {
                 if (config.failOnError) {
                     throw err
