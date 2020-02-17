@@ -220,10 +220,10 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID + ".mtar"
+		mtarName = mtaID
 	}
 
-	return mtarName, nil
+	return mtarName + ".mtar", nil
 
 }
 
