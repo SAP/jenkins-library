@@ -163,7 +163,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	default:
 
-		return fmt.Errorf("Unknown mta build tool: \"${%s}\"", config.MtaBuildTool)
+		return fmt.Errorf("Unknown mta build tool: \"%s\"", config.MtaBuildTool)
 	}
 
 	if err = addNpmBinToPath(e); err != nil {
