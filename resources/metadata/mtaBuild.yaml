@@ -107,5 +107,5 @@ spec:
               - name: mtarFilePath
   containers:
     - name: mta
-      image: ppiper/xs-cli
-      imagePullPolicy: Never
+      image: devxci/mbtci
+      imagePullPolicy: Always
