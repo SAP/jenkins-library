@@ -6,8 +6,8 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: credentialsId
-        description: Jenkins username/password credential for accessing the nexus endpoint.
+      - name: nexusCredentialsId
+        description: The technical username/password credential for accessing the nexus endpoint.
         type: jenkins
     params:
       - name: nexusVersion
