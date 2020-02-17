@@ -156,5 +156,34 @@ class PiperGoUtilsTest extends BasePiperTest {
         exception.expectMessage(containsString('Download of Piper go binary failed'))
         piperGoUtils.unstashPiperBin()
     }
+
+    @Test
+    void testHandleResources() {
+
+        Collection writtenFiles = []
+
+        def steps = [
+            libraryResource: {String s -> return s},
+            writeFile:  {Map m -> writtenFiles << m.file},
+        ]
+
+        String configStr = new PiperGoUtils(steps).prepareConfigurations(['a', 'b'] as List, '/root')
+
+        assert configStr == "\"/root/b\" \"/root/a\"" // this string we can handover to piper go config resolution
+        assert writtenFiles == ['.pipeline/additionalConfigs/a', '.pipeline/additionalConfigs/b']
+    }
+
+    @Test
+    void testRootSpecifiedWithTrailingSlash() {
+
+        exception.expect(IllegalArgumentException)
+        exception.expectMessage('Provide prefix (/root/) without trailing slash')
+
+        def steps = [
+            libraryResource: {String s -> },
+            writeFile:  {Map m -> },
+        ]
+        String configStr = new PiperGoUtils(steps).prepareConfigurations(['a', 'b'] as List, '/root/')
+    }
 }
 

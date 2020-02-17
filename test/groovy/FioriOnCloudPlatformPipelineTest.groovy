@@ -1,6 +1,7 @@
 import util.CommandLineMatcher
 import util.JenkinsLockRule
 import util.JenkinsWithEnvRule
+import util.JenkinsWriteFileRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -11,6 +12,7 @@ import static org.hamcrest.Matchers.subString
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -18,12 +20,15 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.PiperGoUtils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.JenkinsReadJsonRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
@@ -54,6 +59,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLockRule jlr = new JenkinsLockRule(this)
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -65,6 +72,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
+        .around(writeFileRule)
+        .around(readJsonRule)
 
     @Before
     void setup() {
@@ -94,18 +103,27 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                        |PATH : "."
                                        |''' as CharSequence).stripMargin())
 
-        //
-        // we need the path variable since we extend the path in the mtaBuild step. In order
-        // to be able to extend the path we have to have some initial value.
-        binding.setVariable('PATH', '/usr/bin')
-
         binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "\\./piper.*--contextConfig", '{"dummy": "only"}')
+
+        nullScript.commonPipelineEnvironment.metaClass.readFromDisk = {Script s -> System.err<<"\nINSIDE READ FROM DISK\n"; nullScript.commonPipelineEnvironment.mtarFilePath = 'test.mtar'}
+    }
+
+    @After
+    public void tearDown() {
+        nullScript.commonPipelineEnvironment.metaClass = null
     }
 
     @Test
     void straightForwardTest() {
+
+        PiperGoUtils piperGoUtilsMock = new PiperGoUtils(nullScript) {
+            void unstashPiperBin() {
+            }
+        }
 
         nullScript
             .commonPipelineEnvironment
@@ -121,16 +139,13 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
             platform: 'NEO',
+            piperGoUtils: piperGoUtilsMock,
         )
 
         //
         // the mta build call:
 
-        assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('mbt build'),
-                                        containsString('--mtar test.mtar'),
-                                        containsString('--platform NEO'),
-                                        containsString('--target ./'))))
+        assertThat(shellRule.shell, hasItem(containsString('./piper mtaBuild')))
 
         //
         // the deployable is exchanged between the involved steps via this property:

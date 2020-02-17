@@ -2,23 +2,18 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
+import com.sap.piper.PiperGoUtils
 import groovy.transform.Field
 
-import static com.sap.piper.Utils.downloadSettingsFromUrl
-
+@Field String METADATA_FILE = 'metadata/mtaBuild.yaml'
 @Field def STEP_NAME = getClass().getName()
+@Field String PIPER_DEFAULTS = 'default_pipeline_environment.yml'
+@Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
+@Field String ADDITIONAL_CONFIGS_FOLDER='.pipeline/additionalConfigs'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
-    /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
-    'applicationName',
-    /**
-     * mtaBuildTool classic only: The target platform to which the mtar can be deployed.
-     * @possibleValues 'CF', 'NEO', 'XSA'
-     */
-    'buildTarget',
     /**
      * Tool to use when building the MTA
      * @possibleValues 'classic', 'cloudMbt'
@@ -32,29 +27,8 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'dockerOptions',
     /** @see dockerExecute */
     'dockerWorkspace',
-    /** The path to the extension descriptor file.*/
-    'extension',
-    /**
-     * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
-     * If you run on Docker, this must match the location of the jar file in the container as well.
-     */
-    'mtaJarLocation',
-    /** Path or url to the mvn settings file that should be used as global settings file.*/
-    'globalSettingsFile',
-    /** The name of the generated mtar file including its extension. */
-    'mtarName',
-    /**
-     * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
-     * @possibleValues 'CF', 'NEO', 'XSA'
-     */
-    'platform',
-    /** Path or url to the mvn settings file that should be used as project settings file.*/
-    'projectSettingsFile'
 ]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** Url to the npm registry that should be used for installing npm dependencies.*/
-    'defaultNpmRegistry'
-])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
@@ -64,6 +38,10 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: this
+
+        def utils = parameters.juStabUtils ?: new Utils()
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
+        piperGoUtils.unstashPiperBin()
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
@@ -75,106 +53,53 @@ void call(Map parameters = [:]) {
             .dependingOn('mtaBuildTool').mixin('dockerImage')
             .use()
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], configuration)
+        String configFiles = piperGoUtils.prepareConfigurations([PIPER_DEFAULTS].plus(script.commonPipelineEnvironment.getCustomDefaults()), ADDITIONAL_CONFIGS_FOLDER)
+        writeFile(file: "${METADATA_FOLDER}/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
+        Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}' --defaultConfig ${configFiles} --contextConfig"))
 
-        dockerExecute(
-            script: script,
-            dockerImage: configuration.dockerImage,
-            dockerEnvVars: configuration.dockerEnvVars,
-            dockerOptions: configuration.dockerOptions,
-            dockerWorkspace: configuration.dockerWorkspace
-        ) {
+        parameters = [:] << parameters
+        parameters.remove('juStabUtils')
+        parameters.remove('piperGoUtils')
+        parameters.remove('script')
 
-            String projectSettingsFile = configuration.projectSettingsFile?.trim()
-            if (projectSettingsFile) {
-                if (projectSettingsFile.startsWith("http")) {
-                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
-                }
-                sh 'mkdir -p $HOME/.m2'
-                sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
+        if(parameters.verbose) {
+            echo "Context Config: ${contextConfig}"
+            echo "Project config: ${configuration}"
+            echo "Parameters: ${parameters}"
+        }
+
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+        ]) {
+
+            dockerExecute(
+                script: script,
+                dockerImage: configuration.dockerImage ?: contextConfig.dockerImage,
+                dockerEnvVars: configuration.dockerEnvVars ?: backwardCompatibleEnvVars(contextConfig.dockerEnvVars),
+                dockerOptions: configuration.dockerOptions ?: contextConfig.dockerOptions,
+                dockerWorkspace: configuration.dockerWorkspace ?: contextConfig.dockerWorkspace,
+            ) {
+
+                sh """#!/bin/bash
+                    ./piper mtaBuild --defaultConfig ${configFiles}"""
+
+                script.commonPipelineEnvironment.readFromDisk(script)
+
             }
-
-            String globalSettingsFile = configuration.globalSettingsFile?.trim()
-            if (globalSettingsFile) {
-                if (globalSettingsFile.startsWith("http")) {
-                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
-                }
-                sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
-            }
-
-            String defaultNpmRegistry = configuration.defaultNpmRegistry?.trim()
-            if (defaultNpmRegistry) {
-                sh "npm config set registry $defaultNpmRegistry"
-            }
-
-            def mtaYamlName = "mta.yaml"
-            def applicationName = configuration.applicationName
-
-            if (!fileExists(mtaYamlName)) {
-                if (!applicationName) {
-                    error "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file."
-                } else {
-                    echo "[INFO] '${mtaYamlName}' file not found in project sources, but application name provided as parameter - generating '${mtaYamlName}' file."
-                    MtaUtils mtaUtils = new MtaUtils(this)
-                    mtaUtils.generateMtaDescriptorFromPackageJson("package.json", mtaYamlName, applicationName)
-                }
-            } else {
-                echo "[INFO] '${mtaYamlName}' file found in project sources."
-            }
-
-            //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
-            sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
-
-            def mtaCall
-            def options = []
-
-            String mtarName = configuration.mtarName?.trim()
-            if (!mtarName) {
-                def mtaId = getMtaId(mtaYamlName)
-                mtarName = "${mtaId}.mtar"
-            }
-            options.push("--mtar ${mtarName}")
-
-            switch(configuration.mtaBuildTool) {
-                case 'classic':
-                    // If it is not configured, it is expected on the PATH
-                    def mtaJar = configuration.mtaJarLocation ?: 'mta.jar'
-                    options.push("--build-target=${configuration.buildTarget}")
-                    if (configuration.extension) options.push("--extension=${configuration.extension}")
-                    mtaCall = "java -jar ${mtaJar} ${options.join(' ')} build"
-                    break
-                case 'cloudMbt':
-                    options.push("--platform ${configuration.platform}")
-                    options.push("--target ./")
-                    if (configuration.extension) options.push("--extensions=${configuration.extension}")
-                    mtaCall = "mbt build ${options.join(' ')}"
-                    break
-                default:
-                    error "[ERROR][${STEP_NAME}] MTA build tool '${configuration.mtaBuildTool}' not supported!"
-            }
-
-            echo "[INFO] Executing mta build call: '${mtaCall}'."
-
-            //[Q]: Why extending the path? [A]: To be sure e.g. grunt can be found
-            //[Q]: Why escaping \$PATH ? [A]: We want to extend the PATH variable in e.g. the container and not substituting it with the Jenkins environment when using ${PATH}
-            sh """#!/bin/bash
-            export PATH=./node_modules/.bin:\$PATH
-            $mtaCall
-            """
-
-            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
+            echo "mtar file created by the build: '${script.commonPipelineEnvironment.mtarFilePath}'"
         }
     }
 }
 
-def String getMtaId(String fileName){
-    def mtaYaml = readYaml file: fileName
-    if (!mtaYaml.ID) {
-        error "Property 'ID' not found in ${fileName} file."
+Map backwardCompatibleEnvVars(List env) {
+    Map result = [:]
+    for (e in env) {
+        String[] parts = e.split('=')
+        if (parts.size() != 2) {
+            throw new RuntimeException("Unexpected environment variable format. We expect something like key=value, but we got ${e}")
+        }
+        result[parts[0]] = parts[1]
     }
-    return mtaYaml.ID
+    result
 }
+

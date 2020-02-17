@@ -1,16 +1,19 @@
 package com.sap.piper
 
+import java.util.List
+
 class PiperGoUtils implements Serializable {
 
-    private static Script steps
+    private static String additionalConfigFolder = ".pipeline/additionalConfigs"
+    private static def steps
     private static Utils utils
 
-    PiperGoUtils(Script steps) {
+    PiperGoUtils(def steps) {
         this.steps = steps
         this.utils = new Utils()
     }
 
-    PiperGoUtils(Script steps, Utils utils) {
+    PiperGoUtils(def steps, Utils utils) {
         this.steps = steps
         this.utils = utils
     }
@@ -64,5 +67,41 @@ class PiperGoUtils implements Serializable {
             steps.echo "Failed downloading Piper go binary with error '${err}'"
         }
         return false
+    }
+
+    /*
+     * The returned string can be used directly in the command line for retrieving the configuration via go
+     */
+    public String prepareConfigurations(List configs, String configCacheFolder) {
+
+        for(def customDefault : configs) {
+            steps.writeFile(file: "${additionalConfigFolder}/${customDefault}", text: steps.libraryResource(customDefault))
+        }
+        joinAndQuote(configs.reverse(), configCacheFolder)
+    }
+
+    /*
+     * prefix is supposed to be provided without trailing slash
+     */
+    private static String joinAndQuote(List l, String prefix = '') {
+
+        Iterable _l = []
+
+        if(prefix == null) {
+            prefix = ''
+        }
+        if(prefix.endsWith('/') || prefix.endsWith('\\'))
+            throw new IllegalArgumentException("Provide prefix (${prefix}) without trailing slash")
+
+        for(def e : l) {
+            def _e = ''
+            if(prefix.length() > 0) {
+                _e += prefix
+                _e += '/'
+            }
+            _e += e
+            _l << '"' + _e + '"'
+        }
+        _l.join(' ')
     }
 }
