@@ -42,7 +42,7 @@ For an example, you might want to check out our ["Build and Deploy SAPUI5 or SAP
 #### Extensibility
 
 For the vast majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) with little effort in a best-practice compliant way.
-If you require more flexibility, our documentation on [Extensibility][extensibility] discusses available options.
+If you require more flexibility, our documentation on [Extensibility][piper-doc-extensibility] discusses available options.
 
 #### API
 
