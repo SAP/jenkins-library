@@ -11,7 +11,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
@@ -208,7 +207,7 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 
 		log.Entry().Debugf("mtar name not provided via config. Extracting from file \"%s\"", mtaYamlFile)
 
-		mtaID, err := getMtaID(mtaYamlFile)
+		mtaID, err := getMtaID(mtaYamlFile, p)
 
 		if err != nil {
 			return "", err
@@ -369,10 +368,10 @@ func generateMta(id, name, version string) (string, error) {
 	return script.String(), nil
 }
 
-func getMtaID(mtaYamlFile string) (string, error) {
+func getMtaID(mtaYamlFile string, fileUtils piperutils.FileUtils) (string, error) {
 
 	var result map[string]interface{}
-	p, err := ioutil.ReadFile(mtaYamlFile)
+	p, err := fileUtils.FileRead(mtaYamlFile)
 	if err != nil {
 		return "", err
 	}

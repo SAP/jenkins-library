@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestMatBuild(t *testing.T) {
+func TestMarBuild(t *testing.T) {
 
 	cpe := mtaBuildCommonPipelineEnvironment{}
 	httpClient := piperhttp.Client{}
@@ -34,7 +34,7 @@ func TestMatBuild(t *testing.T) {
 
 		e := execMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
@@ -70,10 +70,11 @@ func TestMatBuild(t *testing.T) {
 
 		e := execMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
@@ -137,7 +138,7 @@ func TestMatBuild(t *testing.T) {
 
 		e := execMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
 
 		cpe.mtarFilePath = ""
 
@@ -161,7 +162,7 @@ func TestMatBuild(t *testing.T) {
 
 		e := execMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
@@ -183,7 +184,7 @@ func TestMatBuild(t *testing.T) {
 
 		cpe.mtarFilePath = ""
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
@@ -221,7 +222,7 @@ func TestMatBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 		fileUtils.existingFiles = make(map[string]string)
-		fileUtils.existingFiles["mta.yaml"] = "already there"
+		fileUtils.existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 
 		t.Run("Copy global settings file", func(t *testing.T) {
 
@@ -232,7 +233,7 @@ func TestMatBuild(t *testing.T) {
 
 			e := execMockRunner{}
 
-			options := mtaBuildOptions{GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
+			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
@@ -251,7 +252,7 @@ func TestMatBuild(t *testing.T) {
 
 			e := execMockRunner{}
 
-			options := mtaBuildOptions{ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF"}
+			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
 
