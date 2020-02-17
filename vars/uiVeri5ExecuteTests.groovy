@@ -122,6 +122,10 @@ void call(Map parameters = [:]) {
             sidecarImage: config.sidecarImage,
             stashContent: config.stashContent
         ) {
+            sh returnStatus: true, script: """
+                node --version
+                npm --version
+            """
             try {
                 sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
                 sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
