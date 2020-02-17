@@ -119,6 +119,10 @@ void call(Map parameters = [:], Closure body) {
                 sidecarVolumeBind: config.sidecarVolumeBind
         ) {
             try {
+                sh returnStatus: true, script: """
+                    node --version
+                    npm --version
+                """
                 config.stashContent = config.testRepository
                     ?[GitUtils.handleTestRepository(this, config)]
                     :utils.unstashAll(config.stashContent)
