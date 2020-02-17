@@ -93,8 +93,8 @@ func runMtaBuild(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Sender) error {
 
-	e.Stdout(os.Stderr) // keep stdout clear.
-	e.Stderr(os.Stderr)
+	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
 
 	var err error
 
