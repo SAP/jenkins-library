@@ -19,7 +19,7 @@ func TestNexusUpload(t *testing.T) {
 	defer cancel()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus3",
+		Image:        "sonatype/nexus3:3.14.0", //FIXME in 3.14.0 nexus still has a hardcoded admin pw by default. In later versions the password is written to a file in a volueme -> harder to create the testcase
 		ExposedPorts: []string{"8081/tcp"},
 		WaitingFor:   wait.ForLog("Started Sonatype Nexus"),
 	}
