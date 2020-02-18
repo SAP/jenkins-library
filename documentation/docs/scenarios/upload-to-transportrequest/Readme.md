@@ -186,7 +186,7 @@ general:
   changeManagement:
     type: 'CTS'
     endpoint: 'the ODATA endpoint' # e.g. 'http://example.org/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV/'
-    credentialsId: 'CTS' # The id under which the credentials are provided on Jenkins, defaults to 'CM'
+    credentialsId: 'CTS' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
     clientOpts: '' # additional java options, e.g. '-Djavax.net.ssl.trustStore=/path/to/truststore.jks'
 ```
 ## Parameters
