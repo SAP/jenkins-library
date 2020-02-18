@@ -49,7 +49,7 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 				}
 			}
 			if err != nil {
-//				log.Entry().Info("Failed to upload artifact")
+				//				log.Entry().Info("Failed to upload artifact")
 				panic(fmt.Sprintf("Failed to upload artifact: %s", err))
 			}
 		}

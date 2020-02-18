@@ -68,7 +68,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false
       - name: password
         type: string
         description: Password
@@ -76,4 +76,4 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false

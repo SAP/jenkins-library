@@ -72,8 +72,6 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.MarkFlagRequired("version")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("artifacts")
-	cmd.MarkFlagRequired("user")
-	cmd.MarkFlagRequired("password")
 }
 
 // retrieve step metadata
@@ -135,7 +133,7 @@ func nexusUploadMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -143,7 +141,7 @@ func nexusUploadMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},
