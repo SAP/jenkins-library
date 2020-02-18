@@ -52,11 +52,16 @@ class PiperGoUtils implements Serializable {
 
     private boolean downloadGoBinary(url) {
 
-        def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ./piper '${url}'")
+        try {
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ./piper '${url}'")
 
-        if (httpStatus == '200') {
-            steps.sh(script: 'chmod +x ./piper')
-            return true
+            if (httpStatus == '200') {
+                steps.sh(script: 'chmod +x ./piper')
+                return true
+            }
+        } catch(err) {
+            //nothing to do since error should just result in downloaded=false
+            steps.echo "Failed downloading Piper go binary with error '${err}'"
         }
         return false
     }

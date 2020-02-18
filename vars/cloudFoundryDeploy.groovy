@@ -451,22 +451,15 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
             echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
         }
 
-        def returnCode = sh returnStatus: true, script: deployScript
+        try {
+            sh deployScript
+        } catch (e) {
+            handleCfCliLog(cfTraceFile)
 
-        if(config.verbose || returnCode != 0) {
-            if(fileExists(file: cfTraceFile)) {
-                echo  '### START OF CF CLI TRACE OUTPUT ###'
-                // Would be nice to inline the two next lines, but that is not understood by the test framework
-                def cfTrace =  readFile(file: cfTraceFile)
-                echo cfTrace
-                echo '### END OF CF CLI TRACE OUTPUT ###'
-            } else {
-                echo "No trace file found at '${cfTraceFile}'"
-            }
-        }
-
-        if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+        }
+        if(config.verbose) {
+            handleCfCliLog(cfTraceFile)
         }
 
         if(postDeployAction) postDeployAction(config)
@@ -475,14 +468,26 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
     }
 }
 
+private void handleCfCliLog(String logFile){
+    if(fileExists(file: logFile)) {
+        echo  '### START OF CF CLI TRACE OUTPUT ###'
+        // Would be nice to inline the two next lines, but that is not understood by the test framework
+        def cfTrace = readFile(file: logFile)
+        echo cfTrace
+        echo '### END OF CF CLI TRACE OUTPUT ###'
+    } else {
+        echo "No trace file found at '${logFile}'"
+    }
+}
+
 private void stopOldAppIfRunning(Map config) {
     String oldAppName = "${config.cloudFoundry.appName}-old"
     String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
 
     if (config.keepOldInstance && config.deployType == 'blue-green') {
-        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-
-        if (cfStopReturncode > 0) {
+        try {
+            sh "cf stop $oldAppName  &> $cfStopOutputFileName"
+        } catch (e) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
