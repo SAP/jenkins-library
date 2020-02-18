@@ -40,7 +40,7 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 		response, err := client.UploadRequest(http.MethodPut, url, artifact.File, "", nil, nil)
 		if err != nil {
 			if response.StatusCode == 400 {
-				log.Entry().Info("Artifact already exits at ", url,git ", deleting and retrying...")
+				log.Entry().Info("Artifact already exits, deleting and retrying...")
 				response, err = client.SendRequest(http.MethodDelete, url, nil, nil, nil)
 				if err != nil {
 					panic(fmt.Sprintf("Failed to delete artifact: %s", err))

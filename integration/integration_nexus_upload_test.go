@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
+	"cmd"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -41,6 +43,11 @@ func TestNexusUpload(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
+
+	nexusContainer.Exec(ctx, []string{"cat", "/nexus-data/admin.password"})
+	cmd := exec.Command("go", "run", ".", "nexusUpload")
+	err := cmd.Run()
+
 
 	//todo the actual test
 }
