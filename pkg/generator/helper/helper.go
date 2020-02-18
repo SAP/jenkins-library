@@ -176,7 +176,7 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 	}
 }
 
-func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, command shellRunner{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
+func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, command execRunner{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 	return nil
 }
