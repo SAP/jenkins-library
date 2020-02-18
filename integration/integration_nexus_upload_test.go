@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
+//	"os"
 	"testing"
 	"time"
-	"cmd"
+//	"cmd"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,11 +44,11 @@ func TestNexusUpload(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	cmd := exec.Command("go", "run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=localhost:8081")
-	err := cmd.Run()
-	if err != nil {
-		panic("test failed!!")
-	}
+	// cmd := exec.Command("go", "run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=localhost:8081")
+	// err := cmd.Run()
+	// if err != nil {
+	// 	panic("test failed!!")
+	// }
 
 
 	//todo the actual test
