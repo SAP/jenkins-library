@@ -72,7 +72,7 @@ nav:
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
-        - 'Build Applications and attach the build result to an ABAP transport request': scenarios/upload-to-transportrequest/Readme.md
+        - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
     - Resources:
         - 'Required Plugins': jenkins/requiredPlugins.md
 
