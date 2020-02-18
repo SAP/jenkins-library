@@ -166,7 +166,7 @@ pipeline {
         }
 
         // attaches the deployable to a transport request,
-        // in case we have a prior call to mtaBuild this step sets the deployable
+        // if you have a prior call to mtaBuild, this step sets the deployable
         stage('attach') {
             steps {
                 transportRequestUploadFile script: this,
