@@ -46,12 +46,12 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 
 	lastRelease, resp, err := ghRepoClient.GetLatestRelease(ctx, config.Owner, config.Repository)
 	if err != nil {
-		if resp.StatusCode == 404 {
+		if resp != nil && resp.StatusCode == 404 {
 			//no previous release found -> first release
 			config.AddDeltaToLastRelease = false
 			log.Entry().Debug("This is the first release.")
 		} else {
-			return errors.Wrap(err, "Error occured when retrieving latest GitHub release.")
+			return errors.Wrapf(err, "Error occured when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
 		}
 	}
 	publishedAt = lastRelease.GetPublishedAt()

@@ -5,6 +5,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
+import groovy.json.JsonOutput
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
@@ -43,6 +44,10 @@ import groovy.text.GStringTemplateEngine
      * @possibleValues Jenkins credentials id
      */
     'gitSshKeyCredentialsId',
+    /**
+     * Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.
+     */
+    'seleniumHubCredentialsId',
     /** @see dockerExecute */
     'sidecarEnvVars',
     /** @see dockerExecute */
@@ -99,6 +104,14 @@ void call(Map parameters = [:], Closure body) {
             stepParam1: parameters?.script == null
         ], config)
 
+        // Inject config via env vars so that scripts running inside selenium can respond to that
+        config.dockerEnvVars = config.dockerEnvVars ?: [:]
+        config.dockerEnvVars.PIPER_CONTAINER_PORT_MAPPING = new JsonOutput().toJson(config.containerPortMappings)
+        config.dockerEnvVars.PIPER_DOCKER_NAME = new JsonOutput().toJson(config.dockerName)
+        config.dockerEnvVars.PIPER_DOCKER_IMAGE = new JsonOutput().toJson(config.dockerImage)
+        config.dockerEnvVars.PIPER_SIDECAR_NAME = new JsonOutput().toJson(config.sidecarName)
+        config.dockerEnvVars.PIPER_SIDECAR_IMAGE = new JsonOutput().toJson(config.sidecarImage)
+
         dockerExecute(
                 script: script,
                 containerPortMappings: config.containerPortMappings,
@@ -113,10 +126,20 @@ void call(Map parameters = [:], Closure body) {
                 sidecarVolumeBind: config.sidecarVolumeBind
         ) {
             try {
+                sh returnStatus: true, script: """
+                    node --version
+                    npm --version
+                """
                 config.stashContent = config.testRepository
                     ?[GitUtils.handleTestRepository(this, config)]
                     :utils.unstashAll(config.stashContent)
-                body()
+                if (config.seleniumHubCredentialsId) {
+                    withCredentials([usernamePassword(credentialsId: config.seleniumHubCredentialsId, passwordVariable: 'PIPER_SELENIUM_HUB_PASSWORD', usernameVariable: 'PIPER_SELENIUM_HUB_USER')]) {
+                        body()
+                    }
+                } else {
+                    body()
+                }
             } catch (err) {
                 if (config.failOnError) {
                     throw err
