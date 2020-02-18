@@ -8,7 +8,7 @@ Generally, you can choose between two technical ways to attach a binary to an AB
 
 * You have set up your [Docker environment](https://docs.docker.com/get-started/).
 * You have set up project “Piper”. See [guided tour](../../../guidedtour/).
-* A transport request
+* You have a transport request.
 * Depending on the version of the ABAP system: Docker image for attaching binaries to transport requests via RFC available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/node-rfc)
 
 ### Project Prerequisites
