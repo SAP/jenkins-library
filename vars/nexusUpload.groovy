@@ -29,6 +29,11 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         parameters.jenkinsUtilsStub = null
 
+        if (!parameters.get('credentialsId')) {
+            // Remove null or empty credentialsId key. (Eases calling code.)
+            parameters.remove('credentialsId')
+        }
+
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
