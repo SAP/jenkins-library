@@ -41,9 +41,8 @@ func TestNexusUpload(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	fmt.Printf("http://%s:%s", ip, port.Port())
-
-	params := []string{"run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=" + url}
+	params := []string{"run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=adminsdf123", "--repository=maven-releases", "--version=1.0", "--url=" + url}
 	c := command.Command{}
 	c.RunExecutable("go", params...)
+
 }
