@@ -22,7 +22,7 @@ func (c *Client) DownloadFile(url, filename string, header http.Header, cookies 
 
 // DownloadRequest ...
 func (c *Client) DownloadRequest(method, url, filename string, header http.Header, cookies []*http.Cookie) error {
-	response, err := c.SendRequest(method, url, nil, nil, nil)
+	response, err := c.SendRequest(method, url, nil, header, cookies)
 	if err != nil {
 		return errors.Wrapf(err, "HTTP %v request to %v failed with error", method, url)
 	}
