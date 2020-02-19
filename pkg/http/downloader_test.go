@@ -33,7 +33,7 @@ func TestDownloadRequest(t *testing.T) {
 	targetFile := filepath.Join(workingDir, "abc.xml")
 
 	// function under test
-	err = client.DownloadRequest("GET", server.URL, targetFile, nil, nil)
+	err = client.DownloadFile(server.URL, targetFile, nil, nil)
 	// asserts
 	assert.NoError(t, err, "Error occured but none expected")
 	assert.FileExists(t, targetFile, "File not found")
