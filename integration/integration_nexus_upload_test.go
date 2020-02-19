@@ -46,8 +46,6 @@ func TestNexusUpload(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	nexusContainer.Exec()
-
 	cmd := command.Command{}
 	cmd.Dir("testdata/TestNexusIntegration/")
 
