@@ -4,24 +4,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-//	"os"
 	"testing"
 	"time"
-//	"cmd"
 
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestNexusUpload(t *testing.T) {
-	// Nexus might take a long time to boot
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Minute))
-	defer cancel()
-
+	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "sonatype/nexus3:3.14.0", //FIXME in 3.14.0 nexus still has a hardcoded admin pw by default. In later versions the password is written to a file in a volueme -> harder to create the testcase
 		ExposedPorts: []string{"8081/tcp"},
-		WaitingFor:   wait.ForLog("Started Sonatype Nexus"),
+		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(time.Minute * 5),
 	}
 	nexusContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -39,17 +35,15 @@ func TestNexusUpload(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	url := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	resp, err := http.Get(url)
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	// cmd := exec.Command("go", "run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=localhost:8081")
-	// err := cmd.Run()
-	// if err != nil {
-	// 	panic("test failed!!")
-	// }
+	fmt.Printf("http://%s:%s", ip, port.Port())
 
-
-	//todo the actual test
+	params := []string{"run", ".", "nexusUpload", "--artifacts=[{\\\"id\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]", "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=" + url}
+	c := command.Command{}
+	c.RunExecutable("go", params...)
 }
