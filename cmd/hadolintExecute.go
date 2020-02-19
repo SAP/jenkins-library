@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -19,12 +20,13 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 	options := []string{
 		"--format checkstyle",
 	}
+	client := piperhttp.Client{}
 
 	c.Stdout(&outputBuffer)
 	c.Stderr(&errorBuffer)
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile) && len(config.ConfigurationURL) > 0 {
-		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile)
+		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, &client)
 	}
 	// use config
 	if hasConfigurationFile(config.ConfigurationFile) {
@@ -59,9 +61,10 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 }
 
 // loadConfigurationFile loads a file from the provided url
-func loadConfigurationFile(url, file string) {
+func loadConfigurationFile(url, file string, client piperhttp.Downloader) {
 	log.Entry().WithField("url", url).Debug("Loading configuration file from URL")
-	if _, err := piperutils.Download(url, file); err != nil {
+
+	if err := client.DownloadFile(url, file, nil, nil); err != nil {
 		log.Entry().
 			WithError(err).
 			WithField("file", url).
