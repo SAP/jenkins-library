@@ -24,4 +24,4 @@ indent_style = none
 indent_size = none
 [{go.mod,go.sum,*.go,*.golden}]
 indent_style = tab
-indent_size = 8
+indent_size = 4
