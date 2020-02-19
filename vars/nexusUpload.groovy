@@ -34,6 +34,8 @@ void call(Map parameters = [:]) {
             parameters.remove('credentialsId')
         }
 
+        echo "nexusUpload parameters: $parameters"
+
         git url: 'https://github.com/SAP/jenkins-library.git', branch: 'nexus-upload'
 
         dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
@@ -41,7 +43,7 @@ void call(Map parameters = [:]) {
         }
 
 //        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+//        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -51,6 +53,8 @@ void call(Map parameters = [:]) {
         ]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+
+            echo "config decoded from ENV: $config"
 
             Closure body = {
                 String url = config.url
