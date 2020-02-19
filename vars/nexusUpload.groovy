@@ -43,7 +43,7 @@ void call(Map parameters = [:]) {
 
             // execute step
             withCredentials([usernamePassword(
-                credentialsId: config.nexusCredentialsId,
+                credentialsId: config.credentialsId,
                 passwordVariable: 'PIPER_password',
                 usernameVariable: 'PIPER_username'
             )]) {

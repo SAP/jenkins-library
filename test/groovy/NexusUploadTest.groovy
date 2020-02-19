@@ -55,7 +55,7 @@ class NexusUploadTest extends BasePiperTest {
         })
         credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/nexusUpload.yaml\'',
-            '{"nexusCredentialsId": "idOfCxCredential", "verbose": false, ' +
+            '{"credentialsId": "idOfCxCredential", "verbose": false, ' +
             ' "url": "localhost:8081", "repository": "maven-releases", "version": "1.0", ' +
             ' "groupId": "org", "artifacts": ' +
             '    [{ "artifactId": "blob", ' +
@@ -77,6 +77,6 @@ class NexusUploadTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper nexusUpload'))
+        assertThat(shellCallRule.shell[1], is('./piper nexusUpload --url=localhost:8081 --repository=maven-releases --groupId=org --version=1.0 --artifacts=\"[{\\\"artifactId\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]\"'))
     }
 }
