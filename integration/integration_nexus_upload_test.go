@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -72,11 +71,4 @@ func TestNexusUpload(t *testing.T) {
 		t.Log(resp)
 	}
 
-}
-
-func getPiperExecutable() string {
-	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
-		return p
-	}
-	return "piper"
 }
