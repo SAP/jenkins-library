@@ -29,6 +29,7 @@ class MtaUtils {
         if(!dataFromJson.version) throw new AbortException("'version' not set in the given package.json.")
         mtaData['version'] = dataFromJson.version
         mtaData['modules'][0]['parameters']['version'] = "${dataFromJson.version}-\${timestamp}"
+        mtaData['modules'][0]['parameters']['name'] = applicationName
 
         mtaData['modules'][0]['name'] = applicationName
 

@@ -11,6 +11,7 @@ modules:
     path: .
     parameters:
        version: <version number of your application>-${timestamp}
+       name: "<Name of your Fiori application>"
     build-parameters:
       builder: grunt
       build-result: dist
