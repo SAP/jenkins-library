@@ -3,7 +3,6 @@ package piperutils
 import (
 	"errors"
 	"io"
-	"net/http"
 	"os"
 )
 
@@ -46,21 +45,5 @@ func Copy(src, dst string) (int64, error) {
 	}
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
-	return nBytes, err
-}
-
-func Download(src, dst string) (int64, error) {
-	source, err := http.Get(src)
-	if err != nil {
-		return 0, err
-	}
-	defer source.Body.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer destination.Close()
-	nBytes, err := io.Copy(destination, source.Body)
 	return nBytes, err
 }
