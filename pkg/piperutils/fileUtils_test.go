@@ -41,16 +41,3 @@ func TestCopy(t *testing.T) {
 	assert.NoError(t, err, "Didn't expert error but got one")
 	assert.Equal(t, int64(3), result, "Expected true but got false")
 }
-
-func TestDownload(t *testing.T) {
-	dir, err := ioutil.TempDir("", "dir3")
-	targetFile := filepath.Join(dir, "testfile")
-	// clean up tmp dir
-	defer os.RemoveAll(dir)
-
-	_, err = Download("https://raw.githubusercontent.com/SAP/jenkins-library/master/README.md", targetFile)
-
-	content, _ := ioutil.ReadFile(targetFile)
-	assert.NoError(t, err, "Didn't expert error but got one")
-	assert.Contains(t, string(content), "Project Piper Repository")
-}
