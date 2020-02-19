@@ -21,7 +21,7 @@ class MtaUtils {
 
         def dataFromJson = script.readJSON file: srcPackageJson
 
-        def mtaData  = script.readYaml text: script.libraryResource('template_mta.yml')
+        def mtaData  = script.readYaml text: script.libraryResource('template_mta.yaml')
 
         if(!dataFromJson.name) throw new AbortException("'name' not set in the given package.json.")
         mtaData['ID'] = dataFromJson.name

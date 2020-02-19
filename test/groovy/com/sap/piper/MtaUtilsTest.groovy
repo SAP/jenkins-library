@@ -18,7 +18,7 @@ import util.Rules
 
 class MtaUtilsTest extends BasePiperTest {
     private static srcPackageJson = 'test/resources/MtaUtils/package.json'
-    private static mtaTemplate = 'resources/template_mta.yml'
+    private static mtaTemplate = 'resources/template_mta.yaml'
     private static data
     private static String generatedFile
     private static String targetMtaDescriptor
