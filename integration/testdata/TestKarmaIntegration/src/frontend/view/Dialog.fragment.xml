@@ -1,0 +1,17 @@
+<core:FragmentDefinition
+   xmlns="sap.m"
+   xmlns:core="sap.ui.core" >
+   <Dialog
+      id="demoDialog"
+      title="Demo Dialog">
+      <content>
+        <List
+            headerText='Products'
+            items='{/Products}' >
+        
+            <StandardListItem title='{name}' description="{price}" />
+
+        </List>
+      </content>
+   </Dialog>
+</core:FragmentDefinition>

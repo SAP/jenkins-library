@@ -1,0 +1,30 @@
+<mvc:View
+    height="100%"
+    displayBlock="true"
+    controllerName="sap.ui.piper.controller.App"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+	xmlns:mvc="sap.ui.core.mvc" >
+
+   <App>
+      <pages>
+         <Page title="Demo Sapui5 Page">
+            <content>
+                <FlexBox height="500px" alignItems="Center" justifyContent="Center">
+                    <items>
+                        <Button
+                            id="showToast"
+                            text="Show Toast"
+                            press="onShowToast"/>
+                        <Button
+                            id="showDialog"
+                            text="Show Dialog"
+                            press="onShowDialog"/>
+                    </items>
+                </FlexBox>
+            </content>
+         </Page>
+      </pages>
+   </App>
+
+</mvc:View>

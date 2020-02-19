@@ -82,6 +82,8 @@ import groovy.transform.Field
     'deployTool',
     /**
      * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
+     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
+     * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
     'deployType',
@@ -249,12 +251,12 @@ def findMtar(){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
+        error "[${STEP_NAME}] Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
     }
-    error 'No *.mtar file found!'
+    error "[${STEP_NAME}] No *.mtar file found!"
 }
 
 def deployMta (config) {
@@ -276,8 +278,27 @@ def deployMta (config) {
     deploy(apiStatement, deployStatement, config, null)
 }
 
+private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
+    String manifestFile = config.cloudFoundry.manifest ?: 'manifest.yml'
+    if(config.deployType == 'blue-green' && fileExists(manifestFile)){
+        Map manifest = readYaml file: manifestFile
+        List applications = manifest.applications
+        if(applications) {
+            if(applications.size()>1){
+                error "[${STEP_NAME}] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application."
+            }
+            if(applications.size==1 && applications[0]['no-route']){
+                echo '[WARNING] Blue green deployment is not possible for application without route. Using deployment type "standard" instead.'
+                config.deployType = 'standard'
+            }
+        }
+    }
+}
+
 private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = ''
+
+    checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
     if (config.deployType == 'blue-green') {
         prepareBlueGreenCfNativeDeploy(config,script)
@@ -430,22 +451,15 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
             echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
         }
 
-        def returnCode = sh returnStatus: true, script: deployScript
+        try {
+            sh deployScript
+        } catch (e) {
+            handleCfCliLog(cfTraceFile)
 
-        if(config.verbose || returnCode != 0) {
-            if(fileExists(file: cfTraceFile)) {
-                echo  '### START OF CF CLI TRACE OUTPUT ###'
-                // Would be nice to inline the two next lines, but that is not understood by the test framework
-                def cfTrace =  readFile(file: cfTraceFile)
-                echo cfTrace
-                echo '### END OF CF CLI TRACE OUTPUT ###'
-            } else {
-                echo "No trace file found at '${cfTraceFile}'"
-            }
-        }
-
-        if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+        }
+        if(config.verbose) {
+            handleCfCliLog(cfTraceFile)
         }
 
         if(postDeployAction) postDeployAction(config)
@@ -454,14 +468,26 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
     }
 }
 
+private void handleCfCliLog(String logFile){
+    if(fileExists(file: logFile)) {
+        echo  '### START OF CF CLI TRACE OUTPUT ###'
+        // Would be nice to inline the two next lines, but that is not understood by the test framework
+        def cfTrace = readFile(file: logFile)
+        echo cfTrace
+        echo '### END OF CF CLI TRACE OUTPUT ###'
+    } else {
+        echo "No trace file found at '${logFile}'"
+    }
+}
+
 private void stopOldAppIfRunning(Map config) {
     String oldAppName = "${config.cloudFoundry.appName}-old"
     String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
 
     if (config.keepOldInstance && config.deployType == 'blue-green') {
-        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-
-        if (cfStopReturncode > 0) {
+        try {
+            sh "cf stop $oldAppName  &> $cfStopOutputFileName"
+        } catch (e) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
