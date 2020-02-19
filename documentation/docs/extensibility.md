@@ -114,8 +114,9 @@ Project "Piper" provides some basic building blocks such as `dockerExecute` and 
 ## 2. Modified Ready-Made Pipeline
 
 This option describes how you can copy and paste one of the centrally maintained pipelines to make changes to it that are not possible otherwise.
-For example, with stage level exits or centrally-maintained pipelines, you can't change the order of stages and the stages that run in parallel or add new stages to a centrally maintained pipeline.
-Extensibility level two _Modified Ready-Made Pipeline_ allows you to modify your [declarative pipeline based on the syntax Jenkins provides](https://jenkins.io/doc/book/pipeline/syntax/#declarative-pipeline).
+For example, you can't change the order of stages and the stages that run in parallel or add new stages to a centrally maintained pipeline.
+
+_Modified Ready-Made Pipeline_ allow you to modify your [declarative pipeline based on the syntax Jenkins provides](https://jenkins.io/doc/book/pipeline/syntax/#declarative-pipeline).
 
 This might be done for an individual project (in the `Jenkinsfile`), or in a separate Git repository so it can be used for multiple projects.
 
