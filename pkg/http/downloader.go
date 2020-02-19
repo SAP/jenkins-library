@@ -12,7 +12,6 @@ import (
 type Downloader interface {
 	SetOptions(options ClientOptions)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 }
 
 // DownloadFile downloads a file's content as GET request from the specified URL to the specified file
