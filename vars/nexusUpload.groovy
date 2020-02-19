@@ -43,6 +43,12 @@ void call(Map parameters = [:]) {
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
+            git url: 'https://github.com/SAP/jenkins-library.git', branch: 'nexus-upload'
+
+            dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
+                sh 'go build -o piper . && chmod +x piper'
+            }
+
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
