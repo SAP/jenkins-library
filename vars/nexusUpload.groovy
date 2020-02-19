@@ -52,7 +52,7 @@ void call(Map parameters = [:]) {
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
             // get context configuration
-            echo "environment: ${env.PIPER_parametersJSON}￿"
+            echo "environment: ${env.PIPER_parametersJSON}"
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             echo "config decoded from ENV: $config"
