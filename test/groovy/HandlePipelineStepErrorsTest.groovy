@@ -1,3 +1,4 @@
+import com.sap.piper.DebugReport
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.is
@@ -82,7 +83,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             assertThat(loggingRule.log, containsString('to show step parameters, set verbose:true'))
         }
     }
-    
+
     @Test
     void testHandleErrorsIgnoreFailure() {
         def errorOccured = false
@@ -173,4 +174,24 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
         assertThat(errorMsg, is('[handlePipelineStepErrors] Error in step test - Build result set to \'UNSTABLE\''))
     }
+
+    @Test
+    void testFeedDebugReport() {
+        Exception err = new Exception('TestError')
+        try {
+            stepRule.step.handlePipelineStepErrors([
+                stepName: 'testStep',
+                stepParameters: ['something': 'anything'],
+            ]) {
+                throw err
+            }
+        } catch (ignore) {
+        } finally {
+            // asserts
+            assertThat(DebugReport.instance.failedBuild.step, is('testStep'))
+            assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
+            assertThat(DebugReport.instance.failedBuild.reason, is(err))
+        }
+    }
+
 }

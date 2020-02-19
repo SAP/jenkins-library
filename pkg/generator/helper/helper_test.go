@@ -20,6 +20,22 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
   longDescription: |
     Long Test description
 spec:
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: artifactVersion
+          - name: git/commitId
+          - name: git/branch
+      - name: influxTest
+        type: influx
+        params:
+          - name: m1
+            fields:
+              - name: f1
+            tags:
+              - name: t1
   inputs:
     params:
       - name: param0
@@ -75,6 +91,7 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -84,6 +101,19 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		assert.Equal(t, expected, files["cmd/testStep_generated_test.go"])
+	})
+
+	t.Run("custom step code", func(t *testing.T) {
+		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
+		ProcessMetaFiles([]string{"test.yaml"}, stepHelperData, docuHelperData)
+
+		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		if err != nil {
+			t.Fatalf("failed reading %v", goldenFilePath)
+		}
+		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 }
 
@@ -98,12 +128,14 @@ func TestSetDefaultParameters(t *testing.T) {
 			Spec: config.StepSpec{
 				Inputs: config.StepInputs{
 					Parameters: []config.StepParameters{
-						{Name: "param0", Scope: []string{"GENERAL"}, Type: "string", Default: "val0"},
-						{Name: "param1", Scope: []string{"STEPS"}, Type: "string"},
-						{Name: "param2", Scope: []string{"STAGES"}, Type: "bool", Default: true},
-						{Name: "param3", Scope: []string{"PARAMETERS"}, Type: "bool"},
-						{Name: "param4", Scope: []string{"ENV"}, Type: "[]string", Default: stringSliceDefault},
-						{Name: "param5", Scope: []string{"ENV"}, Type: "[]string"},
+						{Name: "param0", Type: "string", Default: "val0"},
+						{Name: "param1", Type: "string"},
+						{Name: "param2", Type: "bool", Default: true},
+						{Name: "param3", Type: "bool"},
+						{Name: "param4", Type: "[]string", Default: stringSliceDefault},
+						{Name: "param5", Type: "[]string"},
+						{Name: "param6", Type: "int"},
+						{Name: "param7", Type: "int", Default: 1},
 					},
 				},
 			},
@@ -116,6 +148,8 @@ func TestSetDefaultParameters(t *testing.T) {
 			"false",
 			"[]string{\"val4_1\", \"val4_2\"}",
 			"[]string{}",
+			"0",
+			"1",
 		}
 
 		osImport, err := setDefaultParameters(&stepData)
@@ -135,8 +169,8 @@ func TestSetDefaultParameters(t *testing.T) {
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "param0", Scope: []string{"GENERAL"}, Type: "int", Default: 10},
-							{Name: "param1", Scope: []string{"GENERAL"}, Type: "int"},
+							{Name: "param0", Type: "n/a", Default: 10},
+							{Name: "param1", Type: "n/a"},
 						},
 					},
 				},
@@ -145,7 +179,7 @@ func TestSetDefaultParameters(t *testing.T) {
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "param1", Scope: []string{"GENERAL"}, Type: "int"},
+							{Name: "param1", Type: "n/a"},
 						},
 					},
 				},
@@ -176,7 +210,9 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo := getStepInfo(&stepData, true, "")
+	myStepInfo, err := getStepInfo(&stepData, true, "")
+
+	assert.NoError(t, err)
 
 	assert.Equal(t, "testStep", myStepInfo.StepName, "StepName incorrect")
 	assert.Equal(t, "TestStepCommand", myStepInfo.CobraCmdFuncName, "CobraCmdFuncName incorrect")
@@ -203,7 +239,7 @@ func TestLongName(t *testing.T) {
 	}
 }
 
-func TestGolangName(t *testing.T) {
+func TestGolangNameTitle(t *testing.T) {
 	tt := []struct {
 		input    string
 		expected string
@@ -217,7 +253,7 @@ func TestGolangName(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, golangName(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+		assert.Equal(t, v.expected, golangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
 	}
 }
 
@@ -227,6 +263,7 @@ func TestFlagType(t *testing.T) {
 		expected string
 	}{
 		{input: "bool", expected: "BoolVar"},
+		{input: "int", expected: "IntVar"},
 		{input: "string", expected: "StringVar"},
 		{input: "[]string", expected: "StringSliceVar"},
 	}

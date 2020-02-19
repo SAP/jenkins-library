@@ -5,6 +5,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadJsonRule
 import util.JenkinsReadYamlRule
@@ -23,6 +24,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     private List withEnvArgs = []
 
@@ -35,6 +37,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
         .around(shellCallRule)
         .around(stepRule)
         .around(writeFileRule)
+        .around(fileExistsRule)
 
     @Before
     void init() {
@@ -58,26 +61,6 @@ class GithubPublishReleaseTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(withEnvArgs[1], is('PIPER_owner='))
-        assertThat(withEnvArgs[2], is('PIPER_repository='))
-        assertThat(withEnvArgs[3], is('PIPER_version='))
-        assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease --token thisIsATestToken'))
-    }
-
-    @Test
-    void testGithubPublishReleaseWithEnv() {
-
-        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
-        nullScript.commonPipelineEnvironment.setGithubOrg('TestOrg')
-        nullScript.commonPipelineEnvironment.setGithubRepo('TestRepo')
-
-        stepRule.step.githubPublishRelease(
-            juStabUtils: utils,
-            script: nullScript
-        )
-        // asserts
-        assertThat(withEnvArgs[1], is('PIPER_owner=TestOrg'))
-        assertThat(withEnvArgs[2], is('PIPER_repository=TestRepo'))
-        assertThat(withEnvArgs[3], is('PIPER_version=1.0.0'))
+        assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease'))
     }
 }

@@ -1,36 +1,39 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type githubPublishReleaseOptions struct {
 	AddClosedIssues       bool     `json:"addClosedIssues,omitempty"`
 	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty"`
+	APIURL                string   `json:"apiUrl,omitempty"`
 	AssetPath             string   `json:"assetPath,omitempty"`
 	Commitish             string   `json:"commitish,omitempty"`
 	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
-	APIURL                string   `json:"apiUrl,omitempty"`
+	Labels                []string `json:"labels,omitempty"`
 	Owner                 string   `json:"owner,omitempty"`
+	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
 	Repository            string   `json:"repository,omitempty"`
 	ServerURL             string   `json:"serverUrl,omitempty"`
 	Token                 string   `json:"token,omitempty"`
 	UploadURL             string   `json:"uploadUrl,omitempty"`
-	Labels                []string `json:"labels,omitempty"`
-	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
 	Version               string   `json:"version,omitempty"`
 }
-
-var myGithubPublishReleaseOptions githubPublishReleaseOptions
-var githubPublishReleaseStepConfigJSON string
 
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
 	metadata := githubPublishReleaseMetadata()
+	var stepConfig githubPublishReleaseOptions
+	var startTime time.Time
+
 	var createGithubPublishReleaseCmd = &cobra.Command{
 		Use:   "githubPublishRelease",
 		Short: "Publish a release in GitHub",
@@ -45,34 +48,45 @@ The result looks like
 
 ![Example release](../images/githubRelease.png)`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return githubPublishRelease(myGithubPublishReleaseOptions)
+		Run: func(cmd *cobra.Command, args []string) {
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
+			githubPublishRelease(stepConfig, &telemetryData)
+			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addGithubPublishReleaseFlags(createGithubPublishReleaseCmd)
+	addGithubPublishReleaseFlags(createGithubPublishReleaseCmd, &stepConfig)
 	return createGithubPublishReleaseCmd
 }
 
-func addGithubPublishReleaseFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the relese information that brings up all commits since the last release.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Commitish, "commitish", "master", "Target git commitish for the release")
-	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
+func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishReleaseOptions) {
+	cmd.Flags().BoolVar(&stepConfig.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
+	cmd.Flags().BoolVar(&stepConfig.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the relese information that brings up all commits since the last release.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
+	cmd.Flags().StringVar(&stepConfig.Commitish, "commitish", "master", "Target git commitish for the release")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
+	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to include in issue search.")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&stepConfig.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&stepConfig.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
 	cmd.MarkFlagRequired("apiUrl")
 	cmd.MarkFlagRequired("owner")
@@ -90,102 +104,116 @@ func githubPublishReleaseMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "addClosedIssues",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "addClosedIssues",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "addDeltaToLastRelease",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "addDeltaToLastRelease",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "assetPath",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "apiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
-						Name:      "commitish",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "assetPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "excludeLabels",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "commitish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "apiUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubApiUrl"}},
+						Name:        "excludeLabels",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "owner",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Name:        "labels",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "repository",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Name:        "owner",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubOrg"}},
 					},
 					{
-						Name:      "serverUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubServerUrl"}},
+						Name:        "releaseBodyHeader",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "token",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}},
+						Name:        "repository",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubRepo"}},
 					},
 					{
-						Name:      "uploadUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubUploadUrl"}},
+						Name:        "serverUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
-						Name:      "labels",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "token",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubToken"}},
 					},
 					{
-						Name:      "releaseBodyHeader",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "uploadUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubUploadUrl"}},
 					},
 					{
-						Name:      "version",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "version",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

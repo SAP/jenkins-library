@@ -23,21 +23,19 @@ void call(Map parameters = [:]) {
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
+        script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-            "PIPER_owner=${script.commonPipelineEnvironment.getGithubOrg()?:''}",
-            "PIPER_repository=${script.commonPipelineEnvironment.getGithubRepo()?:''}",
-            "PIPER_version=${script.commonPipelineEnvironment.getArtifactVersion()?:''}"
         ]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             // execute step
-            withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
-                sh "./piper githubPublishRelease  --token ${TOKEN}"
+            withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_token')]) {
+                sh './piper githubPublishRelease'
             }
         }
     }

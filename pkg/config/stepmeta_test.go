@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -114,41 +116,42 @@ func TestGetParameterFilters(t *testing.T) {
 	}{
 		{
 			Metadata:              metadata1,
-			ExpectedGeneral:       []string{"paramOne", "paramSeven", "mta"},
-			ExpectedSteps:         []string{"paramOne", "paramTwo", "paramSeven", "mta"},
-			ExpectedStages:        []string{"paramOne", "paramTwo", "paramThree", "paramSeven", "mta"},
-			ExpectedParameters:    []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramSeven", "mta"},
-			ExpectedEnv:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSeven", "mta"},
-			ExpectedAll:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix", "paramSeven", "mta"},
+			ExpectedGeneral:       []string{"verbose", "paramOne", "paramSeven", "mta"},
+			ExpectedSteps:         []string{"verbose", "paramOne", "paramTwo", "paramSeven", "mta"},
+			ExpectedStages:        []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramSeven", "mta"},
+			ExpectedParameters:    []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramFour", "paramSeven", "mta"},
+			ExpectedEnv:           []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSeven", "mta"},
+			ExpectedAll:           []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix", "paramSeven", "mta"},
 			NotExpectedGeneral:    []string{"paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedSteps:      []string{"paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedStages:     []string{"paramFour", "paramFive", "paramSix"},
 			NotExpectedParameters: []string{"paramFive", "paramSix"},
-			NotExpectedEnv:        []string{"paramSix", "mta"},
+			NotExpectedEnv:        []string{"verbose", "paramSix", "mta"},
 			NotExpectedAll:        []string{},
 		},
 		{
 			Metadata:              metadata2,
-			ExpectedGeneral:       []string{"paramOne"},
-			ExpectedSteps:         []string{"paramTwo"},
-			ExpectedStages:        []string{"paramThree"},
-			ExpectedParameters:    []string{"paramFour"},
+			ExpectedGeneral:       []string{"verbose", "paramOne"},
+			ExpectedSteps:         []string{"verbose", "paramTwo"},
+			ExpectedStages:        []string{"verbose", "paramThree"},
+			ExpectedParameters:    []string{"verbose", "paramFour"},
 			ExpectedEnv:           []string{"paramFive"},
-			ExpectedAll:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
+			ExpectedAll:           []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedGeneral:    []string{"paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedSteps:      []string{"paramOne", "paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedStages:     []string{"paramOne", "paramTwo", "paramFour", "paramFive", "paramSix"},
 			NotExpectedParameters: []string{"paramOne", "paramTwo", "paramThree", "paramFive", "paramSix"},
-			NotExpectedEnv:        []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramSix"},
+			NotExpectedEnv:        []string{"verbose", "paramOne", "paramTwo", "paramThree", "paramFour", "paramSix"},
 			NotExpectedAll:        []string{},
 		},
 		{
 			Metadata:           metadata3,
-			ExpectedGeneral:    []string{},
-			ExpectedStages:     []string{},
-			ExpectedSteps:      []string{},
-			ExpectedParameters: []string{},
+			ExpectedGeneral:    []string{"verbose"},
+			ExpectedStages:     []string{"verbose"},
+			ExpectedSteps:      []string{"verbose"},
+			ExpectedParameters: []string{"verbose"},
 			ExpectedEnv:        []string{},
+			ExpectedAll:        []string{"verbose"},
 		},
 	}
 
@@ -264,12 +267,12 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.All, "incorrect filter All")
-		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Parameters, "incorrect filter Parameters")
-		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.All, "incorrect filter All")
+		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Parameters, "incorrect filter Parameters")
+		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Sidecars", func(t *testing.T) {
@@ -441,4 +444,63 @@ func TestGetContextDefaults(t *testing.T) {
 			//no assert since we just want to make sure that no panic occurs
 		})
 	})
+}
+
+func TestGetResourceParameters(t *testing.T) {
+	tt := []struct {
+		in       StepData
+		expected map[string]interface{}
+	}{
+		{
+			in:       StepData{Spec: StepSpec{Inputs: StepInputs{}}},
+			expected: map[string]interface{}{},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1"},
+					{Name: "param2"},
+				}}}},
+			expected: map[string]interface{}{},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{}},
+					{Name: "param2", ResourceRef: []ResourceReference{}},
+				}}}},
+			expected: map[string]interface{}{},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{{Name: "notAvailable", Param: "envparam1"}}},
+					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}},
+				}}}},
+			expected: map[string]interface{}{"param2": "val2"},
+		},
+	}
+
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+
+	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+	err = os.MkdirAll(cpeDir, 0700)
+	if err != nil {
+		t.Fatal("Failed to create sub directory")
+	}
+
+	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
+
+	for run, test := range tt {
+		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
+			got := test.in.GetResourceParameters(dir, "commonPipelineEnvironment")
+			assert.Equal(t, test.expected, got)
+		})
+	}
 }
