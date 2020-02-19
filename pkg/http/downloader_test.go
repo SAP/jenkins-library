@@ -25,10 +25,13 @@ func TestDownloadRequest(t *testing.T) {
 	}
 
 	workingDir, err := ioutil.TempDir("", "test detailed results")
-	assert.NoError(t, err, "Failed to create temporary directory")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
 	// clean up tmp dir
 	defer os.RemoveAll(workingDir)
 	targetFile := filepath.Join(workingDir, "abc.xml")
+
 	// function under test
 	err = client.DownloadRequest("GET", server.URL, targetFile, nil, nil)
 	// asserts
