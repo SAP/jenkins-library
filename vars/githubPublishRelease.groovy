@@ -34,8 +34,8 @@ void call(Map parameters = [:]) {
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             // execute step
-            withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
-                sh "./piper githubPublishRelease  --token ${TOKEN}"
+            withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_token')]) {
+                sh './piper githubPublishRelease'
             }
         }
     }
