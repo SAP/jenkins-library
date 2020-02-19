@@ -59,7 +59,7 @@ func TestNexusUpload(t *testing.T) {
 		"--password=admin123",
 		"--repository=maven-releases",
 		"--version=1.0",
-		"--url=" + fmt.Sprintf("%s:%s", ip, port.Port())
+		"--url=" + fmt.Sprintf("%s:%s", ip, port.Port()),
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
