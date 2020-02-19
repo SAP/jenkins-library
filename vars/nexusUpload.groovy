@@ -46,12 +46,7 @@ void call(Map parameters = [:]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            // execute step
-            withCredentials([usernamePassword(
-                credentialsId: config.credentialsId,
-                passwordVariable: 'PIPER_password',
-                usernameVariable: 'PIPER_username'
-            )]) {
+            Closure body = {
                 String url = config.url
                 String repository = config.repository
                 String version = config.version
@@ -65,6 +60,20 @@ void call(Map parameters = [:]) {
 
                 sh "./piper nexusUpload --url=$url --repository=$repository --groupId=$groupId --version=$version --artifacts=\"$artifacts\""
             }
+
+            // execute step
+            if (config.credentialsId) {
+                withCredentials([usernamePassword(
+                    credentialsId: config.credentialsId,
+                    passwordVariable: 'PIPER_password',
+                    usernameVariable: 'PIPER_username'
+                )]) {
+                    body.call()
+                }
+            } else {
+                body.call()
+            }
+
 
             jenkinsUtils.handleStepResults(STEP_NAME, true, false)
         }
