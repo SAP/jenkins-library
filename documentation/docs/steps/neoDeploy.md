@@ -33,7 +33,7 @@ none
     * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
     * If `runtimeVersion` is not provided (when using `'WAR_PARAMS'` deployment mode).
 * `AbortException`:
-    * If neo-java-web-sdk is not installed, or `neoHome`is wrong.
+    * If neo-java-web-sdk is not properly installed.
 * `CredentialNotFoundException`:
     * If the credentials cannot be resolved.
 
