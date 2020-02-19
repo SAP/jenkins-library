@@ -1,9 +1,9 @@
-_schema-version: "2.0.0"
+_schema-version: "3.1"
 ID: "<Id of your MTA>"
 version: <version number of your application>
 
 parameters:
-  hcp-deployer-version: "1.0.0"
+  hcp-deployer-version: "1.1.0"
 
 modules:
   - name: "<Name of your Fiori application>"
