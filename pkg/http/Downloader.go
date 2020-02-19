@@ -36,7 +36,7 @@ func (c *Client) DownloadRequest(method, url, filename string, header http.Heade
 
 	_, err = io.Copy(fileHandler, response.Body)
 	if err != nil {
-		return errors.Wrapf(err, "unable to copy content from url to file", filename)
+		return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 	}
 	return err
 }
