@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -41,19 +43,13 @@ func TestNexusUpload(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	// cmd := exec.Command("go", "build", "..", "-o", "pipertestbin")
-	// err = cmd.Run()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	cmd := command.Command{}
+	cmd.Dir("testdata/TestNexusIntegration/")
 
-	// when
-	params := []string{"nexusUpload", `--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"testdata/TestNexusIntegration/pom.xml"}]`, "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=" + fmt.Sprintf("%s:%s", ip, port.Port())}
-	c := command.Command{}
-	err = c.RunExecutable("../pipertestbin", params...)
-	if err != nil {
-		t.Log(err)
-	}
+	piperOptions := []string{"nexusUpload", `--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"pom.xml"}]`, "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=" + fmt.Sprintf("%s:%s", ip, port.Port())}
+
+	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
 	// then
 	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/foo/blob/1.0/blob-1.0.pom")
@@ -65,4 +61,11 @@ func TestNexusUpload(t *testing.T) {
 		t.Log(resp)
 	}
 
+}
+
+func getPiperExecutable() string {
+	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
+		return p
+	}
+	return "piper"
 }
