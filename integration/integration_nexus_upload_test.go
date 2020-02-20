@@ -1,10 +1,12 @@
+// +build integration
+// can be execute with go test -tags=integration ./integration/...
+
 package main
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -46,12 +48,20 @@ func TestNexusUpload(t *testing.T) {
 	cmd := command.Command{}
 	cmd.Dir("testdata/TestNexusIntegration/")
 
-	piperOptions := []string{"nexusUpload", `--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"pom.xml"}]`, "--groupId=foo", "--user=admin", "--password=admin123", "--repository=maven-releases", "--version=1.0", "--url=" + fmt.Sprintf("%s:%s", ip, port.Port())}
+	piperOptions := []string{
+		"nexusUpload",
+		`--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"pom.xml"}]`,
+		"--groupId=foo",
+		"--user=admin",
+		"--password=admin123",
+		"--repository=maven-releases",
+		"--version=1.0",
+		"--url=" + fmt.Sprintf("%s:%s", ip, port.Port()),
+	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	// then
 	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/foo/blob/1.0/blob-1.0.pom")
 	if resp.StatusCode != http.StatusOK {
 		t.Log("Test failed")
@@ -61,11 +71,4 @@ func TestNexusUpload(t *testing.T) {
 		t.Log(resp)
 	}
 
-}
-
-func getPiperExecutable() string {
-	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
-		return p
-	}
-	return "piper"
 }
