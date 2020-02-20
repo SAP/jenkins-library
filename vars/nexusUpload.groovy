@@ -2,7 +2,6 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import static groovy.json.JsonOutput.toJson
 
-import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 
 
@@ -26,8 +25,6 @@ void call(Map parameters = [:]) {
 
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
-        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        parameters.jenkinsUtilsStub = null
 
         if (!parameters.get('credentialsId')) {
             // Remove null or empty credentialsId key. (Eases calling code.)
@@ -88,8 +85,6 @@ void call(Map parameters = [:]) {
             } else {
                 body.call()
             }
-
-            jenkinsUtils.handleStepResults(STEP_NAME, true, false)
         }
     }
 }
