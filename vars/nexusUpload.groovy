@@ -36,11 +36,13 @@ void call(Map parameters = [:]) {
 
         echo "nexusUpload parameters: $parameters"
 
-        git url: 'https://github.com/SAP/jenkins-library.git', branch: 'nexus-upload'
-
-        dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
-            sh 'go build -o piper . && chmod +x piper'
+        sh 'git clone https://github.com/SAP/jenkins-library.git -b nexus-upload .piper-git-checkout'
+        dir('.piper-git-checkout') {
+            dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
+                sh 'go build -o piper . && chmod +x piper && mv piper ..'
+            }
         }
+        sh 'rm -rf .piper-git-checkout'
 
 //        new PiperGoUtils(this, utils).unstashPiperBin()
 //        utils.unstash('pipelineConfigAndTests')
@@ -51,10 +53,10 @@ void call(Map parameters = [:]) {
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
-            sh 'env'
+            //sh 'env'
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
-            echo "config decoded from ENV: $config"
+            echo "config as decoded from piper itself: $config"
 
             // Hack to get things going (reading config from ENV doesn't work for some reason):
             config = parameters
@@ -86,7 +88,6 @@ void call(Map parameters = [:]) {
             } else {
                 body.call()
             }
-
 
             jenkinsUtils.handleStepResults(STEP_NAME, true, false)
         }
