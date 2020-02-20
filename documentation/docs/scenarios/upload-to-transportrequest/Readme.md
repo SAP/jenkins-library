@@ -33,7 +33,7 @@ In case of an RFC based upload the binary is not streamed to the ABAP endpoint. 
 
 The transport request can be created on the fly (see [transportRequestCreate](../../../steps/transportRequestCreate/)) or we can use an already existing transport request. In case we use an already existing transport request Id the transport request Id needs to be provided in the git commit history (see example below) or the transport request Id needs to be provided inside the job (e.g. as a job parameter).
 
-The transport request can be closed by the pipeline job (see [transportRequestRelease](../../../steps/transportRequestRelease/)))
+The transport request can be closed by the pipeline job (see [transportRequestRelease](../../../steps/transportRequestRelease/)).
 
 A git commit message containing the transportRequestId:
 
