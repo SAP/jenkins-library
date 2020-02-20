@@ -119,7 +119,7 @@ func generateHashReader(filePath string, hash hash.Hash, length int) (io.Reader,
 		return nil, err
 	}
 
-	// Get the 16 bytes hash
+	// Get the requested number of bytes from the hash
 	hashInBytes := hash.Sum(nil)[:length]
 
 	// Convert the bytes to a string
