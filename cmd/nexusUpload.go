@@ -83,7 +83,6 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 }
 
 func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) (*http.Response, error) {
-	log.Entry().Info("Upload to url '" + url + "'")
 	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
 	if err != nil {
 		// if response != nil && response.StatusCode == 400 {
@@ -96,12 +95,13 @@ func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) (*htt
 		// 	response, err = client.SendRequest(http.MethodPut, url, stream, nil, nil)
 		// }
 		// if err != nil {
-		log.Entry().Info("Failed to upload artifact\n", err)
+		// 		log.Entry().Info("Failed to upload artifact\n", err)
 		//		return nil, err
 		// }
+	} else {
+		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
 	}
-	log.Entry().Info("Response is ", response)
-	return response, nil
+	return response, err
 }
 
 func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) (*http.Response, error) {
