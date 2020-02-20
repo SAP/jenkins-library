@@ -47,10 +47,38 @@ class KarmaExecuteTestsTest extends BasePiperTest {
             containsString("cd '.' && npm install --quiet"),
             containsString("cd '.' && npm run karma")
         ))
-        assertThat(seleniumParams.dockerImage, is('node:8-stretch'))
+        assertThat(seleniumParams.dockerImage, is('node:lts-stretch'))
         assertThat(seleniumParams.dockerName, is('karma'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['NO_PROXY':'', 'no_proxy':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[karmaExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.karmaExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == seleniumParams.dockerImage
+        assert expectedOptions == seleniumParams.dockerOptions
+        assert expectedWorkspace == seleniumParams.dockerWorkspace
+        expectedEnvVars.each { key, value ->
+            assert seleniumParams.dockerEnvVars[key] == value
+        }
     }
 
     @Test

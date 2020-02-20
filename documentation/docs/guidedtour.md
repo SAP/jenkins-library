@@ -12,28 +12,45 @@ The stated instructions assume the use of this application.
 
 * You have installed a Linux system with at least 4 GB memory. **Note:** We have tested our samples on Ubuntu 16.04. On Microsoft Windows, you might face some issues.
 * You have installed the newest version of Docker. See [Docker Community Edition](https://docs.docker.com/install/). **Note:** we have tested on Docker 18.09.6.
-* You have installed Jenkins 2.60.3 or higher. **Recommendation:** We recommend to use the `cx-server` toolkit. See **(Optional) Install the `cx-server` Toolkit for Jenkins**. **Note:** If you use your **own Jenkins installation** you need to care for "Piper" specific configuration. Follow [my own Jenkins installation][guidedtour-my-own-jenkins].
 * Your system has access to [GitHub.com][github].
 
-## (Optional) Install the `cx-server` Toolkit for Jenkins
+## **Recommended:** Install the Cx Server Life-cycle Management for Jenkins
 
-`cx-server`is a lifecycle management toolkit that provides Docker images with a preconfigured Jenkins and a Nexus-based cache to facilitate the configuration and usage of Jenkins.
+Cx Server is a life-cycle management tool to bootstrap a pre-configured Jenkins instance within minutes.
+All required plugins and shared libraries are included automatically.
+It is based on Docker images provided by project "Piper".
 
-To use the toolkit, get the `cx-server` script and its configuration file `server.cfg` by using the following command:
+To get started, initialize Cx Server by using this `docker run` command:
 
 ```sh
 docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
 ```
 
-When the files are downloaded into the current directory, launch the Jenkins server by using the following command:
+This creates a few files in your current working directory.
+The shell script `cx-server` and the configuration file `server.cfg` are of special interest.
+
+Now, you can start the Jenkins server by using the following command:
 
 ```sh
+chmod +x ./cx-server
 ./cx-server start
 ```
 
-For more information on the Jenkins lifecycle management and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
+For more information on the Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
+
+### On your own: Custom Jenkins Setup
+
+If you use your own Jenkins installation, you need to care for the configuration that is specific to project "Piper".
+This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
+If you choose to go this path, follow the [Custom Jenkins Setup guide][resources-custom-jenkins].
+
+**Note:** This option is not supported for SAP Cloud SDK projects.
 
 ## (Optional) Sample Application
+
+!!! info "Choosing the best sample application"
+    Depending on the type of project you're interested in, different sample applications might be interesting.
+    For SAP Cloud SDK, please have a look at the [Address Manager](https://github.com/sap/cloud-s4-sdk-book) example application.
 
 Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a **GitHub** space, you can use any version control system based on Git like **GitLab** or **plain git**. **Note:** A `public` GitHub repository is visible to the public. The configuration files may contain data you don't want to expose, so use a `private` repository.
 
@@ -64,26 +81,33 @@ Copy the sources of the application into your own Git repository. While we will 
    ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
    </p>
 
-1. Provide a name for your new item (for example, *My First Pipeline*) and select **Pipeline**.
+1. Provide a name for your new item (for example, *My First Pipeline*) and select **Multibranch Pipeline**.
    <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline.png "Jenkins New Item")
+   </p>
+   **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
+
+1. For **Branch Sources**, choose **Add source**, select **Git** as source repository.
+   <p align="center">
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
    </p>
 
-1. For **Definition** in the **Pipeline** options, choose **Pipeline script from SCM**.
+1. For **Project Repository** in the **Git** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in **Credentials**.
 
-1. For **SCM**, choose **Git**.
-
-1. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
+1. For **Discover branches**, choose **Add** and **Filter by name (with wildcards)**.
    <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
+   </p>
+   A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
+
+1. For **Include** in the **Filter by name** section, enter the branch name `1_REST_persist_in_Memory`.
+   <p align="center">
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-FilterByName.png "Discover Branches - Filter By Name")
    </p>
 
-1. For **Branch Specifier** in the **Branches to build** section, enter the branch name `*/1_REST_persist_in_Memory`.
+1. Choose **Save**. **Result:** Jenkins scans the repository for branches and filters them according to the specified **Includes**. If the branch is detected, it is built.
 
-1. Choose **Save**.
-
-1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the single stage "prepare".
-
+For additional information about multibranch pipelines, please refer to the [Jenkins documentation][jenkins-io-multibranch].
 
 ## Add a Build Step
 
@@ -169,17 +193,20 @@ Open the application name to get into the `Application Overview`. Open the **App
 
 ## What's Next
 
-You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with default pipelines. Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
+You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
+Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline**
+and **SAP Cloud SDK Pipeline** help you quickly build and deliver your apps.
+Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
 
 Please also consult the blog post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd] and get tons of informations around the application development with the [S/4HANA Cloud SDK][sap-blog-s4-sdk-first-steps].
 
-
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
 [guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
+[resources-custom-jenkins]:          customjenkins.md
 [resources-configuration]:           configuration.md
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
@@ -189,12 +216,13 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 [sap-blog-s4-sdk-first-steps]:       https://blogs.sap.com/2017/05/10/first-steps-with-sap-s4hana-cloud-sdk/
 [sap-blog-ci-cd]:                    https://blogs.sap.com/2017/09/20/continuous-integration-and-delivery/
 
-[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
+[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 
 [cloud-cf-helloworld-nodejs]:        https://github.com/SAP/cloud-cf-helloworld-nodejs
 [github]:                            https://github.com
 [jenkins-io-documentation]:          https://jenkins.io/doc/
 [jenkins-io-jenkinsfile]:            https://jenkins.io/doc/book/pipeline/jenkinsfile
+[jenkins-io-multibranch]:            https://jenkins.io/doc/book/pipeline/multibranch/
 
 [github-create-org]:                 https://help.github.com/en/articles/creating-a-new-organization-from-scratch
 [github-duplicate-repo]:             [https://help.github.com/en/articles/duplicating-a-repository]

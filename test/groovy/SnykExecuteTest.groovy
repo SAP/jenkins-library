@@ -17,6 +17,8 @@ import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
+import com.sap.piper.MapUtils
+
 class SnykExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
@@ -89,11 +91,40 @@ class SnykExecuteTest extends BasePiperTest {
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:lts-stretch'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('buildDescriptor'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
 
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['SNYK_TOKEN':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        
+        nullScript.commonPipelineEnvironment.configuration = MapUtils.merge(
+            nullScript.commonPipelineEnvironment.configuration,
+            [steps:[snykExecute:[
+                dockerImage: expectedImage, 
+                dockerOptions: expectedOptions,
+                dockerEnvVars: expectedEnvVars,
+                dockerWorkspace: expectedWorkspace
+            ]]])
+
+        stepRule.step.snykExecute(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
     @Test
     void testScanTypeNpm() throws Exception {
         stepRule.step.snykExecute(

@@ -2,7 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Telemetry
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -44,11 +44,11 @@ def stashList(script, List stashes) {
             lock(lockName) {
                 unstash stash.name
                 echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-                steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+                steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
             }
         } else {
             echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-            steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+            steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
         }
     }
 }
@@ -59,6 +59,31 @@ def stashWithMessage(name, msg, include = '**/*.*', exclude = '', useDefaultExcl
     } catch (e) {
         echo msg + name + " (${e.getMessage()})"
     }
+}
+
+def stashStageFiles(Script script, String stageName) {
+    List stashes = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: []
+
+    stashList(script, stashes)
+
+    //NOTE: We do not delete the directory in case Jenkins runs on Kubernetes.
+    // deleteDir() is not required in pods, but would be nice to have the same behaviour and leave a clean fileSystem.
+    if (!isInsidePod(script)) {
+        script.deleteDir()
+    }
+}
+
+def unstashStageFiles(Script script, String stageName, List stashContent = []) {
+    stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+
+    script.deleteDir()
+    unstashAll(stashContent)
+
+    return stashContent
+}
+
+boolean isInsidePod(Script script) {
+    return script.env.POD_NAME
 }
 
 def unstash(name, msg = "Unstash failed:") {
@@ -109,7 +134,7 @@ void pushToSWA(Map parameters, Map config) {
 
 @NonCPS
 static String fillTemplate(String templateText, Map binding) {
-    def engine = new SimpleTemplateEngine()
+    def engine = new GStringTemplateEngine()
     String result = engine.createTemplate(templateText).make(binding)
     return result
 }
@@ -122,4 +147,21 @@ static String downloadSettingsFromUrl(script, String url, String targetFile = 's
     def settings = script.httpRequest(url)
     script.writeFile(file: targetFile, text: settings.getContent())
     return targetFile
+}
+
+/*
+ * Uses the Maven Help plugin to evaluate the given expression into the resolved values
+ * that maven sees at / generates at runtime. This way, the exact Maven coordinates and
+ * variables can be used.
+ */
+static String evaluateFromMavenPom(Script script, String pomFileName, String pomPathExpression) {
+
+    String resolvedExpression = script.mavenExecute(
+        script: script,
+        pomPath: pomFileName,
+        goals: 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+        defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
+        returnStdout: true
+    )
+    return resolvedExpression
 }

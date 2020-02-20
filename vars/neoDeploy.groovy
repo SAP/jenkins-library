@@ -208,14 +208,14 @@ void call(parameters = [:]) {
                 )
 
                 lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                    deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
+                    deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
         }
     }
 }
 
-private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
+private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
     String logFolder = 'logs/neo'
 
@@ -236,13 +236,15 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
                 echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
 
                 if (warAction == WarAction.ROLLING_UPDATE) {
-                    def returnCodeRollingUpdate = sh returnStatus: true, script: neoCommandHelper.rollingUpdateCommand()
-                    if(returnCodeRollingUpdate != 0){
+                    try {
+                        sh neoCommandHelper.rollingUpdateCommand()
+                    } catch (e) {
                         error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
                     }
                 } else {
-                    def returnCodeDeploy = sh returnStatus: true, script: neoCommandHelper.deployCommand()
-                    if(returnCodeDeploy != 0){
+                    try {
+                        sh neoCommandHelper.deployCommand()
+                    } catch (e) {
                         error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
                     }
                     sh neoCommandHelper.restartCommand()
@@ -250,8 +252,9 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
 
 
             } else if (deployMode == DeployMode.MTA) {
-                def returnCodeMTA = sh returnStatus: true, script: neoCommandHelper.deployMta()
-                if(returnCodeMTA != 0){
+                try {
+                    sh neoCommandHelper.deployMta()
+                } catch (e) {
                     error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
                 }
             }

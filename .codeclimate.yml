@@ -1,3 +1,7 @@
+version: "2"
+checks:
+  return-statements:
+    enabled: false
 plugins:
   codenarc:
     enabled: true
@@ -12,12 +16,19 @@ plugins:
     exclude_patterns:
     - "documentation/**/images/"
     - "cfg/id_rsa.enc"
+    - "**/testdata/**"
   fixme:
     enabled: true
     config:
       strings:
       - TODO
       - FIXME
+  gofmt:
+    enabled: true
+  golint:
+    enabled: true
+  govet:
+    enabled: true
   markdownlint:
     enabled: true
     checks:

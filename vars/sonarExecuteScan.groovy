@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import static com.sap.piper.Prerequisites.checkScript
 
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import java.nio.charset.StandardCharsets
 
@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Pull-Request voting only:
-     * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
-     * deprecated: only supported in LTS / < 7.2
+     * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
+     * deprecated: only supported below SonarQube v7.2
      */
     'githubApiUrl',
     /**
@@ -33,12 +33,12 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues Jenkins credential id
      */
     'githubTokenCredentialsId',
     /**
-     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [SonarQube docs](https://docs.sonarqube.org/latest/user-guide/user-token/)
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
@@ -56,13 +56,13 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'disableInlineComments',
     /**
      * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * see dockerExecute
+     * see [dockerExecute](dockerExecute.md)
      */
     'dockerImage',
     /**
@@ -72,7 +72,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'legacyPRHandling',
@@ -119,22 +119,27 @@ void call(Map parameters = [:]) {
         if(configuration.options instanceof String)
             configuration.options = [].plus(configuration.options)
 
+        loadCertificates(configuration)
+
         def worker = { config ->
-            withSonarQubeEnv(config.instance) {
-                try{
-                    loadSonarScanner(config)
+            try {
+                withSonarQubeEnv(config.instance) {
 
-                    loadCertificates(config)
+                        loadSonarScanner(config)
 
-                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                    // prefix options
-                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                        if(fileExists('.certificates/cacerts')){
+                            sh 'mv .certificates/cacerts .sonar-scanner/jre/lib/security/cacerts'
+                        }
 
-                    sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
-                }finally{
-                    sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                        if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                        if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                        // prefix options
+                        config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+
+                        sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
                 }
+            } finally {
+                sh 'rm -rf .sonar-scanner .certificates .scannerwork'
             }
         }
 
@@ -172,7 +177,7 @@ void call(Map parameters = [:]) {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
                     config.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
                     config.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    config.options.add("sonar.pullrequest.branch=${env.CHANGE_BRANCH}")
                     config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
                     switch(config.pullRequestProvider){
                         case 'GitHub':
@@ -189,6 +194,9 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage
         ){
+            if(!script.fileExists('.git')) {
+                utils.unstash('git')
+            }
             worker(configuration)
         }
     }
@@ -218,7 +226,7 @@ private void loadCertificates(Map config) {
         '-import',
         '-noprompt',
         '-storepass changeit',
-        '-keystore .sonar-scanner/jre/lib/security/cacerts'
+        "-keystore ${certificateFolder}cacerts"
     ]
     if (config.customTlsCertificateLinks){
         if(config.verbose){

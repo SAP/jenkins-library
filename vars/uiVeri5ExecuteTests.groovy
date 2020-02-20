@@ -3,7 +3,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -107,8 +107,8 @@ void call(Map parameters = [:]) {
         ], config)
 
         config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, config)] : utils.unstashAll(config.stashContent)
-        config.installCommand = SimpleTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
-        config.runCommand = SimpleTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
+        config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
+        config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
         config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
 
         seleniumExecuteTests(
@@ -122,6 +122,10 @@ void call(Map parameters = [:]) {
             sidecarImage: config.sidecarImage,
             stashContent: config.stashContent
         ) {
+            sh returnStatus: true, script: """
+                node --version
+                npm --version
+            """
             try {
                 sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
                 sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"

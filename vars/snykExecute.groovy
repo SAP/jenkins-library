@@ -4,6 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.mta.MtaMultiplexer
+import com.sap.piper.MapUtils
 
 import groovy.transform.Field
 
@@ -23,6 +24,12 @@ import groovy.transform.Field
     'buildDescriptorFile',
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute*/
+    'dockerWorkspace',
     /**
      * Only scanType 'mta': Exclude modules from MTA projects.
      */
@@ -103,9 +110,15 @@ void call(Map parameters = [:]) {
                         dockerExecute(
                             script: script,
                             dockerImage: config.dockerImage,
-                            stashContent: config.stashContent,
-                            dockerEnvVars: ['SNYK_TOKEN': token]
+                            dockerEnvVars: MapUtils.merge(['SNYK_TOKEN': token],config.dockerEnvVars?:[:]),
+                            dockerWorkspace: config.dockerWorkspace,
+                            dockerOptions: config.dockerOptions,
+                            stashContent: config.stashContent
                         ) {
+                            sh returnStatus: true, script: """
+                                node --version
+                                npm --version
+                            """
                             // install Snyk
                             sh 'npm install snyk --global --quiet'
                             if(config.toHtml){

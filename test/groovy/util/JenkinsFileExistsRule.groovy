@@ -10,9 +10,23 @@ class JenkinsFileExistsRule implements TestRule {
     final BasePipelineTest testInstance
     final List existingFiles
 
+    /**
+     * The List of files that have been queried via `fileExists`
+     */
+    final List queriedFiles = []
+
+    JenkinsFileExistsRule(BasePipelineTest testInstance) {
+        this(testInstance,[])
+    }
+
     JenkinsFileExistsRule(BasePipelineTest testInstance, List existingFiles) {
         this.testInstance = testInstance
         this.existingFiles = existingFiles
+    }
+
+    JenkinsFileExistsRule registerExistingFile(String file) {
+        existingFiles.add(file)
+        return  this
     }
 
     @Override
@@ -25,8 +39,15 @@ class JenkinsFileExistsRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s -> return s in existingFiles})
-                testInstance.helper.registerAllowedMethod('fileExists', [Map.class], {m -> return m.file in existingFiles})
+                testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s ->
+                    queriedFiles.add(s.toString())
+                    return s.toString() in existingFiles
+                })
+
+                testInstance.helper.registerAllowedMethod('fileExists', [Map.class], {m ->
+                    queriedFiles.add(m.file.toString())
+                    return m.file.toString() in existingFiles}
+                )
 
                 base.evaluate()
             }

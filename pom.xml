@@ -52,6 +52,12 @@
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>sidebar-link</artifactId>
+            <version>1.9.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>junit</artifactId>
             <version>1.23</version>
         </dependency>
@@ -136,6 +142,13 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
             <version>4.3.5.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.opensagres.js</groupId>
+            <artifactId>minimatch.java</artifactId>
+            <version>1.1.0</version>
             <scope>test</scope>
         </dependency>
 

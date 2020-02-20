@@ -28,7 +28,7 @@ On the project level, provide and adjust the following template:
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [neoDeploy](../../../steps/neoDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 ###### Screenshot: Build and Deploy Process in Jenkins
@@ -45,9 +45,11 @@ Following the convention for pipeline definitions, use a `Jenkinsfile` which res
 fioriOnCloudPlatformPipeline script:this
 ```
 
+`fioriOnCloudPlatform` is a so called _scenario step_ that wraps the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+
 ### Configuration (`.pipeline/config.yml`)
 
-This is a basic configuration example, which is also located in the sources of the project.
+This is a basic configuration example, which is also located in the sources of the project. The configuration corresponds to the steps wrapped in `fioriOnCloudPlatformPipeline`.
 
 ```yaml
 steps:
@@ -55,7 +57,6 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: '/opt/sap/mta.jar'
   neoDeploy:
-    neoHome: '/opt/sap/neo-sdk/'
     neo:
       credentialsId: 'NEO_DEPLOY'
       account: 'your-account-id'
@@ -76,11 +77,10 @@ steps:
 | `account`           | The SAP Cloud Platform account to deploy to. |
 | `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `host`           |  The SAP Cloud Platform host to deploy to. |
-| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
 
 ### Parameters
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/)
+* [mtaBuild](../../../steps/mtaBuild/)
+* [neoDeploy](../../../steps/neoDeploy/)

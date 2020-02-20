@@ -51,10 +51,17 @@ general:
 
 #Steps Specific Configuration
 steps:
+  abapEnvironmentPullGitRepo:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    gitPushMode: 'SSH'
+    verbose: false
+    gitHttpsCredentialsId: 'git'
+    gitDisableSslVerification: false
     dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
@@ -80,7 +87,7 @@ steps:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -152,9 +159,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -164,10 +174,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
   containerExecuteStructureTests:
     containerCommand: '/busybox/tail -f /dev/null'
@@ -178,6 +188,19 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  cloudFoundryCreateService:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+      serviceManifest: 'service-manifest.yml'
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
+    stashContent:
+      - 'deployDescriptor'
+  cloudFoundryCreateServiceKey:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
+  debugReportArchive:
+    shareConfidentialInformation: false
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -239,7 +262,7 @@ steps:
       runCommand: 'mvn test-compile gauge:execute'
       testOptions: '-DspecsDir=specs'
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -287,13 +310,13 @@ steps:
     dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
-      'node:8-stretch':
+      'node:lts-stretch':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -316,10 +339,15 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
+    mtaBuildTool: cloudMbt
+    platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-    dockerImage: 'ppiper/mta-archive-builder'
+    classic:
+      dockerImage: 'ppiper/mta-archive-builder'
+    cloudMbt:
+      dockerImage: 'devxci/mbtci:1.0.4'
   neoDeploy:
-    dockerImage: 's4sdk/docker-neo-cli'
+    dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     extensions: []
@@ -328,7 +356,7 @@ steps:
       credentialsId: 'CI_CREDENTIALS_ID'
 
   newmanExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     failOnError: true
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
@@ -338,7 +366,7 @@ steps:
     stashContent:
       - 'tests'
   npmExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []
@@ -369,7 +397,7 @@ steps:
         - 'opensourceConfiguration'
     npm:
       buildDescriptorFile: './package.json'
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerWorkspace: '/home/node'
       stashContent:
         - 'buildDescriptor'
@@ -431,19 +459,17 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, **/Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
-      opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
       git: ''
-      opa5: ''
       opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
@@ -476,7 +502,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -488,7 +514,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     exclude: []
     monitor: true
     scanType: 'npm'
@@ -498,11 +524,15 @@ steps:
     toJson: false
     toHtml: false
   sonarExecuteScan:
-    dockerImage: 'maven:3.5-jdk-8'
+    dockerImage: 'node:lts-stretch'
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
+  spinnakerTriggerPipeline:
+    certFileCredentialsId: 'spinnaker-client-certificate'
+    keyFileCredentialsId: 'spinnaker-client-key'
+    timeout: 60
   testsPublishResults:
     failOnError: false
     junit:
@@ -517,7 +547,7 @@ steps:
       archive: false
       active: false
     cobertura:
-      pattern: '**/target/coverage/cobertura-coverage.xml'
+      pattern: '**/target/coverage/**/cobertura-coverage.xml'
       onlyStableBuilds: true
       allowEmptyResults: true
       archive: false
@@ -575,3 +605,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'

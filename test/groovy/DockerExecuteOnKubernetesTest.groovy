@@ -17,6 +17,8 @@ import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
 
+import hudson.AbortException
+
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
@@ -29,6 +31,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -39,6 +42,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         .around(shellRule)
         .around(loggingRule)
         .around(stepRule)
+        .around(thrown)
     int whichDockerReturnValue = 0
     def bodyExecuted
     def dockerImage
@@ -228,7 +232,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testSidecarDefault() {
+    void testSidecarDefaultWithContainerMap() {
         List portMapping = []
         helper.registerAllowedMethod('portMapping', [Map.class], {m ->
             portMapping.add(m)
@@ -271,6 +275,36 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+    }
+
+    @Test
+    void testSidecarDefaultWithParameters() {
+        List portMapping = []
+        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+            portMapping.add(m)
+            return m
+        })
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            containerName: 'mavenexecute',
+            dockerOptions: '-it',
+            dockerVolumeBind: ['my_vol': '/my_vol'],
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000'],
+            dockerWorkspace: '/home/piper',
+            sidecarEnvVars: ['testEnv': 'testVal'],
+            sidecarImage: 'postgres',
+            sidecarName: 'postgres',
+            sidecarReadyCommand: 'pg_isready'
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+
+        assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
+        assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres')))
     }
 
     @Test
@@ -435,7 +469,24 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void tastStashIncludesAndExcludes() {
+    void testDockerExecuteOnKubernetesExecutionFails() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Execution failed.')
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { throw new AbortException('Execution failed.') }
+    }
+
+    @Test
+    void testStashIncludesAndExcludes() {
         nullScript.commonPipelineEnvironment.configuration = [
             steps: [
                 dockerExecuteOnKubernetes: [
@@ -457,8 +508,14 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-        assertThat(stashList[0], allOf(hasEntry('includes','workspace/include.test'), hasEntry('excludes','workspace/exclude.test')))
-        assertThat(stashList[1], allOf(hasEntry('includes','container/include.test'), hasEntry('excludes','container/exclude.test')))
+        assertThat(stashList, hasItem(allOf(
+            not(hasEntry('allowEmpty', true)),
+            hasEntry('includes','workspace/include.test'), 
+            hasEntry('excludes','workspace/exclude.test'))))
+        assertThat(stashList, hasItem(allOf(
+            not(hasEntry('allowEmpty', true)),
+            hasEntry('includes','container/include.test'), 
+            hasEntry('excludes','container/exclude.test'))))
     }
 
 

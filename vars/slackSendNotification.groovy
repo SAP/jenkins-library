@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -65,18 +65,18 @@ void call(Map parameters = [:]) {
 
         def buildStatus = script.currentBuild.result
         // resolve templates
-        config.color = SimpleTemplateEngine.newInstance().createTemplate(config.color).make([buildStatus: buildStatus]).toString()
+        config.color = GStringTemplateEngine.newInstance().createTemplate(config.color).make([buildStatus: buildStatus]).toString()
         if (!config?.message){
             if (!buildStatus) {
                 echo "[${STEP_NAME}] currentBuild.result is not set. Skipping Slack notification"
                 return
             }
-            config.message = SimpleTemplateEngine.newInstance().createTemplate(config.defaultMessage).make([buildStatus: buildStatus, env: env]).toString()
+            config.message = GStringTemplateEngine.newInstance().createTemplate(config.defaultMessage).make([buildStatus: buildStatus, env: env]).toString()
         }
         Map options = [:]
         if(config.credentialsId)
             options.put('tokenCredentialId', config.credentialsId)
-        for(String entry : STEP_CONFIG_KEYS.minus('credentialsId'))
+        for(String entry : ['baseUrl','channel','color','message'])
             if(config.get(entry))
                 options.put(entry, config.get(entry))
         slackSend(options)
