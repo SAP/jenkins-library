@@ -44,7 +44,7 @@ func TestNexusUpload(t *testing.T) {
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"myapp-1.0","type":"jar","file":"test.jar"},{"artifactId":"myapp-yaml","classifier":"myapp-1.0","type":"yaml","file":"mta.yaml"},{"artifactId":"myapp-mtar","classifier":"myapp-1.0","type":"mtar","file":"test.mtar"}]`,
+		`--artifacts=[{"artifactId":"myapp-pom","classifier":"","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"","type":"jar","file":"test.jar"},{"artifactId":"myapp-yaml","classifier":"","type":"yaml","file":"mta.yaml"},{"artifactId":"myapp-mtar","classifier":"","type":"mtar","file":"test.mtar"}]`,
 		"--groupId=mygroup",
 		"--user=admin",
 		"--password=admin123",
