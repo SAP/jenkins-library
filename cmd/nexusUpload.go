@@ -47,9 +47,18 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 			artifactName += "-" + artifact.Classifier
 		}
 		artifactName += "." + artifact.Type
-		url := config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
-		url = "http://" + strings.ReplaceAll(url, "//", "/")
 
+		var url string
+		switch config.NexusVersion {
+		case 2:
+			url = config.Url + "/content/repositories/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
+		case 3:
+			url = config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
+		default:
+			log.Entry().WithError(err).Fatal("Unsupported Nexus version ", config.NexusVersion)
+		}
+
+		url = "http://" + strings.ReplaceAll(url, "//", "/")
 		log.Entry().Info("Trying to upload ", artifact.File, " to ", url)
 
 		uploadHash(&client, artifact.File, url+".md5", md5.New(), 16)
