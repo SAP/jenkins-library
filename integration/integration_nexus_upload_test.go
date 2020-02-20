@@ -19,8 +19,9 @@ import (
 func TestNexusUpload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus3:3.14.0", //FIXME in 3.14.0 nexus still has a hardcoded admin pw by default. In later versions the password is written to a file in a volueme -> harder to create the testcase
+		Image:        "sonatype/nexus3:3.21.1",
 		ExposedPorts: []string{"8081/tcp"},
+		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
 		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
 	}
 	nexusContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
