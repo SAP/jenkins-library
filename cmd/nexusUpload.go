@@ -50,9 +50,9 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 
 		var url string
 		switch config.NexusVersion {
-		case 2:
+		case "nexus2":
 			url = config.Url + "/content/repositories/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
-		case 3:
+		case "nexus3":
 			url = config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
 		default:
 			log.Entry().WithError(err).Fatal("Unsupported Nexus version ", config.NexusVersion)

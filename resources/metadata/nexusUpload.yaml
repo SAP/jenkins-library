@@ -11,14 +11,14 @@ spec:
         type: jenkins
     params:
       - name: nexusVersion
-        type: int
+        type: string
         description: The nexus Repository Manager version.
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
         mandatory: false
-        default: 3
+        default: nexus3
       - name: url
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.

@@ -12,7 +12,7 @@ import (
 )
 
 type nexusUploadOptions struct {
-	NexusVersion int    `json:"nexusVersion,omitempty"`
+	NexusVersion string `json:"nexusVersion,omitempty"`
 	Url          string `json:"url,omitempty"`
 	GroupID      string `json:"groupId,omitempty"`
 	Version      string `json:"version,omitempty"`
@@ -58,7 +58,7 @@ func NexusUploadCommand() *cobra.Command {
 }
 
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
-	cmd.Flags().IntVar(&stepConfig.NexusVersion, "nexusVersion", 3, "The nexus Repository Manager version.")
+	cmd.Flags().StringVar(&stepConfig.NexusVersion, "nexusVersion", "nexus3", "The nexus Repository Manager version.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the artifacts.")
@@ -84,7 +84,7 @@ func nexusUploadMetadata() config.StepData {
 						Name:        "nexusVersion",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
