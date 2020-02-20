@@ -19,56 +19,48 @@ import (
 func TestNexusUpload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus3:3.14.0", //FIXME in 3.14.0 nexus still has a hardcoded admin pw by default. In later versions the password is written to a file in a volueme -> harder to create the testcase
+		Image:        "sonatype/nexus3:3.21.1",
 		ExposedPorts: []string{"8081/tcp"},
-		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(time.Minute * 5), // Nexus takes more then one minute to boot
+		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
+		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
 	}
 	nexusContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 	defer nexusContainer.Terminate(ctx)
 	ip, err := nexusContainer.Host(ctx)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 	port, err := nexusContainer.MappedPort(ctx, "8081")
-	if err != nil {
-		t.Error(err)
-	}
-	url := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	assert.NoError(t, err, "Could not map port for nexus container")
+	nexusIpAndPort := fmt.Sprintf("%s:%s", ip, port.Port())
+	url := "http://" + nexusIpAndPort
 	resp, err := http.Get(url)
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
 	cmd := command.Command{}
 	cmd.Dir("testdata/TestNexusIntegration/")
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"pom.xml"}]`,
-		"--groupId=foo",
+		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"myapp-1.0","type":"jar","file":"Test.jar"}]`,
+		"--groupId=mygroup",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=maven-releases",
 		"--version=1.0",
-		"--url=" + fmt.Sprintf("%s:%s", ip, port.Port()),
+		"--url=" + nexusIpAndPort,
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/foo/blob/1.0/blob-1.0.pom")
-	if resp.StatusCode != http.StatusOK {
-		t.Log("Test failed")
-		t.Log(err)
-	}
-	if resp != nil {
-		t.Log(resp)
-	}
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
 }
