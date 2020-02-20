@@ -54,59 +54,7 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 
 	c := strings.Join(append([]string{e}, p...), " ")
 
-	if m.stdoutReturn != nil {
-		for k, v := range m.stdoutReturn {
-
-			found := k == c
-
-			if !found {
-
-				r, e := regexp.Compile(k)
-				if e != nil {
-					return e
-					// we don't distinguish here between an error returned
-					// since it was configured or returning this error here
-					// indicating an invalid regex. Anyway: when running the
-					// test we will see it ...
-				}
-
-				if r.MatchString(c) {
-					found = true
-				}
-			}
-
-			if found {
-				m.stdout.Write([]byte(v))
-			}
-		}
-	}
-
-	if m.shouldFailOnCommand != nil {
-		for k, v := range m.shouldFailOnCommand {
-
-			found := k == c
-
-			if !found {
-				r, e := regexp.Compile(k)
-				if e != nil {
-					return e
-					// we don't distinguish here between an error returned
-					// since it was configured or returning this error here
-					// indicating an invalid regex. Anyway: when running the
-					// test we will see it ...
-				}
-				if r.MatchString(c) {
-					found = true
-				}
-			}
-
-			if found {
-				return v
-			}
-		}
-	}
-
-	return nil
+	return handleCall(c, m.stdoutReturn, m.shouldFailOnCommand, m.stdout)
 }
 
 func (m *execMockRunner) Stdout(out io.Writer) {
@@ -130,11 +78,18 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 
-	if m.stdoutReturn != nil {
-		for k, v := range m.stdoutReturn {
+	return handleCall(c, m.stdoutReturn, m.shouldFailOnCommand, m.stdout)
+}
 
-			found := k == c
+func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+
+	if stdoutReturn != nil {
+		for k, v := range stdoutReturn {
+
+			found := k == call
+
 			if !found {
+
 				r, e := regexp.Compile(k)
 				if e != nil {
 					return e
@@ -143,22 +98,22 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 					// indicating an invalid regex. Anyway: when running the
 					// test we will see it ...
 				}
-				if r.MatchString(c) {
+				if r.MatchString(call) {
 					found = true
 
 				}
 			}
 
 			if found {
-				m.stdout.Write([]byte(m.stdoutReturn[v]))
+				stdout.Write([]byte(v))
 			}
 		}
 	}
 
-	if m.shouldFailOnCommand != nil {
-		for k, v := range m.shouldFailOnCommand {
+	if shouldFailOnCommand != nil {
+		for k, v := range shouldFailOnCommand {
 
-			found := k == c
+			found := k == call
 
 			if !found {
 				r, e := regexp.Compile(k)
@@ -169,7 +124,7 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 					// indicating an invalid regex. Anyway: when running the
 					// test we will see it ...
 				}
-				if r.MatchString(c) {
+				if r.MatchString(call) {
 					found = true
 
 				}
