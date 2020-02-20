@@ -12,7 +12,7 @@ import (
 )
 
 type artifactDescription struct {
-	ID         string `json:"id"`
+	ID         string `json:"artifactId"`
 	Classifier string `json:"classifier"`
 	Type       string `json:"type"`
 	File       string `json:"file"`
@@ -33,8 +33,9 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	clientOptions := piperHttp.ClientOptions{Username: config.User, Password: config.Password, Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	client.SetOptions(clientOptions)
 
+	groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
+
 	for _, artifact := range artifacts {
-		groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
 		artifactName := artifact.ID + "-" + config.Version + "." + artifact.Type
 		url := config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
 		url = "http://" + strings.ReplaceAll(url, "//", "/")
