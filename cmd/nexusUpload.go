@@ -42,7 +42,11 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
 
 	for _, artifact := range artifacts {
-		artifactName := artifact.ID + "-" + config.Version + "." + artifact.Type
+		artifactName := artifact.ID + "-" + config.Version
+		if len(artifact.Classifier) > 0 {
+			artifactName += "-" + artifact.Classifier
+		}
+		artifactName += "." + artifact.Type
 		url := config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
 		url = "http://" + strings.ReplaceAll(url, "//", "/")
 
