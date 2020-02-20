@@ -87,7 +87,7 @@ steps:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -199,6 +199,8 @@ steps:
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
+  debugReportArchive:
+    shareConfidentialInformation: false
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -260,7 +262,7 @@ steps:
       runCommand: 'mvn test-compile gauge:execute'
       testOptions: '-DspecsDir=specs'
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -308,13 +310,13 @@ steps:
     dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
-      'node:8-stretch':
+      'node:lts-stretch':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -337,7 +339,7 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaBuildTool: classic
+    mtaBuildTool: cloudMbt
     platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     classic:
@@ -354,7 +356,7 @@ steps:
       credentialsId: 'CI_CREDENTIALS_ID'
 
   newmanExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     failOnError: true
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
@@ -364,7 +366,7 @@ steps:
     stashContent:
       - 'tests'
   npmExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []
@@ -395,7 +397,7 @@ steps:
         - 'opensourceConfiguration'
     npm:
       buildDescriptorFile: './package.json'
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerWorkspace: '/home/node'
       stashContent:
         - 'buildDescriptor'
@@ -457,7 +459,7 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, **/Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
@@ -500,7 +502,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:lts-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -512,7 +514,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     exclude: []
     monitor: true
     scanType: 'npm'
@@ -522,7 +524,7 @@ steps:
     toJson: false
     toHtml: false
   sonarExecuteScan:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:lts-stretch'
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'

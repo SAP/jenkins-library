@@ -12,7 +12,8 @@ RUN export GIT_COMMIT=$(git rev-parse HEAD) && \
     CGO_ENABLED=0 go build \
         -ldflags \
             "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
-            -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY}" \
+            -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY} \
+            -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
         -o piper
 
 # FROM gcr.io/distroless/base:latest

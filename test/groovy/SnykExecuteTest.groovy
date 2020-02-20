@@ -91,7 +91,7 @@ class SnykExecuteTest extends BasePiperTest {
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:lts-stretch'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('buildDescriptor'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }

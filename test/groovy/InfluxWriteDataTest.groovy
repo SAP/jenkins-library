@@ -1,4 +1,5 @@
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.analytics.InfluxData
 
 import org.junit.Before
@@ -35,6 +36,13 @@ class InfluxWriteDataTest extends BasePiperTest {
     Map fileMap = [:]
     Map stepMap = [:]
     String echoLog = ''
+    String influxVersion
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        String getPluginVersion(name) {
+            return influxVersion
+        }
+    }
 
     @Before
     void init() throws Exception {
@@ -47,6 +55,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         stepMap = [:]
         //reset fileMap
         fileMap = [:]
+        influxVersion = '1.15'
 
         helper.registerAllowedMethod('readYaml', [Map.class], { map ->
             return [
@@ -56,6 +65,8 @@ class InfluxWriteDataTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('writeFile', [Map.class],{m -> fileMap[m.file] = m.text})
         helper.registerAllowedMethod('step', [Map.class],{m -> stepMap = m})
+
+        helper.registerAllowedMethod('influxDbPublisher', [Map.class],{m -> stepMap = m})
     }
 
 
@@ -63,7 +74,10 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxWriteDataWithDefault() throws Exception {
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        stepRule.step.influxWriteData(script: nullScript)
+        stepRule.step.influxWriteData(
+            script: nullScript,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+        )
 
         assertThat(loggingRule.log, containsString('Artifact version: 1.2.3'))
 
@@ -77,6 +91,8 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertThat(fileMap, hasKey('influx_data.json'))
         assertThat(fileMap, hasKey('jenkins_data_tags.json'))
         assertThat(fileMap, hasKey('influx_data_tags.json'))
+
+        assertThat(stepMap['$class'], is('InfluxDbPublisher'))
 
         assertJobStatusSuccess()
     }
@@ -120,7 +136,11 @@ class InfluxWriteDataTest extends BasePiperTest {
         helper.registerAllowedMethod("deleteDir", [], null)
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        stepRule.step.influxWriteData(script: nullScript, wrapInNode: true)
+        stepRule.step.influxWriteData(
+            script: nullScript,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            wrapInNode: true
+        )
 
         assertThat(nodeCalled, is(true))
 
@@ -132,6 +152,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         stepRule.step.influxWriteData(
             //juStabUtils: utils,
             script: nullScript,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             influxServer: 'myInstance',
             customData: [key1: 'test1'],
             customDataTags: [tag1: 'testTag1'],
@@ -152,7 +173,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         InfluxData.addField('test_data', 'key1', 'keyValue1')
         InfluxData.addTag('test_data', 'tag1', 'tagValue1')
         stepRule.step.influxWriteData(
-            //juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             script: nullScript,
             influxServer: 'myInstance'
         )
@@ -160,6 +181,24 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertThat(stepMap.customDataTags, allOf(hasKey('tag1'), hasValue('testTag1')))
         assertThat(stepMap.customDataMap, hasKey('test_data'))
         assertThat(stepMap.customDataMapTags, hasKey('test_data'))
+    }
+
+    @Test
+    void testInfluxWriteDataPluginVersion2() {
+
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        influxVersion = '2.0'
+        stepRule.step.influxWriteData(
+            script: nullScript,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+        )
+
+        assertThat(loggingRule.log, containsString('Artifact version: 1.2.3'))
+
+        assertThat(stepMap.selectedTarget, is('testInflux'))
+        assertThat(stepMap.customPrefix, isEmptyOrNullString())
+
+        assertThat(stepMap['$class'], isEmptyOrNullString())
     }
 
 }

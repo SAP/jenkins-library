@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
@@ -107,9 +108,14 @@ const completeScript = `#!/bin/bash
 xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
-func xsDeploy(XsDeployOptions xsDeployOptions) error {
+func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
-	return runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
+	err := runXsDeploy(config, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
+	if err != nil {
+		log.Entry().
+			WithError(err).
+			Fatal("failed to execute xs deployment")
+	}
 }
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
