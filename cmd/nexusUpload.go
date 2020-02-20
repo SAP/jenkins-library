@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -33,7 +32,7 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	var artifacts []artifactDescription
 	err := json.Unmarshal([]byte(config.Artifacts), &artifacts)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to convert JSON: %s", err))
+		log.Entry().WithError(err).Fatal("Failed to convert JSON ", config.Artifacts)
 	}
 
 	client := piperHttp.Client{}
@@ -55,18 +54,17 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 		var file *os.File
 		file, err = os.Open(artifact.File)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to open artifact file: %s", err))
+			log.Entry().WithError(err).Fatal("Failed to open artifact file ", artifact.File)
 		}
 
 		defer file.Close()
 
 		_, err = uploadToNexus(&client, file, url)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to upload artifact: %s", err))
+			log.Entry().WithError(err).Fatal("Failed to upload artifact ", artifact.File)
 		}
 	}
 
-	//log.Entry().WithField("customKey", "customValue").Info("This is how you write a log message with a custom field ...")
 	return err
 }
 
@@ -95,12 +93,12 @@ func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) (*htt
 func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) (*http.Response, error) {
 	hashReader, err := generateHashReader(filePath, hash, length)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to get hash: %s", err))
+		log.Entry().WithError(err).Fatal("Failed to generate hash")
 	}
 	var response *http.Response
 	response, err = uploadToNexus(client, hashReader, url)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to upload md5 hash: %s", err))
+		log.Entry().WithError(err).Fatal("Failed to upload hash")
 	}
 	return response, nil
 }
