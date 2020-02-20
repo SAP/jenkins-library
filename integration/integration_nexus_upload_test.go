@@ -44,7 +44,7 @@ func TestNexusUpload(t *testing.T) {
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"myapp-1.0","type":"jar","file":"Test.jar"}]`,
+		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"myapp-1.0","type":"jar","file":"test.jar"},{"artifactId":"myapp-yaml","classifier":"myapp-1.0","type":"yaml","file":"mta.yaml"},{"artifactId":"myapp-mtar","classifier":"myapp-1.0","type":"mtar","file":"test.mtar"}]`,
 		"--groupId=mygroup",
 		"--user=admin",
 		"--password=admin123",
@@ -61,6 +61,14 @@ func TestNexusUpload(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-yaml/1.0/myapp-yaml-1.0.yaml")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-mtar/1.0/myapp-mtar-1.0.mtar")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 }
