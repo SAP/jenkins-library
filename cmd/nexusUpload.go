@@ -34,16 +34,16 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	client.SetOptions(clientOptions)
 
 	for _, artifact := range artifacts {
-		groupPath := strings.ReplaceAll(config.groupId, ".", "/")
-		artifactName := artifact.ID + "-" config.Version + "." + artifact.Type
-		url := "http://" + config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
-		url = strings.ReplaceAll(url, "//", "/")
+		groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
+		artifactName := artifact.ID + "-" + config.Version + "." + artifact.Type
+		url := config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
+		url = "http://" + strings.ReplaceAll(url, "//", "/")
 
 		log.Entry().Info("Trying to upload ", artifact.File, " to ", url)
 
 		response, err := client.UploadRequest(http.MethodPut, url, artifact.File, "", nil, nil)
 		if err != nil {
-			if response.StatusCode == 400 {
+			if response != nil && response.StatusCode == 400 {
 				log.Entry().Info("Artifact already exits, deleting and retrying...")
 				response, err = client.SendRequest(http.MethodDelete, url, nil, nil, nil)
 				if err != nil {
