@@ -50,7 +50,7 @@ func TestNexusUpload(t *testing.T) {
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"}]`,
+		`--artifacts=[{"id":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"},{"id":"myapp-jar","classifier":"myapp-1.0","type":"jar","file":"Test.jar"}]`,
 		"--groupId=mygroup",
 		"--user=admin",
 		"--password=admin123",
@@ -62,7 +62,16 @@ func TestNexusUpload(t *testing.T) {
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/foo/blob/1.0/blob-1.0.pom")
+	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
+	if resp.StatusCode != http.StatusOK {
+		t.Log("Test failed")
+		t.Log(err)
+	}
+	if resp != nil {
+		t.Log(resp)
+	}
+
+	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
 	if resp.StatusCode != http.StatusOK {
 		t.Log("Test failed")
 		t.Log(err)
