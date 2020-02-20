@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	file "github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -21,11 +22,14 @@ func sonarExecuteScan(options sonarExecuteScanOptions) error {
 	// also log stdout as Karma reports into it
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	runSonar(options, &c)
+
+	client := piperhttp.Client{}
+
+	runSonar(options, &c, &client)
 	return nil
 }
 
-func runSonar(options sonarExecuteScanOptions, command execRunner) {
+func runSonar(options sonarExecuteScanOptions, command execRunner, client piperhttp.Downloader) {
 	arguments := []string{}
 
 	// Provided by withSonarQubeEnv: SONAR_HOST_URL, SONAR_AUTH_TOKEN, SONARQUBE_SCANNER_PARAMS
@@ -79,14 +83,14 @@ func runSonar(options sonarExecuteScanOptions, command execRunner) {
 		}
 	}
 
-	//loadSonarScanner(options.SonarScannerDownloadURL)
+	//loadSonarScanner(options.SonarScannerDownloadURL, client)
 
-	loadCertificates(command, "")
+	loadCertificates(command, "", client)
 
 	scan(command, arguments)
 }
 
-func loadSonarScanner(url string) {
+func loadSonarScanner(url string, client piperhttp.Downloader) {
 	if len(url) > 0 {
 		log.Entry().WithField("url", url).Debug("download Sonar scanner cli")
 		// create temp folder to extract archive with CLI
@@ -95,7 +99,8 @@ func loadSonarScanner(url string) {
 			log.Entry().WithError(err).WithField("tempFolder", tmpFolder).Debug("creation of temp directory failed")
 		}
 		archive := filepath.Join(tmpFolder, path.Base(url))
-		if err := file.Download(url, archive); err != nil {
+
+		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
 			log.Entry().WithError(err).WithField("source", url).WithField("target", archive).
 				Fatal("download of Sonar scanner cli failed")
 		}
@@ -120,7 +125,7 @@ func loadSonarScanner(url string) {
 }
 
 //TODO: extract to Helper?
-func loadCertificates(command execRunner, certificateString string) {
+func loadCertificates(command execRunner, certificateString string, client piperhttp.Downloader) {
 	if len(certificateString) > 0 {
 		//certificateFolder := ".certificates"
 
@@ -143,7 +148,7 @@ func loadCertificates(command execRunner, certificateString string) {
 				WithField("target", target).
 				Info("download of TLS certificate")
 			// download certificate
-			if err := file.Download(certificate, target); err != nil {
+			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
 				log.Entry().
 					WithField("url", certificate).
 					WithError(err).
