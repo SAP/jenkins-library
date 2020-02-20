@@ -10,6 +10,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/models"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +28,14 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 
 	sys := NewSystemInstanceForClient(client, "test2456", 60*time.Second)
 	return sys, server
+}
+
+func TestNewSystemInstance(t *testing.T) {
+	sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
+	assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
+	assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
+	assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
+	assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
 }
 
 func TestGetProjectByName(t *testing.T) {
@@ -264,7 +273,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 `
 		err := sys.ProjectVersionCopyFromPartial(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyFromPartial call not successful")
-		assert.Equal(t, bodyContent, expected, "Different request content expected")
+		assert.Equal(t, expected, bodyContent, "Different request content expected")
 	})
 }
 
@@ -303,6 +312,387 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 `
 		err := sys.ProjectVersionCopyCurrentState(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyCurrentState call not successful")
-		assert.Equal(t, bodyContent, expected, "Different request content expected")
+		assert.Equal(t, expected, bodyContent, "Different request content expected")
+	})
+}
+
+func TestCopyProjectVersionPermissions(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	referenceContent := `[{"displayName":"some user","email":"some.one@test.com","entityName":"some_user","firstName":"some","id":589,"lastName":"user","type":"User"}]
+`
+	response := `{"data": `
+	response += referenceContent
+	response += `,"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/authEntities" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10173/authEntities" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		err := sys.CopyProjectVersionPermissions(10172, 10173)
+		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+		assert.Equal(t, referenceContent, bodyContent, "Different request content expected")
+	})
+}
+
+func TestCommitProjectVersion(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	referenceContent := `{"active":null,"bugTrackerEnabled":null,"bugTrackerPluginId":null,"committed":true,"createdBy":null,"creationDate":null,"description":null,"issueTemplateId":null,"issueTemplateModifiedTime":null,"issueTemplateName":null,"latestScanId":null,"masterAttrGuid":null,"name":null,"owner":null,"serverVersion":null,"snapshotOutOfDate":null,"staleIssueTemplate":null}
+`
+	response := `{"data": `
+	response += referenceContent
+	response += `,"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.CommitProjectVersion(10172)
+		assert.NoError(t, err, "CommitProjectVersion call not successful")
+		assert.Equal(t, true, *result.Committed, "Different result content expected")
+		assert.Equal(t, referenceContent, bodyContent, "Different request content expected")
+	})
+}
+
+func TestInactivateProjectVersion(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	referenceContent := `{"active":false,"bugTrackerEnabled":null,"bugTrackerPluginId":null,"committed":true,"createdBy":null,"creationDate":null,"description":null,"issueTemplateId":null,"issueTemplateModifiedTime":null,"issueTemplateName":null,"latestScanId":null,"masterAttrGuid":null,"name":null,"owner":null,"serverVersion":null,"snapshotOutOfDate":null,"staleIssueTemplate":null}
+`
+	response := `{"data": `
+	response += referenceContent
+	response += `,"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.InactivateProjectVersion(10172)
+		assert.NoError(t, err, "InactivateProjectVersion call not successful")
+		assert.Equal(t, true, *result.Committed, "Different result content expected")
+		assert.Equal(t, false, *result.Active, "Different result content expected")
+		assert.Equal(t, referenceContent, bodyContent, "Different request content expected")
+	})
+}
+
+func TestGetArtifactsOfProjectVersion(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"data": [{"artifactType": "FPR","fileName": "df54e2ade34c4f6aaddf35679dd87a21.tmp","approvalDate": null,"messageCount": 0,
+		"scanErrorsCount": 0,"uploadIP": "10.238.8.48","allowApprove": false,"allowPurge": false,"lastScanDate": "2019-11-26T22:37:52.000+0000",
+		"fileURL": null,"id": 56,"purged": false,"webInspectStatus": "NONE","inModifyingStatus": false,"originalFileName": "result.fpr",
+		"allowDelete": true,"scaStatus": "PROCESSED","indexed": true,"runtimeStatus": "NONE","userName": "some_user","versionNumber": null,
+		"otherStatus": "NOT_EXIST","uploadDate": "2019-11-26T22:38:11.813+0000","approvalComment": null,"approvalUsername": null,"fileSize": 984703,
+		"messages": "","auditUpdated": false,"status": "PROCESS_COMPLETE"}],"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/artifacts" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetArtifactsOfProjectVersion(10172)
+		assert.NoError(t, err, "GetArtifactsOfProjectVersion call not successful")
+		assert.Equal(t, 1, len(result), "Different result content expected")
+		assert.Equal(t, int64(56), result[0].ID, "Different result content expected")
+	})
+}
+
+func TestGetFilterSetOfProjectVersionByTitle(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"data":[{"defaultFilterSet":true,"folders":[
+	{"id":1,"guid":"4711","name":"Corporate Security Requirements","color":"000000"},
+	{"id":2,"guid":"4712","name":"Audit All","color":"ff0000"},
+	{"id":3,"guid":"4713","name":"Spot Checks of Each Category","color":"ff8000"},
+	{"id":4,"guid":"4714","name":"Optional","color":"808080"}],"description":"",
+	"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/filterSets" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetFilterSetOfProjectVersionByTitle(10172, "Special")
+		assert.NoError(t, err, "GetFilterSetOfProjectVersionByTitle call not successful")
+		assert.Equal(t, "Special", result.Title, "Different result content expected")
+	})
+
+	t.Run("test default", func(t *testing.T) {
+		result, err := sys.GetFilterSetOfProjectVersionByTitle(10172, "")
+		assert.NoError(t, err, "GetFilterSetOfProjectVersionByTitle call not successful")
+		assert.Equal(t, "Special", result.Title, "Different result content expected")
+	})
+}
+
+func TestGetIssueFilterSelectorOfProjectVersionByName(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"data":{"groupBySet": [{"entityType": "CUSTOMTAG","guid": "adsffghjkl","displayName": "Analysis",
+	"value": "87f2364f-dcd4-49e6-861d-f8d3f351686b","description": ""},{"entityType": "ISSUE","guid": "lkjhgfd",
+	"displayName": "Category","value": "11111111-1111-1111-1111-111111111165","description": ""}],"filterBySet":[{
+	"entityType": "CUSTOMTAG","filterSelectorType": "LIST","guid": "87f2364f-dcd4-49e6-861d-f8d3f351686b","displayName": "Analysis",
+	"value": "87f2364f-dcd4-49e6-861d-f8d3f351686b","description": "The analysis tag must be set.",
+	"selectorOptions": []},{"entityType": "FOLDER","filterSelectorType": "LIST","guid": "userAssignment","displayName": "Folder",
+	"value": "FOLDER","description": "","selectorOptions": []}]},"responseCode":200}}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success one", func(t *testing.T) {
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Analysis")
+		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
+		assert.NotNil(t, result, "Expected non nil value")
+		assert.Equal(t, 1, len(result.FilterBySet), "Different result expected")
+		assert.Equal(t, 1, len(result.GroupBySet), "Different result expected")
+	})
+
+	t.Run("test success several", func(t *testing.T) {
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Analysis", "Folder")
+		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
+		assert.NotNil(t, result, "Expected non nil value")
+		assert.Equal(t, 2, len(result.FilterBySet), "Different result expected")
+		assert.Equal(t, 1, len(result.GroupBySet), "Different result expected")
+	})
+
+	t.Run("test empty", func(t *testing.T) {
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Some", "Other")
+		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
+		assert.NotNil(t, result, "Expected non nil value")
+		assert.Equal(t, 0, len(result.FilterBySet), "Different result expected")
+		assert.Equal(t, 0, len(result.GroupBySet), "Different result expected")
+	})
+}
+
+func TestGetProjectIssuesByIDAndFilterSetGroupedByFolder(t *testing.T) {
+	// Start a local HTTP server
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/filterSets" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":[{"defaultFilterSet":true,"folders":[
+				{"id":1,"guid":"4711","name":"Corporate Security Requirements","color":"000000"},
+				{"id":2,"guid":"4712","name":"Audit All","color":"ff0000"},
+				{"id":3,"guid":"4713","name":"Spot Checks of Each Category","color":"ff8000"},
+				{"id":4,"guid":"4714","name":"Optional","color":"808080"}],"description":"",
+				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "ISSUE","guid": "FOLDER","displayName": "Folder","value": "FOLDER",
+			"description": ""}],"filterBySet":[]},"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueGroups" {
+			assert.Equal(t, "filterset=666&groupingtype=FOLDER&showsuppressed=true", req.URL.RawQuery)
+			return
+		}
+		rw.WriteHeader(400)
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByFolder(10172, "Special")
+		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+	})
+}
+
+func TestGetProjectIssuesByIDAndFilterSetGroupedByCategory(t *testing.T) {
+	// Start a local HTTP server
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/filterSets" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":[{"defaultFilterSet":true,"folders":[
+				{"id":1,"guid":"4711","name":"Corporate Security Requirements","color":"000000"},
+				{"id":2,"guid":"4712","name":"Audit All","color":"ff0000"},
+				{"id":3,"guid":"4713","name":"Spot Checks of Each Category","color":"ff8000"},
+				{"id":4,"guid":"4714","name":"Optional","color":"808080"}],"description":"",
+				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "ISSUE","guid": "11111111-1111-1111-1111-111111111165",
+			"displayName": "Category","value": "11111111-1111-1111-1111-111111111165","description": ""}],"filterBySet":[]},"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueGroups" {
+			assert.Equal(t, "filter=4713&filterset=666&groupingtype=11111111-1111-1111-1111-111111111165&showsuppressed=true", req.URL.RawQuery)
+			return
+		}
+		rw.WriteHeader(400)
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByCategory(10172, "Special")
+		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+	})
+}
+
+func TestGetProjectIssuesByIDAndFilterSetGroupedByAnalysis(t *testing.T) {
+	// Start a local HTTP server
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/filterSets" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":[{"defaultFilterSet":true,"folders":[
+				{"id":1,"guid":"4711","name":"Corporate Security Requirements","color":"000000"},
+				{"id":2,"guid":"4712","name":"Audit All","color":"ff0000"},
+				{"id":3,"guid":"4713","name":"Spot Checks of Each Category","color":"ff8000"},
+				{"id":4,"guid":"4714","name":"Optional","color":"808080"}],"description":"",
+				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "CUSTOMTAG","guid": "87f2364f-dcd4-49e6-861d-f8d3f351686b","displayName": "Analysis",
+			"value": "87f2364f-dcd4-49e6-861d-f8d3f351686b","description": ""}],"filterBySet":[]},"responseCode":200}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/issueGroups" {
+			assert.Equal(t, "filterset=666&groupingtype=87f2364f-dcd4-49e6-861d-f8d3f351686b&showsuppressed=true", req.URL.RawQuery)
+			return
+		}
+		rw.WriteHeader(400)
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(10172, "Special")
+		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+	})
+}
+
+func TestGetIssueStatisticsOfProjectVersion(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"data": [{"filterSetId": 3887,"hiddenCount": 0,"suppressedDisplayableCount": 0,"suppressedCount": 11,"hiddenDisplayableCount": 0,"projectVersionId": 10172,
+				"removedDisplayableCount": 0,"removedCount": 747}],"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/10172/issueStatistics" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetIssueStatisticsOfProjectVersion(10172)
+		assert.NoError(t, err, "GetArtifactsOfProjectVersion call not successful")
+		assert.Equal(t, 1, len(result), "Different result content expected")
+		assert.Equal(t, int64(10172), *result[0].ProjectVersionID, "Different result content expected")
+		assert.Equal(t, int32(11), *result[0].SuppressedCount, "Different result content expected")
+	})
+}
+
+func TestGenerateQGateReport(t *testing.T) {
+	// Start a local HTTP server
+	data := ""
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/reports" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			data = string(bodyBytes)
+			response := `{"data": `
+			response += data
+			response += `,"responseCode": 201}`
+			rw.WriteHeader(201)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GenerateQGateReport(2837, 17540, "Fortify", "develop", "PDF")
+		assert.NoError(t, err, "GetArtifactsOfProjectVersion call not successful")
+		assert.Equal(t, int64(2837), result.Projects[0].ID, "Different result content expected")
+		assert.Equal(t, int64(17540), result.Projects[0].Versions[0].ID, "Different result content expected")
+		assert.Equal(t, int64(18), *result.ReportDefinitionID, "Different result content expected")
+	})
+}
+
+func TestGetReportDetails(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"data": {"id":999,"name":"FortifyReport","note":"","type":"PORTFOLIO","reportDefinitionId":18,"format":"PDF",
+	"projects":[{"id":2837,"name":"Fortify","versions":[{"id":17540,"name":"develop"}]}],"projectVersionDisplayName":"develop",
+	"inputReportParameters":[{"name":"Q-gate-report","identifier":"projectVersionId","paramValue":17540,"type":"SINGLE_PROJECT"}]},"count": 1,"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/reports/999" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetReportDetails(999)
+		assert.NoError(t, err, "InactivateProjectVersion call not successful")
+		assert.Equal(t, int64(999), result.ID, "Different result content expected")
 	})
 }

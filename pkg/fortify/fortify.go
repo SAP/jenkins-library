@@ -8,14 +8,22 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
+	"github.com/piper-validation/fortify-client-go/fortify/artifact_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/auth_entity_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/filter_set_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/issue_group_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/issue_selector_set_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/issue_statistics_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_of_project_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/saved_report_controller"
 	"github.com/piper-validation/fortify-client-go/models"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,10 +33,11 @@ type System interface {
 
 // SystemInstance is the specific instance
 type SystemInstance struct {
-	timeout time.Duration
-	token   string
-	client  *ff.Fortify
-	logger  *logrus.Entry
+	timeout    time.Duration
+	token      string
+	client     *ff.Fortify
+	httpClient *piperHttp.Client
+	logger     *logrus.Entry
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
@@ -81,7 +90,7 @@ func (sys *SystemInstance) GetProjectByName(name string) (*models.Project, error
 	return nil, fmt.Errorf("Project with name %v not found in backend", name)
 }
 
-//GetProjectVersionDetailsByNameAndProjectID returns the project version details of the project version identified by the id
+// GetProjectVersionDetailsByNameAndProjectID returns the project version details of the project version identified by the id
 func (sys *SystemInstance) GetProjectVersionDetailsByNameAndProjectID(id int64, name string) (*models.ProjectVersion, error) {
 	nameParam := fmt.Sprintf("name=%v", name)
 	fullText := true
@@ -99,7 +108,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByNameAndProjectID(id int64, 
 	return nil, fmt.Errorf("Project version with name %v not found in for project with ID %v", name, id)
 }
 
-//GetProjectVersionAttributesByID returns the project version attributes of the project version identified by the id
+// GetProjectVersionAttributesByID returns the project version attributes of the project version identified by the id
 func (sys *SystemInstance) GetProjectVersionAttributesByID(id int64) ([]*models.Attribute, error) {
 	params := &attribute_of_project_version_controller.ListAttributeOfProjectVersionParams{ParentID: id}
 	params.WithTimeout(sys.timeout)
@@ -110,7 +119,7 @@ func (sys *SystemInstance) GetProjectVersionAttributesByID(id int64) ([]*models.
 	return result.GetPayload().Data, nil
 }
 
-//CreateProjectVersion creates the project version with the provided details
+// CreateProjectVersion creates the project version with the provided details
 func (sys *SystemInstance) CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error) {
 	params := &project_version_controller.CreateProjectVersionParams{Resource: version}
 	params.WithTimeout(sys.timeout)
@@ -121,7 +130,7 @@ func (sys *SystemInstance) CreateProjectVersion(version *models.ProjectVersion) 
 	return result.GetPayload().Data, nil
 }
 
-//ProjectVersionCopyFromPartial copies parts of the source project version to the target project version identified by their ids
+// ProjectVersionCopyFromPartial copies parts of the source project version to the target project version identified by their ids
 func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int64) error {
 	enable := true
 	settings := models.ProjectVersionCopyPartialRequest{
@@ -141,7 +150,7 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 	return nil
 }
 
-//ProjectVersionCopyCurrentState copies the project version state of sourceID into the new project version addressed by targetID
+// ProjectVersionCopyCurrentState copies the project version state of sourceID into the new project version addressed by targetID
 func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
 	enable := true
 	settings := models.ProjectVersionCopyCurrentStateRequest{
@@ -179,7 +188,7 @@ func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, 
 	return nil
 }
 
-//CopyProjectVersionPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
+// CopyProjectVersionPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
 func (sys *SystemInstance) CopyProjectVersionPermissions(sourceID, targetID int64) error {
 	result, err := sys.getAuthEntityOfProjectVersion(sourceID)
 	if err != nil {
@@ -202,17 +211,200 @@ func (sys *SystemInstance) updateProjectVersionDetails(id int64, details *models
 	return result.GetPayload().Data, nil
 }
 
-//CommitProjectVersion commits the project version with the provided id
+// CommitProjectVersion commits the project version with the provided id
 func (sys *SystemInstance) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
 	enabled := true
 	update := models.ProjectVersion{Committed: &enabled}
 	return sys.updateProjectVersionDetails(id, &update)
 }
 
-//InactivateProjectVersion inactivates the project version with the provided id
+// InactivateProjectVersion inactivates the project version with the provided id
 func (sys *SystemInstance) InactivateProjectVersion(id int64) (*models.ProjectVersion, error) {
 	enabled := true
 	disabled := false
 	update := models.ProjectVersion{Committed: &enabled, Active: &disabled}
 	return sys.updateProjectVersionDetails(id, &update)
+}
+
+// GetArtifactsOfProjectVersion returns the list of artifacts related to the project version addressed with id
+func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
+	scans := "scans"
+	params := &artifact_of_project_version_controller.ListArtifactOfProjectVersionParams{ParentID: id, Embed: &scans}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ArtifactOfProjectVersionController.ListArtifactOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetFilterSetOfProjectVersionByTitle returns the filter set with the given title related to the project version addressed with id, if no title is provided the default filter set will be returned
+func (sys *SystemInstance) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
+	params := &filter_set_of_project_version_controller.ListFilterSetOfProjectVersionParams{ParentID: id}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.FilterSetOfProjectVersionController.ListFilterSetOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	for _, filterSet := range result.GetPayload().Data {
+		if len(title) > 0 && filterSet.Title == title {
+			return filterSet, nil
+		}
+		if len(title) == 0 && filterSet.DefaultFilterSet {
+			return filterSet, nil
+		}
+	}
+	return nil, fmt.Errorf("Failed to identify requested filter set or default one")
+}
+
+// GetIssueFilterSelectorOfProjectVersionByName returns the groupings with the given names related to the project version addressed with id
+func (sys *SystemInstance) GetIssueFilterSelectorOfProjectVersionByName(id int64, names ...string) (*models.IssueFilterSelectorSet, error) {
+	params := &issue_selector_set_of_project_version_controller.GetIssueSelectorSetOfProjectVersionParams{ParentID: id}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.IssueSelectorSetOfProjectVersionController.GetIssueSelectorSetOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	groupingList := []*models.IssueSelector{}
+	if result.GetPayload().Data.GroupBySet != nil {
+		for _, group := range result.GetPayload().Data.GroupBySet {
+			if piperutils.ContainsString(names, *group.DisplayName) {
+				groupingList = append(groupingList, group)
+			}
+		}
+	}
+	filterList := []*models.IssueFilterSelector{}
+	if result.GetPayload().Data.FilterBySet != nil {
+		for _, filter := range result.GetPayload().Data.FilterBySet {
+			if piperutils.ContainsString(names, filter.DisplayName) {
+				filterList = append(filterList, filter)
+			}
+		}
+	}
+	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}, nil
+}
+
+func (sys *SystemInstance) getIssuesOfProjectVersion(id int64, filter, filterset, groupingtype string) ([]*models.ProjectVersionIssueGroup, error) {
+	enable := true
+	params := &issue_group_of_project_version_controller.ListIssueGroupOfProjectVersionParams{ParentID: id, Showsuppressed: &enable, Filterset: &filterset, Groupingtype: &groupingtype}
+	params.WithTimeout(sys.timeout)
+	if len(filter) > 0 {
+		params.WithFilter(&filter)
+	}
+	result, err := sys.client.IssueGroupOfProjectVersionController.ListIssueGroupOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetProjectIssuesByIDAndFilterSetGroupedByFolder returns issues of the project version addressed with id filtered with the respective set and grouped by folder
+func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByFolder(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
+	filterset := ""
+	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
+	if filterSets != nil {
+		filterset = filterSets.GUID
+	}
+	groupingtype := ""
+	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Folder")
+	if filterSelector != nil {
+		groupingtype = *filterSelector.GroupBySet[0].GUID
+	}
+
+	result, err := sys.getIssuesOfProjectVersion(id, "", filterset, groupingtype)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (sys *SystemInstance) getFilterValueByName(filterSets *models.FilterSet, name string) string {
+	for _, folder := range filterSets.Folders {
+		if folder.Name == name {
+			return folder.GUID
+		}
+	}
+	return ""
+}
+
+// GetProjectIssuesByIDAndFilterSetGroupedByCategory returns issues of the project version addressed with id filtered with the respective set and grouped by category
+func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByCategory(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
+	filterset := ""
+	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
+	if filterSets != nil {
+		filterset = filterSets.GUID
+	}
+	groupingtype := ""
+	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Category")
+	if filterSelector != nil {
+		groupingtype = *filterSelector.GroupBySet[0].GUID
+	}
+
+	result, err := sys.getIssuesOfProjectVersion(id, sys.getFilterValueByName(filterSets, "Spot Checks of Each Category"), filterset, groupingtype)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetProjectIssuesByIDAndFilterSetGroupedByAnalysis returns issues of the project version addressed with id filtered with the respective set and grouped by analysis
+func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
+	filterset := ""
+	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
+	if filterSets != nil {
+		filterset = filterSets.GUID
+	}
+	groupingtype := ""
+	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Analysis")
+	if filterSelector != nil {
+		groupingtype = *filterSelector.GroupBySet[0].GUID
+	}
+
+	result, err := sys.getIssuesOfProjectVersion(id, "", filterset, groupingtype)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetIssueStatisticsOfProjectVersion returns the issue statistics related to the project version addressed with id
+func (sys *SystemInstance) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
+	params := &issue_statistics_of_project_version_controller.ListIssueStatisticsOfProjectVersionParams{ParentID: id}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.IssueStatisticsOfProjectVersionController.ListIssueStatisticsOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GenerateQGateReport returns the issue statistics related to the project version addressed with id
+func (sys *SystemInstance) GenerateQGateReport(projectID, projectVersionID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
+	paramIdentifier := "projectVersionId"
+	paramReportDefinitionID := int64(18)
+	paramType := "SINGLE_PROJECT"
+	paramName := "Q-gate-report"
+	reportType := "PORTFOLIO"
+	inputReportParameters := []*models.InputReportParameter{&models.InputReportParameter{Name: &paramName, Identifier: &paramIdentifier, ParamValue: projectVersionID, Type: &paramType}}
+	reportProjectVersions := []*models.ReportProjectVersion{&models.ReportProjectVersion{ID: projectVersionID, Name: projectVersionName}}
+	reportProjects := []*models.ReportProject{&models.ReportProject{ID: projectID, Name: projectName, Versions: reportProjectVersions}}
+	report := models.SavedReport{Name: "FortifyReport", Type: &reportType, ReportDefinitionID: &paramReportDefinitionID, Format: &reportFormat, Projects: reportProjects, InputReportParameters: inputReportParameters}
+	params := &saved_report_controller.CreateSavedReportParams{Resource: &report}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.SavedReportController.CreateSavedReport(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetReportDetails returns the details of the report addressed with id
+func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, error) {
+	params := &saved_report_controller.ReadSavedReportParams{ID: id}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.SavedReportController.ReadSavedReport(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
 }

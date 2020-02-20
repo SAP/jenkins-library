@@ -11,3 +11,13 @@ func ContainsInt(s []int, e int) bool {
 	}
 	return false
 }
+
+//ContainsString check wether the element is part of the slice
+func ContainsString(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
