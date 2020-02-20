@@ -16,7 +16,7 @@ type Downloader interface {
 
 // DownloadFile downloads a file's content as GET request from the specified URL to the specified file
 func (c *Client) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return c.DownloadRequest(http.MethodPost, url, filename, header, cookies)
+	return c.DownloadRequest(http.MethodGet, url, filename, header, cookies)
 }
 
 // DownloadRequest ...
