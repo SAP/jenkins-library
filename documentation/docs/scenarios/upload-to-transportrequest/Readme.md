@@ -125,7 +125,7 @@ general:
         options: []
         envVars: {}
         pullImage: true|false # true if the image is provided by a company-specific Docker registry
- 
+
 steps:
     transportRequestUploadFile:
         codePage: <the code page>, # e.g. 'Cp1252'
@@ -189,6 +189,7 @@ general:
     credentialsId: 'CTS' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
     clientOpts: '' # additional java options, e.g. '-Djavax.net.ssl.trustStore=/path/to/truststore.jks'
 ```
+
 ## Parameters
 
 For the detailed description of the relevant parameters, see:
