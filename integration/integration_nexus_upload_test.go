@@ -50,8 +50,8 @@ func TestNexusUpload(t *testing.T) {
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"id":"blob","classifier":"blob-1.0","type":"pom","file":"pom.xml"}]`,
-		"--groupId=foo",
+		`--artifacts=[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"}]`,
+		"--groupId=mygroup",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=maven-releases",
