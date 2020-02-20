@@ -35,16 +35,16 @@ The transport request can be created on the fly (see [transportRequestCreate](..
 
 The transport request can be closed by the pipeline job (see [transportRequestRelease](../../../steps/transportRequestRelease/)).
 
-A git commit message containing the transportRequestId:
+This is an example of a Git commit message containing the transport request ID:
 
 ```
 The headline
 
-The body. The blank line above is mandatory (git standard).
+The body. The blank line above is mandatory (Git standard).
 TransportRequest: <YOUR TRANSPORT REQUEST ID>
 ```
 
-By default the git commits between the merge base with base branch (default: `master`) and the current branch head are traversed.
+By default, the Git commits between the merge base with the base branch (default: `master`) and the current branch head are traversed.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.png)
 ###### Screenshot: Build and Deploy Process in Jenkins
@@ -55,7 +55,7 @@ By default the git commits between the merge base with base branch (default: `ma
 
 #### Jenkinsfile
 
-Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
+Following the convention for pipeline definitions, use a `Jenkinsfile`, which resides in the root directory of your development sources.
 
 ```groovy
 @Library('piper-lib-os') _
@@ -76,30 +76,30 @@ pipeline {
 
         stage('build') {
             steps {
-                // what needs to be done here depends on the project, maybe zipping the sources is sufficient
+                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
                 mtaBuild script: this
             }
         }
 
         stage('publish') {
             steps {
-                // uploads the binary into a blob store so that it can be attached to a transport request later
+                // This uploads the binary into a blob store so that it can be attached to a transport request later
                 sh "curl --upload-file <deployable> <BLOB_STORE/path/to/application>"
 
                 // OR (in case there is no BLOB_STORE available)
 
-                // this makes the artifact available on nexus. The url is:
+                // This makes the artifact available on Nexus. The URL is the following:
                 // <JENKINS_URL>/job/<JOB_NAME>/<BUILD_NUMBER>/artifact/<DEPLOYABLE>. Nota bene: this format is not an Jenkins API.
-                // The build number can be retrieved during the build via ${currentBuild.number}
+                // The build number can be retrieved during the build through ${currentBuild.number}
                 archiveArtifacts artifacts: <deployable>
             }
         }
 
-        // attaches the deployable to a transport request
+        // This attaches the deployable to a transport request
         stage('attach') {
             steps {
                 transportRequestUploadFile script: this,
-                                           transportRequestId: '<TRANSPORT_REQUEST_ID>', // can be omitted if present inside a git commit message
+                                           transportRequestId: '<TRANSPORT_REQUEST_ID>', // This can be omitted if present inside a Git commit message
                                            applicationUrl: '<THE_URL_TO_THE_DEPLOYABLE_ACCORDING_TO_PUBLISH_STAGE>'
             }
         }
@@ -116,15 +116,15 @@ general:
   changeManagement:
     type: 'RFC'
     endpoint: 'the RFC endpoint' # e.g. example.com'
-    credentialsId: 'RFC' # The id under which the credentials are provided on Jenkins, defaults to 'CM'
+    credentialsId: 'RFC' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
     rfc:
       developmentInstance: '01' # needs to be adjusted
       developmentClient: '001' # needs to be adjusted
       docker:
-        image: '<imageId>' # the image needs to be built on user side. The corresponding id needs to be provided here.
+        image: '<imageId>' # the image needs to be built on user side. The corresponding ID needs to be provided here.
         options: []
         envVars: {}
-        pullImage: true|false # true in case the image is provided by a company specific docker registry
+        pullImage: true|false # true if the image is provided by a company-specific Docker registry
  
 steps:
     transportRequestUploadFile:
@@ -139,7 +139,7 @@ steps:
 
 #### Jenkinsfile
 
-Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
+Following the convention for pipeline definitions, use a `Jenkinsfile`, which resides in the root directory of your development sources.
 
 ```groovy
 @Library('piper-lib-os') _
@@ -160,7 +160,7 @@ pipeline {
 
         stage('build') {
             steps {
-                // what needs to be done here depends on the project, maybe zipping the sources is sufficient
+                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
                 mtaBuild script: this
             }
         }
