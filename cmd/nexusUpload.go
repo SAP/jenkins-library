@@ -25,14 +25,10 @@ type artifactDescription struct {
 }
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) error {
-	log.Entry().Info(config)
-
-	log.Entry().Info("JSON string is ", config.Artifacts)
-
 	var artifacts []artifactDescription
 	err := json.Unmarshal([]byte(config.Artifacts), &artifacts)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to convert JSON ", config.Artifacts)
+		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", config.Artifacts, "'")
 	}
 
 	client := piperHttp.Client{}
