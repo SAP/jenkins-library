@@ -33,7 +33,10 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	client.SetOptions(clientOptions)
 
 	for _, artifact := range artifacts {
-		url := "http://" + config.Url + "/repository/" + config.Repository + "/" + config.GroupID + "/" + artifact.ID + "/" + config.Version + "/" + artifact.Classifier + "." + artifact.Type
+		groupPath := strings.ReplaceAll(config.groupId, ".", "/")
+		artifactName := artifact.ID + "-" config.Version + "." + artifact.Type
+		url := "http://" + config.Url + "/repository/" + config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
+		url = strings.ReplaceAll(url, "//", "/")
 
 		log.Entry().Info("Trying to upload ", artifact.File, " to ", url)
 
