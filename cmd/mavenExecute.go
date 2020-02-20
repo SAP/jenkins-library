@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -37,11 +38,17 @@ func runMavenExecute(config *mavenExecuteOptions, command execRunner) (string, e
 
 	if config.GlobalSettingsFile != "" {
 		globalSettingsFileParameter := "--global-settings " + config.GlobalSettingsFile
+		if strings.HasPrefix(config.GlobalSettingsFile, "http") {
+			globalSettingsFileParameter = "--global-settings " + downloadSettingsFromUrl(config.GlobalSettingsFile)
+		}
 		parameters = append(parameters, globalSettingsFileParameter)
 	}
 
 	if config.ProjectSettingsFile != "" {
 		projectSettingsFileParameter := "--settings " + config.ProjectSettingsFile
+		if strings.HasPrefix(config.ProjectSettingsFile, "http") {
+			projectSettingsFileParameter = "--settings " + downloadSettingsFromUrl(config.ProjectSettingsFile)
+		}
 		parameters = append(parameters, projectSettingsFileParameter)
 	}
 
@@ -80,4 +87,10 @@ func runMavenExecute(config *mavenExecuteOptions, command execRunner) (string, e
 	}
 	return string(stdOutBuf.Bytes()), nil
 
+}
+
+func downloadSettingsFromURL(settingsURL string) string {
+	//client := &p
+
+	return "fileName"
 }

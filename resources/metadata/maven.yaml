@@ -1,6 +1,6 @@
 metadata:
   name: mavenExecute
-  description: Ths step allows to run maven commands
+  description: This step allows to run maven commands
   longDescription: |
     This step runs a maven command based on the parameters provided to the step.
 spec:
