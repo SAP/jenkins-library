@@ -33,7 +33,8 @@ func TestNexusUpload(t *testing.T) {
 	assert.NoError(t, err)
 	port, err := nexusContainer.MappedPort(ctx, "8081")
 	assert.NoError(t, err, "Could not map port for nexus container")
-	url := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	nexusIpAndPort := fmt.Sprintf("%s:%s", ip, port.Port())
+	url := "http://" + nexusIpAndPort
 	resp, err := http.Get(url)
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
@@ -48,17 +49,17 @@ func TestNexusUpload(t *testing.T) {
 		"--password=admin123",
 		"--repository=maven-releases",
 		"--version=1.0",
-		"--url=" + fmt.Sprintf("%s:%s", ip, port.Port()),
+		"--url=" + nexusIpAndPort,
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
-	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()) + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 }
