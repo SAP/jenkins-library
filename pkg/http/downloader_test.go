@@ -30,7 +30,7 @@ func TestDownloadRequest(t *testing.T) {
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(workingDir)
-	targetFile := filepath.Join(workingDir, "abc.xml")
+	targetFile := filepath.Join(workingDir, "abc/123/abc.xml")
 
 	// function under test
 	err = client.DownloadFile(server.URL, targetFile, nil, nil)

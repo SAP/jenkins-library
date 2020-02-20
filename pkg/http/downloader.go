@@ -1,11 +1,12 @@
 package http
 
 import (
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/pkg/errors"
+	"path/filepath"
 )
 
 //Downloader ...
@@ -26,7 +27,18 @@ func (c *Client) DownloadRequest(method, url, filename string, header http.Heade
 		return errors.Wrapf(err, "HTTP %v request to %v failed with error", method, url)
 	}
 	defer response.Body.Close()
-
+	parent := filepath.Dir(filename)
+	if len(parent) > 0 {
+		exists, err := piperutils.FileExists(parent)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			if err = os.MkdirAll(parent, 0775); err != nil {
+				return err
+			}
+		}
+	}
 	fileHandler, err := os.Create(filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create file %v", filename)
