@@ -95,31 +95,29 @@ func uploadFile(client *piperHttp.Client, filePath, url string) {
 
 	defer file.Close()
 
-	_, err = uploadToNexus(client, file, url)
+	err = uploadToNexus(client, file, url)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to upload artifact ", filePath)
 	}
 }
 
-func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) (*http.Response, error) {
+func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) error {
 	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
 	if err == nil {
 		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
 	}
-	return response, err
+	return err
 }
 
-func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) (*http.Response, error) {
+func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) {
 	hashReader, err := generateHashReader(filePath, hash, length)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to generate hash")
 	}
-	var response *http.Response
-	response, err = uploadToNexus(client, hashReader, url)
+	err = uploadToNexus(client, hashReader, url)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to upload hash")
 	}
-	return response, nil
 }
 
 func generateHashReader(filePath string, hash hash.Hash, length int) (io.Reader, error) {
