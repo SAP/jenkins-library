@@ -54,27 +54,8 @@ void call(Map parameters = [:]) {
         withEnv([
             "PIPER_parametersJSON=${toJson(parameters)}",
         ]) {
-            //sh 'env'
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
-
-            // Hack to get things going (reading config from ENV doesn't work for some reason):
-            // config = parameters
-
-            Closure body = {
-                // String url = config.url
-                // String repository = config.repository
-                // String version = config.version
-                // String groupId = config.groupId
-
-                // // config.artifacts is supposed to be a List of Map objects, where each Map contains the
-                // // keys 'artifactId', 'classifier', 'type' and 'file'.
-                // String artifacts = toJson(config.artifacts as List)
-                // artifacts = artifacts.replace('"', '\\"')
-
-//                sh "./piper nexusUpload --url=$url --repository=$repository --groupId=$groupId --version=$version --artifacts=\"$artifacts\""
-                sh "./piper nexusUpload"
-            }
 
             // execute step
             if (config.credentialsId) {
@@ -83,10 +64,10 @@ void call(Map parameters = [:]) {
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
-                    body.call()
+                    sh "./piper nexusUpload"
                 }
             } else {
-                body.call()
+                sh "./piper nexusUpload"
             }
         }
     }
