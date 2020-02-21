@@ -26,7 +26,7 @@ func (projectStructure *ProjectStructure) anyFileExists(candidates ...string) bo
 	for i := 0; i < len(candidates); i++ {
 		exists, err := FileExists(filepath.Join(projectStructure.directory, candidates[i]))
 		if err != nil {
-			return false
+			continue
 		}
 		if exists {
 			return true
