@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"github.com/SAP/jenkins-library/pkg/http"
 	"io"
 	"strings"
 
@@ -23,6 +24,27 @@ func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomDat
 }
 
 func runMavenExecute(config *mavenExecuteOptions, command execRunner) (string, error) {
+	stdOutBuf, stdOut := evaluateStdOut(config)
+	command.Stdout(stdOut)
+	command.Stderr(log.Entry().Writer())
+
+	parameters := getParametersFromConfig(config, &http.Client{})
+
+	err := command.RunExecutable(mavenExecutable, parameters...)
+	if err != nil {
+		log.Entry().
+			WithError(err).
+			WithField("command", append([]string{mavenExecutable}, parameters...)).
+			Fatal("failed to execute run command")
+	}
+
+	if stdOutBuf == nil {
+		return "", nil
+	}
+	return string(stdOutBuf.Bytes()), nil
+}
+
+func evaluateStdOut(config *mavenExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	var stdOut io.Writer
 
@@ -31,23 +53,26 @@ func runMavenExecute(config *mavenExecuteOptions, command execRunner) (string, e
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	}
-	command.Stdout(stdOut)
-	command.Stderr(log.Entry().Writer())
+	return stdOutBuf, stdOut
+}
 
-	parameters := []string{}
+func getParametersFromConfig(config *mavenExecuteOptions, client http.Downloader) []string {
+	var parameters []string
 
 	if config.GlobalSettingsFile != "" {
 		globalSettingsFileParameter := "--global-settings " + config.GlobalSettingsFile
 		if strings.HasPrefix(config.GlobalSettingsFile, "http") {
-			globalSettingsFileParameter = "--global-settings " + downloadSettingsFromUrl(config.GlobalSettingsFile)
+			downloadSettingsFromURL(config.ProjectSettingsFile, "globalSettings.xml", client)
+			globalSettingsFileParameter = "--global-settings " + "globalSettings.xml"
 		}
 		parameters = append(parameters, globalSettingsFileParameter)
 	}
-
+	// do we need some global state to store that a settings.xml was downloaded and should always be used?
 	if config.ProjectSettingsFile != "" {
 		projectSettingsFileParameter := "--settings " + config.ProjectSettingsFile
 		if strings.HasPrefix(config.ProjectSettingsFile, "http") {
-			projectSettingsFileParameter = "--settings " + downloadSettingsFromUrl(config.ProjectSettingsFile)
+			downloadSettingsFromURL(config.ProjectSettingsFile, "projectSettings.xml", client)
+			projectSettingsFileParameter = "--settings " + "projectSettings.xml"
 		}
 		parameters = append(parameters, projectSettingsFileParameter)
 	}
@@ -73,24 +98,13 @@ func runMavenExecute(config *mavenExecuteOptions, command execRunner) (string, e
 	}
 
 	parameters = append(parameters, config.Goals...)
-
-	err := command.RunExecutable(mavenExecutable, parameters...)
-	if err != nil {
-		log.Entry().
-			WithError(err).
-			WithField("command", append([]string{mavenExecutable}, parameters...)).
-			Fatal("failed to execute run command")
-	}
-
-	if stdOutBuf == nil {
-		return "", nil
-	}
-	return string(stdOutBuf.Bytes()), nil
-
+	return parameters
 }
 
-func downloadSettingsFromURL(settingsURL string) string {
-	//client := &p
-
-	return "fileName"
+// ToDo replace with pkg/maven/settings GetSettingsFile
+func downloadSettingsFromURL(url, filename string, client http.Downloader) {
+	err := client.DownloadFile(url, filename, nil, nil)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to download maven settings from: " + url)
+	}
 }
