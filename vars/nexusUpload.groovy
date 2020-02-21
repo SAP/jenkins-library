@@ -48,8 +48,6 @@ void call(Map parameters = [:]) {
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
-        echo "meta data file exists: ${fileExists(METADATA_FILE)}"
-
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
