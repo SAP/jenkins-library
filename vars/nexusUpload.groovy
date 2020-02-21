@@ -48,8 +48,11 @@ void call(Map parameters = [:]) {
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
+        // Replace 'artifacts' List with JSON encoded String
+        parameters.artifacts = "${toJson(parameters.artifacts as List)}"
+
         withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+            "PIPER_parametersJSON=${toJson(parameters)}",
         ]) {
             //sh 'env'
             // get context configuration
