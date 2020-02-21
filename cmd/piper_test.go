@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -22,7 +23,6 @@ type execMockRunner struct {
 	stdout              io.Writer
 	stderr              io.Writer
 	stdoutReturn        map[string]string
-	shouldFailWith      error
 	shouldFailOnCommand map[string]error
 }
 
@@ -32,13 +32,14 @@ type execCall struct {
 }
 
 type shellMockRunner struct {
-	dir            string
-	env            [][]string
-	calls          []string
-	shell          []string
-	stdout         io.Writer
-	stderr         io.Writer
-	shouldFailWith error
+	dir                 string
+	env                 [][]string
+	calls               []string
+	shell               []string
+	stdout              io.Writer
+	stderr              io.Writer
+	stdoutReturn        map[string]string
+	shouldFailOnCommand map[string]error
 }
 
 func (m *execMockRunner) Dir(d string) {
@@ -50,22 +51,13 @@ func (m *execMockRunner) Env(e []string) {
 }
 
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
-	if m.shouldFailWith != nil {
-		return m.shouldFailWith
-	}
 
 	exec := execCall{exec: e, params: p}
 	m.calls = append(m.calls, exec)
 
-	if c := strings.Join(append([]string{e}, p...), " "); m.shouldFailOnCommand != nil && m.shouldFailOnCommand[c] != nil {
-		return m.shouldFailOnCommand[c]
-	}
+	c := strings.Join(append([]string{e}, p...), " ")
 
-	if c := strings.Join(append([]string{e}, p...), " "); m.stdoutReturn != nil && len(m.stdoutReturn[c]) > 0 {
-		m.stdout.Write([]byte(m.stdoutReturn[c]))
-	}
-
-	return nil
+	return handleCall(c, m.stdoutReturn, m.shouldFailOnCommand, m.stdout)
 }
 
 func (m *execMockRunner) Stdout(out io.Writer) {
@@ -86,11 +78,67 @@ func (m *shellMockRunner) Env(e []string) {
 
 func (m *shellMockRunner) RunShell(s string, c string) error {
 
-	if m.shouldFailWith != nil {
-		return m.shouldFailWith
-	}
 	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
+
+	return handleCall(c, m.stdoutReturn, m.shouldFailOnCommand, m.stdout)
+}
+
+func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+
+	if stdoutReturn != nil {
+		for k, v := range stdoutReturn {
+
+			found := k == call
+
+			if !found {
+
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+				if r.MatchString(call) {
+					found = true
+
+				}
+			}
+
+			if found {
+				stdout.Write([]byte(v))
+			}
+		}
+	}
+
+	if shouldFailOnCommand != nil {
+		for k, v := range shouldFailOnCommand {
+
+			found := k == call
+
+			if !found {
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+				if r.MatchString(call) {
+					found = true
+
+				}
+			}
+
+			if found {
+				return v
+			}
+		}
+	}
+
 	return nil
 }
 
