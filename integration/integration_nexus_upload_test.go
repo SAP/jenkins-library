@@ -104,7 +104,7 @@ func TestNexus2Upload(t *testing.T) {
 		"--password=admin123",
 		"--repository=releases",
 		"--version=1.0",
-		"--nexusVersion=2",
+		"--nexusVersion=nexus2",
 		"--url=" + nexusIpAndPort + "/nexus/",
 	}
 
