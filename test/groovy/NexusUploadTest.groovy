@@ -19,6 +19,7 @@ class NexusUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
+    //private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this, [])
 
     private List withEnvArgs = []
 
@@ -33,6 +34,7 @@ class NexusUploadTest extends BasePiperTest {
         .around(stepRule)
         .around(writeFileRule)
         .around(fileExistsRule)
+    //    .around(dockerExecuteRule)
 
     @Before
     void init() {
@@ -53,16 +55,13 @@ class NexusUploadTest extends BasePiperTest {
             }
             return closure()
         })
+        helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class], {map, closure ->
+            // ignore
+        })
         credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/nexusUpload.yaml\'',
-            '{"credentialsId": "idOfCxCredential", "verbose": false, ' +
-            ' "url": "localhost:8081", "repository": "maven-releases", "version": "1.0", ' +
-            ' "groupId": "org", "artifacts": ' +
-            '    [{ "artifactId": "blob", ' +
-            '       "classifier": "blob-1.0", ' +
-            '       "type": "pom", ' +
-            '       "file": "pom.xml"}] ' +
-            '}'
+        shellCallRule.setReturnValue(
+            './piper getConfig --contextConfig --stepMetadata \'metadata/nexusUpload.yaml\'',
+            '{"credentialsId": "idOfCxCredential", "verbose": false}'
         )
     }
 
@@ -77,6 +76,6 @@ class NexusUploadTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper nexusUpload --url=localhost:8081 --repository=maven-releases --groupId=org --version=1.0 --artifacts=\"[{\\\"artifactId\\\":\\\"blob\\\",\\\"classifier\\\":\\\"blob-1.0\\\",\\\"type\\\":\\\"pom\\\",\\\"file\\\":\\\"pom.xml\\\"}]\"'))
+        assertThat(shellCallRule.shell[3], is('./piper nexusUpload'))
     }
 }
