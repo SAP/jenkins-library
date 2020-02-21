@@ -1,44 +1,47 @@
 package piperutils
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestProjectWithOnlyMtaFile(t *testing.T) {
-	wd, _ := os.Getwd()
-	os.Chdir("testdata/mta")
-	defer os.Chdir(wd)
-	resultMta := UsesMta()
+	b := buildTools{directory: "testdata/mta"}
+	resultMta := b.UsesMta()
 	assert.True(t, resultMta)
-	resultPom := UsesMaven()
+	resultPom := b.UsesMaven()
 	assert.False(t, resultPom)
-	resultNpm := UsesNpm()
+	resultNpm := b.UsesNpm()
 	assert.False(t, resultNpm)
 }
 
 func TestProjectWithOnlyPomFile(t *testing.T) {
-	wd, _ := os.Getwd()
-	os.Chdir("testdata/maven")
-	defer os.Chdir(wd)
-	resultMta := UsesMta()
+	b := buildTools{directory: "testdata/maven"}
+	resultMta := b.UsesMta()
 	assert.False(t, resultMta)
-	resultPom := UsesMaven()
+	resultPom := b.UsesMaven()
 	assert.True(t, resultPom)
-	resultNpm := UsesNpm()
+	resultNpm := b.UsesNpm()
 	assert.False(t, resultNpm)
 }
 
 func TestProjectWithOnlyNpmFile(t *testing.T) {
-	wd, _ := os.Getwd()
-	os.Chdir("testdata/npm")
-	defer os.Chdir(wd)
-	resultMta := UsesMta()
+	b := buildTools{directory: "testdata/npm"}
+	resultMta := b.UsesMta()
 	assert.False(t, resultMta)
-	resultPom := UsesMaven()
+	resultPom := b.UsesMaven()
 	assert.False(t, resultPom)
-	resultNpm := UsesNpm()
+	resultNpm := b.UsesNpm()
 	assert.True(t, resultNpm)
+}
+
+func TestDirectryParameterIsEmptyAndNoProjectFilesAreInIt(t *testing.T) {
+	b := buildTools{}
+	resultMta := b.UsesMta()
+	assert.False(t, resultMta)
+	resultPom := b.UsesMaven()
+	assert.False(t, resultPom)
+	resultNpm := b.UsesNpm()
+	assert.False(t, resultNpm)
 }

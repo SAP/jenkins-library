@@ -1,34 +1,35 @@
 package piperutils
 
+import "path/filepath"
+
+type buildTools struct {
+	directory string
+}
+
 // UsesMta returns `true` if the cwd contains typical files for mta projects (mta.yaml, mta.yml), `false` otherwise
-func UsesMta() bool {
-	var mtaYaml, mtaYml bool
-	var err error
-	mtaYaml, err = FileExists("mta.yaml")
-	if err != nil {
-		// no action
-	}
-	mtaYml, err = FileExists("mta.yml")
-	if err != nil {
-		// no action
-	}
-	return mtaYaml || mtaYml
+func (b *buildTools) UsesMta() bool {
+	return b.anyFileExists("mta.yaml", "mta.yml")
 }
 
 // UsesMaven returns `true` if the cwd contains a pom.xml file, false otherwise
-func UsesMaven() bool {
-	pom, err := FileExists("pom.xml")
-	if err != nil {
-		return false
-	}
-	return pom
+func (b *buildTools) UsesMaven() bool {
+	return b.anyFileExists("pom.xml")
 }
 
 // UsesNpm returns `true` if the cwd contains a package.json file, false otherwise
-func UsesNpm() bool {
-	packageJSON, err := FileExists("package.json")
-	if err != nil {
-		return false
+func (b *buildTools) UsesNpm() bool {
+	return b.anyFileExists("package.json")
+}
+
+func (b *buildTools) anyFileExists(candidates ...string) bool {
+	for i := 0; i < len(candidates); i++ {
+		exists, err := FileExists(filepath.Join(b.directory, candidates[i]))
+		if err != nil {
+			return false
+		}
+		if exists {
+			return true
+		}
 	}
-	return packageJSON
+	return false
 }
