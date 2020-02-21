@@ -24,7 +24,8 @@ void call(Map parameters = [:]) {
         }
 
         def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
+        parameters.remove('juStabUtils')
+        parameters.remove('jenkinsUtilsStub')
 
         if (!parameters.get('credentialsId')) {
             // Remove null or empty credentialsId key. (Eases calling code.)
@@ -47,12 +48,14 @@ void call(Map parameters = [:]) {
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
+        echo "meta data file exists: ${fileExists(METADATA_FILE)}"
+
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
             //sh 'env'
             // get context configuration
-            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata'${METADATA_FILE}'"))
             echo "config as decoded from piper itself: $config"
 
             // Hack to get things going (reading config from ENV doesn't work for some reason):
