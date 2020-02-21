@@ -55,7 +55,7 @@ void call(Map parameters = [:]) {
         ]) {
             //sh 'env'
             // get context configuration
-            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata'${METADATA_FILE}'"))
+            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}' -v"))
             echo "config as decoded from piper itself: $config"
 
             // Hack to get things going (reading config from ENV doesn't work for some reason):
