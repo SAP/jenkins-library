@@ -101,14 +101,6 @@ func uploadFile(client *piperHttp.Client, filePath, url string) {
 	}
 }
 
-func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) error {
-	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
-	if err == nil {
-		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
-	}
-	return err
-}
-
 func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) {
 	hashReader, err := generateHashReader(filePath, hash, length)
 	if err != nil {
@@ -118,6 +110,14 @@ func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to upload hash")
 	}
+}
+
+func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) error {
+	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
+	if err == nil {
+		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
+	}
+	return err
 }
 
 func generateHashReader(filePath string, hash hash.Hash, length int) (io.Reader, error) {
