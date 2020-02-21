@@ -99,7 +99,10 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)
-		assert.NotContains(t, "${timestamp}", result.Modules[0].Parameters["version"])
+		assert.Equal(t, "myApp", result.Modules[0].Name)
+		assert.Equal(t, result.Modules[0].Parameters["version"], "1.2.3-${timestamp}")
+		assert.Equal(t, "myApp", result.Modules[0].Parameters["name"])
+
 	})
 
 	t.Run("Dont write mta yaml file when already present no timestamp placeholder", func(t *testing.T) {

@@ -17,19 +17,20 @@ import (
 	"time"
 )
 
-const templateMtaYml = `_schema-version: "2.0.0"
+const templateMtaYml = `_schema-version: "3.1"
 ID: "{{.ID}}"
 version: {{.Version}}
 
 parameters:
-  hcp-deployer-version: "1.0.0"
+  hcp-deployer-version: "1.1.0"
 
 modules:
-  - name: {{.Name}}
+  - name: {{.ApplicationName}}
     type: html5
     path: .
     parameters:
        version: {{.Version}}-${timestamp}
+       name: {{.ApplicationName}}
     build-parameters:
       builder: grunt
       build-result: dist`
@@ -338,13 +339,13 @@ func handleSettingsFiles(config mtaBuildOptions,
 	return nil
 }
 
-func generateMta(id, name, version string) (string, error) {
+func generateMta(id, applicationName, version string) (string, error) {
 
 	if len(id) == 0 {
 		return "", fmt.Errorf("Generating mta file: ID not provided")
 	}
-	if len(name) == 0 {
-		return "", fmt.Errorf("Generating mta file: Name not provided")
+	if len(applicationName) == 0 {
+		return "", fmt.Errorf("Generating mta file: ApplicationName not provided")
 	}
 	if len(version) == 0 {
 		return "", fmt.Errorf("Generating mta file: Version not provided")
@@ -356,12 +357,12 @@ func generateMta(id, name, version string) (string, error) {
 	}
 
 	type properties struct {
-		ID      string
-		Name    string
-		Version string
+		ID              string
+		ApplicationName string
+		Version         string
 	}
 
-	props := properties{ID: id, Name: name, Version: version}
+	props := properties{ID: id, ApplicationName: applicationName, Version: version}
 
 	var script bytes.Buffer
 	tmpl.Execute(&script, props)
