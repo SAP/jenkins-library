@@ -7,7 +7,7 @@ Thanks to highly streamlined components, setting up and delivering your first pr
 
 ## Qualities and Pipeline Features
 
-The SAP Cloud SDK pipeline is based on project "piper" and offers unique features for assuring that your SAP Cloud SDK based application fulfills highest quality standards.
+The SAP Cloud SDK pipeline is based on project "piper" and offers unique features for assuring that your SAP Cloud SDK based application fulfills the highest quality standards.
 In conjunction with the SAP Cloud SDK libraries, the pipeline helps you to implement and automatically assure application qualities, for example:
 
 * Functional correctness via:
@@ -23,6 +23,8 @@ In conjunction with the SAP Cloud SDK libraries, the pipeline helps you to imple
     * Zero-downtime deployment
     * Proper logging of application errors
 
+For more details, see [Cloud Qualities](cloud-qualities).
+
 ![Screenshot of SAP Cloud SDK Pipeline](../../images/cloud-sdk-pipeline.png)
 
 ## Supported Project Types
@@ -34,7 +36,7 @@ The pipeline supports the following types of projects:
 * TypeScript projects based on the [SAP Cloud SDK TypeScript Scaffolding](https://github.com/SAP/cloud-s4-sdk-examples/tree/scaffolding-ts).
 * SAP Cloud Application Programming Model (CAP) projects based on the _SAP Cloud Platform Business Application_ WebIDE Template.
 
-You can find more details about the supported project types and build tools in the [project documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/build-tools.md).
+You can find more details about the supported project types and build tools in [Build Tools](build-tools).
 
 ## Legal Notes
 

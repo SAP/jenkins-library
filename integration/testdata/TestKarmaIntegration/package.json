@@ -1,0 +1,22 @@
+{
+  "name": "piper-karma-integration",
+  "version": "1.0.1",
+  "private": false,
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "main": "app.js",
+  "repository": {
+    "type": "git"
+  },
+  "devDependencies": {
+    "karma": "^1.4.0",
+    "karma-openui5": "^0.2.1",
+    "karma-qunit": "^1.2.1",
+    "karma-webdriver-launcher": "^1.0.5",
+    "qunitjs": "^1.22.0"
+  },
+  "scripts": {
+    "karma": "./node_modules/.bin/karma start"
+  }
+}

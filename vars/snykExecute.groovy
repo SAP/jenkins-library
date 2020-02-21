@@ -115,6 +115,10 @@ void call(Map parameters = [:]) {
                             dockerOptions: config.dockerOptions,
                             stashContent: config.stashContent
                         ) {
+                            sh returnStatus: true, script: """
+                                node --version
+                                npm --version
+                            """
                             // install Snyk
                             sh 'npm install snyk --global --quiet'
                             if(config.toHtml){
