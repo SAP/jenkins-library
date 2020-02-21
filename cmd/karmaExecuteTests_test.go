@@ -29,7 +29,7 @@ func TestRunKarma(t *testing.T) {
 
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "fail install test", RunCommand: "npm run test"}
 
-		e := execMockRunner{shouldFailWith: errors.New("error case")}
+		e := execMockRunner{shouldFailOnCommand: map[string]error{"fail install test": errors.New("error case")}}
 		runKarma(opts, &e)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
@@ -40,7 +40,7 @@ func TestRunKarma(t *testing.T) {
 
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
 
-		e := execMockRunner{shouldFailWith: errors.New("error case")}
+		e := execMockRunner{shouldFailOnCommand: map[string]error{"npm install test": errors.New("error case")}}
 		runKarma(opts, &e)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
