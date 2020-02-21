@@ -104,7 +104,7 @@ spec:
 		var stdout bytes.Buffer
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, e.env[0], []string{"KUBECONFIG=This is my kubeconfig"})
+		assert.Equal(t, e.env, []string{"KUBECONFIG=This is my kubeconfig"})
 
 		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong secret lookup command")
 		assert.Equal(t, []string{

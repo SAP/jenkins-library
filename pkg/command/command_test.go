@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -43,6 +44,14 @@ func TestShellRun(t *testing.T) {
 				}
 			})
 		})
+		s = Command{stdout: o, stderr: e, env: []string{"HOME=.", "DEBUG=true"}}
+		t.Run("environment", func(t *testing.T) {
+			s.RunShell("env", "foo")
+			oStr := o.String()
+			if !strings.Contains(oStr, "HOME=.") || !strings.Contains(oStr, "DEBUG=true") {
+				t.Errorf("expected Environment variables not found")
+			}
+		})
 	})
 }
 
@@ -71,6 +80,27 @@ func TestExecutableRun(t *testing.T) {
 				}
 			})
 		})
+	})
+
+	t.Run("environment", func(t *testing.T) {
+
+		// The funny thing is: the test succeds even if we don't set the helperCommand since
+		// the command (env) exists in the free wild (on linux like systems). We should keep
+		// the helper command, though.
+		ExecCommand = helperCommand
+		defer func() { ExecCommand = exec.Command }()
+
+		o := new(bytes.Buffer)
+		e := new(bytes.Buffer)
+
+		ex := Command{stdout: o, stderr: e}
+		ex.Env([]string{"HOME=.", "DEBUG=true"})
+		ex.RunExecutable("env")
+
+		oStr := o.String()
+		if !strings.Contains(oStr, "HOME=.") || !strings.Contains(oStr, "DEBUG=true") {
+			t.Errorf("expected Environment variables not found")
+		}
 	})
 }
 
@@ -173,6 +203,10 @@ func TestHelperProcess(*testing.T) {
 		}
 		fmt.Println(iargs...)
 		fmt.Fprintf(os.Stderr, "Stderr: command %v\n", cmd)
+	case "env":
+		for _, e := range os.Environ() {
+			fmt.Println(e)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
 		os.Exit(2)

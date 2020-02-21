@@ -18,7 +18,7 @@ import (
 
 type execMockRunner struct {
 	dir                 []string
-	env                 [][]string
+	env                 []string
 	calls               []execCall
 	stdout              io.Writer
 	stderr              io.Writer
@@ -33,7 +33,7 @@ type execCall struct {
 
 type shellMockRunner struct {
 	dir                 string
-	env                 [][]string
+	env                 []string
 	calls               []string
 	shell               []string
 	stdout              io.Writer
@@ -47,7 +47,7 @@ func (m *execMockRunner) Dir(d string) {
 }
 
 func (m *execMockRunner) Env(e []string) {
-	m.env = append(m.env, e)
+	m.env = append(m.env, e...)
 }
 
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
@@ -73,7 +73,7 @@ func (m *shellMockRunner) Dir(d string) {
 }
 
 func (m *shellMockRunner) Env(e []string) {
-	m.env = append(m.env, e)
+	m.env = append(m.env, e...)
 }
 
 func (m *shellMockRunner) RunShell(s string, c string) error {

@@ -14,9 +14,9 @@ import (
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	dir    string
+	env    []string
 	stdout io.Writer
 	stderr io.Writer
-	env    []string
 }
 
 // Dir sets the working directory for the execution
@@ -53,9 +53,7 @@ func (c *Command) RunShell(shell, script string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		cmd.Env = c.env
-	}
+	setEnvironment(cmd, c.env)
 
 	in := bytes.Buffer{}
 	in.Write([]byte(script))
@@ -78,14 +76,29 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		cmd.Env = c.env
-	}
+	setEnvironment(cmd, c.env)
 
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
+}
+
+func setEnvironment(cmd *exec.Cmd, env []string) {
+
+	if len(env) > 0 {
+
+		// When cmd.Env is nil the environment variables from the current
+		// process are also used by the forked process. Our environment variables
+		// should not replace the existing environment, but they should be appended.
+		// Hence we populate cmd.Env first with the current environment in case we
+		// find it empty. In case there is already something, we append to that environment.
+
+		if len(cmd.Env) == 0 {
+			cmd.Env = os.Environ()
+		}
+		cmd.Env = append(cmd.Env, env...)
+	}
 }
 
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
