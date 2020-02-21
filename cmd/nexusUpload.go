@@ -62,7 +62,7 @@ func getBaseUrl(config nexusUploadOptions) string {
 	case "nexus3":
 		baseUrl += "/repository/"
 	default:
-		log.Entry().Fatal("Unsupported Nexus version ", config.NexusVersion)
+		log.Entry().Fatal("Unsupported Nexus version '", config.NexusVersion, "'")
 	}
 	groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
 	baseUrl += config.Repository + "/" + groupPath + "/"
