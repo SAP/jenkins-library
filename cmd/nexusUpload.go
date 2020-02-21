@@ -24,77 +24,86 @@ type artifactDescription struct {
 	File       string `json:"file"`
 }
 
-func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) error {
+func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
+	artifacts := getArtifacts(config)
+	baseUrl := getBaseUrl(config)
+	client := createHttpClient(config)
+
+	for _, artifact := range artifacts {
+		url := getArtifactUrl(baseUrl, config.Version, artifact)
+
+		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
+		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
+		uploadFile(client, artifact.File, url)
+	}
+}
+
+func getArtifacts(config nexusUploadOptions) []artifactDescription {
 	var artifacts []artifactDescription
 	err := json.Unmarshal([]byte(config.Artifacts), &artifacts)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", config.Artifacts, "'")
 	}
+	return artifacts
+}
 
+func createHttpClient(config nexusUploadOptions) *piperHttp.Client {
 	client := piperHttp.Client{}
 	clientOptions := piperHttp.ClientOptions{Username: config.User, Password: config.Password, Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	client.SetOptions(clientOptions)
+	return &client
+}
 
+func getBaseUrl(config nexusUploadOptions) string {
+	baseUrl := config.Url
+	switch config.NexusVersion {
+	case "nexus2":
+		baseUrl += "/content/repositories/"
+	case "nexus3":
+		baseUrl += "/repository/"
+	default:
+		log.Entry().Fatal("Unsupported Nexus version ", config.NexusVersion)
+	}
 	groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
+	baseUrl += config.Repository + "/" + groupPath + "/"
+	return baseUrl
+}
 
-	for _, artifact := range artifacts {
-		url := config.Url
-		switch config.NexusVersion {
-		case "nexus2":
-			url += "/content/repositories/"
-		case "nexus3":
-			url += "/repository/"
-		default:
-			log.Entry().WithError(err).Fatal("Unsupported Nexus version ", config.NexusVersion)
-		}
+func getArtifactUrl(baseUrl, version string, artifact artifactDescription) string {
+	url := baseUrl
 
-		artifactName := artifact.ID + "-" + config.Version
-		if len(artifact.Classifier) > 0 {
-			artifactName += "-" + artifact.Classifier
-		}
-		artifactName += "." + artifact.Type
+	// Generate artifacte name including optional classifier
+	artifactName := artifact.ID + "-" + version
+	if len(artifact.Classifier) > 0 {
+		artifactName += "-" + artifact.Classifier
+	}
+	artifactName += "." + artifact.Type
 
-		url += config.Repository + "/" + groupPath + "/" + artifact.ID + "/" + config.Version + "/" + artifactName
-		url = "http://" + strings.ReplaceAll(url, "//", "/")
-		log.Entry().Info("Trying to upload ", artifact.File, " to ", url)
+	url += artifact.ID + "/" + version + "/" + artifactName
 
-		uploadHash(&client, artifact.File, url+".md5", md5.New(), 16)
-		uploadHash(&client, artifact.File, url+".sha1", sha1.New(), 20)
+	// Remove any double slashes, as Nexus does not like them, and prepend protocol
+	url = "http://" + strings.ReplaceAll(url, "//", "/")
 
-		var file *os.File
-		file, err = os.Open(artifact.File)
-		if err != nil {
-			log.Entry().WithError(err).Fatal("Failed to open artifact file ", artifact.File)
-		}
+	return url
+}
 
-		defer file.Close()
-
-		_, err = uploadToNexus(&client, file, url)
-		if err != nil {
-			log.Entry().WithError(err).Fatal("Failed to upload artifact ", artifact.File)
-		}
+func uploadFile(client *piperHttp.Client, filePath, url string) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to open artifact file ", filePath)
 	}
 
-	return err
+	defer file.Close()
+
+	_, err = uploadToNexus(client, file, url)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to upload artifact ", filePath)
+	}
 }
 
 func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) (*http.Response, error) {
 	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
-	if err != nil {
-		// if response != nil && response.StatusCode == 400 {
-		// 	log.Entry().Info("Artifact already exits, deleting and retrying...\n")
-		// 	response, err = client.SendRequest(http.MethodDelete, url, nil, nil, nil)
-		// 	if err != nil {
-		// 		log.Entry().Info("Failed to delete artifact\n", err)
-		// 		return nil, err
-		// 	}
-		// 	response, err = client.SendRequest(http.MethodPut, url, stream, nil, nil)
-		// }
-		// if err != nil {
-		// 		log.Entry().Info("Failed to upload artifact\n", err)
-		//		return nil, err
-		// }
-	} else {
+	if err == nil {
 		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
 	}
 	return response, err
