@@ -36,4 +36,4 @@ jobs:
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version $REL_VERSION --assetPath ./piper-${{ matrix.os }}"
+         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version $REL_VERSION --assetPath ./piper-${{ matrix.os }}
