@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest] #, macos-latest, windows-latest
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-go@v1
@@ -31,10 +31,7 @@ jobs:
         with:
           name: piper-${{ matrix.os }}
           path: "."
-  release:
-    #currently works only on linux because only linux binaries are available to the action
-    runs-on: ubuntu-latest
-    steps:
+        #currently works only on linux because only linux binaries are available to the action
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
