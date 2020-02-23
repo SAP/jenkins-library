@@ -30,6 +30,7 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: piper-${{ matrix.os }}
+          path: "."
       # - uses: SAP/project-piper-action@master
       #   with:
       #    command: githubPublishRelease
