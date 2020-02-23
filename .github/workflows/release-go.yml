@@ -1,0 +1,25 @@
+name: Build and Releae
+
+# on:
+#   release:
+#     types: [published]
+
+on: push
+
+jobs:
+  foo:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.x'
+      - run: go build -o piper-${{ matrix.os }} .
+      - run: ./piper-${{ matrix.os }} version
+      - uses: SAP/project-piper-action@master
+        with:
+         command: githubPublishRelease
+         flags: "--token ${GITHUB_TOKEN} --version latest --assetPath ./piper-${{ matrix.os }}"
