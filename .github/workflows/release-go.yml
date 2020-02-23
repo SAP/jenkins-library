@@ -31,7 +31,7 @@ jobs:
         with:
           name: piper-${{ matrix.os }}
           path: "."
-      # - uses: SAP/project-piper-action@master
-      #   with:
-      #    command: githubPublishRelease
-      #    flags: "--token ${GITHUB_TOKEN} --version latest --assetPath ./piper-${{ matrix.os }}"
+      - uses: SAP/project-piper-action@master
+        with:
+         command: githubPublishRelease
+         flags: "--token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper-${{ matrix.os }}"
