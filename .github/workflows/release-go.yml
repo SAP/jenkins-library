@@ -18,6 +18,7 @@ jobs:
         with:
           go-version: '1.14.x'
       - run: |
+          export REL_VERSION=${GITHUB_REF##*/}
           export GIT_COMMIT=$(git rev-parse HEAD) && \
           export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
           CGO_ENABLED=0 go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
@@ -35,4 +36,4 @@ jobs:
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version ${GITHUB_REF##*/} --assetPath ./piper-${{ matrix.os }}"
+         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version $REL_VERSION --assetPath ./piper-${{ matrix.os }}"
