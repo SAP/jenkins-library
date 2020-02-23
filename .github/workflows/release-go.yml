@@ -26,6 +26,10 @@ jobs:
             -o piper-${{ matrix.os }} .
         shell: bash
       - run: ./piper-${{ matrix.os }} version
+        shell: bash
+      - uses: actions/upload-artifact@v1
+        with:
+          name: piper-${{ matrix.os }}
       # - uses: SAP/project-piper-action@master
       #   with:
       #    command: githubPublishRelease
