@@ -30,9 +30,9 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: piper-${{ matrix.os }}
-          path: "."
+          path: piper-${{ matrix.os }}
         #currently works only on linux because only linux binaries are available to the action
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version ${{ github.ref }} --assetPath ./piper-${{ matrix.os }}"
+         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version ${{ GITHUB_REF##*/ }} --assetPath ./piper-${{ matrix.os }}"
