@@ -25,7 +25,7 @@ jobs:
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
             -o piper-${{ matrix.os }} .
       - run: ./piper-${{ matrix.os }} version
-      - uses: SAP/project-piper-action@master
-        with:
-         command: githubPublishRelease
-         flags: "--token ${GITHUB_TOKEN} --version latest --assetPath ./piper-${{ matrix.os }}"
+      # - uses: SAP/project-piper-action@master
+      #   with:
+      #    command: githubPublishRelease
+      #    flags: "--token ${GITHUB_TOKEN} --version latest --assetPath ./piper-${{ matrix.os }}"
