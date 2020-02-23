@@ -24,6 +24,7 @@ jobs:
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY} \
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
             -o piper-${{ matrix.os }} .
+        shell: bash
       - run: ./piper-${{ matrix.os }} version
       # - uses: SAP/project-piper-action@master
       #   with:
