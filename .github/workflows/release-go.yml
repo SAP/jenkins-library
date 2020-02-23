@@ -7,7 +7,7 @@ name: Build and Releae
 on: push
 
 jobs:
-  foo:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -31,7 +31,11 @@ jobs:
         with:
           name: piper-${{ matrix.os }}
           path: "."
+  release:
+    #currently works only on linux because only linux binaries are available to the action
+    runs-on: ubuntu-latest
+    steps:
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version v0.0.1 --assetPath ./piper-${{ matrix.os }}"
+         flags: "-v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version ${{ github.ref }} --assetPath ./piper-${{ matrix.os }}"
