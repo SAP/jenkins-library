@@ -25,7 +25,7 @@ type mavenExecuteOptions struct {
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
 }
 
-// MavenExecuteCommand Ths step allows to run maven commands
+// MavenExecuteCommand This step allows to run maven commands
 func MavenExecuteCommand() *cobra.Command {
 	metadata := mavenExecuteMetadata()
 	var stepConfig mavenExecuteOptions
@@ -33,7 +33,7 @@ func MavenExecuteCommand() *cobra.Command {
 
 	var createMavenExecuteCmd = &cobra.Command{
 		Use:   "mavenExecute",
-		Short: "Ths step allows to run maven commands",
+		Short: "This step allows to run maven commands",
 		Long:  `This step runs a maven command based on the parameters provided to the step.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()

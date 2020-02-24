@@ -4,23 +4,23 @@ import (
 	"io"
 )
 
-type runner interface {
+type Runner interface {
 	Dir(d string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 }
 
-type execRunner interface {
-	runner
+type ExecRunner interface {
+	Runner
 	RunExecutable(e string, p ...string) error
 }
 
-type envExecRunner interface {
-	execRunner
+type EnvExecRunner interface {
+	ExecRunner
 	Env(e []string)
 }
 
-type shellRunner interface {
-	runner
+type ShellRunner interface {
+	Runner
 	RunShell(s string, c string) error
 }
