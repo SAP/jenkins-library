@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -19,17 +20,17 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runnexusUpload(&config, telemetryData, &c)
+	err := runNexusUpload(&config, telemetryData, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runnexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 
 	projectStructure := piperutils.ProjectStructure{}
 
-	nexusClient := nexusUpload.NexusUpload{}
+	nexusClient := nexus.NexusUpload{}
 
 	//log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 	return nil
