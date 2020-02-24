@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -32,11 +33,28 @@ type NexusUpload struct {
 	Artifacts []ArtifactDescription
 }
 
+func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
+	baseURL, err := getBaseURL(nexusUrl, nexusVersion, repository, groupID)
+	if err != nil {
+		return err
+	}
+	nexusUpload.baseURL = baseURL
+	return nil
+}
+
 func (nexusUpload *NexusUpload) UploadArtifacts() {
+	if nexusUpload.baseURL == "" {
+		log.Entry().Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
+	}
+
+	if len(nexusUpload.Artifacts) == 0 {
+		log.Entry().Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
+	}
+
 	client := nexusUpload.createHttpClient()
 
 	for _, artifact := range nexusUpload.Artifacts {
-		url := getArtifactUrl(nexusUpload.baseURL, nexusUpload.Version, artifact)
+		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.Version, artifact)
 
 		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
 		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
@@ -52,12 +70,31 @@ func (nexusUpload *NexusUpload) AddArtifactsFromJSON(json string) error {
 	if len(artifacts) == 0 {
 		return errors.New("No artifact descriptions found in JSON string")
 	}
+	for _, artifact := range artifacts {
+		err = validateArtifact(artifact)
+		if err != nil {
+			return err
+		}
+	}
+
 	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifacts...)
 	return nil
 }
 
-func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) {
+func validateArtifact(artifact ArtifactDescription) error {
+	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
+		return errors.New(fmt.Sprintf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type))
+	}
+	return nil
+}
+
+func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error {
+	err := validateArtifact(artifact)
+	if err != nil {
+		return err
+	}
 	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifact)
+	return nil
 }
 
 func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
@@ -76,11 +113,7 @@ func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {
 	return &client
 }
 
-func (nexusUpload NexusUpload) SetBaseUrl(nexusUrl, nexusVersion, repository, groupID string) {
-	nexusUpload.baseURL = getBaseUrl(nexusUrl, nexusVersion, repository, groupID)
-}
-
-func getBaseUrl(nexusUrl, nexusVersion, repository, groupID string) string {
+func getBaseURL(nexusUrl, nexusVersion, repository, groupID string) (string, error) {
 	baseUrl := nexusUrl
 	switch nexusVersion {
 	case "nexus2":
@@ -88,15 +121,15 @@ func getBaseUrl(nexusUrl, nexusVersion, repository, groupID string) string {
 	case "nexus3":
 		baseUrl += "/repository/"
 	default:
-		log.Entry().Fatal("Unsupported Nexus version '", nexusVersion, "'")
+		return "", errors.New(fmt.Sprintf("Unsupported Nexus version '%s'", nexusVersion))
 	}
 	groupPath := strings.ReplaceAll(groupID, ".", "/")
 	baseUrl += repository + "/" + groupPath + "/"
-	return baseUrl
+	return baseUrl, nil
 }
 
-func getArtifactUrl(baseUrl, version string, artifact ArtifactDescription) string {
-	url := baseUrl
+func getArtifactURL(baseURL, version string, artifact ArtifactDescription) string {
+	url := baseURL
 
 	// Generate artifacte name including optional classifier
 	artifactName := artifact.ID + "-" + version

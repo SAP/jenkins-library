@@ -4,7 +4,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -28,11 +27,11 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 
 func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 
-	projectStructure := piperutils.ProjectStructure{}
+	//projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
 	groupID := "" // TODO... expected to be provided for MTA projects, can be empty, though
-	nexusClient.SetBaseUrl(config.Url, config.Version, config.Repository, groupID)
+	nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
 
 	// TODO:
 	artifact := nexus.ArtifactDescription{}
