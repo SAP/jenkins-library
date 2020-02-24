@@ -24,7 +24,7 @@ func TestSettings(t *testing.T) {
 		return ""
 	}
 
-	t.Run("Invalid settimgs file type", func(t *testing.T) {
+	t.Run("Invalid settings file type", func(t *testing.T) {
 
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
