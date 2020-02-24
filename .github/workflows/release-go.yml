@@ -33,6 +33,8 @@ jobs:
           path: piper-${{ matrix.os }}
         #currently works only on linux because only linux binaries are available to the action
       - uses: SAP/project-piper-action@master
+        env:
+          PIPER_version: v0.0.2
         with:
          command: githubPublishRelease
-         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version v0.0.1 --assetPath ./piper-${{ matrix.os }}
+         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper-${{ matrix.os }}
