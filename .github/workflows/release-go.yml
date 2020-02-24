@@ -1,10 +1,13 @@
 name: Build and Releae
 
 # on:
-#   release:
-#     types: [published]
+#   schedule:
+#     - cron:  '0 6 * * 1'
 
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
