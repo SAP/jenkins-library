@@ -50,8 +50,15 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 			fmt.Println(err)
 		}
 		nexusClient.Version = mtaYaml.Version
-		_ = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
-		_ = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
+		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
+		if err != nil {
+			fmt.Println(err)
+		}
+		//fixme do proper way to find name/path of mta file
+		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	if projectStructure.UsesMaven() {
