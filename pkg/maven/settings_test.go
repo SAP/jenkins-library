@@ -36,6 +36,18 @@ func TestSettings(t *testing.T) {
 		}
 	})
 
+	t.Run("Settings file source location not provided", func(t *testing.T) {
+
+		httpClient := httpMock{}
+		fileUtils := fileUtilsMock{}
+
+		err := GetSettingsFile(1, "", &fileUtils, &httpClient)
+
+		if assert.Error(t, err) {
+			assert.Equal(t, "Settings file source location not provided", err.Error())
+		}
+	})
+
 	t.Run("Retrieve global settings file", func(t *testing.T) {
 
 		httpClient := httpMock{}

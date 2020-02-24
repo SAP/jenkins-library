@@ -42,48 +42,50 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 		return err
 	}
 
-	if len(src) > 0 {
+	if len(src) == 0 {
+		return fmt.Errorf("Settings file source location not provided")
+	}
 
-		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
+	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
-		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
+	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
 
-			if err := httpClient.DownloadFile(src, dest, nil, nil); err != nil {
-				return err
-			}
-		} else {
+		if err := httpClient.DownloadFile(src, dest, nil, nil); err != nil {
+			return err
+		}
+	} else {
 
-			// for sake os symetry it would be better to use a file protocol prefix here (file:)
+		// for sake os symetry it would be better to use a file protocol prefix here (file:)
 
-			parent := filepath.Dir(dest)
+		parent := filepath.Dir(dest)
 
-			exists, err := fileUtils.FileExists(parent)
+		exists, err := fileUtils.FileExists(parent)
 
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 
-			if !exists {
-				if err = fileUtils.MkdirAll(parent, 0775); err != nil {
-					return err
-				}
-			}
-
-			exists, err = fileUtils.FileExists(src)
-
-			if err != nil {
-				return err
-			}
-
-			if !exists {
-				return fmt.Errorf("File \"%s\" not found", src)
-			}
-
-			if _, err := fileUtils.Copy(src, dest); err != nil {
+		if !exists {
+			if err = fileUtils.MkdirAll(parent, 0775); err != nil {
 				return err
 			}
 		}
+
+		exists, err = fileUtils.FileExists(src)
+
+		if err != nil {
+			return err
+		}
+
+		if !exists {
+			return fmt.Errorf("File \"%s\" not found", src)
+		}
+
+		if _, err := fileUtils.Copy(src, dest); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
