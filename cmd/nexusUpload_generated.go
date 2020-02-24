@@ -17,6 +17,8 @@ type nexusUploadOptions struct {
 	Version               string `json:"version,omitempty"`
 	Url                   string `json:"url,omitempty"`
 	Repository            string `json:"repository,omitempty"`
+	GroupID               string `json:"groupId,omitempty"`
+	ArtifactID            string `json:"artifactId,omitempty"`
 	AdditionalClassifiers string `json:"additionalClassifiers,omitempty"`
 	User                  string `json:"user,omitempty"`
 	Password              string `json:"password,omitempty"`
@@ -61,6 +63,8 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", "nexus3", "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the nexus repository.")
+	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts. Only used in MTA projects, ignored for Maven.")
+	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.")
 	cmd.Flags().StringVar(&stepConfig.AdditionalClassifiers, "additionalClassifiers", os.Getenv("PIPER_additionalClassifiers"), "List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
@@ -97,6 +101,22 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "groupId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "artifactId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{

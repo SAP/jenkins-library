@@ -37,6 +37,22 @@ spec:
         - STEPS
         mandatory: true
         default:
+      - name: groupId
+        type: string
+        description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+      - name: artifactId
+        type: string
+        description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
       - name: additionalClassifiers
         type: string
         description: List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.
