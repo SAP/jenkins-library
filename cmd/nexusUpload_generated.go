@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type nexusDeployOptions struct {
+type nexusUploadOptions struct {
 	Version               string `json:"version,omitempty"`
 	Url                   string `json:"url,omitempty"`
 	Repository            string `json:"repository,omitempty"`
@@ -22,21 +22,21 @@ type nexusDeployOptions struct {
 	Password              string `json:"password,omitempty"`
 }
 
-// NexusDeployCommand Deploy artifacts to Nexus
-func NexusDeployCommand() *cobra.Command {
-	metadata := nexusDeployMetadata()
-	var stepConfig nexusDeployOptions
+// NexusUploadCommand Upload artifacts to Nexus
+func NexusUploadCommand() *cobra.Command {
+	metadata := nexusUploadMetadata()
+	var stepConfig nexusUploadOptions
 	var startTime time.Time
 
-	var createNexusDeployCmd = &cobra.Command{
-		Use:   "nexusDeploy",
-		Short: "Deploy artifacts to Nexus",
-		Long:  `Deploy build artifacts to a Nexus Repository Manager`,
+	var createNexusUploadCmd = &cobra.Command{
+		Use:   "nexusUpload",
+		Short: "Upload artifacts to Nexus",
+		Long:  `Upload build artifacts to a Nexus Repository Manager`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("nexusDeploy")
+			log.SetStepName("nexusUpload")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "nexusDeploy", &stepConfig, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "nexusUpload", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -47,17 +47,17 @@ func NexusDeployCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "nexusDeploy")
-			nexusDeploy(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "nexusUpload")
+			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addNexusDeployFlags(createNexusDeployCmd, &stepConfig)
-	return createNexusDeployCmd
+	addNexusUploadFlags(createNexusUploadCmd, &stepConfig)
+	return createNexusUploadCmd
 }
 
-func addNexusDeployFlags(cmd *cobra.Command, stepConfig *nexusDeployOptions) {
+func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", "nexus3", "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the nexus repository.")
@@ -70,7 +70,7 @@ func addNexusDeployFlags(cmd *cobra.Command, stepConfig *nexusDeployOptions) {
 }
 
 // retrieve step metadata
-func nexusDeployMetadata() config.StepData {
+func nexusUploadMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

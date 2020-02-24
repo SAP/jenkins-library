@@ -3,6 +3,7 @@ package nexus
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"hash"
 	"io"
 	"net/http"
@@ -43,17 +44,29 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 	}
 }
 
-func (nexusUpload *NexusUpload) SetArtifacts(json string) {
-	nexusUpload.Artifacts = GetArtifacts(json)
+func (nexusUpload *NexusUpload) AddArtifactsFromJSON(json string) error {
+	artifacts, err := GetArtifacts(json)
+	if err != nil {
+		return err
+	}
+	if len(artifacts) == 0 {
+		return errors.New("No artifact descriptions found in JSON string")
+	}
+	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifacts...)
+	return nil
 }
 
-func GetArtifacts(artifactsAsJSON string) []ArtifactDescription {
+func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) {
+	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifact)
+}
+
+func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	var artifacts []ArtifactDescription
 	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", artifactsAsJSON, "'")
 	}
-	return artifacts
+	return artifacts, nil
 }
 
 func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {

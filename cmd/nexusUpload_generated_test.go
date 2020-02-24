@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNexusDeployCommand(t *testing.T) {
+func TestNexusUploadCommand(t *testing.T) {
 
-	testCmd := NexusDeployCommand()
+	testCmd := NexusUploadCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "nexusDeploy", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "nexusUpload", testCmd.Use, "command name incorrect")
 
 }

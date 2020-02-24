@@ -1,8 +1,8 @@
 metadata:
-  name: nexusDeploy
-  description: Deploy artifacts to Nexus
+  name: nexusUpload
+  description: Upload artifacts to Nexus
   longDescription: |
-    Deploy build artifacts to a Nexus Repository Manager
+    Upload build artifacts to a Nexus Repository Manager
 spec:
   inputs:
     secrets:
