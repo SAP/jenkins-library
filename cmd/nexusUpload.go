@@ -5,6 +5,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/ghodss/yaml"
+	"io/ioutil"
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
@@ -25,6 +27,11 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	}
 }
 
+type MtaYaml struct {
+	ID      string `json:"ID"`
+	Version string `json:"version"`
+}
+
 func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 
 	//projectStructure := piperutils.ProjectStructure{}
@@ -33,11 +40,18 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 	groupID := "" // TODO... expected to be provided for MTA projects, can be empty, though
 	nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
 
-	// TODO:
-	artifact := nexus.ArtifactDescription{}
-	// TODO: Artifact ID is also expected to be provided for MTA projects, for compatibility
-	// it would also have to be read from the "commonPipelineEnvironment"
-	nexusClient.AddArtifact(artifact)
+	if projectStructure.UsesMta() {
+		var mtaYaml MtaYaml
+		mtaYamContent, _ := ioutil.ReadFile("mta.yaml")
+		_ = yaml.Unmarshal(mtaYamContent, mtaYaml)
+		nexusClient.Version = mtaYaml.Version
+		nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
+		nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mtarFilePath"}) //fixme depends on https://github.com/SAP/jenkins-library/pull/1128
+	}
+
+	if projectStructure.UsesMaven() {
+		//read pom
+	}
 
 	nexusClient.UploadArtifacts()
 
