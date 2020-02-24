@@ -1,4 +1,4 @@
-package cmd
+package nexus
 
 import (
 	"encoding/hex"
@@ -14,23 +14,28 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-type artifactDescription struct {
+type ArtifactDescription struct {
 	ID         string `json:"artifactId"`
 	Classifier string `json:"classifier"`
 	Type       string `json:"type"`
 	File       string `json:"file"`
 }
 
-func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
-	artifacts := getArtifacts(config)
-	baseUrl := getBaseUrl(config)
-	client := createHttpClient(config)
+type NexusUpload struct {
+	BaseUrl   string
+	Version   string
+	Username  string
+	Password  string
+	Artifacts []ArtifactDescription
+}
 
-	for _, artifact := range artifacts {
-		url := getArtifactUrl(baseUrl, config.Version, artifact)
+func (nexusUpload *NexusUpload) UploadArtifacts() {
+	client := nexusUpload.createHttpClient()
+
+	for _, artifact := range nexusUpload.Artifacts {
+		url := getArtifactUrl(nexusUpload.BaseUrl, nexusUpload.Version, artifact)
 
 		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
 		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
@@ -38,38 +43,42 @@ func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData)
 	}
 }
 
-func getArtifacts(config nexusUploadOptions) []artifactDescription {
-	var artifacts []artifactDescription
-	err := json.Unmarshal([]byte(config.Artifacts), &artifacts)
+func (nexusUpload *NexusUpload) SetArtifacts(json string) {
+	nexusUpload.Artifacts = GetArtifacts(json)
+}
+
+func GetArtifacts(artifactsAsJSON string) []ArtifactDescription {
+	var artifacts []ArtifactDescription
+	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", config.Artifacts, "'")
+		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", artifactsAsJSON, "'")
 	}
 	return artifacts
 }
 
-func createHttpClient(config nexusUploadOptions) *piperHttp.Client {
+func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {
 	client := piperHttp.Client{}
-	clientOptions := piperHttp.ClientOptions{Username: config.User, Password: config.Password, Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	client.SetOptions(clientOptions)
 	return &client
 }
 
-func getBaseUrl(config nexusUploadOptions) string {
-	baseUrl := config.Url
-	switch config.NexusVersion {
+func GetBaseUrl(nexusUrl, nexusVersion, repository, groupID string) string {
+	baseUrl := nexusUrl
+	switch nexusVersion {
 	case "nexus2":
 		baseUrl += "/content/repositories/"
 	case "nexus3":
 		baseUrl += "/repository/"
 	default:
-		log.Entry().Fatal("Unsupported Nexus version '", config.NexusVersion, "'")
+		log.Entry().Fatal("Unsupported Nexus version '", nexusVersion, "'")
 	}
-	groupPath := strings.ReplaceAll(config.GroupID, ".", "/")
-	baseUrl += config.Repository + "/" + groupPath + "/"
+	groupPath := strings.ReplaceAll(groupID, ".", "/")
+	baseUrl += repository + "/" + groupPath + "/"
 	return baseUrl
 }
 
-func getArtifactUrl(baseUrl, version string, artifact artifactDescription) string {
+func getArtifactUrl(baseUrl, version string, artifact ArtifactDescription) string {
 	url := baseUrl
 
 	// Generate artifacte name including optional classifier

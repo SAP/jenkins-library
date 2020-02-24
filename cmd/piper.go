@@ -57,7 +57,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
-	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(NexusDeployCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
