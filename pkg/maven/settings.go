@@ -79,13 +79,11 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 				return fmt.Errorf("File \"%s\" not found", src)
 			}
 
-			fmt.Printf("Copying file '%s' to '%s'", src, dest)
 			if _, err := fileUtils.Copy(src, dest); err != nil {
 				return err
 			}
 		}
 	}
-	log.Entry().Debugf("File \"%s\" copied to \"%s\"", src, dest)
 	return nil
 }
 
