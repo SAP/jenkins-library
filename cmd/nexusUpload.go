@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"io/ioutil"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
-	"io/ioutil"
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
@@ -37,7 +38,7 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 	//projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
-	groupID := "" // TODO... expected to be provided for MTA projects, can be empty, though
+	groupID := config.GroupID // TODO... Only expected to be provided for MTA projects, can be empty, though
 	nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
 
 	if projectStructure.UsesMta() {

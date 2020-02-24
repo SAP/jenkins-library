@@ -30,7 +30,7 @@ type NexusUpload struct {
 	Version   string
 	Username  string
 	Password  string
-	Artifacts []ArtifactDescription
+	artifacts []ArtifactDescription
 }
 
 func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
@@ -47,13 +47,13 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 		log.Entry().Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
 	}
 
-	if len(nexusUpload.Artifacts) == 0 {
+	if len(nexusUpload.artifacts) == 0 {
 		log.Entry().Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
 	}
 
 	client := nexusUpload.createHttpClient()
 
-	for _, artifact := range nexusUpload.Artifacts {
+	for _, artifact := range nexusUpload.artifacts {
 		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.Version, artifact)
 
 		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
@@ -77,7 +77,7 @@ func (nexusUpload *NexusUpload) AddArtifactsFromJSON(json string) error {
 		}
 	}
 
-	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifacts...)
+	nexusUpload.artifacts = append(nexusUpload.artifacts, artifacts...)
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error 
 	if err != nil {
 		return err
 	}
-	nexusUpload.Artifacts = append(nexusUpload.Artifacts, artifact)
+	nexusUpload.artifacts = append(nexusUpload.artifacts, artifact)
 	return nil
 }
 
