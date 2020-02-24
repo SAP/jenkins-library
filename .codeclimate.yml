@@ -17,6 +17,7 @@ plugins:
     - "documentation/**/images/"
     - "cfg/id_rsa.enc"
     - "**/testdata/**"
+    - "**/*_generated*.go"
   fixme:
     enabled: true
     config:
