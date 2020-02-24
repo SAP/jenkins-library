@@ -44,18 +44,24 @@ type Sender interface {
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
 	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadRequest(method, url, file, fieldName string, formFields map[string]string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadFileForm(url, file, fieldName string, formFields map[string]string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	SetOptions(options ClientOptions)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return c.UploadRequest(http.MethodPost, url, file, fieldName, header, cookies)
+	return c.UploadRequest(http.MethodPost, url, file, fieldName, nil, header, cookies)
+}
+
+// UploadFileForm uploads a file's content as multipart-form POST request with additional form fields to the specified URL
+func (c *Client) UploadFileForm(url, file, fieldName string, formFields map[string]string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fieldName, formFields, header, cookies)
 }
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
-func (c *Client) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *Client) UploadRequest(method, url, file, fileFieldName string, formFields map[string]string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
 	if method != http.MethodPost && method != http.MethodPut {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", method, http.MethodPost, http.MethodPut))
@@ -66,9 +72,18 @@ func (c *Client) UploadRequest(method, url, file, fieldName string, header http.
 	bodyBuffer := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuffer)
 
-	fileWriter, err := bodyWriter.CreateFormFile(fieldName, file)
+	if formFields != nil {
+		for fieldName, fieldValue := range formFields {
+			err := bodyWriter.WriteField(fieldName, fieldValue)
+			if err != nil {
+				return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+			}
+		}
+	}
+
+	fileWriter, err := bodyWriter.CreateFormFile(fileFieldName, file)
 	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", file, fieldName)
+		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", file, fileFieldName)
 	}
 
 	fileHandle, err := os.Open(file)

@@ -3,6 +3,7 @@ package fortify
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, *httptest.Server) {
@@ -26,13 +29,18 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 		BasePath: ""},
 	)
 
-	sys := NewSystemInstanceForClient(client, "test2456", 60*time.Second)
+	httpClient := &piperHttp.Client{}
+	httpClientOptions := piperHttp.ClientOptions{Token: "test2456", Timeout: 60 * time.Second}
+	httpClient.SetOptions(httpClientOptions)
+
+	sys := NewSystemInstanceForClient(client, httpClient, server.URL, "test2456", 60*time.Second)
 	return sys, server
 }
 
 func TestNewSystemInstance(t *testing.T) {
 	sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
 	assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
+	assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
 	assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
 	assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
 	assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
@@ -692,7 +700,145 @@ func TestGetReportDetails(t *testing.T) {
 
 	t.Run("test success", func(t *testing.T) {
 		result, err := sys.GetReportDetails(999)
-		assert.NoError(t, err, "InactivateProjectVersion call not successful")
+		assert.NoError(t, err, "GetReportDetails call not successful")
 		assert.Equal(t, int64(999), result.ID, "Different result content expected")
+	})
+}
+
+func TestGetFileUploadToken(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	reference := `{"fileTokenType":"UPLOAD"}
+`
+	response := `{"data": {"fileTokenType": "UPLOAD","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.WriteHeader(201)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetFileUploadToken()
+		assert.NoError(t, err, "GetFileUploadToken call not successful")
+		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
+		assert.Equal(t, reference, bodyContent, "Different request content expected")
+	})
+}
+
+func TestGetFileDownloadToken(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	reference := `{"fileTokenType":"DOWNLOAD"}
+`
+	response := `{"data": {"fileTokenType": "DOWNLOAD","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.WriteHeader(201)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetFileDownloadToken()
+		assert.NoError(t, err, "GetFileDownloadToken call not successful")
+		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
+		assert.Equal(t, reference, bodyContent, "Different request content expected")
+	})
+}
+
+func TestGetReportFileToken(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	reference := `{"fileTokenType":"REPORT_FILE"}
+`
+	response := `{"data": {"fileTokenType": "REPORT_FILE","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.WriteHeader(201)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		result, err := sys.GetReportFileToken()
+		assert.NoError(t, err, "GetReportFileToken call not successful")
+		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
+		assert.Equal(t, reference, bodyContent, "Different request content expected")
+	})
+}
+
+func TestInvalidateFileToken(t *testing.T) {
+	// Start a local HTTP server
+	response := `{"responseCode": 200}`
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" && req.Method == "DELETE" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		err := sys.InvalidateFileTokens()
+		assert.NoError(t, err, "InvalidateFileTokens call not successful")
+	})
+}
+
+func TestUploadFile(t *testing.T) {
+	// Start a local HTTP server
+	response := `OK`
+	bodyContent := ""
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/ssc/upload/resultFileUpload.html" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.WriteHeader(200)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	testFile, err := ioutil.TempFile("uploadFileTest", "result.fpr")
+	if err != nil {
+		t.FailNow()
+	}
+	defer os.RemoveAll(testFile.Name()) // clean up
+
+	t.Run("test success", func(t *testing.T) {
+		err := sys.UploadFile("/ssc/upload/resultFileUpload.html", testFile.Name(), "89ee873", 10770)
+		assert.NoError(t, err, "UploadFile call not successful")
+		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="file"; filename=`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `name="mat"; value=89ee873`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `name="entityId"; value=10770`, "Expected different content in request body")
 	})
 }

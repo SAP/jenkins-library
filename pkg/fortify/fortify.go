@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/piper-validation/fortify-client-go/fortify/artifact_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/auth_entity_of_project_version_controller"
+	"github.com/piper-validation/fortify-client-go/fortify/file_token_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/filter_set_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/issue_group_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/issue_selector_set_of_project_version_controller"
@@ -35,6 +37,7 @@ type System interface {
 type SystemInstance struct {
 	timeout    time.Duration
 	token      string
+	serverURL  string
 	client     *ff.Fortify
 	httpClient *piperHttp.Client
 	logger     *logrus.Entry
@@ -52,17 +55,22 @@ func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Durat
 		Schemes:  []string{schemeHost[0]},
 		BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
 	)
+	httpClientInstance := &piperHttp.Client{}
+	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, Timeout: timeout}
+	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, authToken, timeout)
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
 }
 
 // NewSystemInstanceForClient - creates a new SystemInstance
-func NewSystemInstanceForClient(clientInstance *ff.Fortify, authToken string, requestTimeout time.Duration) *SystemInstance {
+func NewSystemInstanceForClient(clientInstance *ff.Fortify, httpClientInstance *piperHttp.Client, serverURL, authToken string, requestTimeout time.Duration) *SystemInstance {
 	return &SystemInstance{
-		timeout: requestTimeout,
-		token:   authToken,
-		client:  clientInstance,
-		logger:  log.Entry().WithField("package", "SAP/jenkins-library/pkg/fortify"),
+		timeout:    requestTimeout,
+		token:      authToken,
+		serverURL:  serverURL,
+		client:     clientInstance,
+		httpClient: httpClientInstance,
+		logger:     log.Entry().WithField("package", "SAP/jenkins-library/pkg/fortify"),
 	}
 }
 
@@ -407,4 +415,55 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 		return nil, err
 	}
 	return result.GetPayload().Data, nil
+}
+
+// InvalidateFileTokens invalidates the file tokens
+func (sys *SystemInstance) InvalidateFileTokens() error {
+	params := &file_token_controller.MultiDeleteFileTokenParams{}
+	params.WithTimeout(sys.timeout)
+	_, err := sys.client.FileTokenController.MultiDeleteFileToken(params, sys)
+	return err
+}
+
+func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, error) {
+	token := models.FileToken{FileTokenType: &tokenType}
+	params := &file_token_controller.CreateFileTokenParams{Resource: &token}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.FileTokenController.CreateFileToken(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// GetFileUploadToken returns the token upload result files
+func (sys *SystemInstance) GetFileUploadToken() (*models.FileToken, error) {
+	return sys.getFileToken("UPLOAD")
+}
+
+// GetFileDownloadToken returns the token to download result files
+func (sys *SystemInstance) GetFileDownloadToken() (*models.FileToken, error) {
+	return sys.getFileToken("DOWNLOAD")
+}
+
+// GetReportFileToken returns the token to download report files
+func (sys *SystemInstance) GetReportFileToken() (*models.FileToken, error) {
+	return sys.getFileToken("REPORT_FILE")
+}
+
+// UploadFile uploads a file to the fortify backend
+func (sys *SystemInstance) UploadFile(endpoint, file, uploadToken string, projectVersionID int64) error {
+	header := http.Header{}
+	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+	header.Add("Pragma", "no-cache")
+	formFields := map[string]string{}
+	formFields["mat"] = uploadToken
+	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
+	_, err := sys.httpClient.UploadFileForm(sys.serverURL+endpoint, file, "file", formFields, header, nil)
+	return err
+}
+
+// DownloadFile downloads a file from Fortify backend
+func (sys *SystemInstance) DownloadFile(endpoint, file string) ([]byte, error) {
+	return nil, nil
 }
