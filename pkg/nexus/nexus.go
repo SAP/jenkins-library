@@ -108,6 +108,10 @@ func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error 
 	return nil
 }
 
+func (nexusUpload *NexusUpload) GetArtifacts() []ArtifactDescription {
+	return nexusUpload.artifacts
+}
+
 func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	var artifacts []ArtifactDescription
 	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
