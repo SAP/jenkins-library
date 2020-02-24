@@ -16,6 +16,7 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/sirupsen/logrus"
 )
 
 type ArtifactDescription struct {
@@ -31,6 +32,13 @@ type NexusUpload struct {
 	Username  string
 	Password  string
 	artifacts []ArtifactDescription
+	Logger    *logrus.Entry
+}
+
+func (nexusUpload *NexusUpload) initLogger() {
+	if nexusUpload.Logger == nil {
+		nexusUpload.Logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/nexusUpload")
+	}
 }
 
 func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
@@ -43,12 +51,14 @@ func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, g
 }
 
 func (nexusUpload *NexusUpload) UploadArtifacts() {
+	nexusUpload.initLogger()
+
 	if nexusUpload.baseURL == "" {
-		log.Entry().Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
+		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
 	}
 
 	if len(nexusUpload.artifacts) == 0 {
-		log.Entry().Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
+		nexusUpload.Logger.Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
 	}
 
 	client := nexusUpload.createHttpClient()
@@ -100,15 +110,12 @@ func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error 
 func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	var artifacts []ArtifactDescription
 	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to convert artifact JSON '", artifactsAsJSON, "'")
-	}
-	return artifacts, nil
+	return artifacts, err
 }
 
 func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {
 	client := piperHttp.Client{}
-	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: nexusUpload.Logger}
 	client.SetOptions(clientOptions)
 	return &client
 }
