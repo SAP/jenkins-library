@@ -11,7 +11,7 @@ import (
 func TestFileExists(t *testing.T) {
 	dir, err := ioutil.TempDir("", "dir")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace Directory")
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(dir)
@@ -32,7 +32,7 @@ func TestCopy(t *testing.T) {
 	file := filepath.Join(dir, "testFile")
 	err = ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace Directory")
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(dir)

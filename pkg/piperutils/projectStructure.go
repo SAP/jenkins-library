@@ -2,9 +2,9 @@ package piperutils
 
 import "path/filepath"
 
-// ProjectStructure describes a directory containing source code
+// ProjectStructure describes a Directory containing source code
 type ProjectStructure struct {
-	directory string
+	Directory string
 }
 
 // UsesMta returns `true` if the project structure directory contains typical files for mta projects (mta.yaml, mta.yml), `false` otherwise
@@ -24,7 +24,7 @@ func (projectStructure *ProjectStructure) UsesNpm() bool {
 
 func (projectStructure *ProjectStructure) anyFileExists(candidates ...string) bool {
 	for i := 0; i < len(candidates); i++ {
-		exists, err := FileExists(filepath.Join(projectStructure.directory, candidates[i]))
+		exists, err := FileExists(filepath.Join(projectStructure.Directory, candidates[i]))
 		if err != nil {
 			continue
 		}

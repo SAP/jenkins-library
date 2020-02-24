@@ -7,7 +7,7 @@ import (
 )
 
 func TestProjectWithOnlyMtaFile(t *testing.T) {
-	projectStructure := ProjectStructure{directory: "testdata/mta"}
+	projectStructure := ProjectStructure{Directory: "testdata/mta"}
 	resultMta := projectStructure.UsesMta()
 	assert.True(t, resultMta)
 	resultPom := projectStructure.UsesMaven()
@@ -17,7 +17,7 @@ func TestProjectWithOnlyMtaFile(t *testing.T) {
 }
 
 func TestProjectWithOnlyPomFile(t *testing.T) {
-	projectStructure := ProjectStructure{directory: "testdata/maven"}
+	projectStructure := ProjectStructure{Directory: "testdata/maven"}
 	resultMta := projectStructure.UsesMta()
 	assert.False(t, resultMta)
 	resultPom := projectStructure.UsesMaven()
@@ -27,7 +27,7 @@ func TestProjectWithOnlyPomFile(t *testing.T) {
 }
 
 func TestProjectWithOnlyNpmFile(t *testing.T) {
-	projectStructure := ProjectStructure{directory: "testdata/npm"}
+	projectStructure := ProjectStructure{Directory: "testdata/npm"}
 	resultMta := projectStructure.UsesMta()
 	assert.False(t, resultMta)
 	resultPom := projectStructure.UsesMaven()

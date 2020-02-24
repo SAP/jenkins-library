@@ -57,6 +57,7 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
 	}
 
+	fmt.Println(nexusUpload.artifacts)
 	if len(nexusUpload.artifacts) == 0 {
 		nexusUpload.Logger.Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
 	}
