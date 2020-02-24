@@ -1,4 +1,6 @@
 version: "2"
+exclude_patterns:
+  - "**/*_generated*.go"
 checks:
   return-statements:
     enabled: false
@@ -17,7 +19,6 @@ plugins:
     - "documentation/**/images/"
     - "cfg/id_rsa.enc"
     - "**/testdata/**"
-    - "**/*_generated*.go"
   fixme:
     enabled: true
     config:
