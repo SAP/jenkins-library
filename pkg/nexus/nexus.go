@@ -25,7 +25,7 @@ type ArtifactDescription struct {
 }
 
 type NexusUpload struct {
-	BaseUrl   string
+	baseURL   string
 	Version   string
 	Username  string
 	Password  string
@@ -36,7 +36,7 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 	client := nexusUpload.createHttpClient()
 
 	for _, artifact := range nexusUpload.Artifacts {
-		url := getArtifactUrl(nexusUpload.BaseUrl, nexusUpload.Version, artifact)
+		url := getArtifactUrl(nexusUpload.baseURL, nexusUpload.Version, artifact)
 
 		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
 		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
@@ -76,7 +76,11 @@ func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {
 	return &client
 }
 
-func GetBaseUrl(nexusUrl, nexusVersion, repository, groupID string) string {
+func (nexusUpload NexusUpload) SetBaseUrl(nexusUrl, nexusVersion, repository, groupID string) {
+	nexusUpload.baseURL = getBaseUrl(nexusUrl, nexusVersion, repository, groupID)
+}
+
+func getBaseUrl(nexusUrl, nexusVersion, repository, groupID string) string {
 	baseUrl := nexusUrl
 	switch nexusVersion {
 	case "nexus2":

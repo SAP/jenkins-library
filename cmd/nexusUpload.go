@@ -30,7 +30,15 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 
 	projectStructure := piperutils.ProjectStructure{}
 
-	nexusClient := nexus.NexusUpload{}
+	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
+	groupID := "" // TODO...
+	nexusClient.SetBaseUrl(config.Url, config.Version, config.Repository, groupID)
+
+	// TODO:
+	artifact := nexus.ArtifactDescription{}
+	nexusClient.AddArtifact(artifact)
+
+	nexusClient.UploadArtifacts()
 
 	//log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 	return nil
