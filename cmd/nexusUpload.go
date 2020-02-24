@@ -48,7 +48,7 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 		_ = yaml.Unmarshal(mtaYamContent, mtaYaml)
 		nexusClient.Version = mtaYaml.Version
 		nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
-		nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mtarFilePath"}) //fixme depends on https://github.com/SAP/jenkins-library/pull/1128
+		nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar"})
 	}
 
 	if projectStructure.UsesMaven() {
