@@ -6,8 +6,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,36 +86,6 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 		}
 	}
 	log.Entry().Debugf("File \"%s\" copied to \"%s\"", src, dest)
-	return nil
-}
-
-// getSettingsFileFromURL ...
-func getSettingsFileFromURL(url, file string, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
-
-	var e error
-
-	//CHECK:
-	// - how does this work with a proxy inbetween?
-	// - how does this work with http 302 (relocated) --> curl -L
-	response, e := httpClient.SendRequest(http.MethodGet, url, nil, nil, nil)
-	if e != nil {
-		return e
-	}
-
-	if response.StatusCode != 200 {
-		return fmt.Errorf("Got %d reponse from download attempt for \"%s\"", response.StatusCode, url)
-	}
-
-	body, e := ioutil.ReadAll(response.Body)
-	if e != nil {
-		return e
-	}
-
-	e = fileUtils.FileWrite(file, body, 0644)
-	if e != nil {
-		return e
-	}
-
 	return nil
 }
 
