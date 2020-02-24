@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
@@ -47,17 +46,17 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 		mtaYamContent, _ := ioutil.ReadFile("mta.yaml")
 		err := yaml.Unmarshal(mtaYamContent, &mtaYaml)
 		if err != nil {
-			fmt.Println(err)
+			log.Entry().WithError(err).Fatal()
 		}
 		nexusClient.Version = mtaYaml.Version
 		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
 		if err != nil {
-			fmt.Println(err)
+			log.Entry().WithError(err).Fatal()
 		}
 		//fixme do proper way to find name/path of mta file
 		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
 		if err != nil {
-			fmt.Println(err)
+			log.Entry().WithError(err).Fatal()
 		}
 	}
 
