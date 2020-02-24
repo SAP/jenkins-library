@@ -31,11 +31,13 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 	projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
-	groupID := "" // TODO...
+	groupID := "" // TODO... expected to be provided for MTA projects, can be empty, though
 	nexusClient.SetBaseUrl(config.Url, config.Version, config.Repository, groupID)
 
 	// TODO:
 	artifact := nexus.ArtifactDescription{}
+	// TODO: Artifact ID is also expected to be provided for MTA projects, for compatibility
+	// it would also have to be read from the "commonPipelineEnvironment"
 	nexusClient.AddArtifact(artifact)
 
 	nexusClient.UploadArtifacts()
