@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
+	"regexp"
 )
 
 // FileExists ...
@@ -46,4 +48,29 @@ func Copy(src, dst string) (int64, error) {
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+// FindFiles ...
+func FindFiles(root string, pattern string) ([]string, error) {
+
+	var files []string
+
+	r, e := regexp.Compile(pattern)
+	if e != nil {
+		return files, e
+	}
+
+	if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+
+		if ! info.IsDir() && r.MatchString(info.Name()) {
+			files = append(files, path + "/" + info.Name())
+		}
+
+		return nil
+
+	}); err != nil {
+		return files, err
+	}
+
+	return files, nil
 }

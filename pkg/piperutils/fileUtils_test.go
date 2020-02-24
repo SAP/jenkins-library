@@ -41,3 +41,19 @@ func TestCopy(t *testing.T) {
 	assert.NoError(t, err, "Didn't expert error but got one")
 	assert.Equal(t, int64(3), result, "Expected true but got false")
 }
+
+func TestFindFiles(t *testing.T) {
+
+	workdir, err := os.Getwd()
+
+	if assert.NoError(t, err) {
+
+		files, err := FindFiles(workdir + "/..", ".*\\.yaml")
+
+		for i, v := range files {
+			t.Logf("%d = %s\n", i, v)
+		}
+
+		assert.NoError(t, err)
+	}
+}
