@@ -13,7 +13,7 @@ import (
 func TestPersistReportAndLinks(t *testing.T) {
 	workspace, err := ioutil.TempDir("", "workspace5")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace Directory")
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(workspace)

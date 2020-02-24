@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"io/ioutil"
-
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"io/ioutil"
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
@@ -45,15 +45,19 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 	if projectStructure.UsesMta() {
 		var mtaYaml MtaYaml
 		mtaYamContent, _ := ioutil.ReadFile("mta.yaml")
-		_ = yaml.Unmarshal(mtaYamContent, mtaYaml)
+		err := yaml.Unmarshal(mtaYamContent, &mtaYaml)
+		if err != nil {
+			fmt.Println(err)
+		}
 		nexusClient.Version = mtaYaml.Version
-		nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
-		nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar"})
+		_ = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
+		_ = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
 	}
 
 	if projectStructure.UsesMaven() {
 		//read pom
 	}
+
 
 	nexusClient.UploadArtifacts()
 
