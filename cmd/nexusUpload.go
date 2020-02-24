@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
 )
@@ -35,7 +36,7 @@ type MtaYaml struct {
 
 func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 
-	//projectStructure := piperutils.ProjectStructure{}
+	projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
 	groupID := config.GroupID // TODO... Only expected to be provided for MTA projects, can be empty, though
