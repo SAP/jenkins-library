@@ -57,7 +57,6 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
-	rootCmd.AddCommand(MavenExecuteCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
