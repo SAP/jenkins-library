@@ -120,7 +120,7 @@ func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	fExists func(string) (bool, error),
-	fCopy func(string, string) (int64, error),
+	fCopy func(string, string, bool) (int64, error),
 	fRemove func(string) error,
 	stdout io.Writer) error {
 
@@ -435,20 +435,20 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	return nil
 }
 
-func copyFileFromHomeToPwd(xsSessionFile string, fCopy func(string, string) (int64, error)) error {
+func copyFileFromHomeToPwd(xsSessionFile string, fCopy func(string, string, bool) (int64, error)) error {
 	if fCopy == nil {
 		fCopy = piperutils.Copy
 	}
 	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), fmt.Sprintf("%s", xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
-	if _, err := fCopy(src, dest); err != nil {
+	if _, err := fCopy(src, dest, false); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from home directory ('%s') to workspace ('%s')", src, dest)
 	}
 	log.Entry().Debugf("xs session file copied from home directory ('%s') to workspace ('%s')", src, dest)
 	return nil
 }
 
-func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string) (int64, error)) error {
+func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string, bool) (int64, error)) error {
 
 	//
 	// We rely on running inside a docker container which is discarded after a single use.
@@ -462,7 +462,7 @@ func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string) (int
 	}
 	src, dest := fmt.Sprintf("%s", xsSessionFile), fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from workspace ('%s') to home directory ('%s')", src, dest)
-	if _, err := fCopy(src, dest); err != nil {
+	if _, err := fCopy(src, dest, false); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from workspace ('%s') to home directory ('%s')", src, dest)
 	}
 	log.Entry().Debugf("xs session file copied from workspace ('%s') to home directory ('%s')", src, dest)

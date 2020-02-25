@@ -37,7 +37,7 @@ func TestDeploy(t *testing.T) {
 		return path == "dummy.mtar" || path == ".xs_session", nil
 	}
 
-	fCopy := func(src, dest string) (int64, error) {
+	fCopy := func(src, dest string, createMissingDirectories bool) (int64, error) {
 		copiedFiles = append(copiedFiles, fmt.Sprintf("%s->%s", src, dest))
 		return 0, nil
 	}

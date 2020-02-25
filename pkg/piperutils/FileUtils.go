@@ -2,8 +2,10 @@ package piperutils
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 // FileExists ...
@@ -20,8 +22,13 @@ func FileExists(filename string) (bool, error) {
 	return !info.IsDir(), nil
 }
 
+// MkdirAll ...
+func MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+
 // Copy ...
-func Copy(src, dst string) (int64, error) {
+func Copy(src, dst string, createMissingDirectories bool) (int64, error) {
 
 	exists, err := FileExists(src)
 
@@ -31,6 +38,25 @@ func Copy(src, dst string) (int64, error) {
 
 	if !exists {
 		return 0, errors.New("Source file '" + src + "' does not exist")
+	}
+	parent := filepath.Dir(dst)
+
+	parentFolderExists, err := FileExists(parent)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if !parentFolderExists {
+
+		if !createMissingDirectories {
+			return 0, fmt.Errorf("Parent folder for file '%s' does not exist, createMissingDirectories was '%t'", dst, createMissingDirectories)
+		}
+
+		// 775 will not fit always but is a reasonable default. As long as nobody complains ...
+		if err = MkdirAll(parent, 0775); err != nil {
+			return 0, err
+		}
 	}
 
 	source, err := os.Open(src)
