@@ -169,7 +169,7 @@ func (f *fileUtilsMock) Copy(src, dest string) (int64, error) {
 	}
 
 	if !exists {
-		return 0, fmt.Errorf("Source file '" + src + "' does not exist", src)
+		return 0, fmt.Errorf("Source file '"+src+"' does not exist", src)
 	}
 
 	if f.copiedFiles == nil {
