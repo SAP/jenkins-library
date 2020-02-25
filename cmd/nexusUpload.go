@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"io/ioutil"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
-	"io/ioutil"
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
@@ -39,22 +40,27 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 
 	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
 	groupID := config.GroupID // TODO... Only expected to be provided for MTA projects, can be empty, though
-	nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
+	err := nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
+	if err != nil {
+		log.Entry().WithError(err).Fatal()
+	}
 
 	if projectStructure.UsesMta() {
 		var mtaYaml MtaYaml
 		mtaYamContent, _ := ioutil.ReadFile("mta.yaml")
-		err := yaml.Unmarshal(mtaYamContent, &mtaYaml)
-		if err != nil {
-			log.Entry().WithError(err).Fatal()
+		if err == nil {
+			err = yaml.Unmarshal(mtaYamContent, &mtaYaml)
 		}
-		nexusClient.Version = mtaYaml.Version
-		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
-		if err != nil {
-			log.Entry().WithError(err).Fatal()
+		if err == nil {
+			err = nexusClient.SetArtifactsVersion(mtaYaml.Version)
 		}
-		//fixme do proper way to find name/path of mta file
-		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
+		if err == nil {
+			err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
+		}
+		if err == nil {
+			//fixme do proper way to find name/path of mta file
+			err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
+		}
 		if err != nil {
 			log.Entry().WithError(err).Fatal()
 		}
@@ -62,12 +68,16 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 
 	if projectStructure.UsesMaven() {
 		//todo read pom
-		err := nexusClient.AddArtifact(nexus.ArtifactDescription{File: "pom.xml", Type: "pom", Classifier: "", ID: config.ArtifactID})
+		if err == nil {
+			err = nexusClient.SetArtifactsVersion("1.0")
+		}
+		if err == nil {
+			err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "pom.xml", Type: "pom", Classifier: "", ID: config.ArtifactID})
+		}
 		if err != nil {
 			log.Entry().WithError(err).Fatal()
 		}
 	}
-
 
 	nexusClient.UploadArtifacts()
 

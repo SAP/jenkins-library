@@ -28,7 +28,7 @@ type ArtifactDescription struct {
 
 type NexusUpload struct {
 	baseURL   string
-	Version   string
+	version   string
 	Username  string
 	Password  string
 	artifacts []ArtifactDescription
@@ -50,11 +50,24 @@ func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, g
 	return nil
 }
 
+// Set the common version for all artifacts
+func (nexusUpload *NexusUpload) SetArtifactsVersion(version string) error {
+	if version == "" {
+		return errors.New("Version must not be empty")
+	}
+	nexusUpload.version = version
+	return nil
+}
+
 func (nexusUpload *NexusUpload) UploadArtifacts() {
 	nexusUpload.initLogger()
 
 	if nexusUpload.baseURL == "" {
 		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
+	}
+
+	if nexusUpload.version == "" {
+		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetVersion() first.")
 	}
 
 	fmt.Println(nexusUpload.artifacts)
@@ -65,7 +78,7 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 	client := nexusUpload.createHttpClient()
 
 	for _, artifact := range nexusUpload.artifacts {
-		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.Version, artifact)
+		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.version, artifact)
 
 		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
 		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
