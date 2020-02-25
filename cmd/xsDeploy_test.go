@@ -166,10 +166,10 @@ func TestDeploy(t *testing.T) {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
 			s.calls = nil
-			s.shouldFailWith = nil
+			s.shouldFailOnCommand = nil
 		}()
 
-		s.shouldFailWith = errors.New("Error from underlying process")
+		s.shouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
 
 		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		checkErr(t, e, "Error from underlying process")

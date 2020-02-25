@@ -1,14 +1,12 @@
+import com.sap.piper.BashUtils
+import com.sap.piper.CfManifestUtils
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
-
-import com.sap.piper.GenerateDocumentation
-import com.sap.piper.Utils
-import com.sap.piper.ConfigurationHelper
-import com.sap.piper.CfManifestUtils
-import com.sap.piper.BashUtils
-
-import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -134,10 +132,24 @@ import groovy.transform.Field
      */
     'smokeTestStatusCode',
     /**
-      * Provides more output. May reveal sensitive information.
-      * @possibleValues true, false
-      */
+     * Provides more output. May reveal sensitive information.
+     * @possibleValues true, false
+     */
     'verbose',
+    /**
+     * Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker].
+     * If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is
+     * passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG).
+     * See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details.
+     *
+     * Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.
+     */
+    'deployDockerImage',
+    /**
+     * If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization
+     * this defines the credentials to be used.
+     */
+    'dockerCredentialsId',
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
@@ -259,7 +271,7 @@ def findMtar(){
     error "[${STEP_NAME}] No *.mtar file found!"
 }
 
-def deployMta (config) {
+def deployMta(config) {
     if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
@@ -301,7 +313,7 @@ private void handleCFNativeDeployment(Map config, script) {
     checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
     if (config.deployType == 'blue-green') {
-        prepareBlueGreenCfNativeDeploy(config,script)
+        prepareBlueGreenCfNativeDeploy(config, script)
     } else {
         prepareCfPushCfNativeDeploy(config)
     }
@@ -309,19 +321,38 @@ private void handleCFNativeDeployment(Map config, script) {
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
     echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
     echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
-    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
-    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
+    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables ?: 'none specified'}"
+    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles ?: 'none specified'}"
+    echo "[${STEP_NAME}] - cfdeployDockerImage=${config.deployDockerImage ?: 'none specified'}"
+    echo "[${STEP_NAME}] - cfdockerCredentialsId=${config.dockerCredentialsId ?: 'none specified'}"
     echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
 
     checkIfAppNameIsAvailable(config)
-    dockerExecute(
-        script: script,
-        dockerImage: config.dockerImage,
-        dockerWorkspace: config.dockerWorkspace,
-        stashContent: config.stashContent,
-        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-    ) {
-        deployCfNative(config)
+
+    def dockerCredentials = []
+    if (config.dockerCredentialsId != null && config.dockerCredentialsId != '') {
+        dockerCredentials.add(usernamePassword(
+            credentialsId: config.dockerCredentialsId,
+            passwordVariable: 'dockerPassword',
+            usernameVariable: 'dockerUsername'
+        ))
+    }
+    withCredentials(dockerCredentials) {
+        dockerExecute(
+            script: script,
+            dockerImage: config.dockerImage,
+            dockerWorkspace: config.dockerWorkspace,
+            stashContent: config.stashContent,
+            dockerEnvVars: [
+                CF_HOME           : "${config.dockerWorkspace}",
+                CF_PLUGIN_HOME    : "${config.dockerWorkspace}",
+                // if the Docker registry requires authentication the DOCKER_PASSWORD env variable must be set
+                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ''}",
+                STATUS_CODE       : "${config.smokeTestStatusCode}"
+            ]
+        ) {
+            deployCfNative(config)
+        }
     }
 }
 
@@ -420,21 +451,32 @@ private checkIfAppNameIsAvailable(config) {
     }
 }
 
-def deployCfNative (config) {
-    def deployStatement = "cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cfNativeDeployParameters}"
-    deploy(null, deployStatement, config,  { c -> stopOldAppIfRunning(c) })
+def deployCfNative(config) {
+    // the deployStatement is complex and has lot of options; using a list and findAll allows to put each option
+    // as a single list element; if a option is not set (= null or '') this removed before every element is joined
+    // via a single whitespace; results in a single line deploy statement
+    def deployStatement = [
+        'cf',
+        config.deployCommand,
+        config.cloudFoundry.appName,
+        config.deployOptions,
+        config.cloudFoundry.manifest ? "-f '${config.cloudFoundry.manifest}'" : null,
+        config.deployDockerImage ? "--docker-image ${config.deployDockerImage}" : null,
+        binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : null,
+        config.smokeTest,
+        config.cfNativeDeployParameters
+    ].findAll { s -> s != null && s != '' }.join(" ")
+    deploy(null, deployStatement, config, { c -> stopOldAppIfRunning(c) })
 }
 
-private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure postDeployAction) {
+private deploy(String cfApiStatement, String cfDeployStatement, config, Closure postDeployAction) {
 
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-
         def cfTraceFile = 'cf.log'
-
         def deployScript = """#!/bin/bash
             set +x
             set -e
@@ -446,7 +488,7 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
             ${cfDeployStatement}
             """
 
-        if(config.verbose) {
+        if (config.verbose) {
             // Password contained in output below is hidden by withCredentials
             echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
         }
@@ -458,11 +500,11 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
 
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
-        if(config.verbose) {
+        if (config.verbose) {
             handleCfCliLog(cfTraceFile)
         }
 
-        if(postDeployAction) postDeployAction(config)
+        if (postDeployAction) postDeployAction(config)
 
         sh "cf logout"
     }
