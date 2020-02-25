@@ -59,26 +59,16 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 
 		parent := filepath.Dir(dest)
 
-		exists, err := fileUtils.FileExists(parent)
+		parentFolderExists, err := fileUtils.FileExists(parent)
 
 		if err != nil {
 			return err
 		}
 
-		if !exists {
+		if !parentFolderExists {
 			if err = fileUtils.MkdirAll(parent, 0775); err != nil {
 				return err
 			}
-		}
-
-		exists, err = fileUtils.FileExists(src)
-
-		if err != nil {
-			return err
-		}
-
-		if !exists {
-			return fmt.Errorf("File \"%s\" not found", src)
 		}
 
 		if _, err := fileUtils.Copy(src, dest); err != nil {

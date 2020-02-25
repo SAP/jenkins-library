@@ -120,7 +120,7 @@ func TestSettings(t *testing.T) {
 		err := GetSettingsFile(ProjectSettingsFile, "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "File \"/opt/sap/maven/project-settings.xml\" not found")
+			assert.Contains(t, err.Error(), "Source file '/opt/sap/maven/project-settings.xml' does not exist")
 		}
 	})
 }
@@ -169,7 +169,7 @@ func (f *fileUtilsMock) Copy(src, dest string) (int64, error) {
 	}
 
 	if !exists {
-		return 0, fmt.Errorf("File '%s' does not exist", src)
+		return 0, fmt.Errorf("Source file '" + src + "' does not exist", src)
 	}
 
 	if f.copiedFiles == nil {
