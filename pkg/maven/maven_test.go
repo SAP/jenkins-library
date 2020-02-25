@@ -54,7 +54,7 @@ func TestExecute(t *testing.T) {
 		mavenOutput, _ := Execute(&opts, &e)
 
 		assert.Equal(t, e.Calls[0], mock.ExecCall{Exec: "mvn", Params: []string{"--global-settings anotherSettings.xml", "--settings settings.xml",
-			"-Dmaven.repo.local=.m2/", "--file pom.xml", "-q", "--batch-mode",
+			"-Dmaven.repo.local=.m2/", "--file pom.xml", "-q", "-Da=b", "--batch-mode",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "flatten", "install"}})
 		assert.Equal(t, "", mavenOutput)
 	})
