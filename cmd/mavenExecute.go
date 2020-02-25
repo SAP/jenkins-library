@@ -11,7 +11,7 @@ import (
 func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomData) string {
 	c := command.Command{}
 
-	mavenExecuteOptions := maven.ExecuteOptions{
+	options := maven.ExecuteOptions{
 		PomPath:                     config.PomPath,
 		ProjectSettingsFile:         config.ProjectSettingsFile,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
@@ -23,10 +23,11 @@ func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomDat
 		ReturnStdout:                config.ReturnStdout,
 	}
 
-	output, err := maven.Execute(&mavenExecuteOptions, &c)
+	output, err := maven.Execute(&options, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
 	return output
+
 }

@@ -29,12 +29,12 @@ type mavenExecRunner interface {
 
 const mavenExecutable = "mvn"
 
-func Execute(config *ExecuteOptions, command mavenExecRunner) (string, error) {
-	stdOutBuf, stdOut := evaluateStdOut(config)
+func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
+	stdOutBuf, stdOut := evaluateStdOut(options)
 	command.Stdout(stdOut)
 	command.Stderr(log.Entry().Writer())
 
-	parameters := getParametersFromConfig(config, &http.Client{})
+	parameters := getParametersFromOptions(options, &http.Client{})
 
 	err := command.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
@@ -62,48 +62,48 @@ func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	return stdOutBuf, stdOut
 }
 
-func getParametersFromConfig(config *ExecuteOptions, client http.Downloader) []string {
+func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) []string {
 	var parameters []string
 
-	if config.GlobalSettingsFile != "" {
-		globalSettingsFileParameter := "--global-settings " + config.GlobalSettingsFile
-		if strings.HasPrefix(config.GlobalSettingsFile, "http:") || strings.HasPrefix(config.GlobalSettingsFile, "https:") {
-			downloadSettingsFromURL(config.ProjectSettingsFile, "globalSettings.xml", client)
+	if options.GlobalSettingsFile != "" {
+		globalSettingsFileParameter := "--global-settings " + options.GlobalSettingsFile
+		if strings.HasPrefix(options.GlobalSettingsFile, "http:") || strings.HasPrefix(options.GlobalSettingsFile, "https:") {
+			downloadSettingsFromURL(options.ProjectSettingsFile, "globalSettings.xml", client)
 			globalSettingsFileParameter = "--global-settings " + "globalSettings.xml"
 		}
 		parameters = append(parameters, globalSettingsFileParameter)
 	}
 
-	if config.ProjectSettingsFile != "" {
-		projectSettingsFileParameter := "--settings " + config.ProjectSettingsFile
-		if strings.HasPrefix(config.ProjectSettingsFile, "http:") || strings.HasPrefix(config.ProjectSettingsFile, "https:") {
-			downloadSettingsFromURL(config.ProjectSettingsFile, "projectSettings.xml", client)
+	if options.ProjectSettingsFile != "" {
+		projectSettingsFileParameter := "--settings " + options.ProjectSettingsFile
+		if strings.HasPrefix(options.ProjectSettingsFile, "http:") || strings.HasPrefix(options.ProjectSettingsFile, "https:") {
+			downloadSettingsFromURL(options.ProjectSettingsFile, "projectSettings.xml", client)
 			projectSettingsFileParameter = "--settings " + "projectSettings.xml"
 		}
 		parameters = append(parameters, projectSettingsFileParameter)
 	}
 
-	if config.M2Path != "" {
-		m2PathParameter := "-Dmaven.repo.local=" + config.M2Path
+	if options.M2Path != "" {
+		m2PathParameter := "-Dmaven.repo.local=" + options.M2Path
 		parameters = append(parameters, m2PathParameter)
 	}
 
-	if config.PomPath != "" {
-		pomPathParameter := "--file " + config.PomPath
+	if options.PomPath != "" {
+		pomPathParameter := "--file " + options.PomPath
 		parameters = append(parameters, pomPathParameter)
 	}
 
-	if config.Flags != nil {
-		parameters = append(parameters, config.Flags...)
+	if options.Flags != nil {
+		parameters = append(parameters, options.Flags...)
 	}
 
 	parameters = append(parameters, "--batch-mode")
 
-	if config.LogSuccessfulMavenTransfers {
+	if options.LogSuccessfulMavenTransfers {
 		parameters = append(parameters, "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 	}
 
-	parameters = append(parameters, config.Goals...)
+	parameters = append(parameters, options.Goals...)
 	return parameters
 }
 

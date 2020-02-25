@@ -80,7 +80,7 @@ func TestGetParameters(t *testing.T) {
 		mockClient := mockDownloader{shouldFail: false}
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
 
-		parameters := getParametersFromConfig(&opts, &mockClient)
+		parameters := getParametersFromOptions(&opts, &mockClient)
 
 		assert.Equal(t, parameters, []string{"--global-settings globalSettings.xml", "--settings projectSettings.xml", "--file pom.xml", "--batch-mode"})
 	})
