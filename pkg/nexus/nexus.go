@@ -26,7 +26,7 @@ type ArtifactDescription struct {
 	File       string `json:"file"`
 }
 
-type NexusUpload struct {
+type Upload struct {
 	baseURL   string
 	version   string
 	Username  string
@@ -35,13 +35,13 @@ type NexusUpload struct {
 	Logger    *logrus.Entry
 }
 
-func (nexusUpload *NexusUpload) initLogger() {
+func (nexusUpload *Upload) initLogger() {
 	if nexusUpload.Logger == nil {
 		nexusUpload.Logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/nexusUpload")
 	}
 }
 
-func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
+func (nexusUpload *Upload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
 	baseURL, err := getBaseURL(nexusUrl, nexusVersion, repository, groupID)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (nexusUpload *NexusUpload) SetBaseURL(nexusUrl, nexusVersion, repository, g
 }
 
 // Set the common version for all artifacts
-func (nexusUpload *NexusUpload) SetArtifactsVersion(version string) error {
+func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
 	if version == "" {
 		return errors.New("Version must not be empty")
 	}
@@ -59,7 +59,7 @@ func (nexusUpload *NexusUpload) SetArtifactsVersion(version string) error {
 	return nil
 }
 
-func (nexusUpload *NexusUpload) UploadArtifacts() {
+func (nexusUpload *Upload) UploadArtifacts() {
 	nexusUpload.initLogger()
 
 	if nexusUpload.baseURL == "" {
@@ -86,7 +86,7 @@ func (nexusUpload *NexusUpload) UploadArtifacts() {
 	}
 }
 
-func (nexusUpload *NexusUpload) AddArtifactsFromJSON(json string) error {
+func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
 	artifacts, err := GetArtifacts(json)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func validateArtifact(artifact ArtifactDescription) error {
 	return nil
 }
 
-func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error {
+func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	err := validateArtifact(artifact)
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error 
 }
 
 // Returns a copy of the artifact descriptions array
-func (nexusUpload *NexusUpload) GetArtifacts() []ArtifactDescription {
+func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
 	copy(artifacts, nexusUpload.artifacts)
 	return artifacts
@@ -134,7 +134,7 @@ func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	return artifacts, err
 }
 
-func (nexusUpload *NexusUpload) createHttpClient() *piperHttp.Client {
+func (nexusUpload *Upload) createHttpClient() *piperHttp.Client {
 	client := piperHttp.Client{}
 	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: nexusUpload.Logger}
 	client.SetOptions(clientOptions)

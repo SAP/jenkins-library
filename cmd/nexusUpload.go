@@ -38,7 +38,7 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 
 	projectStructure := piperutils.ProjectStructure{}
 
-	nexusClient := nexus.NexusUpload{Username: config.User, Password: config.Password}
+	nexusClient := nexus.Upload{Username: config.User, Password: config.Password}
 	groupID := config.GroupID // TODO... Only expected to be provided for MTA projects, can be empty, though
 	err := nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
 	if err != nil {

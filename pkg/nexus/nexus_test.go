@@ -7,7 +7,7 @@ import (
 )
 
 func TestAddArtifactValid(t *testing.T) {
-	nexusUpload := NexusUpload{}
+	nexusUpload := Upload{}
 
 	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
 
@@ -21,7 +21,7 @@ func TestAddArtifactValid(t *testing.T) {
 }
 
 func TestAddArtifactMissingID(t *testing.T) {
-	nexusUpload := NexusUpload{}
+	nexusUpload := Upload{}
 
 	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "", Classifier: "", Type: "pom", File: "pom.xml"})
 
@@ -30,7 +30,7 @@ func TestAddArtifactMissingID(t *testing.T) {
 }
 
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
-	nexusUpload := NexusUpload{}
+	nexusUpload := Upload{}
 
 	nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
 
