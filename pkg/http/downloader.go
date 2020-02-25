@@ -1,7 +1,6 @@
 package http
 
 import (
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
@@ -29,14 +28,8 @@ func (c *Client) DownloadRequest(method, url, filename string, header http.Heade
 	defer response.Body.Close()
 	parent := filepath.Dir(filename)
 	if len(parent) > 0 {
-		exists, err := piperutils.FileExists(parent)
-		if err != nil {
+		if err = os.MkdirAll(parent, 0775); err != nil {
 			return err
-		}
-		if !exists {
-			if err = os.MkdirAll(parent, 0775); err != nil {
-				return err
-			}
 		}
 	}
 	fileHandler, err := os.Create(filename)
