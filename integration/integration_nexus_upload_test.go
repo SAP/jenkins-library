@@ -40,37 +40,54 @@ func TestNexusUpload(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
 	cmd := command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/")
+	cmd.Dir("testdata/TestNexusIntegration/mta")
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"artifactId":"myapp-pom","classifier":"","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"","type":"jar","file":"test.jar"},{"artifactId":"myapp-yaml","classifier":"","type":"yaml","file":"mta.yaml"},{"artifactId":"myapp-mtar","classifier":"","type":"mtar","file":"test.mtar"}]`,
 		"--groupId=mygroup",
+		"--artifactId=mymta",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=maven-releases",
-		"--version=1.0",
 		"--url=" + nexusIpAndPort,
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	cmd = command.Command{}
+	cmd.Dir("testdata/TestNexusIntegration/maven")
 
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	piperOptions = []string{
+		"nexusUpload",
+		"--groupId=mygroup",
+		"--artifactId=mymaven",
+		"--user=admin",
+		"--password=admin123",
+		"--repository=maven-releases",
+		"--url=" + nexusIpAndPort,
+	}
 
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-yaml/1.0/myapp-yaml-1.0.yaml")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-mtar/1.0/myapp-mtar-1.0.mtar")
+
+	//resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymaven/1.0/mymaven-1.0.pom")
+	////  'http://localhost:32859/repository/maven-releases/mygroup/mymaven/1.0/mymaven-1.0.pom'
+	//assert.NoError(t, err, "Downloading artifact failed")
+	//assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	//resp, err = http.Get(url + "/repository/maven-releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
+	//assert.NoError(t, err, "Downloading artifact failed")
+	//assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestNexus2Upload(t *testing.T) {
