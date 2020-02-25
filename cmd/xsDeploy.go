@@ -110,7 +110,8 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 
 func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
-	err := runXsDeploy(config, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
+	fileUtils := piperutils.Files{}
+	err := runXsDeploy(config, &c, fileUtils, os.Remove, os.Stdout)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -119,8 +120,7 @@ func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
-	fExists func(string) (bool, error),
-	fCopy func(string, string) (int64, error),
+	fileUtils piperutils.FileUtils,
 	fRemove func(string) error,
 	stdout io.Writer) error {
 
@@ -150,7 +150,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	log.Entry().Debugf("performLogin: %t, performLogout: %t", performLogin, performLogout)
 
 	{
-		exists, e := fExists(XsDeployOptions.MtaPath)
+		exists, e := fileUtils.FileExists(XsDeployOptions.MtaPath)
 		if e != nil {
 			return e
 		}
@@ -200,14 +200,14 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	if performLogin {
 		loginErr = xsLogin(XsDeployOptions, s)
 		if loginErr == nil {
-			err = copyFileFromHomeToPwd(xsSessionFile, fCopy)
+			err = copyFileFromHomeToPwd(xsSessionFile, fileUtils)
 		}
 	}
 
 	if loginErr == nil && err == nil {
 
 		{
-			exists, e := fExists(xsSessionFile)
+			exists, e := fileUtils.FileExists(xsSessionFile)
 			if e != nil {
 				return e
 			}
@@ -216,7 +216,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 			}
 		}
 
-		copyFileFromPwdToHome(xsSessionFile, fCopy)
+		copyFileFromPwdToHome(xsSessionFile, fileUtils)
 
 		switch action {
 		case Resume, Abort, Retry:
@@ -435,20 +435,17 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	return nil
 }
 
-func copyFileFromHomeToPwd(xsSessionFile string, fCopy func(string, string) (int64, error)) error {
-	if fCopy == nil {
-		fCopy = piperutils.Copy
-	}
+func copyFileFromHomeToPwd(xsSessionFile string, fileUtils piperutils.FileUtils) error {
 	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), fmt.Sprintf("%s", xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
-	if _, err := fCopy(src, dest); err != nil {
+	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from home directory ('%s') to workspace ('%s')", src, dest)
 	}
 	log.Entry().Debugf("xs session file copied from home directory ('%s') to workspace ('%s')", src, dest)
 	return nil
 }
 
-func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string) (int64, error)) error {
+func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils) error {
 
 	//
 	// We rely on running inside a docker container which is discarded after a single use.
@@ -457,12 +454,9 @@ func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string) (int
 	// affects also other builds.
 	//
 
-	if fCopy == nil {
-		fCopy = piperutils.Copy
-	}
 	src, dest := fmt.Sprintf("%s", xsSessionFile), fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from workspace ('%s') to home directory ('%s')", src, dest)
-	if _, err := fCopy(src, dest); err != nil {
+	if _, err := fileUtils.Copy(src, dest); err != nil {
 		return errors.Wrapf(err, "Cannot copy xssession file from workspace ('%s') to home directory ('%s')", src, dest)
 	}
 	log.Entry().Debugf("xs session file copied from workspace ('%s') to home directory ('%s')", src, dest)

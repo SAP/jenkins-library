@@ -55,6 +55,7 @@ func Execute() {
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
+	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(XsDeployCommand())

@@ -99,7 +99,7 @@ In addition to the default checks of those tools, it adds the following SAP Clou
 
 The pipeline automatically checks JavaScript and XML files in SAPUI5 components for the SAPUI5 recommended best practices.
 
-[Custom linters](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/extensibility.md#custom-linters) can be implemented by development teams, if desired.
+[Custom linters](https://sap.github.io/jenkins-library/extensibility/#practical-example) can be implemented by development teams, if desired.
 
 This allows to enforce a common coding style within a team of developers, thus making it easier to focus on the application code, rather then discussing minor style issues.
 
