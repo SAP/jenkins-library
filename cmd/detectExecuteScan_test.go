@@ -24,7 +24,7 @@ func TestRunDetect(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		s := shellMockRunner{shouldFailWith: fmt.Errorf("Test Error")}
+		s := shellMockRunner{shouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
 		runDetect(detectExecuteScanOptions{}, &s)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
