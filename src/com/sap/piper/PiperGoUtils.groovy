@@ -72,20 +72,20 @@ class PiperGoUtils implements Serializable {
     /*
      * The returned string can be used directly in the command line for retrieving the configuration via go
      */
-    public String prepareConfigurations(List configs, String configCacheFolder) {
+    public String prepareConfigurations(List configFiles, String configCacheFolder) {
 
-        for(def customDefault : configs) {
-            steps.writeFile(file: "${additionalConfigFolder}/${customDefault}", text: steps.libraryResource(customDefault))
+        for(def configFile : configFiles) {
+            steps.writeFile(file: "${additionalConfigFolder}/${configFile}", text: steps.libraryResource(configFile))
         }
-        joinAndQuote(configs.reverse(), configCacheFolder)
+        joinAndQuote(configFiles.reverse(), configCacheFolder)
     }
 
     /*
      * prefix is supposed to be provided without trailing slash
      */
-    private static String joinAndQuote(List l, String prefix = '') {
+    private static String joinAndQuote(List configFiles, String prefix = '') {
 
-        Iterable _l = []
+        Iterable prefixedConfigFiles = []
 
         if(prefix == null) {
             prefix = ''
@@ -93,15 +93,14 @@ class PiperGoUtils implements Serializable {
         if(prefix.endsWith('/') || prefix.endsWith('\\'))
             throw new IllegalArgumentException("Provide prefix (${prefix}) without trailing slash")
 
-        for(def e : l) {
-            def _e = ''
+        for(def configFile : configFiles) {
+            def prefixedConfigFile = ''
             if(prefix.length() > 0) {
-                _e += prefix
-                _e += '/'
+                prefixedConfigFile += prefix + '/'
             }
-            _e += e
-            _l << '"' + _e + '"'
+            prefixedConfigFile += configFile
+            prefixedConfigFiles << '"' + prefixedConfigFile + '"'
         }
-        _l.join(' ')
+        prefixedConfigFiles.join(' ')
     }
 }
