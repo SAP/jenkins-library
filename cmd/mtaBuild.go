@@ -91,7 +91,7 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	e envExecRunner,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Sender) error {
+	httpClient piperhttp.Downloader) error {
 
 	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
 	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
@@ -313,7 +313,7 @@ func handleDefaultNpmRegistry(config mtaBuildOptions, e envExecRunner) error {
 
 func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Sender) error {
+	httpClient piperhttp.Downloader) error {
 
 	if len(config.ProjectSettingsFile) > 0 {
 

@@ -82,7 +82,7 @@ func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(path, content, perm)
 }
 
-// MkDirAll ...
+// MkdirAll ...
 func (f Files) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }

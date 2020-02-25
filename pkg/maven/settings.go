@@ -6,8 +6,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,11 +20,11 @@ const (
 	// GlobalSettingsFile ...
 	GlobalSettingsFile SettingsFileType = iota
 	// ProjectSettingsFile ...
-	ProjectSettingsFile SettingsFileType = iota
+	ProjectSettingsFile
 )
 
 // GetSettingsFile ...
-func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 
 	var dest string
 	var err error
@@ -44,77 +42,38 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 		return err
 	}
 
-	if len(src) > 0 {
+	if len(src) == 0 {
+		return fmt.Errorf("Settings file source location not provided")
+	}
 
-		log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
+	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
+
+	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
+
+		if err := httpClient.DownloadFile(src, dest, nil, nil); err != nil {
+			return err
+		}
+	} else {
+
+		// for sake os symetry it would be better to use a file protocol prefix here (file:)
 
 		parent := filepath.Dir(dest)
 
-		exists, err := fileUtils.FileExists(parent)
+		parentFolderExists, err := fileUtils.FileExists(parent)
 
 		if err != nil {
 			return err
 		}
 
-		if !exists {
-			if err = fileUtils.MkdirAll(parent, 0664); err != nil {
+		if !parentFolderExists {
+			if err = fileUtils.MkdirAll(parent, 0775); err != nil {
 				return err
 			}
 		}
 
-		if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-			if err := getSettingsFileFromURL(src, dest, fileUtils, httpClient); err != nil {
-				return err
-			}
-		} else {
-
-			// for sake os symetry it would be better to use a file protocol prefix here (file:)
-
-			exists, err := fileUtils.FileExists(src)
-
-			if err != nil {
-				return err
-			}
-
-			if !exists {
-				return fmt.Errorf("File \"%s\" not found", src)
-			}
-
-			fmt.Printf("Copying file '%s' to '%s'", src, dest)
-			if _, err := fileUtils.Copy(src, dest); err != nil {
-				return err
-			}
+		if _, err := fileUtils.Copy(src, dest); err != nil {
+			return err
 		}
-	}
-	log.Entry().Debugf("File \"%s\" copied to \"%s\"", src, dest)
-	return nil
-}
-
-// getSettingsFileFromURL ...
-func getSettingsFileFromURL(url, file string, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
-
-	var e error
-
-	//CHECK:
-	// - how does this work with a proxy inbetween?
-	// - how does this work with http 302 (relocated) --> curl -L
-	response, e := httpClient.SendRequest(http.MethodGet, url, nil, nil, nil)
-	if e != nil {
-		return e
-	}
-
-	if response.StatusCode != 200 {
-		return fmt.Errorf("Got %d reponse from download attempt for \"%s\"", response.StatusCode, url)
-	}
-
-	body, e := ioutil.ReadAll(response.Body)
-	if e != nil {
-		return e
-	}
-
-	e = fileUtils.FileWrite(file, body, 0644)
-	if e != nil {
-		return e
 	}
 
 	return nil

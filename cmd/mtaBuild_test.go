@@ -240,7 +240,7 @@ func TestMarBuild(t *testing.T) {
 			sfType maven.SettingsFileType,
 			src string,
 			fileUtilsMock piperutils.FileUtils,
-			httpClientMock piperhttp.Sender) error {
+			httpClientMock piperhttp.Downloader) error {
 			settingsFile = src
 			settingsFileType = sfType
 			return nil
