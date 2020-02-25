@@ -67,7 +67,7 @@ func getParametersFromConfig(config *ExecuteOptions, client http.Downloader) []s
 
 	if config.GlobalSettingsFile != "" {
 		globalSettingsFileParameter := "--global-settings " + config.GlobalSettingsFile
-		if strings.HasPrefix(config.GlobalSettingsFile, "http") {
+		if strings.HasPrefix(config.GlobalSettingsFile, "http:") || strings.HasPrefix(config.GlobalSettingsFile, "https:") {
 			downloadSettingsFromURL(config.ProjectSettingsFile, "globalSettings.xml", client)
 			globalSettingsFileParameter = "--global-settings " + "globalSettings.xml"
 		}
@@ -76,7 +76,7 @@ func getParametersFromConfig(config *ExecuteOptions, client http.Downloader) []s
 
 	if config.ProjectSettingsFile != "" {
 		projectSettingsFileParameter := "--settings " + config.ProjectSettingsFile
-		if strings.HasPrefix(config.ProjectSettingsFile, "http") {
+		if strings.HasPrefix(config.ProjectSettingsFile, "http:") || strings.HasPrefix(config.ProjectSettingsFile, "https:") {
 			downloadSettingsFromURL(config.ProjectSettingsFile, "projectSettings.xml", client)
 			projectSettingsFileParameter = "--settings " + "projectSettings.xml"
 		}
