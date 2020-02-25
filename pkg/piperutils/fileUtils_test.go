@@ -57,7 +57,7 @@ func TestFindFiles(t *testing.T) {
 	_, err = os.Create(workdir + "/1/2/this.one.not")
 	require.NoError(t, err)
 
-	files, err := FindFiles(workdir, ".*\\.txt$")
+	files, err := FindFiles(workdir, ".*/2/.*\\.txt$")
 
 	assert.ElementsMatch(t, []string{workdir + "/1/2/3/my.txt", workdir + "/temp.txt"}, files)
 }
