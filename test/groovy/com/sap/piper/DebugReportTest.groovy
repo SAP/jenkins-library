@@ -43,7 +43,7 @@ class DebugReportTest extends BasePiperTest {
         DebugReport.instance.initFromEnvironment(createEnv())
         DebugReport.instance.setGitRepoInfo('GIT_URL' : 'git://url', 'GIT_LOCAL_BRANCH' : 'some-branch')
 
-        String debugReport = DebugReport.instance.generateReport(mockScript())
+        String debugReport = DebugReport.instance.generateReport(mockScript(), false)
 
         Assert.assertTrue(debugReport.contains('## Pipeline Environment'))
         Assert.assertTrue(debugReport.contains('## Local Extensions'))
@@ -57,9 +57,8 @@ class DebugReportTest extends BasePiperTest {
     void testLogOutputConfidential() {
         DebugReport.instance.initFromEnvironment(createEnv())
         DebugReport.instance.setGitRepoInfo('GIT_URL' : 'git://url', 'GIT_LOCAL_BRANCH' : 'some-branch')
-        DebugReport.instance.shareConfidentialInformation = true
 
-        String debugReport = DebugReport.instance.generateReport(mockScript())
+        String debugReport = DebugReport.instance.generateReport(mockScript(), true)
 
         Assert.assertTrue(debugReport.contains('## Pipeline Environment'))
         Assert.assertTrue(debugReport.contains('## Local Extensions'))

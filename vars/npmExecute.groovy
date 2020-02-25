@@ -65,6 +65,10 @@ void call(Map parameters = [:], body = null) {
                 dockerOptions: configuration.dockerOptions,
                 dockerWorkspace: configuration.dockerWorkspace
             ) {
+                sh returnStatus: true, script: """
+                    node --version
+                    npm --version
+                """
                 if (configuration.defaultNpmRegistry) {
                     sh "npm config set registry ${configuration.defaultNpmRegistry}"
                 }
