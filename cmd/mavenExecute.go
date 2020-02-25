@@ -29,5 +29,4 @@ func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomDat
 	}
 
 	return output
-
 }

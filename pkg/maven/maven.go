@@ -50,12 +50,12 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	return string(stdOutBuf.Bytes()), nil
 }
 
-func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	var stdOut io.Writer
 
 	stdOut = log.Entry().Writer()
-	if options.ReturnStdout {
+	if config.ReturnStdout {
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	}
@@ -95,6 +95,10 @@ func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) [
 
 	if options.Flags != nil {
 		parameters = append(parameters, options.Flags...)
+	}
+
+	if options.Defines != nil {
+		parameters = append(parameters, options.Defines...)
 	}
 
 	parameters = append(parameters, "--batch-mode")
