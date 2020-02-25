@@ -50,12 +50,12 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	return string(stdOutBuf.Bytes()), nil
 }
 
-func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	var stdOut io.Writer
 
 	stdOut = log.Entry().Writer()
-	if config.ReturnStdout {
+	if options.ReturnStdout {
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	}
