@@ -4,6 +4,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 

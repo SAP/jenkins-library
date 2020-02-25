@@ -21,9 +21,15 @@ type ExecuteOptions struct {
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
 }
 
+type mavenExecRunner interface {
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(e string, p ...string) error
+}
+
 const mavenExecutable = "mvn"
 
-func Execute(config *ExecuteOptions, command cmd.ExecRunner) (string, error) {
+func Execute(config *ExecuteOptions, command mavenExecRunner) (string, error) {
 	stdOutBuf, stdOut := evaluateStdOut(config)
 	command.Stdout(stdOut)
 	command.Stderr(log.Entry().Writer())
