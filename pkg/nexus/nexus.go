@@ -108,8 +108,11 @@ func (nexusUpload *NexusUpload) AddArtifact(artifact ArtifactDescription) error 
 	return nil
 }
 
+// Returns a copy of the artifact descriptions array
 func (nexusUpload *NexusUpload) GetArtifacts() []ArtifactDescription {
-	return nexusUpload.artifacts
+	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
+	copy(artifacts, nexusUpload.artifacts)
+	return artifacts
 }
 
 func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
