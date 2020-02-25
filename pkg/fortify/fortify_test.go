@@ -812,33 +812,140 @@ func TestInvalidateFileToken(t *testing.T) {
 
 func TestUploadFile(t *testing.T) {
 	// Start a local HTTP server
-	response := `OK`
 	bodyContent := ""
+	getTokenCalled := false
+	invalidateTokenCalled := false
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/ssc/upload/resultFileUpload.html" {
+		if req.URL.Path == "/fileTokens" && req.Method == "DELETE" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(`{"responseCode": 200}`))
+			invalidateTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/fileTokens" && req.Method == "POST" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(`{"data": {"token": "89ee873"}, "responseCode": 201}`))
+			getTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/upload/resultFileUpload.html" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			bodyBytes, _ := ioutil.ReadAll(req.Body)
 			bodyContent = string(bodyBytes)
 			rw.WriteHeader(200)
-			rw.Write([]byte(response))
+			rw.Write([]byte("OK"))
 			return
 		}
 	})
 	// Close the server when test finishes
 	defer server.Close()
 
-	testFile, err := ioutil.TempFile("uploadFileTest", "result.fpr")
+	testFile, err := ioutil.TempFile("", "result.fpr")
 	if err != nil {
 		t.FailNow()
 	}
 	defer os.RemoveAll(testFile.Name()) // clean up
 
 	t.Run("test success", func(t *testing.T) {
-		err := sys.UploadFile("/ssc/upload/resultFileUpload.html", testFile.Name(), "89ee873", 10770)
+		err := sys.UploadFile("/upload/resultFileUpload.html", testFile.Name(), 10770)
 		assert.NoError(t, err, "UploadFile call not successful")
 		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="file"; filename=`, "Expected different content in request body")
-		assert.Contains(t, bodyContent, `name="mat"; value=89ee873`, "Expected different content in request body")
-		assert.Contains(t, bodyContent, `name="entityId"; value=10770`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="mat"`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `89ee873`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="entityId"`, "Expected different content in request body")
+		assert.Contains(t, bodyContent, `10770`, "Expected different content in request body")
+		assert.Equal(t, true, getTokenCalled, "Expected GetUploadToken to be called")
+		assert.Equal(t, true, invalidateTokenCalled, "Expected InvalidateFileTokens to be called")
+	})
+}
+
+func TestDownloadResultFile(t *testing.T) {
+	// Start a local HTTP server
+	bodyContent := ""
+	getTokenCalled := false
+	invalidateTokenCalled := false
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" && req.Method == "DELETE" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(`{"responseCode": 200}`))
+			invalidateTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/fileTokens" && req.Method == "POST" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(`{"data": {"token": "89ee873"}, "responseCode": 201}`))
+			getTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/download/currentStateFprDownload.html" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent = string(bodyBytes)
+			rw.WriteHeader(200)
+			rw.Write([]byte("OK"))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		data, err := sys.DownloadResultFile("/download/currentStateFprDownload.html", 10775)
+		assert.NoError(t, err, "DownloadResultFile call not successful")
+		assert.Equal(t, "id=10775&mat=89ee873", bodyContent, "Expected different request body")
+		assert.Equal(t, []byte("OK"), data, "Expected different result")
+		assert.Equal(t, true, getTokenCalled, "Expected GetUploadToken to be called")
+		assert.Equal(t, true, invalidateTokenCalled, "Expected InvalidateFileTokens to be called")
+	})
+}
+
+func TestDownloadReportFile(t *testing.T) {
+	// Start a local HTTP server
+	getTokenCalled := false
+	invalidateTokenCalled := false
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/fileTokens" && req.Method == "DELETE" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(`{"responseCode": 200}`))
+			invalidateTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/fileTokens" && req.Method == "POST" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(`{"data": {"token": "89ee873"}, "responseCode": 201}`))
+			getTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/transfer/reportDownload.html" && req.URL.RawQuery == "id=10775&mat=89ee873" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte("OK"))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		data, err := sys.DownloadReportFile("/transfer/reportDownload.html", 10775)
+		assert.NoError(t, err, "DownloadReportFile call not successful")
+		assert.Equal(t, []byte("OK"), data, "Expected different result")
+		assert.Equal(t, true, getTokenCalled, "Expected GetUploadToken to be called")
+		assert.Equal(t, true, invalidateTokenCalled, "Expected InvalidateFileTokens to be called")
 	})
 }

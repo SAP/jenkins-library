@@ -2,7 +2,9 @@ package fortify
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -452,18 +454,76 @@ func (sys *SystemInstance) GetReportFileToken() (*models.FileToken, error) {
 }
 
 // UploadFile uploads a file to the fortify backend
-func (sys *SystemInstance) UploadFile(endpoint, file, uploadToken string, projectVersionID int64) error {
+func (sys *SystemInstance) UploadFile(endpoint, file string, projectVersionID int64) error {
+	token, err := sys.GetFileUploadToken()
+	if err != nil {
+		return err
+	}
+	defer sys.InvalidateFileTokens()
+
 	header := http.Header{}
 	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
 	header.Add("Pragma", "no-cache")
 	formFields := map[string]string{}
-	formFields["mat"] = uploadToken
+	formFields["mat"] = token.Token
 	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
-	_, err := sys.httpClient.UploadFileForm(sys.serverURL+endpoint, file, "file", formFields, header, nil)
+	_, err = sys.httpClient.UploadFileForm(fmt.Sprintf("%v%v", sys.serverURL, endpoint), file, "file", formFields, header, nil)
 	return err
 }
 
 // DownloadFile downloads a file from Fortify backend
-func (sys *SystemInstance) DownloadFile(endpoint, file string) ([]byte, error) {
-	return nil, nil
+func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadToken string, projectVersionID int64) ([]byte, error) {
+	header := http.Header{}
+	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+	header.Add("Pragma", "no-cache")
+	header.Add("Accept", acceptType)
+	header.Add("Content-Type", "application/form-data")
+	body := url.Values{
+		"mat": {downloadToken},
+		"id":  {fmt.Sprintf("%v", projectVersionID)},
+	}
+	var response *http.Response
+	var err error
+	if method == http.MethodGet {
+		response, err = sys.httpClient.SendRequest(method, fmt.Sprintf("%v%v?%v", sys.serverURL, endpoint, body.Encode()), nil, header, nil)
+	} else {
+		response, err = sys.httpClient.SendRequest(method, fmt.Sprintf("%v%v", sys.serverURL, endpoint), strings.NewReader(body.Encode()), header, nil)
+	}
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Error reading the response data %s", err)
+	}
+	return data, nil
+}
+
+// DownloadReportFile downloads a report file from Fortify backend
+func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
+	token, err := sys.GetReportFileToken()
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching report download token %s", err)
+	}
+	defer sys.InvalidateFileTokens()
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", token.Token, projectVersionID)
+	if err != nil {
+		return nil, fmt.Errorf("Error downloading report file %s", err)
+	}
+	return data, nil
+}
+
+// DownloadResultFile downloads a report file from Fortify backend
+func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
+	token, err := sys.GetFileDownloadToken()
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching result file download token %s", err)
+	}
+	defer sys.InvalidateFileTokens()
+	data, err := sys.downloadFile(endpoint, http.MethodPost, "application/zip", token.Token, projectVersionID)
+	if err != nil {
+		return nil, fmt.Errorf("Error downloading result file %s", err)
+	}
+	return data, nil
 }
