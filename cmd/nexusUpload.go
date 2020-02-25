@@ -61,7 +61,11 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 	}
 
 	if projectStructure.UsesMaven() {
-		//read pom
+		//todo read pom
+		err := nexusClient.AddArtifact(nexus.ArtifactDescription{File: "pom.xml", Type: "pom", Classifier: "", ID: config.ArtifactID})
+		if err != nil {
+			log.Entry().WithError(err).Fatal()
+		}
 	}
 
 
