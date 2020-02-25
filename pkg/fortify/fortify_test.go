@@ -726,8 +726,8 @@ func TestGetFileUploadToken(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetFileUploadToken()
-		assert.NoError(t, err, "GetFileUploadToken call not successful")
+		result, err := sys.getFileUploadToken()
+		assert.NoError(t, err, "getFileUploadToken call not successful")
 		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
 		assert.Equal(t, reference, bodyContent, "Different request content expected")
 	})
@@ -754,8 +754,8 @@ func TestGetFileDownloadToken(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetFileDownloadToken()
-		assert.NoError(t, err, "GetFileDownloadToken call not successful")
+		result, err := sys.getFileDownloadToken()
+		assert.NoError(t, err, "getFileDownloadToken call not successful")
 		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
 		assert.Equal(t, reference, bodyContent, "Different request content expected")
 	})
@@ -782,8 +782,8 @@ func TestGetReportFileToken(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetReportFileToken()
-		assert.NoError(t, err, "GetReportFileToken call not successful")
+		result, err := sys.getReportFileToken()
+		assert.NoError(t, err, "getReportFileToken call not successful")
 		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
 		assert.Equal(t, reference, bodyContent, "Different request content expected")
 	})
@@ -805,8 +805,8 @@ func TestInvalidateFileToken(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		err := sys.InvalidateFileTokens()
-		assert.NoError(t, err, "InvalidateFileTokens call not successful")
+		err := sys.invalidateFileTokens()
+		assert.NoError(t, err, "invalidateFileTokens call not successful")
 	})
 }
 

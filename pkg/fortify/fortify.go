@@ -33,6 +33,27 @@ import (
 
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
+	GetProjectByName(name string) (*models.Project, error)
+	GetProjectVersionDetailsByNameAndProjectID(id int64, name string) (*models.ProjectVersion, error)
+	GetProjectVersionAttributesByID(id int64) ([]*models.Attribute, error)
+	CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error)
+	ProjectVersionCopyFromPartial(sourceID, targetID int64) error
+	ProjectVersionCopyCurrentState(sourceID, targetID int64) error
+	CopyProjectVersionPermissions(sourceID, targetID int64) error
+	CommitProjectVersion(id int64) (*models.ProjectVersion, error)
+	InactivateProjectVersion(id int64) (*models.ProjectVersion, error)
+	GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error)
+	GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error)
+	GetIssueFilterSelectorOfProjectVersionByName(id int64, names ...string) (*models.IssueFilterSelectorSet, error)
+	GetProjectIssuesByIDAndFilterSetGroupedByFolder(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
+	GetProjectIssuesByIDAndFilterSetGroupedByCategory(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
+	GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
+	GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error)
+	GenerateQGateReport(projectID, projectVersionID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
+	GetReportDetails(id int64) (*models.SavedReport, error)
+	UploadFile(endpoint, file string, projectVersionID int64) error
+	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
+	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
 }
 
 // SystemInstance is the specific instance
@@ -419,8 +440,7 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 	return result.GetPayload().Data, nil
 }
 
-// InvalidateFileTokens invalidates the file tokens
-func (sys *SystemInstance) InvalidateFileTokens() error {
+func (sys *SystemInstance) invalidateFileTokens() error {
 	params := &file_token_controller.MultiDeleteFileTokenParams{}
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.FileTokenController.MultiDeleteFileToken(params, sys)
@@ -438,28 +458,25 @@ func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, er
 	return result.GetPayload().Data, nil
 }
 
-// GetFileUploadToken returns the token upload result files
-func (sys *SystemInstance) GetFileUploadToken() (*models.FileToken, error) {
+func (sys *SystemInstance) getFileUploadToken() (*models.FileToken, error) {
 	return sys.getFileToken("UPLOAD")
 }
 
-// GetFileDownloadToken returns the token to download result files
-func (sys *SystemInstance) GetFileDownloadToken() (*models.FileToken, error) {
+func (sys *SystemInstance) getFileDownloadToken() (*models.FileToken, error) {
 	return sys.getFileToken("DOWNLOAD")
 }
 
-// GetReportFileToken returns the token to download report files
-func (sys *SystemInstance) GetReportFileToken() (*models.FileToken, error) {
+func (sys *SystemInstance) getReportFileToken() (*models.FileToken, error) {
 	return sys.getFileToken("REPORT_FILE")
 }
 
 // UploadFile uploads a file to the fortify backend
 func (sys *SystemInstance) UploadFile(endpoint, file string, projectVersionID int64) error {
-	token, err := sys.GetFileUploadToken()
+	token, err := sys.getFileUploadToken()
 	if err != nil {
 		return err
 	}
-	defer sys.InvalidateFileTokens()
+	defer sys.invalidateFileTokens()
 
 	header := http.Header{}
 	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -502,11 +519,11 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 
 // DownloadReportFile downloads a report file from Fortify backend
 func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	token, err := sys.GetReportFileToken()
+	token, err := sys.getReportFileToken()
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching report download token %s", err)
 	}
-	defer sys.InvalidateFileTokens()
+	defer sys.invalidateFileTokens()
 	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", token.Token, projectVersionID)
 	if err != nil {
 		return nil, fmt.Errorf("Error downloading report file %s", err)
@@ -516,11 +533,11 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID 
 
 // DownloadResultFile downloads a report file from Fortify backend
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	token, err := sys.GetFileDownloadToken()
+	token, err := sys.getFileDownloadToken()
 	if err != nil {
 		return nil, fmt.Errorf("Error fetching result file download token %s", err)
 	}
-	defer sys.InvalidateFileTokens()
+	defer sys.invalidateFileTokens()
 	data, err := sys.downloadFile(endpoint, http.MethodPost, "application/zip", token.Token, projectVersionID)
 	if err != nil {
 		return nil, fmt.Errorf("Error downloading result file %s", err)

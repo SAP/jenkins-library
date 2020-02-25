@@ -1,0 +1,370 @@
+metadata:
+  name: fortifyExecuteScan
+  description: This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
+  longDescription: |-
+    This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
+    
+    The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
+    and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+spec:
+  inputs:
+    secrets:
+      - name: fortifyCredentialsId
+        type: jenkins
+    resources:
+      - name: commonPipelineEnvironment
+        resourceSpec:
+          type: piperEnvironment
+      - name: buildDescriptor
+        type: stash
+      - name: deployDescriptor
+        type: stash
+      - name: tests
+        type: stash
+      - name: opensourceConfiguration
+        type: stash
+    params:
+    - name: mvnCustomArgs
+      type: string
+      description: Allows providing additional Maven command line parameters
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ''
+    - name: pythonRequirementsFile
+      type: string
+      description: 'The requirements file used in `scanType: ''pip''` to populate
+        the build environment with the necessary dependencies'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: pythonVersion
+      type: string
+      description: 'Python version to be used in `scanType: ''pip''`'
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: python3
+    - name: uploadResults
+      type: bool
+      description: Whether results shall be uploaded or not
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: buildDescriptorFile
+      type: string
+      description: 'Path to the build descriptor file addressing the module/folder
+        to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`:
+        `./setup.py`, scanType=`mta`: determined automatically'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: commitId
+      description: 'Set the Git commit ID for identifing artifacts throughout the scan.'
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: git/commitId
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+    - name: repository
+      description: 'Set the GitHub repository for identifing artifacts throughout the scan.'
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: github/repository
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+    - name: memory
+      type: string
+      description: The amount of memory granted to the translate/scan executions
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: -Xmx4G -Xms512M
+    - name: updateRulePack
+      type: bool
+      description: Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: pythonExcludes
+      type: string
+      description: 'The excludes pattern used in `scanType: ''pip''` for excluding
+        specific .py files i.e. tests'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: -exclude ./**/test/**/*
+    - name: fortifyReportDownloadEndpoint
+      type: string
+      description: Fortify SSC endpoint for Report downloads
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: /transfer/reportDownload.html
+    - name: pollingMinutes
+      type: int
+      description: The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 30
+    - name: quickScan
+      type: bool
+      description: Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
+    - name: translate
+      type: string
+      description: Array of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: fortifyApiEndpoint
+      type: string
+      description: Fortify SSC endpoint used for uploading the scan results and checking the audit state
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: /api/v1
+    - name: reportType
+      type: string
+      description: The type of report to be generated
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: PDF
+    - name: gitTreeish
+      type: string
+      description: 'Identifies the commit/tag/branch used for scanning in `environment:
+        ''xmake'', prepoulated by the pipeline with the related commit id'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: pythonAdditionalPath
+      type: string
+      description: 'The addional path which can be used in `scanType: ''pip''` for
+        customization purposes'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ./lib
+    - name: artifactUrl
+      type: string
+      description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build' 
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: considerSuspicious
+      type: bool
+      description: Whether suspicious issues should trigger the check to fail or not
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: fortifyFprUploadEndpoint
+      type: string
+      description: Fortify SSC endpoint for FPR uploads
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: /upload/resultFileUpload.html
+    - name: fortifyProjectName
+      type: string
+      description: The project used for reporting results in SSC
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ${group}-${artifact}
+    - name: pythonIncludes
+      type: string
+      description: 'The includes pattern used in `scanType: ''pip''` for including
+        .py files'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ./**/*
+    - name: reporting
+      type: bool
+      description: Influences whether a report is generated or not
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
+    - name: fortifyServerUrl
+      type: string
+      description: Fortify SSC Url to be used for accessing the APIs
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: buildDescriptorExcludeList
+      type: string
+      description: Build descriptor files to exclude modules from being scanned
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: []
+    - name: pullRequestMessageRegexGroup
+      type: int
+      description: The group number for extracting the pull request id in `pullRequestMessageRegex`
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 1
+    - name: deltaMinutes
+      type: int
+      description: The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 5
+    - name: spotCheckMinimum
+      type: int
+      description: The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 1
+    - name: fortifyFprDownloadEndpoint
+      type: string
+      description: Fortify SSC endpoint  for FPR downloads
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: /download/currentStateFprDownload.html
+    - name: fortifyProjectVersion
+      type: string
+      description: The project version used for reporting results in SSC
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ${version}
+    - name: pythonInstallCommand
+      type: string
+      description: 'Additional install command that can be run when `scanType: ''pip''`
+        is used which allows further customizing the execution environment of the
+        scan'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: ${pip} install --user .
+    - name: environment
+      type: string
+      description: The environment used to run the Fortify scan.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: docker
+    - name: pullRequestName
+      type: string
+      description: The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: nameVersionMapping
+      type: string
+      description: 'Allows modifying associated project name and version in `scanType:
+        ''mta''` with a map of lists where the map''s key is the path to the build
+        descriptor file and the list value contains project name as first, and project
+        version as second parameter, those may be `null` to force only overwriting
+        one parameter'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: pullRequestMessageRegex
+      type: string
+      description: Regex used to identify the PR-XXX reference within the merge commit message
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: '.*Merge pull request #(\\d+) from.*'
+    - name: xMakeServer
+      type: string
+      description: The Jenkins server URL used for triggering the xMake remote job
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: xmake-dev
+    - name: scanType
+      type: string
+      description: Scan type used for the step which can be `'maven'`, `'pip'`
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: maven
+  containers:
+  - image: ppiper/fortify
+    workingDir: /home/piper
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: fortify_data
+            fields:
+              - name: projectName
+              - name: projectVersion
+              - name: violations
+              - name: corporateTotal
+              - name: corporateAudited
+              - name: auditAllTotal
+              - name: auditAllAudited
+              - name: spotChecksTotal
+              - name: spotChecksAudited
+              - name: suspicious
+              - name: exploitable
+              - name: suppressed
