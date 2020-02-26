@@ -26,18 +26,18 @@ type ShellMockRunner struct {
 	Dir                 string
 	Env                 [][]string
 	Calls               []string
-	shell               []string
+	Shell               []string
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
 }
 
-func (m *ExecMockRunner) AddDir(d string) {
+func (m *ExecMockRunner) SetDir(d string) {
 	m.Dir = append(m.Dir, d)
 }
 
-func (m *ExecMockRunner) AddEnv(e []string) {
+func (m *ExecMockRunner) AddToEnv(e []string) {
 	m.Env = append(m.Env, e)
 }
 
@@ -63,13 +63,13 @@ func (m *ShellMockRunner) SetDir(d string) {
 	m.Dir = d
 }
 
-func (m *ShellMockRunner) AddEnv(e []string) {
+func (m *ShellMockRunner) AddToEnv(e []string) {
 	m.Env = append(m.Env, e)
 }
 
 func (m *ShellMockRunner) RunShell(s string, c string) error {
 
-	m.shell = append(m.shell, s)
+	m.Shell = append(m.Shell, s)
 	m.Calls = append(m.Calls, c)
 
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)

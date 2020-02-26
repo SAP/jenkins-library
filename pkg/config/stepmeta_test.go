@@ -198,7 +198,7 @@ func TestGetParameterFilters(t *testing.T) {
 					}
 				}
 			})
-			t.Run("Env", func(t *testing.T) {
+			t.Run("AddToEnv", func(t *testing.T) {
 				for _, val := range filters.Env {
 					if !sliceContains(row.ExpectedEnv, val) {
 						t.Errorf("Creation of parameter filter failed, expected: %v to be contained in  %v", val, filters.Env)
@@ -262,7 +262,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Steps, "incorrect filter Steps")
 		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Stages, "incorrect filter Stages")
 		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Env, "incorrect filter AddToEnv")
 	})
 
 	t.Run("Containers", func(t *testing.T) {
@@ -272,7 +272,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Steps, "incorrect filter Steps")
 		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Stages, "incorrect filter Stages")
 		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Parameters, "incorrect filter Parameters")
-		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter Env")
+		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter AddToEnv")
 	})
 
 	t.Run("Sidecars", func(t *testing.T) {
@@ -282,7 +282,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Steps, "incorrect filter Steps")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Stages, "incorrect filter Stages")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Parameters, "incorrect filter Parameters")
-		assert.NotEqual(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter Env")
+		assert.NotEqual(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter AddToEnv")
 	})
 }
 

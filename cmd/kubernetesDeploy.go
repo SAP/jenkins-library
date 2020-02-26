@@ -51,8 +51,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 	if len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
-	log.Entry().Debugf("Helm Env: %v", helmEnv)
-	command.Env(helmEnv)
+	log.Entry().Debugf("Helm AddToEnv: %v", helmEnv)
+	command.AddToEnv(helmEnv)
 	command.Stdout(stdout)
 
 	initParams := []string{"init", "--client-only"}
@@ -144,7 +144,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
 		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-		command.Env(kubeEnv)
+		command.AddToEnv(kubeEnv)
 		if len(config.KubeContext) > 0 {
 			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}
