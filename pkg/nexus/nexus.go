@@ -41,8 +41,20 @@ func (nexusUpload *Upload) initLogger() {
 	}
 }
 
-func (nexusUpload *Upload) SetBaseURL(nexusUrl, nexusVersion, repository, groupID string) error {
-	baseURL, err := getBaseURL(nexusUrl, nexusVersion, repository, groupID)
+func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error {
+	if nexusURL == "" {
+		return errors.New("nexusURL must not be empty")
+	}
+	if nexusVersion != "nexus2" && nexusVersion != "nexus3" {
+		return errors.New("nexusVersion must one of 'nexus2' or 'nexus3'")
+	}
+	if repository == "" {
+		return errors.New("repository must not be empty")
+	}
+	if groupID == "" {
+		return errors.New("groupID must not be empty")
+	}
+	baseURL, err := getBaseURL(nexusURL, nexusVersion, repository, groupID)
 	if err != nil {
 		return err
 	}
@@ -70,7 +82,6 @@ func (nexusUpload *Upload) UploadArtifacts() {
 		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetVersion() first.")
 	}
 
-	fmt.Println(nexusUpload.artifacts)
 	if len(nexusUpload.artifacts) == 0 {
 		nexusUpload.Logger.Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
 	}

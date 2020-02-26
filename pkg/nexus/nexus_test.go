@@ -32,11 +32,36 @@ func TestAddArtifactMissingID(t *testing.T) {
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
 	nexusUpload := Upload{}
 
-	nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
+	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
+	assert.NoError(t, err, "Expected to succeed adding valid artifact")
 
 	artifacts := nexusUpload.GetArtifacts()
 	// Overwrite array entry in the returned array...
 	artifacts[0] = ArtifactDescription{ID: "another.id", Classifier: "", Type: "pom", File: "pom.xml"}
 	// ... but expect the entry in nexusUpload object to be unchanged
 	assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
+}
+
+func TestSensibleBaseURLNexus2(t *testing.T) {
+	baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases", "some.group.id")
+	assert.NoError(t, err, "Expected getBaseURL() to succeed")
+	assert.Equal(t, "localhost:8081/nexus/content/repositories/maven-releases/some/group/id/", baseURL)
+}
+
+func TestSensibleBaseURLNexus3(t *testing.T) {
+	baseURL, err := getBaseURL("localhost:8081", "nexus3", "maven-releases", "some.group.id")
+	assert.NoError(t, err, "Expected getBaseURL() to succeed")
+	assert.Equal(t, "localhost:8081/repository/maven-releases/some/group/id/", baseURL)
+}
+
+func TestSetBaseURLParamChecking(t *testing.T) {
+	nexusUpload := Upload{}
+	err := nexusUpload.SetBaseURL("", "nexus3", "maven-releases", "some.group.id")
+	assert.Error(t, err, "Expected SetBaseURL() to fail (no host)")
+	err = nexusUpload.SetBaseURL("localhost:8081", "3", "maven-releases", "some.group.id")
+	assert.Error(t, err, "Expected SetBaseURL() to fail (invalid nexus version)")
+	err = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "", "some.group.id")
+	assert.Error(t, err, "Expected SetBaseURL() to fail (no repository)")
+	err = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "")
+	assert.Error(t, err, "Expected SetBaseURL() to fail (no groupID)")
 }
