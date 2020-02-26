@@ -1,14 +1,15 @@
 package cmd
 
 import (
-	"io/ioutil"
-
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/nexus"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"io/ioutil"
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
@@ -35,7 +36,6 @@ type MtaYaml struct {
 }
 
 func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) error {
-
 	projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.Upload{Username: config.User, Password: config.Password}
@@ -59,7 +59,9 @@ func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomD
 		}
 		if err == nil {
 			//fixme do proper way to find name/path of mta file
-			err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtaYaml.ID + ".mtar", Type: "mtar", Classifier: "", ID: config.ArtifactID})
+			mtarFilePath := piperenv.GetParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
+			fmt.Println(mtarFilePath)
+			err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: config.ArtifactID})
 		}
 		if err != nil {
 			log.Entry().WithError(err).Fatal()
