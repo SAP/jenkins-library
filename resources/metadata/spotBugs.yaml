@@ -1,0 +1,25 @@
+metadata:
+  name: checkSpotBugs
+  description: Execute spotbugs maven plugin
+  longDescription: |
+    SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
+    For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
+spec:
+  inputs:
+    params:
+      - name: excludeFilterFile
+        description: Path to a filter file with bug definitions which should be excluded.
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: includeFilterFile
+        description: Path to a filter file with bug definitions which should be included.
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
