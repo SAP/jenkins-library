@@ -285,7 +285,7 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript)
 
         assertThat(shellRule.shell, hasItem(containsString('mbt build')))
-        assertThat(shellRule.shell, hasItem(containsString('--platform cf')))
+        assertThat(shellRule.shell, hasItem(containsString('--platform NEO')))
         assertThat(shellRule.shell, hasItem(containsString('--target ./')))
         assertThat(shellRule.shell, hasItem(containsString('--mtar com.mycompany.northwind.mtar')))
     }

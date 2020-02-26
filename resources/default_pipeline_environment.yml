@@ -340,7 +340,7 @@ steps:
   mtaBuild:
     buildTarget: 'NEO'
     mtaBuildTool: cloudMbt
-    platform: 'cf'
+    platform: 'NEO'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
