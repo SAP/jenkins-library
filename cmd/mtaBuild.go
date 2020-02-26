@@ -244,7 +244,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 		}
 		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
 	} else {
-		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
+		log.Entry().Infof("No timestamp contained in \"%s\". File has not been modified.", mtaYamlFile)
 	}
 
 	return nil
