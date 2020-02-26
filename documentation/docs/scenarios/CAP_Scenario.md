@@ -21,7 +21,7 @@ Make sure to check the Include support for continuous delivery pipeline of SAP C
 
 This will generate a project which already includes a `Jenkinsfile`, and a `pipeline_config.yml` file.
 
-!!! note "New location of config file"
+!!! note "New location of pipeline configuration file"
     The SAP Cloud SDK Pipeline recently changed the default location for the configuration file from `pipeline_config.yml` to `.config/pipeline` to have a consistent user experience with other piper pipelines. 
     For a limited amount of time starting with version v29 both locations can be used. 
     In teh following the configuration file is referenced by its new location.
