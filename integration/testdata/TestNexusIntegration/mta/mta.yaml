@@ -1,5 +1,5 @@
 _schema-version: 2.1.0
-ID: com.company.vs.samples.odata.eb
+ID: test
 version: 0.3.0
 
 modules:
