@@ -17,7 +17,7 @@ type execRunner interface {
 
 type envExecRunner interface {
 	execRunner
-	AddToEnv(e []string)
+	SetEnv(e []string)
 }
 
 type shellRunner interface {

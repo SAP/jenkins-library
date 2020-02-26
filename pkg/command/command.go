@@ -24,8 +24,8 @@ func (c *Command) SetDir(d string) {
 	c.dir = d
 }
 
-// AddToEnv sets explicit environment variables to be used for execution
-func (c *Command) AddToEnv(e []string) {
+// SetEnv sets explicit environment variables to be used for execution
+func (c *Command) SetEnv(e []string) {
 	c.env = e
 }
 
