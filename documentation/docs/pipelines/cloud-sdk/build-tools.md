@@ -227,6 +227,8 @@ In summary, the project structure should look like this:
 ```
 .
 ├── Jenkinsfile
+├── .pipeline
+│   └── config.yml
 ├── app  // web application, not required
 ├── db   // only if database module exists
 ├── integration-tests
@@ -235,7 +237,6 @@ In summary, the project structure should look like this:
 │       └── test
 ├── mta.yaml
 ├── package.json
-├── pipeline_config.yml
 ├── pom.xml
 └── srv
     ├── pom.xml
