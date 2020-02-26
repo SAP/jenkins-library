@@ -111,36 +111,52 @@ func TestNexus2Upload(t *testing.T) {
 	url := "http://" + nexusIpAndPort + "/nexus/"
 
 	cmd := command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/")
+	cmd.Dir("testdata/TestNexusIntegration/mta")
 
 	piperOptions := []string{
 		"nexusUpload",
-		`--artifacts=[{"artifactId":"myapp-pom","classifier":"","type":"pom","file":"pom.xml"},{"artifactId":"myapp-jar","classifier":"","type":"jar","file":"test.jar"},{"artifactId":"myapp-yaml","classifier":"","type":"yaml","file":"mta.yaml"},{"artifactId":"myapp-mtar","classifier":"","type":"mtar","file":"test.mtar"}]`,
 		"--groupId=mygroup",
+		"--artifactId=mymta",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=releases",
-		"--version=1.0",
-		"--nexusVersion=nexus2",
+		"--version=nexus2",
 		"--url=" + nexusIpAndPort + "/nexus/",
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err := http.Get(url + "content/repositories/releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
+	cmd = command.Command{}
+	cmd.Dir("testdata/TestNexusIntegration/maven")
+
+	piperOptions = []string{
+		"nexusUpload",
+		"--groupId=mygroup",
+		"--artifactId=mymaven",
+		"--user=admin",
+		"--password=admin123",
+		"--repository=releases",
+		"--version=nexus2",
+		"--url=" + nexusIpAndPort + "/nexus/",
+	}
+
+	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+
+	//resp, err := http.Get(url + "content/repositories/releases/mygroup/myapp-pom/1.0/myapp-pom-1.0.pom")
+	//assert.NoError(t, err, "Downloading artifact failed")
+	//assert.Equal(t, resp.StatusCode, http.StatusOK)
+	//
+	//resp, err = http.Get(url + "content/repositories/releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
+	//assert.NoError(t, err, "Downloading artifact failed")
+	//assert.Equal(t, resp.StatusCode, http.StatusOK)
+	//
+	resp, err := http.Get(url + "content/repositories/releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
-	resp, err = http.Get(url + "content/repositories/releases/mygroup/myapp-jar/1.0/myapp-jar-1.0.jar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
-
-	resp, err = http.Get(url + "content/repositories/releases/mygroup/myapp-yaml/1.0/myapp-yaml-1.0.yaml")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
-
-	resp, err = http.Get(url + "content/repositories/releases/mygroup/myapp-mtar/1.0/myapp-mtar-1.0.mtar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	//resp, err = http.Get(url + "content/repositories/releases/mygroup/myapp-mtar/1.0/myapp-mtar-1.0.mtar")
+	//assert.NoError(t, err, "Downloading artifact failed")
+	//assert.Equal(t, resp.StatusCode, http.StatusOK)
 }
