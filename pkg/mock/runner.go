@@ -8,8 +8,8 @@ import (
 )
 
 type ExecMockRunner struct {
-	dir                 []string
-	env                 [][]string
+	Dir                 []string
+	Env                 [][]string
 	Calls               []ExecCall
 	stdout              io.Writer
 	stderr              io.Writer
@@ -23,22 +23,22 @@ type ExecCall struct {
 }
 
 type ShellMockRunner struct {
-	dir                 string
-	env                 [][]string
+	Dir                 string
+	Env                 [][]string
 	Calls               []string
-	shell               []string
+	Shell               []string
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
 }
 
-func (m *ExecMockRunner) Dir(d string) {
-	m.dir = append(m.dir, d)
+func (m *ExecMockRunner) SetDir(d string) {
+	m.Dir = append(m.Dir, d)
 }
 
-func (m *ExecMockRunner) Env(e []string) {
-	m.env = append(m.env, e)
+func (m *ExecMockRunner) AddToEnv(e []string) {
+	m.Env = append(m.Env, e)
 }
 
 func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
@@ -59,17 +59,17 @@ func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
 }
 
-func (m *ShellMockRunner) Dir(d string) {
-	m.dir = d
+func (m *ShellMockRunner) SetDir(d string) {
+	m.Dir = d
 }
 
-func (m *ShellMockRunner) Env(e []string) {
-	m.env = append(m.env, e)
+func (m *ShellMockRunner) AddToEnv(e []string) {
+	m.Env = append(m.Env, e)
 }
 
 func (m *ShellMockRunner) RunShell(s string, c string) error {
 
-	m.shell = append(m.shell, s)
+	m.Shell = append(m.Shell, s)
 	m.Calls = append(m.Calls, c)
 
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
