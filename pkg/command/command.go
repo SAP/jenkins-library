@@ -19,13 +19,13 @@ type Command struct {
 	env    []string
 }
 
-// Dir sets the working directory for the execution
-func (c *Command) Dir(d string) {
+// SetDir sets the working directory for the execution
+func (c *Command) SetDir(d string) {
 	c.dir = d
 }
 
-// Env sets explicit environment variables to be used for execution
-func (c *Command) Env(e []string) {
+// SetEnv sets explicit environment variables to be used for execution
+func (c *Command) SetEnv(e []string) {
 	c.env = e
 }
 

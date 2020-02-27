@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
@@ -54,7 +55,7 @@ func TestDeploy(t *testing.T) {
 		OperationIDLogPattern: `^.*xs bg-deploy -i (.*) -a.*$`,
 	}
 
-	s := shellMockRunner{}
+	s := mock.ShellMockRunner{}
 
 	var removedFiles []string
 
@@ -72,7 +73,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 			stdout = ""
 		}()
 
@@ -97,10 +98,10 @@ func TestDeploy(t *testing.T) {
 
 		t.Run("Standard checks", func(t *testing.T) {
 			// Contains --> we do not check for the shebang
-			assert.Contains(t, s.calls[0], "xs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation")
-			assert.Contains(t, s.calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
-			assert.Contains(t, s.calls[2], "xs logout")
-			assert.Len(t, s.calls, 3)
+			assert.Contains(t, s.Calls[0], "xs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation")
+			assert.Contains(t, s.Calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
+			assert.Contains(t, s.Calls[2], "xs logout")
+			assert.Len(t, s.Calls, 3)
 
 			// xs session file needs to be removed at end during a normal deployment
 			assert.Len(t, removedFiles, 1)
@@ -127,7 +128,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMtaPath := myXsDeployOptions.MtaPath
@@ -148,7 +149,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		myXsDeployOptions.Action = "RETRY"
@@ -165,11 +166,11 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
-			s.shouldFailOnCommand = nil
+			s.Calls = nil
+			s.ShouldFailOnCommand = nil
 		}()
 
-		s.shouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
+		s.ShouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
 
 		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		checkErr(t, e, "Error from underlying process")
@@ -180,7 +181,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -194,9 +195,9 @@ func TestDeploy(t *testing.T) {
 		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
-		assert.Contains(t, s.calls[0], "xs login")
-		assert.Contains(t, s.calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
-		assert.Len(t, s.calls, 2) // There are two entries --> no logout in this case.
+		assert.Contains(t, s.Calls[0], "xs login")
+		assert.Contains(t, s.Calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
+		assert.Len(t, s.Calls, 2) // There are two entries --> no logout in this case.
 	})
 
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
@@ -204,7 +205,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -223,9 +224,9 @@ func TestDeploy(t *testing.T) {
 		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
-		assert.Contains(t, s.calls[0], "xs bg-deploy -i 12345 -a abort")
-		assert.Contains(t, s.calls[1], "xs logout")
-		assert.Len(t, s.calls, 2) // There is no login --> we have two calls
+		assert.Contains(t, s.Calls[0], "xs bg-deploy -i 12345 -a abort")
+		assert.Contains(t, s.Calls[1], "xs logout")
+		assert.Len(t, s.Calls, 2) // There is no login --> we have two calls
 	})
 
 	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
@@ -233,7 +234,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMode := myXsDeployOptions.Mode

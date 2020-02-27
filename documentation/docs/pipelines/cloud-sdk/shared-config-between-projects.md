@@ -1,7 +1,7 @@
 # Share Configuration Between Projects
 
 SAP Cloud SDK Pipeline does not require any programming on the application developer's end, as the pipeline is centrally developed and maintained.
-The necessary configuration happens in the `pipeline_config.yml` file in the root directory of the application's repository.
+The necessary configuration happens in the `.pipeline/config.yml` file in the root directory of the application's repository.
 
 For projects that are composed of multiple repositories (microservices), it might be desired to share the common configuration.
 To do that, create a YAML file which is accessible from your CI/CD environment and configure it in your project.
@@ -16,7 +16,7 @@ It is important to ensure that the HTTP response body is proper YAML, as the pip
 
 Anonymous read access to the `shared-config` repository is required.
 
-The shared config is merged with the project's `pipeline_config.yml`.
+The shared config is merged with the project's `.pipeline/config.yml`.
 Note that the project's config takes precedence, so you can override the shared configuration in your project's local configuration.
 This might be useful to provide a default value that needs to be changed only in some projects.
 

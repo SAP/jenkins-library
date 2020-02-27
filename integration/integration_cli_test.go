@@ -102,7 +102,7 @@ cd /test
 	assert.Equal(t, 0, code)
 }
 
-// Dir copies a directory
+// copyDir copies a directory
 func copyDir(source string, target string) error {
 	var err error
 	var fileInfo []os.FileInfo

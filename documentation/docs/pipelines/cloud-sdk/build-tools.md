@@ -56,7 +56,7 @@ In any case, please also consult the [documentation of the pipeline configuratio
 
 ### Build Tool Independent Requirements
 
-In order to run in the pipeline your project has to include the following two files in the root folder: `Jenkinsfile` and `pipeline_config.yml`.
+In order to run in the pipeline your project has to include the following two files in the root folder: `Jenkinsfile` and `.pipeline/config.yml`.
 You can copy both files from this [github repository](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources).
 There are two variants of the configuration file.
 Please pick the corresponding version for your deployment target and rename it properly.
@@ -69,7 +69,7 @@ The required format of the test result report is the JUnit format as an `.xml` f
 The code coverage report can be published as html report and in the cobertura format.
 The cobertura report as html report has to be stored in the directory `./s4hana_pipeline/reports/coverage-reports/frontend-unit/report-html/ut/` as an `index.html` file.
 These coverage reports will then be published in Jenkins.
-Furthermore, if configured in the `pipeline_config.yml`, the pipeline ensures the configured level of code coverage.
+Furthermore, if configured in the `.pipeline/config.yml`, the pipeline ensures the configured level of code coverage.
 
 In MTA projects Frontend Unit Tests are executed for every module of type `html5`.
 
@@ -121,17 +121,17 @@ If you have multiple npm packages with unit tests the names of the report files 
 
 #### End-to-End Tests
 
-This stage is only executed if you configured it in the file `pipeline_config.yml`.
+This stage is only executed if you configured it in the file `.pipeline/config.yml`.
 
 The command `npm run ci-e2e` will be executed in this stage.
-The url which is defined as `appUrl` in the file `pipeline_config.yml` will be passed as argument named `launchUrl` to the tests.
+The url which is defined as `appUrl` in the file `.pipeline/config.yml` will be passed as argument named `launchUrl` to the tests.
 This can be reproduced locally by executing:
 
 ```
 npm run ci-e2e -- --launchUrl=https://path/to/your/running/application
 ```
 
-The credentials also defined in the file `pipeline_config.yml` will be available during the test execution as environment variables named `e2e_username` and `e2e_password`.
+The credentials also defined in the file `.pipeline/config.yml` will be available during the test execution as environment variables named `e2e_username` and `e2e_password`.
 
 The test results have to be stored in the folder `./s4hana_pipeline/reports/e2e` in the root directory.
 The required format of the test result report is the Cucumber format as an `.json` file, or the JUnit format as an xml file.
@@ -141,7 +141,7 @@ The user is responsible to use a proper reporter for generating the results.
 
 #### Performance Tests
 
-This stage is only executed if you configured it in the file `pipeline_config.yml`.
+This stage is only executed if you configured it in the file `.pipeline/config.yml`.
 
 Performance tests can be executed using [JMeter](https://jmeter.apache.org/) or [Gatling](https://gatling.io/).
 
@@ -209,8 +209,8 @@ Make sure to check the _Include support for continuous delivery pipeline of SAP 
 If you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 
 * [`Jenkinsfile`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/Jenkinsfile)
-* [`pipeline_config.yml`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/cf-pipeline_config.yml)
-    * Note: The file must be named `pipeline_config.yml`, despite the different name of the file template
+* [`.pipeline/config.yml`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/cf-pipeline_config.yml)
+    * Note: The file must be named `.pipeline/config.yml`, despite the different name of the file template
 
 Further constrains on the project structure (this is all correct in projects generated from the _SAP Cloud Platform Business Application_ SAP Web IDE Template):
 
@@ -227,6 +227,8 @@ In summary, the project structure should look like this:
 ```
 .
 ├── Jenkinsfile
+├── .pipeline
+│   └── config.yml
 ├── app  // web application, not required
 ├── db   // only if database module exists
 ├── integration-tests
@@ -235,7 +237,6 @@ In summary, the project structure should look like this:
 │       └── test
 ├── mta.yaml
 ├── package.json
-├── pipeline_config.yml
 ├── pom.xml
 └── srv
     ├── pom.xml
