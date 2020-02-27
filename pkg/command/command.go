@@ -54,7 +54,7 @@ func (c *Command) RunShell(shell, script string) error {
 	}
 
 	if len(c.env) > 0 {
-		cmd.Env = c.env
+		setEnvironment(cmd, c.env)
 	}
 
 	in := bytes.Buffer{}
@@ -79,13 +79,40 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 	}
 
 	if len(c.env) > 0 {
-		cmd.Env = c.env
+		setEnvironment(cmd, c.env)
 	}
 
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
+}
+
+func setEnvironment(cmd *exec.Cmd, env []string) {
+
+	if len(env) > 0 {
+
+		// When cmd.Env is nil the environment variables from the current
+		// process are also used by the forked process. Our environment variables
+		// should not replace the existing environment, but they should be appended.
+		// Hence we populate cmd.Env first with the current environment in case we
+		// find it empty. In case there is already something, we append to that environment.
+		// In that case we assume the current values of `cmd.Env` has either been setup based
+		// on `os.Environ()` or that was initialized in another way for a good reason.
+		//
+		// In case we have the same environment variable is the current envrionment (`os.Environ()``)
+		// and in `env`, the environment variable from `env` is effectively used since this is the
+		// later one. There is no merging between both environment variables.
+		//
+		// cf. https://golang.org/pkg/os/exec/#Command
+		//     If Env contains duplicate environment keys, only the last
+		//     value in the slice for each duplicate key is used.
+
+		if len(cmd.Env) == 0 {
+			cmd.Env = os.Environ()
+		}
+		cmd.Env = append(cmd.Env, env...)
+	}
 }
 
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
