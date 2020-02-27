@@ -4,10 +4,8 @@ name: Build and Releae
 #   schedule:
 #     - cron:  '0 6 * * 1'
 
-on:
-  push:
-    branches:
-      - master
+# fixme just testing
+on: [push]
 
 jobs:
   build:
