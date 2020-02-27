@@ -1,9 +1,14 @@
 package com.sap.piper
 
+
+import hudson.plugins.sidebar_link.LinkAction
+import hudson.AbortException
+
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
@@ -13,14 +18,18 @@ import util.Rules
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertEquals
 
 class JenkinsUtilsTest extends BasePiperTest {
+    public ExpectedException exception = ExpectedException.none()
+
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(exception)
         .around(shellRule)
         .around(loggingRule)
 
@@ -34,9 +43,16 @@ class JenkinsUtilsTest extends BasePiperTest {
 
     String userId
 
+    Map results
+
 
     @Before
     void init() throws Exception {
+        results = [:]
+        results.runlinkCalled = false
+        results.joblinkCalled = false
+        results.removejoblinkCalled = false
+
         jenkinsUtils = new JenkinsUtils() {
             def getCurrentBuildInstance() {
                 return currentBuildMock
@@ -93,6 +109,161 @@ class JenkinsUtilsTest extends BasePiperTest {
         }
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(currentBuildMock)
     }
+
+    def initializeNewUtil() {
+        jenkinsUtils = new JenkinsUtils() {
+            def getCurrentBuildInstance() {
+                return currentBuildMock
+            }
+
+            def getActiveJenkinsInstance() {
+                return jenkinsInstanceMock
+            }
+
+            void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.runlinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+
+            void addJobSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.joblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+            void removeJobSideBarLinks(String relativeUrl) {
+                results.removejoblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+            }
+        }
+        LibraryLoadingTestExecutionListener.prepareObjectInterceptors(jenkinsUtils)
+    }
+
+    @Test
+    void testHandleStepResultsJobLink() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return []
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true, scope: 'job']]
+        })
+
+        jenkinsUtils.handleStepResults("someStep", true, true)
+
+        assertThat(results.removejoblinkCalled, is(true))
+        assertThat(results.runlinkCalled, is(true))
+        assertThat(results.joblinkCalled, is(true))
+    }
+    @Test
+    void testHandleStepResults() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return [[target: "1234.pdf", mandatory: true]]
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true]]
+        })
+
+        jenkinsUtils.handleStepResults("someStep", true, true)
+
+        assertThat(results.removejoblinkCalled, is(false))
+        assertThat(results.runlinkCalled, is(true))
+        assertThat(results.joblinkCalled, is(false))
+    }
+    @Test
+    void testHandleStepResultsEmptyReports() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return []
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true]]
+        })
+
+        jenkinsUtils.handleStepResults("someStep", true, true)
+    }
+    @Test
+    void testHandleStepResultsEmptyLinks() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return [[target: "1234.pdf", mandatory: true]]
+            if(m.file == 'someStep_links.json')
+                return []
+        })
+
+        jenkinsUtils.handleStepResults("someStep", true, true)
+    }
+    @Test
+    void testHandleStepResultsNoErrorReportsLinks() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return []
+            if(m.file == 'someStep_links.json')
+                return []
+        })
+        jenkinsUtils.handleStepResults("someStep", false, false)
+    }
+    @Test
+    void testHandleStepResultsReportsNoFile() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return false
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return [[target: "1234.pdf", mandatory: true]]
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true]]
+        })
+
+        exception.expect(AbortException)
+        exception.expectMessage("Expected to find someStep_reports.json in workspace but it is not there")
+
+        jenkinsUtils.handleStepResults("someStep", true, false)
+    }
+    @Test
+    void testHandleStepResultsLinksNoFile() {
+        initializeNewUtil()
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return false
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return [[target: "1234.pdf", mandatory: true]]
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true]]
+        })
+        helper.registerAllowedMethod('addRunSideBarLink', [String, String, String], { u, n, i ->
+            assertThat(u, is('https://server.com/1234.pdf'))
+            assertThat(n, is('Test link'))
+            assertThat(i, is('images/24x24/graph.png'))
+        })
+
+        exception.expect(AbortException)
+        exception.expectMessage("Expected to find someStep_links.json in workspace but it is not there")
+
+        jenkinsUtils.handleStepResults("someStep", false, true)
+    }
     @Test
     void testNodeAvailable() {
         def result = jenkinsUtils.nodeAvailable()
@@ -148,4 +319,55 @@ class JenkinsUtilsTest extends BasePiperTest {
         assertThat(libs[0], is([name: 'lib1', version: '1', trusted: true]))
         assertThat(libs[1], is([name: 'lib2', version: '2', trusted: false]))
     }
+
+    @Test
+    void testAddJobSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        currentBuildMock.number = 15
+
+        jenkinsUtils.addJobSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("15/abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
+    @Test
+    void testRemoveJobSideBarLinks() {
+        def actions = new ArrayList()
+        actions.add(new LinkAction("abcd/1234", "Some report link", "images/24x24/report.png"))
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.removeJobSideBarLinks("abcd/1234")
+
+        assertEquals(0, actions.size())
+    }
+
+    @Test
+    void testAddRunSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.addRunSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
 }

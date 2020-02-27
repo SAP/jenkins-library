@@ -47,7 +47,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
             containsString("cd '.' && npm install --quiet"),
             containsString("cd '.' && npm run karma")
         ))
-        assertThat(seleniumParams.dockerImage, is('node:8-stretch'))
+        assertThat(seleniumParams.dockerImage, is('node:lts-stretch'))
         assertThat(seleniumParams.dockerName, is('karma'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))
         assertJobStatusSuccess()
@@ -75,8 +75,10 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         
         assert expectedImage == seleniumParams.dockerImage
         assert expectedOptions == seleniumParams.dockerOptions
-        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
         assert expectedWorkspace == seleniumParams.dockerWorkspace
+        expectedEnvVars.each { key, value ->
+            assert seleniumParams.dockerEnvVars[key] == value
+        }
     }
 
     @Test

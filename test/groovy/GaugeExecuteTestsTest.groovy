@@ -106,7 +106,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             'gauge install js',
             'gauge run testSpec'
         ])))
-        assertThat(seleniumParams.dockerImage, is('node:8-stretch'))
+        assertThat(seleniumParams.dockerImage, is('node:lts-stretch'))
         assertThat(seleniumParams.dockerEnvVars, hasEntry('TARGET_SERVER_URL', 'http://custom.url'))
         assertThat(seleniumParams.dockerName, is('npm'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))

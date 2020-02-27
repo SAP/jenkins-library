@@ -61,6 +61,31 @@ def stashWithMessage(name, msg, include = '**/*.*', exclude = '', useDefaultExcl
     }
 }
 
+def stashStageFiles(Script script, String stageName) {
+    List stashes = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: []
+
+    stashList(script, stashes)
+
+    //NOTE: We do not delete the directory in case Jenkins runs on Kubernetes.
+    // deleteDir() is not required in pods, but would be nice to have the same behaviour and leave a clean fileSystem.
+    if (!isInsidePod(script)) {
+        script.deleteDir()
+    }
+}
+
+def unstashStageFiles(Script script, String stageName, List stashContent = []) {
+    stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+
+    script.deleteDir()
+    unstashAll(stashContent)
+
+    return stashContent
+}
+
+boolean isInsidePod(Script script) {
+    return script.env.POD_NAME
+}
+
 def unstash(name, msg = "Unstash failed:") {
 
     def unstashedContent = []
@@ -138,5 +163,13 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
         defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
         returnStdout: true
     )
+    if (resolvedExpression.startsWith('null object or invalid expression')) {
+        // There is no error indication (exit code or otherwise) from the
+        // 'evaluate' Maven plugin, only this output to stdout. The calling
+        // code assumes an empty string is returned when the property could
+        // not be resolved.
+        throw new RuntimeException("Cannot evaluate property value from '${pomFileName}', " +
+            "missing property or invalid expression '${pomPathExpression}'.")
+    }
     return resolvedExpression
 }

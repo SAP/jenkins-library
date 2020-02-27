@@ -16,11 +16,17 @@ type Command struct {
 	dir    string
 	stdout io.Writer
 	stderr io.Writer
+	env    []string
 }
 
-// Dir sets the working directory for the execution
-func (c *Command) Dir(d string) {
+// SetDir sets the working directory for the execution
+func (c *Command) SetDir(d string) {
 	c.dir = d
+}
+
+// SetEnv sets explicit environment variables to be used for execution
+func (c *Command) SetEnv(e []string) {
+	c.env = e
 }
 
 // Stdout ..
@@ -43,7 +49,14 @@ func (c *Command) RunShell(shell, script string) error {
 
 	cmd := ExecCommand(shell)
 
-	cmd.Dir = c.dir
+	if len(c.dir) > 0 {
+		cmd.Dir = c.dir
+	}
+
+	if len(c.env) > 0 {
+		cmd.Env = c.env
+	}
+
 	in := bytes.Buffer{}
 	in.Write([]byte(script))
 	cmd.Stdin = &in
@@ -63,6 +76,10 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir
+	}
+
+	if len(c.env) > 0 {
+		cmd.Env = c.env
 	}
 
 	if err := runCmd(cmd, _out, _err); err != nil {
