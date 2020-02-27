@@ -197,7 +197,7 @@ func addNpmBinToPath(e envExecRunner) error {
 	if len(oldPath) > 0 {
 		path = path + ":" + oldPath
 	}
-	e.Env(append(os.Environ(), "PATH="+path))
+	e.SetEnv(append(os.Environ(), "PATH="+path))
 	return nil
 }
 
@@ -244,7 +244,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 		}
 		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
 	} else {
-		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
+		log.Entry().Infof("No timestamp contained in \"%s\". File has not been modified.", mtaYamlFile)
 	}
 
 	return nil
