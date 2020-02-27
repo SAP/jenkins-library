@@ -89,7 +89,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e envExecRunner,
+	e execRunner,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
@@ -191,7 +191,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e envExecRunner) error {
+func addNpmBinToPath(e execRunner) error {
 	path := "./node_modules/.bin"
 	oldPath := os.Getenv("PATH")
 	if len(oldPath) > 0 {
@@ -296,7 +296,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
-func handleDefaultNpmRegistry(config mtaBuildOptions, e envExecRunner) error {
+func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
 
 	if len(config.DefaultNpmRegistry) > 0 {
 
