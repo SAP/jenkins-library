@@ -66,31 +66,29 @@ func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) [
 	var parameters []string
 
 	if options.GlobalSettingsFile != "" {
-		globalSettingsFileParameter := "--global-settings " + options.GlobalSettingsFile
+		globalSettingsFileName := options.GlobalSettingsFile
 		if strings.HasPrefix(options.GlobalSettingsFile, "http:") || strings.HasPrefix(options.GlobalSettingsFile, "https:") {
 			downloadSettingsFromURL(options.ProjectSettingsFile, "globalSettings.xml", client)
-			globalSettingsFileParameter = "--global-settings " + "globalSettings.xml"
+			globalSettingsFileName = "globalSettings.xml"
 		}
-		parameters = append(parameters, globalSettingsFileParameter)
+		parameters = append(parameters, "--global-settings", globalSettingsFileName)
 	}
 
 	if options.ProjectSettingsFile != "" {
-		projectSettingsFileParameter := "--settings " + options.ProjectSettingsFile
+		projectSettingsFileName := options.ProjectSettingsFile
 		if strings.HasPrefix(options.ProjectSettingsFile, "http:") || strings.HasPrefix(options.ProjectSettingsFile, "https:") {
 			downloadSettingsFromURL(options.ProjectSettingsFile, "projectSettings.xml", client)
-			projectSettingsFileParameter = "--settings " + "projectSettings.xml"
+			projectSettingsFileName = "projectSettings.xml"
 		}
-		parameters = append(parameters, projectSettingsFileParameter)
+		parameters = append(parameters, "--settings", projectSettingsFileName)
 	}
 
 	if options.M2Path != "" {
-		m2PathParameter := "-Dmaven.repo.local=" + options.M2Path
-		parameters = append(parameters, m2PathParameter)
+		parameters = append(parameters, "-Dmaven.repo.local="+options.M2Path)
 	}
 
 	if options.PomPath != "" {
-		pomPathParameter := "--file " + options.PomPath
-		parameters = append(parameters, pomPathParameter)
+		parameters = append(parameters, "--file", options.PomPath)
 	}
 
 	if options.Flags != nil {

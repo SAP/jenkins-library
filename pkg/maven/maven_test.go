@@ -50,12 +50,14 @@ func TestExecute(t *testing.T) {
 			Goals: []string{"flatten", "install"}, Defines: []string{"-Da=b"},
 			Flags: []string{"-q"}, LogSuccessfulMavenTransfers: true,
 			ReturnStdout: false}
+		expectedParameters := []string{"--global-settings", "anotherSettings.xml", "--settings", "settings.xml",
+			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "flatten", "install"}
 
 		mavenOutput, _ := Execute(&opts, &e)
 
-		assert.Equal(t, e.Calls[0], mock.ExecCall{Exec: "mvn", Params: []string{"--global-settings anotherSettings.xml", "--settings settings.xml",
-			"-Dmaven.repo.local=.m2/", "--file pom.xml", "-q", "-Da=b", "--batch-mode",
-			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "flatten", "install"}})
+		assert.Equal(t, len(e.Calls[0].Params), len(expectedParameters))
+		assert.Equal(t, e.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
 		assert.Equal(t, "", mavenOutput)
 	})
 }
@@ -79,10 +81,12 @@ func TestGetParameters(t *testing.T) {
 	t.Run("should resolve configured parameters and download the settings files", func(t *testing.T) {
 		mockClient := mockDownloader{shouldFail: false}
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
+		expectedParameters := []string{"--global-settings", "globalSettings.xml", "--settings", "projectSettings.xml", "--file", "pom.xml", "--batch-mode"}
 
 		parameters := getParametersFromOptions(&opts, &mockClient)
 
-		assert.Equal(t, parameters, []string{"--global-settings globalSettings.xml", "--settings projectSettings.xml", "--file pom.xml", "--batch-mode"})
+		assert.Equal(t, len(parameters), len(expectedParameters))
+		assert.Equal(t, parameters, expectedParameters)
 	})
 }
 
