@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -120,11 +121,11 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		execRunner := execMockRunner{}
+		execRunner := mock.ExecMockRunner{}
 
 		getAbapCommunicationArrangementInfo(config, &execRunner)
-		assert.Equal(t, "cf", execRunner.calls[0].exec, "Wrong command")
-		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.calls[0].params, "Wrong parameters")
+		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
+		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
@@ -138,7 +139,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		execRunner := execMockRunner{}
+		execRunner := mock.ExecMockRunner{}
 
 		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
@@ -151,7 +152,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		execRunner := execMockRunner{}
+		execRunner := mock.ExecMockRunner{}
 
 		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
