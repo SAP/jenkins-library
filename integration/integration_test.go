@@ -5,7 +5,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -27,7 +30,19 @@ func TestPiperHelp(t *testing.T) {
 
 func getPiperExecutable() string {
 	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
+		fmt.Println("Piper executable for integration test: " + p)
 		return p
 	}
+
+	f := piperutils.Files{}
+	wd, _ := os.Getwd()
+	localPiper := path.Join(wd, "piper")
+	exists, _ := f.FileExists(localPiper)
+	if exists {
+		fmt.Println("Piper executable for integration test: " + localPiper)
+		return localPiper
+	}
+
+	fmt.Println("Piper executable for integration test: Using 'piper' from PATH")
 	return "piper"
 }
