@@ -38,10 +38,12 @@ jobs:
         run: |
           set -x
           npm i semver
-          export PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))
+          export NEXT_VERSION=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))
         #currently works only on linux because only linux binaries are available to the action
       - name: Publish Release
         uses: SAP/project-piper-action@master
+        env:
+          PIPER_version: $NEXT_VERSION
         with:
          command: githubPublishRelease
          flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper-${{ matrix.os }}
