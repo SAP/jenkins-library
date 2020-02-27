@@ -20,7 +20,8 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: '1.14.x'
-      - run: |
+      - name: Build Piper
+        run: |
           export GIT_COMMIT=$(git rev-parse HEAD) && \
           export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
           CGO_ENABLED=0 go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
@@ -28,16 +29,21 @@ jobs:
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
             -o piper-${{ matrix.os }} .
         shell: bash
-      - run: ./piper-${{ matrix.os }} version
+      - name: Print Piper Version
+        run: ./piper-${{ matrix.os }} version
         shell: bash
       - uses: actions/upload-artifact@v1
         with:
           name: piper-${{ matrix.os }}
           path: piper-${{ matrix.os }}
+      - name: Calculate Release Version
+        run: |
+          set -x
+          npm i semver
+          export PIPER_version = $(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))
         #currently works only on linux because only linux binaries are available to the action
-      - uses: SAP/project-piper-action@master
-        env:
-          PIPER_version: v0.0.2
+      - name: Publish Release
+        uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
          flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper-${{ matrix.os }}
