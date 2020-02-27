@@ -64,7 +64,7 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
     - name: build
-      run: CGO_ENABLED=0 go build -o piper && chmod +x piper
+      run: CGO_ENABLED=0 go build -o piper -tags release && chmod +x piper # with `-tags release` we ensure that shared test utilities won't end up in the binary
     - name: test
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
