@@ -60,9 +60,3 @@ spec:
           - PARAMETERS
         default: false
         mandatory: false
-      - name: returnStdout
-        type: bool
-        description: Returns the output of the maven command for further processing.
-        scope:
-          - PARAMETERS
-        default: false

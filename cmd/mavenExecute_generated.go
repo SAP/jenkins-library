@@ -22,7 +22,6 @@ type mavenExecuteOptions struct {
 	Defines                     []string `json:"defines,omitempty"`
 	Flags                       []string `json:"flags,omitempty"`
 	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
-	ReturnStdout                bool     `json:"returnStdout,omitempty"`
 }
 
 // MavenExecuteCommand This step allows to run maven commands
@@ -69,7 +68,6 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Defines, "defines", []string{}, "Additional properties in form of -Dkey=value.")
 	cmd.Flags().StringSliceVar(&stepConfig.Flags, "flags", []string{}, "Flags to provide when running mvn.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
-	cmd.Flags().BoolVar(&stepConfig.ReturnStdout, "returnStdout", false, "Returns the output of the maven command for further processing.")
 
 	cmd.MarkFlagRequired("goals")
 }
@@ -138,14 +136,6 @@ func mavenExecuteMetadata() config.StepData {
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "returnStdout",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
