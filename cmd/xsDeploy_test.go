@@ -179,8 +179,6 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("BG deploy succeeds", func(t *testing.T) {
 
-		s.StdoutReturn = make(map[string]string)
-		s.StdoutReturn[".*bg-deploy.*"] = "Use \"xs bg-deploy -i 1234 -a resume\" to resume the process.\n"
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
