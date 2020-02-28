@@ -264,8 +264,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	wg.Wait()
 
 	if err == nil && (mode == BGDeploy && action == None) {
-		XsDeployOptions.OperationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
-		piperEnvironment.operationID = XsDeployOptions.OperationID
+		piperEnvironment.operationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
 		if len(piperEnvironment.operationID) == 0 && err == nil {
 			err = errors.New("No operationID found")
 		}
