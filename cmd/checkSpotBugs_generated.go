@@ -14,8 +14,9 @@ import (
 )
 
 type checkSpotBugsOptions struct {
-	ExcludeFilterFile string `json:"excludeFilterFile,omitempty"`
-	IncludeFilterFile string `json:"includeFilterFile,omitempty"`
+	ExcludeFilterFile    string   `json:"excludeFilterFile,omitempty"`
+	IncludeFilterFile    string   `json:"includeFilterFile,omitempty"`
+	MavenModulesExcludes []string `json:"mavenModulesExcludes,omitempty"`
 }
 
 // CheckSpotBugsCommand Execute spotbugs maven plugin
@@ -57,6 +58,7 @@ For more information please visit https://spotbugs.readthedocs.io/en/latest/mave
 func addCheckSpotBugsFlags(cmd *cobra.Command, stepConfig *checkSpotBugsOptions) {
 	cmd.Flags().StringVar(&stepConfig.ExcludeFilterFile, "excludeFilterFile", os.Getenv("PIPER_excludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.IncludeFilterFile, "includeFilterFile", os.Getenv("PIPER_includeFilterFile"), "Path to a filter file with bug definitions which should be included.")
+	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the PMD check.")
 
 }
 
@@ -79,6 +81,14 @@ func checkSpotBugsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "mavenModulesExcludes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
