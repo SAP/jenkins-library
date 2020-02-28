@@ -40,7 +40,7 @@ func TestNexusUpload(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
 	cmd := command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/mta")
+	cmd.SetDir("testdata/TestNexusIntegration/mta")
 
 	piperOptions := []string{
 		"nexusUpload",
@@ -56,7 +56,7 @@ func TestNexusUpload(t *testing.T) {
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
 	cmd = command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/maven")
+	cmd.SetDir("testdata/TestNexusIntegration/maven")
 
 	piperOptions = []string{
 		"nexusUpload",
@@ -110,7 +110,7 @@ func TestNexus2Upload(t *testing.T) {
 	url := "http://" + nexusIpAndPort + "/nexus/"
 
 	cmd := command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/mta")
+	cmd.SetDir("testdata/TestNexusIntegration/mta")
 
 	piperOptions := []string{
 		"nexusUpload",
@@ -127,7 +127,7 @@ func TestNexus2Upload(t *testing.T) {
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
 	cmd = command.Command{}
-	cmd.Dir("testdata/TestNexusIntegration/maven")
+	cmd.SetDir("testdata/TestNexusIntegration/maven")
 
 	piperOptions = []string{
 		"nexusUpload",
