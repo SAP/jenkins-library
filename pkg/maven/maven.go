@@ -3,23 +3,22 @@ package maven
 import (
 	"bytes"
 
-	"io"
-	"strings"
-
 	"github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"io"
+	"strings"
 )
 
 type ExecuteOptions struct {
-	PomPath                     string
-	ProjectSettingsFile         string
-	GlobalSettingsFile          string
-	M2Path                      string
-	Goals                       []string
-	Defines                     []string
-	Flags                       []string
-	LogSuccessfulMavenTransfers bool
-	ReturnStdout                bool
+	PomPath                     string   `json:"pomPath,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	Goals                       []string `json:"goals,omitempty"`
+	Defines                     []string `json:"defines,omitempty"`
+	Flags                       []string `json:"flags,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	ReturnStdout                bool     `json:"returnStdout,omitempty"`
 }
 
 type mavenExecRunner interface {
@@ -31,9 +30,7 @@ type mavenExecRunner interface {
 const mavenExecutable = "mvn"
 
 func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
-	stdOutBuf := new(bytes.Buffer)
-	stdOut := io.MultiWriter(log.Entry().Writer(), stdOutBuf)
-
+	stdOutBuf, stdOut := evaluateStdOut(options)
 	command.Stdout(stdOut)
 	command.Stderr(log.Entry().Writer())
 
@@ -47,7 +44,22 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 			Fatal("failed to execute run command")
 	}
 
-	return string(stdOutBuf.Bytes()), err
+	if stdOutBuf == nil {
+		return "", nil
+	}
+	return string(stdOutBuf.Bytes()), nil
+}
+
+func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+	var stdOutBuf *bytes.Buffer
+	var stdOut io.Writer
+
+	stdOut = log.Entry().Writer()
+	if config.ReturnStdout {
+		stdOutBuf = new(bytes.Buffer)
+		stdOut = io.MultiWriter(stdOut, stdOutBuf)
+	}
+	return stdOutBuf, stdOut
 }
 
 func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) []string {

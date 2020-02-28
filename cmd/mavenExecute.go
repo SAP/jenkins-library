@@ -8,7 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomData) {
+func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomData) string {
 	c := command.Command{}
 
 	options := maven.ExecuteOptions{
@@ -20,12 +20,13 @@ func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomDat
 		Defines:                     config.Defines,
 		Flags:                       config.Flags,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		ReturnStdout:                config.ReturnStdout,
 	}
 
-	_, err := maven.Execute(&options, &c)
+	output, err := maven.Execute(&options, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
-	return
+	return output
 }
