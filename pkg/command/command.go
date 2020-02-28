@@ -53,9 +53,7 @@ func (c *Command) RunShell(shell, script string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		setEnvironment(cmd, c.env)
-	}
+	setEnvironment(cmd, c.env)
 
 	in := bytes.Buffer{}
 	in.Write([]byte(script))
@@ -78,9 +76,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		setEnvironment(cmd, c.env)
-	}
+	setEnvironment(cmd, c.env)
 
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
