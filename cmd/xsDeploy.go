@@ -268,6 +268,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 		if len(piperEnvironment.operationID) == 0 && err == nil {
 			err = errors.New("No operationID found")
 		}
+		XsDeployOptions.OperationID = piperEnvironment.operationID // for backward compatibility as long as we render that struc to stdout (printStatus)
 	}
 
 	if err != nil {
