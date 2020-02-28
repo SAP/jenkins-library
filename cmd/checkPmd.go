@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -30,14 +29,14 @@ func runCheckPmd(config *checkPmdOptions, telemetryData *telemetry.CustomData, c
 	if config.RuleSets != nil {
 		defines = append(defines, "-Dpmd.rulesets="+strings.Join(config.RuleSets, ","))
 	}
+	//ToDo: build in exclusion of integration-tests and unit-tests here!
 	if config.MavenModulesExcludes != nil {
-		for t, module := range config.MavenModulesExcludes {
-			fmt.Printf("my module: %v \n", t)
-			defines = append(defines, strings.Join([]string{"-pl", module}, " "))
+		for _, module := range config.MavenModulesExcludes {
+			defines = append(defines, "-pl")
+			defines = append(defines, "!"+module)
 		}
 	}
 
-	// build in exclusion of integration-tests and unit-tests
 	mavenOptions := maven.ExecuteOptions{
 		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"},
 		Defines: defines,
