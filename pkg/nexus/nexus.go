@@ -94,7 +94,7 @@ func (nexusUpload *Upload) UploadArtifacts() {
 		nexusUpload.Logger.Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
 	}
 
-	client := nexusUpload.createHttpClient()
+	client := nexusUpload.createHTTPClient()
 
 	for _, artifact := range nexusUpload.artifacts {
 		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.version, artifact)
@@ -129,7 +129,7 @@ func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
 
 func validateArtifact(artifact ArtifactDescription) error {
 	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
-		return errors.New(fmt.Sprintf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type))
+		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type)
 	}
 	return nil
 }
@@ -171,32 +171,32 @@ func getArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	return artifacts, err
 }
 
-func (nexusUpload *Upload) createHttpClient() *piperHttp.Client {
+func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
 	client := piperHttp.Client{}
 	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: nexusUpload.Logger}
 	client.SetOptions(clientOptions)
 	return &client
 }
 
-func getBaseURL(nexusUrl, nexusVersion, repository, groupID string) (string, error) {
-	baseUrl := nexusUrl
+func getBaseURL(nexusURL, nexusVersion, repository, groupID string) (string, error) {
+	baseURL := nexusURL
 	switch nexusVersion {
 	case "nexus2":
-		baseUrl += "/content/repositories/"
+		baseURL += "/content/repositories/"
 	case "nexus3":
-		baseUrl += "/repository/"
+		baseURL += "/repository/"
 	default:
-		return "", errors.New(fmt.Sprintf("Unsupported Nexus version '%s'", nexusVersion))
+		return "", fmt.Errorf("unsupported Nexus version '%s'", nexusVersion)
 	}
 	groupPath := strings.ReplaceAll(groupID, ".", "/")
-	baseUrl += repository + "/" + groupPath + "/"
-	return baseUrl, nil
+	baseURL += repository + "/" + groupPath + "/"
+	return baseURL, nil
 }
 
 func getArtifactURL(baseURL, version string, artifact ArtifactDescription) string {
 	url := baseURL
 
-	// Generate artifacte name including optional classifier
+	// Generate artifact name including optional classifier
 	artifactName := artifact.ID + "-" + version
 	if len(artifact.Classifier) > 0 {
 		artifactName += "-" + artifact.Classifier
