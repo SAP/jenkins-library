@@ -52,22 +52,22 @@ func TestExecutableRun(t *testing.T) {
 	t.Run("test shell", func(t *testing.T) {
 		ExecCommand = helperCommand
 		defer func() { ExecCommand = exec.Command }()
-		o := new(bytes.Buffer)
-		e := new(bytes.Buffer)
+		stdout := new(bytes.Buffer)
+		stderr := new(bytes.Buffer)
 
-		ex := Command{stdout: o, stderr: e}
+		ex := Command{stdout: stdout, stderr: stderr}
 		ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
 
 		t.Run("success case", func(t *testing.T) {
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
-				if oStr := o.String(); oStr != expectedOut {
+				if oStr := stdout.String(); oStr != expectedOut {
 					t.Errorf("expected: %v got: %v", expectedOut, oStr)
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
 				expectedErr := "Stderr: command echo\n"
-				if eStr := e.String(); eStr != expectedErr {
+				if eStr := stderr.String(); eStr != expectedErr {
 					t.Errorf("expected: %v got: %v", expectedErr, eStr)
 				}
 			})
