@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"strings"
 
@@ -19,21 +18,11 @@ import (
 )
 
 func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
-
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	runNexusUpload(&config, telemetryData, &c)
+	runNexusUpload(&config, telemetryData)
 }
 
-func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData, command execRunner) {
+func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData) {
 	projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.Upload{Username: config.User, Password: config.Password}
@@ -190,9 +179,8 @@ func addAdditionalClassifierArtifacts(additionalClassifiers, targetFolder, artif
 	}
 	for _, classifier := range classifiers {
 		if classifier.Classifier == "" || classifier.FileType == "" {
-			return errors.New(
-				fmt.Sprintf("Invalid additional classifier description (classifier: '%s', type: '%s')",
-					classifier.Classifier, classifier.FileType))
+			return fmt.Errorf("invalid additional classifier description (classifier: '%s', type: '%s')",
+				classifier.Classifier, classifier.FileType)
 		}
 		filePath := composeFilePath(targetFolder, artifactID+"-"+classifier.Classifier, classifier.FileType)
 		artifact := nexus.ArtifactDescription{
@@ -235,9 +223,7 @@ func evaluateMavenProperty(pomFile, expression string) (string, error) {
 		return "", err
 	}
 	if strings.HasPrefix(value, "null object or invalid expression") {
-		return "", errors.New(
-			fmt.Sprintf("Expression could not be resolved, property not found or invalid expression '%s'",
-				expression))
+		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
 	}
 	//	if GeneralConfig.Verbose {
 	log.Entry().Infof("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)

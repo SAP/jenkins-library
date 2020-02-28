@@ -19,6 +19,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ArtifactDescription describes a single artifact that can be uploaded to a Nexus repository manager. The File string
+// must point to an existing file. The Classifier can be empty.
 type ArtifactDescription struct {
 	ID         string `json:"artifactId"`
 	Classifier string `json:"classifier"`
@@ -26,6 +28,8 @@ type ArtifactDescription struct {
 	File       string `json:"file"`
 }
 
+// Upload holds state for an upload session. Call SetBaseURL(), SetArtifactsVersion() and add at least one artifact via
+// AddArtifact(). Then call UploadArtifacts().
 type Upload struct {
 	baseURL   string
 	version   string
@@ -41,6 +45,7 @@ func (nexusUpload *Upload) initLogger() {
 	}
 }
 
+// SetBaseURL constructs the base URL for all uploaded artifacts. No parameter can be empty.
 func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error {
 	if nexusURL == "" {
 		return errors.New("nexusURL must not be empty")
@@ -62,15 +67,18 @@ func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupI
 	return nil
 }
 
-// Set the common version for all artifacts
+// SetArtifactsVersion sets the common version for all uploaded artifacts. The version is external to the artifact
+// descriptions so that it is consistent for all of them.
 func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
 	if version == "" {
-		return errors.New("Version must not be empty")
+		return errors.New("version must not be empty")
 	}
 	nexusUpload.version = version
 	return nil
 }
 
+// UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
+// the logger.
 func (nexusUpload *Upload) UploadArtifacts() {
 	nexusUpload.initLogger()
 
@@ -100,13 +108,15 @@ func (nexusUpload *Upload) UploadArtifacts() {
 	nexusUpload.artifacts = nil
 }
 
+// AddArtifactsFromJSON parses the provided JSON string into an array of ArtifactDescriptions and adds each of
+// them via AddArtifact().
 func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
-	artifacts, err := GetArtifacts(json)
+	artifacts, err := getArtifacts(json)
 	if err != nil {
 		return err
 	}
 	if len(artifacts) == 0 {
-		return errors.New("No artifact descriptions found in JSON string")
+		return errors.New("no artifact descriptions found in JSON string")
 	}
 	for _, artifact := range artifacts {
 		err = nexusUpload.AddArtifact(artifact)
@@ -124,6 +134,7 @@ func validateArtifact(artifact ArtifactDescription) error {
 	return nil
 }
 
+// AddArtifact adds a single artifact to the Upload.
 func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	err := validateArtifact(artifact)
 	if err != nil {
@@ -137,6 +148,7 @@ func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	return nil
 }
 
+// ContainsArtifact returns true, if the Upload already contains the provided artifact.
 func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
 	for _, n := range nexusUpload.artifacts {
 		if artifact == n {
@@ -146,14 +158,14 @@ func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
 	return false
 }
 
-// Returns a copy of the artifact descriptions array
+// GetArtifacts returns a copy of the artifact descriptions array stored in the Upload.
 func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
 	copy(artifacts, nexusUpload.artifacts)
 	return artifacts
 }
 
-func GetArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
+func getArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
 	var artifacts []ArtifactDescription
 	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
 	return artifacts, err
