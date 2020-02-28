@@ -100,7 +100,7 @@ func setEnvironment(cmd *exec.Cmd, env []string) {
 		// In that case we assume the current values of `cmd.Env` has either been setup based
 		// on `os.Environ()` or that was initialized in another way for a good reason.
 		//
-		// In case we have the same environment variable is the current envrionment (`os.Environ()``)
+		// In case we have the same environment variable as in the current environment (`os.Environ()`)
 		// and in `env`, the environment variable from `env` is effectively used since this is the
 		// later one. There is no merging between both environment variables.
 		//
