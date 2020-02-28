@@ -1,0 +1,33 @@
+metadata:
+  name: checkPmd
+  description: Execute PMD maven plugin
+  longDescription: |
+    PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
+    For more information please visit https://pmd.github.io/
+spec:
+  inputs:
+    params:
+      - name: excludes
+        description: A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: ruleSets
+        description: The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: mavenModulesExcludes
+        description: Maven modules which should be excluded by the PMD check.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
