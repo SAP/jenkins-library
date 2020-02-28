@@ -182,7 +182,11 @@ func TestDeploy(t *testing.T) {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
 			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
 		}()
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*xs bg-deploy.*"] = "Use \"xs bg-deploy -i 1234 -a resume\" to resume the process.\n"
 
 		oldMode := myXsDeployOptions.Mode
 
@@ -198,6 +202,30 @@ func TestDeploy(t *testing.T) {
 		assert.Contains(t, s.Calls[0], "xs login")
 		assert.Contains(t, s.Calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
 		assert.Len(t, s.Calls, 2) // There are two entries --> no logout in this case.
+	})
+
+	t.Run("BG deploy fails, missing operationID", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
+		}()
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*xs bg-deploy.*"] = "There is no operation id\n"
+
+		oldMode := myXsDeployOptions.Mode
+
+		defer func() {
+			myXsDeployOptions.Mode = oldMode
+		}()
+
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+
+		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		checkErr(t, e, "No operationID found")
 	})
 
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
