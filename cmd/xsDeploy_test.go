@@ -58,6 +58,7 @@ func TestDeploy(t *testing.T) {
 
 	var removedFiles []string
 
+	cpeOut := xsDeployCommonPipelineEnvironment{}
 	fileUtilsMock := FileUtilsMock{}
 
 	fRemove := func(path string) error {
@@ -88,7 +89,7 @@ func TestDeploy(t *testing.T) {
 			wg.Done()
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, wStdout)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
 
 		wStdout.Close()
 		wg.Wait()
@@ -139,7 +140,7 @@ func TestDeploy(t *testing.T) {
 		// this file is not denoted in the file exists mock
 		myXsDeployOptions.MtaPath = "doesNotExist"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		assert.EqualError(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
@@ -156,7 +157,7 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = "NONE"
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		assert.EqualError(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
@@ -171,7 +172,7 @@ func TestDeploy(t *testing.T) {
 
 		s.ShouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		assert.EqualError(t, e, "Error from underlying process")
 	})
 
@@ -181,6 +182,39 @@ func TestDeploy(t *testing.T) {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
 			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
+		}()
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*xs bg-deploy.*"] = "Use \"xs bg-deploy -i 1234 -a resume\" to resume the process.\n"
+
+		oldMode := myXsDeployOptions.Mode
+
+		defer func() {
+			myXsDeployOptions.Mode = oldMode
+		}()
+
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+
+		if assert.NoError(t, e) {
+			if assert.Len(t, s.Calls, 2) { // There are two entries --> no logout in this case.
+				assert.Contains(t, s.Calls[0], "xs login")
+				assert.Contains(t, s.Calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
+			}
+		}
+	})
+
+	t.Run("BG deploy fails, missing operationID", func(t *testing.T) {
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*bg_deploy.*"] = "There is no operationID ...\n"
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -191,14 +225,8 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-
-		if assert.NoError(t, e) {
-			if assert.Len(t, s.Calls, 2) { // There are two entries --> no logout in this case.
-				assert.Contains(t, s.Calls[0], "xs login")
-				assert.Contains(t, s.Calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
-			}
-		}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "No operationID found")
 	})
 
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
@@ -222,7 +250,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.OperationID = "12345"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 
 		if assert.NoError(t, e) {
 			if assert.Len(t, s.Calls, 2) { // There is no login --> we have two calls
@@ -252,7 +280,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 		assert.EqualError(t, e, "OperationID was not provided. This is required for action 'ABORT'.")
 	})
 }
