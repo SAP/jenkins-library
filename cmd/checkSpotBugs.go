@@ -27,7 +27,7 @@ func runCheckSpotBugs(config *checkSpotBugsOptions, telemetryData *telemetry.Cus
 		defines = append(defines, "-Dspotbugs.excludeFilterFile="+config.ExcludeFilterFile)
 	}
 	mavenOptions := maven.ExecuteOptions{
-		Goals:   "com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs",
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"},
 		Defines: defines,
 	}
 
