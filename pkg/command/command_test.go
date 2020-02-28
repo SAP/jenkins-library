@@ -80,10 +80,10 @@ func TestEnvironmentVariables(t *testing.T) {
 	ExecCommand = helperCommand
 	defer func() { ExecCommand = exec.Command }()
 
-	o := new(bytes.Buffer)
-	e := new(bytes.Buffer)
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
 
-	ex := Command{stdout: o, stderr: e}
+	ex := Command{stdout: stdout, stderr: stderr}
 
 	// helperCommand function replaces the full environment with one single entry
 	// (GO_WANT_HELPER_PROCESS), hence there is no need for checking if the DEBUG
@@ -92,7 +92,7 @@ func TestEnvironmentVariables(t *testing.T) {
 	ex.SetEnv([]string{"DEBUG=true"})
 	ex.RunExecutable("env")
 
-	oStr := o.String()
+	oStr := stdout.String()
 
 	if !strings.Contains(oStr, "DEBUG=true") {
 		t.Errorf("expected Environment variable not found")
