@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 )
@@ -54,10 +54,11 @@ func TestDeploy(t *testing.T) {
 		OperationIDLogPattern: `^.*xs bg-deploy -i (.*) -a.*$`,
 	}
 
-	s := shellMockRunner{}
+	s := mock.ShellMockRunner{}
 
 	var removedFiles []string
 
+	cpeOut := xsDeployCommonPipelineEnvironment{}
 	fileUtilsMock := FileUtilsMock{}
 
 	fRemove := func(path string) error {
@@ -72,7 +73,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 			stdout = ""
 		}()
 
@@ -88,19 +89,19 @@ func TestDeploy(t *testing.T) {
 			wg.Done()
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, wStdout)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
 
 		wStdout.Close()
 		wg.Wait()
 
-		checkErr(t, e, "")
+		assert.NoError(t, e)
 
 		t.Run("Standard checks", func(t *testing.T) {
 			// Contains --> we do not check for the shebang
-			assert.Contains(t, s.calls[0], "xs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation")
-			assert.Contains(t, s.calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
-			assert.Contains(t, s.calls[2], "xs logout")
-			assert.Len(t, s.calls, 3)
+			assert.Contains(t, s.Calls[0], "xs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation")
+			assert.Contains(t, s.Calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
+			assert.Contains(t, s.Calls[2], "xs logout")
+			assert.Len(t, s.Calls, 3)
 
 			// xs session file needs to be removed at end during a normal deployment
 			assert.Len(t, removedFiles, 1)
@@ -127,7 +128,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMtaPath := myXsDeployOptions.MtaPath
@@ -139,8 +140,8 @@ func TestDeploy(t *testing.T) {
 		// this file is not denoted in the file exists mock
 		myXsDeployOptions.MtaPath = "doesNotExist"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "Deployable 'doesNotExist' does not exist")
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
 	t.Run("Standard deploy fails, action provided", func(t *testing.T) {
@@ -148,7 +149,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		myXsDeployOptions.Action = "RETRY"
@@ -156,8 +157,8 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = "NONE"
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
 	t.Run("Standard deploy fails, error from underlying process", func(t *testing.T) {
@@ -165,14 +166,14 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
-			s.shouldFailOnCommand = nil
+			s.Calls = nil
+			s.ShouldFailOnCommand = nil
 		}()
 
-		s.shouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
+		s.ShouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "Error from underlying process")
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "Error from underlying process")
 	})
 
 	t.Run("BG deploy succeeds", func(t *testing.T) {
@@ -180,7 +181,40 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
+		}()
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*xs bg-deploy.*"] = "Use \"xs bg-deploy -i 1234 -a resume\" to resume the process.\n"
+
+		oldMode := myXsDeployOptions.Mode
+
+		defer func() {
+			myXsDeployOptions.Mode = oldMode
+		}()
+
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+
+		if assert.NoError(t, e) {
+			if assert.Len(t, s.Calls, 2) { // There are two entries --> no logout in this case.
+				assert.Contains(t, s.Calls[0], "xs login")
+				assert.Contains(t, s.Calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
+			}
+		}
+	})
+
+	t.Run("BG deploy fails, missing operationID", func(t *testing.T) {
+
+		s.StdoutReturn = make(map[string]string)
+		s.StdoutReturn[".*bg_deploy.*"] = "There is no operationID ...\n"
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			s.StdoutReturn = make(map[string]string)
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -191,12 +225,8 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "")
-
-		assert.Contains(t, s.calls[0], "xs login")
-		assert.Contains(t, s.calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
-		assert.Len(t, s.calls, 2) // There are two entries --> no logout in this case.
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "No operationID found")
 	})
 
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
@@ -204,7 +234,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -220,12 +250,15 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.OperationID = "12345"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "")
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
 
-		assert.Contains(t, s.calls[0], "xs bg-deploy -i 12345 -a abort")
-		assert.Contains(t, s.calls[1], "xs logout")
-		assert.Len(t, s.calls, 2) // There is no login --> we have two calls
+		if assert.NoError(t, e) {
+			if assert.Len(t, s.Calls, 2) { // There is no login --> we have two calls
+				assert.Contains(t, s.Calls[0], "xs bg-deploy -i 12345 -a abort")
+				assert.Contains(t, s.Calls[1], "xs logout")
+			}
+
+		}
 	})
 
 	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
@@ -233,7 +266,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.calls = nil
+			s.Calls = nil
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -247,8 +280,8 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
 
-		e := runXsDeploy(myXsDeployOptions, &s, &fileUtilsMock, fRemove, ioutil.Discard)
-		checkErr(t, e, "OperationID was not provided")
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, ioutil.Discard)
+		assert.EqualError(t, e, "OperationID was not provided. This is required for action 'ABORT'.")
 	})
 }
 
@@ -279,23 +312,4 @@ func TestRetrieveOperationID(t *testing.T) {
 	`, `^.*xs bg-deploy -i (.*) -a.*$`)
 
 	assert.Equal(t, "1234", operationID)
-}
-
-func checkErr(t *testing.T, e error, message string) {
-
-	expectError := len(message) > 0
-
-	if expectError {
-		if e == nil {
-			t.Errorf("Expected error not received. Expected: '%s'.", message)
-		} else {
-			if !strings.Contains(e.Error(), message) {
-				t.Errorf("Unexpected error message received: '%s'. Expected: '%s'.", e.Error(), message)
-			}
-		}
-	} else {
-		if e != nil {
-			t.Errorf("No error expected, but error received: %s", e.Error())
-		}
-	}
 }
