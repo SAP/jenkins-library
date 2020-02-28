@@ -79,7 +79,7 @@ func (nexusUpload *Upload) UploadArtifacts() {
 	}
 
 	if nexusUpload.version == "" {
-		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetVersion() first.")
+		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetArtifactsVersion() first.")
 	}
 
 	if len(nexusUpload.artifacts) == 0 {
@@ -95,6 +95,9 @@ func (nexusUpload *Upload) UploadArtifacts() {
 		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
 		uploadFile(client, artifact.File, url)
 	}
+
+	// Reset all artifacts already uploaded, so the object could be re-used
+	nexusUpload.artifacts = nil
 }
 
 func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
@@ -106,13 +109,11 @@ func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
 		return errors.New("No artifact descriptions found in JSON string")
 	}
 	for _, artifact := range artifacts {
-		err = validateArtifact(artifact)
+		err = nexusUpload.AddArtifact(artifact)
 		if err != nil {
 			return err
 		}
 	}
-
-	nexusUpload.artifacts = append(nexusUpload.artifacts, artifacts...)
 	return nil
 }
 
@@ -128,8 +129,21 @@ func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	if err != nil {
 		return err
 	}
+	if nexusUpload.ContainsArtifact(artifact) {
+		log.Entry().Infof("Nexus Upload already contains artifact %v\n", artifact)
+		return nil
+	}
 	nexusUpload.artifacts = append(nexusUpload.artifacts, artifact)
 	return nil
+}
+
+func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
+	for _, n := range nexusUpload.artifacts {
+		if artifact == n {
+			return true
+		}
+	}
+	return false
 }
 
 // Returns a copy of the artifact descriptions array

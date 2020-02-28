@@ -29,6 +29,15 @@ func TestAddArtifactMissingID(t *testing.T) {
 	assert.True(t, len(nexusUpload.artifacts) == 0)
 }
 
+func TestAddDuplicateArtifact(t *testing.T) {
+	nexusUpload := Upload{}
+
+	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "blob", Classifier: "", Type: "pom", File: "pom.xml"})
+	err = nexusUpload.AddArtifact(ArtifactDescription{ID: "blob", Classifier: "", Type: "pom", File: "pom.xml"})
+	assert.NoError(t, err, "Expected to succeed adding duplicate artifact")
+	assert.True(t, len(nexusUpload.artifacts) == 1)
+}
+
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
 	nexusUpload := Upload{}
 
