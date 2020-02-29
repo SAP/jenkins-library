@@ -32,6 +32,16 @@ void call(Map parameters = [:]) {
             parameters.remove('credentialsId')
         }
 
+        echo "nexusUpload parameters: $parameters"
+
+        // sh 'git clone https://github.com/SAP/jenkins-library.git -b nexus-upload .piper-git-checkout'
+        // dir('.piper-git-checkout') {
+        //     dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
+        //         sh 'go build -tags release -o piper . && chmod +x piper && mv piper ..'
+        //     }
+        // }
+        // sh 'rm -rf .piper-git-checkout'
+
 //        new PiperGoUtils(this, utils).unstashPiperBin()
 //        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
@@ -39,16 +49,33 @@ void call(Map parameters = [:]) {
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
         // Replace 'artifacts' List with JSON encoded String
-        parameters.artifacts = "${toJson(parameters.artifacts as List)}"
+        if (parameters.artifacts) {
+            parameters.artifacts = "${toJson(parameters.artifacts as List)}"
+        }
+        // Replace 'additionalClassifiers' List with JSON encoded String
+        if (parameters.additionalClassifiers) {
+            parameters.additionalClassifiers = "${toJson(parameters.additionalClassifiers as List)}"
+        }
+        // TODO: This should be handled in the Piper nexusUpload cmd implementation instead!
+        // TODO: But from the code of commonPipelineEnvironment.writeToDisk() it isn't clear to me whether this would be persisted...
+        if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
+            parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
+        }
 
+        parameters.remove('script')
+
+        echo "converting parameters '${parameters}'"
         withEnv([
             "PIPER_parametersJSON=${toJson(parameters)}",
         ]) {
             // get context configuration
+            echo "reading config"
+            sh 'ls -la'
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             // execute step
             if (config.credentialsId) {
+                echo "executing with credentials"
                 withCredentials([usernamePassword(
                     credentialsId: config.credentialsId,
                     passwordVariable: 'PIPER_password',
@@ -57,6 +84,7 @@ void call(Map parameters = [:]) {
                     sh "./piper nexusUpload"
                 }
             } else {
+                echo "executing without credentials"
                 sh "./piper nexusUpload"
             }
         }
