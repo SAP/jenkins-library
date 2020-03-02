@@ -71,9 +71,8 @@ func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 		err = nexusClient.UploadArtifacts()
 	}
 	if err != nil {
-		log.Entry().WithError(err).Fatal()
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
-
 }
 
 type mtaYaml struct {
@@ -99,7 +98,7 @@ var errPomNotFound error = errors.New("pom.xml not found")
 func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 	err := uploadMavenArtifacts(nexusClient, options, "", "target", "")
 	if err != nil {
-		log.Entry().Fatal(err)
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
 	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
@@ -109,7 +108,7 @@ func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 	if err == errPomNotFound {
 		// Ignore
 	} else if err != nil {
-		log.Entry().Fatal(err)
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
