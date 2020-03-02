@@ -51,7 +51,7 @@ func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupI
 		return errors.New("nexusURL must not be empty")
 	}
 	if nexusVersion != "nexus2" && nexusVersion != "nexus3" {
-		return errors.New("nexusVersion must one of 'nexus2' or 'nexus3'")
+		return errors.New("nexusVersion must be one of 'nexus2' or 'nexus3'")
 	}
 	if repository == "" {
 		return errors.New("repository must not be empty")
