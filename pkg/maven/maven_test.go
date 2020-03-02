@@ -115,15 +115,15 @@ func TestDownloadSettingsFromURL(t *testing.T) {
 
 func TestGetTestModulesExcludes(t *testing.T) {
 	t.Run("Should return excludes for unit- and integration-tests", func(t *testing.T) {
-		os.Mkdir("unit-tests", 0777)
-		defer os.Remove("unit-tests")
-		os.Create("unit-tests/pom.xml")
-		defer os.Remove("unit-tests/pom.xml")
-
-		os.Mkdir("integration-tests", 0777)
-		defer os.Remove("integration-tests")
-		os.Create("integration-tests/pom.xml")
-		defer os.Remove("integration-tests/pom.xml")
+		err := os.Chdir("../../test/resources/maven")
+		if err != nil {
+			t.Fatal("Failed to change to test directory")
+		}
+		currentDir, err := os.Getwd()
+		if err != nil {
+			t.Fatal("Failed to get current working directory")
+		}
+		defer os.Chdir(currentDir)
 
 		expected := []string{"-pl", "!unit-tests", "-pl", "!integration-tests"}
 
