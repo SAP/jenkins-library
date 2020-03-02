@@ -60,9 +60,10 @@ func TestCloudFoundryDeleteService(t *testing.T) {
 		}
 		error := cloudFoundryDeleteServiceKeys(config, &execRunner)
 		if error == nil {
-			assert.Equal(t, "cf", execRunner.calls[0].exec)
-			assert.Equal(t, "service-keys", execRunner.calls[3].params[0])
-			assert.Equal(t, "testInstance", execRunner.calls[3].params[1])
+			assert.Equal(t, "cf", execRunner.calls[3].exec)
+			assert.Equal(t, []string{"service-keys", "testInstance"}, execRunner.calls[3].params)
+			//assert.Equal(t, "service-keys", execRunner.calls[3].params[0])
+			//assert.Equal(t, "testInstance", execRunner.calls[3].params[1])
 		}
 	})
 }
