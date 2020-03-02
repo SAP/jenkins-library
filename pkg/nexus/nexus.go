@@ -1,6 +1,8 @@
 package nexus
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -10,9 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"crypto/md5"
-	"crypto/sha1"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -77,6 +76,69 @@ func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
 	return nil
 }
 
+// AddArtifact adds a single artifact to the Upload.
+func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
+	err := validateArtifact(artifact)
+	if err != nil {
+		return err
+	}
+	if nexusUpload.ContainsArtifact(artifact) {
+		log.Entry().Infof("Nexus Upload already contains artifact %v\n", artifact)
+		return nil
+	}
+	nexusUpload.artifacts = append(nexusUpload.artifacts, artifact)
+	return nil
+}
+
+func validateArtifact(artifact ArtifactDescription) error {
+	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
+		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type)
+	}
+	return nil
+}
+
+// AddArtifactsFromJSON parses the provided JSON string into an array of ArtifactDescriptions and adds each of
+// them via AddArtifact().
+func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
+	artifacts, err := getArtifactsFromJSON(json)
+	if err != nil {
+		return err
+	}
+	if len(artifacts) == 0 {
+		return errors.New("no artifact descriptions found in JSON string")
+	}
+	for _, artifact := range artifacts {
+		err = nexusUpload.AddArtifact(artifact)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getArtifactsFromJSON(artifactsAsJSON string) ([]ArtifactDescription, error) {
+	var artifacts []ArtifactDescription
+	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
+	return artifacts, err
+}
+
+// ContainsArtifact returns true, if the Upload already contains the provided artifact.
+func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
+	for _, n := range nexusUpload.artifacts {
+		if artifact == n {
+			return true
+		}
+	}
+	return false
+}
+
+// GetArtifacts returns a copy of the artifact descriptions array stored in the Upload.
+func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
+	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
+	copy(artifacts, nexusUpload.artifacts)
+	return artifacts
+}
+
 // UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
 // the logger.
 func (nexusUpload *Upload) UploadArtifacts() {
@@ -106,69 +168,6 @@ func (nexusUpload *Upload) UploadArtifacts() {
 
 	// Reset all artifacts already uploaded, so the object could be re-used
 	nexusUpload.artifacts = nil
-}
-
-// AddArtifactsFromJSON parses the provided JSON string into an array of ArtifactDescriptions and adds each of
-// them via AddArtifact().
-func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
-	artifacts, err := getArtifacts(json)
-	if err != nil {
-		return err
-	}
-	if len(artifacts) == 0 {
-		return errors.New("no artifact descriptions found in JSON string")
-	}
-	for _, artifact := range artifacts {
-		err = nexusUpload.AddArtifact(artifact)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validateArtifact(artifact ArtifactDescription) error {
-	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
-		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type)
-	}
-	return nil
-}
-
-// AddArtifact adds a single artifact to the Upload.
-func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
-	err := validateArtifact(artifact)
-	if err != nil {
-		return err
-	}
-	if nexusUpload.ContainsArtifact(artifact) {
-		log.Entry().Infof("Nexus Upload already contains artifact %v\n", artifact)
-		return nil
-	}
-	nexusUpload.artifacts = append(nexusUpload.artifacts, artifact)
-	return nil
-}
-
-// ContainsArtifact returns true, if the Upload already contains the provided artifact.
-func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
-	for _, n := range nexusUpload.artifacts {
-		if artifact == n {
-			return true
-		}
-	}
-	return false
-}
-
-// GetArtifacts returns a copy of the artifact descriptions array stored in the Upload.
-func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
-	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
-	copy(artifacts, nexusUpload.artifacts)
-	return artifacts
-}
-
-func getArtifacts(artifactsAsJSON string) ([]ArtifactDescription, error) {
-	var artifacts []ArtifactDescription
-	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
-	return artifacts, err
 }
 
 func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
