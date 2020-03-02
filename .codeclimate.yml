@@ -16,6 +16,7 @@ plugins:
     exclude_patterns:
     - "documentation/**/images/"
     - "cfg/id_rsa.enc"
+    - "**/testdata/**"
   fixme:
     enabled: true
     config:
@@ -36,3 +37,9 @@ plugins:
         enabled: false
   shellcheck:
     enabled: true
+exclude_patterns:
+  - "**/*_generated.go"
+  # default excludes are overwritten, add them again
+  # https://docs.codeclimate.com/docs/excluding-files-and-folders#section-auto-generated-file-and-folder-exclusions
+  - "**/*_test.go"
+  - "**/test/"
