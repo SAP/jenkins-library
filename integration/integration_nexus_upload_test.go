@@ -60,8 +60,6 @@ func TestNexusUpload(t *testing.T) {
 
 	piperOptions = []string{
 		"nexusUpload",
-		"--groupId=mygroup",
-		"--artifactId=mymaven",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=maven-releases",
@@ -71,14 +69,13 @@ func TestNexusUpload(t *testing.T) {
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymaven/1.0/mymaven-1.0.pom")
+	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	//fixme not yet implemented
-	//resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymaven/1.0/mymaven-1.0.jar")
-	//assert.NoError(t, err, "Downloading artifact failed")
-	//assert.Equal(t, http.StatusOK, resp.StatusCode)
+	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
@@ -131,8 +128,6 @@ func TestNexus2Upload(t *testing.T) {
 
 	piperOptions = []string{
 		"nexusUpload",
-		"--groupId=mygroup",
-		"--artifactId=mymaven",
 		"--user=admin",
 		"--password=admin123",
 		"--repository=releases",
@@ -143,14 +138,13 @@ func TestNexus2Upload(t *testing.T) {
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err := http.Get(url + "content/repositories/releases/mygroup/mymaven/1.0/mymaven-1.0.pom")
+	resp, err := http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	//fixme not yet implemented
-	//resp, err = http.Get(url + "content/repositories/releases/mygroup/mymaven/1.0/mymaven-1.0.jar")
-	//assert.NoError(t, err, "Downloading artifact failed")
-	//assert.Equal(t, http.StatusOK, resp.StatusCode)
+	resp, err = http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, err = http.Get(url + "content/repositories/releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
