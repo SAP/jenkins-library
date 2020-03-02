@@ -91,7 +91,7 @@ func TestGetProjectByName(t *testing.T) {
 	})
 }
 
-func TestGetProjectVersionDetailsByNameAndProjectID(t *testing.T) {
+func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 	// Start a local HTTP server
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/projects/4711/versions" {
@@ -131,23 +131,23 @@ func TestGetProjectVersionDetailsByNameAndProjectID(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetProjectVersionDetailsByNameAndProjectID(4711, "0")
+		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(4711, "0")
 		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
 		assert.Equal(t, "0", *result.Name, "Expected to get project version with different name")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
-		_, err := sys.GetProjectVersionDetailsByNameAndProjectID(777, "python-empty")
+		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(777, "python-empty")
 		assert.Error(t, err, "Expected error but got success")
 	})
 
 	t.Run("test HTTP error", func(t *testing.T) {
-		_, err := sys.GetProjectVersionDetailsByNameAndProjectID(999, "python-http-error")
+		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(999, "python-http-error")
 		assert.Error(t, err, "Expected error but got success")
 	})
 }
 
-func TestGetProjectVersionAttributesByID(t *testing.T) {
+func TestGetProjectVersionAttributesByProjectVersionID(t *testing.T) {
 	// Start a local HTTP server
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/projectVersions/4711/attributes" {
@@ -175,21 +175,53 @@ func TestGetProjectVersionAttributesByID(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetProjectVersionAttributesByID(4711)
-		assert.NoError(t, err, "GetProjectVersionAttributesByID call not successful")
+		result, err := sys.GetProjectVersionAttributesByProjectVersionID(4711)
+		assert.NoError(t, err, "GetProjectVersionAttributesByProjectVersionID call not successful")
 		assert.Equal(t, "abcd", *result[0].Value, "Expected to get attribute with different value")
 		assert.Equal(t, int64(4712), result[0].ID, "Expected to get attribute with different id")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
-		result, err := sys.GetProjectVersionAttributesByID(777)
+		result, err := sys.GetProjectVersionAttributesByProjectVersionID(777)
 		assert.NoError(t, err, "GetProjectVersionAttributesByID call not successful")
 		assert.Equal(t, 0, len(result), "Expected to not get any attributes")
 	})
 
 	t.Run("test HTTP error", func(t *testing.T) {
-		_, err := sys.GetProjectVersionAttributesByID(999)
+		_, err := sys.GetProjectVersionAttributesByProjectVersionID(999)
 		assert.Error(t, err, "Expected error but got success")
+	})
+}
+
+func TestSetProjectVersionAttributesByProjectVersionID(t *testing.T) {
+	// Start a local HTTP server
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projectVersions/4711/attributes" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyString := string(bodyBytes)
+			response := `{"data": `
+			response += bodyString
+			response += `,"count": 1,"responseCode": 200}`
+			rw.WriteHeader(200)
+			rw.Write([]byte(response))
+			return
+		}
+	})
+
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		value := "abcd"
+		defID := int64(18)
+		attributes := []*models.Attribute{&models.Attribute{ID: 4712, Value: &value, AttributeDefinitionID: &defID}}
+		result, err := sys.SetProjectVersionAttributesByProjectVersionID(4711, attributes)
+		assert.NoError(t, err, "SetProjectVersionAttributesByProjectVersionID call not successful")
+		assert.Equal(t, 1, len(result), "Expected to get slice with different amount of values")
+		assert.Equal(t, "abcd", *result[0].Value, "Expected to get attribute with different value")
+		assert.Equal(t, int64(4712), result[0].ID, "Expected to get attribute with different id")
 	})
 }
 
@@ -324,7 +356,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 	})
 }
 
-func TestCopyProjectVersionPermissions(t *testing.T) {
+func TestProjectVersionCopyPermissions(t *testing.T) {
 	// Start a local HTTP server
 	bodyContent := ""
 	referenceContent := `[{"displayName":"some user","email":"some.one@test.com","entityName":"some_user","firstName":"some","id":589,"lastName":"user","type":"User"}]
@@ -352,8 +384,8 @@ func TestCopyProjectVersionPermissions(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		err := sys.CopyProjectVersionPermissions(10172, 10173)
-		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+		err := sys.ProjectVersionCopyPermissions(10172, 10173)
+		assert.NoError(t, err, "ProjectVersionCopyPermissions call not successful")
 		assert.Equal(t, referenceContent, bodyContent, "Different request content expected")
 	})
 }
@@ -409,7 +441,7 @@ func TestInactivateProjectVersion(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.InactivateProjectVersion(10172)
+		result, err := sys.inactivateProjectVersion(10172)
 		assert.NoError(t, err, "InactivateProjectVersion call not successful")
 		assert.Equal(t, true, *result.Committed, "Different result content expected")
 		assert.Equal(t, false, *result.Active, "Different result content expected")
@@ -553,7 +585,7 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByFolder(t *testing.T) {
 
 	t.Run("test success", func(t *testing.T) {
 		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByFolder(10172, "Special")
-		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByFolder call not successful")
 	})
 }
 
@@ -589,7 +621,7 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByCategory(t *testing.T) {
 
 	t.Run("test success", func(t *testing.T) {
 		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByCategory(10172, "Special")
-		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByCategory call not successful")
 	})
 }
 
@@ -625,7 +657,7 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByAnalysis(t *testing.T) {
 
 	t.Run("test success", func(t *testing.T) {
 		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(10172, "Special")
-		assert.NoError(t, err, "CopyProjectVersionPermissions call not successful")
+		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByAnalysis call not successful")
 	})
 }
 
@@ -810,7 +842,7 @@ func TestInvalidateFileToken(t *testing.T) {
 	})
 }
 
-func TestUploadFile(t *testing.T) {
+func TestUploadResultFile(t *testing.T) {
 	// Start a local HTTP server
 	bodyContent := ""
 	getTokenCalled := false
@@ -852,7 +884,7 @@ func TestUploadFile(t *testing.T) {
 	defer os.RemoveAll(testFile.Name()) // clean up
 
 	t.Run("test success", func(t *testing.T) {
-		err := sys.UploadFile("/upload/resultFileUpload.html", testFile.Name(), 10770)
+		err := sys.UploadResultFile("/upload/resultFileUpload.html", testFile.Name(), 10770)
 		assert.NoError(t, err, "UploadFile call not successful")
 		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="file"; filename=`, "Expected different content in request body")
 		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="mat"`, "Expected different content in request body")
@@ -947,5 +979,232 @@ func TestDownloadReportFile(t *testing.T) {
 		assert.Equal(t, []byte("OK"), data, "Expected different result")
 		assert.Equal(t, true, getTokenCalled, "Expected GetUploadToken to be called")
 		assert.Equal(t, true, invalidateTokenCalled, "Expected InvalidateFileTokens to be called")
+	})
+}
+
+func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
+	// Start a local HTTP server
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projects/4711/versions" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(`{"data": [], "count": 0, "responseCode": 200}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions" && req.Method == "POST" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyContent := string(bodyBytes)
+			responseContent := `{"data": `
+			responseContent += bodyContent
+			responseContent += `,"count": 1,"responseCode": 201,"links": {}}`
+			fmt.Println(responseContent)
+			rw.WriteHeader(201)
+			rw.Write([]byte(responseContent))
+			return
+		}
+		if req.URL.Path == "/projectVersions/4711/attributes" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data": [{"_href": "https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/4711/attributes/4712","attributeDefinitionId": 31,
+				"values": null,"guid": "gdgfdgfdgfdgfd","id": 4712,"value": "abcd"}],"count": 8,"responseCode": 200}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/4712/attributes" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			bodyBytes, _ := ioutil.ReadAll(req.Body)
+			bodyString := string(bodyBytes)
+			response := `{"data": `
+			response += bodyString
+			response += `,"count": 1,"responseCode": 200}`
+			rw.WriteHeader(200)
+			rw.Write([]byte(response))
+			return
+		}
+		if req.URL.Path == "/projectVersions/action/copyFromPartial" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data":[{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+				"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data": {"active":null,"bugTrackerEnabled":null,"bugTrackerPluginId":null,"committed":true,"createdBy":null,"creationDate":null,"description":null,"issueTemplateId":null,"issueTemplateModifiedTime":null,"issueTemplateName":null,"latestScanId":null,"masterAttrGuid":null,"name":null,"owner":null,"serverVersion":null,"snapshotOutOfDate":null,"staleIssueTemplate":null}, "responseCode": 200}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/action/copyCurrentState" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data":[{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+				"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172/authEntities" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data": [{"displayName":"some user","email":"some.one@test.com","entityName":"some_user","firstName":"some","id":589,"lastName":"user","type":"User"}],"count": 1,"responseCode": 200}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/10173/authEntities" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data": [{"displayName":"some user","email":"some.one@test.com","entityName":"some_user","firstName":"some","id":589,"lastName":"user","type":"User"}],"count": 1,"responseCode": 200}`))
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		int64Value := int64(65)
+		int32Value := int32(876)
+		float32Value := float32(19.12)
+		now := models.NewIso8601MilliDateTime()
+		enabled := true
+		disabled := false
+		name := "Test new PV"
+		owner := "someUser"
+		masterGUID := "dsadaoudoiud"
+		project := models.Project{CreatedBy: &owner, CreationDate: now, Description: name, ID: int64Value, IssueTemplateID: &name, Name: &name}
+		projectVersionState := models.ProjectVersionState{AnalysisResultsExist: &disabled, AnalysisUploadEnabled: &disabled,
+			AttentionRequired: &disabled, AuditEnabled: &enabled, BatchBugSubmissionExists: &disabled, Committed: &enabled,
+			CriticalPriorityIssueCountDelta: &int32Value, DeltaPeriod: &int32Value, ExtraMessage: &name, HasCustomIssues: &disabled,
+			ID: &int64Value, IssueCountDelta: &int32Value, LastFprUploadDate: &now, MetricEvaluationDate: &now, PercentAuditedDelta: &float32Value,
+			PercentCriticalPriorityIssuesAuditedDelta: &float32Value}
+		masterProjectVersion := models.ProjectVersion{AssignedIssuesCount: int64Value, Project: &project, Name: &name, Active: &enabled,
+			Committed: &enabled, AttachmentsOutOfDate: disabled, AutoPredict: disabled, BugTrackerEnabled: &disabled,
+			CustomTagValuesAutoApply: disabled, RefreshRequired: disabled, Owner: &owner, ServerVersion: &float32Value,
+			SnapshotOutOfDate: &disabled, StaleIssueTemplate: &disabled, MasterAttrGUID: &masterGUID,
+			LatestScanID: &int64Value, IssueTemplateName: &name, IssueTemplateModifiedTime: &int64Value,
+			IssueTemplateID: &name, Description: &name, CreatedBy: &owner, BugTrackerPluginID: &name, Mode: "NONE",
+			CurrentState: &projectVersionState, ID: int64Value, LoadProperties: "", CreationDate: &now,
+			MigrationVersion: float32Value, ObfuscatedID: "", PredictionPolicy: "", SecurityGroup: "",
+			SiteID: "", SourceBasePath: "", Status: "", TracesOutOfDate: false}
+		prProjectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(4711, &masterProjectVersion, "PR-815")
+		assert.NoError(t, err, "LookupOrCreateProjectVersionDetailsForPullRequest call not successful")
+		assert.Equal(t, "PR-815", *prProjectVersion.Name, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Description, prProjectVersion.Description, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Active, prProjectVersion.Active, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Committed, prProjectVersion.Committed, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Project.Name, prProjectVersion.Project.Name, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Project.Description, prProjectVersion.Project.Description, "Expected different result")
+		assert.Equal(t, masterProjectVersion.Project.ID, prProjectVersion.Project.ID, "Expected different result")
+		assert.Equal(t, masterProjectVersion.IssueTemplateID, prProjectVersion.IssueTemplateID, "Expected different result")
+	})
+}
+
+func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
+	// Start a local HTTP server
+	getPRProjectVersionCalled := false
+	invalidateTokenCalled := false
+	getTokenCalled := false
+	downloadCalled := false
+	uploadCalled := false
+	inactivateCalled := false
+	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/projects/4711/versions" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data":[{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+			"project":{"id":4711,"name":"product.some.com","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+			"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+			"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+			"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+			"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+			"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+			"migrationVersion":null,"createdBy":"admin","name":"PR-815","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+			"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+			"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+			"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+			"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
+			"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
+			"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+			getPRProjectVersionCalled = true
+			return
+		}
+		if req.URL.Path == "/fileTokens" && req.Method == "DELETE" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte(`{"responseCode": 200}`))
+			invalidateTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/fileTokens" && req.Method == "POST" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(`{"data": {"token": "89ee873"}, "responseCode": 201}`))
+			getTokenCalled = true
+			return
+		}
+		if req.URL.Path == "/download/currentStateFprDownload.html" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte("OK"))
+			downloadCalled = true
+			return
+		}
+		if req.URL.Path == "/upload/resultFileUpload.html" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(200)
+			rw.Write([]byte("OK"))
+			uploadCalled = true
+			return
+		}
+		if req.URL.Path == "/projectVersions/10172" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(`{"data": {"active":false,"bugTrackerEnabled":null,"bugTrackerPluginId":null,"committed":true,"createdBy":null,"creationDate":null,"description":null,"issueTemplateId":null,"issueTemplateModifiedTime":null,"issueTemplateName":null,"latestScanId":null,"masterAttrGuid":null,"name":null,"owner":null,"serverVersion":null,"snapshotOutOfDate":null,"staleIssueTemplate":null}, "responseCode": 200}`))
+			inactivateCalled = true
+			return
+		}
+	})
+	// Close the server when test finishes
+	defer server.Close()
+
+	t.Run("test success", func(t *testing.T) {
+		err := sys.MergeProjectVersionStateOfPRIntoMaster("/download/currentStateFprDownload.html", "/upload/resultFileUpload.html", 4711, 10171, "PR-815")
+		assert.NoError(t, err, "MergeProjectVersionStateOfPRIntoMaster call not successful")
+		assert.Equal(t, true, getPRProjectVersionCalled, "Expected different value")
+		assert.Equal(t, true, invalidateTokenCalled, "Expected different value")
+		assert.Equal(t, true, getTokenCalled, "Expected different value")
+		assert.Equal(t, true, downloadCalled, "Expected different value")
+		assert.Equal(t, true, uploadCalled, "Expected different value")
+		assert.Equal(t, true, inactivateCalled, "Expected different value")
 	})
 }

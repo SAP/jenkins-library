@@ -1,15 +1,16 @@
 package fortify
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/fortify/artifact_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
@@ -28,20 +29,26 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string) (*models.Project, error)
-	GetProjectVersionDetailsByNameAndProjectID(id int64, name string) (*models.ProjectVersion, error)
-	GetProjectVersionAttributesByID(id int64) ([]*models.Attribute, error)
+	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string) (*models.ProjectVersion, error)
+	GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error)
+	SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error)
+	LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error)
 	CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error)
 	ProjectVersionCopyFromPartial(sourceID, targetID int64) error
 	ProjectVersionCopyCurrentState(sourceID, targetID int64) error
-	CopyProjectVersionPermissions(sourceID, targetID int64) error
+	ProjectVersionCopyPermissions(sourceID, targetID int64) error
 	CommitProjectVersion(id int64) (*models.ProjectVersion, error)
-	InactivateProjectVersion(id int64) (*models.ProjectVersion, error)
+	MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error
 	GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error)
 	GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error)
 	GetIssueFilterSelectorOfProjectVersionByName(id int64, names ...string) (*models.IssueFilterSelectorSet, error)
@@ -51,7 +58,7 @@ type System interface {
 	GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error)
 	GenerateQGateReport(projectID, projectVersionID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
-	UploadFile(endpoint, file string, projectVersionID int64) error
+	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
 }
@@ -121,8 +128,8 @@ func (sys *SystemInstance) GetProjectByName(name string) (*models.Project, error
 	return nil, fmt.Errorf("Project with name %v not found in backend", name)
 }
 
-// GetProjectVersionDetailsByNameAndProjectID returns the project version details of the project version identified by the id
-func (sys *SystemInstance) GetProjectVersionDetailsByNameAndProjectID(id int64, name string) (*models.ProjectVersion, error) {
+// GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
+func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string) (*models.ProjectVersion, error) {
 	nameParam := fmt.Sprintf("name=%v", name)
 	fullText := true
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam, Fulltextsearch: &fullText}
@@ -139,11 +146,74 @@ func (sys *SystemInstance) GetProjectVersionDetailsByNameAndProjectID(id int64, 
 	return nil, fmt.Errorf("Project version with name %v not found in for project with ID %v", name, id)
 }
 
-// GetProjectVersionAttributesByID returns the project version attributes of the project version identified by the id
-func (sys *SystemInstance) GetProjectVersionAttributesByID(id int64) ([]*models.Attribute, error) {
+// LookupOrCreateProjectVersionDetailsForPullRequest looks up a project version for pull requests or creates it from scratch
+func (sys *SystemInstance) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
+	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName)
+	if nil != projectVersion {
+		return projectVersion, nil
+	}
+
+	newVersion := &models.ProjectVersion{}
+	newVersion.Name = &pullRequestName
+	newVersion.Description = masterProjectVersion.Description
+	newVersion.Active = masterProjectVersion.Active
+	newVersion.Committed = masterProjectVersion.Committed
+	newVersion.Project = &models.Project{}
+	newVersion.Project.Name = masterProjectVersion.Project.Name
+	newVersion.Project.Description = masterProjectVersion.Project.Description
+	newVersion.Project.ID = masterProjectVersion.Project.ID
+	newVersion.IssueTemplateID = masterProjectVersion.IssueTemplateID
+
+	projectVersion, err := sys.CreateProjectVersion(newVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create new project version for pull request %v", pullRequestName)
+	}
+	attributes, err := sys.GetProjectVersionAttributesByProjectVersionID(masterProjectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to load project version attributes for master project version %v", masterProjectVersion.ID)
+	}
+	for _, attribute := range attributes {
+		attribute.ID = 0
+	}
+	_, err = sys.SetProjectVersionAttributesByProjectVersionID(projectVersion.ID, attributes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to update project version attributes for pull request project version %v", projectVersion.ID)
+	}
+	err = sys.ProjectVersionCopyFromPartial(masterProjectVersion.ID, projectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy from partial of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+	}
+	_, err = sys.CommitProjectVersion(projectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to commit project version %v: %v", projectVersion.ID, err)
+	}
+	err = sys.ProjectVersionCopyCurrentState(masterProjectVersion.ID, projectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy current state of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+	}
+	err = sys.ProjectVersionCopyPermissions(masterProjectVersion.ID, projectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy permissions of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+	}
+	return projectVersion, nil
+}
+
+// GetProjectVersionAttributesByProjectVersionID returns the project version attributes of the project version identified by the id
+func (sys *SystemInstance) GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error) {
 	params := &attribute_of_project_version_controller.ListAttributeOfProjectVersionParams{ParentID: id}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.AttributeOfProjectVersionController.ListAttributeOfProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// SetProjectVersionAttributesByProjectVersionID sets the project version attributes of the project version identified by the id
+func (sys *SystemInstance) SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error) {
+	params := &attribute_of_project_version_controller.UpdateCollectionAttributeOfProjectVersionParams{ParentID: id, Data: attributes}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.AttributeOfProjectVersionController.UpdateCollectionAttributeOfProjectVersion(params, sys)
 	if err != nil {
 		return nil, err
 	}
@@ -219,8 +289,8 @@ func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, 
 	return nil
 }
 
-// CopyProjectVersionPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
-func (sys *SystemInstance) CopyProjectVersionPermissions(sourceID, targetID int64) error {
+// ProjectVersionCopyPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
+func (sys *SystemInstance) ProjectVersionCopyPermissions(sourceID, targetID int64) error {
 	result, err := sys.getAuthEntityOfProjectVersion(sourceID)
 	if err != nil {
 		return err
@@ -249,8 +319,7 @@ func (sys *SystemInstance) CommitProjectVersion(id int64) (*models.ProjectVersio
 	return sys.updateProjectVersionDetails(id, &update)
 }
 
-// InactivateProjectVersion inactivates the project version with the provided id
-func (sys *SystemInstance) InactivateProjectVersion(id int64) (*models.ProjectVersion, error) {
+func (sys *SystemInstance) inactivateProjectVersion(id int64) (*models.ProjectVersion, error) {
 	enabled := true
 	disabled := false
 	update := models.ProjectVersion{Committed: &enabled, Active: &disabled}
@@ -267,6 +336,26 @@ func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Art
 		return nil, err
 	}
 	return result.GetPayload().Data, nil
+}
+
+// MergeProjectVersionStateOfPRIntoMaster merges the PR project version's fpr result file into the master project version
+func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
+	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName)
+	if nil != prProjectVersion {
+		data, err := sys.DownloadResultFile(downloadEndpoint, prProjectVersion.ID)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to download current state FPR of PR project version %v", prProjectVersion.ID)
+		}
+		err = sys.uploadResultFileContent(uploadEndpoint, "prMergeTransfer.fpr", bytes.NewReader(data), masterProjectID)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to upload PR project version state to master project version %v", masterProjectID)
+		}
+		_, err = sys.inactivateProjectVersion(prProjectVersion.ID)
+		if err != nil {
+			log.Entry().Warnf("Failed to inactivate merged PR project version %v", prProjectVersion.ID)
+		}
+	}
+	return nil
 }
 
 // GetFilterSetOfProjectVersionByTitle returns the filter set with the given title related to the project version addressed with id, if no title is provided the default filter set will be returned
@@ -470,8 +559,18 @@ func (sys *SystemInstance) getReportFileToken() (*models.FileToken, error) {
 	return sys.getFileToken("REPORT_FILE")
 }
 
-// UploadFile uploads a file to the fortify backend
-func (sys *SystemInstance) UploadFile(endpoint, file string, projectVersionID int64) error {
+// UploadResultFile uploads a fpr file to the fortify backend
+func (sys *SystemInstance) UploadResultFile(endpoint, file string, projectVersionID int64) error {
+	fileHandle, err := os.Open(file)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to locate file %v", file)
+	}
+	defer fileHandle.Close()
+
+	return sys.uploadResultFileContent(endpoint, file, fileHandle, projectVersionID)
+}
+
+func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileContent io.Reader, projectVersionID int64) error {
 	token, err := sys.getFileUploadToken()
 	if err != nil {
 		return err
@@ -481,10 +580,12 @@ func (sys *SystemInstance) UploadFile(endpoint, file string, projectVersionID in
 	header := http.Header{}
 	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
 	header.Add("Pragma", "no-cache")
+
 	formFields := map[string]string{}
 	formFields["mat"] = token.Token
 	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
-	_, err = sys.httpClient.UploadFileForm(fmt.Sprintf("%v%v", sys.serverURL, endpoint), file, "file", formFields, header, nil)
+
+	_, err = sys.httpClient.UploadRequest(http.MethodPost, fmt.Sprintf("%v%v", sys.serverURL, endpoint), file, "file", formFields, fileContent, header, nil)
 	return err
 }
 
@@ -512,7 +613,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 	data, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
-		return nil, fmt.Errorf("Error reading the response data %s", err)
+		return nil, errors.Wrap(err, "Error reading the response data")
 	}
 	return data, nil
 }
@@ -521,12 +622,12 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	token, err := sys.getReportFileToken()
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching report download token %s", err)
+		return nil, errors.Wrap(err, "Error fetching report download token")
 	}
 	defer sys.invalidateFileTokens()
 	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", token.Token, projectVersionID)
 	if err != nil {
-		return nil, fmt.Errorf("Error downloading report file %s", err)
+		return nil, errors.Wrap(err, "Error downloading report file")
 	}
 	return data, nil
 }
@@ -535,12 +636,12 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID 
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	token, err := sys.getFileDownloadToken()
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching result file download token %s", err)
+		return nil, errors.Wrap(err, "Error fetching result file download token")
 	}
 	defer sys.invalidateFileTokens()
 	data, err := sys.downloadFile(endpoint, http.MethodPost, "application/zip", token.Token, projectVersionID)
 	if err != nil {
-		return nil, fmt.Errorf("Error downloading result file %s", err)
+		return nil, errors.Wrap(err, "Error downloading result file")
 	}
 	return data, nil
 }

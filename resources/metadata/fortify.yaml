@@ -24,6 +24,14 @@ spec:
       - name: opensourceConfiguration
         type: stash
     params:
+    - name: authToken
+      type: string
+      description: The FortifyToken to use for authentication
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
     - name: mvnCustomArgs
       type: string
       description: Allows providing additional Maven command line parameters
@@ -77,6 +85,16 @@ spec:
       - STAGES
       - STEPS
       type: string
+    - name: commitMessage
+      description: 'Set the Git commit message for identifing pull request merges throughout the scan.'
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: git/commitMessage
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
     - name: repository
       description: 'Set the GitHub repository for identifing artifacts throughout the scan.'
       resourceRef:
@@ -112,7 +130,9 @@ spec:
       - STAGES
       - STEPS
       default: -exclude ./**/test/**/*
-    - name: fortifyReportDownloadEndpoint
+    - name: reportDownloadEndpoint
+      aliases:
+      - name: fortifyReportDownloadEndpoint
       type: string
       description: Fortify SSC endpoint for Report downloads
       scope:
@@ -144,7 +164,9 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: fortifyApiEndpoint
+    - name: apiEndpoint
+      aliases:
+      - name: fortifyApiEndpoint
       type: string
       description: Fortify SSC endpoint used for uploading the scan results and checking the audit state
       scope:
@@ -193,7 +215,9 @@ spec:
       - STAGES
       - STEPS
       default: true
-    - name: fortifyFprUploadEndpoint
+    - name: fprUploadEndpoint
+      aliases:
+      - name: fortifyFprUploadEndpoint
       type: string
       description: Fortify SSC endpoint for FPR uploads
       scope:
@@ -202,14 +226,16 @@ spec:
       - STAGES
       - STEPS
       default: /upload/resultFileUpload.html
-    - name: fortifyProjectName
+    - name: projectName
+      aliases:
+      - name: fortifyProjectName
       type: string
       description: The project used for reporting results in SSC
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ${group}-${artifact}
+      default: "{{.GroupID}}-{{.ArtifactID}}"
     - name: pythonIncludes
       type: string
       description: 'The includes pattern used in `scanType: ''pip''` for including
@@ -227,7 +253,9 @@ spec:
       - STAGES
       - STEPS
       default: false
-    - name: fortifyServerUrl
+    - name: serverUrl
+      aliases:
+      - name: fortifyServerUrl
       type: string
       description: Fortify SSC Url to be used for accessing the APIs
       scope:
@@ -268,7 +296,9 @@ spec:
       - STAGES
       - STEPS
       default: 1
-    - name: fortifyFprDownloadEndpoint
+    - name: fprDownloadEndpoint
+      aliases:
+      - name: fortifyFprDownloadEndpoint
       type: string
       description: Fortify SSC endpoint  for FPR downloads
       scope:
@@ -277,14 +307,16 @@ spec:
       - STAGES
       - STEPS
       default: /download/currentStateFprDownload.html
-    - name: fortifyProjectVersion
+    - name: projectVersion
+      aliases:
+      - name: fortifyProjectVersion
       type: string
       description: The project version used for reporting results in SSC
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ${version}
+      default: "{{.Version}}"
     - name: pythonInstallCommand
       type: string
       description: 'Additional install command that can be run when `scanType: ''pip''`
@@ -295,14 +327,6 @@ spec:
       - STAGES
       - STEPS
       default: ${pip} install --user .
-    - name: environment
-      type: string
-      description: The environment used to run the Fortify scan.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: docker
     - name: pullRequestName
       type: string
       description: The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version
@@ -329,14 +353,6 @@ spec:
       - STAGES
       - STEPS
       default: '.*Merge pull request #(\\d+) from.*'
-    - name: xMakeServer
-      type: string
-      description: The Jenkins server URL used for triggering the xMake remote job
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: xmake-dev
     - name: scanType
       type: string
       description: Scan type used for the step which can be `'maven'`, `'pip'`
