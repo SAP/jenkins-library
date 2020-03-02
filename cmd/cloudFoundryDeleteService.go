@@ -18,8 +18,8 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 
 	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
 
-	if CloudFoundryDeleteServiceOptions.CfServiceKeys == true {
-		log.Entry().WithField("Delete Service Bindings and Keys flag is set", CloudFoundryDeleteServiceOptions.CfServiceKeys).Info("Deleting inherent Service Bindings and Service Keys")
+	if CloudFoundryDeleteServiceOptions.CfDeleteServiceKeys == true {
+		log.Entry().Info("Deleting inherent Service Keys")
 		cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions, &c)
 	}
 

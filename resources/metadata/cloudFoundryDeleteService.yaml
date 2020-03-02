@@ -66,7 +66,7 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceInstance
-      - name: cfServiceKeys
+      - name: cfDeleteServiceKeys
         type: bool
         description: Parameter to force deletion of Cloud Foundry Service Keys
         scope:

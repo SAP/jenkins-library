@@ -12,13 +12,13 @@ import (
 )
 
 type cloudFoundryDeleteServiceOptions struct {
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeys     bool   `json:"cfServiceKeys,omitempty"`
+	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
+	Username            string `json:"username,omitempty"`
+	Password            string `json:"password,omitempty"`
+	CfOrg               string `json:"cfOrg,omitempty"`
+	CfSpace             string `json:"cfSpace,omitempty"`
+	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
+	CfDeleteServiceKeys bool   `json:"cfDeleteServiceKeys,omitempty"`
 }
 
 // CloudFoundryDeleteServiceCommand DeleteCloudFoundryService
@@ -63,7 +63,7 @@ func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
-	cmd.Flags().BoolVar(&stepConfig.CfServiceKeys, "cfServiceKeys", false, "Parameter to force deletion of Cloud Foundry Service Keys")
+	cmd.Flags().BoolVar(&stepConfig.CfDeleteServiceKeys, "cfDeleteServiceKeys", false, "Parameter to force deletion of Cloud Foundry Service Keys")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -128,7 +128,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
-						Name:        "cfServiceKeys",
+						Name:        "cfDeleteServiceKeys",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
