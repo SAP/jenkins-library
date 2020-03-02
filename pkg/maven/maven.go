@@ -2,14 +2,12 @@ package maven
 
 import (
 	"bytes"
-
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-
 	"io"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type ExecuteOptions struct {
