@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"fmt"
@@ -90,19 +92,38 @@ func setVersionFromMtaYaml(nexusClient *nexus.Upload) error {
 	return nexusClient.SetArtifactsVersion(mtaYaml.Version)
 }
 
+var pomNotFontError error = errors.New("pom.xml not found")
+
 func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
-	uploadMavenArtifacts(nexusClient, config, "", "target", "")
-	uploadMavenArtifacts(nexusClient, config, "application", "application/target",
-		config.AdditionalClassifiers)
+	err := uploadMavenArtifacts(nexusClient, config, "", "target", "")
+	if err != nil {
+		log.Entry().Fatal(err)
+	}
+
+	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
+	// This means there are built-in assumptions about the project structure (archetype),
+	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
+	err = uploadMavenArtifacts(nexusClient, config, "application", "application/target", config.AdditionalClassifiers)
+	if err == pomNotFontError {
+		// Ignore
+	} else if err != nil {
+		log.Entry().Fatal(err)
+	}
 }
 
-func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions, pomPath, targetFolder, additionalClassifiers string) {
+func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions, pomPath, targetFolder, additionalClassifiers string) error {
 	var err error
 
 	pomFile := composeFilePath(pomPath, "pom", "xml")
+	stat, err := os.Stat(pomFile)
+	if err != nil || stat.IsDir() {
+		return pomNotFontError
+	}
 	groupID, err := evaluateMavenProperty(pomFile, "project.groupId")
 	if groupID == "" {
 		groupID = config.GroupID
+		// Reset error
+		err = nil
 	}
 	if err == nil {
 		err = nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
@@ -133,12 +154,10 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions,
 	if err == nil {
 		err = addAdditionalClassifierArtifacts(additionalClassifiers, targetFolder, artifactID, nexusClient)
 	}
-
-	if err != nil {
-		log.Entry().WithError(err).Fatal()
+	if err == nil {
+		nexusClient.UploadArtifacts()
 	}
-
-	nexusClient.UploadArtifacts()
+	return err
 }
 
 func addTargetArtifact(pomFile, targetFolder, artifactID string, nexusClient *nexus.Upload) error {
