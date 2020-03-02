@@ -3,8 +3,6 @@ import static com.sap.piper.Prerequisites.checkScript
 import static groovy.json.JsonOutput.toJson
 
 import com.sap.piper.PiperGoUtils
-
-
 import com.sap.piper.Utils
 
 import groovy.transform.Field
@@ -42,8 +40,8 @@ void call(Map parameters = [:]) {
         // }
         // sh 'rm -rf .piper-git-checkout'
 
-//        new PiperGoUtils(this, utils).unstashPiperBin()
-//        utils.unstash('pipelineConfigAndTests')
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -57,7 +55,7 @@ void call(Map parameters = [:]) {
             parameters.additionalClassifiers = "${toJson(parameters.additionalClassifiers as List)}"
         }
         // TODO: This should be handled in the Piper nexusUpload cmd implementation instead!
-        // TODO: But from the code of commonPipelineEnvironment.writeToDisk() it isn't clear to me whether this would be persisted...
+        // But from the code of commonPipelineEnvironment.writeToDisk() it isn't clear to me whether this would be persisted...
         if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
             parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
         }
