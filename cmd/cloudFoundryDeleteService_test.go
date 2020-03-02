@@ -65,10 +65,4 @@ func TestCloudFoundryDeleteService(t *testing.T) {
 			assert.Equal(t, "testInstance", execRunner.calls[3].params[1])
 		}
 	})
-	t.Run("CF Delete Service: Error case", func(t *testing.T) {
-		ServiceName := "testInstance"
-		error := cloudFoundryDeleteServiceFunction(ServiceName, &execRunner)
-		if error == nil {
-		}
-	})
 }
