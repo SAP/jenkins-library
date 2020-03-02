@@ -76,6 +76,6 @@ class NexusUploadTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[3], is('./piper nexusUpload'))
+        assertThat(shellCallRule.shell[1], is('./piper nexusUpload'))
     }
 }

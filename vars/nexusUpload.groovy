@@ -29,8 +29,10 @@ void call(Map parameters = [:]) {
             parameters.remove('credentialsId')
         }
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+        if (!fileExists('./piper')) {
+            new PiperGoUtils(this, utils).unstashPiperBin()
+            utils.unstash('pipelineConfigAndTests')
+        }
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
