@@ -19,53 +19,53 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-func nexusUpload(config nexusUploadOptions, telemetryData *telemetry.CustomData) {
+func nexusUpload(options nexusUploadOptions, telemetryData *telemetry.CustomData) {
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	runNexusUpload(&config, telemetryData)
+	runNexusUpload(&options, telemetryData)
 }
 
-func runNexusUpload(config *nexusUploadOptions, telemetryData *telemetry.CustomData) {
+func runNexusUpload(options *nexusUploadOptions, telemetryData *telemetry.CustomData) {
 	projectStructure := piperutils.ProjectStructure{}
 
-	nexusClient := nexus.Upload{Username: config.User, Password: config.Password}
+	nexusClient := nexus.Upload{Username: options.User, Password: options.Password}
 
 	if projectStructure.UsesMta() {
 		//		if GeneralConfig.Verbose {
 		log.Entry().Info("MTA project structure detected")
 		//		}
-		uploadMTA(&nexusClient, config)
+		uploadMTA(&nexusClient, options)
 	} else if projectStructure.UsesMaven() {
 		//		if GeneralConfig.Verbose {
 		log.Entry().Info("Maven project structure detected")
 		//		}
-		uploadMaven(&nexusClient, config)
+		uploadMaven(&nexusClient, options)
 	} else {
 		log.Entry().Fatal("Unsupported project structure")
 	}
 }
 
-func uploadMTA(nexusClient *nexus.Upload, config *nexusUploadOptions) {
-	if config.GroupID == "" {
+func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) {
+	if options.GroupID == "" {
 		log.Entry().Fatal("The 'groupID' parameter needs to be provided for MTA projects")
 	}
-	err := nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, config.GroupID)
+	err := nexusClient.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
 	if err == nil {
 		err = setVersionFromMtaYaml(nexusClient)
 	}
 	if err == nil {
-		artifactID := config.ArtifactID
+		artifactID := options.ArtifactID
 		if artifactID == "" {
-			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
+			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/optionsuration", "artifactId")
 		}
-		// TODO: Read artifactID from commonPipelineEnvironment if not given via config
-		// commonPipelineEnvironment.configuration.artifactId
-		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: config.ArtifactID})
+		// TODO: Read artifactID from commonPipelineEnvironment if not given via options
+		// commonPipelineEnvironment.optionsuration.artifactId
+		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: options.ArtifactID})
 	}
 	if err == nil {
 		//TODO: do proper way to find name/path of mta file
 		mtarFilePath := piperenv.GetParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
 		fmt.Println(mtarFilePath)
-		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: config.ArtifactID})
+		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: options.ArtifactID})
 	}
 	if err == nil {
 		err = nexusClient.UploadArtifacts()
@@ -96,8 +96,8 @@ func setVersionFromMtaYaml(nexusClient *nexus.Upload) error {
 
 var errPomNotFound error = errors.New("pom.xml not found")
 
-func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
-	err := uploadMavenArtifacts(nexusClient, config, "", "target", "")
+func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) {
+	err := uploadMavenArtifacts(nexusClient, options, "", "target", "")
 	if err != nil {
 		log.Entry().Fatal(err)
 	}
@@ -105,7 +105,7 @@ func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
 	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
 	// This means there are built-in assumptions about the project structure (archetype),
 	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
-	err = uploadMavenArtifacts(nexusClient, config, "application", "application/target", config.AdditionalClassifiers)
+	err = uploadMavenArtifacts(nexusClient, options, "application", "application/target", options.AdditionalClassifiers)
 	if err == errPomNotFound {
 		// Ignore
 	} else if err != nil {
@@ -113,7 +113,7 @@ func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
 	}
 }
 
-func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions, pomPath, targetFolder, additionalClassifiers string) error {
+func uploadMavenArtifacts(nexusClient *nexus.Upload, options *nexusUploadOptions, pomPath, targetFolder, additionalClassifiers string) error {
 	var err error
 
 	pomFile := composeFilePath(pomPath, "pom", "xml")
@@ -123,12 +123,12 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions,
 	}
 	groupID, err := evaluateMavenProperty(pomFile, "project.groupId")
 	if groupID == "" {
-		groupID = config.GroupID
+		groupID = options.GroupID
 		// Reset error
 		err = nil
 	}
 	if err == nil {
-		err = nexusClient.SetBaseURL(config.Url, config.Version, config.Repository, groupID)
+		err = nexusClient.SetBaseURL(options.Url, options.Version, options.Repository, groupID)
 	}
 	var artifactID string
 	if err == nil {
