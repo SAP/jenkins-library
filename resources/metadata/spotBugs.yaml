@@ -24,7 +24,7 @@ spec:
           - STAGES
           - STEPS
       - name: mavenModulesExcludes
-        description: Maven modules which should be excluded by the PMD check.
+        description: Maven modules which should be excluded by the Spotbugs check.
         type: '[]string'
         mandatory: false
         scope:
