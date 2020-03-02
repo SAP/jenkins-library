@@ -39,6 +39,15 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteSeleniumDefault() {
+        def expectedDefaultEnvVars = [
+            // following env vars are expected in JSON format
+            'PIPER_CONTAINER_PORT_MAPPING': '{"selenium/standalone-chrome":[{"containerPort":4444,"hostPort":4444}]}',
+            'PIPER_DOCKER_NAME': '"npm"',
+            'PIPER_DOCKER_IMAGE': '"node:lts-stretch"',
+            'PIPER_SIDECAR_NAME': '"selenium"',
+            'PIPER_SIDECAR_IMAGE': '"selenium/standalone-chrome"'
+        ]
+
         stepRule.step.seleniumExecuteTests(
             script: nullScript,
             juStabUtils: utils
@@ -47,7 +56,6 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         }
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteRule.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
-        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, is(null))
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-stretch'))
         assertThat(dockerExecuteRule.dockerParams.dockerName, is('npm'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
@@ -55,6 +63,9 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams.sidecarImage, is('selenium/standalone-chrome'))
         assertThat(dockerExecuteRule.dockerParams.sidecarName, is('selenium'))
         assertThat(dockerExecuteRule.dockerParams.sidecarVolumeBind, is(['/dev/shm': '/dev/shm']))
+        expectedDefaultEnvVars.each { key, value ->
+            assert dockerExecuteRule.dockerParams.dockerEnvVars[key] == value
+        }
     }
 
     @Test
@@ -80,8 +91,10 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
         assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
         assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
-        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+        expectedEnvVars.each { key, value ->
+            assert dockerExecuteRule.dockerParams.dockerEnvVars[key] == value
+        }
     }
     
     @Test
