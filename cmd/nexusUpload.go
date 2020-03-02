@@ -67,11 +67,13 @@ func uploadMTA(nexusClient *nexus.Upload, config *nexusUploadOptions) {
 		fmt.Println(mtarFilePath)
 		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: config.ArtifactID})
 	}
+	if err == nil {
+		err = nexusClient.UploadArtifacts()
+	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal()
 	}
 
-	nexusClient.UploadArtifacts()
 }
 
 type mtaYaml struct {
@@ -155,7 +157,7 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions,
 		err = addAdditionalClassifierArtifacts(additionalClassifiers, targetFolder, artifactID, nexusClient)
 	}
 	if err == nil {
-		nexusClient.UploadArtifacts()
+		err = nexusClient.UploadArtifacts()
 	}
 	return err
 }

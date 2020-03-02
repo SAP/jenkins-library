@@ -141,33 +141,41 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 
 // UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
 // the logger.
-func (nexusUpload *Upload) UploadArtifacts() {
-	nexusUpload.initLogger()
-
+func (nexusUpload *Upload) UploadArtifacts() error {
 	if nexusUpload.baseURL == "" {
-		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetBaseURL() first.")
+		return fmt.Errorf("the nexus.Upload needs to be configured by calling SetBaseURL() first")
 	}
-
 	if nexusUpload.version == "" {
-		nexusUpload.Logger.Fatal("The NexusUpload object needs to be configured by calling SetArtifactsVersion() first.")
+		return fmt.Errorf("the nexus.Upload needs to be configured by calling SetArtifactsVersion() first")
 	}
-
 	if len(nexusUpload.artifacts) == 0 {
-		nexusUpload.Logger.Fatal("No artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first.")
+		return fmt.Errorf("no artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first")
 	}
 
+	nexusUpload.initLogger()
 	client := nexusUpload.createHTTPClient()
 
 	for _, artifact := range nexusUpload.artifacts {
 		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.version, artifact)
 
-		uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
-		uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
-		uploadFile(client, artifact.File, url)
+		var err error
+		err = uploadHash(client, artifact.File, url+".md5", md5.New(), 16)
+		if err != nil {
+			return err
+		}
+		err = uploadHash(client, artifact.File, url+".sha1", sha1.New(), 20)
+		if err != nil {
+			return err
+		}
+		err = uploadFile(client, artifact.File, url)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Reset all artifacts already uploaded, so the object could be re-used
 	nexusUpload.artifacts = nil
+	return nil
 }
 
 func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
@@ -210,29 +218,31 @@ func getArtifactURL(baseURL, version string, artifact ArtifactDescription) strin
 	return url
 }
 
-func uploadFile(client *piperHttp.Client, filePath, url string) {
+func uploadFile(client *piperHttp.Client, filePath, url string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to open artifact file ", filePath)
+		return fmt.Errorf("failed to open artifact file %s: %w", filePath, err)
 	}
 
 	defer file.Close()
 
 	err = uploadToNexus(client, file, url)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to upload artifact ", filePath)
+		return fmt.Errorf("failed to upload artifact file %s: %w", filePath, err)
 	}
+	return nil
 }
 
-func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) {
+func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) error {
 	hashReader, err := generateHashReader(filePath, hash, length)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to generate hash")
+		return fmt.Errorf("failed to generate hash %w", err)
 	}
 	err = uploadToNexus(client, hashReader, url)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to upload hash")
+		return fmt.Errorf("failed to upload hash %w", err)
 	}
+	return nil
 }
 
 func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) error {
