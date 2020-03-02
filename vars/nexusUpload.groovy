@@ -16,7 +16,6 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         final Script script = checkScript(this, parameters) ?: null
-
         if (!script) {
             error "Reference to surrounding pipeline script not provided (script: this)."
         }
@@ -29,16 +28,6 @@ void call(Map parameters = [:]) {
             // Remove null or empty credentialsId key. (Eases calling code.)
             parameters.remove('credentialsId')
         }
-
-        echo "nexusUpload parameters: $parameters"
-
-        // sh 'git clone https://github.com/SAP/jenkins-library.git -b nexus-upload .piper-git-checkout'
-        // dir('.piper-git-checkout') {
-        //     dockerExecute(script: this, dockerImage: 'golang:1.13', dockerOptions: '-u 0') {
-        //         sh 'go build -tags release -o piper . && chmod +x piper && mv piper ..'
-        //     }
-        // }
-        // sh 'rm -rf .piper-git-checkout'
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
