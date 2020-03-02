@@ -3,10 +3,13 @@ package maven
 import (
 	"bytes"
 
-	"github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"io"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type ExecuteOptions struct {
@@ -115,4 +118,17 @@ func downloadSettingsFromURL(url, filename string, client http.Downloader) {
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to download maven settings from: " + url)
 	}
+}
+
+func GetTestModulesExcludes() []string {
+	var excludes []string
+	exists, _ := piperutils.FileExists("unit-tests/pom.xml")
+	if exists {
+		excludes = append(excludes, "-pl", "!unit-tests")
+	}
+	exists, _ = piperutils.FileExists("integration-tests/pom.xml")
+	if exists {
+		excludes = append(excludes, "-pl", "!integration-tests")
+	}
+	return excludes
 }

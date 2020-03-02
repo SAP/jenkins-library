@@ -2,6 +2,7 @@ package maven
 
 import (
 	"errors"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
@@ -110,5 +111,23 @@ func TestDownloadSettingsFromURL(t *testing.T) {
 		downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
+}
 
+func TestGetTestModulesExcludes(t *testing.T) {
+	t.Run("Should return excludes for unit- and integration-tests", func(t *testing.T) {
+		os.Mkdir("unit-tests", 0777)
+		defer os.Remove("unit-tests")
+		os.Create("unit-tests/pom.xml")
+		defer os.Remove("unit-tests/pom.xml")
+
+		os.Mkdir("integration-tests", 0777)
+		defer os.Remove("integration-tests")
+		os.Create("integration-tests/pom.xml")
+		defer os.Remove("integration-tests/pom.xml")
+
+		expected := []string{"-pl", "!unit-tests", "-pl", "!integration-tests"}
+
+		modulesExcludes := GetTestModulesExcludes()
+		assert.Equal(t, expected, modulesExcludes)
+	})
 }
