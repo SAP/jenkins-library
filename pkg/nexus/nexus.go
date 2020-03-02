@@ -254,7 +254,8 @@ func generateHashReader(filePath string, hash hash.Hash, length int) (io.Reader,
 	defer file.Close()
 
 	// Read file and feed the hash
-	if _, err := io.Copy(hash, file); err != nil {
+	_, err = io.Copy(hash, file)
+	if err != nil {
 		return nil, err
 	}
 
