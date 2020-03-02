@@ -92,7 +92,7 @@ func setVersionFromMtaYaml(nexusClient *nexus.Upload) error {
 	return nexusClient.SetArtifactsVersion(mtaYaml.Version)
 }
 
-var pomNotFontError error = errors.New("pom.xml not found")
+var errPomNotFound error = errors.New("pom.xml not found")
 
 func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
 	err := uploadMavenArtifacts(nexusClient, config, "", "target", "")
@@ -104,7 +104,7 @@ func uploadMaven(nexusClient *nexus.Upload, config *nexusUploadOptions) {
 	// This means there are built-in assumptions about the project structure (archetype),
 	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
 	err = uploadMavenArtifacts(nexusClient, config, "application", "application/target", config.AdditionalClassifiers)
-	if err == pomNotFontError {
+	if err == errPomNotFound {
 		// Ignore
 	} else if err != nil {
 		log.Entry().Fatal(err)
@@ -117,7 +117,7 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, config *nexusUploadOptions,
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 	stat, err := os.Stat(pomFile)
 	if err != nil || stat.IsDir() {
-		return pomNotFontError
+		return errPomNotFound
 	}
 	groupID, err := evaluateMavenProperty(pomFile, "project.groupId")
 	if groupID == "" {
