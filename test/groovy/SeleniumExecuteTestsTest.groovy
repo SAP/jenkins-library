@@ -89,7 +89,27 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
             containerPortMappings: []
         ]]]
-// todo: extend
+
+        stepRule.step.seleniumExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(bodyExecuted, is(true))
+        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == ''
+    }
+
+    @Test
+    void testNoNullPointerExceptionWithUnrelatedSidecarImageAndContainerPortMapping() {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
+            sidecarImage: 'myCustomImage',
+            containerPortMappings: [
+                'someImageOtherThanMyCustomImage': [
+                    [containerPort: 5555, hostPort: 5555]
+                ]
+            ]
+        ]]]
         stepRule.step.seleniumExecuteTests(
             script: nullScript,
             juStabUtils: utils
