@@ -20,7 +20,7 @@ class PiperGoUtils implements Serializable {
         if (utils.unstash('piper-bin').size() > 0) return
 
         if (steps.env.REPOSITORY_UNDER_TEST && steps.env.LIBRARY_VERSION_UNDER_TEST) {
-            println("Running in a consumer test, building unit-under-test binary for verification.")
+            steps.echo("Running in a consumer test, building unit-under-test binary for verification.")
             steps.dockerExecute(script: steps, dockerImage: 'golang:1.13', dockerOptions: '-u 0', dockerEnvVars: [
                 REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
                 LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
