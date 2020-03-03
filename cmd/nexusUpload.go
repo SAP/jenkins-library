@@ -121,15 +121,15 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, options *nexusUploadOptions
 		return errPomNotFound
 	}
 
-	// Begin testing effective POM generation
-	effectivePomFile := composeFilePath(pomPath, "effectivePom", "xml")
-	m2Path := "s4hana_pipeline/maven_local_repo"
-	err = generateEffectivePOM(pomFile, effectivePomFile, m2Path, nil)
-	if err != nil {
-		return fmt.Errorf("failed to generate effective POM: %w", err)
-	}
-	pomFile = effectivePomFile
-	// End testing effective POM generation
+	//// Begin testing effective POM generation
+	//effectivePomFile := composeFilePath(pomPath, "effectivePom", "xml")
+	//m2Path := "s4hana_pipeline/maven_local_repo"
+	//err = generateEffectivePOM(pomFile, effectivePomFile, m2Path, nil)
+	//if err != nil {
+	//	return fmt.Errorf("failed to generate effective POM: %w", err)
+	//}
+	//pomFile = effectivePomFile
+	//// End testing effective POM generation
 
 	groupID, err := evaluateMavenProperty(pomFile, "project.groupId")
 	if groupID == "" {
@@ -262,22 +262,22 @@ func evaluateMavenProperty(pomFile, expression string) (string, error) {
 	return value, nil
 }
 
-func generateEffectivePOM(pomFile, effectivePomFile, m2Path string, execRunner *command.Command) error {
-	if execRunner == nil {
-		execRunner = &command.Command{}
-		execRunner.Stdout(ioutil.Discard)
-		execRunner.Stderr(ioutil.Discard)
-	}
-
-	options := maven.ExecuteOptions{
-		PomPath:      pomFile,
-		M2Path:       m2Path,
-		Goals:        []string{"help:effective-pom"},
-		Defines:      []string{"-Doutput="+effectivePomFile},
-	}
-	_, err := maven.Execute(&options, execRunner)
-	return err
-}
+//func generateEffectivePOM(pomFile, effectivePomFile, m2Path string, execRunner *command.Command) error {
+//	if execRunner == nil {
+//		execRunner = &command.Command{}
+//		execRunner.Stdout(ioutil.Discard)
+//		execRunner.Stderr(ioutil.Discard)
+//	}
+//
+//	options := maven.ExecuteOptions{
+//		PomPath:      pomFile,
+//		M2Path:       m2Path,
+//		Goals:        []string{"help:effective-pom"},
+//		Defines:      []string{"-Doutput="+effectivePomFile},
+//	}
+//	_, err := maven.Execute(&options, execRunner)
+//	return err
+//}
 
 type classifierDescription struct {
 	Classifier string `json:"classifier"`
