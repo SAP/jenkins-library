@@ -1,7 +1,5 @@
 package com.sap.piper
 
-import jenkins.model.Jenkins
-
 class PiperGoUtils implements Serializable {
 
     private static Script steps
