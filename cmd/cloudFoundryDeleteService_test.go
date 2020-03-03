@@ -50,7 +50,6 @@ func TestCloudFoundryDeleteService(t *testing.T) {
 		}
 	})
 	t.Run("CF Delete Service Keys: success case", func(t *testing.T) {
-		execRunner2 := execMockRunner{}
 		config := cloudFoundryDeleteServiceOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
@@ -59,10 +58,10 @@ func TestCloudFoundryDeleteService(t *testing.T) {
 			Password:          "testPassword",
 			CfServiceInstance: "testInstance",
 		}
-		error := cloudFoundryDeleteServiceKeys(config, &execRunner2)
+		error := cloudFoundryDeleteServiceKeys(config, &execRunner)
 		if error == nil {
-			assert.Equal(t, "cf", execRunner2.calls[0].exec)
-			assert.Equal(t, []string{"service-keys", "testInstance"}, execRunner2.calls[0].params)
+			assert.Equal(t, "cf", execRunner.calls[3].exec)
+			assert.Equal(t, []string{"service-keys", "testInstance"}, execRunner.calls[3].params)
 		}
 	})
 }
