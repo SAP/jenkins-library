@@ -75,7 +75,7 @@ spec:
         - STEPS
         mandatory: false
         aliases:
-          - name: cloudFoundry/cfServiceKeys
+          - name: cloudFoundry/cfDeleteServiceKeys
   containers:
     - name: cf
       image: ppiper/cf-cli

@@ -135,7 +135,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/cfServiceKeys"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
 					},
 				},
 			},
