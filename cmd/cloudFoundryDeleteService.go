@@ -77,6 +77,7 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 		}
 	} else {
 		log.Entry().Info("No service key could be retrieved for your requested Service")
+		return err
 	}
 	return err
 }
