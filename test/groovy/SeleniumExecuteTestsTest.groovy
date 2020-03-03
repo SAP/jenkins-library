@@ -97,7 +97,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
-        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == ''
+        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == null
     }
 
     @Test
@@ -117,7 +117,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
-        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == ''
+        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == null
     }
 
     @Test
