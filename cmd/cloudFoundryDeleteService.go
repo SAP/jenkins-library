@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, telemetryData *telemetry.CustomData) error {
+func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemetryData *telemetry.CustomData) error {
 
 	c := command.Command{}
 
@@ -16,14 +16,14 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
-	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
+	cloudFoundryLogin(options, &c)
 
-	if CloudFoundryDeleteServiceOptions.CfDeleteServiceKeys == true {
+	if options.CfDeleteServiceKeys == true {
 		log.Entry().Info("Deleting inherent Service Keys")
-		cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions, &c)
+		cloudFoundryDeleteServiceKeys(options, &c)
 	}
 
-	err := cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
+	err := cloudFoundryDeleteServiceFunction(options.CfServiceInstance, &c)
 	if err != nil {
 		cloudFoundryLogout(&c)
 		log.Entry().
@@ -37,9 +37,9 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	return nil
 }
 
-func cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
+func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c execRunner) error {
 
-	var cfFindServiceKeysScript = []string{"service-keys", CloudFoundryDeleteServiceOptions.CfServiceInstance}
+	var cfFindServiceKeysScript = []string{"service-keys", options.CfServiceInstance}
 
 	var serviceKeyBytes bytes.Buffer
 	c.Stdout(&serviceKeyBytes)
@@ -65,7 +65,7 @@ func cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions cloudFoundry
 		for i := 3; i <= numberOfServiceKeys-2; i++ {
 			log.Entry().WithField("Deleting Service Key", lines[i]).Info("ServiceKeyDeletion")
 
-			var cfDeleteServiceKeyScript = []string{"delete-service-key", CloudFoundryDeleteServiceOptions.CfServiceInstance, lines[i], "-f"}
+			var cfDeleteServiceKeyScript = []string{"delete-service-key", options.CfServiceInstance, lines[i], "-f"}
 
 			err := c.RunExecutable("cf", cfDeleteServiceKeyScript...)
 			if err != nil {
@@ -81,10 +81,10 @@ func cloudFoundryDeleteServiceKeys(CloudFoundryDeleteServiceOptions cloudFoundry
 	return err
 }
 
-func cloudFoundryLogin(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
-	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.CfAPIEndpoint, "-o", CloudFoundryDeleteServiceOptions.CfOrg, "-s", CloudFoundryDeleteServiceOptions.CfSpace, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
+func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) error {
+	var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
 
-	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.CfAPIEndpoint).WithField("cfOrg", CloudFoundryDeleteServiceOptions.CfOrg).WithField("space", CloudFoundryDeleteServiceOptions.CfSpace).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
 	err := c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {
