@@ -1,3 +1,5 @@
+// +build !release
+
 package mock
 
 import (
@@ -9,7 +11,7 @@ import (
 
 type ExecMockRunner struct {
 	Dir                 []string
-	Env                 [][]string
+	Env                 []string
 	Calls               []ExecCall
 	stdout              io.Writer
 	stderr              io.Writer
@@ -24,7 +26,7 @@ type ExecCall struct {
 
 type ShellMockRunner struct {
 	Dir                 string
-	Env                 [][]string
+	Env                 []string
 	Calls               []string
 	Shell               []string
 	stdout              io.Writer
@@ -38,7 +40,7 @@ func (m *ExecMockRunner) SetDir(d string) {
 }
 
 func (m *ExecMockRunner) SetEnv(e []string) {
-	m.Env = append(m.Env, e)
+	m.Env = append(m.Env, e...)
 }
 
 func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
@@ -64,7 +66,11 @@ func (m *ShellMockRunner) SetDir(d string) {
 }
 
 func (m *ShellMockRunner) SetEnv(e []string) {
-	m.Env = append(m.Env, e)
+	m.Env = append(m.Env, e...)
+}
+
+func (m *ShellMockRunner) AddToEnv(e []string) {
+	m.Env = append(m.Env, e...)
 }
 
 func (m *ShellMockRunner) RunShell(s string, c string) error {
