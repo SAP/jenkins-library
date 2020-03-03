@@ -30,14 +30,10 @@ func runNexusUpload(options *nexusUploadOptions, telemetryData *telemetry.Custom
 	nexusClient := nexus.Upload{Username: options.User, Password: options.Password}
 
 	if projectStructure.UsesMta() {
-		//		if GeneralConfig.Verbose {
 		log.Entry().Info("MTA project structure detected")
-		//		}
 		uploadMTA(&nexusClient, options)
 	} else if projectStructure.UsesMaven() {
-		//		if GeneralConfig.Verbose {
 		log.Entry().Info("Maven project structure detected")
-		//		}
 		uploadMaven(&nexusClient, options)
 	} else {
 		log.Entry().Fatal("Unsupported project structure")
@@ -55,14 +51,11 @@ func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 	if err == nil {
 		artifactID := options.ArtifactID
 		if artifactID == "" {
-			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/optionsuration", "artifactId")
+			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
 		}
-		// TODO: Read artifactID from commonPipelineEnvironment if not given via options
-		// commonPipelineEnvironment.optionsuration.artifactId
 		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: options.ArtifactID})
 	}
 	if err == nil {
-		//TODO: do proper way to find name/path of mta file
 		mtarFilePath := piperenv.GetParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
 		fmt.Println(mtarFilePath)
 		err = nexusClient.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: options.ArtifactID})
@@ -120,17 +113,6 @@ func uploadMavenArtifacts(nexusClient *nexus.Upload, options *nexusUploadOptions
 	if err != nil || stat.IsDir() {
 		return errPomNotFound
 	}
-
-	//// Begin testing effective POM generation
-	//effectivePomFile := composeFilePath(pomPath, "effectivePom", "xml")
-	//m2Path := "s4hana_pipeline/maven_local_repo"
-	//err = generateEffectivePOM(pomFile, effectivePomFile, m2Path, nil)
-	//if err != nil {
-	//	return fmt.Errorf("failed to generate effective POM: %w", err)
-	//}
-	//pomFile = effectivePomFile
-	//// End testing effective POM generation
-
 	groupID, err := evaluateMavenProperty(pomFile, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
@@ -256,28 +238,11 @@ func evaluateMavenProperty(pomFile, expression string) (string, error) {
 	if strings.HasPrefix(value, "null object or invalid expression") {
 		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
 	}
-	//	if GeneralConfig.Verbose {
-	log.Entry().Infof("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)
-	//	}
+	if GeneralConfig.Verbose {
+		log.Entry().Infof("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)
+	}
 	return value, nil
 }
-
-//func generateEffectivePOM(pomFile, effectivePomFile, m2Path string, execRunner *command.Command) error {
-//	if execRunner == nil {
-//		execRunner = &command.Command{}
-//		execRunner.Stdout(ioutil.Discard)
-//		execRunner.Stderr(ioutil.Discard)
-//	}
-//
-//	options := maven.ExecuteOptions{
-//		PomPath:      pomFile,
-//		M2Path:       m2Path,
-//		Goals:        []string{"help:effective-pom"},
-//		Defines:      []string{"-Doutput="+effectivePomFile},
-//	}
-//	_, err := maven.Execute(&options, execRunner)
-//	return err
-//}
 
 type classifierDescription struct {
 	Classifier string `json:"classifier"`
