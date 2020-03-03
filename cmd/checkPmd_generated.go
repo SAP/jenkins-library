@@ -57,7 +57,7 @@ For more information please visit https://pmd.github.io/`,
 func addCheckPmdFlags(cmd *cobra.Command, stepConfig *checkPmdOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.")
 	cmd.Flags().StringSliceVar(&stepConfig.RuleSets, "ruleSets", []string{}, "The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.")
-	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the PMD check.")
+	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the PMD check. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
 
 }
 

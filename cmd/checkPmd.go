@@ -29,7 +29,9 @@ func runCheckPmd(config *checkPmdOptions, telemetryData *telemetry.CustomData, c
 	if config.RuleSets != nil {
 		defines = append(defines, "-Dpmd.rulesets="+strings.Join(config.RuleSets, ","))
 	}
-	//ToDo: build in exclusion of integration-tests and unit-tests here!
+	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+		defines = append(defines, testModulesExcludes...)
+	}
 	if config.MavenModulesExcludes != nil {
 		for _, module := range config.MavenModulesExcludes {
 			defines = append(defines, "-pl")
