@@ -58,7 +58,7 @@ For more information please visit https://spotbugs.readthedocs.io/en/latest/mave
 func addCheckSpotBugsFlags(cmd *cobra.Command, stepConfig *checkSpotBugsOptions) {
 	cmd.Flags().StringVar(&stepConfig.ExcludeFilterFile, "excludeFilterFile", os.Getenv("PIPER_excludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.IncludeFilterFile, "includeFilterFile", os.Getenv("PIPER_includeFilterFile"), "Path to a filter file with bug definitions which should be included.")
-	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the Spotbugs check.")
+	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the Spotbugs check. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
 
 }
 
