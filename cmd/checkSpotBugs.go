@@ -26,7 +26,9 @@ func runCheckSpotBugs(config *checkSpotBugsOptions, telemetryData *telemetry.Cus
 	if config.ExcludeFilterFile != "" {
 		defines = append(defines, "-Dspotbugs.excludeFilterFile="+config.ExcludeFilterFile)
 	}
-	//ToDo: build in exclusion of integration-tests and unit-tests here!
+	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+		defines = append(defines, testModulesExcludes...)
+	}
 	if config.MavenModulesExcludes != nil {
 		for _, module := range config.MavenModulesExcludes {
 			defines = append(defines, "-pl")
