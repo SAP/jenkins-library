@@ -58,11 +58,11 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 			log.Entry().Info("No Service Keys active to be deleted")
 			return err
 		}
-		var numberOfServiceKeys = len(lines)
-		log.Entry().WithField("Number of service keys :", numberOfServiceKeys-4).Info("ServiceKey")
+		var numberOfLines = len(lines)
+		log.Entry().WithField("Number of service keys :", numberOfLines-4).Info("ServiceKey")
 
 		//Deleting all matched Service Keys for Service
-		for i := 3; i <= numberOfServiceKeys-2; i++ {
+		for i := 3; i <= numberOfLines-2; i++ {
 			log.Entry().WithField("Deleting Service Key", lines[i]).Info("ServiceKeyDeletion")
 
 			var cfDeleteServiceKeyScript = []string{"delete-service-key", options.CfServiceInstance, lines[i], "-f"}
