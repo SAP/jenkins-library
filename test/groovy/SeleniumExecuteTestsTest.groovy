@@ -16,6 +16,8 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
+    private List credentials = []
+
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -30,22 +32,36 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+        credentials = []
         bodyExecuted = false
         helper.registerAllowedMethod('stash', [String.class], null)
         helper.registerAllowedMethod('git', [Map.class], {m ->
             gitMap = m
+        })
+        helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
+        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
+            l.each {m ->
+                credentials.add(m)
+                if (m.credentialsId == 'MyCredentialId') {
+                    binding.setProperty('PIPER_SELENIUM_HUB_USER', 'seleniumUser')
+                    binding.setProperty('PIPER_SELENIUM_HUB_PASSWORD', '********')
+                }
+            }
+            try {
+                c()
+            } finally {
+                binding.setProperty('PIPER_SELENIUM_HUB_USER', null)
+                binding.setProperty('PIPER_SELENIUM_HUB_PASSWORD', null)
+            }
         })
     }
 
     @Test
     void testExecuteSeleniumDefault() {
         def expectedDefaultEnvVars = [
-            // following env vars are expected in JSON format
-            'PIPER_CONTAINER_PORT_MAPPING': '{"selenium/standalone-chrome":[{"containerPort":4444,"hostPort":4444}]}',
-            'PIPER_DOCKER_NAME': '"npm"',
-            'PIPER_DOCKER_IMAGE': '"node:lts-stretch"',
-            'PIPER_SIDECAR_NAME': '"selenium"',
-            'PIPER_SIDECAR_IMAGE': '"selenium/standalone-chrome"'
+            'PIPER_SELENIUM_HOSTNAME': 'npm',
+            'PIPER_SELENIUM_WEBDRIVER_HOSTNAME': 'selenium',
+            'PIPER_SELENIUM_WEBDRIVER_PORT': '4444'
         ]
 
         stepRule.step.seleniumExecuteTests(
@@ -66,6 +82,22 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         expectedDefaultEnvVars.each { key, value ->
             assert dockerExecuteRule.dockerParams.dockerEnvVars[key] == value
         }
+    }
+
+    @Test
+    void testNoNullPointerExceptionWithEmptyContainerPortMapping() {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
+            containerPortMappings: []
+        ]]]
+
+        stepRule.step.seleniumExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(bodyExecuted, is(true))
+        assert dockerExecuteRule.dockerParams.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT == ''
     }
 
     @Test
@@ -150,5 +182,22 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(gitMap, hasEntry('branch', 'test'))
         assertThat(gitMap, hasEntry('credentialsId', 'testCredentials'))
         assertThat(gitMap, hasEntry('url', 'git@test/test.git'))
+    }
+
+    @Test
+    void testSeleniumHubCredentials() {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
+            seleniumHubCredentialsId: 'MyCredentialId'
+        ]]]
+
+        stepRule.step.seleniumExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+        assertThat(credentials.size(), is(1))
     }
 }

@@ -1,13 +1,13 @@
-# Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced
+# Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model
 
-Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
+Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result to SAP HANA extended application services, advanced model.
 
 ## Prerequisites
 
 * [Docker environment](https://docs.docker.com/get-started/)
-* All artifacts refereneced during the build are available either on Service Market Place or via public repositories
+* All artifacts referenced during the build are available either on Service Market Place or via public repositories.
 * You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
-* Docker image for xs deployment available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/xs-cli).
+* Docker image for xs deployment is locally available. Due to legal reasons, there is no pre-build Docker image. How to create the Docker image is explained [here][devops-docker-images-xs-deploy-readme].
 
 ### Project Prerequisites
 
@@ -99,3 +99,5 @@ For the detailed description of the relevant parameters, see:
 
 * [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
 * [xsDeploy](https://sap.github.io/jenkins-library/steps/xsDeploy/)
+
+[devops-docker-images-xs-deploy-readme]: https://github.com/SAP/devops-docker-xs-cli/blob/master/README.md#how-to-build-it

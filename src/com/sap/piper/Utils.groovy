@@ -163,5 +163,13 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
         defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
         returnStdout: true
     )
+    if (resolvedExpression.startsWith('null object or invalid expression')) {
+        // There is no error indication (exit code or otherwise) from the
+        // 'evaluate' Maven plugin, only this output to stdout. The calling
+        // code assumes an empty string is returned when the property could
+        // not be resolved.
+        throw new RuntimeException("Cannot evaluate property value from '${pomFileName}', " +
+            "missing property or invalid expression '${pomPathExpression}'.")
+    }
     return resolvedExpression
 }
