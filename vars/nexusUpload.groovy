@@ -44,7 +44,7 @@ void call(Map parameters = [:]) {
         if (parameters.additionalClassifiers) {
             parameters.additionalClassifiers = "${toJson(parameters.additionalClassifiers as List)}"
         }
-        // Default to artifactId from configuration
+        // Fall-back to artifactId from configuration if not given
         if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
             parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
         }
