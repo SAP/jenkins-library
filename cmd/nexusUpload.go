@@ -20,29 +20,31 @@ import (
 )
 
 func nexusUpload(options nexusUploadOptions, telemetryData *telemetry.CustomData) {
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	runNexusUpload(&options, telemetryData)
+	err := runNexusUpload(&options, telemetryData)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
 }
 
-func runNexusUpload(options *nexusUploadOptions, telemetryData *telemetry.CustomData) {
+func runNexusUpload(options *nexusUploadOptions, telemetryData *telemetry.CustomData) error {
 	projectStructure := piperutils.ProjectStructure{}
 
 	nexusClient := nexus.Upload{Username: options.User, Password: options.Password}
 
 	if projectStructure.UsesMta() {
 		log.Entry().Info("MTA project structure detected")
-		uploadMTA(&nexusClient, options)
+		return uploadMTA(&nexusClient, options)
 	} else if projectStructure.UsesMaven() {
 		log.Entry().Info("Maven project structure detected")
-		uploadMaven(&nexusClient, options)
+		return uploadMaven(&nexusClient, options)
 	} else {
-		log.Entry().Fatal("Unsupported project structure")
+		return fmt.Errorf("unsupported project structure")
 	}
 }
 
-func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) {
+func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) error {
 	if options.GroupID == "" {
-		log.Entry().Fatal("The 'groupID' parameter needs to be provided for MTA projects")
+		return fmt.Errorf("The 'groupID' parameter needs to be provided for MTA projects")
 	}
 	err := nexusClient.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
 	if err == nil {
@@ -63,9 +65,7 @@ func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 	if err == nil {
 		err = nexusClient.UploadArtifacts()
 	}
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
-	}
+	return err
 }
 
 type mtaYaml struct {
@@ -88,10 +88,10 @@ func setVersionFromMtaYaml(nexusClient *nexus.Upload) error {
 
 var errPomNotFound error = errors.New("pom.xml not found")
 
-func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) {
+func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) error {
 	err := uploadMavenArtifacts(nexusClient, options, "", "target", "")
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		return err
 	}
 
 	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
@@ -99,10 +99,10 @@ func uploadMaven(nexusClient *nexus.Upload, options *nexusUploadOptions) {
 	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
 	err = uploadMavenArtifacts(nexusClient, options, "application", "application/target", options.AdditionalClassifiers)
 	if err == errPomNotFound {
-		// Ignore
-	} else if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		// Ignore for missing application module
+		return nil
 	}
+	return err
 }
 
 func uploadMavenArtifacts(nexusClient *nexus.Upload, options *nexusUploadOptions, pomPath, targetFolder, additionalClassifiers string) error {
