@@ -9,39 +9,32 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest] #, macos-latest, windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.14.x'
-      - name: Build Piper
-        run: |
+          go-version: '1.13.x'
+      - run: |
           export GIT_COMMIT=$(git rev-parse HEAD) && \
           export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
           CGO_ENABLED=0 go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY} \
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
-            -o piper-${{ matrix.os }} .
+            -o piper .
         shell: bash
-      - name: Print Piper Version
-        run: ./piper-${{ matrix.os }} version
+      - run: ./piper version
         shell: bash
       - uses: actions/upload-artifact@v1
         with:
-          name: piper-${{ matrix.os }}
-          path: piper-${{ matrix.os }}
+          name: piper
+          path: piper
       - name: Calculate Release Version
         run: |
           set -x
           npm i semver
           echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))"
-        #currently works only on linux because only linux binaries are available to the action
-      - name: Publish Release
-        uses: SAP/project-piper-action@master
+      - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper-${{ matrix.os }}
+         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper
