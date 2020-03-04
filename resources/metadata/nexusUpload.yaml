@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: credentialsId
+      - name: nexusCredentialsId
         description: The technical username/password credential for accessing the nexus endpoint.
         type: jenkins
     params:
@@ -27,7 +27,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        default:
       - name: repository
         type: string
         description: Name of the nexus repository.
@@ -52,7 +51,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: false
       - name: additionalClassifiers
         type: string
         description: List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.
@@ -60,7 +58,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: false
       - name: user
         type: string
         description: User
@@ -68,7 +65,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: false
       - name: password
         type: string
         description: Password
@@ -76,4 +72,3 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: false

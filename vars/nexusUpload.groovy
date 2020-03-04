@@ -22,13 +22,17 @@ void call(Map parameters = [:]) {
         }
 
         def utils = parameters.juStabUtils ?: new Utils()
+        
+        // Make shallow copy of parameters, so we can add/remove (top-level) keys without side-effects
+        parameters = [:] << parameters
         parameters.remove('juStabUtils')
         parameters.remove('jenkinsUtilsStub')
 
-        if (!parameters.get('credentialsId')) {
-            // Remove null or empty credentialsId key. (Eases calling code.)
-            parameters.remove('credentialsId')
+        // Backwards compatibility
+        if (parameters.credentialsId && !parameters.nexusCredentialsId) {
+            parameters.nexusCredentialsId = parameters.credentialsId
         }
+        parameters.remove('credentialsId')
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
@@ -58,9 +62,9 @@ void call(Map parameters = [:]) {
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             // execute step
-            if (config.credentialsId) {
+            if (config.nexusCredentialsId) {
                 withCredentials([usernamePassword(
-                    credentialsId: config.credentialsId,
+                    credentialsId: config.nexusCredentialsId,
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
