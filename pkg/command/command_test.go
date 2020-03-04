@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -51,27 +52,51 @@ func TestExecutableRun(t *testing.T) {
 	t.Run("test shell", func(t *testing.T) {
 		ExecCommand = helperCommand
 		defer func() { ExecCommand = exec.Command }()
-		o := new(bytes.Buffer)
-		e := new(bytes.Buffer)
+		stdout := new(bytes.Buffer)
+		stderr := new(bytes.Buffer)
 
-		ex := Command{stdout: o, stderr: e}
+		ex := Command{stdout: stdout, stderr: stderr}
 		ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
 
 		t.Run("success case", func(t *testing.T) {
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
-				if oStr := o.String(); oStr != expectedOut {
+				if oStr := stdout.String(); oStr != expectedOut {
 					t.Errorf("expected: %v got: %v", expectedOut, oStr)
 				}
 			})
 			t.Run("stderr", func(t *testing.T) {
 				expectedErr := "Stderr: command echo\n"
-				if eStr := e.String(); eStr != expectedErr {
+				if eStr := stderr.String(); eStr != expectedErr {
 					t.Errorf("expected: %v got: %v", expectedErr, eStr)
 				}
 			})
 		})
 	})
+}
+
+func TestEnvironmentVariables(t *testing.T) {
+
+	ExecCommand = helperCommand
+	defer func() { ExecCommand = exec.Command }()
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+
+	ex := Command{stdout: stdout, stderr: stderr}
+
+	// helperCommand function replaces the full environment with one single entry
+	// (GO_WANT_HELPER_PROCESS), hence there is no need for checking if the DEBUG
+	// environment variable already exists in the set of environment variables for the
+	// current process.
+	ex.SetEnv([]string{"DEBUG=true"})
+	ex.RunExecutable("env")
+
+	oStr := stdout.String()
+
+	if !strings.Contains(oStr, "DEBUG=true") {
+		t.Errorf("expected Environment variable not found")
+	}
 }
 
 func TestPrepareOut(t *testing.T) {
@@ -142,6 +167,7 @@ func TestCmdPipes(t *testing.T) {
 //based on https://golang.org/src/os/exec/exec_test.go
 //this is not directly executed
 func TestHelperProcess(*testing.T) {
+
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
@@ -173,6 +199,10 @@ func TestHelperProcess(*testing.T) {
 		}
 		fmt.Println(iargs...)
 		fmt.Fprintf(os.Stderr, "Stderr: command %v\n", cmd)
+	case "env":
+		for _, e := range os.Environ() {
+			fmt.Println(e)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
 		os.Exit(2)
