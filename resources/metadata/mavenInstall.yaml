@@ -1,0 +1,24 @@
+metadata:
+  name: mavenInstall
+  description: This step will install the maven project into the local maven repository.
+  longDescription: |
+    This step will install the maven project into the local maven repository.
+    It will also prepare jacoco to record the code coverage and
+    supports ci friendly versioning by flattening the pom before installing.
+spec:
+  inputs:
+    params:
+      - name: pomPath
+        type: string
+        description: Path to the pom file which should be installed including all children
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+        default: pom.xml
+      - name: flatten
+        type: bool
+        description: Defines if the pom files should be flattened to support ci friendly maven versioning.
+        scope:
+          - PARAMETERS
+        default: true
