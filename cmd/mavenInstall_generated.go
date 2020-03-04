@@ -15,6 +15,7 @@ import (
 type mavenInstallOptions struct {
 	PomPath string `json:"pomPath,omitempty"`
 	Flatten bool   `json:"flatten,omitempty"`
+	Verify  bool   `json:"verify,omitempty"`
 }
 
 // MavenInstallCommand This step will install the maven project into the local maven repository.
@@ -55,8 +56,9 @@ supports ci friendly versioning by flattening the pom before installing.`,
 }
 
 func addMavenInstallFlags(cmd *cobra.Command, stepConfig *mavenInstallOptions) {
-	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children")
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
+	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 
 }
 
@@ -76,6 +78,14 @@ func mavenInstallMetadata() config.StepData {
 					},
 					{
 						Name:        "flatten",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "verify",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",

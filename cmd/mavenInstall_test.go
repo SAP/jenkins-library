@@ -32,6 +32,16 @@ func TestMavenInstall(t *testing.T) {
 		assert.Contains(t, execMockRunner.Calls[0].Params, "-DupdatePomFile=true")
 	})
 
+	t.Run("mavenInstall should run only verify", func(t *testing.T) {
+		execMockRunner := mock.ExecMockRunner{}
+
+		config := mavenInstallOptions{Verify: true}
+
+		err := runMavenInstall(&config, nil, &execMockRunner)
+
+		assert.Nil(t, err)
+		assert.Contains(t, execMockRunner.Calls[0].Params, "verify")
+		assert.NotContains(t, execMockRunner.Calls[0].Params, "install")
+	})
 
 }
-
