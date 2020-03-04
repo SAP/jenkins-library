@@ -6,25 +6,25 @@ import (
 	"testing"
 )
 
-func TestMavenInstall(t *testing.T) {
-	t.Run("mavenInstall should install the artifact", func(t *testing.T) {
+func TestMavenBuild(t *testing.T) {
+	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 
-		config := mavenInstallOptions{}
+		config := mavenBuildOptions{}
 
-		err := runMavenInstall(&config, nil, &execMockRunner)
+		err := runMavenBuild(&config, nil, &execMockRunner)
 
 		assert.Nil(t, err)
 		assert.Equal(t, execMockRunner.Calls[0].Exec, "mvn")
 		assert.Contains(t, execMockRunner.Calls[0].Params, "install")
 	})
 
-	t.Run("mavenInstall should flatten", func(t *testing.T) {
+	t.Run("mavenBuild should flatten", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 
-		config := mavenInstallOptions{Flatten: true}
+		config := mavenBuildOptions{Flatten: true}
 
-		err := runMavenInstall(&config, nil, &execMockRunner)
+		err := runMavenBuild(&config, nil, &execMockRunner)
 
 		assert.Nil(t, err)
 		assert.Contains(t, execMockRunner.Calls[0].Params, "flatten:flatten")
@@ -32,12 +32,12 @@ func TestMavenInstall(t *testing.T) {
 		assert.Contains(t, execMockRunner.Calls[0].Params, "-DupdatePomFile=true")
 	})
 
-	t.Run("mavenInstall should run only verify", func(t *testing.T) {
+	t.Run("mavenBuild should run only verify", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 
-		config := mavenInstallOptions{Verify: true}
+		config := mavenBuildOptions{Verify: true}
 
-		err := runMavenInstall(&config, nil, &execMockRunner)
+		err := runMavenBuild(&config, nil, &execMockRunner)
 
 		assert.Nil(t, err)
 		assert.Contains(t, execMockRunner.Calls[0].Params, "verify")

@@ -12,29 +12,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type mavenInstallOptions struct {
+type mavenBuildOptions struct {
 	PomPath string `json:"pomPath,omitempty"`
 	Flatten bool   `json:"flatten,omitempty"`
 	Verify  bool   `json:"verify,omitempty"`
 }
 
-// MavenInstallCommand This step will install the maven project into the local maven repository.
-func MavenInstallCommand() *cobra.Command {
-	metadata := mavenInstallMetadata()
-	var stepConfig mavenInstallOptions
+// MavenBuildCommand This step will install the maven project into the local maven repository.
+func MavenBuildCommand() *cobra.Command {
+	metadata := mavenBuildMetadata()
+	var stepConfig mavenBuildOptions
 	var startTime time.Time
 
-	var createMavenInstallCmd = &cobra.Command{
-		Use:   "mavenInstall",
+	var createMavenBuildCmd = &cobra.Command{
+		Use:   "mavenBuild",
 		Short: "This step will install the maven project into the local maven repository.",
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenInstall")
+			log.SetStepName("mavenBuild")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenInstall", &stepConfig, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "mavenBuild", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -45,17 +45,17 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenInstall")
-			mavenInstall(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenBuild")
+			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addMavenInstallFlags(createMavenInstallCmd, &stepConfig)
-	return createMavenInstallCmd
+	addMavenBuildFlags(createMavenBuildCmd, &stepConfig)
+	return createMavenBuildCmd
 }
 
-func addMavenInstallFlags(cmd *cobra.Command, stepConfig *mavenInstallOptions) {
+func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
@@ -63,7 +63,7 @@ func addMavenInstallFlags(cmd *cobra.Command, stepConfig *mavenInstallOptions) {
 }
 
 // retrieve step metadata
-func mavenInstallMetadata() config.StepData {
+func mavenBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

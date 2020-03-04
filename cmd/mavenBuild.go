@@ -8,7 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func mavenInstall(config mavenInstallOptions, telemetryData *telemetry.CustomData) {
+func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -20,13 +20,13 @@ func mavenInstall(config mavenInstallOptions, telemetryData *telemetry.CustomDat
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runMavenInstall(&config, telemetryData, &c)
+	err := runMavenBuild(&config, telemetryData, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenInstall(config *mavenInstallOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	exists, _ := piperutils.FileExists("integration-tests/pom.xml")

@@ -59,7 +59,7 @@ func Execute() {
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
-	rootCmd.AddCommand(MavenInstallCommand())
+	rootCmd.AddCommand(MavenBuildCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
