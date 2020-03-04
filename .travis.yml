@@ -22,15 +22,6 @@ cache:
 jobs:
   include:
     - stage: Tests
-      name: Golang Build & Publish
-      if: type != pull_request && repo = "SAP/jenkins-library" && branch = "master"
-      script:
-        - docker build -t piper:${TRAVIS_BRANCH} .
-        - docker create --name piper_${TRAVIS_BRANCH} piper:${TRAVIS_BRANCH}
-        - docker cp piper_${TRAVIS_BRANCH}:/build/piper .
-        - docker rm piper_${TRAVIS_BRANCH}
-        - cp ./piper ./piper_master
-        - chmod +x ./piper
     - name: Consumer Tests
       if: repo = "SAP/jenkins-library" && ( (type != pull_request && branch =~ /^master$|^it\/.*$/) || (type == pull_request && head_repo = "SAP/jenkins-library" && head_branch =~ /^it\/.*$/) )
       script: cd consumer-test && groovy consumerTestController.groovy
