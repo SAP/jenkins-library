@@ -22,7 +22,7 @@ void call(Map parameters = [:]) {
         }
 
         def utils = parameters.juStabUtils ?: new Utils()
-        
+
         // Make shallow copy of parameters, so we can add/remove (top-level) keys without side-effects
         parameters = [:] << parameters
         parameters.remove('juStabUtils')
