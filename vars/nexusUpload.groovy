@@ -7,9 +7,10 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-@Field String METADATA_FILE = 'metadata/nexusUpload.yaml'
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/nexusUpload.yaml'
 
+//Metadata maintained in file project://resources/metadata/nexusUpload.yaml
 
 void call(Map parameters = [:]) {
 
@@ -29,10 +30,8 @@ void call(Map parameters = [:]) {
             parameters.remove('credentialsId')
         }
 
-        if (!fileExists('./piper')) {
-            new PiperGoUtils(this, utils).unstashPiperBin()
-            utils.unstash('pipelineConfigAndTests')
-        }
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -45,8 +44,7 @@ void call(Map parameters = [:]) {
         if (parameters.additionalClassifiers) {
             parameters.additionalClassifiers = "${toJson(parameters.additionalClassifiers as List)}"
         }
-        // TODO: This should be handled in the Piper nexusUpload cmd implementation instead!
-        // But from the code of commonPipelineEnvironment.writeToDisk() it isn't clear to me whether this would be persisted...
+        // Default to artifactId from configuration
         if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
             parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
         }
