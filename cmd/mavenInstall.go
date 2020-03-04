@@ -44,7 +44,11 @@ func runMavenInstall(config *mavenInstallOptions, telemetryData *telemetry.Custo
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
-	goals = append(goals, "install")
+	if config.Verify {
+		goals = append(goals, "verify")
+	} else {
+		goals = append(goals, "install")
+	}
 
 	mavenOptions := maven.ExecuteOptions{
 		Flags:   flags,
