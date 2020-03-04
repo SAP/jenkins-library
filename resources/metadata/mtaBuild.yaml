@@ -1,6 +1,6 @@
 metadata:
   name: mtaBuild
-  description: Performs an mta build
+  description: Performs an MTA build
   longDescription: |
     Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
 spec:
