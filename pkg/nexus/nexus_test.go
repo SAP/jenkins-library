@@ -112,6 +112,16 @@ func TestAddNoArtifactsFromInvalidJSON(t *testing.T) {
 	assert.Equal(t, 0, len(nexusUpload.artifacts))
 }
 
+
+func TestUpload_AddArtifactsFromJSON(t *testing.T) {
+	json := `[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"}]`
+	nexusUpload := Upload{}
+	if err := nexusUpload.AddArtifactsFromJSON(json); err != nil {
+		t.Errorf("AddArtifactsFromJSON() error = %v", err)
+	}
+	assert.Equal(t, []ArtifactDescription{{ID: "myapp-pom", Classifier: "myapp-1.0", Type: "pom", File: "pom.xml"}}, nexusUpload.artifacts)
+}
+
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
 	nexusUpload := Upload{}
 
