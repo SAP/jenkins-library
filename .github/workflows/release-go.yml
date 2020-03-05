@@ -35,8 +35,9 @@ jobs:
         run: |
           set -x
           npm install semver
-          echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))"
+          echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
       - uses: SAP/project-piper-action@master
         with:
+          piper-version: latest
          command: githubPublishRelease
          flags: --verbose --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper
