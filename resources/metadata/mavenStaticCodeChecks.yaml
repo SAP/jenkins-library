@@ -1,0 +1,60 @@
+metadata:
+  name: mavenStaticCodeChecks
+  description: Execute static code checks using maven as is spobugs and pmd
+  longDescription: |
+    Executes spotbugs maven plugin as well as pmd maven plugin for static code checks.
+    SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
+    For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
+    PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
+    For more information please visit https://pmd.github.io/
+spec:
+  inputs:
+    params:
+      - name: mavenModulesExcludes
+        description: Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: spotBugsExcludeFilterFile
+        description: Path to a filter file with bug definitions which should be excluded.
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/excludeFilterFile
+      - name: spotBugsIncludeFilterFile
+        description: Path to a filter file with bug definitions which should be included.
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/includeFilterFile
+      - name: pmdExcludes
+        description: A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/excludes
+      - name: pmdRuleSets
+        description: The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.
+        type: '[]string'
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/rulesSets
