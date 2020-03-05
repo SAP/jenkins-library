@@ -38,7 +38,8 @@ type Upload struct {
 	Logger    *logrus.Entry
 }
 
-// Uploader provides an interface to the nexus upload for configuring the target Nexus Repository and adding artifacts.
+// Uploader provides an interface to the nexus upload for configuring the target Nexus Repository and
+// adding artifacts.
 type Uploader interface {
 	SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error
 	SetArtifactsVersion(version string) error
@@ -86,7 +87,8 @@ func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
 	return nil
 }
 
-// AddArtifact adds a single artifact to the Upload.
+// AddArtifact adds a single artifact to be uploaded later via UploadArtifacts(). If an identical artifact
+// description is already contained in the Upload, the function does nothing and returns no error.
 func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	err := validateArtifact(artifact)
 	if err != nil {
@@ -148,8 +150,7 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 	return artifacts
 }
 
-// UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
-// the logger.
+// UploadArtifacts performs the actual upload of all added artifacts to the Nexus server.
 func (nexusUpload *Upload) UploadArtifacts() error {
 	client := nexusUpload.createHTTPClient()
 	return nexusUpload.uploadArtifacts(client)
