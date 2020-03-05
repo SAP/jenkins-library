@@ -2,11 +2,11 @@ package nexus
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"io"
 	"net/http"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -240,6 +240,14 @@ func (m *httpMock) SetOptions(options piperhttp.ClientOptions) {
 	m.password = options.Password
 }
 
+func createConfiguredNexusUpload() Upload {
+	nexusUpload := Upload{}
+	_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
+	_ = nexusUpload.SetArtifactsVersion("1.0")
+	_ = nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "../../pom.xml"})
+	return nexusUpload
+}
+
 func TestUploadWorks(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
@@ -247,10 +255,7 @@ func TestUploadWorks(t *testing.T) {
 	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
 	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
 
-	nexusUpload := Upload{}
-	_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
-	_ = nexusUpload.SetArtifactsVersion("1.0")
-	_ = nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "../../pom.xml"})
+	nexusUpload := createConfiguredNexusUpload()
 
 	err := nexusUpload.uploadArtifacts(&mockedHttp)
 	assert.NoError(t, err, "Expected that uploading the artifact works")
@@ -266,21 +271,50 @@ func TestUploadWorks(t *testing.T) {
 	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom", mockedHttp.requests[2].url)
 }
 
-func TestUploadFails(t *testing.T) {
+func TestUploadFailsAtMd5(t *testing.T) {
+	var mockedHttp = httpMock{}
+	// There will be three requests, md5, sha1 and the file itself
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+
+	nexusUpload := createConfiguredNexusUpload()
+
+	err := nexusUpload.uploadArtifacts(&mockedHttp)
+	assert.Error(t, err, "Expected that uploading the artifact failed")
+
+	assert.Equal(t, 1, mockedHttp.requestIndex, "Expected only one HTTP requests")
+	assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
+}
+
+func TestUploadFailsAtSha1(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
 	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 OK", err: fmt.Errorf("failed")})
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
 	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
 
-	nexusUpload := Upload{}
-	_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
-	_ = nexusUpload.SetArtifactsVersion("1.0")
-	_ = nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "../../pom.xml"})
+	nexusUpload := createConfiguredNexusUpload()
 
 	err := nexusUpload.uploadArtifacts(&mockedHttp)
 	assert.Error(t, err, "Expected that uploading the artifact failed")
 
 	assert.Equal(t, 2, mockedHttp.requestIndex, "Expected only two HTTP requests")
+	assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
+}
+
+func TestUploadFailsAtFile(t *testing.T) {
+	var mockedHttp = httpMock{}
+	// There will be three requests, md5, sha1 and the file itself
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
+
+	nexusUpload := createConfiguredNexusUpload()
+
+	err := nexusUpload.uploadArtifacts(&mockedHttp)
+	assert.Error(t, err, "Expected that uploading the artifact failed")
+
+	assert.Equal(t, 3, mockedHttp.requestIndex, "Expected only three HTTP requests")
 	assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
 }
