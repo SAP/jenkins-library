@@ -38,6 +38,15 @@ type Upload struct {
 	Logger    *logrus.Entry
 }
 
+// Uploader provides an interface to the nexus upload for configuring the target Nexus Repository and adding artifacts.
+type Uploader interface {
+	SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error
+	SetArtifactsVersion(version string) error
+	AddArtifact(artifact ArtifactDescription) error
+	AddArtifactsFromJSON(json string) error
+	UploadArtifacts() error
+}
+
 func (nexusUpload *Upload) initLogger() {
 	if nexusUpload.Logger == nil {
 		nexusUpload.Logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/nexusUpload")
@@ -82,7 +91,7 @@ func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 	if err != nil {
 		return err
 	}
-	if nexusUpload.ContainsArtifact(artifact) {
+	if nexusUpload.containsArtifact(artifact) {
 		log.Entry().Infof("Nexus Upload already contains artifact %v\n", artifact)
 		return nil
 	}
@@ -122,21 +131,13 @@ func getArtifactsFromJSON(artifactsAsJSON string) ([]ArtifactDescription, error)
 	return artifacts, err
 }
 
-// ContainsArtifact returns true, if the Upload already contains the provided artifact.
-func (nexusUpload *Upload) ContainsArtifact(artifact ArtifactDescription) bool {
+func (nexusUpload *Upload) containsArtifact(artifact ArtifactDescription) bool {
 	for _, n := range nexusUpload.artifacts {
 		if artifact == n {
 			return true
 		}
 	}
 	return false
-}
-
-// GetArtifacts returns a copy of the artifact descriptions array stored in the Upload.
-func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
-	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
-	copy(artifacts, nexusUpload.artifacts)
-	return artifacts
 }
 
 // UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via

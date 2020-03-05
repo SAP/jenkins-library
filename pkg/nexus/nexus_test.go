@@ -121,19 +121,6 @@ func TestUpload_AddArtifactsFromJSON(t *testing.T) {
 	assert.Equal(t, []ArtifactDescription{{ID: "myapp-pom", Classifier: "myapp-1.0", Type: "pom", File: "pom.xml"}}, nexusUpload.artifacts)
 }
 
-func TestArtifactsNotDirectlyAccessible(t *testing.T) {
-	nexusUpload := Upload{}
-
-	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
-	assert.NoError(t, err, "Expected to succeed adding valid artifact")
-
-	artifacts := nexusUpload.GetArtifacts()
-	// Overwrite array entry in the returned array...
-	artifacts[0] = ArtifactDescription{ID: "another.id", Classifier: "", Type: "pom", File: "pom.xml"}
-	// ... but expect the entry in nexusUpload object to be unchanged
-	assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
-}
-
 func TestSensibleBaseURLNexus2(t *testing.T) {
 	baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases", "some.group.id")
 	assert.NoError(t, err, "Expected getBaseURL() to succeed")
@@ -144,6 +131,12 @@ func TestSensibleBaseURLNexus3(t *testing.T) {
 	baseURL, err := getBaseURL("localhost:8081", "nexus3", "maven-releases", "some.group.id")
 	assert.NoError(t, err, "Expected getBaseURL() to succeed")
 	assert.Equal(t, "localhost:8081/repository/maven-releases/some/group/id/", baseURL)
+}
+
+func TestBaseURLUnsupportedNexusVersion(t *testing.T) {
+	baseURL, err := getBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
+	assert.Error(t, err, "Expected getBaseURL() to fail")
+	assert.Equal(t, "", baseURL)
 }
 
 func TestSetBaseURLParamChecking(t *testing.T) {
