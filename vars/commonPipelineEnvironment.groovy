@@ -176,16 +176,24 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for value type and act accordingly?
-                script.writeFile file: fileName, text: value
+                //ToDo: check for additional value types and act accordingly?
+                if(value instanceof java.util.ArrayList) {
+                    script.writeFile file: fileName, text: value.join(",")
+                } else {
+                    script.writeFile file: fileName, text: value
+                }
             }
         })
 
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for value type and act accordingly?
-                script.writeFile file: fileName, text: value
+                //ToDo: check for additional value types and act accordingly?
+                if(value instanceof java.util.ArrayList) {
+                    script.writeFile file: fileName, text: value.join(",")
+                } else {
+                    script.writeFile file: fileName, text: value
+                }
             }
         })
     }
