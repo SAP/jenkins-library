@@ -86,10 +86,9 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 		err := c.RunExecutable("cf", cfDeleteServiceKeyScript...)
 		if err != nil {
 			return fmt.Errorf("Failed to Delete Service Key: %w", err)
-		} else {
-			log.Entry().Info("ServiceKeys have been deleted!")
 		}
 	}
+	log.Entry().Info("ServiceKeys have been deleted!")
 	return err
 }
 
@@ -102,10 +101,9 @@ func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) e
 
 	if err != nil {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
-	} else {
-		log.Entry().Info("Logged in successfully to Cloud Foundry..")
-		return err
 	}
+	log.Entry().Info("Logged in successfully to Cloud Foundry..")
+	return err
 }
 
 func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
@@ -117,10 +115,9 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 
 	if err != nil {
 		return fmt.Errorf("Failed to delete Service: %w", err)
-	} else {
-		log.Entry().Info("Deletion of Service is finished or the Service has never existed")
-		return err
 	}
+	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
+	return err
 }
 
 func cloudFoundryLogout(c execRunner) error {
@@ -131,8 +128,7 @@ func cloudFoundryLogout(c execRunner) error {
 	err := c.RunExecutable("cf", cfLogoutScript)
 	if err != nil {
 		return fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-	} else {
-		log.Entry().Info("Logged out successfully")
-		return err
 	}
+	log.Entry().Info("Logged out successfully")
+	return err
 }
