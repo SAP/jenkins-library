@@ -142,6 +142,11 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 // UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
 // the logger.
 func (nexusUpload *Upload) UploadArtifacts() error {
+	client := nexusUpload.createHTTPClient()
+	return nexusUpload.uploadArtifacts(client)
+}
+
+func (nexusUpload *Upload) uploadArtifacts(client piperHttp.Sender) error {
 	if nexusUpload.baseURL == "" {
 		return fmt.Errorf("the nexus.Upload needs to be configured by calling SetBaseURL() first")
 	}
@@ -153,7 +158,6 @@ func (nexusUpload *Upload) UploadArtifacts() error {
 	}
 
 	nexusUpload.initLogger()
-	client := nexusUpload.createHTTPClient()
 
 	for _, artifact := range nexusUpload.artifacts {
 		url := getArtifactURL(nexusUpload.baseURL, nexusUpload.version, artifact)
@@ -218,7 +222,7 @@ func getArtifactURL(baseURL, version string, artifact ArtifactDescription) strin
 	return url
 }
 
-func uploadFile(client *piperHttp.Client, filePath, url string) error {
+func uploadFile(client piperHttp.Sender, filePath, url string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open artifact file %s: %w", filePath, err)
@@ -233,7 +237,7 @@ func uploadFile(client *piperHttp.Client, filePath, url string) error {
 	return nil
 }
 
-func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, length int) error {
+func uploadHash(client piperHttp.Sender, filePath, url string, hash hash.Hash, length int) error {
 	hashReader, err := generateHashReader(filePath, hash, length)
 	if err != nil {
 		return fmt.Errorf("failed to generate hash %w", err)
@@ -245,7 +249,7 @@ func uploadHash(client *piperHttp.Client, filePath, url string, hash hash.Hash, 
 	return nil
 }
 
-func uploadToNexus(client *piperHttp.Client, stream io.Reader, url string) error {
+func uploadToNexus(client piperHttp.Sender, stream io.Reader, url string) error {
 	response, err := client.SendRequest(http.MethodPut, url, stream, nil, nil)
 	if err == nil {
 		log.Entry().Info("Uploaded '"+url+"', response: ", response.StatusCode)
