@@ -67,9 +67,7 @@ jobs:
       env:
         CGO_ENABLED: 0
       # with `-tags release` we ensure that shared test utilities won't end up in the binary
-      run: |
-        go build -o piper -tags release
-        chmod +x piper
+      run: go build -o piper -tags release
     - name: test
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
