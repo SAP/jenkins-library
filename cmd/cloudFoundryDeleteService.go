@@ -23,14 +23,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 		cloudFoundryDeleteServiceKeys(options, &c)
 	}
 
-	err := cloudFoundryDeleteServiceFunction(options.CfServiceInstance, &c)
-	if err != nil {
-		cloudFoundryLogout(&c)
-		log.Entry().
-			WithError(err).
-			Fatal("Failed to delete Service!")
-		return err
-	}
+	cloudFoundryDeleteServiceFunction(options.CfServiceInstance, &c)
 
 	cloudFoundryLogout(&c)
 
@@ -72,8 +65,9 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 				cloudFoundryLogout(c)
 				log.Entry().
 					WithError(err).
-					Fatal("Failed to login to Delete Service Key")
+					Fatal("Failed to Delete Service Key")
 			}
+			log.Entry().Info("ServiceKeys have been deleted!")
 		}
 	} else {
 		log.Entry().Info("No service key could be retrieved for your requested Service")
@@ -104,7 +98,10 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 
 	err := c.RunExecutable("cf", cfdeleteServiceScript...)
 	if err != nil {
-		return err
+		cloudFoundryLogout(c)
+		log.Entry().
+			WithError(err).
+			Fatal("Failed to delete Service!")
 	}
 	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
 	return err
