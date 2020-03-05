@@ -423,9 +423,9 @@ private List getContainerEnvs(config, imageName) {
     }
 
     if (dockerEnvVars) {
-        for (int i = 0; i < dockerEnvVars.keySet().size(); i++) {
-            String k = dockerEnvVars.keySet().getAt(i)
-            containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
+        dockerEnvVars.each {
+            k, v ->
+            containerEnv << envVar(key: k, value: v.toString())
         }
     }
 
@@ -435,9 +435,9 @@ private List getContainerEnvs(config, imageName) {
 
     // Inherit the proxy information from the master to the container
     SystemEnv systemEnv = new SystemEnv()
-    for (int i = 0; i < systemEnv.getEnv().keySet().size(); i++) {
-        String env = systemEnv.getEnv().keySet().getAt(i)
-        containerEnv << envVar(key: env, value: systemEnv.get(env))
+    systemEnv.getEnv().each {
+        k, v ->
+            containerEnv << envVar(key: k, value: v)
     }
 
     return containerEnv
