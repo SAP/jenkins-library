@@ -32,7 +32,7 @@ jobs:
       - name: Calculate Release Version
         run: |
           set -x
-          npm i semver
+          npm install semver
           echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/fwilhe/jenkins-library/releases/latest" | jq -r .tag_name))"
       - uses: SAP/project-piper-action@master
         with:
