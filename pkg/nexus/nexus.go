@@ -44,6 +44,7 @@ type Uploader interface {
 	SetArtifactsVersion(version string) error
 	AddArtifact(artifact ArtifactDescription) error
 	AddArtifactsFromJSON(json string) error
+	GetArtifacts() []ArtifactDescription
 	UploadArtifacts() error
 }
 
@@ -138,6 +139,13 @@ func (nexusUpload *Upload) containsArtifact(artifact ArtifactDescription) bool {
 		}
 	}
 	return false
+}
+
+// GetArtifacts returns a copy of the artifact descriptions array stored in the Upload.
+func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
+	artifacts := make([]ArtifactDescription, len(nexusUpload.artifacts))
+	copy(artifacts, nexusUpload.artifacts)
+	return artifacts
 }
 
 // UploadArtifacts performs the actual upload to Nexus. If any error occurs, the program will currently exit via
