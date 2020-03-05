@@ -249,6 +249,10 @@ func (m *httpMock) SetOptions(options piperhttp.ClientOptions) {
 	m.password = options.Password
 }
 
+func (m *httpMock) appendReply(reply requestReply) {
+	m.requestReplies = append(m.requestReplies, reply)
+}
+
 func createConfiguredNexusUpload() Upload {
 	nexusUpload := Upload{}
 	_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
@@ -260,9 +264,9 @@ func createConfiguredNexusUpload() Upload {
 func TestUploadWorks(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
 
 	nexusUpload := createConfiguredNexusUpload()
 
@@ -283,9 +287,9 @@ func TestUploadWorks(t *testing.T) {
 func TestUploadFailsAtMd5(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
 
 	nexusUpload := createConfiguredNexusUpload()
 
@@ -299,9 +303,9 @@ func TestUploadFailsAtMd5(t *testing.T) {
 func TestUploadFailsAtSha1(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
 
 	nexusUpload := createConfiguredNexusUpload()
 
@@ -315,9 +319,9 @@ func TestUploadFailsAtSha1(t *testing.T) {
 func TestUploadFailsAtFile(t *testing.T) {
 	var mockedHttp = httpMock{}
 	// There will be three requests, md5, sha1 and the file itself
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "200 OK", err: nil})
-	mockedHttp.requestReplies = append(mockedHttp.requestReplies, requestReply{response: "404 Error", err: fmt.Errorf("failed")})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
 
 	nexusUpload := createConfiguredNexusUpload()
 
