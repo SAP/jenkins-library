@@ -2,6 +2,7 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
+import com.sap.piper.JsonUtils
 
 class commonPipelineEnvironment implements Serializable {
 
@@ -176,24 +177,14 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for additional value types and act accordingly?
-                if(value instanceof java.util.ArrayList) {
-                    script.writeFile file: fileName, text: value.join(",")
-                } else {
-                    script.writeFile file: fileName, text: value
-                }
+                script.writeFile file: fileName, text: JsonUtils.groovyObjectToJsonString(value)
             }
         })
 
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for additional value types and act accordingly?
-                if(value instanceof java.util.ArrayList) {
-                    script.writeFile file: fileName, text: value.join(",")
-                } else {
-                    script.writeFile file: fileName, text: value
-                }
+                script.writeFile file: fileName, text: JsonUtils.groovyObjectToJsonString(value)
             }
         })
     }
