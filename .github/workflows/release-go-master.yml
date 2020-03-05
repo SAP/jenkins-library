@@ -13,10 +13,12 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: '1.13.x'
-      - run: |
+      - env:
+          CGO_ENABLED: 0
+        run: |
           export GIT_COMMIT=$(git rev-parse HEAD) && \
           export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
-          CGO_ENABLED=0 go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
+          go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY} \
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
             -o piper_master .
@@ -30,4 +32,4 @@ jobs:
       - uses: SAP/project-piper-action@master
         with:
          command: githubPublishRelease
-         flags: -v --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper_master
+         flags: --verbose --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper_master
