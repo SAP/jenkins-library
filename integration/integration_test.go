@@ -36,7 +36,7 @@ func getPiperExecutable() string {
 
 	f := piperutils.Files{}
 	wd, _ := os.Getwd()
-	localPiper := path.Join(wd, "piper")
+	localPiper := path.Join(wd, "..", "piper")
 	exists, _ := f.FileExists(localPiper)
 	if exists {
 		fmt.Println("Piper executable for integration test: " + localPiper)
