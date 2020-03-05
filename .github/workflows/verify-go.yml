@@ -73,5 +73,4 @@ jobs:
     - name: test
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-#        PIPER_INTEGRATION_EXECUTABLE: ./piper
       run: go test -tags=integration ./integration/...
