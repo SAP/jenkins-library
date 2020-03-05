@@ -16,11 +16,9 @@ jobs:
       - env:
           CGO_ENABLED: 0
         run: |
-          export GIT_COMMIT=$(git rev-parse HEAD) && \
-          export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
-          go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
-                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GIT_REPOSITORY}" \
+          go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
+                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
             -o piper_master .
         shell: bash
       - run: ./piper_master version
@@ -32,5 +30,5 @@ jobs:
       - uses: SAP/project-piper-action@master
         with:
           piper-version: latest
-         command: githubPublishRelease
-         flags: --verbose --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper_master
+          command: githubPublishRelease
+          flags: --verbose --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper_master
