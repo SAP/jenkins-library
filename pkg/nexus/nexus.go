@@ -18,8 +18,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ArtifactDescription describes a single artifact that can be uploaded to a Nexus repository manager. The File string
-// must point to an existing file. The Classifier can be empty.
+// ArtifactDescription describes a single artifact that can be uploaded to a Nexus repository manager.
+// The File string must point to an existing file. The Classifier can be empty.
 type ArtifactDescription struct {
 	ID         string `json:"artifactId"`
 	Classifier string `json:"classifier"`
@@ -27,8 +27,8 @@ type ArtifactDescription struct {
 	File       string `json:"file"`
 }
 
-// Upload holds state for an upload session. Call SetBaseURL(), SetArtifactsVersion() and add at least one artifact via
-// AddArtifact(). Then call UploadArtifacts().
+// Upload holds state for an upload session. Call SetBaseURL(), SetArtifactsVersion() and add at least
+// one artifact via AddArtifact(). Then call UploadArtifacts().
 type Upload struct {
 	baseURL   string
 	version   string
@@ -77,8 +77,8 @@ func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupI
 	return nil
 }
 
-// SetArtifactsVersion sets the common version for all uploaded artifacts. The version is external to the artifact
-// descriptions so that it is consistent for all of them.
+// SetArtifactsVersion sets the common version for all uploaded artifacts. The version is external to
+// the artifact descriptions so that it is consistent for all of them.
 func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
 	if version == "" {
 		return errors.New("version must not be empty")
@@ -104,7 +104,8 @@ func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 
 func validateArtifact(artifact ArtifactDescription) error {
 	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
-		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty", artifact.File, artifact.ID, artifact.Type)
+		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty",
+			artifact.File, artifact.ID, artifact.Type)
 	}
 	return nil
 }
@@ -194,7 +195,11 @@ func (nexusUpload *Upload) uploadArtifacts(client piperHttp.Sender) error {
 
 func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
 	client := piperHttp.Client{}
-	clientOptions := piperHttp.ClientOptions{Username: nexusUpload.Username, Password: nexusUpload.Password, Logger: nexusUpload.Logger}
+	clientOptions := piperHttp.ClientOptions{
+		Username: nexusUpload.Username,
+		Password: nexusUpload.Password,
+		Logger:   nexusUpload.Logger,
+	}
 	client.SetOptions(clientOptions)
 	return &client
 }

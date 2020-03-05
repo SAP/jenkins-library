@@ -13,7 +13,12 @@ import (
 func TestAddArtifactValid(t *testing.T) {
 	nexusUpload := Upload{}
 
-	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "artifact.id",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
 
 	assert.NoError(t, err, "Expected to add valid artifact")
 	assert.True(t, len(nexusUpload.artifacts) == 1)
@@ -27,7 +32,12 @@ func TestAddArtifactValid(t *testing.T) {
 func TestAddArtifactMissingID(t *testing.T) {
 	nexusUpload := Upload{}
 
-	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "", Classifier: "", Type: "pom", File: "pom.xml"})
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
 
 	assert.Error(t, err, "Expected to fail adding invalid artifact")
 	assert.True(t, len(nexusUpload.artifacts) == 0)
@@ -36,8 +46,18 @@ func TestAddArtifactMissingID(t *testing.T) {
 func TestAddDuplicateArtifact(t *testing.T) {
 	nexusUpload := Upload{}
 
-	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "blob", Classifier: "", Type: "pom", File: "pom.xml"})
-	err = nexusUpload.AddArtifact(ArtifactDescription{ID: "blob", Classifier: "", Type: "pom", File: "pom.xml"})
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "blob",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
+	err = nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "blob",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
 	assert.NoError(t, err, "Expected to succeed adding duplicate artifact")
 	assert.True(t, len(nexusUpload.artifacts) == 1)
 }
@@ -118,18 +138,33 @@ func TestUpload_AddArtifactsFromJSON(t *testing.T) {
 	if err := nexusUpload.AddArtifactsFromJSON(json); err != nil {
 		t.Errorf("AddArtifactsFromJSON() error = %v", err)
 	}
-	assert.Equal(t, []ArtifactDescription{{ID: "myapp-pom", Classifier: "myapp-1.0", Type: "pom", File: "pom.xml"}}, nexusUpload.artifacts)
+	assert.Equal(t, []ArtifactDescription{{
+		ID:         "myapp-pom",
+		Classifier: "myapp-1.0",
+		Type:       "pom",
+		File:       "pom.xml",
+	}}, nexusUpload.artifacts)
 }
 
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
 	nexusUpload := Upload{}
 
-	err := nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "pom.xml"})
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "artifact.id",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
 	assert.NoError(t, err, "Expected to succeed adding valid artifact")
 
 	artifacts := nexusUpload.GetArtifacts()
 	// Overwrite array entry in the returned array...
-	artifacts[0] = ArtifactDescription{ID: "another.id", Classifier: "", Type: "pom", File: "pom.xml"}
+	artifacts[0] = ArtifactDescription{
+		ID:         "another.id",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	}
 	// ... but expect the entry in nexusUpload object to be unchanged
 	assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
 }
@@ -285,9 +320,12 @@ func TestUploadWorks(t *testing.T) {
 	assert.Equal(t, http.MethodPut, mockedHttp.requests[1].method)
 	assert.Equal(t, http.MethodPut, mockedHttp.requests[2].method)
 
-	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.md5", mockedHttp.requests[0].url)
-	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.sha1", mockedHttp.requests[1].url)
-	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom", mockedHttp.requests[2].url)
+	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.md5",
+		mockedHttp.requests[0].url)
+	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.sha1",
+		mockedHttp.requests[1].url)
+	assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom",
+		mockedHttp.requests[2].url)
 }
 
 func TestUploadFailsAtMd5(t *testing.T) {
