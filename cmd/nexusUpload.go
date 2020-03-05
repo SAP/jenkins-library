@@ -44,7 +44,7 @@ func runNexusUpload(options *nexusUploadOptions, telemetryData *telemetry.Custom
 
 func uploadMTA(nexusClient *nexus.Upload, options *nexusUploadOptions) error {
 	if options.GroupID == "" {
-		return fmt.Errorf("The 'groupID' parameter needs to be provided for MTA projects")
+		return fmt.Errorf("the 'groupID' parameter needs to be provided for MTA projects")
 	}
 	err := nexusClient.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
 	if err == nil {
