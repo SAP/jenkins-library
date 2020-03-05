@@ -69,13 +69,13 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 
 	if len(serviceKeyBytes.String()) == 0 {
 		log.Entry().Info("No service key could be retrieved for your requested Service")
-		return err
+		return nil
 	}
 
 	var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
 	if len(lines) <= 4 {
 		log.Entry().Info("No Service Keys active to be deleted")
-		return err
+		return nil
 	}
 	var numberOfLines = len(lines)
 	log.Entry().WithField("Number of service keys :", numberOfLines-4).Info("ServiceKey")
@@ -89,7 +89,7 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 		}
 	}
 	log.Entry().Info("ServiceKeys have been deleted!")
-	return err
+	return nil
 }
 
 func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) error {
@@ -103,7 +103,7 @@ func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) e
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
 	}
 	log.Entry().Info("Logged in successfully to Cloud Foundry..")
-	return err
+	return nil
 }
 
 func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
@@ -117,7 +117,7 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 		return fmt.Errorf("Failed to delete Service: %w", err)
 	}
 	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
-	return err
+	return nil
 }
 
 func cloudFoundryLogout(c execRunner) error {
@@ -130,5 +130,5 @@ func cloudFoundryLogout(c execRunner) error {
 		return fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
 	}
 	log.Entry().Info("Logged out successfully")
-	return err
+	return nil
 }
