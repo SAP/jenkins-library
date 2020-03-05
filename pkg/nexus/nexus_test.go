@@ -112,7 +112,6 @@ func TestAddNoArtifactsFromInvalidJSON(t *testing.T) {
 	assert.Equal(t, 0, len(nexusUpload.artifacts))
 }
 
-
 func TestUpload_AddArtifactsFromJSON(t *testing.T) {
 	json := `[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"}]`
 	nexusUpload := Upload{}
@@ -173,7 +172,7 @@ func TestSetValidArtifactsVersion(t *testing.T) {
 
 type simpleHttpMock struct {
 	responseStatus string
-	responseError error
+	responseError  error
 }
 
 func (m *simpleHttpMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
@@ -186,7 +185,7 @@ func (m *simpleHttpMock) SetOptions(options piperhttp.ClientOptions) {
 func TestUploadNoInit(t *testing.T) {
 	var mockedHttp = simpleHttpMock{
 		responseStatus: "200 OK",
-		responseError: nil,
+		responseError:  nil,
 	}
 
 	t.Run("Expect that upload fails without base-URL", func(t *testing.T) {
@@ -216,20 +215,20 @@ func TestUploadNoInit(t *testing.T) {
 
 type request struct {
 	method string
-	url string
+	url    string
 }
 
 type requestReply struct {
 	response string
-	err error
+	err      error
 }
 
 type httpMock struct {
-	username string
-	password string
-	requestIndex int
+	username       string
+	password       string
+	requestIndex   int
 	requestReplies []requestReply
-	requests []request
+	requests       []request
 }
 
 func (m *httpMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
