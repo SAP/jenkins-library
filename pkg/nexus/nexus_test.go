@@ -42,6 +42,76 @@ func TestAddDuplicateArtifact(t *testing.T) {
 	assert.True(t, len(nexusUpload.artifacts) == 1)
 }
 
+func TestAddArtifactsFromValidJSON(t *testing.T) {
+	nexusUpload := Upload{}
+
+	artifactJSON := `
+		[
+			{
+				"artifactId" : "my-app",
+				"classifier" : "",
+				"file"       : "app.jar",
+				"type"       : "jar"
+			},
+			{
+				"artifactId" : "my-app",
+				"file"       : "pom.xml",
+				"type"       : "pom"
+			}
+		]`
+
+	err := nexusUpload.AddArtifactsFromJSON(artifactJSON)
+	assert.NoError(t, err, "Expected to succeed adding 2 artifacts from valid JSON")
+	assert.Equal(t, 2, len(nexusUpload.artifacts))
+}
+
+func TestAddNoArtifactsFromPartiallyValidJSON(t *testing.T) {
+	nexusUpload := Upload{}
+
+	artifactJSON := `
+		[
+			{
+				"blah" : "blub",
+			},
+			{
+				"artifactId" : "my-app",
+				"file"       : "pom.xml",
+				"type"       : "pom"
+			}
+		]`
+
+	err := nexusUpload.AddArtifactsFromJSON(artifactJSON)
+	assert.Error(t, err, "Expected to fail adding artifacts from partially valid JSON")
+	assert.Equal(t, 0, len(nexusUpload.artifacts))
+}
+
+func TestAddArtifactsFromJSONWithWrongTypes(t *testing.T) {
+	nexusUpload := Upload{}
+
+	artifactJSON := `
+		[
+			{
+				"artifactId" : "my-app",
+				"file"       : 1,
+				"type"       : true
+			}
+		]`
+
+	err := nexusUpload.AddArtifactsFromJSON(artifactJSON)
+	assert.Error(t, err, "Expected to fail adding artifacts from JSON with wrong types")
+	assert.Equal(t, 0, len(nexusUpload.artifacts))
+}
+
+func TestAddNoArtifactsFromInvalidJSON(t *testing.T) {
+	nexusUpload := Upload{}
+
+	artifactJSON := "grmpf"
+
+	err := nexusUpload.AddArtifactsFromJSON(artifactJSON)
+	assert.Error(t, err, "Expected to fail adding artifacts from invalid JSON")
+	assert.Equal(t, 0, len(nexusUpload.artifacts))
+}
+
 func TestArtifactsNotDirectlyAccessible(t *testing.T) {
 	nexusUpload := Upload{}
 
