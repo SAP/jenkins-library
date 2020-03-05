@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"fmt"
@@ -223,11 +224,8 @@ func addAdditionalClassifierArtifacts(additionalClassifiers, targetFolder, artif
 }
 
 func composeFilePath(folder, name, extension string) string {
-	path := name + "." + extension
-	if folder != "" {
-		path = folder + "/" + path
-	}
-	return path
+	fileName := name + "." + extension
+	return filepath.Join(folder, fileName)
 }
 
 func evaluateMavenProperty(pomFile, expression string) (string, error) {
@@ -250,9 +248,7 @@ func evaluateMavenProperty(pomFile, expression string) (string, error) {
 	if strings.HasPrefix(value, "null object or invalid expression") {
 		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
 	}
-	if GeneralConfig.Verbose {
-		log.Entry().Infof("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)
-	}
+	log.Entry().Debugf("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)
 	return value, nil
 }
 
