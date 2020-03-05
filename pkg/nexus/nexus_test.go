@@ -284,3 +284,12 @@ func TestUploadFails(t *testing.T) {
 	assert.Equal(t, 2, mockedHttp.requestIndex, "Expected only two HTTP requests")
 	assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
 }
+
+func TestUpload_AddArtifactsFromJSON(t *testing.T) {
+	json := `[{"artifactId":"myapp-pom","classifier":"myapp-1.0","type":"pom","file":"pom.xml"}]`
+	nexusUpload := Upload{}
+	if err := nexusUpload.AddArtifactsFromJSON(json); err != nil {
+		t.Errorf("AddArtifactsFromJSON() error = %v", err)
+	}
+	assert.Equal(t, []ArtifactDescription{{ID: "myapp-pom", Classifier: "myapp-1.0", Type: "pom", File: "pom.xml"}}, nexusUpload.artifacts)
+}
