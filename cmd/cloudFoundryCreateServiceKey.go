@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -17,12 +16,11 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	c.Stderr(log.Entry().Writer())
 
 	config := cloudFoundryDeleteServiceOptions{
-		CfAPIEndpoint:     options.CfAPIEndpoint,
-		CfOrg:             options.CfOrg,
-		CfSpace:           options.CfSpace,
-		Username:          options.Username,
-		Password:          options.Password,
-		CfServiceInstance: options.CfServiceInstance,
+		CfAPIEndpoint: options.CfAPIEndpoint,
+		CfOrg:         options.CfOrg,
+		CfSpace:       options.CfSpace,
+		Username:      options.Username,
+		Password:      options.Password,
 	}
 
 	var err error
@@ -59,19 +57,16 @@ func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions
 
 	log.Entry().Info("Creating Service Key")
 
-	var cfFindServiceKeysScript []string
+	var cfCreateServiceKeyScript []string
 
 	if config.CfServiceKeyConfig == "" {
-		cfFindServiceKeysScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName}
+		cfCreateServiceKeyScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName}
 	} else {
-		fmt.Println(reflect.TypeOf(config.CfServiceKeyConfig))
-		fmt.Println(config.CfServiceKeyConfig)
-
-		cfFindServiceKeysScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName, "[-c", config.CfServiceKeyConfig, "]"}
-		fmt.Println(cfFindServiceKeysScript)
+		cfCreateServiceKeyScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName, "[-c", config.CfServiceKeyConfig, "]"}
+		fmt.Println(cfCreateServiceKeyScript)
 	}
 
-	err := c.RunExecutable("cf", cfFindServiceKeysScript...)
+	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to Create Service Key: %w", err)
