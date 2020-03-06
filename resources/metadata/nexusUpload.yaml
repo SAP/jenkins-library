@@ -1,0 +1,74 @@
+metadata:
+  name: nexusUpload
+  description: Upload artifacts to Nexus
+  longDescription: |
+    Upload build artifacts to a Nexus Repository Manager
+spec:
+  inputs:
+    secrets:
+      - name: nexusCredentialsId
+        description: The technical username/password credential for accessing the nexus endpoint.
+        type: jenkins
+    params:
+      - name: version
+        type: string
+        description: The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default: nexus3
+      - name: url
+        type: string
+        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: repository
+        type: string
+        description: Name of the nexus repository.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: groupId
+        type: string
+        description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+      - name: artifactId
+        type: string
+        description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: additionalClassifiers
+        type: string
+        description: List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: user
+        type: string
+        description: User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: password
+        type: string
+        description: Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS

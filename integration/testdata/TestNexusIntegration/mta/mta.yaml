@@ -1,0 +1,10 @@
+_schema-version: 2.1.0
+ID: test
+version: 0.3.0
+
+modules:
+
+- name: java
+  type: java
+  path: srv
+
