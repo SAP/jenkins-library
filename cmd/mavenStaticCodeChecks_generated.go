@@ -14,6 +14,8 @@ import (
 )
 
 type mavenStaticCodeChecksOptions struct {
+	SpotBugs                  bool     `json:"spotBugs,omitempty"`
+	Pmd                       bool     `json:"pmd,omitempty"`
 	MavenModulesExcludes      []string `json:"mavenModulesExcludes,omitempty"`
 	SpotBugsExcludeFilterFile string   `json:"spotBugsExcludeFilterFile,omitempty"`
 	SpotBugsIncludeFilterFile string   `json:"spotBugsIncludeFilterFile,omitempty"`
@@ -21,7 +23,7 @@ type mavenStaticCodeChecksOptions struct {
 	PmdRuleSets               []string `json:"pmdRuleSets,omitempty"`
 }
 
-// MavenStaticCodeChecksCommand Execute static code checks using maven as is spobugs and pmd
+// MavenStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
 func MavenStaticCodeChecksCommand() *cobra.Command {
 	metadata := mavenStaticCodeChecksMetadata()
 	var stepConfig mavenStaticCodeChecksOptions
@@ -29,8 +31,8 @@ func MavenStaticCodeChecksCommand() *cobra.Command {
 
 	var createMavenStaticCodeChecksCmd = &cobra.Command{
 		Use:   "mavenStaticCodeChecks",
-		Short: "Execute static code checks using maven as is spobugs and pmd",
-		Long: `Executes spotbugs maven plugin as well as pmd maven plugin for static code checks.
+		Short: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
+		Long: `Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
 SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
 For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
 PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
@@ -61,6 +63,8 @@ For more information please visit https://pmd.github.io/`,
 }
 
 func addMavenStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenStaticCodeChecksOptions) {
+	cmd.Flags().BoolVar(&stepConfig.SpotBugs, "spotBugs", true, "Parameter to turn off SpotBugs.")
+	cmd.Flags().BoolVar(&stepConfig.Pmd, "pmd", true, "Parameter to turn off PMD.")
 	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsExcludeFilterFile, "spotBugsExcludeFilterFile", os.Getenv("PIPER_spotBugsExcludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsIncludeFilterFile, "spotBugsIncludeFilterFile", os.Getenv("PIPER_spotBugsIncludeFilterFile"), "Path to a filter file with bug definitions which should be included.")
@@ -75,6 +79,22 @@ func mavenStaticCodeChecksMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "spotBugs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "pmd",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 					{
 						Name:        "mavenModulesExcludes",
 						ResourceRef: []config.ResourceReference{},

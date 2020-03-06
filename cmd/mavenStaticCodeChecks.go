@@ -21,6 +21,11 @@ func mavenStaticCodeChecks(config mavenStaticCodeChecksOptions, telemetryData *t
 
 func runMavenStaticCodeChecks(config *mavenStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 	var defines []string
+	var goals []string
+
+	if !config.SpotBugs && !config.Pmd {
+		log.Entry().Fatal("Neither SpotBugs nor Pmd are configured. At least one of those tools have to be enabled")
+	}
 
 	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
@@ -32,14 +37,18 @@ func runMavenStaticCodeChecks(config *mavenStaticCodeChecksOptions, telemetryDat
 		}
 	}
 
-	spotBugsMavenParameters := getSpotBugsMavenParameters(config)
-	pmdMavenParameters := getPmdMavenParameters(config)
-
-	defines = append(defines, spotBugsMavenParameters.Defines...)
-	defines = append(defines, pmdMavenParameters.Defines...)
-
+	if config.SpotBugs {
+		spotBugsMavenParameters := getSpotBugsMavenParameters(config)
+		defines = append(defines, spotBugsMavenParameters.Defines...)
+		goals = append(goals, spotBugsMavenParameters.Goals...)
+	}
+	if config.Pmd {
+		pmdMavenParameters := getPmdMavenParameters(config)
+		defines = append(defines, pmdMavenParameters.Defines...)
+		goals = append(goals, pmdMavenParameters.Goals...)
+	}
 	finalMavenOptions := maven.ExecuteOptions{
-		Goals:   append(spotBugsMavenParameters.Goals, pmdMavenParameters.Goals...),
+		Goals:   goals,
 		Defines: defines,
 	}
 	_, err := maven.Execute(&finalMavenOptions, command)
@@ -49,7 +58,7 @@ func runMavenStaticCodeChecks(config *mavenStaticCodeChecksOptions, telemetryDat
 func getSpotBugsMavenParameters(config *mavenStaticCodeChecksOptions) *maven.ExecuteOptions {
 	var defines []string
 	if config.SpotBugsIncludeFilterFile != "" {
-		defines = append(defines, "-Dspotbugs.excludeFilterFile="+config.SpotBugsIncludeFilterFile)
+		defines = append(defines, "-Dspotbugs.includeFilterFile="+config.SpotBugsIncludeFilterFile)
 	}
 	if config.SpotBugsExcludeFilterFile != "" {
 		defines = append(defines, "-Dspotbugs.excludeFilterFile="+config.SpotBugsExcludeFilterFile)

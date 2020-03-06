@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -14,6 +16,8 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		config := mavenStaticCodeChecksOptions{
+			SpotBugs:                  true,
+			Pmd:                       true,
 			PmdExcludes:               []string{"*test.java", "*prod.java"},
 			PmdRuleSets:               []string{"myRule.xml", "anotherRule.xml"},
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
@@ -24,7 +28,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 			Exec: "mvn",
 			Params: []string{"-pl", "!unit-tests", "-pl", "!integration-tests",
 				"-pl", "!testing-lib", "-pl", "!test-helpers",
-				"-Dspotbugs.excludeFilterFile=includeFilter.xml",
+				"-Dspotbugs.includeFilterFile=includeFilter.xml",
 				"-Dspotbugs.excludeFilterFile=excludeFilter.xml",
 				"-Dpmd.excludes=*test.java,*prod.java",
 				"-Dpmd.rulesets=myRule.xml,anotherRule.xml",
@@ -46,11 +50,23 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, expected, execMockRunner.Calls[0])
 	})
+	t.Run("should log fatal if all tools are turned off", func(t *testing.T) {
+		var hasFailed bool
+		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
+		execMockRunner := mock.ExecMockRunner{}
+		config := mavenStaticCodeChecksOptions{
+			SpotBugs: false,
+			Pmd:      false,
+		}
+		_ = runMavenStaticCodeChecks(&config, nil, &execMockRunner)
+		assert.True(t, hasFailed, "expected command to exit with fatal")
+	})
 }
 
 func TestGetPmdMavenParameters(t *testing.T) {
 	t.Run("should return maven options with excludes and rulesets", func(t *testing.T) {
 		config := mavenStaticCodeChecksOptions{
+			Pmd:         true,
 			PmdExcludes: []string{"*test.java", "*prod.java"},
 			PmdRuleSets: []string{"myRule.xml", "anotherRule.xml"},
 		}
@@ -73,12 +89,13 @@ func TestGetPmdMavenParameters(t *testing.T) {
 func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven options with excludes and include filters", func(t *testing.T) {
 		config := mavenStaticCodeChecksOptions{
+			SpotBugs:                  true,
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
 			SpotBugsIncludeFilterFile: "includeFilter.xml",
 		}
 		expected := maven.ExecuteOptions{
 			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"},
-			Defines: []string{"-Dspotbugs.excludeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml"},
+			Defines: []string{"-Dspotbugs.includeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml"},
 		}
 
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
