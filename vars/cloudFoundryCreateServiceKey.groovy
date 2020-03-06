@@ -12,6 +12,11 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field def STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/cloudFoundryCreateServiceKey.yaml'
 
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace', serviceInstance: 'cfServiceInstance', serviceKeyName: 'cfServiceKeyName', serviceKeyConfig: 'cfServiceKeyConfig']]
+
+
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
