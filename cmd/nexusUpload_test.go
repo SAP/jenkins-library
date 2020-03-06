@@ -162,6 +162,17 @@ func TestUploadMTAProjects(t *testing.T) {
 		fileUtils.files["mta.yaml"] = testMtaYml
 		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
 		assert.NoError(t, err, "expected mta.yaml project upload to work")
+
+		assert.Equal(t, 2, len(uploader.artifacts))
+
+		assert.Equal(t, "mta.yaml", uploader.artifacts[0].File)
+		assert.Equal(t, "yaml", uploader.artifacts[0].Type)
+		assert.Equal(t, "artifact.id", uploader.artifacts[0].ID)
+
+		// For the next check to work, need to mock the piperenv, since the mtar filepath is read from there
+		assert.Equal(t, "", uploader.artifacts[1].File)
+		assert.Equal(t, "mtar", uploader.artifacts[1].Type)
+		assert.Equal(t, "artifact.id", uploader.artifacts[1].ID)
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
 		projectStructure := mockProjectStructure{mta: true}
@@ -172,6 +183,17 @@ func TestUploadMTAProjects(t *testing.T) {
 		fileUtils.files["mta.yml"] = testMtaYml
 		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
 		assert.NoError(t, err, "expected mta.yml project upload to work")
+
+		assert.Equal(t, 2, len(uploader.artifacts))
+
+		assert.Equal(t, "mta.yml", uploader.artifacts[0].File)
+		assert.Equal(t, "yaml", uploader.artifacts[0].Type)
+		assert.Equal(t, "artifact.id", uploader.artifacts[0].ID)
+
+		// For the next check to work, need to mock the piperenv, since the mtar filepath is read from there
+		assert.Equal(t, "", uploader.artifacts[1].File)
+		assert.Equal(t, "mtar", uploader.artifacts[1].Type)
+		assert.Equal(t, "artifact.id", uploader.artifacts[1].ID)
 	})
 }
 
@@ -183,13 +205,19 @@ func TestUploadMavenProjects(t *testing.T) {
 		evaluator.properties["project.groupId"] = "com.mycompany.app"
 		evaluator.properties["project.artifactId"] = "my-app"
 		evaluator.properties["project.packaging"] = "pom"
-		evaluator.properties["project.build.finalName"] = "my-app-1.0.jar"
+		evaluator.properties["project.build.finalName"] = "my-app-1.0"
 		uploader := mockUploader{}
 		options := createOptions()
 		fileUtils := newMockFileUtils()
 		fileUtils.files["pom.xml"] = testPomXml
 		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
 		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, 1, len(uploader.artifacts))
+
+		assert.Equal(t, "pom.xml", uploader.artifacts[0].File)
+		assert.Equal(t, "my-app", uploader.artifacts[0].ID)
+		assert.Equal(t, "pom", uploader.artifacts[0].Type)
 	})
 	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
 		projectStructure := mockProjectStructure{maven: true}
@@ -198,7 +226,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		evaluator.properties["project.groupId"] = "com.mycompany.app"
 		evaluator.properties["project.artifactId"] = "my-app"
 		evaluator.properties["project.packaging"] = "jar"
-		evaluator.properties["project.build.finalName"] = "my-app-1.0.jar"
+		evaluator.properties["project.build.finalName"] = "my-app-1.0"
 		uploader := mockUploader{}
 		options := createOptions()
 		fileUtils := newMockFileUtils()
@@ -206,6 +234,16 @@ func TestUploadMavenProjects(t *testing.T) {
 		fileUtils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
 		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
 		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, 2, len(uploader.artifacts))
+
+		assert.Equal(t, "pom.xml", uploader.artifacts[0].File)
+		assert.Equal(t, "my-app", uploader.artifacts[0].ID)
+		assert.Equal(t, "pom", uploader.artifacts[0].Type)
+
+		assert.Equal(t, "target/my-app-1.0.jar", uploader.artifacts[1].File)
+		assert.Equal(t, "my-app", uploader.artifacts[1].ID)
+		assert.Equal(t, "jar", uploader.artifacts[1].Type)
 	})
 }
 
