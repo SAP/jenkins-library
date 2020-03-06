@@ -49,7 +49,7 @@ type Uploader interface {
 
 func (nexusUpload *Upload) initLogger() {
 	if nexusUpload.Logger == nil {
-		nexusUpload.Logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/nexusUpload")
+		nexusUpload.Logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/nexus")
 	}
 }
 
