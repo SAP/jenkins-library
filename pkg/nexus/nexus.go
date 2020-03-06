@@ -55,15 +55,6 @@ func (nexusUpload *Upload) initLogger() {
 
 // SetBaseURL constructs the base URL for all uploaded artifacts. No parameter can be empty.
 func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error {
-	if nexusURL == "" {
-		return errors.New("nexusURL must not be empty")
-	}
-	if repository == "" {
-		return errors.New("repository must not be empty")
-	}
-	if groupID == "" {
-		return errors.New("groupID must not be empty")
-	}
 	baseURL, err := getBaseURL(nexusURL, nexusVersion, repository, groupID)
 	if err != nil {
 		return err
@@ -175,6 +166,15 @@ func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
 }
 
 func getBaseURL(nexusURL, nexusVersion, repository, groupID string) (string, error) {
+	if nexusURL == "" {
+		return "", errors.New("nexusURL must not be empty")
+	}
+	if repository == "" {
+		return "", errors.New("repository must not be empty")
+	}
+	if groupID == "" {
+		return "", errors.New("groupID must not be empty")
+	}
 	baseURL := nexusURL
 	switch nexusVersion {
 	case "nexus2":

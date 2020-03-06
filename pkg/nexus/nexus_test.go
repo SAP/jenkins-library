@@ -45,13 +45,13 @@ func TestAddArtifact(t *testing.T) {
 	t.Run("Test adding duplicate artifact is ignored", func(t *testing.T) {
 		nexusUpload := Upload{}
 
-		err := nexusUpload.AddArtifact(ArtifactDescription{
+		_ = nexusUpload.AddArtifact(ArtifactDescription{
 			ID:         "blob",
 			Classifier: "",
 			Type:       "pom",
 			File:       "pom.xml",
 		})
-		err = nexusUpload.AddArtifact(ArtifactDescription{
+		err := nexusUpload.AddArtifact(ArtifactDescription{
 			ID:         "blob",
 			Classifier: "",
 			Type:       "pom",
@@ -86,6 +86,7 @@ func TestGetArtifacts(t *testing.T) {
 }
 
 func TestGetBaseURL(t *testing.T) {
+	// Invalid parameters to getBaseURL() already tested via SetBaseURL() tests
 	t.Run("Test base URL for nexus2 is sensible", func(t *testing.T) {
 		baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases", "some.group.id")
 		assert.NoError(t, err, "Expected getBaseURL() to succeed")
@@ -95,11 +96,6 @@ func TestGetBaseURL(t *testing.T) {
 		baseURL, err := getBaseURL("localhost:8081", "nexus3", "maven-releases", "some.group.id")
 		assert.NoError(t, err, "Expected getBaseURL() to succeed")
 		assert.Equal(t, "localhost:8081/repository/maven-releases/some/group/id/", baseURL)
-	})
-	t.Run("Test unsupported nexus version", func(t *testing.T) {
-		baseURL, err := getBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected getBaseURL() to fail")
-		assert.Equal(t, "", baseURL)
 	})
 }
 
@@ -123,6 +119,16 @@ func TestSetBaseURL(t *testing.T) {
 		nexusUpload := Upload{}
 		err := nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "")
 		assert.Error(t, err, "Expected SetBaseURL() to fail (no groupID)")
+	})
+	t.Run("Test no nexus version provided", func(t *testing.T) {
+		nexusUpload := Upload{}
+		err := nexusUpload.SetBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
+		assert.Error(t, err, "Expected SetBaseURL() to fail (unsupported nexus version)")
+	})
+	t.Run("Test unsupported nexus version provided", func(t *testing.T) {
+		nexusUpload := Upload{}
+		err := nexusUpload.SetBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
+		assert.Error(t, err, "Expected SetBaseURL() to fail (unsupported nexus version)")
 	})
 }
 
