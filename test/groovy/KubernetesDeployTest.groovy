@@ -38,6 +38,10 @@ class KubernetesDeployTest extends BasePiperTest {
             return closure()
         })
 
+        helper.registerAllowedMethod('fileExists', [Map.class], {
+            return false
+        })
+
         helper.registerAllowedMethod('file', [Map], { m -> return m })
         helper.registerAllowedMethod('string', [Map], { m -> return m })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
@@ -70,6 +74,7 @@ class KubernetesDeployTest extends BasePiperTest {
 
         stepRule.step.kubernetesDeploy(
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
             testParam: "This is test content",
             script: nullScript
         )
@@ -87,6 +92,7 @@ class KubernetesDeployTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/kubernetesdeploy.yaml\'', '{"kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials"}')
         stepRule.step.kubernetesDeploy(
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
             script: nullScript
         )
         // asserts
