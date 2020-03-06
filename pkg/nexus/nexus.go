@@ -135,7 +135,7 @@ func (nexusUpload *Upload) uploadArtifacts(client piperHttp.Sender) error {
 		return fmt.Errorf("the nexus.Upload needs to be configured by calling SetArtifactsVersion() first")
 	}
 	if len(nexusUpload.artifacts) == 0 {
-		return fmt.Errorf("no artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first")
+		return fmt.Errorf("no artifacts to upload, call AddArtifact() first")
 	}
 
 	nexusUpload.initLogger()

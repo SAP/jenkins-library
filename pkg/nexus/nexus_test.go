@@ -177,7 +177,7 @@ func TestUploadNoInit(t *testing.T) {
 		_ = nexusUpload.SetArtifactsVersion("1.0")
 
 		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.EqualError(t, err, "no artifacts to upload, call AddArtifact() or AddArtifactsFromJSON() first")
+		assert.EqualError(t, err, "no artifacts to upload, call AddArtifact() first")
 	})
 }
 
@@ -229,7 +229,7 @@ func createConfiguredNexusUpload() Upload {
 	return nexusUpload
 }
 
-func TestUpload_UploadArtifacts(t *testing.T) {
+func TestUploadArtifacts(t *testing.T) {
 	t.Run("Test upload works", func(t *testing.T) {
 		var mockedHttp = httpMock{}
 		// There will be three requests, md5, sha1 and the file itself
