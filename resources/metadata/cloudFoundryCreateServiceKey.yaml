@@ -75,7 +75,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: cloudFoundry/cfServiceKeyName
+          - name: cloudFoundry/serviceKeyName
       - name: cfServiceKeyConfig
         type: string
         description: Configuration for Service Key Creation
@@ -85,7 +85,7 @@ spec:
         - STEPS
         mandatory: false
         aliases:
-          - name: cloudFoundry/cfServiceKeyConfig
+          - name: cloudFoundry/serviceKeyConfig
   containers:
     - name: cf
       image: ppiper/cf-cli

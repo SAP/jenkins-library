@@ -138,7 +138,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/cfServiceKeyName"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyName"}},
 					},
 					{
 						Name:        "cfServiceKeyConfig",
@@ -146,7 +146,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/cfServiceKeyConfig"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"}},
 					},
 				},
 			},
