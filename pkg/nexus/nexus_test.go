@@ -126,16 +126,17 @@ func TestSetBaseURL(t *testing.T) {
 	})
 }
 
-func TestSetInvalidArtifactsVersion(t *testing.T) {
-	nexusUpload := Upload{}
-	err := nexusUpload.SetArtifactsVersion("")
-	assert.Error(t, err, "Expected SetArtifactsVersion() to fail (empty version)")
-}
-
-func TestSetValidArtifactsVersion(t *testing.T) {
-	nexusUpload := Upload{}
-	err := nexusUpload.SetArtifactsVersion("1.0.0-SNAPSHOT")
-	assert.NoError(t, err, "Expected SetArtifactsVersion() to succeed")
+func TestSetArtifactsVersion(t *testing.T) {
+	t.Run("Test invalid artifact version", func(t *testing.T) {
+		nexusUpload := Upload{}
+		err := nexusUpload.SetArtifactsVersion("")
+		assert.Error(t, err, "Expected SetArtifactsVersion() to fail (empty version)")
+	})
+	t.Run("Test valid artifact version", func(t *testing.T) {
+		nexusUpload := Upload{}
+		err := nexusUpload.SetArtifactsVersion("1.0.0-SNAPSHOT")
+		assert.NoError(t, err, "Expected SetArtifactsVersion() to succeed")
+	})
 }
 
 type simpleHttpMock struct {
