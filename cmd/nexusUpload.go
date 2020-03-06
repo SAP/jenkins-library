@@ -63,17 +63,6 @@ func uploadMTA(uploader nexus.Uploader, fileUtils piperutils.FileUtils, options 
 		return fmt.Errorf("the 'groupID' parameter needs to be provided for MTA projects")
 	}
 	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
-	if err == nil {
-		exists, _ := fileUtils.FileExists("mta.yaml")
-		if exists {
-			// Give this file precedence, but it would be even better if
-			// ProjectStructure could be asked for the mta file it detected.
-			err = setVersionFromMtaFile(uploader, fileUtils, "mta.yaml")
-		} else {
-			// This will fail anyway if the file doesn't exist
-			err = setVersionFromMtaFile(uploader, fileUtils, "mta.yml")
-		}
-	}
 	var mtaPath string
 	if err == nil {
 		exists, _ := fileUtils.FileExists("mta.yaml")
