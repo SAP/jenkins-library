@@ -182,7 +182,7 @@ func getBaseURL(nexusURL, nexusVersion, repository, groupID string) (string, err
 	case "nexus3":
 		baseURL += "/repository/"
 	default:
-		return "", fmt.Errorf("unsupported Nexus version '%s'", nexusVersion)
+		return "", fmt.Errorf("unsupported Nexus version '%s', must be 'nexus2' or 'nexus3'", nexusVersion)
 	}
 	groupPath := strings.ReplaceAll(groupID, ".", "/")
 	baseURL += repository + "/" + groupPath + "/"
