@@ -62,9 +62,15 @@ class PiperExecuteBinTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
-            return '''metadata:
+            if (s == 'metadata/test.yaml') {
+                return '''metadata:
   name: testStep
 '''
+            } else {
+                return '''general:
+  failOnError: true
+'''
+            }
         })
 
         helper.registerAllowedMethod('file', [Map], { m -> return m })
@@ -185,4 +191,28 @@ class PiperExecuteBinTest extends BasePiperTest {
 
     }
 
+    @Test
+    void testPiperExecuteBinNoReportFound() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('fileExists', [Map], {
+            return false
+        })
+
+        exception.expect(AbortException)
+        exception.expectMessage("Expected to find testStep_reports.json in workspace but it is not there")
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            [],
+            true,
+            false
+        )
+    }
 }
