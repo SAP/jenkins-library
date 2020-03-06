@@ -63,16 +63,18 @@ func uploadMTA(uploader nexus.Uploader, fileUtils piperutils.FileUtils, options 
 		return fmt.Errorf("the 'groupID' parameter needs to be provided for MTA projects")
 	}
 	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
+	var mtaPath string
 	if err == nil {
 		exists, _ := fileUtils.FileExists("mta.yaml")
 		if exists {
+			mtaPath = "mta.yaml"
 			// Give this file precedence, but it would be even better if
 			// ProjectStructure could be asked for the mta file it detected.
-			err = setVersionFromMtaFile(uploader, fileUtils, "mta.yaml")
 		} else {
 			// This will fail anyway if the file doesn't exist
-			err = setVersionFromMtaFile(uploader, fileUtils, "mta.yml")
+			mtaPath = "mta.yml"
 		}
+		err = setVersionFromMtaFile(uploader, fileUtils, mtaPath)
 	}
 	if err == nil {
 		artifactID := options.ArtifactID
@@ -80,7 +82,7 @@ func uploadMTA(uploader nexus.Uploader, fileUtils piperutils.FileUtils, options 
 			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
 			log.Entry().Debugf("mtar artifact id from CPE: '%s'", artifactID)
 		}
-		err = uploader.AddArtifact(nexus.ArtifactDescription{File: "mta.yaml", Type: "yaml", Classifier: "", ID: options.ArtifactID})
+		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtaPath, Type: "yaml", Classifier: "", ID: options.ArtifactID})
 	}
 	if err == nil {
 		mtarFilePath := piperenv.GetParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
