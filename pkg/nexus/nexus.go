@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"hash"
@@ -44,7 +43,6 @@ type Uploader interface {
 	SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error
 	SetArtifactsVersion(version string) error
 	AddArtifact(artifact ArtifactDescription) error
-	AddArtifactsFromJSON(json string) error
 	GetArtifacts() []ArtifactDescription
 	UploadArtifacts() error
 }
@@ -108,31 +106,6 @@ func validateArtifact(artifact ArtifactDescription) error {
 			artifact.File, artifact.ID, artifact.Type)
 	}
 	return nil
-}
-
-// AddArtifactsFromJSON parses the provided JSON string into an array of ArtifactDescriptions and adds each of
-// them via AddArtifact().
-func (nexusUpload *Upload) AddArtifactsFromJSON(json string) error {
-	artifacts, err := getArtifactsFromJSON(json)
-	if err != nil {
-		return err
-	}
-	if len(artifacts) == 0 {
-		return errors.New("no artifact descriptions found in JSON string")
-	}
-	for _, artifact := range artifacts {
-		err = nexusUpload.AddArtifact(artifact)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func getArtifactsFromJSON(artifactsAsJSON string) ([]ArtifactDescription, error) {
-	var artifacts []ArtifactDescription
-	err := json.Unmarshal([]byte(artifactsAsJSON), &artifacts)
-	return artifacts, err
 }
 
 func (nexusUpload *Upload) containsArtifact(artifact ArtifactDescription) bool {
