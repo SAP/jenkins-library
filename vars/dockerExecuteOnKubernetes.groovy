@@ -319,6 +319,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
     return null
 }
@@ -334,6 +337,9 @@ private void unstashWorkspace(config, prefix) {
         stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
 }
 
