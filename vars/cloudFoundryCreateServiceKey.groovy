@@ -16,6 +16,48 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace', serviceInstance: 'cfServiceInstance', serviceKeyName: 'cfServiceKeyName', serviceKeyConfig: 'cfServiceKeyConfig']]
 
+@Field Set STEP_CONFIG_KEYS = [
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Cloud Foundry credentials.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+        /**
+         * Cloud Foundry service instance, for which the service key will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceInstance',
+        /**
+         * Cloud Foundry service key, which will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKeyName',
+        /**
+         * Cloud Foundry service key configuration.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKeyConfig',
+    /** @see dockerExecute */
+    'dockerImage',
+    /** @see dockerExecute */
+    'dockerWorkspace'
+]
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
