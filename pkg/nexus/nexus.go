@@ -93,6 +93,9 @@ func validateArtifact(artifact ArtifactDescription) error {
 		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty",
 			artifact.File, artifact.ID, artifact.Type)
 	}
+	if strings.Contains(artifact.ID, "/") {
+		return fmt.Errorf("Artifact.ID may not include slashes")
+	}
 	return nil
 }
 

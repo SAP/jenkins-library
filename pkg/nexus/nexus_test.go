@@ -42,6 +42,45 @@ func TestAddArtifact(t *testing.T) {
 		assert.Error(t, err, "Expected to fail adding invalid artifact")
 		assert.True(t, len(nexusUpload.artifacts) == 0)
 	})
+	t.Run("Test invalid ID", func(t *testing.T) {
+		nexusUpload := Upload{}
+
+		err := nexusUpload.AddArtifact(ArtifactDescription{
+			ID:         "artifact/id",
+			Classifier: "",
+			Type:       "pom",
+			File:       "pom.xml",
+		})
+
+		assert.Error(t, err, "Expected to fail adding invalid artifact")
+		assert.True(t, len(nexusUpload.artifacts) == 0)
+	})
+	t.Run("Test missing type", func(t *testing.T) {
+		nexusUpload := Upload{}
+
+		err := nexusUpload.AddArtifact(ArtifactDescription{
+			ID:         "artifact",
+			Classifier: "",
+			Type:       "",
+			File:       "pom.xml",
+		})
+
+		assert.Error(t, err, "Expected to fail adding invalid artifact")
+		assert.True(t, len(nexusUpload.artifacts) == 0)
+	})
+	t.Run("Test missing file", func(t *testing.T) {
+		nexusUpload := Upload{}
+
+		err := nexusUpload.AddArtifact(ArtifactDescription{
+			ID:         "artifact",
+			Classifier: "",
+			Type:       "pom",
+			File:       "",
+		})
+
+		assert.Error(t, err, "Expected to fail adding invalid artifact")
+		assert.True(t, len(nexusUpload.artifacts) == 0)
+	})
 	t.Run("Test adding duplicate artifact is ignored", func(t *testing.T) {
 		nexusUpload := Upload{}
 
