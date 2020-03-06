@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpload_AddArtifact(t *testing.T) {
+func TestAddArtifact(t *testing.T) {
 	t.Run("Test valid artifact", func(t *testing.T) {
 		nexusUpload := Upload{}
 
@@ -62,7 +62,7 @@ func TestUpload_AddArtifact(t *testing.T) {
 	})
 }
 
-func TestUpload_GetArtifacts(t *testing.T) {
+func TestGetArtifacts(t *testing.T) {
 	nexusUpload := Upload{}
 
 	err := nexusUpload.AddArtifact(ArtifactDescription{
@@ -85,7 +85,7 @@ func TestUpload_GetArtifacts(t *testing.T) {
 	assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
 }
 
-func TestUpload_getBaseURL(t *testing.T) {
+func TestGetBaseURL(t *testing.T) {
 	t.Run("Test base URL for nexus2 is sensible", func(t *testing.T) {
 		baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases", "some.group.id")
 		assert.NoError(t, err, "Expected getBaseURL() to succeed")
@@ -103,7 +103,7 @@ func TestUpload_getBaseURL(t *testing.T) {
 	})
 }
 
-func TestUpload_SetBaseURL(t *testing.T) {
+func TestSetBaseURL(t *testing.T) {
 	t.Run("Test no host provided", func(t *testing.T) {
 		nexusUpload := Upload{}
 		err := nexusUpload.SetBaseURL("", "nexus3", "maven-releases", "some.group.id")
