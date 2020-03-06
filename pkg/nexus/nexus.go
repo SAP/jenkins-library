@@ -169,6 +169,10 @@ func getBaseURL(nexusURL, nexusVersion, repository, groupID string) (string, err
 	if nexusURL == "" {
 		return "", errors.New("nexusURL must not be empty")
 	}
+	nexusURL = strings.ToLower(nexusURL)
+	if strings.HasPrefix(nexusURL, "http://") || strings.HasPrefix(nexusURL, "https://") {
+		return "", errors.New("nexusURL must not start with 'http://' or 'https://'")
+	}
 	if repository == "" {
 		return "", errors.New("repository must not be empty")
 	}
