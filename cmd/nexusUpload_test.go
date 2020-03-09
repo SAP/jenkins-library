@@ -85,10 +85,10 @@ type mockFileUtils struct {
 	files map[string][]byte
 }
 
-func newMockFileUtils() mockFileUtils {
+func newMockFileUtils() *mockFileUtils {
 	f := mockFileUtils{}
 	f.files = map[string][]byte{}
-	return f
+	return &f
 }
 
 func (f *mockFileUtils) FileExists(path string) (bool, error) {
@@ -160,7 +160,15 @@ func TestUploadMTAProjects(t *testing.T) {
 		options := createOptions()
 		fileUtils := newMockFileUtils()
 		fileUtils.files["mta.yaml"] = testMtaYml
-		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
+
+		worker := worker{
+			projectStructure: &projectStructure,
+			evaluator:        &evaluator,
+			uploader:         &uploader,
+			fileUtils:        fileUtils,
+		}
+
+		err := runNexusUpload(&worker, &options)
 		assert.NoError(t, err, "expected mta.yaml project upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -181,7 +189,15 @@ func TestUploadMTAProjects(t *testing.T) {
 		options := createOptions()
 		fileUtils := newMockFileUtils()
 		fileUtils.files["mta.yml"] = testMtaYml
-		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
+
+		worker := worker{
+			projectStructure: &projectStructure,
+			evaluator:        &evaluator,
+			uploader:         &uploader,
+			fileUtils:        fileUtils,
+		}
+
+		err := runNexusUpload(&worker, &options)
 		assert.NoError(t, err, "expected mta.yml project upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -210,7 +226,15 @@ func TestUploadMavenProjects(t *testing.T) {
 		options := createOptions()
 		fileUtils := newMockFileUtils()
 		fileUtils.files["pom.xml"] = testPomXml
-		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
+
+		worker := worker{
+			projectStructure: &projectStructure,
+			evaluator:        &evaluator,
+			uploader:         &uploader,
+			fileUtils:        fileUtils,
+		}
+
+		err := runNexusUpload(&worker, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, 1, len(uploader.artifacts))
@@ -232,7 +256,15 @@ func TestUploadMavenProjects(t *testing.T) {
 		fileUtils := newMockFileUtils()
 		fileUtils.files["pom.xml"] = testPomXml
 		fileUtils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
-		err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
+
+		worker := worker{
+			projectStructure: &projectStructure,
+			evaluator:        &evaluator,
+			uploader:         &uploader,
+			fileUtils:        fileUtils,
+		}
+
+		err := runNexusUpload(&worker, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -253,7 +285,15 @@ func TestUploadUnknownProjectFails(t *testing.T) {
 	uploader := mockUploader{}
 	options := createOptions()
 	fileUtils := newMockFileUtils()
-	err := runNexusUpload(&options, &uploader, &projectStructure, &fileUtils, &evaluator)
+
+	worker := worker{
+		projectStructure: &projectStructure,
+		evaluator:        &evaluator,
+		uploader:         &uploader,
+		fileUtils:        fileUtils,
+	}
+
+	err := runNexusUpload(&worker, &options)
 	assert.Error(t, err, "expected upload of unknown project structure to fail")
 }
 
