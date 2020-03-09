@@ -24,12 +24,14 @@ type mockUtilsBundle struct {
 	maven      bool
 	files      map[string][]byte
 	properties map[string]string
+	cpe        map[string]string
 }
 
 func newMockUtilsBundle(usesMta, usesMaven bool) mockUtilsBundle {
 	utils := mockUtilsBundle{mta: usesMta, maven: usesMaven}
 	utils.files = map[string][]byte{}
 	utils.properties = map[string]string{}
+	utils.cpe = map[string]string{}
 	return utils
 }
 
@@ -55,6 +57,11 @@ func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
 		return nil, fmt.Errorf("could not read '%s'", path)
 	}
 	return content, nil
+}
+
+func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
+	path = path + "/" + name
+	return m.cpe[path]
 }
 
 func (m *mockUtilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
@@ -130,6 +137,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
 		utils.files["mta.yaml"] = testMtaYml
+		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -142,14 +150,14 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, "yaml", uploader.artifacts[0].Type)
 		assert.Equal(t, "artifact.id", uploader.artifacts[0].ID)
 
-		// For the next check to work, need to mock the piperenv, since the mtar filepath is read from there
-		assert.Equal(t, "", uploader.artifacts[1].File)
+		assert.Equal(t, "test.mtar", uploader.artifacts[1].File)
 		assert.Equal(t, "mtar", uploader.artifacts[1].Type)
 		assert.Equal(t, "artifact.id", uploader.artifacts[1].ID)
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
 		utils.files["mta.yml"] = testMtaYml
+		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -162,10 +170,32 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, "yaml", uploader.artifacts[0].Type)
 		assert.Equal(t, "artifact.id", uploader.artifacts[0].ID)
 
-		// For the next check to work, need to mock the piperenv, since the mtar filepath is read from there
-		assert.Equal(t, "", uploader.artifacts[1].File)
+		assert.Equal(t, "test.mtar", uploader.artifacts[1].File)
 		assert.Equal(t, "mtar", uploader.artifacts[1].Type)
 		assert.Equal(t, "artifact.id", uploader.artifacts[1].ID)
+	})
+	t.Run("Test uploading mta.yml project works with artifactID from CPE", func(t *testing.T) {
+		utils := newMockUtilsBundle(true, false)
+		utils.files["mta.yml"] = testMtaYml
+		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
+		utils.cpe[".pipeline/commonPipelineEnvironment/configuration/artifactId"] = "my-artifact-id"
+		uploader := mockUploader{}
+		options := createOptions()
+		// Clear artifact ID to trigger reading it from the CPE
+		options.ArtifactID = ""
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected mta.yml project upload to work")
+
+		assert.Equal(t, 2, len(uploader.artifacts))
+
+		assert.Equal(t, "mta.yml", uploader.artifacts[0].File)
+		assert.Equal(t, "yaml", uploader.artifacts[0].Type)
+		assert.Equal(t, "my-artifact-id", uploader.artifacts[0].ID)
+
+		assert.Equal(t, "test.mtar", uploader.artifacts[1].File)
+		assert.Equal(t, "mtar", uploader.artifacts[1].Type)
+		assert.Equal(t, "my-artifact-id", uploader.artifacts[1].ID)
 	})
 }
 

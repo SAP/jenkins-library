@@ -26,6 +26,7 @@ type nexusUploadUtils interface {
 	fileRead(path string) ([]byte, error)
 	usesMta() bool
 	usesMaven() bool
+	getEnvParameter(path, name string) string
 	evaluateProperty(pomFile, expression string) (string, error)
 }
 
@@ -55,6 +56,10 @@ func (u *utilsBundle) usesMta() bool {
 
 func (u *utilsBundle) usesMaven() bool {
 	return u.projectStructure.UsesMaven()
+}
+
+func (u *utilsBundle) getEnvParameter(path, name string) string {
+	return piperenv.GetParameter(path, name)
 }
 
 func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
@@ -121,18 +126,18 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		}
 		err = setVersionFromMtaFile(utils, uploader, mtaPath)
 	}
+	var artifactID = options.ArtifactID
 	if err == nil {
-		artifactID := options.ArtifactID
 		if artifactID == "" {
-			artifactID = piperenv.GetParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
+			artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
 			log.Entry().Debugf("mtar artifact id from CPE: '%s'", artifactID)
 		}
-		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtaPath, Type: "yaml", Classifier: "", ID: options.ArtifactID})
+		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtaPath, Type: "yaml", Classifier: "", ID: artifactID})
 	}
 	if err == nil {
-		mtarFilePath := piperenv.GetParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
+		mtarFilePath := utils.getEnvParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
 		log.Entry().Debugf("mtar file path: '%s'", mtarFilePath)
-		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: options.ArtifactID})
+		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: artifactID})
 	}
 	if err == nil {
 		err = uploader.UploadArtifacts()
