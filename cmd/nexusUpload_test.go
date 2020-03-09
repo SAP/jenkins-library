@@ -147,7 +147,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		options.GroupID = ""
 
 		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "the 'groupID' parameter needs to be provided for MTA projects")
+		assert.EqualError(t, err, "the 'groupId' parameter needs to be provided for MTA projects")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
 	})
 	t.Run("Uploading MTA project fails due to missing yaml file", func(t *testing.T) {

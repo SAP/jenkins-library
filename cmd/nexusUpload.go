@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"fmt"
 
@@ -88,7 +89,11 @@ func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, erro
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 	utils := newUtilsBundle()
-	uploader := nexus.Upload{Username: options.User, Password: options.Password}
+	uploader := nexus.Upload{
+		Username: options.User,
+		Password: options.Password,
+		Timeout:  30 * time.Second,
+	}
 
 	err := runNexusUpload(utils, &uploader, &options)
 	if err != nil {
@@ -110,7 +115,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 
 func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	if options.GroupID == "" {
-		return fmt.Errorf("the 'groupID' parameter needs to be provided for MTA projects")
+		return fmt.Errorf("the 'groupId' parameter needs to be provided for MTA projects")
 	}
 	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
 	var mtaPath string
@@ -127,11 +132,15 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = setVersionFromMtaFile(utils, uploader, mtaPath)
 	}
 	var artifactID = options.ArtifactID
-	if err == nil {
+	if artifactID == "" {
+		artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
 		if artifactID == "" {
-			artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
+			err = fmt.Errorf("the 'artifactId' parameter was not provided and could not be retrieved from the Common Pipeline Environment")
+		} else {
 			log.Entry().Debugf("mtar artifact id from CPE: '%s'", artifactID)
 		}
+	}
+	if err == nil {
 		err = addArtifact(utils, uploader, mtaPath, "", "yaml", artifactID)
 	}
 	if err == nil {
