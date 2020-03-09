@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -13,38 +12,53 @@ import (
 func TestMavenEvaluateGroupID(t *testing.T) {
 	// This is a temporary test which should be moved into maven pkg
 	// together with evaluate functionality (needs separate PR)
-	evaluator := mavenExecutor{execRunner: command.Command{}}
-	value, err := evaluator.evaluateProperty("../pom.xml", "project.groupId")
+	utils := newUtilsBundle()
+	value, err := utils.evaluateProperty("../pom.xml", "project.groupId")
 
 	assert.NoError(t, err, "expected evaluation to succeed")
 	assert.Equal(t, "com.sap.cp.jenkins", value)
 }
 
-type mockProjectStructure struct {
-	mta   bool
-	maven bool
-}
-
-func (ps *mockProjectStructure) UsesMta() bool {
-	return ps.mta
-}
-
-func (ps *mockProjectStructure) UsesMaven() bool {
-	return ps.maven
-}
-
-type mockPropertyEvaluator struct {
+type mockUtilsBundle struct {
+	mta        bool
+	maven      bool
+	files      map[string][]byte
 	properties map[string]string
 }
 
-func newMockPropertyEvaluator() mockPropertyEvaluator {
-	e := mockPropertyEvaluator{}
-	e.properties = map[string]string{}
-	return e
+func newMockUtilsBundle(usesMta, usesMaven bool) mockUtilsBundle {
+	utils := mockUtilsBundle{mta: usesMta, maven: usesMaven}
+	utils.files = map[string][]byte{}
+	utils.properties = map[string]string{}
+	return utils
 }
 
-func (e *mockPropertyEvaluator) evaluateProperty(pomFile, expression string) (string, error) {
-	value := e.properties[expression]
+func (m *mockUtilsBundle) usesMta() bool {
+	return m.mta
+}
+
+func (m *mockUtilsBundle) usesMaven() bool {
+	return m.maven
+}
+
+func (m *mockUtilsBundle) fileExists(path string) (bool, error) {
+	content := m.files[path]
+	if content == nil {
+		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
+	}
+	return true, nil
+}
+
+func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
+	content := m.files[path]
+	if content == nil {
+		return nil, fmt.Errorf("could not read '%s'", path)
+	}
+	return content, nil
+}
+
+func (m *mockUtilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
+	value := m.properties[expression]
 	if value == "" {
 		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
 	}
@@ -81,46 +95,6 @@ func (u *mockUploader) UploadArtifacts() error {
 	return nil
 }
 
-type mockFileUtils struct {
-	files map[string][]byte
-}
-
-func newMockFileUtils() *mockFileUtils {
-	f := mockFileUtils{}
-	f.files = map[string][]byte{}
-	return &f
-}
-
-func (f *mockFileUtils) FileExists(path string) (bool, error) {
-	content := f.files[path]
-	if content == nil {
-		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
-	}
-	return true, nil
-}
-
-func (f *mockFileUtils) Copy(src, dest string) (int64, error) {
-	// Not used, only needed to complete FileUtils interface
-	return 42, nil
-}
-
-func (f *mockFileUtils) FileRead(path string) ([]byte, error) {
-	content := f.files[path]
-	if content == nil {
-		return nil, fmt.Errorf("could not read '%s'", path)
-	}
-	return content, nil
-}
-
-func (f *mockFileUtils) FileWrite(path string, content []byte, perm os.FileMode) error {
-	f.files[path] = content
-	return nil
-}
-
-func (f *mockFileUtils) MkdirAll(path string, perm os.FileMode) error {
-	return nil
-}
-
 func createOptions() nexusUploadOptions {
 	return nexusUploadOptions{
 		Repository: "maven-releases",
@@ -154,21 +128,12 @@ var testPomXml = []byte(`
 
 func TestUploadMTAProjects(t *testing.T) {
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
-		projectStructure := mockProjectStructure{mta: true}
-		evaluator := mockPropertyEvaluator{}
+		utils := newMockUtilsBundle(true, false)
+		utils.files["mta.yaml"] = testMtaYml
 		uploader := mockUploader{}
 		options := createOptions()
-		fileUtils := newMockFileUtils()
-		fileUtils.files["mta.yaml"] = testMtaYml
 
-		worker := worker{
-			projectStructure: &projectStructure,
-			evaluator:        &evaluator,
-			uploader:         &uploader,
-			fileUtils:        fileUtils,
-		}
-
-		err := runNexusUpload(&worker, &options)
+		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected mta.yaml project upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -183,21 +148,12 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, "artifact.id", uploader.artifacts[1].ID)
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
-		projectStructure := mockProjectStructure{mta: true}
-		evaluator := mockPropertyEvaluator{}
+		utils := newMockUtilsBundle(true, false)
+		utils.files["mta.yml"] = testMtaYml
 		uploader := mockUploader{}
 		options := createOptions()
-		fileUtils := newMockFileUtils()
-		fileUtils.files["mta.yml"] = testMtaYml
 
-		worker := worker{
-			projectStructure: &projectStructure,
-			evaluator:        &evaluator,
-			uploader:         &uploader,
-			fileUtils:        fileUtils,
-		}
-
-		err := runNexusUpload(&worker, &options)
+		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected mta.yml project upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -215,26 +171,17 @@ func TestUploadMTAProjects(t *testing.T) {
 
 func TestUploadMavenProjects(t *testing.T) {
 	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
-		projectStructure := mockProjectStructure{maven: true}
-		evaluator := newMockPropertyEvaluator()
-		evaluator.properties["project.version"] = "1.0"
-		evaluator.properties["project.groupId"] = "com.mycompany.app"
-		evaluator.properties["project.artifactId"] = "my-app"
-		evaluator.properties["project.packaging"] = "pom"
-		evaluator.properties["project.build.finalName"] = "my-app-1.0"
+		utils := newMockUtilsBundle(false, true)
+		utils.properties["project.version"] = "1.0"
+		utils.properties["project.groupId"] = "com.mycompany.app"
+		utils.properties["project.artifactId"] = "my-app"
+		utils.properties["project.packaging"] = "pom"
+		utils.properties["project.build.finalName"] = "my-app-1.0"
+		utils.files["pom.xml"] = testPomXml
 		uploader := mockUploader{}
 		options := createOptions()
-		fileUtils := newMockFileUtils()
-		fileUtils.files["pom.xml"] = testPomXml
 
-		worker := worker{
-			projectStructure: &projectStructure,
-			evaluator:        &evaluator,
-			uploader:         &uploader,
-			fileUtils:        fileUtils,
-		}
-
-		err := runNexusUpload(&worker, &options)
+		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, 1, len(uploader.artifacts))
@@ -244,27 +191,18 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, "pom", uploader.artifacts[0].Type)
 	})
 	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
-		projectStructure := mockProjectStructure{maven: true}
-		evaluator := newMockPropertyEvaluator()
-		evaluator.properties["project.version"] = "1.0"
-		evaluator.properties["project.groupId"] = "com.mycompany.app"
-		evaluator.properties["project.artifactId"] = "my-app"
-		evaluator.properties["project.packaging"] = "jar"
-		evaluator.properties["project.build.finalName"] = "my-app-1.0"
+		utils := newMockUtilsBundle(false, true)
+		utils.properties["project.version"] = "1.0"
+		utils.properties["project.groupId"] = "com.mycompany.app"
+		utils.properties["project.artifactId"] = "my-app"
+		utils.properties["project.packaging"] = "jar"
+		utils.properties["project.build.finalName"] = "my-app-1.0"
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
 		uploader := mockUploader{}
 		options := createOptions()
-		fileUtils := newMockFileUtils()
-		fileUtils.files["pom.xml"] = testPomXml
-		fileUtils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
 
-		worker := worker{
-			projectStructure: &projectStructure,
-			evaluator:        &evaluator,
-			uploader:         &uploader,
-			fileUtils:        fileUtils,
-		}
-
-		err := runNexusUpload(&worker, &options)
+		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, 2, len(uploader.artifacts))
@@ -280,20 +218,11 @@ func TestUploadMavenProjects(t *testing.T) {
 }
 
 func TestUploadUnknownProjectFails(t *testing.T) {
-	projectStructure := mockProjectStructure{}
-	evaluator := newMockPropertyEvaluator()
+	utils := newMockUtilsBundle(false, false)
 	uploader := mockUploader{}
 	options := createOptions()
-	fileUtils := newMockFileUtils()
 
-	worker := worker{
-		projectStructure: &projectStructure,
-		evaluator:        &evaluator,
-		uploader:         &uploader,
-		fileUtils:        fileUtils,
-	}
-
-	err := runNexusUpload(&worker, &options)
+	err := runNexusUpload(&utils, &uploader, &options)
 	assert.Error(t, err, "expected upload of unknown project structure to fail")
 }
 
@@ -343,5 +272,5 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 
 func testAdditionalClassifierArtifacts(additionalClassifiers string) (*nexus.Upload, error) {
 	client := nexus.Upload{}
-	return &client, addAdditionalClassifierArtifacts(additionalClassifiers, "some folder", "artifact-id", &client)
+	return &client, addAdditionalClassifierArtifacts(&client, additionalClassifiers, "some folder", "artifact-id")
 }
