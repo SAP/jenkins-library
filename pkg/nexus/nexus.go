@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -163,6 +164,7 @@ func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
 		Username: nexusUpload.Username,
 		Password: nexusUpload.Password,
 		Logger:   nexusUpload.Logger,
+		Timeout:  3 * time.Minute,
 	}
 	client.SetOptions(clientOptions)
 	return &client
