@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -140,9 +141,18 @@ func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
+	var transport = &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: c.timeout,
+		}).DialContext,
+		ResponseHeaderTimeout: 10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSHandshakeTimeout:   c.timeout,
+	}
+
 	var httpClient = &http.Client{
-		Timeout: c.timeout,
-		Jar:     c.cookieJar,
+		Transport: transport,
+		Jar:       c.cookieJar,
 	}
 	c.logger.Debugf("Timeout set to %v", c.timeout)
 
