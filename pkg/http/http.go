@@ -209,7 +209,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occured.")
 	}
 
-	return response, fmt.Errorf("Request to %v returned with HTTP Code %v", response.Request.URL, response.StatusCode)
+	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
 }
 
 func (c *Client) applyDefaults() {
