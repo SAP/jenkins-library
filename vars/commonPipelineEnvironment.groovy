@@ -177,6 +177,7 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
+                // Format data in case value is complex type
                 script.writeFile file: fileName, text: JsonUtils.groovyObjectToJsonString(value)
             }
         })
@@ -184,6 +185,7 @@ class commonPipelineEnvironment implements Serializable {
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
+                // Format data in case value is complex type
                 script.writeFile file: fileName, text: JsonUtils.groovyObjectToJsonString(value)
             }
         })
