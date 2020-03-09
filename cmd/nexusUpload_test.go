@@ -13,10 +13,20 @@ func TestMavenEvaluateGroupID(t *testing.T) {
 	// This is a temporary test which should be moved into maven pkg
 	// together with evaluate functionality (needs separate PR)
 	utils := newUtilsBundle()
-	value, err := utils.evaluateProperty("../pom.xml", "project.groupId")
 
-	assert.NoError(t, err, "expected evaluation to succeed")
-	assert.Equal(t, "com.sap.cp.jenkins", value)
+	t.Run("Test evaluating groupId works", func(t *testing.T) {
+		value, err := utils.evaluateProperty("../pom.xml", "project.groupId")
+
+		assert.NoError(t, err, "expected evaluation to succeed")
+		assert.Equal(t, "com.sap.cp.jenkins", value)
+	})
+	t.Run("Test evaluating missing property fails", func(t *testing.T) {
+		value, err := utils.evaluateProperty("../pom.xml", "project.missingProperty")
+
+		assert.EqualError(t, err,
+			"expression 'project.missingProperty' in file '../pom.xml' could not be resolved")
+		assert.Equal(t, "", value)
+	})
 }
 
 type mockUtilsBundle struct {
