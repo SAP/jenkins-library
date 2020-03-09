@@ -136,7 +136,8 @@ void call(Map parameters = [:]) {
                         // prefix options
                         config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
-                        sh "PATH=\$PATH:${env.WORKSPACE?.replaceAll('\\s', '\\ ' )}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                        sh """export PATH=\$PATH:${env.WORKSPACE?.replaceAll(/\s/, '\\ ' )}/.sonar-scanner/bin
+sonar-scanner ${config.options.join(' ')}"""
                 }
             } finally {
                 sh 'rm -rf .sonar-scanner .certificates .scannerwork'
