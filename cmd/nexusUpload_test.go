@@ -91,7 +91,7 @@ type mockUploader struct {
 	artifacts []nexus.ArtifactDescription
 }
 
-func (u *mockUploader) SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error {
+func (u *mockUploader) SetBaseURL(nexusURL, _, repository, groupID string) error {
 	u.baseURL = "http://" + nexusURL + "/nexus/repositories/" + repository
 	u.baseURL += "/" + strings.ReplaceAll(groupID, ".", "/")
 	return nil

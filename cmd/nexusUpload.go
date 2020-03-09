@@ -86,7 +86,7 @@ func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, erro
 	return value, nil
 }
 
-func nexusUpload(options nexusUploadOptions, telemetryData *telemetry.CustomData) {
+func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 	utils := newUtilsBundle()
 	uploader := nexus.Upload{Username: options.User, Password: options.Password}
 
