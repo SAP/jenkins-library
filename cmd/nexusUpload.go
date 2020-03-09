@@ -132,12 +132,12 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 			artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
 			log.Entry().Debugf("mtar artifact id from CPE: '%s'", artifactID)
 		}
-		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtaPath, Type: "yaml", Classifier: "", ID: artifactID})
+		err = addArtifact(utils, uploader, mtaPath, "", "yaml", artifactID)
 	}
 	if err == nil {
 		mtarFilePath := utils.getEnvParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
 		log.Entry().Debugf("mtar file path: '%s'", mtarFilePath)
-		err = uploader.AddArtifact(nexus.ArtifactDescription{File: mtarFilePath, Type: "mtar", Classifier: "", ID: artifactID})
+		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
 	}
 	if err == nil {
 		err = uploader.UploadArtifacts()
@@ -167,7 +167,7 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte) error
 	return uploader.SetArtifactsVersion(mtaYaml.Version)
 }
 
-var errPomNotFound error = errors.New("pom.xml not found")
+var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	err := uploadMavenArtifacts(utils, uploader, options, "", "target", "")
@@ -217,19 +217,13 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 		err = uploader.SetArtifactsVersion(artifactsVersion)
 	}
 	if err == nil {
-		artifact := nexus.ArtifactDescription{
-			File:       pomFile,
-			Type:       "pom",
-			Classifier: "",
-			ID:         artifactID,
-		}
-		err = uploader.AddArtifact(artifact)
+		err = addArtifact(utils, uploader, pomFile, "", "pom", artifactID)
 	}
 	if err == nil {
 		err = addTargetArtifact(utils, uploader, pomFile, targetFolder, artifactID)
 	}
 	if err == nil {
-		err = addAdditionalClassifierArtifacts(uploader, additionalClassifiers, targetFolder, artifactID)
+		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder, artifactID)
 	}
 	if err == nil {
 		err = uploader.UploadArtifacts()
@@ -256,16 +250,11 @@ func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile,
 		return err
 	}
 	filePath := composeFilePath(targetFolder, finalName, packaging)
-	artifact := nexus.ArtifactDescription{
-		File:       filePath,
-		Type:       packaging,
-		Classifier: "",
-		ID:         artifactID,
-	}
-	return uploader.AddArtifact(artifact)
+	return addArtifact(utils, uploader, filePath, "", packaging, artifactID)
 }
 
-func addAdditionalClassifierArtifacts(uploader nexus.Uploader, additionalClassifiers, targetFolder, artifactID string) error {
+func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
+	additionalClassifiers, targetFolder, artifactID string) error {
 	if additionalClassifiers == "" {
 		return nil
 	}
@@ -279,13 +268,7 @@ func addAdditionalClassifierArtifacts(uploader nexus.Uploader, additionalClassif
 				classifier.Classifier, classifier.FileType)
 		}
 		filePath := composeFilePath(targetFolder, artifactID+"-"+classifier.Classifier, classifier.FileType)
-		artifact := nexus.ArtifactDescription{
-			File:       filePath,
-			Type:       classifier.FileType,
-			Classifier: classifier.Classifier,
-			ID:         artifactID,
-		}
-		err = uploader.AddArtifact(artifact)
+		err = addArtifact(utils, uploader, filePath, classifier.FileType, classifier.Classifier, artifactID)
 		if err != nil {
 			return err
 		}
@@ -296,6 +279,20 @@ func addAdditionalClassifierArtifacts(uploader nexus.Uploader, additionalClassif
 func composeFilePath(folder, name, extension string) string {
 	fileName := name + "." + extension
 	return filepath.Join(folder, fileName)
+}
+
+func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, classifier, fileType, id string) error {
+	exists, _ := utils.fileExists(filePath)
+	if !exists {
+		return fmt.Errorf("artifact file not found '%s'", filePath)
+	}
+	artifact := nexus.ArtifactDescription{
+		File:       filePath,
+		Type:       fileType,
+		Classifier: classifier,
+		ID:         id,
+	}
+	return uploader.AddArtifact(artifact)
 }
 
 type classifierDescription struct {
