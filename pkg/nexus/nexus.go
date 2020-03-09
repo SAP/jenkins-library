@@ -36,6 +36,7 @@ type Upload struct {
 	Password  string
 	artifacts []ArtifactDescription
 	Logger    *logrus.Entry
+	Timeout   time.Duration
 }
 
 // Uploader provides an interface to the nexus upload for configuring the target Nexus Repository and
@@ -164,7 +165,7 @@ func (nexusUpload *Upload) createHTTPClient() *piperHttp.Client {
 		Username: nexusUpload.Username,
 		Password: nexusUpload.Password,
 		Logger:   nexusUpload.Logger,
-		Timeout:  3 * time.Minute,
+		Timeout:  nexusUpload.Timeout,
 	}
 	client.SetOptions(clientOptions)
 	return &client
