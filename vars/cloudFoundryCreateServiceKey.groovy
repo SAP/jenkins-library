@@ -65,7 +65,20 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        Map config
+        //Map config
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .withMandatoryProperty('cloudFoundry/org')
+            .withMandatoryProperty('cloudFoundry/space')
+            .withMandatoryProperty('cloudFoundry/credentialsId')
+            .withMandatoryProperty('cloudFoundry/serviceInstance')
+            .withMandatoryProperty('cloudFoundry/serviceKeyName')
+            .withMandatoryProperty('cloudFoundry/apiEndpoint')
+            .use()
         def utils = parameters.juStabUtils ?: new Utils()
 
         script.commonPipelineEnvironment.writeToDisk(script)
