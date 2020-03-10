@@ -14,7 +14,6 @@ func mavenStaticCodeChecks(config mavenStaticCodeChecksOptions, telemetryData *t
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	err := runMavenStaticCodeChecks(&config, telemetryData, &c)
-
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}

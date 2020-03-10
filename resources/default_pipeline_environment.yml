@@ -255,7 +255,7 @@ steps:
       - 'buildDescriptor'
       - 'tests'
     maven:
-      dockerImage: 'maven:3.6-jdk-8'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerName: 'maven'
       dockerWorkspace: ''
       languageRunner: 'java'
@@ -390,7 +390,7 @@ steps:
         - 'opensourceConfiguration'
     maven:
       buildDescriptorFile: './pom.xml'
-      dockerImage: 'maven:3.6-jdk-8'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerWorkspace: '/home/java'
       stashContent:
         - 'buildDescriptor'
@@ -498,7 +498,7 @@ steps:
     stashContent:
       - 'tests'
     maven:
-      dockerImage: 'maven:3.6-jdk-8'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
@@ -616,5 +616,3 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
-  mavenStaticCodeChecks:
-    dockerImage: 'maven:3.6-jdk-8'
