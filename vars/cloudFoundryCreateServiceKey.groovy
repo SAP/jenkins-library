@@ -97,7 +97,7 @@ void call(Map parameters = [:]) {
                 dockerWorkspace: '/home/piper'
             ) {
                 withCredentials([usernamePassword(
-                    credentialsId: 'cfCredentialsId',
+                    credentialsId: 'cfAuthentification',
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
