@@ -58,12 +58,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		if resp == nil {
-			log.Entry().WithError(err).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Request failed")
-			return uriConnectionDetails, err
-		}
-		log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Authentication on the ABAP system failed")
-		resp.Body.Close()
+		handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails, config)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -75,12 +70,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		if resp == nil {
-			log.Entry().WithError(err).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Request failed")
-			return uriConnectionDetails, err
-		}
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-		resp.Body.Close()
+		handleHTTPError(resp, err, "Could not pull the Repository / Software Component", uriConnectionDetails, config)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -109,12 +99,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	for {
 		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
-			if resp == nil {
-				log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
-				return "", err
-			}
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-			resp.Body.Close()
+			handleHTTPError(resp, err, "Could not pull the Repository / Software Component", connectionDetails, config)
 			return "", err
 		}
 		defer resp.Body.Close()
@@ -213,6 +198,15 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 
 	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
 	return req, err
+}
+
+func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP, config abapEnvironmentPullGitRepoOptions) {
+	if resp == nil {
+		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+	} else {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error(message)
+		resp.Body.Close()
+	}
 }
 
 type abapEntity struct {
