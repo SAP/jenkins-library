@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"text/template"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,10 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"gopkg.in/yaml.v2"
-	"os"
-	"strings"
-	"text/template"
-	"time"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
