@@ -200,7 +200,7 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 	return req, err
 }
 
-func handleHTTPError(httpResult httpResult, message string, connectionDetails connectionDetailsHTTP) {
+func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) {
 	if resp == nil {
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
