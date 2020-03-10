@@ -26,6 +26,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
+		Timeout:   30 * time.Second,
 		CookieJar: cookieJar,
 		Username:  connectionDetails.User,
 		Password:  connectionDetails.Password,
@@ -56,11 +57,17 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
-	defer resp.Body.Close()
 	if err != nil {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Authentication on the ABAP system failed")
-		return uriConnectionDetails, err
+		if resp == nil {
+			log.Entry().WithError(err).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Request failed")
+			return uriConnectionDetails, err
+		} else {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Authentication on the ABAP system failed")
+			resp.Body.Close()
+			return uriConnectionDetails, err
+		}
 	}
+	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
@@ -68,11 +75,17 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	// Trigger the Pull of a Repository
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
-	defer resp.Body.Close()
 	if err != nil {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-		return uriConnectionDetails, err
+		if resp == nil {
+			log.Entry().WithError(err).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Request failed")
+			return uriConnectionDetails, err
+		} else {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			resp.Body.Close()
+			return uriConnectionDetails, err
+		}
 	}
+	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
@@ -97,11 +110,17 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 
 	for {
 		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
-		defer resp.Body.Close()
 		if err != nil {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-			return "", err
+			if resp == nil {
+				log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+				return "", err
+			} else {
+				log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+				resp.Body.Close()
+				return "", err
+			}
 		}
+		defer resp.Body.Close()
 
 		// Parse response
 		var body abapEntity
