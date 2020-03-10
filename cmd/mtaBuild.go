@@ -192,12 +192,13 @@ func getMarJarName(config mtaBuildOptions) string {
 }
 
 func addNpmBinToPath(e execRunner) error {
-	path := "./node_modules/.bin"
+	dir, _ := os.Getwd()
+	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")
 	if len(oldPath) > 0 {
-		path = path + ":" + oldPath
+		newPath = newPath + ":" + oldPath
 	}
-	e.SetEnv(append(os.Environ(), "PATH="+path))
+	e.SetEnv([]string{"PATH=" + newPath})
 	return nil
 }
 
