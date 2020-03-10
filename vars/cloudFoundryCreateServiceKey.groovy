@@ -76,7 +76,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .withMandatoryProperty('cloudFoundry/serviceInstance')
-            .withMandatoryProperty('cloudFoundry/serviceKeyName')
+            //.withMandatoryProperty('cloudFoundry/serviceKeyName')
             .withMandatoryProperty('cloudFoundry/apiEndpoint')
             .use()
         def utils = parameters.juStabUtils ?: new Utils()
