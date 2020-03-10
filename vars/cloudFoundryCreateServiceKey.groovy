@@ -85,9 +85,9 @@ void call(Map parameters = [:]) {
 
         //writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
-        withEnv([
+        /*withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-        ]) {
+        ]) {*/
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
             // execute step
@@ -104,6 +104,6 @@ void call(Map parameters = [:]) {
                     sh "./piper cloudFoundryCreateServiceKey"
                 }
             }
-        }
+        //}
     }
 }
