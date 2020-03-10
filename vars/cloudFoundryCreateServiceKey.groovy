@@ -93,7 +93,7 @@ void call(Map parameters = [:]) {
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: ppiper/cf-cli,
+                dockerImage: 'ppiper/cf-cli',
                 dockerWorkspace: '/home/piper'
             ) {
                 withCredentials([usernamePassword(
