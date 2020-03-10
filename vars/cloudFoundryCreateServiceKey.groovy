@@ -55,6 +55,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerWorkspace'
 ]
 
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
