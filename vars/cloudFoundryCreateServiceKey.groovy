@@ -89,15 +89,15 @@ void call(Map parameters = [:]) {
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {*/
             // get context configuration
-            config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            //config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: config.dockerImage,
-                dockerWorkspace: config.dockerWorkspace
+                dockerImage: ppiper/cf-cli,
+                dockerWorkspace: '/home/piper'
             ) {
                 withCredentials([usernamePassword(
-                    credentialsId: config.cfCredentialsId,
+                    credentialsId: 'cfCredentialsId',
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
