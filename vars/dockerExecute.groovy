@@ -265,19 +265,19 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     ]
     def options = []
     if (dockerEnvVars) {
-        for (String k : dockerEnvVars.keySet()) {
+        dockerEnvVars.keySet().each { String k ->
             options.add("--env ${k}=${dockerEnvVars[k].toString()}")
         }
     }
 
-    for (String envVar : specialEnvironments) {
+    specialEnvironments.each { envVar ->
         if (dockerEnvVars == null || !dockerEnvVars.containsKey(envVar)) {
             options.add("--env ${envVar}")
         }
     }
 
     if (dockerVolumeBind) {
-        for (String k : dockerVolumeBind.keySet()) {
+        dockerVolumeBind.keySet().each { k ->
             options.add("--volume ${k}:${dockerVolumeBind[k].toString()}")
         }
     }
@@ -287,7 +287,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
             dockerOptions = [dockerOptions]
         }
         if (dockerOptions instanceof List) {
-            for (String option : dockerOptions) {
+            dockerOptions.each { String option ->
                 options << escapeBlanks(option)
             }
         } else {
