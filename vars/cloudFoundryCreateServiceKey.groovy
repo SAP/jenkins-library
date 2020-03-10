@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
 
         script.commonPipelineEnvironment.writeToDisk(script)
 
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
+        //writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
