@@ -58,7 +58,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails, config)
+		handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -70,7 +70,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		handleHTTPError(resp, err, "Could not pull the Repository / Software Component", uriConnectionDetails, config)
+		handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -99,7 +99,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	for {
 		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
-			handleHTTPError(resp, err, "Could not pull the Repository / Software Component", connectionDetails, config)
+			handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, connectionDetails)
 			return "", err
 		}
 		defer resp.Body.Close()
@@ -200,11 +200,11 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 	return req, err
 }
 
-func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP, config abapEnvironmentPullGitRepoOptions) {
+func handleHTTPError(httpResult httpResult, message string, connectionDetails connectionDetailsHTTP) {
 	if resp == nil {
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error(message)
+		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 		resp.Body.Close()
 	}
 }
