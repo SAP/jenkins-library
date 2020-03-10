@@ -133,7 +133,7 @@ func mavenStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pmd/rulesSets"}},
+						Aliases:     []config.Alias{{Name: "pmd/ruleSets"}},
 					},
 				},
 			},

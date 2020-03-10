@@ -68,4 +68,4 @@ spec:
           - STAGES
           - STEPS
         aliases:
-          - name: pmd/rulesSets
+          - name: pmd/ruleSets
