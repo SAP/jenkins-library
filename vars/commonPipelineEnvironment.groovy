@@ -2,7 +2,7 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
-import com.sap.piper.analytics.JsonUtils
+import com.sap.piper.JsonUtils
 
 class commonPipelineEnvironment implements Serializable {
 
