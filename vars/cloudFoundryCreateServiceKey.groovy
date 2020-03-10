@@ -12,6 +12,49 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field def STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/cloudFoundryCreateServiceKey.yaml'
 
+@Field Set STEP_CONFIG_KEYS = [
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Cloud Foundry credentials.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+        /**
+         * Cloud Foundry service instance, for which the service key will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceInstance',
+        /**
+         * Cloud Foundry service key, which will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKeyName',
+        /**
+         * Cloud Foundry service key configuration.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKeyConfig',
+    /** @see dockerExecute */
+    'dockerImage',
+    /** @see dockerExecute */
+    'dockerWorkspace'
+]
+
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
