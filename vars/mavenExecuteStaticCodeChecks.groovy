@@ -4,13 +4,12 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String METADATA_FILE = 'metadata/mavenStaticCodeChecks.yaml'
+@Field String METADATA_FILE = 'metadata/mavenExecuteStaticCodeChecks.yaml'
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
 
 
-
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: null
@@ -43,7 +42,7 @@ def call(Map parameters = [:]) {
             Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}'"))
 
             dockerExecute([script: script].plus([dockerImage: contextConfig.dockerImage])) {
-                sh "./piper mavenStaticCodeChecks"
+                sh "./piper mavenExecuteStaticCodeChecks"
             }
         }
     }
