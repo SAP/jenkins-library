@@ -1,0 +1,27 @@
+name: Publish master branch binary
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.x'
+      - env:
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
+                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
+            -o piper_master .
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master

@@ -103,11 +103,11 @@ class WhitesourceConfigurationHelper implements Serializable {
         if (!moduleSpecificFile)
             moduleSpecificFile = [:]
 
-        mapping.each {
-            entry ->
-                def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
-                if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && (entry.force || moduleSpecificFile[entry.name] == null) && entry.value != 'null')
-                    moduleSpecificFile[entry.name] = entry.value.toString()
+        for(int i = 0; i < mapping.size(); i++) {
+            def entry = mapping.get(i)
+            def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
+            if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && (entry.force || moduleSpecificFile[entry.name] == null) && entry.value != 'null')
+                moduleSpecificFile[entry.name] = entry.value.toString()
         }
 
         def output = serializationClosure(moduleSpecificFile)

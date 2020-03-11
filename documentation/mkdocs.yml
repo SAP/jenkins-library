@@ -20,13 +20,18 @@ nav:
                 - 'Confirm Stage': stages/confirm.md
                 - 'Promote Stage': stages/promote.md
                 - 'Release Stage': stages/release.md
-        - 'SAP Cloud SDK pipeline': pipelines/cloud-sdk/introduction.md
+        - 'SAP Cloud SDK pipeline':
+            - 'Introduction': pipelines/cloud-sdk/introduction.md
+            - 'Build Tools': pipelines/cloud-sdk/build-tools.md
+            - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
+            - 'Shared Configuration': pipelines/cloud-sdk/shared-config-between-projects.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced': scenarios/xsa-deploy/Readme.md
+        - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
