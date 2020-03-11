@@ -41,6 +41,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'seleniumHost',
     /**
+     * Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.
+     */
+    'seleniumHubCredentialsId',
+    /**
      * The port of the selenium hub. The value is only needed for the `runCommand`.
      */
     'seleniumPort',
@@ -118,6 +122,7 @@ void call(Map parameters = [:]) {
             dockerImage: config.dockerImage,
             dockerName: config.dockerName,
             dockerWorkspace: config.dockerWorkspace,
+            seleniumHubCredentialsId: config.seleniumHubCredentialsId,
             sidecarEnvVars: config.sidecarEnvVars,
             sidecarImage: config.sidecarImage,
             stashContent: config.stashContent
