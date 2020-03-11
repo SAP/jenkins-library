@@ -4,7 +4,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String METADATA_FILE = 'metadata/mavenExecuteStaticCodeChecks.yaml'
+@Field String METADATA_FILE = 'metadata/mavenStaticCodeChecks.yaml'
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
 
@@ -17,6 +17,8 @@ void call(Map parameters = [:]) {
         if (!script) {
             error "Reference to surrounding pipeline script not provided (script: this)."
         }
+        def utils = parameters.juStabUtils ?: new Utils()
+        new PiperGoUtils(this, utils).unstashPiperBin()
 
         // The parameters map in provided from outside. That map might be used elsewhere in the pipeline
         // hence we should not modify it here. So we create a new map based on the parameters map.
@@ -28,9 +30,6 @@ void call(Map parameters = [:]) {
         parameters.remove('piperGoUtils')
         parameters.remove('script')
 
-        def utils = parameters.juStabUtils ?: new Utils()
-        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
-        piperGoUtils.unstashPiperBin()
 
         script.commonPipelineEnvironment.writeToDisk(script)
         writeFile(file: "${METADATA_FOLDER}/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
@@ -42,7 +41,7 @@ void call(Map parameters = [:]) {
             Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}'"))
 
             dockerExecute([script: script].plus([dockerImage: contextConfig.dockerImage])) {
-                sh "./piper MavenExecuteStaticCodeChecks"
+                sh "./piper mavenExecuteStaticCodeChecks"
             }
         }
     }
