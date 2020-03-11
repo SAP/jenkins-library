@@ -2,7 +2,7 @@ name: Create new Release
 
 on:
   schedule:
-    - cron:  '*/2 * * * *'
+    - cron:  '0 9 * * 1'
 
 jobs:
   build:
@@ -19,9 +19,9 @@ jobs:
         with:
           piper-version: latest
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper_master
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
       - uses: SAP/project-piper-action@master
         with:
           piper-version: latest
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
