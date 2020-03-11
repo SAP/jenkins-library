@@ -1,41 +1,27 @@
 name: Build and Release
 
-# on:
-#   schedule:
-#     - cron:  '0 6 * * 1'
-
-# fixme just testing
-on: [push]
+on:
+  schedule:
+    - cron:  '0 9 * * 1'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-go@v1
-        with:
-          go-version: '1.13.x'
-      - env:
-          CGO_ENABLED: 0
+      - name: Prepare Release
         run: |
-          go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
-                  -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
-            -o piper .
-        shell: bash
-      - run: ./piper version
-        shell: bash
-      - uses: actions/upload-artifact@v1
-        with:
-          name: piper
-          path: piper
-      - name: Calculate Release Version
-        run: |
-          set -x
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          cp ./piper_master ./piper
           npm install semver
           echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
       - uses: SAP/project-piper-action@master
         with:
           piper-version: latest
           command: githubPublishRelease
-          flags: --verbose --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --assetPath ./piper
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
