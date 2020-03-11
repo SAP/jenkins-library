@@ -1,0 +1,57 @@
+metadata:
+  name: cloudFoundryCreateServiceKey
+  description: cloudFoundryCreateServiceKey
+  longDescription: |
+    Create CloudFoundryServiceKey
+spec:
+  inputs:
+    secrets:
+      - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: User Password for CF User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: softwareComponent
+        type: string
+        description: Specifies the Software Component
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: package
+        type: string
+        description: Specifies the Package
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      dockerWorkspace: '/home/piper'
+      imagePullPolicy: Never
