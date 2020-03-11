@@ -270,14 +270,14 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
         }
     }
 
-    specialEnvironments.each { envVar ->
+    specialEnvironments.each { String envVar ->
         if (dockerEnvVars == null || !dockerEnvVars.containsKey(envVar)) {
             options.add("--env ${envVar}")
         }
     }
 
     if (dockerVolumeBind) {
-        dockerVolumeBind.keySet().each { k ->
+        dockerVolumeBind.keySet().each { String k ->
             options.add("--volume ${k}:${dockerVolumeBind[k].toString()}")
         }
     }
