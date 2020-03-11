@@ -277,7 +277,7 @@ func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Upl
 				classifier.Classifier, classifier.FileType)
 		}
 		filePath := composeFilePath(targetFolder, artifactID+"-"+classifier.Classifier, classifier.FileType)
-		err = addArtifact(utils, uploader, filePath, classifier.FileType, classifier.Classifier, artifactID)
+		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType, artifactID)
 		if err != nil {
 			return err
 		}

@@ -357,3 +357,23 @@ func TestUploadArtifacts(t *testing.T) {
 		assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
 	})
 }
+
+func TestDownloadMavenMetadata(t *testing.T) {
+	buffer, err := downloadIntoBuffer(
+		"http://localhost:8081/repository/maven-snapshots/com/sap/opensap/employee-browser-application/maven-metadata.xml",
+		50*1024)
+	assert.NoError(t, err)
+	// XML file should be UTF-8 encoded, for this the conversion to string works.
+	originalString := string(buffer[:])
+	fmt.Print(originalString)
+
+	metadata, err := xmlBufferToMavenMetadata(buffer)
+	assert.NoError(t, err)
+
+	fmt.Printf("last build: %v\n", metadata.Versioning.Snapshot.BuildNumber)
+
+	buffer, err = mavenMetadataToXMLBuffer(metadata)
+	newString := string(buffer[:])
+
+	assert.Equal(t, originalString, newString, "expected conversion to be loss-less")
+}
