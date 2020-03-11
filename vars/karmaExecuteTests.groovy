@@ -43,6 +43,10 @@ import groovy.transform.Field
     'modules',
     /** The command that is executed to start the tests. */
     'runCommand',
+    /**
+     * Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.
+     */
+    'seleniumHubCredentialsId',
     /** A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`. */
     'sidecarEnvVars',
     /** The name of the docker image of the sidecar container. If empty, no sidecar container is started. */
@@ -99,6 +103,7 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
             failOnError: config.failOnError,
+            seleniumHubCredentialsId: config.seleniumHubCredentialsId,
             sidecarEnvVars: config.sidecarEnvVars,
             sidecarImage: config.sidecarImage,
             sidecarName: config.sidecarName,
