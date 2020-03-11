@@ -31,4 +31,4 @@ jobs:
         with:
           piper-version: latest
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner fwilhe --version latest --assetPath ./piper_master
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
