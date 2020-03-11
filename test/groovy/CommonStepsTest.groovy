@@ -122,6 +122,7 @@ public class CommonStepsTest extends BasePiperTest{
         'protecodeExecuteScan', //implementing new golang pattern without fields
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
+        'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
     ]
 
     @Test

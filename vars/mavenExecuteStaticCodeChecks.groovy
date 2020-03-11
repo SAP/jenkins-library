@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
             Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}'"))
 
             dockerExecute([script: script].plus([dockerImage: contextConfig.dockerImage])) {
-                sh "./piper mavenExecuteStaticCodeChecks"
+                sh "./piper MavenExecuteStaticCodeChecks"
             }
         }
     }
