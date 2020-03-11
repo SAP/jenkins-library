@@ -1,8 +1,8 @@
 metadata:
-  name: cloudFoundryCreateServiceKey
-  description: cloudFoundryCreateServiceKey
+  name: abapEnvironmentRunATCCheck
+  description: Runs an ATC Check
   longDescription: |
-    Create CloudFoundryServiceKey
+    Run ATC Check
 spec:
   inputs:
     secrets:
