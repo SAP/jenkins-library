@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"fmt"
 
@@ -89,11 +86,7 @@ func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, erro
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 	utils := newUtilsBundle()
-	uploader := nexus.Upload{
-		Username: options.User,
-		Password: options.Password,
-		Timeout:  30 * time.Second,
-	}
+	uploader := nexus.Upload{}
 
 	err := runNexusUpload(utils, &uploader, &options)
 	if err != nil {
@@ -107,7 +100,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 		return uploadMTA(utils, uploader, options)
 	} else if utils.usesMaven() {
 		log.Entry().Info("Maven project structure detected")
-		return uploadMaven(utils, uploader, options)
+		return uploadMaven(uploader, options)
 	} else {
 		return fmt.Errorf("unsupported project structure")
 	}
@@ -117,7 +110,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 	if options.GroupID == "" {
 		return fmt.Errorf("the 'groupId' parameter needs to be provided for MTA projects")
 	}
-	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository, options.GroupID)
+	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
 	var mtaPath string
 	if err == nil {
 		exists, _ := utils.fileExists("mta.yaml")
@@ -149,7 +142,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
 	}
 	if err == nil {
-		err = uploader.UploadArtifacts()
+		err = uploadArtifacts(uploader, options)
 	}
 	return err
 }
@@ -176,118 +169,102 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte) error
 	return uploader.SetArtifactsVersion(mtaYaml.Version)
 }
 
-var errPomNotFound = errors.New("pom.xml not found")
-
-func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := uploadMavenArtifacts(utils, uploader, options, "", "target", "")
-	if err != nil {
-		return err
+func uploadArtifacts(uploader nexus.Uploader, options *nexusUploadOptions) error {
+	artifacts := uploader.GetArtifacts()
+	if len(artifacts) == 0 {
+		return errors.New("no artifacts to upload")
 	}
 
-	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
-	// This means there are built-in assumptions about the project structure (archetype),
-	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
-	err = uploadMavenArtifacts(utils, uploader, options, "application", "application/target",
-		options.AdditionalClassifiers)
-	if err == errPomNotFound {
-		// Ignore for missing application module
-		return nil
-	}
-	return err
-}
+	execRunner := command.Command{}
+	execRunner.Stdout(ioutil.Discard)
+	execRunner.Stderr(ioutil.Discard)
 
-func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
-	pomPath, targetFolder, additionalClassifiers string) error {
-	var err error
+	var defines []string
+	defines = append(defines, "-Durl=http://"+uploader.GetBaseURL())
 
-	pomFile := composeFilePath(pomPath, "pom", "xml")
-	exists, _ := utils.fileExists(pomFile)
-	if !exists {
-		return errPomNotFound
-	}
-	groupID, err := utils.evaluateProperty(pomFile, "project.groupId")
-	if groupID == "" {
-		groupID = options.GroupID
-		// Reset error
-		err = nil
-	}
-	if err == nil {
-		err = uploader.SetBaseURL(options.Url, options.Version, options.Repository, groupID)
-	}
-	var artifactID string
-	if err == nil {
-		artifactID, err = utils.evaluateProperty(pomFile, "project.artifactId")
-	}
-	var artifactsVersion string
-	if err == nil {
-		artifactsVersion, err = utils.evaluateProperty(pomFile, "project.version")
-	}
-	if err == nil {
-		err = uploader.SetArtifactsVersion(artifactsVersion)
-	}
-	if err == nil {
-		err = addArtifact(utils, uploader, pomFile, "", "pom", artifactID)
-	}
-	if err == nil {
-		err = addTargetArtifact(utils, uploader, pomFile, targetFolder, artifactID)
-	}
-	if err == nil {
-		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder, artifactID)
-	}
-	if err == nil {
-		err = uploader.UploadArtifacts()
-	}
-	return err
-}
+	file := ""
+	files := ""
+	classifiers := ""
+	types := ""
+	artifactId := artifacts[0].ID
 
-func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, artifactID string) error {
-	packaging, err := utils.evaluateProperty(pomFile, "project.packaging")
-	if err != nil {
-		return err
-	}
-	if packaging == "pom" {
-		// Only pom.xml itself is the artifact
-		return nil
-	}
-	if packaging == "" {
-		packaging = "jar"
-	}
-	finalName, err := utils.evaluateProperty(pomFile, "project.build.finalName")
-	if err != nil || finalName == "" {
-		// NOTE: The error should be ignored, and the finalName built as Maven would from artifactId and so on.
-		// But it seems this expression always resolves, even if finalName is nowhere declared in the pom.xml
-		return err
-	}
-	filePath := composeFilePath(targetFolder, finalName, packaging)
-	return addArtifact(utils, uploader, filePath, "", packaging, artifactID)
-}
-
-func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
-	additionalClassifiers, targetFolder, artifactID string) error {
-	if additionalClassifiers == "" {
-		return nil
-	}
-	classifiers, err := getClassifiers(additionalClassifiers)
-	if err != nil {
-		return err
-	}
-	for _, classifier := range classifiers {
-		if classifier.Classifier == "" || classifier.FileType == "" {
-			return fmt.Errorf("invalid additional classifier description (classifier: '%s', type: '%s')",
-				classifier.Classifier, classifier.FileType)
+	for i, artifact := range artifacts {
+		if i == 0 {
+			file = artifact.File
+		} else {
+			if i > 1 {
+				files += ","
+				classifiers += ","
+				types += ","
+			}
+			files += artifact.File
+			classifiers += artifact.Classifier
+			types += artifact.Type
 		}
-		filePath := composeFilePath(targetFolder, artifactID+"-"+classifier.Classifier, classifier.FileType)
-		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType, artifactID)
-		if err != nil {
-			return err
+		if artifactId != artifact.ID {
+			return fmt.Errorf(
+				"cannot deploy artifacts with different IDs in one run (%s vs. %s)",
+				artifactId, artifact.ID)
 		}
+	}
+
+	defines = append(defines, "-DgroupId="+options.GroupID)
+	defines = append(defines, "-DartifactId="+artifactId)
+	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
+	defines = append(defines, "-Dfile="+file)
+	defines = append(defines, "-DgeneratePom=false")
+	if len(files) > 0 {
+		defines = append(defines, "-Dfiles="+files)
+		defines = append(defines, "-Dclassifiers="+classifiers)
+		defines = append(defines, "-Dtypes="+types)
+	}
+
+	mavenOptions := maven.ExecuteOptions{
+		Goals:        []string{"deploy:deploy-file"},
+		Defines:      defines,
+		ReturnStdout: false,
+	}
+	_, err := maven.Execute(&mavenOptions, &execRunner)
+	if err != nil {
+		return err
 	}
 	return nil
 }
+func uploadMaven(uploader nexus.Uploader, options *nexusUploadOptions) error {
+	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
+	if err != nil {
+		return err
+	}
 
-func composeFilePath(folder, name, extension string) string {
-	fileName := name + "." + extension
-	return filepath.Join(folder, fileName)
+	execRunner := command.Command{}
+	execRunner.Stdout(ioutil.Discard)
+	execRunner.Stderr(ioutil.Discard)
+
+	// This is the ID which maven will look up in the local settings file to find login credentials
+	// TODO: Create a temporary settings file, store credential keys so they can be substituted from env variables
+	repositoryId := options.Repository
+
+	altRepository := repositoryId + "::default::http://" + uploader.GetBaseURL()
+
+	var defines []string
+	defines = append(defines, "-Dmaven.test.skip")
+	defines = append(defines, "-DaltDeploymentRepository="+altRepository)
+
+	testModulesExcludes := maven.GetTestModulesExcludes()
+	if testModulesExcludes != nil {
+		defines = append(defines, testModulesExcludes...)
+	}
+
+	mavenOptions := maven.ExecuteOptions{
+		Goals:        []string{"deploy"},
+		Defines:      defines,
+		ReturnStdout: false,
+	}
+	_, err = maven.Execute(&mavenOptions, &execRunner)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, classifier, fileType, id string) error {
@@ -302,15 +279,4 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 		ID:         id,
 	}
 	return uploader.AddArtifact(artifact)
-}
-
-type classifierDescription struct {
-	Classifier string `json:"classifier"`
-	FileType   string `json:"type"`
-}
-
-func getClassifiers(classifiersAsJSON string) ([]classifierDescription, error) {
-	var classifiers []classifierDescription
-	err := json.Unmarshal([]byte(classifiersAsJSON), &classifiers)
-	return classifiers, err
 }

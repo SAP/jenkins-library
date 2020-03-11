@@ -5,9 +5,32 @@ import (
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"strings"
 	"testing"
 )
+
+func TestDeployMTA(t *testing.T) {
+	err := os.Chdir("../integration/testdata/TestNexusIntegration/mta")
+	assert.NoError(t, err)
+	options := nexusUploadOptions{
+		Url:        "localhost:8081",
+		GroupID:    "nexus.upload",
+		Repository: "maven-releases",
+		ArtifactID: "my.mta.project",
+		Version:    "nexus3",
+	}
+	nexusUpload(options, nil)
+}
+
+func TestDeployMaven(t *testing.T) {
+	err := os.Chdir("../integration/testdata/TestNexusIntegration/maven")
+	assert.NoError(t, err)
+	options := nexusUploadOptions{
+		Url:        "localhost:8081",
+		Repository: "maven-releases",
+		Version:    "nexus3",
+	}
+	nexusUpload(options, nil)
+}
 
 func TestMavenEvaluateGroupID(t *testing.T) {
 	// This is a temporary test which should be moved into maven pkg
@@ -86,24 +109,7 @@ func (m *mockUtilsBundle) evaluateProperty(pomFile, expression string) (string, 
 }
 
 type mockUploader struct {
-	baseURL string
-	version string
 	nexus.Upload
-}
-
-func (u *mockUploader) SetBaseURL(nexusURL, nexusVersion, repository, groupID string) error {
-	u.baseURL = "http://" + nexusURL + "/nexus/repositories/" + repository
-	u.baseURL += "/" + strings.ReplaceAll(groupID, ".", "/")
-	return u.Upload.SetBaseURL(nexusURL, nexusVersion, repository, groupID)
-}
-
-func (u *mockUploader) SetArtifactsVersion(version string) error {
-	u.version = version
-	return u.Upload.SetArtifactsVersion(version)
-}
-
-func (u *mockUploader) UploadArtifacts() error {
-	return nil
 }
 
 func createOptions() nexusUploadOptions {
@@ -182,7 +188,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "artifact file not found 'test.mtar'")
 
-		assert.Equal(t, "0.3.0", uploader.version)
+		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 1, len(artifacts)) {
@@ -202,7 +208,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected mta.yaml project upload to work")
 
-		assert.Equal(t, "0.3.0", uploader.version)
+		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 2, len(artifacts)) {
@@ -226,7 +232,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected mta.yml project upload to work")
 
-		assert.Equal(t, "0.3.0", uploader.version)
+		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 2, len(artifacts)) {
@@ -364,7 +370,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.NoError(t, err, "expected Maven upload to work")
 
 		assert.Equal(t, "http://localhost:8081/nexus/repositories/maven-releases/awesome/group",
-			uploader.baseURL)
+			uploader.GetBaseURL())
 
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 1, len(artifacts)) {
@@ -459,75 +465,4 @@ func TestUploadUnknownProjectFails(t *testing.T) {
 
 	err := runNexusUpload(&utils, &uploader, &options)
 	assert.Error(t, err, "expected upload of unknown project structure to fail")
-}
-
-func TestAdditionalClassifierEmpty(t *testing.T) {
-	t.Run("Empty additional classifiers", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "")
-		assert.NoError(t, err, "expected empty additional classifiers to succeed")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is invalid JSON", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "some random string")
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but wrong JSON", func(t *testing.T) {
-		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			},
-			{}
-		]
-	`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 1, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but does not exist", func(t *testing.T) {
-		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			}
-		]
-	`
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.EqualError(t, err, "artifact file not found 'some folder/artifact-id-source.jar'")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is valid JSON", func(t *testing.T) {
-		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			},
-			{
-				"classifier" : "classes",
-				"type"       : "jar"
-			}
-		]
-	`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		utils.files["some folder/artifact-id-classes.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.NoError(t, err, "expected valid additional classifiers to succeed")
-		assert.Equal(t, 2, len(client.GetArtifacts()))
-	})
-}
-
-func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
-	client := nexus.Upload{}
-	return &client, addAdditionalClassifierArtifacts(utils, &client, additionalClassifiers,
-		"some folder", "artifact-id")
 }
