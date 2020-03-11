@@ -1,4 +1,4 @@
-name: Build and Release
+name: Create new Release
 
 on:
   schedule:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Prepare Release
         run: |
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
           cp ./piper_master ./piper
           npm install semver
           echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"

@@ -1,4 +1,4 @@
-name: Build and Release master branch
+name: Publish master branch binary
 
 on:
   push:
