@@ -20,13 +20,6 @@ jobs:
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
                   -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
             -o piper_master .
-        shell: bash
-      - run: ./piper_master version
-        shell: bash
-      - uses: actions/upload-artifact@v1
-        with:
-          name: piper_master
-          path: piper_master
       - uses: SAP/project-piper-action@master
         with:
           piper-version: latest
