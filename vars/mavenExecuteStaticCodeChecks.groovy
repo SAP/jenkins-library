@@ -20,12 +20,11 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         new PiperGoUtils(this, utils).unstashPiperBin()
 
-        // The parameters map in provided from outside. That map might be used elsewhere in the pipeline
-        // hence we should not modify it here. So we create a new map based on the parameters map.
+        // Make a shallow copy of the passed-in Map in order to prevent removal of top-level keys
+        // to be visible in calling code, just in case the map is still used there.
         parameters = [:] << parameters
 
-        // hard to predict how these parameters looks like in its serialized form. Anyhow it is better
-        // not to have these parameters forwarded somehow to the go layer.
+        // do not forward these parameters to the go layer
         parameters.remove('juStabUtils')
         parameters.remove('piperGoUtils')
         parameters.remove('script')
