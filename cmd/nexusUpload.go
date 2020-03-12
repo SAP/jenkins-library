@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"strings"
-
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -24,7 +22,6 @@ type nexusUploadUtils interface {
 	usesMta() bool
 	usesMaven() bool
 	getEnvParameter(path, name string) string
-	evaluateProperty(pomFile, expression string) (string, error)
 	getExecRunner() execRunner
 }
 
@@ -65,26 +62,6 @@ func (u *utilsBundle) getExecRunner() execRunner {
 	execRunner.Stdout(log.Entry().Writer())
 	execRunner.Stderr(log.Entry().Writer())
 	return &execRunner
-}
-
-func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
-	expressionDefine := "-Dexpression=" + expression
-
-	options := maven.ExecuteOptions{
-		PomPath:      pomFile,
-		Goals:        []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
-		Defines:      []string{expressionDefine, "-DforceStdout", "-q"},
-		ReturnStdout: true,
-	}
-	value, err := maven.Execute(&options, u.getExecRunner())
-	if err != nil {
-		return "", err
-	}
-	if strings.HasPrefix(value, "null object or invalid expression") {
-		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
-	}
-	log.Entry().Debugf("Evaluated expression '%s' in file '%s' as '%s'\n", expression, pomFile, value)
-	return value, nil
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
