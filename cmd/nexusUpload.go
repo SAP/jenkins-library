@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -135,18 +135,27 @@ type mtaYaml struct {
 func setVersionFromMtaFile(utils nexusUploadUtils, uploader nexus.Uploader, filePath string) error {
 	mtaYamlContent, err := utils.fileRead(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read from required project descriptor file '%s'",
+			filePath)
 	}
-	return setVersionFromMtaYaml(uploader, mtaYamlContent)
+	return setVersionFromMtaYaml(uploader, mtaYamlContent, filePath)
 }
 
-func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte) error {
+func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte, filePath string) error {
 	var mtaYaml mtaYaml
 	err := yaml.Unmarshal(mtaYamlContent, &mtaYaml)
 	if err != nil {
-		return err
+		// Eat the original error as it is unhelpful and confusingly mentions JSON, while the
+		// user thinks it should parse YAML (it is transposed by the implementation).
+		return fmt.Errorf("failed to parse contents of the project descriptor file '%s'",
+			filePath)
 	}
-	return uploader.SetArtifactsVersion(mtaYaml.Version)
+	err = uploader.SetArtifactsVersion(mtaYaml.Version)
+	if err != nil {
+		return fmt.Errorf("the project descriptor file '%s' has an invalid version: %w",
+			filePath, err)
+	}
+	return nil
 }
 
 func uploadArtifactsMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
@@ -202,12 +211,16 @@ func uploadArtifactsMTA(utils nexusUploadUtils, uploader nexus.Uploader, options
 	}
 	_, err := maven.Execute(&mavenOptions, utils.getExecRunner())
 	if err != nil {
-		return err
+		return fmt.Errorf("uploading artifacts failed: %w", err)
 	}
 	return nil
 }
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	if pomExists, _ := utils.fileExists("pom.xml"); !pomExists {
+		return errors.New("pom.xml not found")
+	}
+
 	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
 	if err != nil {
 		return err
