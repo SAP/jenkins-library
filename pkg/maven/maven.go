@@ -2,6 +2,7 @@ package maven
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 
@@ -49,6 +50,24 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 		return "", nil
 	}
 	return string(stdOutBuf.Bytes()), nil
+}
+
+func Evaluate(pomFile, expression string, command mavenExecRunner) (string, error) {
+	expressionDefine := "-Dexpression=" + expression
+	options := ExecuteOptions{
+		PomPath:      pomFile,
+		Goals:        []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
+		Defines:      []string{expressionDefine, "-DforceStdout", "-q"},
+		ReturnStdout: true,
+	}
+	value, err := Execute(&options, command)
+	if err != nil {
+		return "", err
+	}
+	if strings.HasPrefix(value, "null object or invalid expression") {
+		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
+	}
+	return value, nil
 }
 
 func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
