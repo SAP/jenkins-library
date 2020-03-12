@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"io/ioutil"
 	"strings"
 
 	"fmt"
@@ -26,6 +25,7 @@ type nexusUploadUtils interface {
 	usesMaven() bool
 	getEnvParameter(path, name string) string
 	evaluateProperty(pomFile, expression string) (string, error)
+	getExecRunner() execRunner
 }
 
 type utilsBundle struct {
@@ -60,11 +60,14 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
+func (u *utilsBundle) getExecRunner() execRunner {
 	execRunner := command.Command{}
-	execRunner.Stdout(ioutil.Discard)
-	execRunner.Stderr(ioutil.Discard)
+	execRunner.Stdout(log.Entry().Writer())
+	execRunner.Stderr(log.Entry().Writer())
+	return &execRunner
+}
 
+func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
 
 	options := maven.ExecuteOptions{
@@ -73,7 +76,7 @@ func (u *utilsBundle) evaluateProperty(pomFile, expression string) (string, erro
 		Defines:      []string{expressionDefine, "-DforceStdout", "-q"},
 		ReturnStdout: true,
 	}
-	value, err := maven.Execute(&options, &execRunner)
+	value, err := maven.Execute(&options, u.getExecRunner())
 	if err != nil {
 		return "", err
 	}
@@ -100,7 +103,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 		return uploadMTA(utils, uploader, options)
 	} else if utils.usesMaven() {
 		log.Entry().Info("Maven project structure detected")
-		return uploadMaven(uploader, options)
+		return uploadMaven(utils, uploader, options)
 	} else {
 		return fmt.Errorf("unsupported project structure")
 	}
@@ -142,7 +145,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
 	}
 	if err == nil {
-		err = uploadArtifacts(uploader, options)
+		err = uploadArtifactsMTA(utils, uploader, options)
 	}
 	return err
 }
@@ -169,15 +172,11 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte) error
 	return uploader.SetArtifactsVersion(mtaYaml.Version)
 }
 
-func uploadArtifacts(uploader nexus.Uploader, options *nexusUploadOptions) error {
+func uploadArtifactsMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	artifacts := uploader.GetArtifacts()
 	if len(artifacts) == 0 {
 		return errors.New("no artifacts to upload")
 	}
-
-	execRunner := command.Command{}
-	execRunner.Stdout(ioutil.Discard)
-	execRunner.Stderr(ioutil.Discard)
 
 	var defines []string
 	defines = append(defines, "-Durl=http://"+uploader.GetBaseURL())
@@ -224,21 +223,18 @@ func uploadArtifacts(uploader nexus.Uploader, options *nexusUploadOptions) error
 		Defines:      defines,
 		ReturnStdout: false,
 	}
-	_, err := maven.Execute(&mavenOptions, &execRunner)
+	_, err := maven.Execute(&mavenOptions, utils.getExecRunner())
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func uploadMaven(uploader nexus.Uploader, options *nexusUploadOptions) error {
+
+func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
 	if err != nil {
 		return err
 	}
-
-	execRunner := command.Command{}
-	execRunner.Stdout(ioutil.Discard)
-	execRunner.Stderr(ioutil.Discard)
 
 	// This is the ID which maven will look up in the local settings file to find login credentials
 	// TODO: Create a temporary settings file, store credential keys so they can be substituted from env variables
@@ -260,7 +256,7 @@ func uploadMaven(uploader nexus.Uploader, options *nexusUploadOptions) error {
 		Defines:      defines,
 		ReturnStdout: false,
 	}
-	_, err = maven.Execute(&mavenOptions, &execRunner)
+	_, err = maven.Execute(&mavenOptions, utils.getExecRunner())
 	if err != nil {
 		return err
 	}

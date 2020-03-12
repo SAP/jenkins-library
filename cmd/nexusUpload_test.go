@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
 
-func TestDeployMTA(t *testing.T) {
+/*func TestDeployMTA(t *testing.T) {
 	err := os.Chdir("../integration/testdata/TestNexusIntegration/mta")
 	assert.NoError(t, err)
 	options := nexusUploadOptions{
@@ -16,6 +17,19 @@ func TestDeployMTA(t *testing.T) {
 		GroupID:    "nexus.upload",
 		Repository: "maven-releases",
 		ArtifactID: "my.mta.project",
+		Version:    "nexus3",
+	}
+	nexusUpload(options, nil)
+}
+
+func TestDeployGettingStartedBookshot(t *testing.T) {
+	err := os.Chdir("../../GettingStartedBookshop")
+	assert.NoError(t, err)
+	options := nexusUploadOptions{
+		Url:        "localhost:8081",
+		GroupID:    "nexus.upload",
+		Repository: "maven-releases",
+		ArtifactID: "GettingStartedBookshop",
 		Version:    "nexus3",
 	}
 	nexusUpload(options, nil)
@@ -50,7 +64,7 @@ func TestMavenEvaluateGroupID(t *testing.T) {
 			"expression 'project.missingProperty' in file '../pom.xml' could not be resolved")
 		assert.Equal(t, "", value)
 	})
-}
+}*/
 
 type mockUtilsBundle struct {
 	mta        bool
@@ -106,6 +120,11 @@ func (m *mockUtilsBundle) evaluateProperty(pomFile, expression string) (string, 
 		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
 	}
 	return value, nil
+}
+
+func (m *mockUtilsBundle) getExecRunner() execRunner {
+	mockExecRunner := mock.ExecMockRunner{}
+	return &mockExecRunner
 }
 
 type mockUploader struct {
