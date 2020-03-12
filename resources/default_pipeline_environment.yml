@@ -528,7 +528,7 @@ steps:
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.3.0.2102-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
     keyFileCredentialsId: 'spinnaker-client-key'
