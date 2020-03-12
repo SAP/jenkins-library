@@ -246,6 +246,11 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 		Defines:      defines,
 		ReturnStdout: false,
 	}
+
+	if options.M2Path != "" {
+		mavenOptions.M2Path = options.M2Path
+	}
+
 	_, err = maven.Execute(&mavenOptions, utils.getExecRunner())
 	if err != nil {
 		return err

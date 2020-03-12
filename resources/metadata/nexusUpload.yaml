@@ -51,6 +51,13 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      - name: m2Path
+        type: string
+        description: The path to the local .m2 directory, only used for Maven projects.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: additionalClassifiers
         type: string
         description: List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.
@@ -72,3 +79,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

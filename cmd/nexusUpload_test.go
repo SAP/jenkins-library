@@ -375,6 +375,20 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, utils.execRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
 		}
 	})
+	t.Run("Test uploading Maven project with m2 path produces correct mvn command line", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.files["pom.xml"] = testPomXml
+		uploader := mockUploader{}
+		options := createOptions()
+		options.M2Path = ".pipeline/m2"
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		if assert.NoError(t, err, "expected Maven upload to work") {
+			expectedParameters := []string{"-Dmaven.repo.local=.pipeline/m2", "-Dmaven.test.skip", "-DaltDeploymentRepository=maven-releases::default::http://localhost:8081/repository/maven-releases/", "--batch-mode", "deploy"}
+			assert.Equal(t, len(utils.execRunner.Calls[0].Params), len(expectedParameters))
+			assert.Equal(t, utils.execRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
+		}
+	})
 }
 
 func TestUploadUnknownProjectFails(t *testing.T) {
