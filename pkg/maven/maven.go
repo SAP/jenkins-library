@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+// ExecuteOptions are used by Execute() to construct the Maven command line.
 type ExecuteOptions struct {
 	PomPath                     string   `json:"pomPath,omitempty"`
 	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
@@ -31,6 +32,8 @@ type mavenExecRunner interface {
 
 const mavenExecutable = "mvn"
 
+// Execute constructs a mvn command line from the given options, and uses the provided
+// mavenExecRunner to execute it.
 func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	stdOutBuf, stdOut := evaluateStdOut(options)
 	command.Stdout(stdOut)
@@ -52,6 +55,9 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	return string(stdOutBuf.Bytes()), nil
 }
 
+// Evaluate constructs ExecuteOptions for using the maven-help-plugin's 'evaluate' goal to
+// evaluate a given expression from a pom file. This allows to retrieve the value of - for
+// example - 'project.version' from a pom file exactly as Maven itself evaluates it.
 func Evaluate(pomFile, expression string, command mavenExecRunner) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
 	options := ExecuteOptions{
