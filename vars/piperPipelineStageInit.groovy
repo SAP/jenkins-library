@@ -1,3 +1,4 @@
+import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
@@ -131,6 +132,7 @@ private void initStashConfiguration (script, config) {
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }
 
+@NonCPS
 private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
     def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
