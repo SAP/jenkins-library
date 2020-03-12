@@ -1,0 +1,27 @@
+name: Create new Release
+
+on:
+  schedule:
+    - cron:  '0 9 * * 1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Prepare Release
+        run: |
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          cp ./piper_master ./piper
+          npm install semver --quiet
+          echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
