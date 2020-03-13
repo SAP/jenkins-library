@@ -158,6 +158,18 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte, fileP
 	return nil
 }
 
+func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions {
+	mavenOptions := maven.ExecuteOptions{
+		ReturnStdout:        false,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
+	}
+	return mavenOptions
+}
+
+var settingsServerId = "artifact.deployment.nexus"
+
 func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	artifacts := uploader.GetArtifacts()
 	if len(artifacts) == 0 {
@@ -198,18 +210,28 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-Dfile="+file)
 	defines = append(defines, "-DgeneratePom=false")
+
+	execRunner := utils.getExecRunner()
+
+	if options.User != "" && options.Password != "" {
+		log.Entry().Debugf("Writing nexus credentials to environment")
+		defines = append(defines, "-DrepositoryId="+settingsServerId)
+		execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+		defines = append(defines, "-Drepo.username=\"$NEXUS_username\"")
+		defines = append(defines, "-Drepo.password=\"$NEXUS_password\"")
+	}
+
 	if len(files) > 0 {
 		defines = append(defines, "-Dfiles="+files)
 		defines = append(defines, "-Dclassifiers="+classifiers)
 		defines = append(defines, "-Dtypes="+types)
 	}
 
-	mavenOptions := maven.ExecuteOptions{
-		Goals:        []string{"deploy:deploy-file"},
-		Defines:      defines,
-		ReturnStdout: false,
-	}
-	_, err := maven.Execute(&mavenOptions, utils.getExecRunner())
+	mavenOptions := createMavenExecuteOptions(options)
+	mavenOptions.Goals = []string{"deploy:deploy-file"}
+	mavenOptions.Defines = defines
+
+	_, err := maven.Execute(&mavenOptions, execRunner)
 	if err != nil {
 		return fmt.Errorf("uploading artifacts failed: %w", err)
 	}
@@ -226,33 +248,32 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 		return err
 	}
 
-	// This is the ID which maven will look up in the local settings file to find login credentials
-	// TODO: Create a temporary settings file, store credential keys so they can be substituted from env variables
-	repositoryId := options.Repository
-
-	altRepository := repositoryId + "::default::http://" + uploader.GetBaseURL()
+	// Maven will look up 'settingsServerId' in the local settings file to find login credentials
+	altRepository := settingsServerId + "::default::http://" + uploader.GetBaseURL()
 
 	var defines []string
 	defines = append(defines, "-Dmaven.test.skip")
 	defines = append(defines, "-DaltDeploymentRepository="+altRepository)
+
+	execRunner := utils.getExecRunner()
+
+	if options.User != "" && options.Password != "" {
+		log.Entry().Debugf("Writing nexus credentials to environment")
+		execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+		defines = append(defines, "-Drepo.username=\"$NEXUS_username\"")
+		defines = append(defines, "-Drepo.password=\"$NEXUS_password\"")
+	}
 
 	testModulesExcludes := maven.GetTestModulesExcludes()
 	if testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
 	}
 
-	mavenOptions := maven.ExecuteOptions{
-		Goals:        []string{"deploy"},
-		Defines:      defines,
-		ReturnStdout: false,
-	}
+	mavenOptions := createMavenExecuteOptions(options)
+	mavenOptions.Goals = []string{"deploy"}
+	mavenOptions.Defines = defines
 
-	if options.M2Path != "" {
-		mavenOptions.M2Path = options.M2Path
-		log.Entry().Debugf("Using m2 path: '%s'", options.M2Path)
-	}
-
-	_, err = maven.Execute(&mavenOptions, utils.getExecRunner())
+	_, err = maven.Execute(&mavenOptions, execRunner)
 	if err != nil {
 		return err
 	}

@@ -19,6 +19,8 @@ type nexusUploadOptions struct {
 	Repository            string `json:"repository,omitempty"`
 	GroupID               string `json:"groupId,omitempty"`
 	ArtifactID            string `json:"artifactId,omitempty"`
+	ProjectSettingsFile   string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile    string `json:"globalSettingsFile,omitempty"`
 	M2Path                string `json:"m2Path,omitempty"`
 	AdditionalClassifiers string `json:"additionalClassifiers,omitempty"`
 	User                  string `json:"user,omitempty"`
@@ -66,6 +68,8 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the nexus repository.")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts. Only used in MTA projects, ignored for Maven.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "The path to the local .m2 directory, only used for Maven projects.")
 	cmd.Flags().StringVar(&stepConfig.AdditionalClassifiers, "additionalClassifiers", os.Getenv("PIPER_additionalClassifiers"), "List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
@@ -117,6 +121,22 @@ func nexusUploadMetadata() config.StepData {
 						Name:        "artifactId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
