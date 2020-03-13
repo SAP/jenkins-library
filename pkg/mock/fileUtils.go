@@ -3,8 +3,7 @@
 package mock
 
 import (
-	"io"
-	"io/ioutil"
+	"errors"
 	"os"
 )
 
@@ -12,58 +11,30 @@ type FilesMock struct {
 	Files []string
 }
 
-
 func (f FilesMock) FileExists(filename string) (bool, error) {
 
-	if f.Files
+	for _, file := range f.Files {
+		if file == filename {
+			return true, nil
+		}
 
-	info, err := os.Stat(filename)
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
 	}
 
-	return !info.IsDir(), nil
+	return false, nil
 }
 
 func (f FilesMock) Copy(src, dst string) (int64, error) {
-
-	exists, err := f.FileExists(src)
-
-	if err != nil {
-		return 0, err
-	}
-
-	if !exists {
-		return 0, errors.New("Source file '" + src + "' does not exist")
-	}
-
-	source, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	defer destination.Close()
-	nBytes, err := io.Copy(destination, source)
-	return nBytes, err
+	return 0, errors.New("Not implemented")
 }
 
 func (f FilesMock) FileRead(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return nil, errors.New("Not implemented")
 }
 
 func (f FilesMock) FileWrite(path string, content []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(path, content, perm)
+	return errors.New("Not implemented")
 }
 
 func (f FilesMock) MkdirAll(path string, perm os.FileMode) error {
-	return os.MkdirAll(path, perm)
+	return errors.New("Not implemented")
 }
