@@ -379,7 +379,7 @@ func TestUploadMavenProjects(t *testing.T) {
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		if assert.NoError(t, err, "expected Maven upload to work") {
-			expectedParameters := []string{"-Dmaven.test.skip", "-DaltDeploymentRepository=maven-releases::default::http://localhost:8081/repository/maven-releases/", "--batch-mode", "deploy"}
+			expectedParameters := []string{"-Dmaven.test.skip", "-DaltDeploymentRepository=artifact.deployment.nexus::default::http://localhost:8081/repository/maven-releases/", "--batch-mode", "deploy"}
 			assert.Equal(t, len(utils.execRunner.Calls[0].Params), len(expectedParameters))
 			assert.Equal(t, utils.execRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
 		}
@@ -393,7 +393,7 @@ func TestUploadMavenProjects(t *testing.T) {
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		if assert.NoError(t, err, "expected Maven upload to work") {
-			expectedParameters := []string{"-Dmaven.repo.local=.pipeline/m2", "-Dmaven.test.skip", "-DaltDeploymentRepository=maven-releases::default::http://localhost:8081/repository/maven-releases/", "--batch-mode", "deploy"}
+			expectedParameters := []string{"-Dmaven.repo.local=.pipeline/m2", "-Dmaven.test.skip", "-DaltDeploymentRepository=artifact.deployment.nexus::default::http://localhost:8081/repository/maven-releases/", "--batch-mode", "deploy"}
 			assert.Equal(t, len(utils.execRunner.Calls[0].Params), len(expectedParameters))
 			assert.Equal(t, utils.execRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
 		}
