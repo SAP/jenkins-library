@@ -10,9 +10,11 @@ func TestMavenBuild(t *testing.T) {
 	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 
+		mockedUtils := mock.FilesMock{}
+
 		config := mavenBuildOptions{}
 
-		err := runMavenBuild(&config, nil, &execMockRunner)
+		err := runMavenBuild(&config, nil, &execMockRunner, &mockedUtils)
 
 		assert.Nil(t, err)
 		assert.Equal(t, execMockRunner.Calls[0].Exec, "mvn")
