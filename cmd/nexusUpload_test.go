@@ -87,6 +87,15 @@ func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
 	return content, nil
 }
 
+func (m *mockUtilsBundle) fileWrite(path string, content []byte, _ os.FileMode) error {
+	m.files[path] = content
+	return nil
+}
+
+func (m *mockUtilsBundle) fileRemove(path string) {
+	m.files[path] = nil
+}
+
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 	path = path + "/" + name
 	return m.cpe[path]
