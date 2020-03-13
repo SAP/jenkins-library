@@ -275,10 +275,12 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 	if settingsFile != "" {
 		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerId)
-		defer utils.fileRemove(settingsFile)
 	}
 
 	_, err = maven.Execute(&mavenOptions, execRunner)
+	if settingsFile != "" {
+		utils.fileRemove(settingsFile)
+	}
 	if err != nil {
 		return fmt.Errorf("uploading artifacts failed: %w", err)
 	}
@@ -302,8 +304,6 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	defines = append(defines, "-Dmaven.test.skip")
 	defines = append(defines, "-DaltDeploymentRepository="+altRepository)
 
-	execRunner := utils.getExecRunner()
-
 	testModulesExcludes := maven.GetTestModulesExcludes()
 	if testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
@@ -313,15 +313,16 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	mavenOptions.Goals = []string{"deploy"}
 	mavenOptions.Defines = defines
 
+	execRunner := utils.getExecRunner()
 	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
 	if err != nil {
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
-	if settingsFile != "" {
-		defer utils.fileRemove(settingsFile)
-	}
 
 	_, err = maven.Execute(&mavenOptions, execRunner)
+	if settingsFile != "" {
+		utils.fileRemove(settingsFile)
+	}
 	if err != nil {
 		return err
 	}
