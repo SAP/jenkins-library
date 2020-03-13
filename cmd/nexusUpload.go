@@ -52,7 +52,7 @@ func (u *utilsBundle) fileRead(path string) ([]byte, error) {
 func (u *utilsBundle) fileWrite(filePath string, content []byte, perm os.FileMode) error {
 	basePath := path.Base(filePath)
 	if basePath != "" {
-		err := u.fileUtils.MkdirAll(basePath, perm)
+		err := u.fileUtils.MkdirAll(basePath, os.ModeDir)
 		if err != nil {
 			return err
 		}
