@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
+	"path"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -48,8 +49,15 @@ func (u *utilsBundle) fileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
 }
 
-func (u *utilsBundle) fileWrite(path string, content []byte, perm os.FileMode) error {
-	return u.fileUtils.FileWrite(path, content, perm)
+func (u *utilsBundle) fileWrite(filePath string, content []byte, perm os.FileMode) error {
+	basePath := path.Base(filePath)
+	if basePath != "" {
+		err := u.fileUtils.MkdirAll(basePath, perm)
+		if err != nil {
+			return err
+		}
+	}
+	return u.fileUtils.FileWrite(filePath, content, perm)
 }
 
 func (u *utilsBundle) fileRemove(path string) {
@@ -200,6 +208,7 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	if options.User == "" || options.Password == "" {
 		return "", nil
 	}
+
 	path := ".pipeline/nexusMavenSettings.xml"
 	err := utils.fileWrite(path, []byte(nexusMavenSettings), os.ModePerm)
 	if err != nil {
