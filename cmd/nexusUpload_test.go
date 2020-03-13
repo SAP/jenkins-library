@@ -293,13 +293,13 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 }
 
-func TestUploadArtifactsMTA(t *testing.T) {
+func TestUploadArtifacts(t *testing.T) {
 	t.Run("Uploading MTA project fails without any artifacts", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		uploader := mockUploader{}
 		options := createOptions()
 
-		err := uploadArtifactsMTA(&utils, &uploader, &options)
+		err := uploadArtifacts(&utils, &uploader, &options)
 		assert.EqualError(t, err, "no artifacts to upload")
 	})
 	t.Run("Uploading MTA project fails for unknown reasons", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestUploadArtifactsMTA(t *testing.T) {
 
 		options := createOptions()
 
-		err := uploadArtifactsMTA(&utils, &uploader, &options)
+		err := uploadArtifacts(&utils, &uploader, &options)
 		assert.EqualError(t, err, "uploading artifacts failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -DartifactId=my.artifact -Dversion= -Dfile=mta.yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
 	})
 	t.Run("Uploading MTA project fails with different artifact IDs", func(t *testing.T) {
@@ -347,7 +347,7 @@ func TestUploadArtifactsMTA(t *testing.T) {
 			ID:   "artifact",
 		})
 
-		err := uploadArtifactsMTA(&utils, &uploader, &options)
+		err := uploadArtifacts(&utils, &uploader, &options)
 		assert.EqualError(t, err, "cannot deploy artifacts with different IDs in one run (my.artifact vs. artifact)")
 	})
 }

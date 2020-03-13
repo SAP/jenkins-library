@@ -122,7 +122,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
 	}
 	if err == nil {
-		err = uploadArtifactsMTA(utils, uploader, options)
+		err = uploadArtifacts(utils, uploader, options)
 	}
 	return err
 }
@@ -158,7 +158,7 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte, fileP
 	return nil
 }
 
-func uploadArtifactsMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	artifacts := uploader.GetArtifacts()
 	if len(artifacts) == 0 {
 		return errors.New("no artifacts to upload")
@@ -249,6 +249,7 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 
 	if options.M2Path != "" {
 		mavenOptions.M2Path = options.M2Path
+		log.Entry().Debugf("Using m2 path: '%s'", options.M2Path)
 	}
 
 	_, err = maven.Execute(&mavenOptions, utils.getExecRunner())
