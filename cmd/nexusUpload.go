@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -19,6 +20,8 @@ import (
 type nexusUploadUtils interface {
 	fileExists(path string) (bool, error)
 	fileRead(path string) ([]byte, error)
+	fileWrite(path string, content []byte, perm os.FileMode) error
+	fileRemove(path string)
 	usesMta() bool
 	usesMaven() bool
 	getEnvParameter(path, name string) string
@@ -43,6 +46,17 @@ func (u *utilsBundle) fileExists(path string) (bool, error) {
 
 func (u *utilsBundle) fileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
+}
+
+func (u *utilsBundle) fileWrite(path string, content []byte, perm os.FileMode) error {
+	return u.fileUtils.FileWrite(path, content, perm)
+}
+
+func (u *utilsBundle) fileRemove(path string) {
+	err := os.Remove(path)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("Failed to remove file '%s'.", path)
+	}
 }
 
 func (u *utilsBundle) usesMta() bool {
@@ -160,15 +174,44 @@ func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte, fileP
 
 func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions {
 	mavenOptions := maven.ExecuteOptions{
-		ReturnStdout:        false,
-		M2Path:              options.M2Path,
-		ProjectSettingsFile: options.ProjectSettingsFile,
-		GlobalSettingsFile:  options.GlobalSettingsFile,
+		ReturnStdout:       false,
+		M2Path:             options.M2Path,
+		GlobalSettingsFile: options.GlobalSettingsFile,
 	}
 	return mavenOptions
 }
 
 var settingsServerId = "artifact.deployment.nexus"
+var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <servers>
+        <server>
+            <id>artifact.deployment.nexus</id>
+            <username>${repo.username}</username>
+            <password>${repo.password}</password>
+        </server>
+    </servers>
+</settings>
+`
+
+func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUploadOptions,
+	mavenOptions *maven.ExecuteOptions, execRunner execRunner) (string, error) {
+	if options.User == "" || options.Password == "" {
+		return "", nil
+	}
+	path := ".pipeline/nexusMavenSettings.xml"
+	err := utils.fileWrite(path, []byte(nexusMavenSettings), os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("failed to write maven settings file to '%s': %w", path, err)
+	}
+
+	log.Entry().Debugf("Writing nexus credentials to environment")
+
+	execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+
+	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.username=\"$NEXUS_username\"")
+	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.password=\"$NEXUS_password\"")
+	return path, nil
+}
 
 func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	artifacts := uploader.GetArtifacts()
@@ -213,14 +256,6 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 
 	execRunner := utils.getExecRunner()
 
-	if options.User != "" && options.Password != "" {
-		log.Entry().Debugf("Writing nexus credentials to environment")
-		defines = append(defines, "-DrepositoryId="+settingsServerId)
-		execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
-		defines = append(defines, "-Drepo.username=\"$NEXUS_username\"")
-		defines = append(defines, "-Drepo.password=\"$NEXUS_password\"")
-	}
-
 	if len(files) > 0 {
 		defines = append(defines, "-Dfiles="+files)
 		defines = append(defines, "-Dclassifiers="+classifiers)
@@ -231,7 +266,16 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	mavenOptions.Goals = []string{"deploy:deploy-file"}
 	mavenOptions.Defines = defines
 
-	_, err := maven.Execute(&mavenOptions, execRunner)
+	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
+	if err != nil {
+		return fmt.Errorf("writing credential settings for maven failed: %w", err)
+	}
+	if settingsFile != "" {
+		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerId)
+		defer utils.fileRemove(settingsFile)
+	}
+
+	_, err = maven.Execute(&mavenOptions, execRunner)
 	if err != nil {
 		return fmt.Errorf("uploading artifacts failed: %w", err)
 	}
@@ -257,13 +301,6 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 
 	execRunner := utils.getExecRunner()
 
-	if options.User != "" && options.Password != "" {
-		log.Entry().Debugf("Writing nexus credentials to environment")
-		execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
-		defines = append(defines, "-Drepo.username=\"$NEXUS_username\"")
-		defines = append(defines, "-Drepo.password=\"$NEXUS_password\"")
-	}
-
 	testModulesExcludes := maven.GetTestModulesExcludes()
 	if testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
@@ -272,6 +309,14 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	mavenOptions := createMavenExecuteOptions(options)
 	mavenOptions.Goals = []string{"deploy"}
 	mavenOptions.Defines = defines
+
+	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
+	if err != nil {
+		return fmt.Errorf("writing credential settings for maven failed: %w", err)
+	}
+	if settingsFile != "" {
+		defer utils.fileRemove(settingsFile)
+	}
 
 	_, err = maven.Execute(&mavenOptions, execRunner)
 	if err != nil {
