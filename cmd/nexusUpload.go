@@ -56,6 +56,8 @@ func (u *utilsBundle) fileRemove(path string) {
 	err := os.Remove(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to remove file '%s'.", path)
+	} else {
+		log.Entry().Infof("Remove file '%s'", path)
 	}
 }
 
@@ -205,6 +207,7 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
+	log.Entry().Infof("Wrote maven settings to '%s", path)
 
 	execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
 
@@ -274,12 +277,10 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 	if settingsFile != "" {
 		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerId)
+		defer utils.fileRemove(settingsFile)
 	}
 
 	_, err = maven.Execute(&mavenOptions, execRunner)
-	if settingsFile != "" {
-		utils.fileRemove(settingsFile)
-	}
 	if err != nil {
 		return fmt.Errorf("uploading artifacts failed: %w", err)
 	}
@@ -317,11 +318,11 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	if err != nil {
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
+	if settingsFile != "" {
+		defer utils.fileRemove(settingsFile)
+	}
 
 	_, err = maven.Execute(&mavenOptions, execRunner)
-	if settingsFile != "" {
-		utils.fileRemove(settingsFile)
-	}
 	if err != nil {
 		return err
 	}
