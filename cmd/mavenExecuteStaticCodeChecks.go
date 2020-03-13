@@ -50,6 +50,7 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 	finalMavenOptions := maven.ExecuteOptions{
 		Goals:   goals,
 		Defines: defines,
+		M2Path:  config.M2Path,
 	}
 	_, err := maven.Execute(&finalMavenOptions, command)
 	return err

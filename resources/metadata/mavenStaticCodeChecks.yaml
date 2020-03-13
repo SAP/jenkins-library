@@ -26,6 +26,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: m2Path
+        description: Path to the local m2 directory.
+        type: string
+        default: '~/.m2/'
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: mavenModulesExcludes
         description: Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.
         type: '[]string'

@@ -16,6 +16,7 @@ import (
 type mavenExecuteStaticCodeChecksOptions struct {
 	SpotBugs                  bool     `json:"spotBugs,omitempty"`
 	Pmd                       bool     `json:"pmd,omitempty"`
+	M2Path                    string   `json:"m2Path,omitempty"`
 	MavenModulesExcludes      []string `json:"mavenModulesExcludes,omitempty"`
 	SpotBugsExcludeFilterFile string   `json:"spotBugsExcludeFilterFile,omitempty"`
 	SpotBugsIncludeFilterFile string   `json:"spotBugsIncludeFilterFile,omitempty"`
@@ -65,6 +66,7 @@ For more information please visit https://pmd.github.io/`,
 func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenExecuteStaticCodeChecksOptions) {
 	cmd.Flags().BoolVar(&stepConfig.SpotBugs, "spotBugs", true, "Parameter to turn off SpotBugs.")
 	cmd.Flags().BoolVar(&stepConfig.Pmd, "pmd", true, "Parameter to turn off PMD.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", "~/.m2/", "Path to the local m2 directory.")
 	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsExcludeFilterFile, "spotBugsExcludeFilterFile", os.Getenv("PIPER_spotBugsExcludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsIncludeFilterFile, "spotBugsIncludeFilterFile", os.Getenv("PIPER_spotBugsIncludeFilterFile"), "Path to a filter file with bug definitions which should be included.")
@@ -92,6 +94,14 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
