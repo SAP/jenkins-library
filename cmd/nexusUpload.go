@@ -209,8 +209,8 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = path
-	mavenOptions.Defines = append(mavenOptions.Defines, `-Drepo.username="$NEXUS_username"`)
-	mavenOptions.Defines = append(mavenOptions.Defines, `-Drepo.password="$NEXUS_password"`)
+	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.username=$NEXUS_username")
+	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.password=$NEXUS_password")
 	return path, nil
 }
 
