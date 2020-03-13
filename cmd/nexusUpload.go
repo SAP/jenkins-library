@@ -257,8 +257,6 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	defines = append(defines, "-Dfile="+file)
 	defines = append(defines, "-DgeneratePom=false")
 
-	execRunner := utils.getExecRunner()
-
 	if len(files) > 0 {
 		defines = append(defines, "-Dfiles="+files)
 		defines = append(defines, "-Dclassifiers="+classifiers)
@@ -269,6 +267,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	mavenOptions.Goals = []string{"deploy:deploy-file"}
 	mavenOptions.Defines = defines
 
+	execRunner := utils.getExecRunner()
 	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
 	if err != nil {
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
