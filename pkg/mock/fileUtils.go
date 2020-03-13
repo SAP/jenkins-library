@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// FilesMock ...
 type FilesMock struct {
 	Files []string
 }
