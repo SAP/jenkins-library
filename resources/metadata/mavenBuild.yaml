@@ -1,0 +1,58 @@
+metadata:
+  name: mavenBuild
+  description: This step will install the maven project into the local maven repository.
+  longDescription: |
+    This step will install the maven project into the local maven repository.
+    It will also prepare jacoco to record the code coverage and
+    supports ci friendly versioning by flattening the pom before installing.
+spec:
+  inputs:
+    params:
+      - name: pomPath
+        type: string
+        description: Path to the pom file which should be installed including all children.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+        default: pom.xml
+      - name: flatten
+        type: bool
+        description: Defines if the pom files should be flattened to support ci friendly maven versioning.
+        scope:
+          - PARAMETERS
+        default: true
+      - name: verify
+        type: bool
+        description: Instead of installing the artifact only the verify lifecycle phase is executed.
+        scope:
+          - PARAMETERS
+        default: false
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        scope:
+          - PARAMETERS
+        default: false
+        mandatory: false

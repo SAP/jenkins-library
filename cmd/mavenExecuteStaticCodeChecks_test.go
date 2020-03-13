@@ -15,7 +15,7 @@ import (
 func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
-		config := mavenStaticCodeChecksOptions{
+		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
 			PmdExcludes:               []string{"*test.java", "*prod.java"},
@@ -54,7 +54,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 		execMockRunner := mock.ExecMockRunner{}
-		config := mavenStaticCodeChecksOptions{
+		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs: false,
 			Pmd:      false,
 		}
@@ -65,7 +65,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 
 func TestGetPmdMavenParameters(t *testing.T) {
 	t.Run("should return maven options with excludes and rulesets", func(t *testing.T) {
-		config := mavenStaticCodeChecksOptions{
+		config := mavenExecuteStaticCodeChecksOptions{
 			Pmd:         true,
 			PmdExcludes: []string{"*test.java", "*prod.java"},
 			PmdRuleSets: []string{"myRule.xml", "anotherRule.xml"},
@@ -78,7 +78,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
 	})
 	t.Run("should return maven goal only", func(t *testing.T) {
-		config := mavenStaticCodeChecksOptions{}
+		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
 			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"}}
 
@@ -88,7 +88,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 
 func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven options with excludes and include filters", func(t *testing.T) {
-		config := mavenStaticCodeChecksOptions{
+		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
 			SpotBugsIncludeFilterFile: "includeFilter.xml",
@@ -101,7 +101,7 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
 	})
 	t.Run("should return maven goal only", func(t *testing.T) {
-		config := mavenStaticCodeChecksOptions{}
+		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
 			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"}}
 
