@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -50,9 +50,9 @@ func (u *utilsBundle) fileRead(path string) ([]byte, error) {
 }
 
 func (u *utilsBundle) fileWrite(filePath string, content []byte, perm os.FileMode) error {
-	basePath := path.Base(filePath)
-	if basePath != "" {
-		err := u.fileUtils.MkdirAll(basePath, os.ModeDir)
+	parent := filepath.Dir(filePath)
+	if parent != "" {
+		err := u.fileUtils.MkdirAll(parent, 0775)
 		if err != nil {
 			return err
 		}
