@@ -241,7 +241,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	files := ""
 	classifiers := ""
 	types := ""
-	artifactId := artifacts[0].ID
+	artifactID := artifacts[0].ID
 
 	for i, artifact := range artifacts {
 		if i == 0 {
@@ -256,15 +256,15 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 			classifiers += artifact.Classifier
 			types += artifact.Type
 		}
-		if artifactId != artifact.ID {
+		if artifactID != artifact.ID {
 			return fmt.Errorf(
 				"cannot deploy artifacts with different IDs in one run (%s vs. %s)",
-				artifactId, artifact.ID)
+				artifactID, artifact.ID)
 		}
 	}
 
 	defines = append(defines, "-DgroupId="+options.GroupID)
-	defines = append(defines, "-DartifactId="+artifactId)
+	defines = append(defines, "-DartifactId="+artifactID)
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-Dfile="+file)
 	defines = append(defines, "-DgeneratePom=false")
