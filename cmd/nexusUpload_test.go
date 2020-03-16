@@ -9,45 +9,6 @@ import (
 	"testing"
 )
 
-/*
-func TestDeployMTA(t *testing.T) {
-	err := os.Chdir("../integration/testdata/TestNexusIntegration/mta")
-	assert.NoError(t, err)
-	options := nexusUploadOptions{
-		Url:        "localhost:8081",
-		GroupID:    "nexus.upload",
-		Repository: "maven-releases",
-		ArtifactID: "my.mta.project",
-		Version:    "nexus3",
-	}
-	nexusUpload(options, nil)
-}
-
-func TestDeployGettingStartedBookshot(t *testing.T) {
-	err := os.Chdir("../../GettingStartedBookshop")
-	assert.NoError(t, err)
-	options := nexusUploadOptions{
-		Url:        "localhost:8081",
-		GroupID:    "nexus.upload",
-		Repository: "maven-releases",
-		ArtifactID: "GettingStartedBookshop",
-		Version:    "nexus3",
-	}
-	nexusUpload(options, nil)
-}
-
-func TestDeployMaven(t *testing.T) {
-	err := os.Chdir("../integration/testdata/TestNexusIntegration/maven")
-	assert.NoError(t, err)
-	options := nexusUploadOptions{
-		Url:        "localhost:8081",
-		Repository: "maven-releases",
-		Version:    "nexus3",
-	}
-	nexusUpload(options, nil)
-}
-*/
-
 type mockUtilsBundle struct {
 	mta        bool
 	maven      bool
@@ -342,33 +303,22 @@ func TestUploadMTAProjects(t *testing.T) {
 }
 
 func TestUploadArtifacts(t *testing.T) {
-	t.Run("Uploading MTA project fails without version", func(t *testing.T) {
+	t.Run("Uploading MTA project fails without info", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		uploader := mockUploader{}
 		options := createOptions()
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
-		assert.EqualError(t, err, "no artifact version specified")
-	})
-	t.Run("Uploading MTA project fails without artifacts ID", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, true)
-		uploader := mockUploader{}
-		options := createOptions()
-
-		_ = uploader.SetArtifactsVersion("3.0")
-
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
-		assert.EqualError(t, err, "no artifact ID specified")
+		err := uploadArtifacts(&utils, &uploader, &options, false)
+		assert.EqualError(t, err, "no group ID was provided, or could be established from project files")
 	})
 	t.Run("Uploading MTA project fails without any artifacts", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		uploader := mockUploader{}
 		options := createOptions()
 
-		_ = uploader.SetArtifactsVersion("3.0")
-		_ = uploader.SetArtifactsID("some.id")
+		_ = uploader.SetInfo(options.GroupID, "some.id", "3.0")
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
+		err := uploadArtifacts(&utils, &uploader, &options, false)
 		assert.EqualError(t, err, "no artifacts to upload")
 	})
 	t.Run("Uploading MTA project fails for unknown reasons", func(t *testing.T) {
@@ -379,8 +329,8 @@ func TestUploadArtifacts(t *testing.T) {
 		utils.execRunner.ShouldFailOnCommand["mvn"] = fmt.Errorf("failed")
 
 		uploader := mockUploader{}
-		_ = uploader.SetArtifactsVersion("3.0")
-		_ = uploader.SetArtifactsID("some.id")
+		options := createOptions()
+		_ = uploader.SetInfo(options.GroupID, "some.id", "3.0")
 		_ = uploader.AddArtifact(nexus.ArtifactDescription{
 			File: "mta.yaml",
 			Type: "yaml",
@@ -390,9 +340,7 @@ func TestUploadArtifacts(t *testing.T) {
 			Type: "yaml",
 		})
 
-		options := createOptions()
-
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
+		err := uploadArtifacts(&utils, &uploader, &options, false)
 		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
 	})
 	t.Run("Uploading bundle generates correct maven parameters", func(t *testing.T) {
@@ -401,8 +349,7 @@ func TestUploadArtifacts(t *testing.T) {
 		options := createOptions()
 
 		_ = uploader.SetRepoURL("localhost:8081", "nexus3", "maven-releases")
-		_ = uploader.SetArtifactsVersion("4.0")
-		_ = uploader.SetArtifactsID("my.artifact")
+		_ = uploader.SetInfo(options.GroupID, "my.artifact", "4.0")
 		_ = uploader.AddArtifact(nexus.ArtifactDescription{
 			File: "mta.yaml",
 			Type: "yaml",
@@ -412,7 +359,7 @@ func TestUploadArtifacts(t *testing.T) {
 			Type: "pom",
 		})
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
+		err := uploadArtifacts(&utils, &uploader, &options, false)
 		assert.NoError(t, err, "expected upload as two bundles to work")
 		assert.Equal(t, 1, len(utils.execRunner.Calls))
 
@@ -729,7 +676,7 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 
 func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
 	client := nexus.Upload{}
-	_ = client.SetArtifactsID("artifact-id")
+	_ = client.SetInfo("group.id", "artifact-id", "1.0")
 	return &client, addAdditionalClassifierArtifacts(utils, &client, additionalClassifiers,
 		"some folder")
 }

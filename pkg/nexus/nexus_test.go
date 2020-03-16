@@ -139,35 +139,43 @@ func TestSetBaseURL(t *testing.T) {
 	})
 }
 
-func TestSetArtifactsVersion(t *testing.T) {
+func TestSetInfo(t *testing.T) {
 	t.Run("Test invalid artifact version", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetArtifactsVersion("")
-		assert.Error(t, err, "Expected SetArtifactsVersion() to fail (empty version)")
+		err := nexusUpload.SetInfo("my.group", "artifact.id", "")
+		assert.Error(t, err, "Expected SetInfo() to fail (empty version)")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
 	t.Run("Test valid artifact version", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetArtifactsVersion("1.0.0-SNAPSHOT")
-		assert.NoError(t, err, "Expected SetArtifactsVersion() to succeed")
+		err := nexusUpload.SetInfo("my.group", "artifact.id", "1.0.0-SNAPSHOT")
+		assert.NoError(t, err, "Expected SetInfo() to succeed")
 	})
-}
-
-func TestSetArtifactsID(t *testing.T) {
-	t.Run("Test empty ID", func(t *testing.T) {
+	t.Run("Test empty artifactID", func(t *testing.T) {
 		nexusUpload := Upload{}
-
-		err := nexusUpload.SetArtifactsID("")
-
-		assert.Error(t, err, "Expected to fail setting empty ID")
+		err := nexusUpload.SetInfo("my.group", "", "1.0")
+		assert.Error(t, err, "Expected to fail setting empty artifactID")
+		assert.Equal(t, "", nexusUpload.groupID)
 		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
+	})
+	t.Run("Test empty groupID", func(t *testing.T) {
+		nexusUpload := Upload{}
+		err := nexusUpload.SetInfo("", "id", "1.0")
+		assert.Error(t, err, "Expected to fail setting empty groupID")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
 	t.Run("Test invalid ID", func(t *testing.T) {
 		nexusUpload := Upload{}
-
-		err := nexusUpload.SetArtifactsID("artifact/id")
-
+		err := nexusUpload.SetInfo("my.group", "artifact/id", "1.0.0-SNAPSHOT")
 		assert.Error(t, err, "Expected to fail adding invalid artifact")
+		assert.Equal(t, "", nexusUpload.groupID)
 		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
 }
 

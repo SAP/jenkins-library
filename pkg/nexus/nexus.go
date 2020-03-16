@@ -19,6 +19,7 @@ type ArtifactDescription struct {
 // Call SetRepoURL(), SetArtifactsVersion(), SetArtifactID(), and add at least one artifact via AddArtifact().
 type Upload struct {
 	repoURL    string
+	groupID    string
 	version    string
 	artifactID string
 	artifacts  []ArtifactDescription
@@ -28,9 +29,9 @@ type Upload struct {
 type Uploader interface {
 	SetRepoURL(nexusURL, nexusVersion, repository string) error
 	GetRepoURL() string
-	SetArtifactsID(version string) error
+	SetInfo(groupID, artifactsID, version string) error
+	GetGroupID() string
 	GetArtifactsID() string
-	SetArtifactsVersion(version string) error
 	GetArtifactsVersion() string
 	AddArtifact(artifact ArtifactDescription) error
 	GetArtifacts() []ArtifactDescription
@@ -52,12 +53,28 @@ func (nexusUpload *Upload) GetRepoURL() string {
 	return nexusUpload.repoURL
 }
 
-// SetArtifactsVersion sets the common version for all uploaded artifacts. The version is external to
+var ErrEmptyGroupID = errors.New("groupID must not be empty")
+var ErrEmptyArtifactID = errors.New("artifactID must not be empty")
+var ErrInvalidArtifactID = errors.New("artifactID may not include slashes")
+var ErrEmptyVersion = errors.New("version must not be empty")
+
+// SetInfo sets the common info for all uploaded artifacts. This info is external to
 // the artifact descriptions so that it is consistent for all of them.
-func (nexusUpload *Upload) SetArtifactsVersion(version string) error {
-	if version == "" {
-		return errors.New("version must not be empty")
+func (nexusUpload *Upload) SetInfo(groupID, artifactID, version string) error {
+	if groupID == "" {
+		return ErrEmptyGroupID
 	}
+	if artifactID == "" {
+		return ErrEmptyArtifactID
+	}
+	if strings.Contains(artifactID, "/") {
+		return ErrInvalidArtifactID
+	}
+	if version == "" {
+		return ErrEmptyVersion
+	}
+	nexusUpload.groupID = groupID
+	nexusUpload.artifactID = artifactID
 	nexusUpload.version = version
 	return nil
 }
@@ -67,17 +84,9 @@ func (nexusUpload *Upload) GetArtifactsVersion() string {
 	return nexusUpload.version
 }
 
-// SetArtifactsID sets the common ID for all uploaded artifacts. The ID is external to
-// the artifact descriptions so that it is consistent for all of them.
-func (nexusUpload *Upload) SetArtifactsID(id string) error {
-	if id == "" {
-		return errors.New("id must not be empty")
-	}
-	if strings.Contains(id, "/") {
-		return fmt.Errorf("artifact ID may not include slashes")
-	}
-	nexusUpload.artifactID = id
-	return nil
+// GetGroupID returns the common version for all artifacts.
+func (nexusUpload *Upload) GetGroupID() string {
+	return nexusUpload.groupID
 }
 
 // GetArtifactsID returns the common version for all artifacts.

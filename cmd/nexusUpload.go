@@ -108,6 +108,10 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 }
 
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
+	if err != nil {
+		return err
+	}
 	if utils.usesMta() {
 		log.Entry().Info("MTA project structure detected")
 		return uploadMTA(utils, uploader, options)
@@ -123,20 +127,17 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 	if options.GroupID == "" {
 		return fmt.Errorf("the 'groupId' parameter needs to be provided for MTA projects")
 	}
-	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
 	var mtaPath string
-	if err == nil {
-		exists, _ := utils.fileExists("mta.yaml")
-		if exists {
-			mtaPath = "mta.yaml"
-			// Give this file precedence, but it would be even better if
-			// ProjectStructure could be asked for the mta file it detected.
-		} else {
-			// This will fail anyway if the file doesn't exist
-			mtaPath = "mta.yml"
-		}
-		err = setVersionFromMtaFile(utils, uploader, mtaPath)
+	exists, _ := utils.fileExists("mta.yaml")
+	if exists {
+		mtaPath = "mta.yaml"
+		// Give this file precedence, but it would be even better if
+		// ProjectStructure could be asked for the mta file it detected.
+	} else {
+		// This will fail anyway if the file doesn't exist
+		mtaPath = "mta.yml"
 	}
+	version, err := getVersionFromMtaFile(utils, mtaPath)
 	var artifactID = options.ArtifactID
 	if artifactID == "" {
 		artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
@@ -147,7 +148,10 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		}
 	}
 	if err == nil {
-		err = uploader.SetArtifactsID(artifactID)
+		err = uploader.SetInfo(options.GroupID, artifactID, version)
+		if err == nexus.ErrEmptyVersion {
+			err = fmt.Errorf("the project descriptor file 'mta.yaml' has an invalid version: %w", err)
+		}
 	}
 	if err == nil {
 		err = addArtifact(utils, uploader, mtaPath, "", "yaml")
@@ -158,7 +162,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar")
 	}
 	if err == nil {
-		err = uploadArtifacts(utils, uploader, options, options.GroupID, false)
+		err = uploadArtifacts(utils, uploader, options, false)
 	}
 	return err
 }
@@ -168,30 +172,25 @@ type mtaYaml struct {
 	Version string `json:"version"`
 }
 
-func setVersionFromMtaFile(utils nexusUploadUtils, uploader nexus.Uploader, filePath string) error {
+func getVersionFromMtaFile(utils nexusUploadUtils, filePath string) (string, error) {
 	mtaYamlContent, err := utils.fileRead(filePath)
 	if err != nil {
-		return fmt.Errorf("could not read from required project descriptor file '%s'",
+		return "", fmt.Errorf("could not read from required project descriptor file '%s'",
 			filePath)
 	}
-	return setVersionFromMtaYaml(uploader, mtaYamlContent, filePath)
+	return getVersionFromMtaYaml(mtaYamlContent, filePath)
 }
 
-func setVersionFromMtaYaml(uploader nexus.Uploader, mtaYamlContent []byte, filePath string) error {
+func getVersionFromMtaYaml(mtaYamlContent []byte, filePath string) (string, error) {
 	var mtaYaml mtaYaml
 	err := yaml.Unmarshal(mtaYamlContent, &mtaYaml)
 	if err != nil {
 		// Eat the original error as it is unhelpful and confusingly mentions JSON, while the
 		// user thinks it should parse YAML (it is transposed by the implementation).
-		return fmt.Errorf("failed to parse contents of the project descriptor file '%s'",
+		return "", fmt.Errorf("failed to parse contents of the project descriptor file '%s'",
 			filePath)
 	}
-	err = uploader.SetArtifactsVersion(mtaYaml.Version)
-	if err != nil {
-		return fmt.Errorf("the project descriptor file '%s' has an invalid version: %w",
-			filePath, err)
-	}
-	return nil
+	return mtaYaml.Version, nil
 }
 
 func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions {
@@ -203,7 +202,7 @@ func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions
 	return mavenOptions
 }
 
-var settingsServerId = "artifact.deployment.nexus"
+var settingsServerID = "artifact.deployment.nexus"
 var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
 	<servers>
 		<server>
@@ -248,16 +247,10 @@ type artifactDefines struct {
 	types       string
 }
 
-func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions, groupID string,
+func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	generatePOM bool) error {
-	if groupID == "" {
+	if uploader.GetGroupID() == "" {
 		return fmt.Errorf("no group ID was provided, or could be established from project files")
-	}
-	if uploader.GetArtifactsVersion() == "" {
-		return fmt.Errorf("no artifact version specified")
-	}
-	if uploader.GetArtifactsID() == "" {
-		return fmt.Errorf("no artifact ID specified")
 	}
 
 	artifacts := uploader.GetArtifacts()
@@ -266,9 +259,8 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	var defines []string
-	defines = append(defines)
 	defines = append(defines, "-Durl=http://"+uploader.GetRepoURL())
-	defines = append(defines, "-DgroupId="+groupID)
+	defines = append(defines, "-DgroupId="+uploader.GetGroupID())
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
 
@@ -282,29 +274,24 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
 	if settingsFile != "" {
-		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerId)
+		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
 		defer utils.fileRemove(settingsFile)
 	}
 
 	// iterate over the artifact descriptions, the first one is the main artifact, the following ones are
 	// sub-artifacts.
 	var d artifactDefines
-
 	for i, artifact := range artifacts {
 		if i == 0 {
 			d.file = artifact.File
 			d.packaging = artifact.Type
-		} else if i == 1 {
-			d.files = artifact.File
-			d.classifiers = artifact.Classifier
-			d.types = artifact.Type
 		} else {
 			// Note: It is important to append the comma, even when the list is empty
 			// or the appended item is empty. So classifiers could end up like ",,classes".
 			// This is needed to match the third classifier "classes" to the third sub-artifact.
-			d.files += "," + artifact.File
-			d.classifiers += "," + artifact.Classifier
-			d.types += "," + artifact.Type
+			d.files = appendItemToString(d.files, artifact.File, i == 1)
+			d.classifiers = appendItemToString(d.classifiers, artifact.Classifier, i == 1)
+			d.types = appendItemToString(d.types, artifact.Type, i == 1)
 		}
 	}
 
@@ -314,6 +301,15 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 	uploader.Clear()
 	return nil
+}
+
+// appendItemToString appends a comma this is not the first item, regardless of whether
+// list or item are empty.
+func appendItemToString(list, item string, first bool) string {
+	if !first {
+		list += ","
+	}
+	return list + item
 }
 
 func uploadArtifactsBundle(d artifactDefines,
@@ -377,35 +373,22 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 
 func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	pomPath, targetFolder, additionalClassifiers string) error {
-	var err error
-
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 	exists, _ := utils.fileExists(pomFile)
 	if !exists {
 		return errPomNotFound
 	}
-	groupID, err := utils.evaluate(pomFile, "project.groupId")
+	groupID, _ := utils.evaluate(pomFile, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
-		// Reset error
-		err = nil
 	}
-	if err == nil {
-		err = uploader.SetRepoURL(options.Url, options.Version, options.Repository)
-	}
-	var artifactID string
-	if err == nil {
-		artifactID, err = utils.evaluate(pomFile, "project.artifactId")
-	}
-	if err == nil {
-		err = uploader.SetArtifactsID(artifactID)
-	}
+	artifactID, err := utils.evaluate(pomFile, "project.artifactId")
 	var artifactsVersion string
 	if err == nil {
 		artifactsVersion, err = utils.evaluate(pomFile, "project.version")
 	}
 	if err == nil {
-		err = uploader.SetArtifactsVersion(artifactsVersion)
+		err = uploader.SetInfo(groupID, artifactID, artifactsVersion)
 	}
 	if err == nil {
 		err = addArtifact(utils, uploader, pomFile, "", "pom")
@@ -417,7 +400,7 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder)
 	}
 	if err == nil {
-		err = uploadArtifacts(utils, uploader, options, groupID, true)
+		err = uploadArtifacts(utils, uploader, options, true)
 	}
 	return err
 }
