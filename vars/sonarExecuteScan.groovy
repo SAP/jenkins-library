@@ -141,7 +141,7 @@ void call(Map parameters = [:]) {
                     }
                 }
             } finally {
-                sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                sh 'rm -rf .sonar-scanner .certificates'
             }
         }
 
