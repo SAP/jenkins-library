@@ -71,19 +71,19 @@ func TestNexusUpload(t *testing.T) {
 
 	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.pom: %s", resp.Status)
 
 	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.jar: %s", resp.Status)
 
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.yaml: %s", resp.Status)
 
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.mtar: %s", resp.Status)
 }
 
 func TestNexus2Upload(t *testing.T) {
@@ -140,17 +140,17 @@ func TestNexus2Upload(t *testing.T) {
 
 	resp, err := http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.pom: %s", resp.Status)
 
 	resp, err = http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.jar: %s", resp.Status)
 
 	resp, err = http.Get(url + "content/repositories/releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.yaml: %s", resp.Status)
 
 	resp, err = http.Get(url + "content/repositories/releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
 	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.mtar: %s", resp.Status)
 }
