@@ -16,9 +16,9 @@ type ArtifactDescription struct {
 }
 
 // Upload combines information about an artifact and its sub-artifacts which are supposed to be uploaded together.
-// Call SetRepoURL(), SetArtifactsVersion() and add at least one artifact via AddArtifact().
+// Call SetRepoURL(), SetArtifactsVersion(), SetArtifactID(), and add at least one artifact via AddArtifact().
 type Upload struct {
-	baseURL    string
+	repoURL    string
 	version    string
 	artifactID string
 	artifacts  []ArtifactDescription
@@ -39,17 +39,17 @@ type Uploader interface {
 
 // SetRepoURL constructs the base URL to the Nexus repository. No parameter can be empty.
 func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, repository string) error {
-	baseURL, err := getBaseURL(nexusURL, nexusVersion, repository)
+	repoURL, err := getBaseURL(nexusURL, nexusVersion, repository)
 	if err != nil {
 		return err
 	}
-	nexusUpload.baseURL = baseURL
+	nexusUpload.repoURL = repoURL
 	return nil
 }
 
 // GetRepoURL returns the base URL for the nexus repository.
 func (nexusUpload *Upload) GetRepoURL() string {
-	return nexusUpload.baseURL
+	return nexusUpload.repoURL
 }
 
 // SetArtifactsVersion sets the common version for all uploaded artifacts. The version is external to
