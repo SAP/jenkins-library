@@ -8,14 +8,16 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
     handlePipelineStepErrors(stepName: stepName, stepParameters: parameters) {
 
+        def stepParameters = [:].plus(parameters)
+
         def script = checkScript(this, parameters) ?: this
-        parameters.script = null
+        stepParameters.remove('script')
 
         def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
+        stepParameters.remove('juStabUtils')
 
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        parameters.jenkinsUtilsStub = null
+        stepParameters.remove('jenkinsUtilsStub')
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
@@ -24,7 +26,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
         withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
             // get context configuration
