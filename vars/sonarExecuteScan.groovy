@@ -129,7 +129,7 @@ void call(Map parameters = [:]) {
                     loadSonarScanner(config)
 
                     if(fileExists('.certificates/cacerts')){
-                        envVars = envVars.plus("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=\"${env.WORKSPACE}/.certificates/cacerts\"")
+                        envVars = envVars.plus("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=${env.WORKSPACE}/.certificates/cacerts")
                     }
 
                     if(config.organization) config.options.add("sonar.organization=${config.organization}")
