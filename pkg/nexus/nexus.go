@@ -10,25 +10,26 @@ import (
 // ArtifactDescription describes a single artifact that can be uploaded to a Nexus repository manager.
 // The File string must point to an existing file. The Classifier can be empty.
 type ArtifactDescription struct {
-	ID         string `json:"artifactId"`
 	Classifier string `json:"classifier"`
 	Type       string `json:"type"`
 	File       string `json:"file"`
 }
 
-// Upload holds state for an upload session. Call SetBaseURL(), SetArtifactsVersion() and add at least
-// one artifact via AddArtifact(). Then call UploadArtifacts().
+// Upload combines information about an artifact and its sub-artifacts which are supposed to be uploaded together.
+// Call SetRepoURL(), SetArtifactsVersion() and add at least one artifact via AddArtifact().
 type Upload struct {
-	baseURL   string
-	version   string
-	artifacts []ArtifactDescription
+	baseURL    string
+	version    string
+	artifactID string
+	artifacts  []ArtifactDescription
 }
 
-// Uploader provides an interface to the nexus upload for configuring the target Nexus Repository and
-// adding artifacts.
+// Uploader provides an interface for configuring the target Nexus Repository and adding artifacts.
 type Uploader interface {
-	SetBaseURL(nexusURL, nexusVersion, repository string) error
-	GetBaseURL() string
+	SetRepoURL(nexusURL, nexusVersion, repository string) error
+	GetRepoURL() string
+	SetArtifactsID(version string) error
+	GetArtifactsID() string
 	SetArtifactsVersion(version string) error
 	GetArtifactsVersion() string
 	AddArtifact(artifact ArtifactDescription) error
@@ -36,8 +37,8 @@ type Uploader interface {
 	Clear()
 }
 
-// SetBaseURL constructs the base URL to the Nexus repository. No parameter can be empty.
-func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository string) error {
+// SetRepoURL constructs the base URL to the Nexus repository. No parameter can be empty.
+func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, repository string) error {
 	baseURL, err := getBaseURL(nexusURL, nexusVersion, repository)
 	if err != nil {
 		return err
@@ -46,8 +47,8 @@ func (nexusUpload *Upload) SetBaseURL(nexusURL, nexusVersion, repository string)
 	return nil
 }
 
-// GetBaseURL returns the base URL for the nexus repository.
-func (nexusUpload *Upload) GetBaseURL() string {
+// GetRepoURL returns the base URL for the nexus repository.
+func (nexusUpload *Upload) GetRepoURL() string {
 	return nexusUpload.baseURL
 }
 
@@ -66,6 +67,24 @@ func (nexusUpload *Upload) GetArtifactsVersion() string {
 	return nexusUpload.version
 }
 
+// SetArtifactsID sets the common ID for all uploaded artifacts. The ID is external to
+// the artifact descriptions so that it is consistent for all of them.
+func (nexusUpload *Upload) SetArtifactsID(id string) error {
+	if id == "" {
+		return errors.New("id must not be empty")
+	}
+	if strings.Contains(id, "/") {
+		return fmt.Errorf("artifact ID may not include slashes")
+	}
+	nexusUpload.artifactID = id
+	return nil
+}
+
+// GetArtifactsID returns the common version for all artifacts.
+func (nexusUpload *Upload) GetArtifactsID() string {
+	return nexusUpload.artifactID
+}
+
 // AddArtifact adds a single artifact to be uploaded later via UploadArtifacts(). If an identical artifact
 // description is already contained in the Upload, the function does nothing and returns no error.
 func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
@@ -82,12 +101,9 @@ func (nexusUpload *Upload) AddArtifact(artifact ArtifactDescription) error {
 }
 
 func validateArtifact(artifact ArtifactDescription) error {
-	if artifact.File == "" || artifact.ID == "" || artifact.Type == "" {
-		return fmt.Errorf("Artifact.File (%v), ID (%v) or Type (%v) is empty",
-			artifact.File, artifact.ID, artifact.Type)
-	}
-	if strings.Contains(artifact.ID, "/") {
-		return fmt.Errorf("Artifact.ID may not include slashes")
+	if artifact.File == "" || artifact.Type == "" {
+		return fmt.Errorf("Artifact.File (%v) or Type (%v) is empty",
+			artifact.File, artifact.Type)
 	}
 	return nil
 }

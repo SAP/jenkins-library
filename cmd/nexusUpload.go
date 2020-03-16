@@ -123,7 +123,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 	if options.GroupID == "" {
 		return fmt.Errorf("the 'groupId' parameter needs to be provided for MTA projects")
 	}
-	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
+	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
 	var mtaPath string
 	if err == nil {
 		exists, _ := utils.fileExists("mta.yaml")
@@ -147,12 +147,15 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		}
 	}
 	if err == nil {
-		err = addArtifact(utils, uploader, mtaPath, "", "yaml", artifactID)
+		err = uploader.SetArtifactsID(artifactID)
+	}
+	if err == nil {
+		err = addArtifact(utils, uploader, mtaPath, "", "yaml")
 	}
 	if err == nil {
 		mtarFilePath := utils.getEnvParameter(".pipeline/commonPipelineEnvironment", "mtarFilePath")
 		log.Entry().Debugf("mtar file path: '%s'", mtarFilePath)
-		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
+		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar")
 	}
 	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, options.GroupID, false)
@@ -237,10 +240,24 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	return path, nil
 }
 
+type artifactDefines struct {
+	file        string
+	packaging   string
+	files       string
+	classifiers string
+	types       string
+}
+
 func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions, groupID string,
 	generatePOM bool) error {
 	if groupID == "" {
 		return fmt.Errorf("no group ID was provided, or could be established from project files")
+	}
+	if uploader.GetArtifactsVersion() == "" {
+		return fmt.Errorf("no artifact version specified")
+	}
+	if uploader.GetArtifactsID() == "" {
+		return fmt.Errorf("no artifact ID specified")
 	}
 
 	artifacts := uploader.GetArtifacts()
@@ -250,9 +267,10 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 
 	var defines []string
 	defines = append(defines)
-	defines = append(defines, "-Durl=http://"+uploader.GetBaseURL())
+	defines = append(defines, "-Durl=http://"+uploader.GetRepoURL())
 	defines = append(defines, "-DgroupId="+groupID)
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
+	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
 
 	mavenOptions := createMavenExecuteOptions(options)
 	mavenOptions.Goals = []string{"deploy:deploy-file"}
@@ -268,133 +286,63 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		defer utils.fileRemove(settingsFile)
 	}
 
-	// iterate over the artifact descriptions and upload those with the same ID in one bundle
-	artifactID := ""
-	file := ""
-	packaging := ""
-	files := ""
-	classifiers := ""
-	types := ""
+	// iterate over the artifact descriptions, the first one is the main artifact, the following ones are
+	// sub-artifacts.
+	var d artifactDefines
 
-	for _, artifact := range artifacts {
-		if artifactID != artifact.ID {
-			if artifactID != "" {
-				err := uploadArtifactsBundle(artifactID, file, packaging,
-					files, classifiers, types, generatePOM, mavenOptions, execRunner)
-				if err != nil {
-					return err
-				}
-			}
-			artifactID = artifact.ID
-			file = ""
-			packaging = ""
-			files = ""
-			classifiers = ""
-			types = ""
-		}
-		if file == "" {
-			file = artifact.File
-			packaging = artifact.Type
+	for i, artifact := range artifacts {
+		if i == 0 {
+			d.file = artifact.File
+			d.packaging = artifact.Type
+		} else if i == 1 {
+			d.files = artifact.File
+			d.classifiers = artifact.Classifier
+			d.types = artifact.Type
 		} else {
-			if files != "" {
-				files += ","
-				classifiers += ","
-				types += ","
-			}
-			files += artifact.File
-			classifiers += artifact.Classifier
-			types += artifact.Type
+			// Note: It is important to append the comma, even when the list is empty
+			// or the appended item is empty. So classifiers could end up like ",,classes".
+			// This is needed to match the third classifier "classes" to the third sub-artifact.
+			d.files += "," + artifact.File
+			d.classifiers += "," + artifact.Classifier
+			d.types += "," + artifact.Type
 		}
 	}
 
-	if file != "" {
-		err = uploadArtifactsBundle(artifactID, file, packaging,
-			files, classifiers, types, generatePOM, mavenOptions, execRunner)
+	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, execRunner)
+	if err != nil {
+		return fmt.Errorf("uploading artifacts for ID '%s' failed: %w", uploader.GetArtifactsID(), err)
 	}
-
 	uploader.Clear()
-
-	return err
+	return nil
 }
 
-func uploadArtifactsBundle(artifactID, file, packaging, files, classifiers, types string,
+func uploadArtifactsBundle(d artifactDefines,
 	generatePOM bool, mavenOptions maven.ExecuteOptions, execRunner execRunner) error {
-	if artifactID == "" {
-		return fmt.Errorf("no artifact ID specified")
-	}
-	if file == "" {
+	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}
 
 	var defines []string
 
-	defines = append(defines, "-DartifactId="+artifactID)
-	defines = append(defines, "-Dfile="+file)
-	defines = append(defines, "-Dpackaging="+packaging)
+	defines = append(defines, "-Dfile="+d.file)
+	defines = append(defines, "-Dpackaging="+d.packaging)
 	if !generatePOM {
 		defines = append(defines, "-DgeneratePom=false")
 	}
 
-	if len(files) > 0 {
-		defines = append(defines, "-Dfiles="+files)
-		defines = append(defines, "-Dclassifiers="+classifiers)
-		defines = append(defines, "-Dtypes="+types)
+	if len(d.files) > 0 {
+		defines = append(defines, "-Dfiles="+d.files)
+		defines = append(defines, "-Dclassifiers="+d.classifiers)
+		defines = append(defines, "-Dtypes="+d.types)
 	}
 
 	mavenOptions.Defines = append(mavenOptions.Defines, defines...)
 
 	_, err := maven.Execute(&mavenOptions, execRunner)
-	if err != nil {
-		return fmt.Errorf("uploading artifacts for ID '%s' failed: %w", artifactID, err)
-	}
-	return nil
+	return err
 }
 
-/*
-func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	if pomExists, _ := utils.fileExists("pom.xml"); !pomExists {
-		return errors.New("pom.xml not found")
-	}
-
-	err := uploader.SetBaseURL(options.Url, options.Version, options.Repository)
-	if err != nil {
-		return err
-	}
-
-	// Maven will look up 'settingsServerId' in the local settings file to find login credentials
-	altRepository := settingsServerId + "::default::http://" + uploader.GetBaseURL()
-
-	var defines []string
-	defines = append(defines, "-Dmaven.test.skip")
-	defines = append(defines, "-DaltDeploymentRepository="+altRepository)
-
-	testModulesExcludes := maven.GetTestModulesExcludes()
-	if testModulesExcludes != nil {
-		defines = append(defines, testModulesExcludes...)
-	}
-
-	mavenOptions := createMavenExecuteOptions(options)
-	mavenOptions.Goals = []string{"deploy"}
-	mavenOptions.Defines = defines
-
-	execRunner := utils.getExecRunner()
-	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
-	if err != nil {
-		return fmt.Errorf("writing credential settings for maven failed: %w", err)
-	}
-	if settingsFile != "" {
-		defer utils.fileRemove(settingsFile)
-	}
-
-	_, err = maven.Execute(&mavenOptions, execRunner)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
-
-func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, classifier, fileType, id string) error {
+func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, classifier, fileType string) error {
 	exists, _ := utils.fileExists(filePath)
 	if !exists {
 		return fmt.Errorf("artifact file not found '%s'", filePath)
@@ -403,7 +351,6 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 		File:       filePath,
 		Type:       fileType,
 		Classifier: classifier,
-		ID:         id,
 	}
 	return uploader.AddArtifact(artifact)
 }
@@ -444,11 +391,14 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 		err = nil
 	}
 	if err == nil {
-		err = uploader.SetBaseURL(options.Url, options.Version, options.Repository)
+		err = uploader.SetRepoURL(options.Url, options.Version, options.Repository)
 	}
 	var artifactID string
 	if err == nil {
 		artifactID, err = utils.evaluate(pomFile, "project.artifactId")
+	}
+	if err == nil {
+		err = uploader.SetArtifactsID(artifactID)
 	}
 	var artifactsVersion string
 	if err == nil {
@@ -458,13 +408,13 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 		err = uploader.SetArtifactsVersion(artifactsVersion)
 	}
 	if err == nil {
-		err = addArtifact(utils, uploader, pomFile, "", "pom", artifactID)
+		err = addArtifact(utils, uploader, pomFile, "", "pom")
 	}
 	if err == nil {
-		err = addTargetArtifact(utils, uploader, pomFile, targetFolder, artifactID)
+		err = addTargetArtifact(utils, uploader, pomFile, targetFolder)
 	}
 	if err == nil {
-		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder, artifactID)
+		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder)
 	}
 	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, groupID, true)
@@ -472,7 +422,7 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 	return err
 }
 
-func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, artifactID string) error {
+func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder string) error {
 	packaging, err := utils.evaluate(pomFile, "project.packaging")
 	if err != nil {
 		return err
@@ -491,11 +441,11 @@ func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile,
 		return err
 	}
 	filePath := composeFilePath(targetFolder, finalName, packaging)
-	return addArtifact(utils, uploader, filePath, "", packaging, artifactID)
+	return addArtifact(utils, uploader, filePath, "", packaging)
 }
 
 func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
-	additionalClassifiers, targetFolder, artifactID string) error {
+	additionalClassifiers, targetFolder string) error {
 	if additionalClassifiers == "" {
 		return nil
 	}
@@ -508,8 +458,9 @@ func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Upl
 			return fmt.Errorf("invalid additional classifier description (classifier: '%s', type: '%s')",
 				classifier.Classifier, classifier.FileType)
 		}
-		filePath := composeFilePath(targetFolder, artifactID+"-"+classifier.Classifier, classifier.FileType)
-		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType, artifactID)
+		filePath := composeFilePath(targetFolder, uploader.GetArtifactsID()+"-"+classifier.Classifier,
+			classifier.FileType)
+		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType)
 		if err != nil {
 			return err
 		}
