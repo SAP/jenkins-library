@@ -65,6 +65,27 @@ func TestExecute(t *testing.T) {
 	})
 }
 
+func TestEvaluate(t *testing.T) {
+	t.Run("should evaluate expression", func(t *testing.T) {
+		execMockRunner := mock.ExecMockRunner{}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "com.awesome"}
+
+		result, err := Evaluate("pom.xml", "project.groupId", &execMockRunner)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "com.awesome", result)
+		}
+	})
+	t.Run("should not evaluate expression", func(t *testing.T) {
+		execMockRunner := mock.ExecMockRunner{}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "null object or invalid expression"}
+
+		result, err := Evaluate("pom.xml", "project.groupId", &execMockRunner)
+		if assert.EqualError(t, err, "expression 'project.groupId' in file 'pom.xml' could not be resolved") {
+			assert.Equal(t, "", result)
+		}
+	})
+}
+
 type mockDownloader struct {
 	shouldFail bool
 }

@@ -4,7 +4,9 @@ import com.sap.piper.API
 
 @API
 @Singleton
-class ContainerMap {
+class ContainerMap implements Serializable {
+    static final long serialVersionUID = 1L
+
     private Map containerMap = null
 
     Map getMap() {

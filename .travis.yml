@@ -21,29 +21,19 @@ cache:
 # Travis GHPages deploy provider: https://docs.travis-ci.com/user/deployment/pages/
 jobs:
   include:
-    - stage: Tests		
-      name: Golang Build & Publish
-      if: type != pull_request && repo = "SAP/jenkins-library" && branch = "master"
-      script:
-        - docker build -t piper:${TRAVIS_BRANCH} .
-        - docker create --name piper_${TRAVIS_BRANCH} piper:${TRAVIS_BRANCH}
-        - docker cp piper_${TRAVIS_BRANCH}:/build/piper .
-        - docker rm piper_${TRAVIS_BRANCH}
-        - cp ./piper ./piper_master
-        - chmod +x ./piper
-        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --assetPath ./piper_master
-    - name: Consumer Tests
+    - stage: Tests
+      name: Consumer Tests
       if: repo = "SAP/jenkins-library" && ( (type != pull_request && branch =~ /^master$|^it\/.*$/) || (type == pull_request && head_repo = "SAP/jenkins-library" && head_branch =~ /^it\/.*$/) )
       script: cd consumer-test && groovy consumerTestController.groovy
     - stage: Docs
       name: Create Documentation
       install: docker pull squidfunk/mkdocs-material:3.0.4
-      before_script: 
+      before_script:
         - documentation/bin/createDocu.sh
         - docker run -u `id -u`:`id -g` --rm -it -e GOCACHE=/tmp -v ${TRAVIS_BUILD_DIR}:/docu-gen golang sh -c "cd /docu-gen && go get github.com/SAP/jenkins-library/... && go run /docu-gen/pkg/generator/step-metadata.go --docuDir=/docu-gen/documentation/docs/steps/ --docuGen=true "
       script:
         - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}/documentation:/docs squidfunk/mkdocs-material:3.0.4 build --clean --strict
-      after_script: 
+      after_script:
         - mkdir -p documentation/docs-gen/misc
         - cp target/docuMetaData.json documentation/docs-gen/misc
       deploy:

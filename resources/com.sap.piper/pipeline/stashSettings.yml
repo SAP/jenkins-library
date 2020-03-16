@@ -6,13 +6,23 @@ Init:
     excludes: ".pipeline/**"
 
 'Pull-Request Voting':
-  unstash: ['source']
+  unstash:
+  - source
   stashes: []
 
-'Build':
-  unstash: ['source']
+Build:
+  unstash:
+  - source
   stashes: []
 
-'Acceptance':
-  unstash: ['buildResult']
+Acceptance:
+  unstash:
+  - buildResult
+  - deployDescriptor
+  stashes: []
+
+Release:
+  unstash:
+  - buildResult
+  - deployDescriptor
   stashes: []
