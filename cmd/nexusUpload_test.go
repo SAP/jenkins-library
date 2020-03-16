@@ -334,7 +334,7 @@ func TestUploadArtifacts(t *testing.T) {
 		uploader := mockUploader{}
 		options := createOptions()
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
 		assert.EqualError(t, err, "no artifacts to upload")
 	})
 	t.Run("Uploading MTA project fails for unknown reasons", func(t *testing.T) {
@@ -358,7 +358,7 @@ func TestUploadArtifacts(t *testing.T) {
 
 		options := createOptions()
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
 		assert.EqualError(t, err, "uploading artifacts for ID 'my.artifact' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion= -DartifactId=my.artifact -Dfile=mta.yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
 	})
 	t.Run("Uploading with different artifact IDs happens in two bundles", func(t *testing.T) {
@@ -384,7 +384,7 @@ func TestUploadArtifacts(t *testing.T) {
 			ID:   "artifact",
 		})
 
-		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
 		assert.NoError(t, err, "expected upload as two bundles to work")
 		assert.Equal(t, 2, len(utils.execRunner.Calls))
 

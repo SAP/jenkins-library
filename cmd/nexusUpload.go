@@ -155,7 +155,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		err = addArtifact(utils, uploader, mtarFilePath, "", "mtar", artifactID)
 	}
 	if err == nil {
-		err = uploadArtifacts(utils, uploader, options, options.GroupID)
+		err = uploadArtifacts(utils, uploader, options, options.GroupID, false)
 	}
 	return err
 }
@@ -237,7 +237,8 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	return path, nil
 }
 
-func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions, groupID string) error {
+func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions, groupID string,
+	generatePOM bool) error {
 	if groupID == "" {
 		return fmt.Errorf("no group ID was provided, or could be established from project files")
 	}
@@ -277,7 +278,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	for _, artifact := range artifacts {
 		if artifactID != artifact.ID {
 			if artifactID != "" {
-				err := uploadArtifactsBundle(artifactID, file, files, classifiers, types, mavenOptions, execRunner)
+				err := uploadArtifactsBundle(artifactID, file, files, classifiers, types, generatePOM, mavenOptions, execRunner)
 				if err != nil {
 					return err
 				}
@@ -303,13 +304,13 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	if file != "" {
-		return uploadArtifactsBundle(artifactID, file, files, classifiers, types, mavenOptions, execRunner)
+		return uploadArtifactsBundle(artifactID, file, files, classifiers, types, generatePOM, mavenOptions, execRunner)
 	}
 	return nil
 }
 
 func uploadArtifactsBundle(artifactID, file, files, classifiers, types string,
-	mavenOptions maven.ExecuteOptions, execRunner execRunner) error {
+	generatePOM bool, mavenOptions maven.ExecuteOptions, execRunner execRunner) error {
 	if artifactID == "" {
 		return fmt.Errorf("no artifact ID specified")
 	}
@@ -321,7 +322,9 @@ func uploadArtifactsBundle(artifactID, file, files, classifiers, types string,
 
 	defines = append(defines, "-DartifactId="+artifactID)
 	defines = append(defines, "-Dfile="+file)
-	//	defines = append(defines, "-DgeneratePom=false")
+	if !generatePOM {
+		defines = append(defines, "-DgeneratePom=false")
+	}
 
 	if len(files) > 0 {
 		defines = append(defines, "-Dfiles="+files)
@@ -455,7 +458,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder, artifactID)
 	}
 	if err == nil {
-		err = uploadArtifacts(utils, uploader, options, groupID)
+		err = uploadArtifacts(utils, uploader, options, groupID, true)
 	}
 	return err
 }
