@@ -52,6 +52,7 @@ type mockUtilsBundle struct {
 	mta        bool
 	maven      bool
 	files      map[string][]byte
+	properties map[string]map[string]string
 	cpe        map[string]string
 	execRunner mock.ExecMockRunner
 }
@@ -59,6 +60,7 @@ type mockUtilsBundle struct {
 func newMockUtilsBundle(usesMta, usesMaven bool) mockUtilsBundle {
 	utils := mockUtilsBundle{mta: usesMta, maven: usesMaven}
 	utils.files = map[string][]byte{}
+	utils.properties = map[string]map[string]string{}
 	utils.cpe = map[string]string{}
 	return utils
 }
@@ -103,6 +105,30 @@ func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 
 func (m *mockUtilsBundle) getExecRunner() execRunner {
 	return &m.execRunner
+}
+
+func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
+	pom := m.properties[pomFile]
+	if pom == nil {
+		pom = map[string]string{}
+		m.properties[pomFile] = pom
+	}
+	pom[expression] = value
+}
+
+func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
+	pom := m.properties[pomFile]
+	if pom == nil {
+		return "", fmt.Errorf("pom file '%s' not found", pomFile)
+	}
+	value := pom[expression]
+	if value == "<empty>" {
+		return "", nil
+	}
+	if value == "" {
+		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
+	}
+	return value, nil
 }
 
 type mockUploader struct {
@@ -308,7 +334,7 @@ func TestUploadArtifacts(t *testing.T) {
 		uploader := mockUploader{}
 		options := createOptions()
 
-		err := uploadArtifacts(&utils, &uploader, &options)
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
 		assert.EqualError(t, err, "no artifacts to upload")
 	})
 	t.Run("Uploading MTA project fails for unknown reasons", func(t *testing.T) {
@@ -332,14 +358,16 @@ func TestUploadArtifacts(t *testing.T) {
 
 		options := createOptions()
 
-		err := uploadArtifacts(&utils, &uploader, &options)
-		assert.EqualError(t, err, "uploading artifacts failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -DartifactId=my.artifact -Dversion= -Dfile=mta.yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
+		assert.EqualError(t, err, "uploading artifacts for ID 'my.artifact' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion= -DartifactId=my.artifact -Dfile=mta.yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
 	})
-	t.Run("Uploading MTA project fails with different artifact IDs", func(t *testing.T) {
+	t.Run("Uploading with different artifact IDs happens in two bundles", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		uploader := mockUploader{}
 		options := createOptions()
 
+		_ = uploader.SetBaseURL("localhost:8081", "nexus3", "maven-releases")
+		_ = uploader.SetArtifactsVersion("4.0")
 		_ = uploader.AddArtifact(nexus.ArtifactDescription{
 			File: "mta.yaml",
 			Type: "yaml",
@@ -356,11 +384,40 @@ func TestUploadArtifacts(t *testing.T) {
 			ID:   "artifact",
 		})
 
-		err := uploadArtifacts(&utils, &uploader, &options)
-		assert.EqualError(t, err, "cannot deploy artifacts with different IDs in one run (my.artifact vs. artifact)")
+		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID)
+		assert.NoError(t, err, "expected upload as two bundles to work")
+		assert.Equal(t, 2, len(utils.execRunner.Calls))
+
+		expectedParameters1 := []string{
+			"-Durl=http://localhost:8081/repository/maven-releases/",
+			"-DgroupId=my.group.id",
+			"-Dversion=4.0",
+			"-DartifactId=my.artifact",
+			"-Dfile=mta.yaml",
+			"-DgeneratePom=false",
+			"-Dfiles=pom.yml",
+			"-Dclassifiers=",
+			"-Dtypes=pom",
+			"--batch-mode",
+			"deploy:deploy-file"}
+		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+
+		expectedParameters2 := []string{
+			"-Durl=http://localhost:8081/repository/maven-releases/",
+			"-DgroupId=my.group.id",
+			"-Dversion=4.0",
+			"-DartifactId=artifact",
+			"-Dfile=artifact.mtar",
+			"-DgeneratePom=false",
+			"--batch-mode",
+			"deploy:deploy-file"}
+		assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.execRunner.Calls[1])
 	})
 }
 
+/*
 func TestUploadMavenProjects(t *testing.T) {
 	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -399,6 +456,193 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 }
+*/
+
+func TestUploadMavenProjects(t *testing.T) {
+	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "pom.xml not found")
+		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+	})
+	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "pom")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 1, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 2, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+
+			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, "my-app", artifacts[1].ID)
+			assert.Equal(t, "jar", artifacts[1].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with fall-back to JAR packaging works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "<empty>")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 2, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+
+			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, "my-app", artifacts[1].ID)
+			assert.Equal(t, "jar", artifacts[1].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with fall-back to group id from parameters works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "pom")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		uploader := mockUploader{}
+		options := createOptions()
+		options.GroupID = "awesome.group"
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, "localhost:8081/repository/maven-releases/",
+			uploader.GetBaseURL())
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 1, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with JAR packaging fails without finalName", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "property 'project.build.finalName' not found in 'pom.xml'")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 1, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with application module works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "pom")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.setProperty("application/pom.xml", "project.version", "1.0")
+		utils.setProperty("application/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("application/pom.xml", "project.packaging", "jar")
+		utils.setProperty("application/pom.xml", "project.build.finalName", "my-app-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["application/pom.xml"] = testPomXml
+		utils.files["application/target/my-app-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 3, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+
+			assert.Equal(t, "application/pom.xml", artifacts[1].File)
+			assert.Equal(t, "my-app-app", artifacts[1].ID)
+			assert.Equal(t, "pom", artifacts[1].Type)
+
+			assert.Equal(t, "application/target/my-app-app-1.0.jar", artifacts[2].File)
+			assert.Equal(t, "my-app-app", artifacts[2].ID)
+			assert.Equal(t, "jar", artifacts[2].Type)
+		}
+	})
+	t.Run("Test uploading Maven project fails without packaging", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "property 'project.packaging' not found in 'pom.xml'")
+
+		artifacts := uploader.GetArtifacts()
+		if assert.Equal(t, 1, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "my-app", artifacts[0].ID)
+			assert.Equal(t, "pom", artifacts[0].Type)
+		}
+	})
+}
 
 func TestUploadUnknownProjectFails(t *testing.T) {
 	utils := newMockUtilsBundle(false, false)
@@ -407,4 +651,75 @@ func TestUploadUnknownProjectFails(t *testing.T) {
 
 	err := runNexusUpload(&utils, &uploader, &options)
 	assert.EqualError(t, err, "unsupported project structure")
+}
+
+func TestAdditionalClassifierEmpty(t *testing.T) {
+	t.Run("Empty additional classifiers", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, false)
+		client, err := testAdditionalClassifierArtifacts(&utils, "")
+		assert.NoError(t, err, "expected empty additional classifiers to succeed")
+		assert.Equal(t, 0, len(client.GetArtifacts()))
+	})
+	t.Run("Additional classifiers is invalid JSON", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, false)
+		client, err := testAdditionalClassifierArtifacts(&utils, "some random string")
+		assert.Error(t, err, "expected invalid additional classifiers to fail")
+		assert.Equal(t, 0, len(client.GetArtifacts()))
+	})
+	t.Run("Classifiers valid but wrong JSON", func(t *testing.T) {
+		json := `
+		[
+			{
+				"classifier" : "source",
+				"type"       : "jar"
+			},
+			{}
+		]
+	`
+		utils := newMockUtilsBundle(false, false)
+		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
+		client, err := testAdditionalClassifierArtifacts(&utils, json)
+		assert.Error(t, err, "expected invalid additional classifiers to fail")
+		assert.Equal(t, 1, len(client.GetArtifacts()))
+	})
+	t.Run("Classifiers valid but does not exist", func(t *testing.T) {
+		json := `
+		[
+			{
+				"classifier" : "source",
+				"type"       : "jar"
+			}
+		]
+	`
+		utils := newMockUtilsBundle(false, false)
+		client, err := testAdditionalClassifierArtifacts(&utils, json)
+		assert.EqualError(t, err, "artifact file not found 'some folder/artifact-id-source.jar'")
+		assert.Equal(t, 0, len(client.GetArtifacts()))
+	})
+	t.Run("Additional classifiers is valid JSON", func(t *testing.T) {
+		json := `
+		[
+			{
+				"classifier" : "source",
+				"type"       : "jar"
+			},
+			{
+				"classifier" : "classes",
+				"type"       : "jar"
+			}
+		]
+	`
+		utils := newMockUtilsBundle(false, false)
+		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
+		utils.files["some folder/artifact-id-classes.jar"] = []byte("contentsOfJar")
+		client, err := testAdditionalClassifierArtifacts(&utils, json)
+		assert.NoError(t, err, "expected valid additional classifiers to succeed")
+		assert.Equal(t, 2, len(client.GetArtifacts()))
+	})
+}
+
+func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
+	client := nexus.Upload{}
+	return &client, addAdditionalClassifierArtifacts(utils, &client, additionalClassifiers,
+		"some folder", "artifact-id")
 }

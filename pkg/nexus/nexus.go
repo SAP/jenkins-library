@@ -33,6 +33,7 @@ type Uploader interface {
 	GetArtifactsVersion() string
 	AddArtifact(artifact ArtifactDescription) error
 	GetArtifacts() []ArtifactDescription
+	Clear()
 }
 
 // SetBaseURL constructs the base URL to the Nexus repository. No parameter can be empty.
