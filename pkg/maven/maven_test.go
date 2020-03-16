@@ -60,7 +60,7 @@ func TestExecute(t *testing.T) {
 		output, err := Execute(&opts, &execMockRunner)
 
 		assert.EqualError(t, err, "failed to run executable, command: '[mvn --file pom.xml --batch-mode]', error: error case")
-		assert.Equal(t, output, "")
+		assert.Equal(t, "", output)
 	})
 	t.Run("should have all configured parameters in the exec call", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
@@ -75,8 +75,8 @@ func TestExecute(t *testing.T) {
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
 
-		assert.Equal(t, len(execMockRunner.Calls[0].Params), len(expectedParameters))
-		assert.Equal(t, execMockRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
+		assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters}, execMockRunner.Calls[0])
 		assert.Equal(t, "", mavenOutput)
 	})
 }
@@ -110,8 +110,8 @@ func TestGetParameters(t *testing.T) {
 
 		parameters, err := getParametersFromOptions(&opts, &mockClient)
 		if assert.NoError(t, err) {
-			assert.Equal(t, len(parameters), len(expectedParameters))
-			assert.Equal(t, parameters, expectedParameters)
+			assert.Equal(t, len(expectedParameters), len(parameters))
+			assert.Equal(t, expectedParameters, parameters)
 			if assert.Equal(t, 2, len(mockClient.requestedUrls)) {
 				assert.Equal(t, "https://mysettings.com", mockClient.requestedUrls[0])
 				assert.Equal(t, "globalSettings.xml", mockClient.requestedFiles[0])
