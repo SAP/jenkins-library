@@ -53,9 +53,16 @@ func (nexusUpload *Upload) GetRepoURL() string {
 	return nexusUpload.repoURL
 }
 
+// ErrEmptyGroupID is returned from SetInfo, if groupID is empty.
 var ErrEmptyGroupID = errors.New("groupID must not be empty")
+
+// ErrEmptyArtifactID is returned from SetInfo, if artifactID is empty.
 var ErrEmptyArtifactID = errors.New("artifactID must not be empty")
+
+// ErrInvalidArtifactID is returned from SetInfo, if artifactID contains slashes.
 var ErrInvalidArtifactID = errors.New("artifactID may not include slashes")
+
+// ErrEmptyVersion is returned from SetInfo, if version is empty.
 var ErrEmptyVersion = errors.New("version must not be empty")
 
 // SetInfo sets the common info for all uploaded artifacts. This info is external to
