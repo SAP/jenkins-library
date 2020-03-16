@@ -263,7 +263,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
 	if settingsFile != "" {
-		defines = append(defines, "-DrepositoryId="+settingsServerId)
+		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerId)
 		defer utils.fileRemove(settingsFile)
 	}
 
