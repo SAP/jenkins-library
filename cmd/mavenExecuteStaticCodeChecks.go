@@ -48,8 +48,12 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 		goals = append(goals, pmdMavenParameters.Goals...)
 	}
 	finalMavenOptions := maven.ExecuteOptions{
-		Goals:   goals,
-		Defines: defines,
+		Goals:                       goals,
+		Defines:                     defines,
+		ProjectSettingsFile:         config.ProjectSettingsFile,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
+		M2Path:                      config.M2Path,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 	}
 	_, err := maven.Execute(&finalMavenOptions, command)
 	return err

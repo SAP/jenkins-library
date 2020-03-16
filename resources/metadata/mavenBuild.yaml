@@ -28,13 +28,16 @@ spec:
         scope:
           - PARAMETERS
         default: false
+
+      # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as project settings file.
         scope:
           - GENERAL
-          - PARAMETERS
           - STEPS
+          - STAGES
+          - PARAMETERS
         mandatory: false
         aliases:
           - name: maven/projectSettingsFile
@@ -43,8 +46,9 @@ spec:
         description: Path to the mvn settings file that should be used as global settings file.
         scope:
           - GENERAL
-          - PARAMETERS
           - STEPS
+          - STAGES
+          - PARAMETERS
         mandatory: false
         aliases:
           - name: maven/globalSettingsFile
@@ -53,8 +57,9 @@ spec:
         description: Path to the location of the local repository that should be used.
         scope:
           - GENERAL
-          - PARAMETERS
           - STEPS
+          - STAGES
+          - PARAMETERS
         mandatory: false
         aliases:
           - name: maven/m2Path
@@ -62,9 +67,14 @@ spec:
         type: bool
         description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
         scope:
+          - GENERAL
+          - STEPS
+          - STAGES
           - PARAMETERS
         default: false
         mandatory: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
 
   containers:
     - name: mvn

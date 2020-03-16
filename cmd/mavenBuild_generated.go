@@ -104,7 +104,7 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STEPS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
@@ -112,7 +112,7 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STEPS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
@@ -120,7 +120,7 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STEPS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
@@ -128,10 +128,10 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "logSuccessfulMavenTransfers",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
 			},
