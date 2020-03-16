@@ -21,14 +21,14 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
-        writeFile(file: metadataFile, text: libraryResource(metadataFile))
+        writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${metadataFile}'"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
             echo "Config: ${config}"
 
             dockerWrapper(script, config) {
