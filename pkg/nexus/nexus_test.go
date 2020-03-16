@@ -184,3 +184,20 @@ func TestSetArtifactsVersion(t *testing.T) {
 		assert.NoError(t, err, "Expected SetArtifactsVersion() to succeed")
 	})
 }
+
+func TestClear(t *testing.T) {
+	nexusUpload := Upload{}
+
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		ID:         "artifact.id",
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
+	})
+	assert.NoError(t, err, "Expected to succeed adding valid artifact")
+	assert.Equal(t, 1, len(nexusUpload.GetArtifacts()))
+
+	nexusUpload.Clear()
+
+	assert.Equal(t, 0, len(nexusUpload.GetArtifacts()))
+}

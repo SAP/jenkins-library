@@ -107,6 +107,11 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 	return artifacts
 }
 
+// Clear removes any contained artifact descriptions.
+func (nexusUpload *Upload) Clear() {
+	nexusUpload.artifacts = []ArtifactDescription{}
+}
+
 func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
 	if nexusURL == "" {
 		return "", errors.New("nexusURL must not be empty")
