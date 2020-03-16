@@ -70,7 +70,7 @@ class KubernetesDeployTest extends BasePiperTest {
 
     @Test
     void testKubernetesDeployAllCreds() {
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/kubernetesdeploy.yaml\'', '{"kubeConfigFileCredentialsId":"kubeConfig", "kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials", "dockerImage":"my.Registry/K8S:latest"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/kubernetesdeploy.yaml\'', '{"kubeConfigFileCredentialsId":"kubeConfig", "kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials", "dockerImage":"my.Registry/K8S:latest"}')
 
         stepRule.step.kubernetesDeploy(
             juStabUtils: utils,
@@ -79,7 +79,7 @@ class KubernetesDeployTest extends BasePiperTest {
             script: nullScript
         )
         // asserts
-        assertThat(writeFileRule.files['metadata/kubernetesdeploy.yaml'], containsString('name: kubernetesDeploy'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/kubernetesdeploy.yaml'], containsString('name: kubernetesDeploy'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy'))
         assertThat(credentials.size(), is(3))
@@ -89,7 +89,7 @@ class KubernetesDeployTest extends BasePiperTest {
 
     @Test
     void testKubernetesDeploySomeCreds() {
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/kubernetesdeploy.yaml\'', '{"kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/kubernetesdeploy.yaml\'', '{"kubeTokenCredentialsId":"kubeToken", "dockerCredentialsId":"dockerCredentials"}')
         stepRule.step.kubernetesDeploy(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
