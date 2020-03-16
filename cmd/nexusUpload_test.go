@@ -359,7 +359,7 @@ func TestUploadArtifacts(t *testing.T) {
 		options := createOptions()
 
 		err := uploadArtifacts(&utils, &uploader, &options, options.GroupID, false)
-		assert.EqualError(t, err, "uploading artifacts for ID 'my.artifact' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion= -DartifactId=my.artifact -Dfile=mta.yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
+		assert.EqualError(t, err, "uploading artifacts for ID 'my.artifact' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion= -DartifactId=my.artifact -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode deploy:deploy-file]', error: failed")
 	})
 	t.Run("Uploading with different artifact IDs happens in two bundles", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -380,7 +380,7 @@ func TestUploadArtifacts(t *testing.T) {
 		})
 		_ = uploader.AddArtifact(nexus.ArtifactDescription{
 			File: "artifact.mtar",
-			Type: "yaml",
+			Type: "mtar",
 			ID:   "artifact",
 		})
 
@@ -394,6 +394,7 @@ func TestUploadArtifacts(t *testing.T) {
 			"-Dversion=4.0",
 			"-DartifactId=my.artifact",
 			"-Dfile=mta.yaml",
+			"-Dpackaging=yaml",
 			"-DgeneratePom=false",
 			"-Dfiles=pom.yml",
 			"-Dclassifiers=",
@@ -409,6 +410,7 @@ func TestUploadArtifacts(t *testing.T) {
 			"-Dversion=4.0",
 			"-DartifactId=artifact",
 			"-Dfile=artifact.mtar",
+			"-Dpackaging=mtar",
 			"-DgeneratePom=false",
 			"--batch-mode",
 			"deploy:deploy-file"}

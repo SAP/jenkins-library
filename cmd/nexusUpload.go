@@ -271,6 +271,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	// iterate over the artifact descriptions and upload those with the same ID in one bundle
 	artifactID := ""
 	file := ""
+	packaging := ""
 	files := ""
 	classifiers := ""
 	types := ""
@@ -278,19 +279,22 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	for _, artifact := range artifacts {
 		if artifactID != artifact.ID {
 			if artifactID != "" {
-				err := uploadArtifactsBundle(artifactID, file, files, classifiers, types, generatePOM, mavenOptions, execRunner)
+				err := uploadArtifactsBundle(artifactID, file, packaging,
+					files, classifiers, types, generatePOM, mavenOptions, execRunner)
 				if err != nil {
 					return err
 				}
 			}
 			artifactID = artifact.ID
 			file = ""
+			packaging = ""
 			files = ""
 			classifiers = ""
 			types = ""
 		}
 		if file == "" {
 			file = artifact.File
+			packaging = artifact.Type
 		} else {
 			if files != "" {
 				files += ","
@@ -304,12 +308,13 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	if file != "" {
-		return uploadArtifactsBundle(artifactID, file, files, classifiers, types, generatePOM, mavenOptions, execRunner)
+		return uploadArtifactsBundle(artifactID, file, packaging,
+			files, classifiers, types, generatePOM, mavenOptions, execRunner)
 	}
 	return nil
 }
 
-func uploadArtifactsBundle(artifactID, file, files, classifiers, types string,
+func uploadArtifactsBundle(artifactID, file, packaging, files, classifiers, types string,
 	generatePOM bool, mavenOptions maven.ExecuteOptions, execRunner execRunner) error {
 	if artifactID == "" {
 		return fmt.Errorf("no artifact ID specified")
@@ -322,6 +327,7 @@ func uploadArtifactsBundle(artifactID, file, files, classifiers, types string,
 
 	defines = append(defines, "-DartifactId="+artifactID)
 	defines = append(defines, "-Dfile="+file)
+	defines = append(defines, "-Dpackaging="+packaging)
 	if !generatePOM {
 		defines = append(defines, "-DgeneratePom=false")
 	}
