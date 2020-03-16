@@ -655,12 +655,13 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "property 'project.packaging' not found in 'pom.xml'")
 
-		artifacts := uploader.uploadedArtifacts
+		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 }
 
