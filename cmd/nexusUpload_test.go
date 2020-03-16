@@ -137,9 +137,9 @@ type mockUploader struct {
 }
 
 func (m *mockUploader) Clear() {
-	// Clear is called after a successful upload. Record the artifacts that are present a before
-	// they are cleared. This way we can later peek into the set of all artifacts that were uploaded
-	// in potentially multiple bundles.
+	// Clear is called after a successful upload. Record the artifacts that are present before
+	// they are cleared. This way we can later peek into the set of all artifacts that were
+	// uploaded across multiple bundles.
 	m.uploadedArtifacts = append(m.uploadedArtifacts, m.GetArtifacts()...)
 	m.Upload.Clear()
 }
