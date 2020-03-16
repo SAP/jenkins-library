@@ -1,5 +1,5 @@
 metadata:
-  name: mavenStaticCodeChecks
+  name: mavenExecuteStaticCodeChecks
   description: Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
   longDescription: |
     Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
@@ -69,3 +69,7 @@ spec:
           - STEPS
         aliases:
           - name: pmd/ruleSets
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

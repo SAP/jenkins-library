@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type mavenStaticCodeChecksOptions struct {
+type mavenExecuteStaticCodeChecksOptions struct {
 	SpotBugs                  bool     `json:"spotBugs,omitempty"`
 	Pmd                       bool     `json:"pmd,omitempty"`
 	MavenModulesExcludes      []string `json:"mavenModulesExcludes,omitempty"`
@@ -23,14 +23,14 @@ type mavenStaticCodeChecksOptions struct {
 	PmdRuleSets               []string `json:"pmdRuleSets,omitempty"`
 }
 
-// MavenStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
-func MavenStaticCodeChecksCommand() *cobra.Command {
-	metadata := mavenStaticCodeChecksMetadata()
-	var stepConfig mavenStaticCodeChecksOptions
+// MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
+func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
+	metadata := mavenExecuteStaticCodeChecksMetadata()
+	var stepConfig mavenExecuteStaticCodeChecksOptions
 	var startTime time.Time
 
-	var createMavenStaticCodeChecksCmd = &cobra.Command{
-		Use:   "mavenStaticCodeChecks",
+	var createMavenExecuteStaticCodeChecksCmd = &cobra.Command{
+		Use:   "mavenExecuteStaticCodeChecks",
 		Short: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
 		Long: `Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
 SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
@@ -39,9 +39,9 @@ PMD is a source code analyzer. It finds common programming flaws like unused var
 For more information please visit https://pmd.github.io/`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenStaticCodeChecks")
+			log.SetStepName("mavenExecuteStaticCodeChecks")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -52,17 +52,17 @@ For more information please visit https://pmd.github.io/`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenStaticCodeChecks")
-			mavenStaticCodeChecks(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenExecuteStaticCodeChecks")
+			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addMavenStaticCodeChecksFlags(createMavenStaticCodeChecksCmd, &stepConfig)
-	return createMavenStaticCodeChecksCmd
+	addMavenExecuteStaticCodeChecksFlags(createMavenExecuteStaticCodeChecksCmd, &stepConfig)
+	return createMavenExecuteStaticCodeChecksCmd
 }
 
-func addMavenStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenStaticCodeChecksOptions) {
+func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenExecuteStaticCodeChecksOptions) {
 	cmd.Flags().BoolVar(&stepConfig.SpotBugs, "spotBugs", true, "Parameter to turn off SpotBugs.")
 	cmd.Flags().BoolVar(&stepConfig.Pmd, "pmd", true, "Parameter to turn off PMD.")
 	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
@@ -74,7 +74,7 @@ func addMavenStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenStaticCo
 }
 
 // retrieve step metadata
-func mavenStaticCodeChecksMetadata() config.StepData {
+func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
