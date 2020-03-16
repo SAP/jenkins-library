@@ -58,7 +58,7 @@ private void stageLocking(Map config, Closure body) {
     }
 }
 
-private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled) {
+private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
     def startTime = System.currentTimeMillis()
