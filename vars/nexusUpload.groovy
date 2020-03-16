@@ -57,10 +57,6 @@ void call(Map parameters = [:]) {
         if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
             parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
         }
-        // Pass MTAR file path
-        if (!parameters.artifactId && script.commonPipelineEnvironment.configuration.artifactId) {
-            parameters.artifactId = script.commonPipelineEnvironment.configuration.artifactId
-        }
 
         parameters.remove('script')
 
@@ -70,8 +66,6 @@ void call(Map parameters = [:]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            sh 'ls -laR .pipeline'
-
             // execute step
             if (config.nexusCredentialsId) {
                 withCredentials([usernamePassword(
@@ -79,10 +73,10 @@ void call(Map parameters = [:]) {
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
-                    sh "./piper nexusUpload --verbose"
+                    sh "./piper nexusUpload"
                 }
             } else {
-                sh "./piper nexusUpload --verbose"
+                sh "./piper nexusUpload"
             }
         }
     }
