@@ -202,13 +202,13 @@ func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions
 
 var settingsServerId = "artifact.deployment.nexus"
 var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-    <servers>
-        <server>
-            <id>artifact.deployment.nexus</id>
-            <username>${repo.username}</username>
-            <password>${repo.password}</password>
-        </server>
-    </servers>
+	<servers>
+		<server>
+			<id>artifact.deployment.nexus</id>
+			<username>${repo.username}</username>
+			<password>${repo.password}</password>
+		</server>
+	</servers>
 </settings>
 `
 
