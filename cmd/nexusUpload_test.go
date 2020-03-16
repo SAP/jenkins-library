@@ -133,6 +133,15 @@ func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
 
 type mockUploader struct {
 	nexus.Upload
+	uploadedArtifacts []nexus.ArtifactDescription
+}
+
+func (m *mockUploader) Clear() {
+	// Clear is called after a successful upload. Record the artifacts that are present a before
+	// they are cleared. This way we can later peek into the set of all artifacts that were uploaded
+	// in potentially multiple bundles.
+	m.uploadedArtifacts = append(m.uploadedArtifacts, m.GetArtifacts()...)
+	m.Upload.Clear()
 }
 
 func createOptions() nexusUploadOptions {
@@ -187,6 +196,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "the 'groupId' parameter needs to be provided for MTA projects")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project without artifactId parameter fails", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -199,6 +209,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "the 'artifactId' parameter was not provided and could not be retrieved from the Common Pipeline Environment")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project fails due to missing yaml file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -209,6 +220,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "could not read from required project descriptor file 'mta.yml'")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project fails due to garbage YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -221,6 +233,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.EqualError(t, err,
 			"failed to parse contents of the project descriptor file 'mta.yaml'")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project fails due invalid version in YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -233,6 +246,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.EqualError(t, err,
 			"the project descriptor file 'mta.yaml' has an invalid version: version must not be empty")
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading mta.yaml project fails due to missing mtar file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -246,12 +260,14 @@ func TestUploadMTAProjects(t *testing.T) {
 
 		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
+		// Check the artifacts that /would/ have been uploaded
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "mta.yaml", artifacts[0].File)
 			assert.Equal(t, "yaml", artifacts[0].Type)
 			assert.Equal(t, "artifact.id", artifacts[0].ID)
 		}
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -266,7 +282,7 @@ func TestUploadMTAProjects(t *testing.T) {
 
 		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "mta.yaml", artifacts[0].File)
 			assert.Equal(t, "yaml", artifacts[0].Type)
@@ -290,7 +306,7 @@ func TestUploadMTAProjects(t *testing.T) {
 
 		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "mta.yml", artifacts[0].File)
 			assert.Equal(t, "yaml", artifacts[0].Type)
@@ -315,7 +331,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected mta.yml project upload to work")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "mta.yml", artifacts[0].File)
 			assert.Equal(t, "yaml", artifacts[0].Type)
@@ -428,7 +444,7 @@ func TestUploadMavenProjects(t *testing.T) {
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "pom.xml not found")
-		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading Maven project produces correct mvn command line", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -468,7 +484,7 @@ func TestUploadMavenProjects(t *testing.T) {
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "pom.xml not found")
-		assert.Equal(t, 0, len(uploader.GetArtifacts()))
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -484,7 +500,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
@@ -506,7 +522,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
@@ -532,7 +548,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
@@ -560,7 +576,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, "localhost:8081/repository/maven-releases/",
 			uploader.GetBaseURL())
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
@@ -581,12 +597,14 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "property 'project.build.finalName' not found in 'pom.xml'")
 
+		// Test the artifacts that /would/ have been uploaded
 		artifacts := uploader.GetArtifacts()
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading Maven project with application module works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -609,7 +627,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 3, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)
@@ -637,7 +655,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.EqualError(t, err, "property 'project.packaging' not found in 'pom.xml'")
 
-		artifacts := uploader.GetArtifacts()
+		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "my-app", artifacts[0].ID)

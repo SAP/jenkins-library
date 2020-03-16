@@ -308,10 +308,13 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	if file != "" {
-		return uploadArtifactsBundle(artifactID, file, packaging,
+		err = uploadArtifactsBundle(artifactID, file, packaging,
 			files, classifiers, types, generatePOM, mavenOptions, execRunner)
 	}
-	return nil
+
+	uploader.Clear()
+
+	return err
 }
 
 func uploadArtifactsBundle(artifactID, file, packaging, files, classifiers, types string,
@@ -408,7 +411,7 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := uploadMavenArtifacts(utils, uploader, options, "", "target", "")
+	err := addMavenArtifacts(utils, uploader, options, "", "target", "")
 	if err != nil {
 		return err
 	}
@@ -416,16 +419,16 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
 	// This means there are built-in assumptions about the project structure (archetype),
 	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
-	err = uploadMavenArtifacts(utils, uploader, options, "application", "application/target",
+	err = addMavenArtifacts(utils, uploader, options, "application", "application/target",
 		options.AdditionalClassifiers)
 	if err == errPomNotFound {
 		// Ignore for missing application module
-		return nil
+		err = nil
 	}
 	return err
 }
 
-func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
+func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	pomPath, targetFolder, additionalClassifiers string) error {
 	var err error
 
