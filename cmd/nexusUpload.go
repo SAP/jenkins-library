@@ -321,7 +321,7 @@ func uploadArtifactsBundle(artifactID, file, files, classifiers, types string,
 
 	defines = append(defines, "-DartifactId="+artifactID)
 	defines = append(defines, "-Dfile="+file)
-	defines = append(defines, "-DgeneratePom=false")
+	//	defines = append(defines, "-DgeneratePom=false")
 
 	if len(files) > 0 {
 		defines = append(defines, "-Dfiles="+files)
