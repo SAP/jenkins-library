@@ -12,11 +12,12 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	file "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 const toolFolder = ".sonar-scanner"
 
-func sonarExecuteScan(options sonarExecuteScanOptions) error {
+func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
 	// reroute command output to loging framework
 	// also log stdout as Karma reports into it
