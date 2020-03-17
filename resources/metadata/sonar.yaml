@@ -5,6 +5,20 @@ metadata:
 spec:
   inputs:
     params:
+      - name: changeId
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: changeBranch
+        type: string
+        scope:
+          - PARAMETERS
+      - name: changeTarget
+        type: string
+        scope:
+          - PARAMETERS
       - name: host
         type: string
         scope:
@@ -18,12 +32,6 @@ spec:
           - STAGES
           - STEPS
       - name: githubToken
-        type: string
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: changeId
         type: string
         scope:
           - PARAMETERS
@@ -48,7 +56,7 @@ spec:
           - STEPS
       - name: owner
         type: string
-        description: "Pull-Request voting only: The Github organization. @default: `commonPipelineEnvironment.getGithubOrg()`"
+        description: "Pull-Request voting only: The owner of the scm repository."
         scope:
           - GENERAL
           - PARAMETERS
@@ -56,9 +64,12 @@ spec:
           - STEPS
         aliases:
           - name: githubOrg
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
       - name: repository
         type: string
-        description: "Pull-Request voting only: The Github repository. @default: `commonPipelineEnvironment.getGithubRepo()`"
+        description: "Pull-Request voting only: The scm repository."
         scope:
           - GENERAL
           - PARAMETERS
@@ -66,6 +77,9 @@ spec:
           - STEPS
         aliases:
           - name: githubRepo
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
       - name: githubApiUrl
         type: string
         description:
@@ -118,15 +132,14 @@ spec:
       - name: projectVersion
         type: string
         description:
-          "The project version that is reported to SonarQube. @default: major
-          number of `commonPipelineEnvironment.getArtifactVersion()`"
+          "The project version that is reported to SonarQube."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-    resources:
-      - name: instance
-        type: installation
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
     secrets:
       - name: sonarTokenCredentialsId
         type: jenkins

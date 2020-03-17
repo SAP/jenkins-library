@@ -3,140 +3,176 @@ package cmd
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	file "github.com/SAP/jenkins-library/pkg/piperutils"
+	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-const toolFolder = ".sonar-scanner"
+type sonarSettings struct {
+	Binary      string
+	Environment []string
+	Options     []string
+}
+
+var sonar sonarSettings
 
 func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
 	// reroute command output to loging framework
-	// also log stdout as Karma reports into it
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
 	client := piperhttp.Client{}
+	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
+
+	sonar = sonarSettings{
+		Binary:      "sonar-scanner",
+		Environment: []string{},
+		Options:     []string{},
+	}
 
 	runSonar(options, &c, &client)
 	return nil
 }
 
-func runSonar(options sonarExecuteScanOptions, command execRunner, client piperhttp.Downloader) {
-	arguments := []string{}
-
-	// Provided by withSonarQubeEnv: SONAR_HOST_URL, SONAR_AUTH_TOKEN, SONARQUBE_SCANNER_PARAMS
-	// SONARQUBE_SCANNER_PARAMS={ "sonar.host.url" : "https:\/\/sonar", "sonar.login" : "******"}
-	//sonarHost := os.Getenv("SONAR_HOST_URL")
+func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperhttp.Downloader) {
+	// Provided by withSonarQubeEnv:
+	// - SONAR_CONFIG_NAME
+	// - SONAR_EXTRA_PROPS
+	// - SONAR_HOST_URL
+	// - SONAR_AUTH_TOKEN
+	// - SONARQUBE_SCANNER_PARAMS = { "sonar.host.url" : "https:\/\/sonar", "sonar.login" : "******"}
+	// - SONAR_MAVEN_GOAL
 	if len(options.Host) > 0 {
-		arguments = append(arguments, "sonar.host.url="+options.Host)
+		sonar.Environment = append(sonar.Environment, "SONAR_HOST_URL="+options.Host)
 	}
-	//sonarToken := os.Getenv("SONAR_AUTH_TOKEN")
+	//TODO: SONAR_AUTH_TOKEN or SONAR_TOKEN, both seem to work
 	if len(options.Token) > 0 {
-		arguments = append(arguments, "sonar.login="+options.Token)
+		sonar.Environment = append(sonar.Environment, "SONAR_TOKEN="+options.Token)
 	}
 	if len(options.Organization) > 0 {
-		arguments = append(arguments, "sonar.organization="+options.Organization)
+		sonar.Options = append(sonar.Options, "sonar.organization="+options.Organization)
 	}
 	if len(options.ProjectVersion) > 0 {
-		arguments = append(arguments, "sonar.projectVersion="+options.ProjectVersion)
+		sonar.Options = append(sonar.Options, "sonar.projectVersion="+options.ProjectVersion)
 	}
 
-	//if(configuration.options instanceof String)
-	//configuration.options = [].plus(configuration.options)
+	handlePullRequest(options)
 
+	loadSonarScanner(options.SonarScannerDownloadURL, client)
+
+	loadCertificates(runner, "", client)
+
+	log.Entry().
+		WithField("command", sonar.Binary).
+		WithField("options", sonar.Options).
+		WithField("environment", sonar.Environment).
+		Debug("Executing sonar scan command")
+
+	runner.SetEnv(sonar.Environment)
+
+	sonar.Options = SliceUtils.Prefix(sonar.Options, "-D")
+	if err := runner.RunExecutable(sonar.Binary, sonar.Options...); err != nil {
+		log.Entry().WithError(err).Fatal("Failed to execute scan command")
+	}
+}
+
+func handlePullRequest(options sonarExecuteScanOptions) {
 	if len(options.ChangeID) > 0 {
 		if options.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-			arguments = append(arguments, "sonar.analysis.mode=preview")
-			arguments = append(arguments, "sonar.github.pullRequest="+options.ChangeID)
-
-			//githubToken := os.Getenv("GITHUB_TOKEN")
-			if len(options.GithubToken) > 0 {
-				arguments = append(arguments, "sonar.github.oauth="+options.GithubToken)
-			}
-			arguments = append(arguments, "sonar.github.repository=${config.githubOrg}/${config.githubRepo}")
+			sonar.Options = append(sonar.Options, "sonar.analysis.mode=preview")
+			sonar.Options = append(sonar.Options, "sonar.github.pullRequest="+options.ChangeID)
 			if len(options.GithubAPIURL) > 0 {
-				arguments = append(arguments, "sonar.github.endpoint="+options.GithubAPIURL)
+				sonar.Options = append(sonar.Options, "sonar.github.endpoint="+options.GithubAPIURL)
+			}
+			if len(options.GithubToken) > 0 {
+				sonar.Options = append(sonar.Options, "sonar.github.oauth="+options.GithubToken)
+			}
+			if len(options.Owner) > 0 && len(options.Repository) > 0 {
+				sonar.Options = append(sonar.Options, "sonar.github.repository="+options.Owner+"/"+options.Repository)
 			}
 			if options.DisableInlineComments {
-				arguments = append(arguments, "sonar.github.disableInlineComments="+strconv.FormatBool(options.DisableInlineComments))
+				sonar.Options = append(sonar.Options, "sonar.github.disableInlineComments="+strconv.FormatBool(options.DisableInlineComments))
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
-			arguments = append(arguments, "sonar.pullrequest.key="+options.ChangeID)
-			arguments = append(arguments, "sonar.pullrequest.base={{ env.CHANGE_toolFolder }}")
-			arguments = append(arguments, "sonar.pullrequest.branch={{ env.CHANGE_BRANCH }}")
-			arguments = append(arguments, "sonar.pullrequest.provider={{ options.pullRequestProvider }}")
-			/*if options.PullRequestProvider == "GitHub" {
-				arguments = append(arguments, "sonar.pullrequest.github.repository={{ options.githubOrg }}/{{ options.githubRepo }}")
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
+			if options.PullRequestProvider == "GitHub" {
+				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
-				log.Entry().Fatal("Pull-Request provider '{{ options.pullRequestProvider }}' is not supported!")
-			}*/
+				log.Entry().Fatal("Pull-Request provider '" + options.PullRequestProvider + "' is not supported!")
+			}
 		}
 	}
-
-	//loadSonarScanner(options.SonarScannerDownloadURL, client)
-
-	loadCertificates(command, "", client)
-
-	scan(command, arguments)
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) {
-	if len(url) > 0 {
-		log.Entry().WithField("url", url).Debug("download Sonar scanner cli")
-		// create temp folder to extract archive with CLI
-		tmpFolder, err := ioutil.TempDir(".", "temp-")
-		if err != nil {
-			log.Entry().WithError(err).WithField("tempFolder", tmpFolder).Debug("creation of temp directory failed")
+	if scannerPath, err := exec.LookPath(sonar.Binary); err == nil {
+		// using existing sonar-scanner
+		log.Entry().WithField("path", scannerPath).Debug("Using local Sonar scanner cli")
+	} else {
+		// download sonar-scanner-cli from url to .sonar-scanner/
+		log.Entry().WithField("url", url).Debug("Downloading Sonar scanner cli")
+		if len(url) == 0 {
+			log.Entry().Error("Download url for Sonar scanner cli missing")
 		}
+		// download sonar-scanner-cli into TEMP folder
+		tmpFolder := getTempDir()
 		archive := filepath.Join(tmpFolder, path.Base(url))
-
 		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			log.Entry().WithError(err).WithField("source", url).WithField("target", archive).
-				Fatal("download of Sonar scanner cli failed")
+			log.Entry().WithError(err).
+				WithField("source", url).
+				WithField("target", archive).
+				Fatal("Download of Sonar scanner cli failed")
 		}
-		if _, err := file.Unzip(archive, tmpFolder); err != nil {
-			log.Entry().WithError(err).WithField("source", archive).WithField("target", tmpFolder).
-				Fatal("extraction of Sonar scanner cli failed")
+		// unzip sonar-scanner-cli
+		if _, err := FileUtils.Unzip(archive, tmpFolder); err != nil {
+			log.Entry().WithError(err).
+				WithField("source", archive).
+				WithField("target", tmpFolder).
+				Fatal("Extraction of Sonar scanner cli failed")
 		}
-		// derive foldername from archive
+		// move sonar-scanner-cli to .sonar-scanner/
+		toolPath := ".sonar-scanner"
 		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
-		if err := os.Rename(foldername, toolFolder); err != nil {
-			log.Entry().WithError(err).WithField("source", foldername).WithField("target", toolFolder).
-				Fatal("renaming of tool folder failed")
+		if err := os.Rename(foldername, toolPath); err != nil {
+			log.Entry().WithError(err).
+				WithField("source", foldername).
+				WithField("target", toolPath).
+				Fatal("Renaming of tool folder failed")
 		}
+		// remove TEMP folder
 		if err := os.Remove(tmpFolder); err != nil {
 			log.Entry().WithError(err).WithField("target", tmpFolder).
-				Warn("deletion of archive failed")
+				Warn("Deletion of archive failed")
 		}
-		log.Entry().Debug("download completed")
-	} else {
-		log.Entry().WithField("url", url).Debug("download of Sonar scanner cli skipped")
+		// update binary path
+		sonar.Binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.Binary)
+		log.Entry().Debug("Download completed")
 	}
 }
 
-//TODO: extract to Helper?
-func loadCertificates(command execRunner, certificateString string, client piperhttp.Downloader) {
+func loadCertificates(runner execRunner, certificateString string, client piperhttp.Downloader) {
+	certPath := ".certificates"
+	workingDir := getWorkingDir()
 	if len(certificateString) > 0 {
-		//certificateFolder := ".certificates"
-
 		// create temp folder to extract archive with CLI
-		tmpFolder, err := ioutil.TempDir(".", "temp-")
-		if err != nil {
-			log.Entry().WithError(err).WithField("tempFolder", tmpFolder).Debug("creation of temp directory failed")
-		}
-
-		keystore := filepath.Join(toolFolder, "jre", "lib", "security", "cacerts")
+		tmpFolder := getTempDir()
+		keystore := filepath.Join(workingDir, certPath, "cacerts")
 		keytoolOptions := []string{"-import", "-noprompt", "-storepass changeit", "-keystore " + keystore}
 		certificateList := strings.Split(certificateString, ",")
 
@@ -147,51 +183,52 @@ func loadCertificates(command execRunner, certificateString string, client piper
 			log.Entry().
 				WithField("source", certificate).
 				WithField("target", target).
-				Info("download of TLS certificate")
+				Info("Download of TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
 				log.Entry().
 					WithField("url", certificate).
 					WithError(err).
-					Fatal("download of TLS certificate failed")
+					Fatal("Download of TLS certificate failed")
 			}
 			options := append(keytoolOptions, "-file \""+target+"\"")
 			options = append(options, "-alias \""+filename+"\"")
 			// add certificate to keystore
-			if err := command.RunExecutable("keytool", keytoolOptions...); err != nil {
-				log.Entry().WithError(err).WithField("source", target).Fatal("adding certificate to keystore failed")
+			if err := runner.RunExecutable("keytool", keytoolOptions...); err != nil {
+				log.Entry().WithError(err).WithField("source", target).Fatal("Adding certificate to keystore failed")
 			}
-			// sh "keytool ${keytoolOptions.join(" ")} -alias "${filename}" -file "${certificateFolder}${filename}""
+			// sh "keytool ${keytoolOptions.join(" ")} -alias "${filename}" -file "${certPath}${filename}""
 		}
 	} else {
+		log.Entry().Debug("Download of TLS certificates skipped")
+	}
+	// use custom trust store
+	trustStoreFile := filepath.Join(workingDir, certPath, "cacerts")
+	if exists, _ := FileUtils.FileExists(filepath.Join(workingDir, certPath, "cacerts")); exists {
 		log.Entry().
-			WithField("certificates", certificateString).
-			Debug("download of TLS certificates skipped")
+			WithField("trust store", trustStoreFile).
+			Debug("Using local trust store")
+		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
 	}
 }
 
-func scan(command execRunner, options []string) {
-	executable := filepath.Join(toolFolder, "bin", "sonar-scanner")
-	for idx, element := range options {
-		element = strings.TrimSpace(element)
-		if !strings.HasPrefix(element, "-D") {
-			element = "-D" + element
-		}
-		options[idx] = element
+func getWorkingDir() string {
+	workingDir, err := os.Getwd()
+	if err != nil {
+		log.Entry().WithError(err).
+			WithField("path", workingDir).
+			Debug("Retrieving of work directory failed")
 	}
-	log.Entry().
-		WithField("command", executable).
-		WithField("options", strings.Join(options, " ")).
-		Debug("executing sonar scan command")
-
-	if err := command.RunExecutable(executable, options...); err != nil {
-		log.Entry().WithError(err).Fatal("failed to execute scan command")
-	}
+	return workingDir
 }
 
-func setOption(options *[]string, id, value string) {
-	if len(value) > 0 {
-		o := append(*options, "sonar."+id+"="+value)
-		options = &o
+func getTempDir() string {
+	// create temp folder
+	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	if err != nil {
+		log.Entry().WithError(err).
+			WithField("path", tmpFolder).
+			Debug("Creation of temp directory failed")
 	}
+	return tmpFolder
 }
