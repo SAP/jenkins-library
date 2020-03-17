@@ -1,5 +1,4 @@
 import groovy.json.JsonSlurper
-import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -55,12 +54,12 @@ class NexusUploadTest extends BasePiperTest {
             }
             return closure()
         })
-        helper.registerAllowedMethod("dockerExecute", [Map, Closure], { map, closure ->
-            // ignore
-        })
+//        helper.registerAllowedMethod("dockerExecute", [Map, Closure], { map, closure ->
+//            // ignore
+//        })
         credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
         shellCallRule.setReturnValue(
-            './piper getConfig --contextConfig --stepMetadata \'metadata/nexusUpload.yaml\'',
+            './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/nexusUpload.yaml\'',
             '{"credentialsId": "idOfCxCredential", "verbose": false}'
         )
     }
@@ -74,7 +73,7 @@ class NexusUploadTest extends BasePiperTest {
             script: nullScript,
         )
         // asserts
-        assertThat(writeFileRule.files['metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
             containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper nexusUpload'))
