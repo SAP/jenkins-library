@@ -319,6 +319,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
     return null
 }
@@ -334,6 +337,9 @@ private void unstashWorkspace(config, prefix) {
         stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
 }
 
@@ -423,8 +429,9 @@ private List getContainerEnvs(config, imageName) {
     }
 
     if (dockerEnvVars) {
-        for (String k : dockerEnvVars.keySet()) {
-            containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
+        dockerEnvVars.each {
+            k, v ->
+            containerEnv << envVar(key: k, value: v.toString())
         }
     }
 
@@ -434,8 +441,9 @@ private List getContainerEnvs(config, imageName) {
 
     // Inherit the proxy information from the master to the container
     SystemEnv systemEnv = new SystemEnv()
-    for (String env : systemEnv.getEnv().keySet()) {
-        containerEnv << envVar(key: env, value: systemEnv.get(env))
+    systemEnv.getEnv().each {
+        k, v ->
+            containerEnv << envVar(key: k, value: v)
     }
 
     return containerEnv

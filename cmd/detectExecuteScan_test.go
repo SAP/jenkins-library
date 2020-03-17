@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,20 +12,20 @@ import (
 func TestRunDetect(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
-		s := shellMockRunner{}
+		s := mock.ShellMockRunner{}
 		runDetect(detectExecuteScanOptions{}, &s)
 
-		assert.Equal(t, ".", s.dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", s.shell[0], "Bash shell expected")
+		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
-		assert.Equal(t, expectedScript, s.calls[0])
+		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		s := shellMockRunner{shouldFailWith: fmt.Errorf("Test Error")}
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
 		runDetect(detectExecuteScanOptions{}, &s)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
