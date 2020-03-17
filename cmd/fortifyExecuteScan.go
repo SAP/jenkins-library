@@ -18,7 +18,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	gav, err := piperutils.GetMavenGAV(config.BuildDescriptorFile)
+	gav, err := piperutils.GetMavenCoordinates(config.BuildDescriptorFile)
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
