@@ -93,5 +93,5 @@ spec:
         - STEPS
   containers:
     - name: mvn
-      image: maven:3.6-jdk-8
+      image: maven:3.6.1-jdk-8-alpine
       imagePullPolicy: Never
