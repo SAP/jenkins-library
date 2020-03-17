@@ -533,12 +533,21 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("application/pom.xml", "project.packaging", "jar")
-		utils.setProperty("application/pom.xml", "project.build.finalName", "my-app-app-1.0")
+		utils.setProperty("application/pom.xml", "project.build.finalName", "my-app-app")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
-		utils.files["application/target/my-app-app-1.0.jar"] = []byte("contentsOfJar")
+		utils.files["application/target/my-app-app.jar"] = []byte("contentsOfJar")
+		utils.files["application/target/my-app-app-classes.jar"] = []byte("contentsOfClassesJar")
 		uploader := mockUploader{}
 		options := createOptions()
+		options.AdditionalClassifiers = `
+			[
+				{
+					"classifier" : "classes",
+					"type"       : "jar"
+				}
+			]
+		`
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
@@ -546,15 +555,18 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, "my-app-app", uploader.GetArtifactsID())
 
 		artifacts := uploader.uploadedArtifacts
-		if assert.Equal(t, 3, len(artifacts)) {
+		if assert.Equal(t, 4, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
 			assert.Equal(t, "application/pom.xml", artifacts[1].File)
 			assert.Equal(t, "pom", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/my-app-app-1.0.jar", artifacts[2].File)
+			assert.Equal(t, "application/target/my-app-app.jar", artifacts[2].File)
 			assert.Equal(t, "jar", artifacts[2].Type)
+
+			assert.Equal(t, "application/target/my-app-app-classes.jar", artifacts[3].File)
+			assert.Equal(t, "jar", artifacts[3].Type)
 		}
 		if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
 			expectedParameters1 := []string{
@@ -576,9 +588,9 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DartifactId=my-app-app",
 				"-Dfile=application/pom.xml",
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/my-app-app-1.0.jar",
-				"-Dclassifiers=",
-				"-Dtypes=jar",
+				"-Dfiles=application/target/my-app-app.jar,application/target/my-app-app-classes.jar",
+				"-Dclassifiers=,classes",
+				"-Dtypes=jar,jar",
 				"--batch-mode",
 				"deploy:deploy-file"}
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
@@ -604,6 +616,45 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+	})
+	t.Run("Write credentials settings", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "pom")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		uploader := mockUploader{}
+		options := createOptions()
+		options.User = "admin"
+		options.Password = "admin123"
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, 1, len(utils.execRunner.Calls))
+		expectedParameters1 := []string{
+			"--settings",
+			settingsPath,
+			"-Durl=http://localhost:8081/repository/maven-releases/",
+			"-DgroupId=com.mycompany.app",
+			"-Dversion=1.0",
+			"-DartifactId=my-app",
+			"-DrepositoryId=" + settingsServerID,
+			"-Dfile=pom.xml",
+			"-Dpackaging=pom",
+			"--batch-mode",
+			"deploy:deploy-file"}
+		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+
+		expectedEnv := []string{"NEXUS_username=admin", "NEXUS_password=admin123"}
+		assert.Equal(t, 2, len(utils.execRunner.Env))
+		assert.Equal(t, expectedEnv, utils.execRunner.Env)
+
+		assert.Nil(t, utils.files[settingsPath])
+		assert.NotNil(t, utils.removedFiles[settingsPath])
 	})
 }
 

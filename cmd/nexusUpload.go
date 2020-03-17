@@ -84,7 +84,6 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-// Repeated calls to getExecRunner() return the same instance of execRunner.
 func (u *utilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
@@ -203,8 +202,9 @@ func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions
 	return mavenOptions
 }
 
-var settingsServerID = "artifact.deployment.nexus"
-var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+const settingsServerID = "artifact.deployment.nexus"
+
+const nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
 	<servers>
 		<server>
 			<id>artifact.deployment.nexus</id>
@@ -215,23 +215,24 @@ var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.
 </settings>
 `
 
+const settingsPath = ".pipeline/nexusMavenSettings.xml"
+
 func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUploadOptions,
 	mavenOptions *maven.ExecuteOptions) (string, error) {
 	if options.User == "" || options.Password == "" {
 		return "", nil
 	}
 
-	path := ".pipeline/nexusMavenSettings.xml"
-	err := utils.fileWrite(path, []byte(nexusMavenSettings), os.ModePerm)
+	err := utils.fileWrite(settingsPath, []byte(nexusMavenSettings), os.ModePerm)
 	if err != nil {
-		return "", fmt.Errorf("failed to write maven settings file to '%s': %w", path, err)
+		return "", fmt.Errorf("failed to write maven settings file to '%s': %w", settingsPath, err)
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
 	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
 
-	mavenOptions.ProjectSettingsFile = path
-	return path, nil
+	mavenOptions.ProjectSettingsFile = settingsPath
+	return settingsPath, nil
 }
 
 type artifactDefines struct {
@@ -306,8 +307,8 @@ func appendItemToString(list, item string, first bool) string {
 	return list + item
 }
 
-func uploadArtifactsBundle(d artifactDefines,
-	generatePOM bool, mavenOptions maven.ExecuteOptions, execRunner execRunner) error {
+func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions maven.ExecuteOptions,
+	execRunner execRunner) error {
 	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}
