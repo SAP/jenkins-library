@@ -133,7 +133,7 @@ func TestSonarLoadScanner(t *testing.T) {
 		loadSonarScanner(url, &mockClient)
 		// assert
 		assert.Equal(t, url, mockClient.requestedURL)
-		assert.Equal(t, "sonar-scanner-cli-4.3.0.2102-linux.zip", mockClient.requestedFile)
+		assert.Regexp(t, "sonar-scanner-cli-4.3.0.2102-linux.zip$", mockClient.requestedFile)
 		assert.Equal(t, path.Join(getWorkingDir(), ".sonar-scanner", "bin", "sonar-scanner"), sonar.Binary)
 	})
 }
