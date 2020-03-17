@@ -147,4 +147,4 @@ spec:
         type: jenkins
   containers:
     - name: sonar
-      image: maven:3.5-jdk-8
+      image: node:lts-stretch
