@@ -29,6 +29,8 @@ var sonar sonarSettings
 var execLookPath = exec.LookPath
 var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
+var osRename = os.Rename
+var osRemove = os.Remove
 
 func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
@@ -115,6 +117,7 @@ func handlePullRequest(options sonarExecuteScanOptions) {
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
+			//TODO: use toLowerCase ?
 			if options.PullRequestProvider == "GitHub" {
 				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
@@ -154,14 +157,14 @@ func loadSonarScanner(url string, client piperhttp.Downloader) {
 		// move sonar-scanner-cli to .sonar-scanner/
 		toolPath := ".sonar-scanner"
 		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
-		if err := os.Rename(foldername, toolPath); err != nil {
+		if err := osRename(foldername, toolPath); err != nil {
 			log.Entry().WithError(err).
 				WithField("source", foldername).
 				WithField("target", toolPath).
 				Fatal("Renaming of tool folder failed")
 		}
 		// remove TEMP folder
-		if err := os.Remove(tmpFolder); err != nil {
+		if err := osRemove(tmpFolder); err != nil {
 			log.Entry().WithError(err).WithField("target", tmpFolder).
 				Warn("Deletion of archive failed")
 		}
@@ -200,10 +203,9 @@ func loadCertificates(runner execRunner, certificateString string, client piperh
 			options := append(keytoolOptions, "-file \""+target+"\"")
 			options = append(options, "-alias \""+filename+"\"")
 			// add certificate to keystore
-			if err := runner.RunExecutable("keytool", keytoolOptions...); err != nil {
+			if err := runner.RunExecutable("keytool", options...); err != nil {
 				log.Entry().WithError(err).WithField("source", target).Fatal("Adding certificate to keystore failed")
 			}
-			// sh "keytool ${keytoolOptions.join(" ")} -alias "${filename}" -file "${certPath}${filename}""
 		}
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
@@ -234,7 +236,7 @@ func getTempDir() string {
 	if err != nil {
 		log.Entry().WithError(err).
 			WithField("path", tmpFolder).
-			Debug("Creation of temp directory failed")
+			Debug("Creating temp directory failed")
 	}
 	return tmpFolder
 }
