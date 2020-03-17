@@ -48,9 +48,12 @@ public class CommonStepsTest extends BasePiperTest{
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
             'commonPipelineEnvironment',
+            'checkmarxExecuteScan',
+            'kubernetesDeploy',
             'handlePipelineStepErrors',
             'pipelineExecute',
             'piperPipeline',
+            'piperExecuteBin',
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
@@ -119,9 +122,11 @@ public class CommonStepsTest extends BasePiperTest{
         'checkmarxExecuteScan', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'kubernetesDeploy', //implementing new golang pattern without fields
+        'piperExecuteBin', //implementing new golang pattern without fields
         'protecodeExecuteScan', //implementing new golang pattern without fields
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
+        'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
     ]
 
     @Test
@@ -181,6 +186,7 @@ public class CommonStepsTest extends BasePiperTest{
         def whitelist = [
             'commonPipelineEnvironment',
             'piperPipeline',
+            'piperExecuteBin',
             'buildSetResult'
         ]
 

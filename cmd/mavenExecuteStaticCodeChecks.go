@@ -9,7 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func mavenStaticCodeChecks(config mavenStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
+func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
@@ -19,7 +19,7 @@ func mavenStaticCodeChecks(config mavenStaticCodeChecksOptions, telemetryData *t
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
 	var defines []string
 	var goals []string
 
@@ -55,7 +55,7 @@ func runMavenStaticCodeChecks(config *mavenStaticCodeChecksOptions, telemetryDat
 	return err
 }
 
-func getSpotBugsMavenParameters(config *mavenStaticCodeChecksOptions) *maven.ExecuteOptions {
+func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.ExecuteOptions {
 	var defines []string
 	if config.SpotBugsIncludeFilterFile != "" {
 		defines = append(defines, "-Dspotbugs.includeFilterFile="+config.SpotBugsIncludeFilterFile)
@@ -72,7 +72,7 @@ func getSpotBugsMavenParameters(config *mavenStaticCodeChecksOptions) *maven.Exe
 	return &mavenOptions
 }
 
-func getPmdMavenParameters(config *mavenStaticCodeChecksOptions) *maven.ExecuteOptions {
+func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.ExecuteOptions {
 	var defines []string
 	if config.PmdExcludes != nil {
 		defines = append(defines, "-Dpmd.excludes="+strings.Join(config.PmdExcludes, ","))
