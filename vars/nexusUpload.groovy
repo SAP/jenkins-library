@@ -9,7 +9,7 @@ import groovy.transform.Field
 //Metadata maintained in file project://resources/metadata/nexusUpload.yaml
 
 void call(Map parameters = [:]) {
-    final script = checkScript(this, parameters) ?: null
+    final Script script = checkScript(this, parameters) ?: null
     if (!script) {
         error "Reference to surrounding pipeline script not provided (script: this)."
     }

@@ -108,6 +108,7 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 }
 
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	log.Entry().Infof("nexusUpload options: %v", options)
 	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
 	if err != nil {
 		return err
