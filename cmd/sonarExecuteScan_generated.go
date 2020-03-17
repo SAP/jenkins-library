@@ -77,15 +77,15 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "")
 	cmd.Flags().BoolVar(&stepConfig.DisableInlineComments, "disableInlineComments", false, "Pull-Request voting only: Disables the pull-request decoration with inline comments. deprecated: only supported in < 7.2")
 	cmd.Flags().BoolVar(&stepConfig.LegacyPRHandling, "legacyPRHandling", false, "Pull-Request voting only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated). deprecated: only supported in < 7.2")
-	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Pull-Request voting only: The Github organization. @default: `commonPipelineEnvironment.getGithubOrg()`")
-	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Pull-Request voting only: The Github repository. @default: `commonPipelineEnvironment.getGithubRepo()`")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Pull-Request voting only: The owner of the scm repository.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Pull-Request voting only: The scm repository.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", "https://api.github.com", "Pull-Request voting only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) deprecated: only supported in < 7.2")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringVar(&stepConfig.Options, "options", "[]", "A list of options which are passed to the `sonar-scanner`.")
 	cmd.Flags().StringVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", "[]", "List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.PullRequestProvider, "pullRequestProvider", "GitHub", "")
 	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip", "")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube. @default: major number of `commonPipelineEnvironment.getArtifactVersion()`")
+	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube.")
 
 }
 
@@ -225,7 +225,7 @@ func sonarExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "projectVersion",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
