@@ -84,6 +84,7 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
+// Repeated calls to getExecRunner() return the same instance of execRunner.
 func (u *utilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
@@ -207,15 +208,15 @@ var nexusMavenSettings = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.
 	<servers>
 		<server>
 			<id>artifact.deployment.nexus</id>
-			<username>${repo.username}</username>
-			<password>${repo.password}</password>
+			<username>${env.NEXUS_username}</username>
+			<password>${env.NEXUS_password}</password>
 		</server>
 	</servers>
 </settings>
 `
 
 func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUploadOptions,
-	mavenOptions *maven.ExecuteOptions, execRunner execRunner) (string, error) {
+	mavenOptions *maven.ExecuteOptions) (string, error) {
 	if options.User == "" || options.Password == "" {
 		return "", nil
 	}
@@ -227,15 +228,9 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
-	log.Entry().Infof("Wrote maven settings to '%s", path)
-
-	execRunner.SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = path
-	//	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.username=$NEXUS_username")
-	//	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.password=$NEXUS_password")
-	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.username="+options.User)
-	mavenOptions.Defines = append(mavenOptions.Defines, "-Drepo.password="+options.Password)
 	return path, nil
 }
 
@@ -268,8 +263,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	mavenOptions.Goals = []string{"deploy:deploy-file"}
 	mavenOptions.Defines = defines
 
-	execRunner := utils.getExecRunner()
-	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions, execRunner)
+	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions)
 	if err != nil {
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
@@ -295,7 +289,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		}
 	}
 
-	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, execRunner)
+	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, utils.getExecRunner())
 	if err != nil {
 		return fmt.Errorf("uploading artifacts for ID '%s' failed: %w", uploader.GetArtifactsID(), err)
 	}
@@ -333,7 +327,6 @@ func uploadArtifactsBundle(d artifactDefines,
 	}
 
 	mavenOptions.Defines = append(mavenOptions.Defines, defines...)
-
 	_, err := maven.Execute(&mavenOptions, execRunner)
 	return err
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
@@ -10,17 +11,19 @@ import (
 )
 
 type mockUtilsBundle struct {
-	mta        bool
-	maven      bool
-	files      map[string][]byte
-	properties map[string]map[string]string
-	cpe        map[string]string
-	execRunner mock.ExecMockRunner
+	mta          bool
+	maven        bool
+	files        map[string][]byte
+	removedFiles map[string][]byte
+	properties   map[string]map[string]string
+	cpe          map[string]string
+	execRunner   mock.ExecMockRunner
 }
 
 func newMockUtilsBundle(usesMta, usesMaven bool) mockUtilsBundle {
 	utils := mockUtilsBundle{mta: usesMta, maven: usesMaven}
 	utils.files = map[string][]byte{}
+	utils.removedFiles = map[string][]byte{}
 	utils.properties = map[string]map[string]string{}
 	utils.cpe = map[string]string{}
 	return utils
@@ -56,7 +59,11 @@ func (m *mockUtilsBundle) fileWrite(path string, content []byte, _ os.FileMode) 
 }
 
 func (m *mockUtilsBundle) fileRemove(path string) {
+	contents := m.files[path]
 	m.files[path] = nil
+	if contents != nil {
+		m.removedFiles[path] = contents
+	}
 }
 
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
@@ -624,14 +631,14 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 	})
 	t.Run("Classifiers valid but wrong JSON", func(t *testing.T) {
 		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			},
-			{}
-		]
-	`
+			[
+				{
+					"classifier" : "source",
+					"type"       : "jar"
+				},
+				{}
+			]
+		`
 		utils := newMockUtilsBundle(false, false)
 		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
 		client, err := testAdditionalClassifierArtifacts(&utils, json)
@@ -640,13 +647,13 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 	})
 	t.Run("Classifiers valid but does not exist", func(t *testing.T) {
 		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			}
-		]
-	`
+			[
+				{
+					"classifier" : "source",
+					"type"       : "jar"
+				}
+			]
+		`
 		utils := newMockUtilsBundle(false, false)
 		client, err := testAdditionalClassifierArtifacts(&utils, json)
 		assert.EqualError(t, err, "artifact file not found 'some folder/artifact-id-source.jar'")
@@ -654,17 +661,17 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 	})
 	t.Run("Additional classifiers is valid JSON", func(t *testing.T) {
 		json := `
-		[
-			{
-				"classifier" : "source",
-				"type"       : "jar"
-			},
-			{
-				"classifier" : "classes",
-				"type"       : "jar"
-			}
-		]
-	`
+			[
+				{
+					"classifier" : "source",
+					"type"       : "jar"
+				},
+				{
+					"classifier" : "classes",
+					"type"       : "jar"
+				}
+			]
+		`
 		utils := newMockUtilsBundle(false, false)
 		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
 		utils.files["some folder/artifact-id-classes.jar"] = []byte("contentsOfJar")
@@ -679,4 +686,20 @@ func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassif
 	_ = client.SetInfo("group.id", "artifact-id", "1.0")
 	return &client, addAdditionalClassifierArtifacts(utils, &client, additionalClassifiers,
 		"some folder")
+}
+
+func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
+	utils := newMockUtilsBundle(false, true)
+	options := nexusUploadOptions{User: "admin", Password: "admin123"}
+	mavenOptions := maven.ExecuteOptions{}
+	settingsPath, err := setupNexusCredentialsSettingsFile(&utils, &options, &mavenOptions)
+
+	assert.NoError(t, err, "expected setting up credentials settings.xml to work")
+	assert.Equal(t, 0, len(utils.execRunner.Calls))
+	expectedEnv := []string{"NEXUS_username=admin", "NEXUS_password=admin123"}
+	assert.Equal(t, 2, len(utils.execRunner.Env))
+	assert.Equal(t, expectedEnv, utils.execRunner.Env)
+
+	assert.True(t, settingsPath != "")
+	assert.NotNil(t, utils.files[settingsPath])
 }
