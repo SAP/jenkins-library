@@ -1,6 +1,7 @@
 import util.CommandLineMatcher
 import util.JenkinsLockRule
 import util.JenkinsWithEnvRule
+import util.JenkinsWriteFileRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -53,6 +54,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
@@ -62,6 +64,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
+        .around(writeFileRule)
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
