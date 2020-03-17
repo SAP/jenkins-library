@@ -19,7 +19,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
-        if (!fileExists('./piper') {
+        if (!fileExists('./piper')) {
             new PiperGoUtils(this, utils).unstashPiperBin()
         }
         utils.unstash('pipelineConfigAndTests')
