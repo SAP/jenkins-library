@@ -26,6 +26,10 @@ type sonarSettings struct {
 
 var sonar sonarSettings
 
+var execLookPath = exec.LookPath
+var fileUtilsExists = FileUtils.FileExists
+var fileUtilsUnzip = FileUtils.Unzip
+
 func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
 	// reroute command output to loging framework
@@ -121,7 +125,7 @@ func handlePullRequest(options sonarExecuteScanOptions) {
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) {
-	if scannerPath, err := exec.LookPath(sonar.Binary); err == nil {
+	if scannerPath, err := execLookPath(sonar.Binary); err == nil {
 		// using existing sonar-scanner
 		log.Entry().WithField("path", scannerPath).Debug("Using local Sonar scanner cli")
 	} else {
@@ -132,6 +136,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) {
 		}
 		// download sonar-scanner-cli into TEMP folder
 		tmpFolder := getTempDir()
+		defer os.RemoveAll(tmpFolder) // clean up
 		archive := filepath.Join(tmpFolder, path.Base(url))
 		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
 			log.Entry().WithError(err).
@@ -140,7 +145,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) {
 				Fatal("Download of Sonar scanner cli failed")
 		}
 		// unzip sonar-scanner-cli
-		if _, err := FileUtils.Unzip(archive, tmpFolder); err != nil {
+		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
 			log.Entry().WithError(err).
 				WithField("source", archive).
 				WithField("target", tmpFolder).
@@ -172,6 +177,7 @@ func loadCertificates(runner execRunner, certificateString string, client piperh
 	if len(certificateString) > 0 {
 		// create temp folder to extract archive with CLI
 		tmpFolder := getTempDir()
+		defer os.RemoveAll(tmpFolder) // clean up
 		keystore := filepath.Join(workingDir, certPath, "cacerts")
 		keytoolOptions := []string{"-import", "-noprompt", "-storepass changeit", "-keystore " + keystore}
 		certificateList := strings.Split(certificateString, ",")
@@ -204,7 +210,7 @@ func loadCertificates(runner execRunner, certificateString string, client piperh
 	}
 	// use custom trust store
 	trustStoreFile := filepath.Join(workingDir, certPath, "cacerts")
-	if exists, _ := FileUtils.FileExists(filepath.Join(workingDir, certPath, "cacerts")); exists {
+	if exists, _ := fileUtilsExists(filepath.Join(workingDir, certPath, "cacerts")); exists {
 		log.Entry().
 			WithField("trust store", trustStoreFile).
 			Debug("Using local trust store")
@@ -224,7 +230,7 @@ func getWorkingDir() string {
 
 func getTempDir() string {
 	// create temp folder
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
+	tmpFolder, err := ioutil.TempDir("", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).
 			WithField("path", tmpFolder).
