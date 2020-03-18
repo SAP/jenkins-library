@@ -1,6 +1,9 @@
 package com.sap.piper
 
+import com.cloudbees.groovy.cps.NonCPS
 import groovy.text.SimpleTemplateEngine
+import hudson.plugins.jacoco.report.CoverageReport
+import hudson.tasks.junit.TestResult
 
 @Singleton
 class ReportAggregator {
@@ -70,7 +73,7 @@ class ReportAggregator {
     }
 
     def reportNpmSecurityScan(auditedAdvisories) {
-        ReportAggregator.instance.reportVulnerabilityScanExecution(QualityCheck.NpmAudit)
+        instance.reportVulnerabilityScanExecution(QualityCheck.NpmAudit)
         if (auditedAdvisories) {
             npmAuditedAdvisories.addAll(auditedAdvisories)
         }
