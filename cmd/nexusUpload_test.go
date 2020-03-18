@@ -498,31 +498,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 	})
-	t.Run("Test uploading Maven project with JAR packaging fails without finalName", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, true)
-		utils.setProperty("pom.xml", "project.version", "1.0")
-		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
-		utils.setProperty("pom.xml", "project.artifactId", "my-app")
-		utils.setProperty("pom.xml", "project.packaging", "jar")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
-		uploader := mockUploader{}
-		options := createOptions()
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "property 'project.build.finalName' not found in 'pom.xml'")
-		assert.Equal(t, "1.0", uploader.GetArtifactsVersion())
-		assert.Equal(t, "my-app", uploader.GetArtifactsID())
-
-		// Test the artifacts that /would/ have been uploaded
-		artifacts := uploader.GetArtifacts()
-		if assert.Equal(t, 1, len(artifacts)) {
-			assert.Equal(t, "pom.xml", artifacts[0].File)
-			assert.Equal(t, "pom", artifacts[0].Type)
-		}
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
-	})
-	t.Run("Test uploading Maven project with application module works", func(t *testing.T) {
+	t.Run("Test uploading Maven project with application module and finalName works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -533,11 +509,11 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("application/pom.xml", "project.packaging", "jar")
-		utils.setProperty("application/pom.xml", "project.build.finalName", "my-app-app")
+		utils.setProperty("application/pom.xml", "project.build.finalName", "final-artifact")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
-		utils.files["application/target/my-app-app.jar"] = []byte("contentsOfJar")
-		utils.files["application/target/my-app-app-classes.jar"] = []byte("contentsOfClassesJar")
+		utils.files["application/target/final-artifact.jar"] = []byte("contentsOfJar")
+		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
 		uploader := mockUploader{}
 		options := createOptions()
 		options.AdditionalClassifiers = `
@@ -562,10 +538,10 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "application/pom.xml", artifacts[1].File)
 			assert.Equal(t, "pom", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/my-app-app.jar", artifacts[2].File)
+			assert.Equal(t, "application/target/final-artifact.jar", artifacts[2].File)
 			assert.Equal(t, "jar", artifacts[2].Type)
 
-			assert.Equal(t, "application/target/my-app-app-classes.jar", artifacts[3].File)
+			assert.Equal(t, "application/target/final-artifact-classes.jar", artifacts[3].File)
 			assert.Equal(t, "jar", artifacts[3].Type)
 		}
 		if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -588,7 +564,7 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DartifactId=my-app-app",
 				"-Dfile=application/pom.xml",
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/my-app-app.jar,application/target/my-app-app-classes.jar",
+				"-Dfiles=application/target/final-artifact.jar,application/target/final-artifact-classes.jar",
 				"-Dclassifiers=,classes",
 				"-Dtypes=jar,jar",
 				"--batch-mode",
@@ -735,8 +711,8 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
 	client := nexus.Upload{}
 	_ = client.SetInfo("group.id", "artifact-id", "1.0")
-	return &client, addAdditionalClassifierArtifacts(utils, &client, additionalClassifiers,
-		"some folder")
+	return &client, addMavenTargetSubArtifacts(utils, &client, additionalClassifiers,
+		"some folder", "artifact-id")
 }
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {

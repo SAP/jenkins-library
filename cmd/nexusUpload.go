@@ -233,6 +233,7 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = settingsPath
+	mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
 	return settingsPath, nil
 }
 
@@ -263,6 +264,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 
 	mavenOptions := createMavenExecuteOptions(options)
 	mavenOptions.Goals = []string{"deploy:deploy-file"}
+	//mavenOptions.Goals = []string{"maven-deploy-plugin:2.7:deploy-file"}
 	mavenOptions.Defines = defines
 
 	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions)
@@ -270,7 +272,6 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
 	if settingsFile != "" {
-		mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
 		defer utils.fileRemove(settingsFile)
 	}
 
@@ -349,7 +350,7 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := addMavenArtifacts(utils, uploader, options, "", "target", "")
+	err := uploadMavenArtifacts(utils, uploader, options, "", "target", "")
 	if err != nil {
 		return err
 	}
@@ -357,7 +358,7 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
 	// This means there are built-in assumptions about the project structure (archetype),
 	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
-	err = addMavenArtifacts(utils, uploader, options, "application", "application/target",
+	err = uploadMavenArtifacts(utils, uploader, options, "application", "application/target",
 		options.AdditionalClassifiers)
 	if err == errPomNotFound {
 		// Ignore for missing application module
@@ -366,7 +367,7 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 	return err
 }
 
-func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
+func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	pomPath, targetFolder, additionalClassifiers string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 	exists, _ := utils.fileExists(pomFile)
@@ -385,14 +386,22 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 	if err == nil {
 		err = uploader.SetInfo(groupID, artifactID, artifactsVersion)
 	}
+	var finalBuildName string
+	if err == nil {
+		finalBuildName, _ = utils.evaluate(pomFile, "project.build.finalName")
+		if finalBuildName == "" {
+			// Fallback to using artifactID as base-name of artifact files.
+			finalBuildName = artifactID
+		}
+	}
 	if err == nil {
 		err = addArtifact(utils, uploader, pomFile, "", "pom")
 	}
 	if err == nil {
-		err = addTargetArtifact(utils, uploader, pomFile, targetFolder)
+		err = addMavenTargetArtifact(utils, uploader, pomFile, targetFolder, finalBuildName)
 	}
 	if err == nil {
-		err = addAdditionalClassifierArtifacts(utils, uploader, additionalClassifiers, targetFolder)
+		err = addMavenTargetSubArtifacts(utils, uploader, additionalClassifiers, targetFolder, finalBuildName)
 	}
 	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, true)
@@ -400,7 +409,8 @@ func addMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options 
 	return err
 }
 
-func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder string) error {
+func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader,
+	pomFile, targetFolder, finalBuildName string) error {
 	packaging, err := utils.evaluate(pomFile, "project.packaging")
 	if err != nil {
 		return err
@@ -412,18 +422,12 @@ func addTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile,
 	if packaging == "" {
 		packaging = "jar"
 	}
-	finalName, err := utils.evaluate(pomFile, "project.build.finalName")
-	if err != nil || finalName == "" {
-		// NOTE: The error should be ignored, and the finalName built as Maven would from artifactId and so on.
-		// But it seems this expression always resolves, even if finalName is nowhere declared in the pom.xml
-		return err
-	}
-	filePath := composeFilePath(targetFolder, finalName, packaging)
+	filePath := composeFilePath(targetFolder, finalBuildName, packaging)
 	return addArtifact(utils, uploader, filePath, "", packaging)
 }
 
-func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
-	additionalClassifiers, targetFolder string) error {
+func addMavenTargetSubArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
+	additionalClassifiers, targetFolder, finalBuildName string) error {
 	if additionalClassifiers == "" {
 		return nil
 	}
@@ -436,8 +440,7 @@ func addAdditionalClassifierArtifacts(utils nexusUploadUtils, uploader nexus.Upl
 			return fmt.Errorf("invalid additional classifier description (classifier: '%s', type: '%s')",
 				classifier.Classifier, classifier.FileType)
 		}
-		filePath := composeFilePath(targetFolder, uploader.GetArtifactsID()+"-"+classifier.Classifier,
-			classifier.FileType)
+		filePath := composeFilePath(targetFolder, finalBuildName+"-"+classifier.Classifier, classifier.FileType)
 		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType)
 		if err != nil {
 			return err
