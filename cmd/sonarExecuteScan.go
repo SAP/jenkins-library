@@ -16,6 +16,7 @@ import (
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
@@ -30,9 +31,8 @@ var execLookPath = exec.LookPath
 var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
-var osRemove = os.Remove
 
-func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) error {
+func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
@@ -47,11 +47,12 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 		Options:     []string{},
 	}
 
-	runSonar(options, &c, &client)
-	return nil
+	if err := runSonar(options, &c, &client); err != nil {
+		log.Entry().WithError(err).Fatal("Execution failed")
+	}
 }
 
-func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperhttp.Downloader) {
+func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperhttp.Downloader) error {
 	// Provided by withSonarQubeEnv:
 	// - SONAR_CONFIG_NAME
 	// - SONAR_EXTRA_PROPS
@@ -72,12 +73,15 @@ func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperht
 	if len(options.ProjectVersion) > 0 {
 		sonar.Options = append(sonar.Options, "sonar.projectVersion="+options.ProjectVersion)
 	}
-
-	handlePullRequest(options)
-
-	loadSonarScanner(options.SonarScannerDownloadURL, client)
-
-	loadCertificates("", client, runner)
+	if err := handlePullRequest(options); err != nil {
+		return err
+	}
+	if err := loadSonarScanner(options.SonarScannerDownloadURL, client); err != nil {
+		return err
+	}
+	if err := loadCertificates("", client, runner); err != nil {
+		return err
+	}
 
 	log.Entry().
 		WithField("command", sonar.Binary).
@@ -85,15 +89,12 @@ func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperht
 		WithField("environment", sonar.Environment).
 		Debug("Executing sonar scan command")
 
-	runner.SetEnv(sonar.Environment)
-
 	sonar.Options = SliceUtils.Prefix(sonar.Options, "-D")
-	if err := runner.RunExecutable(sonar.Binary, sonar.Options...); err != nil {
-		log.Entry().WithError(err).Fatal("Failed to execute scan command")
-	}
+	runner.SetEnv(sonar.Environment)
+	return runner.RunExecutable(sonar.Binary, sonar.Options...)
 }
 
-func handlePullRequest(options sonarExecuteScanOptions) {
+func handlePullRequest(options sonarExecuteScanOptions) error {
 	if len(options.ChangeID) > 0 {
 		if options.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
@@ -117,7 +118,7 @@ func handlePullRequest(options sonarExecuteScanOptions) {
 			if options.PullRequestProvider == "GitHub" {
 				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
-				log.Entry().Fatal("Pull-Request provider '" + options.PullRequestProvider + "' is not supported!")
+				return errors.New("Pull-Request provider '" + options.PullRequestProvider + "' is not supported!")
 			}
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
@@ -125,56 +126,42 @@ func handlePullRequest(options sonarExecuteScanOptions) {
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
 		}
 	}
+	return nil
 }
 
-func loadSonarScanner(url string, client piperhttp.Downloader) {
+func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	if scannerPath, err := execLookPath(sonar.Binary); err == nil {
 		// using existing sonar-scanner
-		log.Entry().WithField("path", scannerPath).Debug("Using local Sonar scanner cli")
-	} else {
-		// download sonar-scanner-cli from url to .sonar-scanner/
-		log.Entry().WithField("url", url).Debug("Downloading Sonar scanner cli")
-		if len(url) == 0 {
-			log.Entry().Error("Download url for Sonar scanner cli missing")
-		}
+		log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
+	} else if len(url) != 0 {
 		// download sonar-scanner-cli into TEMP folder
+		log.Entry().WithField("url", url).Debug("Downloading sonar-scanner")
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
 		archive := filepath.Join(tmpFolder, path.Base(url))
 		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			log.Entry().WithError(err).
-				WithField("source", url).
-				WithField("target", archive).
-				Fatal("Download of Sonar scanner cli failed")
+			return errors.New("Download of sonar-scanner failed")
 		}
 		// unzip sonar-scanner-cli
+		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
 		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			log.Entry().WithError(err).
-				WithField("source", archive).
-				WithField("target", tmpFolder).
-				Fatal("Extraction of Sonar scanner cli failed")
+			return errors.New("Extraction of sonar-scanner failed")
 		}
 		// move sonar-scanner-cli to .sonar-scanner/
 		toolPath := ".sonar-scanner"
 		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
+		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
 		if err := osRename(foldername, toolPath); err != nil {
-			log.Entry().WithError(err).
-				WithField("source", foldername).
-				WithField("target", toolPath).
-				Fatal("Renaming of tool folder failed")
-		}
-		// remove TEMP folder
-		if err := osRemove(tmpFolder); err != nil {
-			log.Entry().WithError(err).WithField("target", tmpFolder).
-				Warn("Deletion of archive failed")
+			return errors.New("Moving of sonar-scanner failed")
 		}
 		// update binary path
 		sonar.Binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.Binary)
 		log.Entry().Debug("Download completed")
 	}
+	return nil
 }
 
-func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) {
+func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) error {
 	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
@@ -220,6 +207,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
+	return nil
 }
 
 func getWorkingDir() string {

@@ -59,14 +59,6 @@ func mockOsRename(t *testing.T, expectOld, expectNew string) func(string, string
 	}
 }
 
-func mockOsRemove(t *testing.T) func(string) error {
-	return func(filename string) error {
-		//TODO: tempDir name not known here
-		//assert.Equal(t, "", filename)
-		return nil
-	}
-}
-
 func TestSonarHandlePullRequest(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		// init
@@ -84,13 +76,31 @@ func TestSonarHandlePullRequest(t *testing.T) {
 			Repository:          "jenkins-library",
 		}
 		// test
-		handlePullRequest(options)
+		err := handlePullRequest(options)
 		// assert
+		assert.NoError(t, err)
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.key=123")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.provider=GitHub")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.base=master")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.branch=feat/bogus")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.github.repository=SAP/jenkins-library")
+	})
+	t.Run("unsupported scm provider", func(t *testing.T) {
+		// init
+		sonar = sonarSettings{
+			Binary:      "sonar-scanner",
+			Environment: []string{},
+			Options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			ChangeID:            "123",
+			PullRequestProvider: "Gerrit",
+		}
+		// test
+		err := handlePullRequest(options)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, "Pull-Request provider 'Gerrit' is not supported!", err.Error())
 	})
 }
 
@@ -108,8 +118,9 @@ func TestSonarLoadScanner(t *testing.T) {
 		execLookPath = mockExecLookPath
 		defer func() { execLookPath = exec.LookPath }()
 		// test
-		loadSonarScanner(ignore, &mockClient)
+		err := loadSonarScanner(ignore, &mockClient)
 		// assert
+		assert.NoError(t, err)
 		assert.Equal(t, "local-sonar-scanner", sonar.Binary)
 	})
 
@@ -127,11 +138,10 @@ func TestSonarLoadScanner(t *testing.T) {
 		defer func() { fileUtilsUnzip = FileUtils.Unzip }()
 		osRename = mockOsRename(t, "sonar-scanner-4.3.0.2102-linux", ".sonar-scanner")
 		defer func() { osRename = os.Rename }()
-		osRemove = mockOsRemove(t)
-		defer func() { osRemove = os.Remove }()
 		// test
-		loadSonarScanner(url, &mockClient)
+		err := loadSonarScanner(url, &mockClient)
 		// assert
+		assert.NoError(t, err)
 		assert.Equal(t, url, mockClient.requestedURL)
 		assert.Regexp(t, "sonar-scanner-cli-4.3.0.2102-linux.zip$", mockClient.requestedFile)
 		assert.Equal(t, path.Join(getWorkingDir(), ".sonar-scanner", "bin", "sonar-scanner"), sonar.Binary)
@@ -152,8 +162,9 @@ func TestSonarLoadCertificates(t *testing.T) {
 		fileUtilsExists = mockFileUtilsExists
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
-		loadCertificates("", &mockClient, &mockRunner)
+		err := loadCertificates("", &mockClient, &mockRunner)
 		// assert
+		assert.NoError(t, err)
 		assert.Contains(t, sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
 	})
 }
