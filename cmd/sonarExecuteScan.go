@@ -77,7 +77,7 @@ func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperht
 
 	loadSonarScanner(options.SonarScannerDownloadURL, client)
 
-	loadCertificates(runner, "", client)
+	loadCertificates("", client, runner)
 
 	log.Entry().
 		WithField("command", sonar.Binary).
@@ -113,16 +113,16 @@ func handlePullRequest(options sonarExecuteScanOptions) {
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
 			//TODO: use toLowerCase ?
 			if options.PullRequestProvider == "GitHub" {
 				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
 				log.Entry().Fatal("Pull-Request provider '" + options.PullRequestProvider + "' is not supported!")
 			}
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
 		}
 	}
 }
@@ -174,15 +174,23 @@ func loadSonarScanner(url string, client piperhttp.Downloader) {
 	}
 }
 
-func loadCertificates(runner execRunner, certificateString string, client piperhttp.Downloader) {
-	certPath := ".certificates"
-	workingDir := getWorkingDir()
-	if len(certificateString) > 0 {
-		// create temp folder to extract archive with CLI
+func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) {
+	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
+
+	if exists, _ := fileUtilsExists(trustStoreFile); exists {
+		// use local existing trust store
+		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
+	} else if len(certificateString) > 0 {
+		// use local created trust store with downloaded certificates
+		keytoolOptions := []string{
+			"-import",
+			"-noprompt",
+			"-storepass changeit",
+			"-keystore " + trustStoreFile,
+		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
-		keystore := filepath.Join(workingDir, certPath, "cacerts")
-		keytoolOptions := []string{"-import", "-noprompt", "-storepass changeit", "-keystore " + keystore}
 		certificateList := strings.Split(certificateString, ",")
 
 		for _, certificate := range certificateList {
@@ -207,36 +215,25 @@ func loadCertificates(runner execRunner, certificateString string, client piperh
 				log.Entry().WithError(err).WithField("source", target).Fatal("Adding certificate to keystore failed")
 			}
 		}
+		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
-	}
-	// use custom trust store
-	trustStoreFile := filepath.Join(workingDir, certPath, "cacerts")
-	if exists, _ := fileUtilsExists(filepath.Join(workingDir, certPath, "cacerts")); exists {
-		log.Entry().
-			WithField("trust store", trustStoreFile).
-			Debug("Using local trust store")
-		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
 	}
 }
 
 func getWorkingDir() string {
 	workingDir, err := os.Getwd()
 	if err != nil {
-		log.Entry().WithError(err).
-			WithField("path", workingDir).
-			Debug("Retrieving of work directory failed")
+		log.Entry().WithError(err).WithField("path", workingDir).Debug("Retrieving of work directory failed")
 	}
 	return workingDir
 }
 
 func getTempDir() string {
-	// create temp folder
 	tmpFolder, err := ioutil.TempDir("", "temp-")
 	if err != nil {
-		log.Entry().WithError(err).
-			WithField("path", tmpFolder).
-			Debug("Creating temp directory failed")
+		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
 }

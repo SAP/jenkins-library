@@ -152,7 +152,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 		fileUtilsExists = mockFileUtilsExists
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
-		loadCertificates(&mockRunner, "", &mockClient)
+		loadCertificates("", &mockClient, &mockRunner)
 		// assert
 		assert.Contains(t, sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
 	})
