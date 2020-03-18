@@ -245,6 +245,8 @@ type artifactDefines struct {
 	types       string
 }
 
+const deployGoal = "org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy-file"
+
 func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	generatePOM bool) error {
 	if uploader.GetGroupID() == "" {
@@ -263,7 +265,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
 
 	mavenOptions := createMavenExecuteOptions(options)
-	mavenOptions.Goals = []string{"maven-deploy-plugin:deploy-file"}
+	mavenOptions.Goals = []string{deployGoal}
 	mavenOptions.Defines = defines
 
 	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions)
