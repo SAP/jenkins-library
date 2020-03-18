@@ -100,7 +100,32 @@ func TestSonarHandlePullRequest(t *testing.T) {
 		err := handlePullRequest(options)
 		// assert
 		assert.Error(t, err)
-		assert.Equal(t, "Pull-Request provider 'Gerrit' is not supported!", err.Error())
+		assert.Equal(t, "Pull-Request provider 'gerrit' is not supported!", err.Error())
+	})
+	t.Run("legacy", func(t *testing.T) {
+		// init
+		sonar = sonarSettings{
+			Binary:      "sonar-scanner",
+			Environment: []string{},
+			Options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			LegacyPRHandling:      true,
+			ChangeID:              "123",
+			Owner:                 "SAP",
+			Repository:            "jenkins-library",
+			GithubToken:           "some-token",
+			DisableInlineComments: true,
+		}
+		// test
+		err := handlePullRequest(options)
+		// assert
+		assert.NoError(t, err)
+		assert.Contains(t, sonar.Options, "sonar.analysis.mode=preview")
+		assert.Contains(t, sonar.Options, "sonar.github.pullRequest=123")
+		assert.Contains(t, sonar.Options, "sonar.github.oauth=some-token")
+		assert.Contains(t, sonar.Options, "sonar.github.repository=SAP/jenkins-library")
+		assert.Contains(t, sonar.Options, "sonar.github.disableInlineComments=true")
 	})
 }
 
