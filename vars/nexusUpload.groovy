@@ -40,5 +40,5 @@ void call(Map parameters = [:]) {
     }
 
     List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
