@@ -80,7 +80,7 @@ func TestSonarHandlePullRequest(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.key=123")
-		assert.Contains(t, sonar.Options, "sonar.pullrequest.provider=GitHub")
+		assert.Contains(t, sonar.Options, "sonar.pullrequest.provider=github")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.base=master")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.branch=feat/bogus")
 		assert.Contains(t, sonar.Options, "sonar.pullrequest.github.repository=SAP/jenkins-library")

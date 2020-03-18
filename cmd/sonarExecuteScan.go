@@ -114,16 +114,16 @@ func handlePullRequest(options sonarExecuteScanOptions) error {
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
-			//TODO: use toLowerCase ?
-			if options.PullRequestProvider == "GitHub" {
+			provider := strings.ToLower(options.PullRequestProvider)
+			if provider == "github" {
 				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
-				return errors.New("Pull-Request provider '" + options.PullRequestProvider + "' is not supported!")
+				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
 			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+options.PullRequestProvider)
+			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+provider)
 		}
 	}
 	return nil
