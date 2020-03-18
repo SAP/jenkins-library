@@ -263,7 +263,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
 
 	mavenOptions := createMavenExecuteOptions(options)
-	mavenOptions.Goals = []string{"maven-deploy-plugin:2.7:deploy-file"}
+	mavenOptions.Goals = []string{"maven-deploy-plugin:deploy-file"}
 	mavenOptions.Defines = defines
 
 	settingsFile, err := setupNexusCredentialsSettingsFile(utils, options, &mavenOptions)

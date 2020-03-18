@@ -348,7 +348,7 @@ func TestUploadArtifacts(t *testing.T) {
 		})
 
 		err := uploadArtifacts(&utils, &uploader, &options, false)
-		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode maven-deploy-plugin:2.7:deploy-file]', error: failed")
+		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode maven-deploy-plugin:deploy-file]', error: failed")
 	})
 	t.Run("Uploading bundle generates correct maven parameters", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -382,7 +382,7 @@ func TestUploadArtifacts(t *testing.T) {
 			"-Dclassifiers=",
 			"-Dtypes=pom",
 			"--batch-mode",
-			"maven-deploy-plugin:2.7:deploy-file"}
+			"maven-deploy-plugin:deploy-file"}
 		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
 		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
 	})
@@ -553,7 +553,7 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Dfile=pom.xml",
 				"-Dpackaging=pom",
 				"--batch-mode",
-				"maven-deploy-plugin:2.7:deploy-file"}
+				"maven-deploy-plugin:deploy-file"}
 			assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
 
@@ -568,7 +568,7 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Dclassifiers=,classes",
 				"-Dtypes=jar,jar",
 				"--batch-mode",
-				"maven-deploy-plugin:2.7:deploy-file"}
+				"maven-deploy-plugin:deploy-file"}
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.execRunner.Calls[1])
 		}
@@ -621,7 +621,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			"-Dfile=pom.xml",
 			"-Dpackaging=pom",
 			"--batch-mode",
-			"maven-deploy-plugin:2.7:deploy-file"}
+			"maven-deploy-plugin:deploy-file"}
 		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
 		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
 
