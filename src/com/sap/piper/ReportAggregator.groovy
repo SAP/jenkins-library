@@ -2,7 +2,6 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 import groovy.text.SimpleTemplateEngine
-import hudson.plugins.jacoco.report.CoverageReport
 import hudson.tasks.junit.TestResult
 
 @Singleton
@@ -111,7 +110,7 @@ class ReportAggregator {
             passedTests = result.getPassCount()
         }
 
-        CoverageReport coverageReport = script.currentBuild?.getRawBuild()?.getAction(hudson.plugins.jacoco.JacocoBuildAction.class)?.getResult()
+        def coverageReport = script.currentBuild?.getRawBuild()?.getAction(hudson.plugins.jacoco.JacocoBuildAction.class)?.getResult()
 
         if (coverageReport) {
             lineCoverage = coverageReport.lineCoverage.percentage
