@@ -79,7 +79,7 @@ func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperht
 	if err := loadSonarScanner(options.SonarScannerDownloadURL, client); err != nil {
 		return err
 	}
-	if err := loadCertificates("", client, runner); err != nil {
+	if err := loadCertificates(options.CustomTLSCertificateLinks, client, runner); err != nil {
 		return err
 	}
 
@@ -140,19 +140,19 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 		defer os.RemoveAll(tmpFolder) // clean up
 		archive := filepath.Join(tmpFolder, path.Base(url))
 		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			return errors.New("Download of sonar-scanner failed")
+			return errors.Wrap(err, "Download of sonar-scanner failed")
 		}
 		// unzip sonar-scanner-cli
 		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
 		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			return errors.New("Extraction of sonar-scanner failed")
+			return errors.Wrap(err, "Extraction of sonar-scanner failed")
 		}
 		// move sonar-scanner-cli to .sonar-scanner/
 		toolPath := ".sonar-scanner"
 		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
 		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
 		if err := osRename(foldername, toolPath); err != nil {
-			return errors.New("Moving of sonar-scanner failed")
+			return errors.Wrap(err, "Moving of sonar-scanner failed")
 		}
 		// update binary path
 		sonar.Binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.Binary)
@@ -168,7 +168,10 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		// use local existing trust store
 		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
-	} else if len(certificateString) > 0 {
+	} else
+	//TODO: certificate loading is deactivated due to the missing JAVA keytool
+	// see https://github.com/SAP/jenkins-library/issues/1072
+	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateString) > 0 {
 		// use local created trust store with downloaded certificates
 		keytoolOptions := []string{
 			"-import",
@@ -184,22 +187,16 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 			filename := path.Base(certificate) // decode?
 			target := filepath.Join(tmpFolder, filename)
 
-			log.Entry().
-				WithField("source", certificate).
-				WithField("target", target).
-				Info("Download of TLS certificate")
+			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				log.Entry().
-					WithField("url", certificate).
-					WithError(err).
-					Fatal("Download of TLS certificate failed")
+				return errors.Wrapf(err, "Download of TLS certificate failed")
 			}
 			options := append(keytoolOptions, "-file \""+target+"\"")
 			options = append(options, "-alias \""+filename+"\"")
 			// add certificate to keystore
 			if err := runner.RunExecutable("keytool", options...); err != nil {
-				log.Entry().WithError(err).WithField("source", target).Fatal("Adding certificate to keystore failed")
+				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
 		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)

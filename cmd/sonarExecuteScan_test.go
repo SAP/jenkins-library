@@ -12,6 +12,7 @@ import (
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockDownloader struct {
@@ -33,8 +34,13 @@ func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {
 	return
 }
 
-func mockFileUtilsExists(filename string) (bool, error) {
-	return true, nil
+func mockFileUtilsExists(exists bool) func(string) (bool, error) {
+	return func(filename string) (bool, error) {
+		if exists {
+			return true, nil
+		}
+		return false, errors.New("something happened")
+	}
 }
 
 func mockExecLookPath(executable string) (string, error) {
@@ -177,19 +183,57 @@ func TestSonarLoadCertificates(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockClient := mockDownloader{shouldFail: false}
 
-	t.Run("use custom trust store", func(t *testing.T) {
+	t.Run("use local trust store", func(t *testing.T) {
 		// init
 		sonar = sonarSettings{
 			Binary:      "sonar-scanner",
 			Environment: []string{},
 			Options:     []string{},
 		}
-		fileUtilsExists = mockFileUtilsExists
+		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
 		err := loadCertificates("", &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
+	})
+
+	t.Run("use local trust store with downloaded certificates", func(t *testing.T) {
+		// init
+		sonar = sonarSettings{
+			Binary:      "sonar-scanner",
+			Environment: []string{},
+			Options:     []string{},
+		}
+		fileUtilsExists = mockFileUtilsExists(false)
+		defer func() { fileUtilsExists = FileUtils.FileExists }()
+		os.Setenv("PIPER_SONAR_LOAD_CERTIFICATES", "true")
+		require.Equal(t, "true", os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must be set")
+		// test
+		err := loadCertificates("any-certificate-url", &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, "https://custom.crt", mockClient.requestedURL)
+		assert.Regexp(t, "sonar-scanner-cli-4.3.0.2102-linux.zip$", mockClient.requestedFile)
+		assert.Contains(t, sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
+	})
+
+	t.Run("use local trust store with downloaded certificates - deactivated", func(t *testing.T) {
+		// init
+		sonar = sonarSettings{
+			Binary:      "sonar-scanner",
+			Environment: []string{},
+			Options:     []string{},
+		}
+		fileUtilsExists = mockFileUtilsExists(false)
+		defer func() { fileUtilsExists = FileUtils.FileExists }()
+		os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
+		require.Empty(t, os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must not be set")
+		// test
+		err := loadCertificates("any-certificate-url", &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.NotContains(t, sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
 	})
 }
