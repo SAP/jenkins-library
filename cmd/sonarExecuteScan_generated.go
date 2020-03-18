@@ -98,7 +98,7 @@ func sonarExecuteScanMetadata() config.StepData {
 					{
 						Name:        "changeId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

@@ -9,8 +9,6 @@ spec:
         type: string
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
       - name: changeBranch
         type: string
         scope:
