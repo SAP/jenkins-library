@@ -77,6 +77,10 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 // retrieve step metadata
 func detectExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "detectExecuteScan",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
