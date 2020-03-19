@@ -216,7 +216,7 @@ func getWorkingDir() string {
 }
 
 func getTempDir() string {
-	tmpFolder, err := ioutil.TempDir("", "temp-")
+	tmpFolder, err := ioutil.TempDir(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
