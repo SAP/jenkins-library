@@ -33,10 +33,10 @@ var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
 func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	runner := command.Command{}
 	// reroute command output to loging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	runner.Stdout(log.Entry().Writer())
+	runner.Stderr(log.Entry().Writer())
 
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
@@ -47,12 +47,12 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 		Options:     []string{},
 	}
 
-	if err := runSonar(options, &c, &client); err != nil {
+	if err := runSonar(options, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 }
 
-func runSonar(options sonarExecuteScanOptions, runner execRunner, client piperhttp.Downloader) error {
+func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
 	// Provided by withSonarQubeEnv:
 	// - SONAR_CONFIG_NAME
 	// - SONAR_EXTRA_PROPS
