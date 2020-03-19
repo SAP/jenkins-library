@@ -92,6 +92,10 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 // retrieve step metadata
 func sonarExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "sonarExecuteScan",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
