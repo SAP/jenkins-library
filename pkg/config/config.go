@@ -95,6 +95,9 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step configuration used for step '%v'. Please switch to '%v'!", stepAlias.Name, stepName)
 			}
 			for paramName, paramValue := range c.Steps[stepAlias.Name] {
+				if c.Steps[stepName] == nil {
+					c.Steps[stepName] = map[string]interface{}{}
+				}
 				if c.Steps[stepName][paramName] == nil {
 					c.Steps[stepName][paramName] = paramValue
 				}

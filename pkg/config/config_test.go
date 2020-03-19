@@ -427,44 +427,70 @@ func TestGetDeepAliasValue(t *testing.T) {
 }
 
 func TestCopyStepAliasConfig(t *testing.T) {
-	c := Config{
-		Steps: map[string]map[string]interface{}{
-			"step1": map[string]interface{}{
-				"p1": "p1_step",
-				"p2": "p2_step",
+	t.Run("Step config available", func(t *testing.T) {
+		c := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p1": "p1_step",
+					"p2": "p2_step",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+					"p3": "p3_stepAlias",
+				},
+				"stepAlias2": map[string]interface{}{
+					"p3": "p3_stepAlias2",
+					"p4": "p4_stepAlias2",
+				},
 			},
-			"stepAlias1": map[string]interface{}{
-				"p2": "p2_stepAlias",
-				"p3": "p3_stepAlias",
-			},
-			"stepAlias2": map[string]interface{}{
-				"p3": "p3_stepAlias2",
-				"p4": "p4_stepAlias2",
-			},
-		},
-	}
+		}
 
-	expected := Config{
-		Steps: map[string]map[string]interface{}{
-			"step1": map[string]interface{}{
-				"p1": "p1_step",
-				"p2": "p2_step",
-				"p3": "p3_stepAlias",
-				"p4": "p4_stepAlias2",
+		expected := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p1": "p1_step",
+					"p2": "p2_step",
+					"p3": "p3_stepAlias",
+					"p4": "p4_stepAlias2",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+					"p3": "p3_stepAlias",
+				},
+				"stepAlias2": map[string]interface{}{
+					"p3": "p3_stepAlias2",
+					"p4": "p4_stepAlias2",
+				},
 			},
-			"stepAlias1": map[string]interface{}{
-				"p2": "p2_stepAlias",
-				"p3": "p3_stepAlias",
-			},
-			"stepAlias2": map[string]interface{}{
-				"p3": "p3_stepAlias2",
-				"p4": "p4_stepAlias2",
-			},
-		},
-	}
+		}
 
-	c.copyStepAliasConfig("step1", []Alias{{Name: "stepAlias1"}, {Name: "stepAlias2"}})
-	assert.Equal(t, expected, c)
+		c.copyStepAliasConfig("step1", []Alias{{Name: "stepAlias1"}, {Name: "stepAlias2"}})
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("Step config not available", func(t *testing.T) {
+		c := Config{
+			Steps: map[string]map[string]interface{}{
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+			},
+		}
+
+		expected := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+			},
+		}
+
+		c.copyStepAliasConfig("step1", []Alias{{Name: "stepAlias1"}})
+		assert.Equal(t, expected, c)
+	})
 }
 
 func TestGetJSON(t *testing.T) {
