@@ -74,6 +74,7 @@ Files can be uploaded to the Nexus by simple HTTP PUT requests, using basic auth
 ### Decision
 
 `Apache Maven Deploy Plugin` is chosen, because:
+
 - `Maven lifecycle phase: deploy` conflicts with the build-once principle.
 - Credentials handling is not very complex to implement.
 - Has the fine-grained control needed over which artifacts are deployed.
