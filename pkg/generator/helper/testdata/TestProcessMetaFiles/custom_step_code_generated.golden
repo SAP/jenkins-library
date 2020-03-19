@@ -142,6 +142,10 @@ func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 // retrieve step metadata
 func testStepMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "testStep",
+			Aliases: []config.Alias{{Name: "testStepAlias", Deprecated: true},},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
