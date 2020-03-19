@@ -53,19 +53,11 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 }
 
 func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
-	// Provided by withSonarQubeEnv:
-	// - SONAR_CONFIG_NAME
-	// - SONAR_EXTRA_PROPS
-	// - SONAR_HOST_URL
-	// - SONAR_AUTH_TOKEN
-	// - SONARQUBE_SCANNER_PARAMS = { "sonar.host.url" : "https:\/\/sonar", "sonar.login" : "******"}
-	// - SONAR_MAVEN_GOAL
 	if len(options.Host) > 0 {
 		sonar.Environment = append(sonar.Environment, "SONAR_HOST_URL="+options.Host)
 	}
-	//TODO: SONAR_AUTH_TOKEN or SONAR_TOKEN, both seem to work
 	if len(options.Token) > 0 {
-		sonar.Environment = append(sonar.Environment, "SONAR_TOKEN="+options.Token)
+		sonar.Environment = append(sonar.Environment, "SONAR_AUTH_TOKEN="+options.Token)
 	}
 	if len(options.Organization) > 0 {
 		sonar.Options = append(sonar.Options, "sonar.organization="+options.Organization)
