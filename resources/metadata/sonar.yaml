@@ -37,7 +37,7 @@ spec:
           - STEPS
       - name: disableInlineComments
         type: bool
-        description: "Pull-Request voting only: Disables the pull-request decoration with inline comments. deprecated: only supported in < 7.2"
+        description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in < 7.2"
         scope:
           - PARAMETERS
           - STAGES
@@ -45,16 +45,14 @@ spec:
       - name: legacyPRHandling
         type: bool
         description:
-          "Pull-Request voting only: Activates the pull-request handling
-          using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin)
-          (deprecated). deprecated: only supported in < 7.2"
+          "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in < 7.2"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: owner
         type: string
-        description: "Pull-Request voting only: The owner of the scm repository."
+        description: "Pull-Request only: The owner of the scm repository."
         scope:
           - GENERAL
           - PARAMETERS
@@ -67,7 +65,7 @@ spec:
             param: github/owner
       - name: repository
         type: string
-        description: "Pull-Request voting only: The scm repository."
+        description: "Pull-Request only: The scm repository."
         scope:
           - GENERAL
           - PARAMETERS
@@ -81,9 +79,7 @@ spec:
       - name: githubApiUrl
         type: string
         description:
-          "Pull-Request voting only: The URL to the Github API. see [GitHub
-          plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
-          deprecated: only supported in < 7.2"
+          "Pull-Request only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in < 7.2"
         scope:
           - GENERAL
           - PARAMETERS
