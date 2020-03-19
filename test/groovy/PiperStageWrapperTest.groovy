@@ -1,8 +1,9 @@
 import com.sap.piper.DebugReport
-
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
@@ -16,6 +17,8 @@ import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
 
+    private ExpectedException thrown = ExpectedException.none()
+
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
@@ -26,6 +29,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(thrown)
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
@@ -175,6 +179,17 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
         assertThat(DebugReport.instance.localExtensions.test_old_extension, is('Extends'))
+    }
+
+    @Test
+    void testPipelineResilienceMandatoryStep() {
+        thrown.expectMessage('expected error')
+
+        nullScript.commonPipelineEnvironment.configuration = [general: [failOnError: false]]
+
+        stepRule.step.piperStageWrapper (script: nullScript, stageLocking: false, stageName: 'testStage', juStabUtils: utils) {
+            throw new AbortException('expected error')
+        }
     }
 
     @Test
