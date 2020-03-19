@@ -128,7 +128,7 @@ func nexusUploadMetadata() config.StepData {
 					{
 						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -136,7 +136,7 @@ func nexusUploadMetadata() config.StepData {
 					{
 						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -144,7 +144,7 @@ func nexusUploadMetadata() config.StepData {
 					{
 						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
