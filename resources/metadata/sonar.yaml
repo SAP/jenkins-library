@@ -26,12 +26,16 @@ spec:
       - name: token
         type: string
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
+        aliases:
+          - name: sonarToken
       - name: githubToken
         type: string
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
