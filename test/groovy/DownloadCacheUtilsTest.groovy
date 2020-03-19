@@ -40,6 +40,7 @@ class DownloadCacheUtilsTest extends BasePiperTest{
         nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
         nullScript.env.DL_CACHE_NETWORK = 'cx-network'
         boolean actual = DownloadCacheUtils.isEnabled(nullScript)
+
         assertTrue(actual)
     }
 
@@ -60,7 +61,6 @@ class DownloadCacheUtilsTest extends BasePiperTest{
         helper.registerAllowedMethod('writeFile', [Map.class]) {Map m ->
             writeFileExecuted = true
         }
-
         String expected = '.pipeline/global_settings.xml'
         String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
 
@@ -73,19 +73,14 @@ class DownloadCacheUtilsTest extends BasePiperTest{
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
         String expected = '.pipeline/global_settings.xml'
         String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
-
         assertEquals(expected, actual)
     }
 
     @Test
     void 'getGlobalMavenSettingsForDownloadCache should return empty string if dl cache not active'() {
         String expected = ''
-        helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
-            body()
-        }
         String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
 
         assertEquals(expected, actual)
-
     }
 }
