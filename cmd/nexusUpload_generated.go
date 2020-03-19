@@ -131,7 +131,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -139,7 +139,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
 						Name:        "m2Path",
@@ -147,7 +147,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
 						Name:        "additionalClassifiers",
