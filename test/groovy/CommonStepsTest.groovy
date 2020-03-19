@@ -57,6 +57,7 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
+            'nexusUpload',
         ]
 
         List steps = getSteps().stream()
