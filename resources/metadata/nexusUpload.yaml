@@ -1,5 +1,8 @@
 metadata:
   name: nexusUpload
+  aliases:
+    - name: mavenExecute
+      deprecated: false
   description: Upload artifacts to Nexus
   longDescription: |
     Upload build artifacts to a Nexus Repository Manager

@@ -82,6 +82,10 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 // retrieve step metadata
 func nexusUploadMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "nexusUpload",
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
