@@ -35,16 +35,19 @@ class DownloadCacheUtilsTest extends BasePiperTest{
     @Test
     void writeGlobalMavenSettingsForDownloadCacheShouldWriteFile() {
         //binding.variables.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        binding.setVariable('env', [DL_CACHE_HOSTNAME: 'cx-downloadcache'])
+        Map bind = [DL_CACHE_HOSTNAME: 'cx-downloadcache']
+        binding.variables.env.DL_CACHE_HOSTNAME = 'asd'
+        binding.setProperty('DL_CACHE_HOSTNAME', 'asdasdasd')
+        binding.setVariable('env', bind)
         helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
             body()
         }
         helper.registerAllowedMethod('env', []) { ->
-            return 'cx-downloadcache'
+            return [DL_CACHE_HOSTNAME: 'cx-downloadcache']
         }
 
         String expected = '.pipeline/global_settings.xml'
-        String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
+        String actual = DownloadCacheUtils.isEnabled(nullScript)//getGlobalMavenSettingsForDownloadCache(nullScript)
 
         assertEquals(expected, actual)
     }

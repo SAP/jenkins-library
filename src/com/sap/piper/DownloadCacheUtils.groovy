@@ -1,6 +1,13 @@
 package com.sap.piper
 
+
 class DownloadCacheUtils {
+
+    static boolean isEnabled(Script script) {
+        script.node('master') {
+            return (Boolean.valueOf(script.env.DL_CACHE_NETWORK) && Boolean.valueOf(script.env.DL_CACHE_HOSTNAME))
+        }
+    }
 
     static String getDockerOptions(Script script) {
         script.node('master') {
