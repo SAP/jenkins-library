@@ -66,7 +66,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'"))
-        assertThat(loggingRule.log, containsString("Received response '{ \"access_token\": \"myOAuthToken\" }' with status 200."))
+        assertThat(loggingRule.log, containsString("Received response with status 200 from authentification request."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
     }
 
