@@ -122,6 +122,10 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 // retrieve step metadata
 func xsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "xsDeploy",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
