@@ -18,6 +18,7 @@ stages:
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
+          - 'cloudFoundry/space'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
