@@ -4,14 +4,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
-import util.JenkinsEnvironmentRule
 import util.JenkinsFileExistsRule
 import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
 
 class DownloadCacheUtilsTest extends BasePiperTest{
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -35,7 +32,6 @@ class DownloadCacheUtilsTest extends BasePiperTest{
 
     }
 
-
     @Test
     void writeGlobalMavenSettingsForDownloadCacheShouldWriteFile() {
         //binding.variables.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
@@ -43,9 +39,12 @@ class DownloadCacheUtilsTest extends BasePiperTest{
         helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
             body()
         }
+        helper.registerAllowedMethod('env', []) { ->
+            return 'cx-downloadcache'
+        }
 
         String expected = '.pipeline/global_settings.xml'
-        String actual = DownloadCacheUtils.writeGlobalMavenSettingsForDownloadCache(nullScript)
+        String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
 
         assertEquals(expected, actual)
     }
@@ -53,10 +52,21 @@ class DownloadCacheUtilsTest extends BasePiperTest{
     @Test
     void writeGlobalMavenSettingsForDownloadCacheShouldNotWriteFile() {
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
+        String expected = '.pipeline/global_settings.xml'
+        String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
+
+        assertEquals(expected, actual)
     }
 
     @Test
     void writeGlobalMavenSettingsForDownloadCacheShouldReturnEmptyStringOnNoDlCache() {
+        String expected = ''
+        helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
+            body()
+        }
+        String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
+
+        assertEquals(expected, actual)
 
     }
 }

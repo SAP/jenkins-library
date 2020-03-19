@@ -12,7 +12,7 @@ class DownloadCacheUtils {
         }
     }
 
-    static String writeGlobalMavenSettingsForDownloadCache(Script script) {
+    static String getGlobalMavenSettingsForDownloadCache(Script script) {
         String globalSettingsFilePath = '.pipeline/global_settings.xml'
         if (script.fileExists(globalSettingsFilePath)) {
             return globalSettingsFilePath
