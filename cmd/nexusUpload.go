@@ -67,8 +67,6 @@ func (u *utilsBundle) fileRemove(path string) {
 	err := os.Remove(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to remove file '%s'.", path)
-	} else {
-		log.Entry().Infof("Remove file '%s'", path)
 	}
 }
 
@@ -108,7 +106,6 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 }
 
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	log.Entry().Infof("nexusUpload options: %v", options)
 	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
 	if err != nil {
 		return err
