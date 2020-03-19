@@ -9,6 +9,7 @@ import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 class DownloadCacheUtilsTest extends BasePiperTest{
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -29,31 +30,46 @@ class DownloadCacheUtilsTest extends BasePiperTest{
             }
             return ''
         })
-
-    }
-
-    @Test
-    void writeGlobalMavenSettingsForDownloadCacheShouldWriteFile() {
-        //binding.variables.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        Map bind = [DL_CACHE_HOSTNAME: 'cx-downloadcache']
-        binding.variables.env.DL_CACHE_HOSTNAME = 'asd'
-        binding.setProperty('DL_CACHE_HOSTNAME', 'asdasdasd')
-        binding.setVariable('env', bind)
         helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
             body()
         }
-        helper.registerAllowedMethod('env', []) { ->
-            return [DL_CACHE_HOSTNAME: 'cx-downloadcache']
-        }
+    }
 
-        String expected = '.pipeline/global_settings.xml'
-        String actual = DownloadCacheUtils.isEnabled(nullScript)//getGlobalMavenSettingsForDownloadCache(nullScript)
+    @Test
+    void 'isEnabled should return true if dl cache is enabled'() {
+        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        boolean actual = DownloadCacheUtils.isEnabled(nullScript)
+        assertTrue(actual)
+    }
+
+    @Test
+    void 'getDockerOptions should return docker network if configured'() {
+        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        String expected = ' --network=cx-network'
+        String actual = DownloadCacheUtils.getDockerOptions(nullScript)
 
         assertEquals(expected, actual)
     }
 
     @Test
-    void writeGlobalMavenSettingsForDownloadCacheShouldNotWriteFile() {
+    void 'getGlobalMavenSettingsForDownloadCache should write file'() {
+        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        boolean writeFileExecuted = false
+
+        helper.registerAllowedMethod('writeFile', [Map.class]) {Map m ->
+            writeFileExecuted = true
+        }
+
+        String expected = '.pipeline/global_settings.xml'
+        String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
+
+        assertEquals(expected, actual)
+        assertTrue(writeFileExecuted)
+    }
+
+    @Test
+    void 'getGlobalMavenSettingsForDownloadCache should return filePath if file already exists'() {
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
         String expected = '.pipeline/global_settings.xml'
         String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
@@ -62,7 +78,7 @@ class DownloadCacheUtilsTest extends BasePiperTest{
     }
 
     @Test
-    void writeGlobalMavenSettingsForDownloadCacheShouldReturnEmptyStringOnNoDlCache() {
+    void 'getGlobalMavenSettingsForDownloadCache should return empty string if dl cache not active'() {
         String expected = ''
         helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
             body()
