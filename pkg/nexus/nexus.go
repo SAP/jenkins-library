@@ -91,12 +91,12 @@ func (nexusUpload *Upload) GetArtifactsVersion() string {
 	return nexusUpload.version
 }
 
-// GetGroupID returns the common version for all artifacts.
+// GetGroupID returns the common groupId for all artifacts.
 func (nexusUpload *Upload) GetGroupID() string {
 	return nexusUpload.groupID
 }
 
-// GetArtifactsID returns the common version for all artifacts.
+// GetArtifactsID returns the common artifactId for all artifacts.
 func (nexusUpload *Upload) GetArtifactsID() string {
 	return nexusUpload.artifactID
 }
