@@ -77,6 +77,10 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 // retrieve step metadata
 func mavenExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "mavenExecute",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
