@@ -15,6 +15,8 @@ class TransportManagementServiceTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt'])
 
     @Rule
     public RuleChain rules = Rules
@@ -23,7 +25,8 @@ class TransportManagementServiceTest extends BasePiperTest {
         .around(new JenkinsReadJsonRule(this))
         .around(shellRule)
         .around(loggingRule)
-        .around(new JenkinsReadFileRule(this, 'test/resources/TransportManagementService'))
+        .around(readFileRule)
+        .around(fileExistsRule)
         .around(thrown)
 
     @Test
@@ -90,7 +93,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(responseDetails, hasEntry("fileId", 1234))
     }
 
-    @Ignore
+    @Test
     void uploadFile__withHttpErrorResponse__throwsError() {
 
         def url = 'http://dummy.com/oauth'
@@ -100,9 +103,12 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", {throw new AbortException()})
 
-        thrown.expect(AbortException.class)
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload']
 
-        def tms = new TransportManagementService(nullScript, [:])
+        thrown.expect(AbortException.class)
+        loggingRule.expect('Something went wrong during file upload')
+
+        def tms = new TransportManagementService(nullScript, [verbose:true])
         tms.uploadFile(url, token, file, namedUser)
 
     }

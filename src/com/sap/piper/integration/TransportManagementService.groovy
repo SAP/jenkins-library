@@ -68,20 +68,35 @@ class TransportManagementService implements Serializable {
 
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
-        script.sh """#!/bin/sh -e
-                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
+        def responseFileUpload = 'responseFileUpload.txt'
+
+        def responseContent
+
+        try {
+            script.sh """#!/bin/sh -e
+                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o ${responseFileUpload}  --fail '${url}/v2/files/upload'
             """
 
-        def responseContent = script.readFile("responseFileUpload.txt")
+            echo("File upload successful.")
 
-        if (config.verbose) {
-            echo("${responseContent}")
+        } catch (Exception e) {
+            echo("Exception caught during file upload. Consider re-run in verbose mode in order to get more details.")
+            throw e
+        } finally {
+
+            if (script.fileExists(responseFileUpload)) {
+                responseContent = script.readFile(responseFileUpload)
+
+                if (config.verbose) {
+                    echo("Upload file response: ${responseContent}")
+                }
+            }
         }
-
-        echo("File upload successful.")
-
+        if (! responseContent) {
+            // should no happen. Instead there should be an exception thrown by the sh step
+            error "Cannot provide upload file response."
+        }
         return jsonUtils.jsonStringToGroovyObject(responseContent)
-
     }
 
 
