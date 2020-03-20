@@ -9,9 +9,10 @@ import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
 
-class DownloadCacheUtilsTest extends BasePiperTest{
+class DownloadCacheUtilsTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
@@ -30,7 +31,7 @@ class DownloadCacheUtilsTest extends BasePiperTest{
             }
             return ''
         })
-        helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
+        helper.registerAllowedMethod('node', [String.class, Closure.class]) { s, body ->
             body()
         }
     }
@@ -58,7 +59,7 @@ class DownloadCacheUtilsTest extends BasePiperTest{
         nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
         boolean writeFileExecuted = false
 
-        helper.registerAllowedMethod('writeFile', [Map.class]) {Map m ->
+        helper.registerAllowedMethod('writeFile', [Map.class]) { Map m ->
             writeFileExecuted = true
         }
         String expected = '.pipeline/global_settings.xml'
@@ -71,8 +72,15 @@ class DownloadCacheUtilsTest extends BasePiperTest{
     @Test
     void 'getGlobalMavenSettingsForDownloadCache should return filePath if file already exists'() {
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
+        boolean writeFileExecuted = false
+
+        helper.registerAllowedMethod('writeFile', [Map.class]) { Map m ->
+            writeFileExecuted = true
+        }
+
         String expected = '.pipeline/global_settings.xml'
         String actual = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(nullScript)
+        assertFalse(writeFileExecuted)
         assertEquals(expected, actual)
     }
 
