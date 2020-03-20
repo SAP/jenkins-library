@@ -464,8 +464,8 @@ def deployCfNative(config) {
         config.cloudFoundry.appName,
         config.deployOptions,
         config.cloudFoundry.manifest ? "-f '${config.cloudFoundry.manifest}'" : null,
-        config.deployDockerImage ? "--docker-image ${config.deployDockerImage}" : null,
-        config.dockerUsername ? "--docker-username ${dockerUsername}" : null,
+        config.deployDockerImage && config.deployType != 'blue-green' ? "--docker-image ${config.deployDockerImage}" : null,
+        config.dockerUsername && config.deployType != 'blue-green' ? "--docker-username ${dockerUsername}" : null,
         config.smokeTest,
         config.cfNativeDeployParameters
     ].findAll { s -> s != null && s != '' }.join(" ")

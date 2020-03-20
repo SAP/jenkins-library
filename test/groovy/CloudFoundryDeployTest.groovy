@@ -318,6 +318,39 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testCfNativeBlueGreenWithManifestAndDockerCredentials() {
+        // Blue Green Deploy cf cli plugin does not support --docker-username and --docker-image parameters
+        // docker username and docker image have to be set in the manifest file
+        // if a private docker repository is used the CF_DOCKER_PASSWORD env variable must be set
+
+        credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            dockerCredentialsId: 'test_cfDockerCredentialsId',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                credentialsId: 'test_cfCredentialsId',
+                appName: 'testAppName',
+                manifest: 'manifest.yml'
+            ]
+        ])
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'manifest.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
     void testCfNativeAppNameFromManifest() {
         fileExistsRule.registerExistingFile('test.yml')
         readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
