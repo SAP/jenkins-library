@@ -26,22 +26,16 @@ spec:
       - name: token
         type: string
         scope:
-          - GENERAL
           - PARAMETERS
-          - STAGES
-          - STEPS
         aliases:
           - name: sonarToken
       - name: githubToken
         type: string
         scope:
-          - GENERAL
           - PARAMETERS
-          - STAGES
-          - STEPS
       - name: disableInlineComments
         type: bool
-        description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in < 7.2"
+        description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2"
         scope:
           - PARAMETERS
           - STAGES
@@ -49,7 +43,7 @@ spec:
       - name: legacyPRHandling
         type: bool
         description:
-          "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in < 7.2"
+          "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in SonarQube < 7.2"
         scope:
           - PARAMETERS
           - STAGES
@@ -83,7 +77,7 @@ spec:
       - name: githubApiUrl
         type: string
         description:
-          "Pull-Request only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in < 7.2"
+          "Pull-Request only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in SonarQube < 7.2"
         scope:
           - GENERAL
           - PARAMETERS
@@ -107,7 +101,7 @@ spec:
         default: []
       - name: customTlsCertificateLinks
         type: string
-        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+        description: List containing comma-separated download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
         scope:
           - PARAMETERS
           - STAGES
