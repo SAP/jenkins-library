@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/ghodss/yaml"
@@ -134,12 +135,15 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
-		switch err.(type) {
-		case *ParseError:
-			return StepConfig{}, errors.Wrap(err, "failed to parse pipeline default configuration")
-		default:
-			//ignoring unavailability of defaults since considered optional
-		}
+		return StepConfig{}, errors.Wrap(err, "failed to read default configuration")
+		/*
+			switch err.(type) {
+			case *ParseError:
+				return StepConfig{}, errors.Wrap(err, "failed to parse pipeline default configuration")
+			default:
+				//ignoring unavailability of defaults since considered optional
+			}
+		*/
 	}
 
 	// initialize with defaults from step.yaml
@@ -229,11 +233,14 @@ func GetJSON(data interface{}) (string, error) {
 
 // OpenPiperFile provides functionality to retrieve configuration via file or http
 func OpenPiperFile(name string) (io.ReadCloser, error) {
-	//ToDo: support also https as source
 	if !strings.HasPrefix(name, "http") {
 		return os.Open(name)
 	}
-	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
+
+	// support http(s) urls next to file path - url cannot be protected
+	client := http.Client{}
+	response, err := client.SendRequest("GET", name, nil, nil, nil)
+	return response.Body, err
 }
 
 func envValues(filter []string) map[string]interface{} {

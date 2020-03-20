@@ -123,9 +123,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
-			//ToDo: support also https as source
-			fc, _ := openFile(f)
-			defaultConfig = append(defaultConfig, fc)
+			fc, err := openFile(f)
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
+			}
 		}
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
