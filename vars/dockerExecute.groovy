@@ -48,10 +48,12 @@ import groovy.transform.Field
      */
     'dockerName',
     /**
+     * Docker only:
      * Docker options to be set when starting the container (List or String).
      */
     'dockerOptions',
     /**
+     * Docker only:
      * Volumes that should be mounted into the container.
      */
     'dockerVolumeBind',
