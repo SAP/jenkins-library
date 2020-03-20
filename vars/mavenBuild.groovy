@@ -1,3 +1,4 @@
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -6,5 +7,6 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     List credentials = [ ]
+    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(parameters)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
