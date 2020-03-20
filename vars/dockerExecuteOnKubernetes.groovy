@@ -108,14 +108,7 @@ import hudson.AbortException
      * as `dockerWorkspace` for the sidecar container
      */
     'sidecarWorkspace',
-    /**
-     * as `dockerVolumeBind` for the sidecar container
-     */
-    'sidecarVolumeBind',
-    /**
-     * as `dockerOptions` for the sidecar container
-     */
-    'sidecarOptions',
+
     /** Defines the Kubernetes nodeSelector as per [https://github.com/jenkinsci/kubernetes-plugin](https://github.com/jenkinsci/kubernetes-plugin).*/
     'nodeSelector',
     /**
@@ -361,7 +354,7 @@ private List getContainerList(config) {
             name           : containerName.toLowerCase(),
             image          : imageName,
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
-            env            : getContainerEnvs(config, imageName)
+            env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
 
         def configuredCommand = config.containerCommands?.get(imageName)
@@ -403,7 +396,7 @@ private List getContainerList(config) {
             name           : config.sidecarName.toLowerCase(),
             image          : config.sidecarImage,
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
-            env            : getContainerEnvs(config, config.sidecarImage),
+            env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
 
@@ -419,10 +412,10 @@ private List getContainerList(config) {
  * @param config Map with configurations
  */
 
-private List getContainerEnvs(config, imageName) {
+private List getContainerEnvs(config, imageName, defaultEnvVars, defaultConfig) {
     def containerEnv = []
-    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
-    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
+    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: defaultEnvVars ?: [:]
+    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : defaultConfig ?: ''
 
     def envVar = { e ->
         [name: e.key, value: e.value]
