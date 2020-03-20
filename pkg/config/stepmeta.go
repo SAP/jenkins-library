@@ -21,9 +21,10 @@ type StepData struct {
 
 // StepMetadata defines the metadata for a step, like step descriptions, parameters, ...
 type StepMetadata struct {
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	LongDescription string `json:"longDescription,omitempty"`
+	Name            string  `json:"name"`
+	Aliases         []Alias `json:"aliases,omitempty"`
+	Description     string  `json:"description"`
+	LongDescription string  `json:"longDescription,omitempty"`
 }
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...
