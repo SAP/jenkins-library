@@ -199,7 +199,7 @@ void runPiperGoStep(Script step, Map parameters){
 
 
         script.commonPipelineEnvironment.writeToDisk(script)
-        writeFile(file: "${step.METADATA_FOLDER}/${step.METADATA_FILE}", text: step.libraryResource(METADATA_FILE))
+        writeFile(file: "${step.METADATA_FOLDER}/${step.METADATA_FILE}", text: step.libraryResource(step.METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -207,7 +207,11 @@ void runPiperGoStep(Script step, Map parameters){
             // get context configuration
             Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${step.METADATA_FOLDER}/${step.METADATA_FILE}'"))
 
-            step.dockerExecute([script: script].plus([dockerImage: contextConfig.dockerImage])) {
+            step.dockerExecute([script: script].plus([
+                dockerImage: contextConfig.dockerImage,
+                dockerOptions: contextConfig.dockerOptions,
+                dockerWorkspace: contextConfig.dockerWorkspace,
+            ])) {
                 sh "./piper ${step.GO_COMMAND}"
             }
         }
