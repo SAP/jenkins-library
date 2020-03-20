@@ -18,22 +18,30 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	timeout   time.Duration
-	username  string
-	password  string
-	token     string
-	logger    *logrus.Entry
-	cookieJar http.CookieJar
+	maxRequestDuration time.Duration
+	transportTimeout   time.Duration
+	username           string
+	password           string
+	token              string
+	logger             *logrus.Entry
+	cookieJar          http.CookieJar
 }
 
 // ClientOptions defines the options to be set on the client
 type ClientOptions struct {
-	Timeout   time.Duration
-	Username  string
-	Password  string
-	Token     string
-	Logger    *logrus.Entry
-	CookieJar http.CookieJar
+	// MaxRequestDuration has a default value of "0", meaning "no maximum
+	// request duration". If it is greater than 0, an overall, hard timeout
+	// for the request will be enforced. This should only be used if the
+	// length of the request bodies is known.
+	MaxRequestDuration time.Duration
+	// TransportTimeout defaults to 10 seconds, if not specified. It is
+	// used for the transport layer and duration of handshakes and such.
+	TransportTimeout time.Duration
+	Username         string
+	Password         string
+	Token            string
+	Logger           *logrus.Entry
+	CookieJar        http.CookieJar
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -44,10 +52,9 @@ type Sender interface {
 
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
-	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	Sender
 	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-	SetOptions(options ClientOptions)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
@@ -124,7 +131,8 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 // SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
-	c.timeout = options.Timeout
+	c.transportTimeout = options.TransportTimeout
+	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
@@ -141,20 +149,29 @@ func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
+	responseHeaderTimeout := 10 * time.Second
+	if c.transportTimeout < responseHeaderTimeout {
+		responseHeaderTimeout = c.transportTimeout
+	}
+	expectContinueTimeout := 1 * time.Second
+	if c.transportTimeout < expectContinueTimeout {
+		expectContinueTimeout = c.transportTimeout
+	}
 	var transport = &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout: c.timeout,
+			Timeout: c.transportTimeout,
 		}).DialContext,
-		ResponseHeaderTimeout: 10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSHandshakeTimeout:   c.timeout,
+		ResponseHeaderTimeout: responseHeaderTimeout,
+		ExpectContinueTimeout: expectContinueTimeout,
+		TLSHandshakeTimeout:   c.transportTimeout,
 	}
 
 	var httpClient = &http.Client{
+		Timeout:   c.maxRequestDuration,
 		Transport: transport,
 		Jar:       c.cookieJar,
 	}
-	c.logger.Debugf("Timeout set to %v", c.timeout)
+	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
 	return httpClient
 }
@@ -213,8 +230,8 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 }
 
 func (c *Client) applyDefaults() {
-	if c.timeout == 0 {
-		c.timeout = time.Second * 10
+	if c.transportTimeout == 0 {
+		c.transportTimeout = time.Second * 10
 	}
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
