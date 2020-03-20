@@ -67,6 +67,7 @@ class DownloadCacheUtilsTest extends BasePiperTest {
     @Test
     void 'getGlobalMavenSettingsForDownloadCache should return filePath if file already exists'() {
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
+        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
         boolean writeFileExecuted = false
 
         helper.registerAllowedMethod('writeFile', [Map.class]) { Map m ->
