@@ -324,7 +324,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // if a private docker repository is used the CF_DOCKER_PASSWORD env variable must be set
 
         credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
-        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        readYamlRule.registerYaml('manifest.yml', "applications: [[name: 'manifestAppName']]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
             data = parameters.data
