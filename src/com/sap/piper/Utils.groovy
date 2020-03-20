@@ -7,8 +7,6 @@ import groovy.text.GStringTemplateEngine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
-import static com.sap.piper.Prerequisites.checkScript
-
 
 def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"
@@ -174,46 +172,4 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
             "missing property or invalid expression '${pomPathExpression}'.")
     }
     return resolvedExpression
-}
-
-void runPiperGoStep(Script step, Map parameters){
-
-    step.handlePipelineStepErrors(stepName: step.STEP_NAME, stepParameters: parameters) {
-
-        final script = checkScript(this, parameters) ?: null
-
-        if (!script) {
-            step.error "Reference to surrounding pipeline script not provided (script: this)."
-        }
-
-        new PiperGoUtils(step, this).unstashPiperBin()
-
-        // Make a shallow copy of the passed-in Map in order to prevent removal of top-level keys
-        // to be visible in calling code, just in case the map is still used there.
-        parameters = [:] << parameters
-
-        // do not forward these parameters to the go layer
-        parameters.remove('juStabUtils')
-        parameters.remove('piperGoUtils')
-        parameters.remove('script')
-
-
-        script.commonPipelineEnvironment.writeToDisk(script)
-        writeFile(file: "${step.METADATA_FOLDER}/${step.METADATA_FILE}", text: step.libraryResource(step.METADATA_FILE))
-
-        withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-        ]) {
-            // get context configuration
-            Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${step.METADATA_FOLDER}/${step.METADATA_FILE}'"))
-
-            step.dockerExecute([script: script].plus([
-                dockerImage: contextConfig.dockerImage,
-                dockerOptions: contextConfig.dockerOptions,
-                dockerWorkspace: contextConfig.dockerWorkspace,
-            ])) {
-                sh "./piper ${step.GO_COMMAND}"
-            }
-        }
-    }
 }
