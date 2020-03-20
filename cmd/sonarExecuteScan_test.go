@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//TODO: extract to mock package
 type mockDownloader struct {
 	shouldFail    bool
 	requestedURL  []string
