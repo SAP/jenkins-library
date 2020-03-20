@@ -99,6 +99,26 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.environment, "SONAR_AUTH_TOKEN=secret-ABC")
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
 	})
+	t.Run("with custom options", func(t *testing.T) {
+		// init
+		sonar = sonarSettings{
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			Options: "-Dsonar.projectKey=piper",
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+		defer func() {
+			fileUtilsExists = FileUtils.FileExists
+		}()
+		// test
+		err := runSonar(options, &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
+	})
 }
 
 func TestSonarHandlePullRequest(t *testing.T) {
