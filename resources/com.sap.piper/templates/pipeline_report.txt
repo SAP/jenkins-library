@@ -10,11 +10,11 @@ It belongs to the artifact/project with the following identifier: $projectIdenti
 1. Continuous Delivery Pipeline
 
 Relevant for Requirements:
-      - CP-SWLC-04: Capability to Quickly Deliver Urgent Corrections
-      - CP-CD-04: Continuous Integration applied
-      - CP-CD-06: Deployment Pipeline used
-      - CQP-CLI-4: Provisioning Tools
-      - CQP-OPE-1: Software Lifecycle Automation
+    - CP-SWLC-04: Capability to Quickly Deliver Urgent Corrections
+    - CP-CD-04: Continuous Integration applied
+    - CP-CD-06: Deployment Pipeline used
+    - CQP-CLI-4: Provisioning Tools
+    - CQP-OPE-1: Software Lifecycle Automation
 
 The projects uses a build pipeline. The following checks were executed successfully during the pipeline run:
 
@@ -46,18 +46,18 @@ The following Security Scanners were executed during the pipeline build:
 4. Resilience Check
 
 Relevant for Requirements:
-      - CP-PERF-02: Communication (Resilience)
-      - CQC-SRV-5: Resilience
+    - CP-PERF-02: Communication (Resilience)
+    - CQC-SRV-5: Resilience
 
 <% print resilienceChecked? "The pipeline checked during the test execution that all calls to 3rd party systems were wrapped with Hystrix." : "There were no checks for resilience." %>
 
 5. Performance Tests
 
 Relevant for Requirements:
-      - CP-OP-15: Scalability
-      - CP-OP-16: Elasticity
-      - CQC-PRF-1: Performance Tests
-      - CQC-PRF-2: E2E Processing Time
+    - CP-OP-15: Scalability
+    - CP-OP-16: Elasticity
+    - CQC-PRF-1: Performance Tests
+    - CQC-PRF-2: E2E Processing Time
 
 <% print performanceTestsExecutions ?"The following performance tests were executed:" :"No performance tests were executed in the pipeline." %>
 <% print performanceTestsExecutions.collect({each -> "  - ${each}"}).join("\n") %>
@@ -80,8 +80,8 @@ else {
 7.  Test Automation
 
 Relevant for Requirements:
-      - CP-CD-05: Test Automation
-      - CQP-OPE-7: Test Automation
+    - CP-CD-05: Test Automation
+    - CQP-OPE-7: Test Automation
 
 The pipeline executed the following kinds of tests:
 <% print testsExecutions.collect({each -> "  - ${each}"}).join("\n") %>
@@ -121,7 +121,7 @@ Relevant for Requirements:
 9. Zero Downtime Deployment
 
 Relevant for Requirements:
-      - CP-PERF-03: Zero Downtime
-      - CQC-PRF-4: Zero Downtime
+    - CP-PERF-03: Zero Downtime
+    - CQC-PRF-4: Zero Downtime
 
 <% print deploymentExecuted? "The pipeline used a zero-downtime approach to deploy productively." : "The pipeline did not execute a deployment." %>
