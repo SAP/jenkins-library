@@ -86,6 +86,10 @@ func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runn
 		Debug("Executing sonar scan command")
 
 	sonar.options = SliceUtils.Prefix(sonar.options, "-D")
+
+	if len(options.Options) > 0 {
+		sonar.addOption(options.Options)
+	}
 	runner.SetEnv(sonar.environment)
 	return runner.RunExecutable(sonar.binary, sonar.options...)
 }
