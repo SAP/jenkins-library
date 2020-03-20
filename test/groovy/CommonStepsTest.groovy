@@ -58,6 +58,8 @@ public class CommonStepsTest extends BasePiperTest{
             'setupCommonPipelineEnvironment',
             'buildSetResult',
             'nexusUpload',
+            'mavenBuild',
+            'mavenExecuteStaticCodeChecks'
         ]
 
         List steps = getSteps().stream()
