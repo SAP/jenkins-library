@@ -136,14 +136,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
 		return StepConfig{}, errors.Wrap(err, "failed to read default configuration")
-		/*
-			switch err.(type) {
-			case *ParseError:
-				return StepConfig{}, errors.Wrap(err, "failed to parse pipeline default configuration")
-			default:
-				//ignoring unavailability of defaults since considered optional
-			}
-		*/
 	}
 
 	// initialize with defaults from step.yaml
