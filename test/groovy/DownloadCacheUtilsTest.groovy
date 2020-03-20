@@ -5,21 +5,16 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
-import util.JenkinsShellCallRule
 import util.Rules
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertTrue
+import static org.junit.Assert.*
 
 class DownloadCacheUtilsTest extends BasePiperTest {
-    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(shellRule)
         .around(fileExistsRule)
 
     @Before
