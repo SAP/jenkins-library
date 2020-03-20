@@ -9,5 +9,5 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     def utils = parameters.juStabUtils ?: new Utils()
-    utils.runPiperGoStep(this, parameters)
+    utils.runGoStepWithDocker(this, parameters)
 }

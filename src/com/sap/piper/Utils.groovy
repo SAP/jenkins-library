@@ -176,17 +176,16 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
     return resolvedExpression
 }
 
-void runPiperGoStep(Script step, Map parameters){
+void runGoStepWithDocker(Script step, Map parameters){
 
-    step.handlePipelineStepErrors(stepName: step.STEP_NAME, stepParameters: parameters) {
+    final script = checkScript(this, parameters) ?: null
+    if (!script) {
+        step.error "Reference to surrounding pipeline script not provided (script: this)."
+    }
 
-        final script = checkScript(this, parameters) ?: null
+    script.handlePipelineStepErrors(stepName: step.STEP_NAME, stepParameters: parameters) {
 
-        if (!script) {
-            step.error "Reference to surrounding pipeline script not provided (script: this)."
-        }
-
-        new PiperGoUtils(step, this).unstashPiperBin()
+        new PiperGoUtils(script, this).unstashPiperBin()
 
         // Make a shallow copy of the passed-in Map in order to prevent removal of top-level keys
         // to be visible in calling code, just in case the map is still used there.
@@ -199,15 +198,15 @@ void runPiperGoStep(Script step, Map parameters){
 
 
         script.commonPipelineEnvironment.writeToDisk(script)
-        writeFile(file: "${step.METADATA_FOLDER}/${step.METADATA_FILE}", text: step.libraryResource(step.METADATA_FILE))
+        script.writeFile(file: "${step.METADATA_FOLDER}/${step.METADATA_FILE}", text: script.libraryResource(step.METADATA_FILE))
 
-        withEnv([
+        script.withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
             // get context configuration
-            Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${step.METADATA_FOLDER}/${step.METADATA_FILE}'"))
+            Map contextConfig = script.readJSON(text: script.sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${step.METADATA_FOLDER}/${step.METADATA_FILE}'"))
 
-            step.dockerExecute([script: script].plus([
+            script.dockerExecute([script: script].plus([
                 dockerImage: contextConfig.dockerImage,
                 dockerOptions: contextConfig.dockerOptions,
                 dockerWorkspace: contextConfig.dockerWorkspace,
