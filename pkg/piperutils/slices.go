@@ -15,13 +15,19 @@ func ContainsInt(s []int, e int) bool {
 }
 
 //Prefix adds a prefix to each element of the slice
-func Prefix(slice []string, prefix string) []string {
-	for idx, element := range slice {
-		element = strings.TrimSpace(element)
-		if !strings.HasPrefix(element, prefix) {
-			element = prefix + element
-		}
-		slice[idx] = element
+func Prefix(in []string, prefix string) (out []string) {
+	for _, element := range in {
+		out = append(out, prefix+element)
 	}
-	return slice
+	return
+}
+
+//Trim removes dangling whitespaces from each element of the slice, empty elements are dropped
+func Trim(in []string) (out []string) {
+	for _, element := range in {
+		if trimmed := strings.TrimSpace(element); len(trimmed) > 0 {
+			out = append(out, trimmed)
+		}
+	}
+	return
 }

@@ -85,7 +85,7 @@ func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runn
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
 
-	sonar.options = SliceUtils.Prefix(sonar.options, "-D")
+	sonar.options = SliceUtils.Prefix(SliceUtils.Trim(sonar.options), "-D")
 
 	if len(options.Options) > 0 {
 		sonar.addOption(options.Options)

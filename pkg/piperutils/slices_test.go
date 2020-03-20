@@ -19,11 +19,24 @@ func TestContainsInt(t *testing.T) {
 
 func TestPrefix(t *testing.T) {
 	// init
-	s := []string{"tree", "pie", "juice"}
+	s := []string{"tree", "pie", "applejuice"}
 	// test
 	s = Prefix(s, "apple")
 	// assert
 	assert.Contains(t, s, "appletree")
-	assert.Contains(t, s, "applejuice")
 	assert.Contains(t, s, "applepie")
+	assert.Contains(t, s, "appleapplejuice")
+}
+
+func TestTrim(t *testing.T) {
+	// init
+	s := []string{" orange", "banana ", "	apple", "mango	", " ", ""}
+	// test
+	s = Trim(s)
+	// assert
+	assert.Equal(t, 4, len(s))
+	assert.Contains(t, s, "orange")
+	assert.Contains(t, s, "banana")
+	assert.Contains(t, s, "apple")
+	assert.Contains(t, s, "mango")
 }
