@@ -30,9 +30,7 @@ func (m *mockDownloader) DownloadFile(url, filename string, header http.Header, 
 	return nil
 }
 
-func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {
-	return
-}
+func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {}
 
 func mockFileUtilsExists(exists bool) func(string) (bool, error) {
 	return func(filename string) (bool, error) {
