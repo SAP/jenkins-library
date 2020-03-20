@@ -1,5 +1,8 @@
 metadata:
-  name: mavenStaticCodeChecks
+  name: mavenExecuteStaticCodeChecks
+  aliases:
+    - name: mavenExecute
+      deprecated: false
   description: Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
   longDescription: |
     Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
@@ -68,4 +71,56 @@ spec:
           - STAGES
           - STEPS
         aliases:
-          - name: pmd/rulesSets
+          - name: pmd/ruleSets
+
+      # Global maven settings, should be added to all maven steps
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/m2Path
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        mandatory: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
+
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

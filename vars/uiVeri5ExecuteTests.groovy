@@ -40,6 +40,8 @@ import static com.sap.piper.Prerequisites.checkScript
      * The host of the selenium hub, this is set automatically to `localhost` in a Kubernetes environment (determined by the `ON_K8S` environment variable) of to `selenium` in any other case. The value is only needed for the `runCommand`.
      */
     'seleniumHost',
+    /** @see seleniumExecuteTests */
+    'seleniumHubCredentialsId',
     /**
      * The port of the selenium hub. The value is only needed for the `runCommand`.
      */
@@ -118,6 +120,7 @@ void call(Map parameters = [:]) {
             dockerImage: config.dockerImage,
             dockerName: config.dockerName,
             dockerWorkspace: config.dockerWorkspace,
+            seleniumHubCredentialsId: config.seleniumHubCredentialsId,
             sidecarEnvVars: config.sidecarEnvVars,
             sidecarImage: config.sidecarImage,
             stashContent: config.stashContent

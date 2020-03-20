@@ -43,6 +43,8 @@ import groovy.transform.Field
     'modules',
     /** The command that is executed to start the tests. */
     'runCommand',
+    /** @see seleniumExecuteTests */
+    'seleniumHubCredentialsId',
     /** A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`. */
     'sidecarEnvVars',
     /** The name of the docker image of the sidecar container. If empty, no sidecar container is started. */
@@ -99,6 +101,7 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
             failOnError: config.failOnError,
+            seleniumHubCredentialsId: config.seleniumHubCredentialsId,
             sidecarEnvVars: config.sidecarEnvVars,
             sidecarImage: config.sidecarImage,
             sidecarName: config.sidecarName,

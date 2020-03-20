@@ -13,33 +13,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type mavenExecuteOptions struct {
-	PomPath                     string   `json:"pomPath,omitempty"`
-	Goals                       []string `json:"goals,omitempty"`
-	Defines                     []string `json:"defines,omitempty"`
-	Flags                       []string `json:"flags,omitempty"`
-	ReturnStdout                bool     `json:"returnStdout,omitempty"`
-	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
-	M2Path                      string   `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+type mavenBuildOptions struct {
+	PomPath                     string `json:"pomPath,omitempty"`
+	Flatten                     bool   `json:"flatten,omitempty"`
+	Verify                      bool   `json:"verify,omitempty"`
+	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
+	M2Path                      string `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
-// MavenExecuteCommand This step allows to run maven commands
-func MavenExecuteCommand() *cobra.Command {
-	metadata := mavenExecuteMetadata()
-	var stepConfig mavenExecuteOptions
+// MavenBuildCommand This step will install the maven project into the local maven repository.
+func MavenBuildCommand() *cobra.Command {
+	metadata := mavenBuildMetadata()
+	var stepConfig mavenBuildOptions
 	var startTime time.Time
 
-	var createMavenExecuteCmd = &cobra.Command{
-		Use:   "mavenExecute",
-		Short: "This step allows to run maven commands",
-		Long:  `This step runs a maven command based on the parameters provided to the step.`,
+	var createMavenBuildCmd = &cobra.Command{
+		Use:   "mavenBuild",
+		Short: "This step will install the maven project into the local maven repository.",
+		Long: `This step will install the maven project into the local maven repository.
+It will also prepare jacoco to record the code coverage and
+supports ci friendly versioning by flattening the pom before installing.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenExecute")
+			log.SetStepName("mavenBuild")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecute", &stepConfig, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "mavenBuild", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -50,36 +50,33 @@ func MavenExecuteCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenExecute")
-			mavenExecute(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenBuild")
+			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addMavenExecuteFlags(createMavenExecuteCmd, &stepConfig)
-	return createMavenExecuteCmd
+	addMavenBuildFlags(createMavenBuildCmd, &stepConfig)
+	return createMavenBuildCmd
 }
 
-func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
-	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", os.Getenv("PIPER_pomPath"), "Path to the pom file that should be used.")
-	cmd.Flags().StringSliceVar(&stepConfig.Goals, "goals", []string{}, "Maven goals that should be executed.")
-	cmd.Flags().StringSliceVar(&stepConfig.Defines, "defines", []string{}, "Additional properties in form of -Dkey=value.")
-	cmd.Flags().StringSliceVar(&stepConfig.Flags, "flags", []string{}, "Flags to provide when running mvn.")
-	cmd.Flags().BoolVar(&stepConfig.ReturnStdout, "returnStdout", false, "Returns the output of the maven command for further processing.")
+func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children.")
+	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
+	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 
-	cmd.MarkFlagRequired("goals")
 }
 
 // retrieve step metadata
-func mavenExecuteMetadata() config.StepData {
+func mavenBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecute",
-			Aliases: []config.Alias{},
+			Name:    "mavenBuild",
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -93,31 +90,15 @@ func mavenExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "goals",
+						Name:        "flatten",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
-						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "defines",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "[]string",
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "flags",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "returnStdout",
+						Name:        "verify",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
