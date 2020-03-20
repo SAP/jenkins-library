@@ -25,6 +25,10 @@ type sonarSettings struct {
 	options     []string
 }
 
+func (s *sonarSettings) addEnvironment(element string) { s.environment = append(s.environment, element) }
+
+func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
+
 var sonar sonarSettings
 
 var execLookPath = exec.LookPath
@@ -54,16 +58,16 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 
 func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
 	if len(options.Host) > 0 {
-		sonar.environment = append(sonar.environment, "SONAR_HOST_URL="+options.Host)
+		sonar.addEnvironment("SONAR_HOST_URL=" + options.Host)
 	}
 	if len(options.Token) > 0 {
-		sonar.environment = append(sonar.environment, "SONAR_AUTH_TOKEN="+options.Token)
+		sonar.addEnvironment("SONAR_AUTH_TOKEN=" + options.Token)
 	}
 	if len(options.Organization) > 0 {
-		sonar.options = append(sonar.options, "sonar.organization="+options.Organization)
+		sonar.addOption("sonar.organization=" + options.Organization)
 	}
 	if len(options.ProjectVersion) > 0 {
-		sonar.options = append(sonar.options, "sonar.projectVersion="+options.ProjectVersion)
+		sonar.addOption("sonar.projectVersion=" + options.ProjectVersion)
 	}
 	if err := handlePullRequest(options); err != nil {
 		return err
@@ -90,32 +94,32 @@ func handlePullRequest(options sonarExecuteScanOptions) error {
 	if len(options.ChangeID) > 0 {
 		if options.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-			sonar.options = append(sonar.options, "sonar.analysis.mode=preview")
-			sonar.options = append(sonar.options, "sonar.github.pullRequest="+options.ChangeID)
+			sonar.addOption("sonar.analysis.mode=preview")
+			sonar.addOption("sonar.github.pullRequest=" + options.ChangeID)
 			if len(options.GithubAPIURL) > 0 {
-				sonar.options = append(sonar.options, "sonar.github.endpoint="+options.GithubAPIURL)
+				sonar.addOption("sonar.github.endpoint=" + options.GithubAPIURL)
 			}
 			if len(options.GithubToken) > 0 {
-				sonar.options = append(sonar.options, "sonar.github.oauth="+options.GithubToken)
+				sonar.addOption("sonar.github.oauth=" + options.GithubToken)
 			}
 			if len(options.Owner) > 0 && len(options.Repository) > 0 {
-				sonar.options = append(sonar.options, "sonar.github.repository="+options.Owner+"/"+options.Repository)
+				sonar.addOption("sonar.github.repository=" + options.Owner + "/" + options.Repository)
 			}
 			if options.DisableInlineComments {
-				sonar.options = append(sonar.options, "sonar.github.disableInlineComments="+strconv.FormatBool(options.DisableInlineComments))
+				sonar.addOption("sonar.github.disableInlineComments=" + strconv.FormatBool(options.DisableInlineComments))
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
 			provider := strings.ToLower(options.PullRequestProvider)
 			if provider == "github" {
-				sonar.options = append(sonar.options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
+				sonar.addOption("sonar.pullrequest.github.repository=" + options.Owner + "/" + options.Repository)
 			} else {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
-			sonar.options = append(sonar.options, "sonar.pullrequest.key="+options.ChangeID)
-			sonar.options = append(sonar.options, "sonar.pullrequest.base="+options.ChangeTarget)
-			sonar.options = append(sonar.options, "sonar.pullrequest.branch="+options.ChangeBranch)
-			sonar.options = append(sonar.options, "sonar.pullrequest.provider="+provider)
+			sonar.addOption("sonar.pullrequest.key=" + options.ChangeID)
+			sonar.addOption("sonar.pullrequest.base=" + options.ChangeTarget)
+			sonar.addOption("sonar.pullrequest.branch=" + options.ChangeBranch)
+			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
 	}
 	return nil
@@ -158,7 +162,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
-		sonar.environment = append(sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else
 	//TODO: certificate loading is deactivated due to the missing JAVA keytool
@@ -191,7 +195,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.environment = append(sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
