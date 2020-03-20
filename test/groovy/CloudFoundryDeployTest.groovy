@@ -346,7 +346,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'manifest.yml' --smoke-test $(pwd)/blueGreenCheckScript.sh")))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'manifest.yml'")))
         assertThat(shellRule.shell, hasItem(containsString('cf logout')))
     }
 
