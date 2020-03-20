@@ -20,9 +20,9 @@ import (
 )
 
 type sonarSettings struct {
-	Binary      string
-	Environment []string
-	Options     []string
+	binary      string
+	environment []string
+	options     []string
 }
 
 var sonar sonarSettings
@@ -42,9 +42,9 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
 
 	sonar = sonarSettings{
-		Binary:      "sonar-scanner",
-		Environment: []string{},
-		Options:     []string{},
+		binary:      "sonar-scanner",
+		environment: []string{},
+		options:     []string{},
 	}
 
 	if err := runSonar(options, &client, &runner); err != nil {
@@ -54,16 +54,16 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 
 func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
 	if len(options.Host) > 0 {
-		sonar.Environment = append(sonar.Environment, "SONAR_HOST_URL="+options.Host)
+		sonar.environment = append(sonar.environment, "SONAR_HOST_URL="+options.Host)
 	}
 	if len(options.Token) > 0 {
-		sonar.Environment = append(sonar.Environment, "SONAR_AUTH_TOKEN="+options.Token)
+		sonar.environment = append(sonar.environment, "SONAR_AUTH_TOKEN="+options.Token)
 	}
 	if len(options.Organization) > 0 {
-		sonar.Options = append(sonar.Options, "sonar.organization="+options.Organization)
+		sonar.options = append(sonar.options, "sonar.organization="+options.Organization)
 	}
 	if len(options.ProjectVersion) > 0 {
-		sonar.Options = append(sonar.Options, "sonar.projectVersion="+options.ProjectVersion)
+		sonar.options = append(sonar.options, "sonar.projectVersion="+options.ProjectVersion)
 	}
 	if err := handlePullRequest(options); err != nil {
 		return err
@@ -76,53 +76,53 @@ func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runn
 	}
 
 	log.Entry().
-		WithField("command", sonar.Binary).
-		WithField("options", sonar.Options).
-		WithField("environment", sonar.Environment).
+		WithField("command", sonar.binary).
+		WithField("options", sonar.options).
+		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
 
-	sonar.Options = SliceUtils.Prefix(sonar.Options, "-D")
-	runner.SetEnv(sonar.Environment)
-	return runner.RunExecutable(sonar.Binary, sonar.Options...)
+	sonar.options = SliceUtils.Prefix(sonar.options, "-D")
+	runner.SetEnv(sonar.environment)
+	return runner.RunExecutable(sonar.binary, sonar.options...)
 }
 
 func handlePullRequest(options sonarExecuteScanOptions) error {
 	if len(options.ChangeID) > 0 {
 		if options.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-			sonar.Options = append(sonar.Options, "sonar.analysis.mode=preview")
-			sonar.Options = append(sonar.Options, "sonar.github.pullRequest="+options.ChangeID)
+			sonar.options = append(sonar.options, "sonar.analysis.mode=preview")
+			sonar.options = append(sonar.options, "sonar.github.pullRequest="+options.ChangeID)
 			if len(options.GithubAPIURL) > 0 {
-				sonar.Options = append(sonar.Options, "sonar.github.endpoint="+options.GithubAPIURL)
+				sonar.options = append(sonar.options, "sonar.github.endpoint="+options.GithubAPIURL)
 			}
 			if len(options.GithubToken) > 0 {
-				sonar.Options = append(sonar.Options, "sonar.github.oauth="+options.GithubToken)
+				sonar.options = append(sonar.options, "sonar.github.oauth="+options.GithubToken)
 			}
 			if len(options.Owner) > 0 && len(options.Repository) > 0 {
-				sonar.Options = append(sonar.Options, "sonar.github.repository="+options.Owner+"/"+options.Repository)
+				sonar.options = append(sonar.options, "sonar.github.repository="+options.Owner+"/"+options.Repository)
 			}
 			if options.DisableInlineComments {
-				sonar.Options = append(sonar.Options, "sonar.github.disableInlineComments="+strconv.FormatBool(options.DisableInlineComments))
+				sonar.options = append(sonar.options, "sonar.github.disableInlineComments="+strconv.FormatBool(options.DisableInlineComments))
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
 			provider := strings.ToLower(options.PullRequestProvider)
 			if provider == "github" {
-				sonar.Options = append(sonar.Options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
+				sonar.options = append(sonar.options, "sonar.pullrequest.github.repository="+options.Owner+"/"+options.Repository)
 			} else {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.key="+options.ChangeID)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.base="+options.ChangeTarget)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.branch="+options.ChangeBranch)
-			sonar.Options = append(sonar.Options, "sonar.pullrequest.provider="+provider)
+			sonar.options = append(sonar.options, "sonar.pullrequest.key="+options.ChangeID)
+			sonar.options = append(sonar.options, "sonar.pullrequest.base="+options.ChangeTarget)
+			sonar.options = append(sonar.options, "sonar.pullrequest.branch="+options.ChangeBranch)
+			sonar.options = append(sonar.options, "sonar.pullrequest.provider="+provider)
 		}
 	}
 	return nil
 }
 
 func loadSonarScanner(url string, client piperhttp.Downloader) error {
-	if scannerPath, err := execLookPath(sonar.Binary); err == nil {
+	if scannerPath, err := execLookPath(sonar.binary); err == nil {
 		// using existing sonar-scanner
 		log.Entry().WithField("path", scannerPath).Debug("Using local sonar-scanner")
 	} else if len(url) != 0 {
@@ -147,7 +147,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 			return errors.Wrap(err, "Moving of sonar-scanner failed")
 		}
 		// update binary path
-		sonar.Binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.Binary)
+		sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
 		log.Entry().Debug("Download completed")
 	}
 	return nil
@@ -158,7 +158,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
-		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		sonar.environment = append(sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else
 	//TODO: certificate loading is deactivated due to the missing JAVA keytool
@@ -191,7 +191,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.Environment = append(sonar.Environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
+		sonar.environment = append(sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+trustStoreFile)
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
