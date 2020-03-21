@@ -111,7 +111,10 @@ class TransportManagementService implements Serializable {
                     name     : 'authorization',
                     value    : "Bearer ${token}"
                 ]
-            ]
+            ],
+            // in order to provide the details in case of 4xx and 5xx responses
+            // we allow also that codes in the range and check ourselfs later.
+            validResponseCodes : "100:599",
         ]
 
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
@@ -122,6 +125,11 @@ class TransportManagementService implements Serializable {
 
         def response = sendApiRequest(parameters)
 
+        if (response.status.startsWith('4') || response.status.startsWith('5')) {
+            echo("Node upload failed. Status code: \"${response.status}\". response body: \"${response.content}\"")
+            script.error("Node upload failed. Status code: \"${response.status}\"")
+        }
+
         if (config.verbose) {
             echo("Received response '${response.content}' with status ${response.status}.")
         }
@@ -129,7 +137,6 @@ class TransportManagementService implements Serializable {
         echo("Node upload successful.")
 
         return jsonUtils.jsonStringToGroovyObject(response.content)
-
     }
 
     private sendApiRequest(parameters) {

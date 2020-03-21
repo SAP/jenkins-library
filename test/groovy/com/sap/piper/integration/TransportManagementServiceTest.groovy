@@ -131,7 +131,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '{ "upload": "success" }']
+            return [content: '{ "upload": "success" }', status: '200']
         })
 
         def url = 'http://dummy.com/oauth'
@@ -159,7 +159,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '{ "upload": "success" }']
+            return [content: '{ "upload": "success" }', status: '200']
         })
 
         def url = 'http://dummy.com/oauth'
@@ -176,6 +176,30 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'"))
         assertThat(loggingRule.log, containsString("\"upload\": \"success\""))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful."))
+    }
+
+    @Test
+    void uploadFileToNode__error_response() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Node upload failed. Status code: "500"')
+        loggingRule.expect('something went wrong')
+
+        Map requestParams
+        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+            requestParams = m
+            return [content: 'something went wrong', status: '500']
+        })
+
+        def url = 'http://dummy.com/oauth'
+        def token = 'myToken'
+        def nodeName = 'myNode'
+        def fileId = 1234
+        def description = "My description."
+        def namedUser = 'myUser'
+
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
     }
 
 }
