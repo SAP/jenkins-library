@@ -1,5 +1,4 @@
 import com.sap.piper.DownloadCacheUtils
-import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field String METADATA_FILE = 'metadata/mavenBuild.yaml'

@@ -131,6 +131,8 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
+        'mavenBuild', //implementing new golang pattern without fields
+        'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
     ]
 
     @Test
