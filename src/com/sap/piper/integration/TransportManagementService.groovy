@@ -80,7 +80,7 @@ class TransportManagementService implements Serializable {
             echo("File upload successful.")
 
         } catch (Exception e) {
-            echo("Exception caught during file upload. Consider re-run in verbose mode in order to get more details.")
+            echo("Exception caught during file upload. Consider re-running in verbose mode in order to get more details.")
             throw e
         } finally {
 
