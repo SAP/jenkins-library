@@ -22,7 +22,7 @@ class DownloadCacheUtilsTest extends BasePiperTest {
     @Before
     void init() {
         helper.registerAllowedMethod("libraryResource", [String.class], { path ->
-            File resource = new File(new File('resources/com.sap.piper/templates'), path)
+            File resource = new File(new File('resources'), path)
             if (resource.exists()) {
                 return resource.getText()
             }
