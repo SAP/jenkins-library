@@ -84,6 +84,10 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 // retrieve step metadata
 func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "mavenExecuteStaticCodeChecks",
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{

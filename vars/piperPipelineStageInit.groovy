@@ -46,7 +46,7 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1) {
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
