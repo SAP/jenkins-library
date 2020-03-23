@@ -43,6 +43,13 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
         .around(fileExistsRule)
     @Before
     void init() {
+        helper.registerAllowedMethod("libraryResource", [String.class], { path ->
+            File resource = new File(new File('resources'), path)
+            if (resource.exists()) {
+                return resource.getText()
+            }
+            return ''
+        })
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], { arguments, closure ->
             arguments.each { arg ->
                 withEnvArgs.add(arg.toString())
