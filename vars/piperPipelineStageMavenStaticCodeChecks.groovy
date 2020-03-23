@@ -1,21 +1,26 @@
+import com.sap.piper.ConfigurationLoader
+import com.sap.piper.QualityCheck
+import com.sap.piper.ReportAggregator
 
-import com.sap.cloud.sdk.s4hana.pipeline.QualityCheck
-import com.sap.cloud.sdk.s4hana.pipeline.ReportAggregator
+import static com.sap.piper.Prerequisites.checkScript
 
 def call(Map parameters = [:]) {
-    String stageName = 'staticCodeChecks'
-    Script script = parameters.script
+    final String stageName = 'staticCodeChecks'
+    final script = checkScript(this, parameters) ?: null
 
     piperStageWrapper(stageName: stageName, script: script) {
 
-        String includeFilterFile = 's4hana_findbugs_include_filter.xml'
-        String localIncludeFilerPath = "s4hana_pipeline/${includeFilterFile}"
-        writeFile file: localIncludeFilerPath, text: libraryResource(includeFilterFile)
+        String spotBugsIncludeFilterFile = 'default_spotbugs_include_filter.xml'
+        String spotBugsLocalIncludeFilerPath = ".pipeline/${spotBugsIncludeFilterFile}"
+        writeFile file: spotBugsLocalIncludeFilerPath, text: libraryResource(spotBugsIncludeFilterFile)
+
+        String defaultPmdRulesFile = 'default_pmd_rulesets.xml'
+        String pmdRulesPath = ".pipeline/${spotBugsIncludeFilterFile}"
+        writeFile file: pmdRulesPath, text: libraryResource(defaultPmdRulesFile)
 
         mavenExecuteStaticCodeChecks(script: script,
-            spotBugsIncludeFilterFile: localIncludeFilerPath,
-            pmdRuleSets: 'rulesets/s4hana-qualities.xml',
-            m2Path: s4SdkGlobals.m2Directory)
+            spotBugsIncludeFilterFile: spotBugsLocalIncludeFilerPath,
+            pmdRuleSets: [pmdRulesPath])
 
         executeWithLockedCurrentBuildResult(
             script: script,
@@ -40,6 +45,7 @@ def call(Map parameters = [:]) {
         }
 
         Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
+        // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
         if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
             ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
         }

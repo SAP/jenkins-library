@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<ruleset name="Custom ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+    <description>
+        This ruleset checks special qualities suggested by the SAP S4HANA Cloud SDK
+    </description>
+
+    <rule name="HandleExceptionsRule"
+          message="Please pass the exception to a logger or error handling method or reference it in a new throw exception."
+          class="com.sap.cloud.sdk.quality.pmd.rules.HandleExceptionsRule">
+        <description>
+            In order to allow post mortem analysability log the exception in the catch block or in a called handling method or reference it in a new thrown exception.
+        </description>
+        <priority>1</priority>
+
+        <example>
+            <![CDATA[
+    protected List<CostCenterDetails> convertResult(Result result) {
+        try {
+            return result.asList(CostCenterDetails.class);
+        }
+        catch( final Exception e) {
+            doNothing();
+        }
+    }
+]]>
+        </example>
+    </rule>
+
+    <rule name="ReferenceExceptionRule"
+          message="If you log an error in an exception you should reference it."
+          class="com.sap.cloud.sdk.quality.pmd.rules.ReferenceExceptionRule">
+        <description>
+            In order to allow post mortem analysability reference the exception when logging inside a catch block.
+        </description>
+        <priority>2</priority>
+
+        <example>
+            <![CDATA[
+        try {
+            doSomething();
+        }
+        catch( final Exception e) {
+            logger.error("Some exception happened");
+        }
+]]>
+        </example>
+    </rule>
+
+    <rule name="UseSdkPlatformAbstractionsRule"
+          message="There is a platform abstraction provided by the SAP S4HANA Cloud SDK. Please use it."
+          class="com.sap.cloud.sdk.quality.pmd.rules.UseSdkPlatformAbstractionsRule">
+        <description>
+            In order to allow a smooth transition from Neo to Cloud Foundry you should use the platform independent abstractions provided by the SAP S4HANA Cloud SDK.
+        </description>
+        <priority>2</priority>
+
+        <example>
+            <![CDATA[
+Context ctx = new InitialContext();
+ConnectivityConfiguration configuration = (ConnectivityConfiguration) ctx.lookup("java:comp/env/connectivityConfiguration");
+]]>
+        </example>
+    </rule>
+
+    <rule ref="rulesets/java/logging-java.xml/LoggerIsNotStaticFinal"/>
+    <rule ref="rulesets/java/logging-java.xml/MoreThanOneLogger"/>
+    <rule ref="rulesets/java/strictexception.xml/AvoidThrowingNewInstanceOfSameException"/>
+
+    <rule ref="rulesets/java/logging-java.xml/SystemPrintln">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="rulesets/java/empty.xml/EmptyCatchBlock">
+        <priority>1</priority>
+        <properties>
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/java/basic.xml/MisplacedNullCheck">
+        <priority>2</priority>
+    </rule>
+    <rule ref="rulesets/java/sunsecure.xml/MethodReturnsInternalArray">
+        <priority>2</priority>
+    </rule>
+    <rule ref="rulesets/java/design.xml/AvoidInstanceofChecksInCatchClause">
+        <priority>4</priority>
+    </rule>
+    <rule ref="rulesets/java/strictexception.xml/AvoidThrowingRawExceptionTypes">
+        <priority>3</priority>
+    </rule>
+    <rule ref="rulesets/java/design.xml/NonCaseLabelInSwitchStatement">
+        <priority>3</priority>
+    </rule>
+    <rule ref="rulesets/java/design.xml/PreserveStackTrace">
+        <priority>3</priority>
+    </rule>
+    <rule ref="rulesets/java/basic.xml/ReturnFromFinallyBlock">
+        <priority>2</priority>
+    </rule>
+    <rule ref="rulesets/java/strictexception.xml/SignatureDeclareThrowsException">
+        <priority>3</priority>
+    </rule>
+    <rule ref="rulesets/java/strictexception.xml/DoNotThrowExceptionInFinally">
+        <priority>2</priority>
+    </rule>
+
+    <rule ref="rulesets/java/basic.xml/BrokenNullCheck">
+        <priority>2</priority>
+    </rule>
+    <rule ref="rulesets/java/basic.xml/UnconditionalIfStatement">
+        <priority>2</priority>
+    </rule>
+    <rule ref="rulesets/java/clone.xml/CloneThrowsCloneNotSupportedException">
+        <priority>3</priority>
+    </rule>
+    <rule ref="rulesets/java/strictexception.xml/AvoidThrowingNullPointerException">
+        <priority>4</priority>
+    </rule>
+    <rule ref="rulesets/java/imports.xml/UnusedImports">
+        <priority>5</priority>
+    </rule>
+
+</ruleset>
