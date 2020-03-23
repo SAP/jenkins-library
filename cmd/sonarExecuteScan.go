@@ -176,8 +176,8 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		keytoolOptions := []string{
 			"-import",
 			"-noprompt",
-			"-storepass changeit",
-			"-keystore " + trustStoreFile,
+			"-storepass", "changeit",
+			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
@@ -192,8 +192,8 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
 				return errors.Wrapf(err, "Download of TLS certificate failed")
 			}
-			options := append(keytoolOptions, "-file \""+target+"\"")
-			options = append(options, "-alias \""+filename+"\"")
+			options := append(keytoolOptions, "-file", target)
+			options = append(options, "-alias", filename)
 			// add certificate to keystore
 			if err := runner.RunExecutable("keytool", options...); err != nil {
 				return errors.Wrap(err, "Adding certificate to keystore failed")
