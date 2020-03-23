@@ -36,14 +36,14 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
-	// reroute command output to loging framework
+	// reroute command output to logging framework
 	runner.Stdout(log.Entry().Writer())
 	runner.Stderr(log.Entry().Writer())
 
 	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
+	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
 		binary:      "sonar-scanner",
