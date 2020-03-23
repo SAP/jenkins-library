@@ -48,34 +48,26 @@ void call(Map parameters = [:]) {
             spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath,
             pmdRuleSets: [pmdRulesPath])
 
-        executeWithLockedCurrentBuildResult(
-            script: script,
-            errorStatus: 'FAILURE',
-            errorHandler: script.buildFailureReason.setFailureReason,
-            errorHandlerParameter: 'Maven Static Code Checks',
-            errorMessage: "Please examine the SpotBugs/PMD reports."
-        ) {
-            recordIssues failedTotalHigh: 1,
-                failedTotalNormal: 10,
-                blameDisabled: true,
-                enabledForFailure: true,
-                aggregatingResults: false,
-                tool: spotBugs(pattern: '**/target/spotbugsXml.xml')
-
-            recordIssues failedTotalHigh: 1,
-                failedTotalNormal: 10,
-                blameDisabled: true,
-                enabledForFailure: true,
-                aggregatingResults: false,
-                tool: pmdParser(pattern: '**/target/pmd.xml')
-        }
-
         Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
         // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
         if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
+            recordIssues(failedTotalHigh: 1,
+                failedTotalNormal: 10,
+                blameDisabled: true,
+                enabledForFailure: true,
+                aggregatingResults: false,
+                tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
+
             ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
         }
         if (configuration.mavenExecuteStaticCodeChecks?.pmd == null || configuration.mavenExecuteStaticCodeChecks?.pmd == true) {
+            recordIssues(failedTotalHigh: 1,
+                failedTotalNormal: 10,
+                blameDisabled: true,
+                enabledForFailure: true,
+                aggregatingResults: false,
+                tool: pmdParser(pattern: '**/target/pmd.xml'))
+
             ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
         }
     }
