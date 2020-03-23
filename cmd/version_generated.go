@@ -57,6 +57,10 @@ func addVersionFlags(cmd *cobra.Command, stepConfig *versionOptions) {
 // retrieve step metadata
 func versionMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "version",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{},

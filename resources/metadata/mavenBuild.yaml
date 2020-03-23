@@ -1,5 +1,8 @@
 metadata:
   name: mavenBuild
+  aliases:
+    - name: mavenExecute
+      deprecated: false
   description: This step will install the maven project into the local maven repository.
   longDescription: |
     This step will install the maven project into the local maven repository.

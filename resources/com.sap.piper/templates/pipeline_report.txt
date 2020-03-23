@@ -1,0 +1,127 @@
+SAP Cloud SDK Continuous Delivery Report
+
+SAP offers special programs for partners to get their products certified or apply for vendor branded and SAP branded reselling. These programs require that the partner fulfills certain quality criteria.
+The SAP Cloud SDK helps partners to fulfill many of these qualities. Furthermore, the SAP Cloud SDK Continuous Delivery toolkit helps to ensure these qualities as listed below.
+This report lists which qualities were assessed during the pipeline run. For each quality, it references the relevant requirements in the partner certification or qualification program.
+
+This report was generated at: $utcTimestamp UTC
+It belongs to the artifact/project with the following identifier: $projectIdentifier
+
+1. Continuous Delivery Pipeline
+
+Relevant for Requirements:
+    - CP-SWLC-04: Capability to Quickly Deliver Urgent Corrections
+    - CP-CD-04: Continuous Integration applied
+    - CP-CD-06: Deployment Pipeline used
+    - CQP-CLI-4: Provisioning Tools
+    - CQP-OPE-1: Software Lifecycle Automation
+
+The projects uses a build pipeline. The following checks were executed successfully during the pipeline run:
+
+<% print qualityChecks.collect({each -> "  - ${each}"}).join("\n") %>
+
+<% print deploymentExecuted? "Afterwards the pipeline deployed the project." : "The pipeline did not execute a productive deployment." %>
+
+Details regarding these checks executed in the pipeline can be found below.
+
+2.  Version Control
+
+Relevant for Requirements:
+    - CP-SEC-02: Version Control available
+
+<% print versionControlTool ? "This project uses ${versionControlTool} as version control system." : "No version control system could be identified." %>
+
+3. Security Checks
+
+Relevant for Requirements:
+    - CP-SEC-02: No vulnerability with high and critical severity
+    - CQC-SEC-2: Web/Internet Security
+
+The following Security Scanners were executed during the pipeline build:
+<% print securityScans.collect({each -> "  - ${each}"}).join("\n") %>
+
+<% print npmAuditedAdvisories ?"The following advisories for npm were found but audited:\n" :""
+   print npmAuditedAdvisories.collect({each -> "  - https://www.npmjs.com/advisories/${each}"}).join("\n") %>
+
+4. Resilience Check
+
+Relevant for Requirements:
+    - CP-PERF-02: Communication (Resilience)
+    - CQC-SRV-5: Resilience
+
+<% print resilienceChecked? "The pipeline checked during the test execution that all calls to 3rd party systems were wrapped with Hystrix." : "There were no checks for resilience." %>
+
+5. Performance Tests
+
+Relevant for Requirements:
+    - CP-OP-15: Scalability
+    - CP-OP-16: Elasticity
+    - CQC-PRF-1: Performance Tests
+    - CQC-PRF-2: E2E Processing Time
+
+<% print performanceTestsExecutions ?"The following performance tests were executed:" :"No performance tests were executed in the pipeline." %>
+<% print performanceTestsExecutions.collect({each -> "  - ${each}"}).join("\n") %>
+
+6.  Artifact Repository
+
+Relevant for Requirements:
+    - CP-CD-03: Artifact Repository available
+
+<%
+if(deploymentToNexusExecuted){
+    print "The pipeline deployed artifacts to nexus.\n"
+    print automaticVersioning ?"The pipeline generates a new version identifier for each deployment." :"The pipeline does not generate a new version identifier for each deployment."
+}
+else {
+    print "There is no deployment to nexus configured in the pipeline."
+}
+%>
+
+7.  Test Automation
+
+Relevant for Requirements:
+    - CP-CD-05: Test Automation
+    - CQP-OPE-7: Test Automation
+
+The pipeline executed the following kinds of tests:
+<% print testsExecutions.collect({each -> "  - ${each}"}).join("\n") %>
+
+Test statistics:
+- Number of failed tests: $failedTests
+- Number of skipped tests: $skippedTests
+- Number of passed tests: $passedTests
+
+<%
+if(minimumCodeCoverage) {
+    print "The pipeline checked that the line code coverage for backend unit/integration tests is above ${minimumCodeCoverage}%.\n"
+    print "The actual line code coverage is ${lineCoverage}%\n"
+    print "The actual branch code coverage is ${branchCoverage}%\n"
+}
+else {
+    print "There was no assertion of the code coverage."
+}
+%>
+<% print jacocoExcludes?"The following excludes regarding code coverage were defined:\n" :""
+   print jacocoExcludes.collect({each -> "  - ${each}"}).join("\n")
+%>
+
+8. Only public APIs
+
+Relevant for Requirements:
+    - CQC-EXT-3: Openness to Standards
+
+<% print onlyPublicAPIsChecked ?"The pipeline checked that only public SAP S/4HANA APIs were called." :"There were no checks executed whether only public APIs are used." %>
+<%
+    print apiCheckExceptions.customODataServices ?"The following exceptions from that were declared:\n" :""
+    print apiCheckExceptions.customODataServices.collect({each -> "  - ${each}"}).join("\n")
+    print apiCheckExceptions.nonErpDestinations ?"The following Destinations not representing an ERP were declared:\n" :""
+    print apiCheckExceptions.nonErpDestinations.collect({each -> "  - ${each}"}).join("\n")
+%>
+
+9. Zero Downtime Deployment
+
+Relevant for Requirements:
+    - CP-PERF-03: Zero Downtime
+    - CQC-PRF-4: Zero Downtime
+
+<% print deploymentExecuted? "The pipeline used a zero-downtime approach to deploy productively." : "The pipeline did not execute a deployment." %>
