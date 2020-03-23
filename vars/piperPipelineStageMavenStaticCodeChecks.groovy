@@ -15,7 +15,7 @@ def call(Map parameters = [:]) {
         writeFile file: spotBugsLocalIncludeFilerPath, text: libraryResource(spotBugsIncludeFilterFile)
 
         String defaultPmdRulesFile = 'default_pmd_rulesets.xml'
-        String pmdRulesPath = ".pipeline/${spotBugsIncludeFilterFile}"
+        String pmdRulesPath = ".pipeline/${defaultPmdRulesFile}"
         writeFile file: pmdRulesPath, text: libraryResource(defaultPmdRulesFile)
 
         mavenExecuteStaticCodeChecks(script: script,
