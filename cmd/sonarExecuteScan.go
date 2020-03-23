@@ -36,14 +36,14 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.CustomData) {
+func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
-	// reroute command output to loging framework
+	// reroute command output to logging framework
 	runner.Stdout(log.Entry().Writer())
 	runner.Stderr(log.Entry().Writer())
 
 	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
+	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
 		binary:      "sonar-scanner",
@@ -176,8 +176,8 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		keytoolOptions := []string{
 			"-import",
 			"-noprompt",
-			"-storepass changeit",
-			"-keystore " + trustStoreFile,
+			"-storepass", "changeit",
+			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
@@ -192,8 +192,8 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
 				return errors.Wrapf(err, "Download of TLS certificate failed")
 			}
-			options := append(keytoolOptions, "-file \""+target+"\"")
-			options = append(options, "-alias \""+filename+"\"")
+			options := append(keytoolOptions, "-file", target)
+			options = append(options, "-alias", filename)
 			// add certificate to keystore
 			if err := runner.RunExecutable("keytool", options...); err != nil {
 				return errors.Wrap(err, "Adding certificate to keystore failed")

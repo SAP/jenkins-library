@@ -26,10 +26,10 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
 	clientOptions := piperhttp.ClientOptions{
-		Timeout:   30 * time.Second,
-		CookieJar: cookieJar,
-		Username:  connectionDetails.User,
-		Password:  connectionDetails.Password,
+		MaxRequestDuration: 30 * time.Second,
+		CookieJar:          cookieJar,
+		Username:           connectionDetails.User,
+		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
 
