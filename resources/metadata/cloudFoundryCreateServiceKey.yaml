@@ -17,6 +17,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/apiEndpoint
@@ -43,6 +44,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/org
