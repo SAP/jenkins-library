@@ -61,6 +61,7 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
+	rootCmd.AddCommand(NexusUploadCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

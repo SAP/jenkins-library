@@ -126,7 +126,7 @@ class TransportManagementService implements Serializable {
         def defaultParameters = [
             acceptType            : 'APPLICATION_JSON',
             quiet                 : !config.verbose,
-            consoleLogResponseBody: !config.verbose,
+            consoleLogResponseBody: false, // must be false, otherwise this reveals the api-token in the auth-request
             ignoreSslErrors       : true,
             validResponseCodes    : "100:399"
         ]

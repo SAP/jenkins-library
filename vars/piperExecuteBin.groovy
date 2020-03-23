@@ -49,6 +49,7 @@ void dockerWrapper(script, config, body) {
             script: script,
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
+            dockerOptions: config.dockerOptions,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()
