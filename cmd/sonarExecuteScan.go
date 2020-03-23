@@ -43,7 +43,7 @@ func sonarExecuteScan(options sonarExecuteScanOptions, telemetryData *telemetry.
 	runner.Stderr(log.Entry().Writer())
 
 	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 180})
+	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
 		binary:      "sonar-scanner",
