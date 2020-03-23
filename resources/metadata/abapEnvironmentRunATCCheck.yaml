@@ -10,6 +10,58 @@ spec:
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
     params:
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: cfOrg
+        type: string
+        description: CF org
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfServiceInstance
+        type: string
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Parameter of CloudFoundry Service Key to be created
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKeyName
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/space
       - name: username
         type: string
         description: User or E-Mail for CF
@@ -33,7 +85,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false
       - name: softwareComponent
         type: string
         description: Specifies the Software Component

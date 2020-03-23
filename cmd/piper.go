@@ -60,6 +60,7 @@ func Execute() {
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
+	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

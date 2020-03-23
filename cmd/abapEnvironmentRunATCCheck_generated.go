@@ -14,6 +14,11 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
+	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
+	CfOrg             string `json:"cfOrg,omitempty"`
+	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+	CfSpace           string `json:"cfSpace,omitempty"`
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
 	Host              string `json:"host,omitempty"`
@@ -57,15 +62,22 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunATCCheckOptions) {
+	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
+	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.SoftwareComponent, "softwareComponent", os.Getenv("PIPER_softwareComponent"), "Specifies the Software Component")
 	cmd.Flags().StringVar(&stepConfig.Package, "package", os.Getenv("PIPER_package"), "Specifies the Package")
 
+	cmd.MarkFlagRequired("cfApiEndpoint")
+	cmd.MarkFlagRequired("cfOrg")
+	cmd.MarkFlagRequired("cfSpace")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("softwareComponent")
 	cmd.MarkFlagRequired("package")
 }
@@ -76,6 +88,46 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "cfApiEndpoint",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+					},
+					{
+						Name:        "cfOrg",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+					},
+					{
+						Name:        "cfServiceInstance",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+					},
+					{
+						Name:        "cfServiceKeyName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyName"}},
+					},
+					{
+						Name:        "cfSpace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+					},
 					{
 						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
@@ -97,7 +149,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{

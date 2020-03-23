@@ -7,7 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func TestCloudFoundryCreateServiceKey(t *testing.T) {
+func TestAbapEnvironemtnRunATCCheck(t *testing.T) {
 	execRunner := mock.ExecMockRunner{}
 	var telemetryData telemetry.CustomData
 	t.Run("success case", func(t *testing.T) {
