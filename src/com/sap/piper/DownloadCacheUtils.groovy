@@ -3,7 +3,35 @@ package com.sap.piper
 
 class DownloadCacheUtils {
 
+    static Map injectDownloadCacheInMavenParameters(Script script, Map parameters) {
+        if (DownloadCacheUtils.isEnabled(script)) {
+
+            if (!parameters.dockerOptions) {
+                parameters.dockerOptions = []
+            }
+            if (parameters.dockerOptions instanceof CharSequence) {
+                parameters.dockerOptions = [parameters.dockerOptions]
+            }
+
+            if (!(parameters.dockerOptions instanceof List)) {
+                throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${parameters.dockerOptions.getClass()}'")
+            }
+            parameters.dockerOptions.add(DownloadCacheUtils.getDockerOptions(script))
+
+            if (parameters.globalSettingsFile) {
+                throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
+            }
+
+            parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
+        }
+
+        return parameters
+    }
+
     static boolean isEnabled(Script script) {
+        if (script.env.ON_K8S) {
+            return false
+        }
         script.node('master') {
             String network = script.env.DL_CACHE_NETWORK
             String host = script.env.DL_CACHE_HOSTNAME
@@ -17,7 +45,7 @@ class DownloadCacheUtils {
             if (!dockerNetwork) {
                 return ''
             }
-            return " --network=$dockerNetwork"
+            return "--network=$dockerNetwork"
         }
     }
 
