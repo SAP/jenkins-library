@@ -176,8 +176,8 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		keytoolOptions := []string{
 			"-import",
 			"-noprompt",
-			"-storepass changeit",
-			"-keystore " + trustStoreFile,
+			"-storepass", "changeit",
+			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
