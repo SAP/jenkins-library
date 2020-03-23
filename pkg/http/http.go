@@ -231,7 +231,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 
 func (c *Client) applyDefaults() {
 	if c.transportTimeout == 0 {
-		c.transportTimeout = time.Second * 10
+		c.transportTimeout = 10 * time.Second
 	}
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
