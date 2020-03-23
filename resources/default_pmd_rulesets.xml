@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <ruleset name="Custom ruleset"
-         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+        xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
     <description>
         This ruleset checks special qualities suggested by the SAP S4HANA Cloud SDK
     </description>
 
     <rule name="HandleExceptionsRule"
-          message="Please pass the exception to a logger or error handling method or reference it in a new throw exception."
-          class="com.sap.cloud.sdk.quality.pmd.rules.HandleExceptionsRule">
+            message="Please pass the exception to a logger or error handling method or reference it in a new throw exception."
+            class="com.sap.cloud.sdk.quality.pmd.rules.HandleExceptionsRule">
         <description>
             In order to allow post mortem analysability log the exception in the catch block or in a called handling method or reference it in a new thrown exception.
         </description>
@@ -30,8 +30,8 @@
     </rule>
 
     <rule name="ReferenceExceptionRule"
-          message="If you log an error in an exception you should reference it."
-          class="com.sap.cloud.sdk.quality.pmd.rules.ReferenceExceptionRule">
+            message="If you log an error in an exception you should reference it."
+            class="com.sap.cloud.sdk.quality.pmd.rules.ReferenceExceptionRule">
         <description>
             In order to allow post mortem analysability reference the exception when logging inside a catch block.
         </description>
@@ -50,8 +50,8 @@
     </rule>
 
     <rule name="UseSdkPlatformAbstractionsRule"
-          message="There is a platform abstraction provided by the SAP S4HANA Cloud SDK. Please use it."
-          class="com.sap.cloud.sdk.quality.pmd.rules.UseSdkPlatformAbstractionsRule">
+            message="There is a platform abstraction provided by the SAP S4HANA Cloud SDK. Please use it."
+            class="com.sap.cloud.sdk.quality.pmd.rules.UseSdkPlatformAbstractionsRule">
         <description>
             In order to allow a smooth transition from Neo to Cloud Foundry you should use the platform independent abstractions provided by the SAP S4HANA Cloud SDK.
         </description>
