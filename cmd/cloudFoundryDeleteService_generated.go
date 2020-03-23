@@ -78,6 +78,10 @@ func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 // retrieve step metadata
 func cloudFoundryDeleteServiceMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "cloudFoundryDeleteService",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
