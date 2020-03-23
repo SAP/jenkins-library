@@ -40,6 +40,14 @@ spec:
       - STAGES
       - STEPS
       default: ''
+    - name: modulePath
+      type: string
+      description: Allows providing the path for the module to scan
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: './'
     - name: pythonRequirementsFile
       type: string
       description: 'The requirements file used in `scanType: ''pip''` to populate
@@ -90,6 +98,16 @@ spec:
       resourceRef:
         - name: commonPipelineEnvironment
           param: git/commitMessage
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+    - name: repoUrl
+      description: 'Set the source code repository URL for identifing sources of the scan.'
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: gitHttpsUrl
       scope:
       - PARAMETERS
       - STAGES
@@ -159,7 +177,7 @@ spec:
       default: false
     - name: translate
       type: string
-      description: Array of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`
+      description: JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`
       scope:
       - PARAMETERS
       - STAGES
@@ -183,14 +201,6 @@ spec:
       - STAGES
       - STEPS
       default: PDF
-    - name: gitTreeish
-      type: string
-      description: 'Identifies the commit/tag/branch used for scanning in `environment:
-        ''xmake'', prepoulated by the pipeline with the related commit id'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
     - name: pythonAdditionalPath
       type: string
       description: 'The addional path which can be used in `scanType: ''pip''` for

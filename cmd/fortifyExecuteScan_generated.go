@@ -16,12 +16,14 @@ import (
 type fortifyExecuteScanOptions struct {
 	AuthToken                    string `json:"authToken,omitempty"`
 	MvnCustomArgs                string `json:"mvnCustomArgs,omitempty"`
+	ModulePath                   string `json:"modulePath,omitempty"`
 	PythonRequirementsFile       string `json:"pythonRequirementsFile,omitempty"`
 	PythonVersion                string `json:"pythonVersion,omitempty"`
 	UploadResults                bool   `json:"uploadResults,omitempty"`
 	BuildDescriptorFile          string `json:"buildDescriptorFile,omitempty"`
 	CommitID                     string `json:"commitId,omitempty"`
 	CommitMessage                string `json:"commitMessage,omitempty"`
+	RepoURL                      string `json:"repoUrl,omitempty"`
 	Repository                   string `json:"repository,omitempty"`
 	Memory                       string `json:"memory,omitempty"`
 	UpdateRulePack               bool   `json:"updateRulePack,omitempty"`
@@ -32,7 +34,6 @@ type fortifyExecuteScanOptions struct {
 	Translate                    string `json:"translate,omitempty"`
 	APIEndpoint                  string `json:"apiEndpoint,omitempty"`
 	ReportType                   string `json:"reportType,omitempty"`
-	GitTreeish                   string `json:"gitTreeish,omitempty"`
 	PythonAdditionalPath         string `json:"pythonAdditionalPath,omitempty"`
 	ArtifactURL                  string `json:"artifactUrl,omitempty"`
 	ConsiderSuspicious           bool   `json:"considerSuspicious,omitempty"`
@@ -152,12 +153,14 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", "", "Allows providing additional Maven command line parameters")
+	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", "./", "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", "python3", "Python version to be used in `scanType: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`: `./setup.py`, scanType=`mta`: determined automatically")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifing artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifing pull request merges throughout the scan.")
+	cmd.Flags().StringVar(&stepConfig.RepoURL, "repoUrl", os.Getenv("PIPER_repoUrl"), "Set the source code repository URL for identifing sources of the scan.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository for identifing artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.Memory, "memory", "-Xmx4G -Xms512M", "The amount of memory granted to the translate/scan executions")
 	cmd.Flags().BoolVar(&stepConfig.UpdateRulePack, "updateRulePack", true, "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not")
@@ -168,7 +171,6 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Array of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", "/api/v1", "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", "PDF", "The type of report to be generated")
-	cmd.Flags().StringVar(&stepConfig.GitTreeish, "gitTreeish", os.Getenv("PIPER_gitTreeish"), "Identifies the commit/tag/branch used for scanning in `environment: 'xmake', prepoulated by the pipeline with the related commit id")
 	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", "./lib", "The addional path which can be used in `scanType: 'pip'` for customization purposes")
 	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
@@ -208,6 +210,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "mvnCustomArgs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "modulePath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -257,6 +267,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 					{
 						Name:        "commitMessage",
 						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "git/commitMessage"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "repoUrl",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "gitHttpsUrl"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -336,14 +354,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "reportType",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "gitTreeish",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
