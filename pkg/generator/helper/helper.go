@@ -465,6 +465,7 @@ func golangName(name string) string {
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
 	properName = strings.Replace(properName, "json", "JSON", -1)
+	properName = strings.Replace(properName, "Tls", "TLS", -1)
 	return properName
 }
 
