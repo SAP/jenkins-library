@@ -42,7 +42,7 @@ func Initialize(telemetryDisabled bool, stepName string) {
 		client = &piperhttp.Client{}
 	}
 
-	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
+	client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second})
 
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"

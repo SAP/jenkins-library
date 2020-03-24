@@ -53,7 +53,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             Map params, Closure c ->
             c.call()
         })
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/metadata/mavenStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
     }
 
     @Test
@@ -65,7 +65,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             script: nullScript
         )
         // asserts
-        assertThat(writeFileRule.files['.pipeline/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper mavenExecuteStaticCodeChecks'))
     }
