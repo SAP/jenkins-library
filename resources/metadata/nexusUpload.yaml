@@ -12,6 +12,8 @@ spec:
       - name: nexusCredentialsId
         description: The technical username/password credential for accessing the nexus endpoint.
         type: jenkins
+        aliases:
+          - name: nexus/credentialsId
     params:
       - name: version
         type: string
@@ -22,6 +24,8 @@ spec:
         - STEPS
         mandatory: false
         default: nexus3
+        aliases:
+          - name: nexus/version
       - name: url
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
@@ -30,6 +34,8 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        aliases:
+          - name: nexus/url
       - name: repository
         type: string
         description: Name of the nexus repository.
@@ -38,22 +44,19 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        default:
+        aliases:
+          - name: nexus/repository
       - name: groupId
         type: string
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
         scope:
         - PARAMETERS
-        - STAGES
-        - STEPS
         mandatory: false
       - name: artifactId
         type: string
         description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
         scope:
         - PARAMETERS
-        - STAGES
-        - STEPS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.
@@ -81,20 +84,18 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: nexus/additionalClassifiers
       - name: user
         type: string
         description: User
         scope:
         - PARAMETERS
-        - STAGES
-        - STEPS
       - name: password
         type: string
         description: Password
         scope:
         - PARAMETERS
-        - STAGES
-        - STEPS
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
