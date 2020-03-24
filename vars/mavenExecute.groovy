@@ -125,7 +125,7 @@ def call(Map parameters = [:]) {
             command += " ${defines}"
         }
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions, dockerEnvVars: [_JAVA_OPTIONS: '-Duser.home=/tmp']) {
             if (configuration.returnStdout) {
                 commandOutput = sh(returnStdout: true, script: command)
             } else {
