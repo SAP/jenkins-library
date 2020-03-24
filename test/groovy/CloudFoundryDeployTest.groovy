@@ -645,6 +645,98 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerArgsMta() {
+
+        def expectedImage = 'image:test'
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:[cloudFoundryDeploy:[
+            dockerImage: expectedImage,
+            dockerOptions: expectedOptions,
+            dockerWorkspace: expectedWorkspace,
+            ]]]
+
+        stepRule.step.cloudFoundryDeploy(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar'
+        )
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', expectedImage))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerOptions', expectedOptions))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', expectedWorkspace ))
+    }
+
+
+    @Test
+    void testDockerArgsCF() {
+
+        def expectedImage = 'image:test'
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:[cloudFoundryDeploy:[
+            dockerImage: expectedImage,
+            dockerOptions: expectedOptions,
+            dockerWorkspace: expectedWorkspace,
+            ]]]
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName'
+        ])
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', expectedImage))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerOptions', expectedOptions))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', expectedWorkspace ))
+    }
+
+    @Test
+    void testDockerArgsCFBlueGreen() {
+
+        def expectedImage = 'image:test'
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:[cloudFoundryDeploy:[
+            dockerImage: expectedImage,
+            dockerOptions: expectedOptions,
+            dockerWorkspace: expectedWorkspace,
+            ]]]
+
+        readYamlRule.registerYaml('test.yml', "applications: [{}]")
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', expectedImage))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerOptions', expectedOptions))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', expectedWorkspace ))
+    }
+
+    @Test
     void testInfluxReporting() {
         readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->

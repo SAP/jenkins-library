@@ -95,6 +95,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** @see dockerExecute */
     'dockerWorkspace',
     /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute */
     'stashContent',
     /**
      * Additional parameters passed to cf native deployment command.
@@ -254,7 +256,12 @@ private void handleMTADeployment(Map config, script) {
         .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
         .use()
 
-    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+    dockerExecute(script: script, 
+        dockerImage: config.dockerImage, 
+        dockerOptions: config.dockerOptions,
+        dockerWorkspace: config.dockerWorkspace, 
+        stashContent: config.stashContent) 
+    {
         deployMta(config)
     }
 }
@@ -342,6 +349,7 @@ private void handleCFNativeDeployment(Map config, script) {
             script: script,
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
+            dockerOptions: config.dockerOptions,
             stashContent: config.stashContent,
             dockerEnvVars: [
                 CF_HOME           : "${config.dockerWorkspace}",
