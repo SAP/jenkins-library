@@ -96,7 +96,11 @@ enum GitPushMode {NONE, HTTPS, SSH}
       * Push is only performed in case 'commitVersion' is set to 'true'.
       * @possibleValues 'SSH', 'HTTPS', 'NONE'
       */
-    'gitPushMode'
+    'gitPushMode',
+    /**
+     * Custom path for maven m2 directory. Only applicable if the configured buildTool is maven.
+    */
+    'm2Path'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
