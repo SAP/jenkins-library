@@ -20,7 +20,7 @@ do
 done
 
 export CLASSPATH_FILE='target/cp.txt'
-mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
+mvn -X clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
 
 # --in: is created by the unit tests. It contains a mapping between the test case (name is
 # already adjusted).
