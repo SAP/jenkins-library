@@ -31,7 +31,7 @@ import groovy.transform.Field
  */
 @GenerateStageDocumentation(defaultStageName = 'staticCodeChecks')
 void call(Map parameters = [:]) {
-    String stageName = parameters.stageName?:env.STAGE_NAME
+    String stageName = 'staticCodeChecks'//parameters.stageName?:env.STAGE_NAME
     final script = checkScript(this, parameters) ?: null
 
     piperStageWrapper(stageName: stageName, script: script) {
