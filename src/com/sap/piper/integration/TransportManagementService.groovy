@@ -141,7 +141,7 @@ class TransportManagementService implements Serializable {
             validResponseCodes    : "100:399"
         ]
 
-        script.httpRequest(defaultParameters + parameters)
+        return script.httpRequest(defaultParameters + parameters)
     }
 
     private echo(message) {
