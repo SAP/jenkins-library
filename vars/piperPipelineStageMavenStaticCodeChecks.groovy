@@ -29,9 +29,9 @@ import groovy.transform.Field
  * Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
  *
  */
-@GenerateStageDocumentation(defaultStageName = 'staticCodeChecks')
+@GenerateStageDocumentation(defaultStageName = 'mavenExecuteStaticCodeChecks')
 void call(Map parameters = [:]) {
-    String stageName = 'staticCodeChecks'//parameters.stageName?:env.STAGE_NAME
+    String stageName = 'mavenExecuteStaticCodeChecks'
     final script = checkScript(this, parameters) ?: null
 
     piperStageWrapper(stageName: stageName, script: script) {
