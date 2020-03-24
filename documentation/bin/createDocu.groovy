@@ -11,6 +11,10 @@ import groovy.text.StreamingTemplateEngine
 
 import com.sap.piper.MapUtils
 
+@Grapes(
+    @Grab(group='org.yaml', module='snakeyaml', version='1.26')
+)
+
 //
 // Collects helper functions for rendering the documentation
 //
