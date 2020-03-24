@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 d=$(dirname "$0")
 [ !  -z  "$d"  ] &&  d="$d/"
 
