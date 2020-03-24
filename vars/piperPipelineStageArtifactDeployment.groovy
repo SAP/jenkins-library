@@ -1,6 +1,7 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
 import com.sap.piper.Utils
@@ -18,47 +19,35 @@ import static com.sap.piper.Prerequisites.checkScript
     'nexus',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** Artifact ID of the main build artifact. */
+    'artifactId',
+    /** Group ID of the main build artifact. */
+    'groupId',
+    /** The docker image to use for executing the step. */
+    'dockerImage',
+    /** The options to be passed to docker when executing the step within a docker context. */
+    'dockerOptions',
+])
 
 /**
  * This stage is responsible fpr releasing/deploying artifacts to a Nexus Repository Manager.<br />
  */
 @GenerateStageDocumentation(defaultStageName = 'artifactDeployment')
 def call(Map parameters = [:]) {
-//    def script = checkScript(this, parameters) ?: this
-//    def utils = parameters.juStabUtils ?: new Utils()
-//
-//    def stageName = parameters.stageName?:env.STAGE_NAME
-//
-//    Map config = ConfigurationHelper.newInstance(this)
-//        .loadStepDefaults()
-//        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-//        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
-//        .mixin(parameters, PARAMETER_KEYS)
-//        .addIfEmpty('nexus', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.nexus)
-//        .use()
-//
-//    piperStageWrapper (script: script, stageName: stageName) {
-//        // telemetry reporting
-//        utils.pushToSWA([step: STEP_NAME], config)
-//
-//        if (!config.nexus) {
-//            error("Can't deploy to nexus because the configuration is missing. " +
-//                "Please ensure the `$stageName` section has a `nexus` sub-section.")
-//        }
-//
-//        nexusUpload(nexusUploadParams)
-//
-//        ReportAggregator.instance.reportDeploymentToNexus()
-//    }
-
     String stageName = 'artifactDeployment'
     final script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .withMandatoryProperty('nexus')
+        .use()
+
     piperStageWrapper(stageName: stageName, script: script) {
-        Map defaultConfig = ConfigurationLoader.defaultStageConfiguration(script, stageName)
-        Map stageConfig = ConfigurationLoader.stageConfiguration(script, stageName)
 
         def commonPipelineEnvironment = script.commonPipelineEnvironment
         List unstableSteps = commonPipelineEnvironment?.getValue('unstableSteps') ?: []
@@ -69,51 +58,21 @@ def call(Map parameters = [:]) {
         }
 
         // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], stageConfig)
+        utils.pushToSWA([step: STEP_NAME], config)
 
-        if (!stageConfig.nexus) {
-            error("Can't deploy to nexus because the configuration is missing. " +
-                "Please ensure the `$stageName` section has a `nexus` sub-section.")
-        }
-
-        Set nexusConfigKeys = [
-            'dockerImage',
-            'url',
-            'repository',
-            'version',
-            'credentialsId',
-            'additionalClassifiers',
-            'artifactId',
-            'groupId',
-        ]
-
-        Map nexusConfig = ConfigurationMerger.merge(stageConfig.nexus, nexusConfigKeys, defaultConfig.nexus)
-
-        String url = nexusConfig.url
-        if (!url) {
-            error "You need to configure the key 'url' in the nexus configuration"
-        }
-
-        def nexusUrlWithoutProtocol = url.replaceFirst("^https?://", "")
-
-        Map mavenConfig = ConfigurationMerger.merge(
-            ConfigurationLoader.stepConfiguration(script, 'mavenExecute'),
-            ['dockerImage', 'dockerOptions', 'globalSettingsFile'] as Set,
-            ConfigurationLoader.defaultStepConfiguration(script, 'mavenExecute'))
+        def nexusConfig = config.nexus
 
         // Merge maven and nexus config for nexusUpload step
         Map nexusUploadParams = [
             script: script,
-            url: nexusUrlWithoutProtocol,
             version: nexusConfig.version,
+            url: nexusConfig.url,
             repository: nexusConfig.repository,
-            groupId: nexusConfig.groupId,
-
-            m2Path: mavenConfig.m2Directory,
-            globalSettingsFile: mavenConfig.globalSettingsFile,
-            dockerImage: mavenConfig.dockerImage,
-            dockerOptions: mavenConfig.dockerOptions
+            dockerImage: config.dockerImage,
+            dockerOptions: config.dockerOptions
         ]
+
+        nexusUploadParams = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script as Script, nexusUploadParams)
 
         // Set artifactId if configured, fall-back to artifactId from CPE if set
         if (nexusConfig.artifactId) {
@@ -125,13 +84,9 @@ def call(Map parameters = [:]) {
         if (nexusConfig.additionalClassifiers) {
             nexusUploadParams.additionalClassifiers = "${toJson(nexusConfig.additionalClassifiers as List)}"
         }
-        // Only add 'nexusCredentialsId' if 'credentialsId' is not empty
-        if (nexusConfig.credentialsId) {
-            nexusUploadParams.nexusCredentialsId = nexusConfig.credentialsId
-        }
 
         // The withEnv wrapper can be removed before merging to master.
-        withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=nexus-upload-cmd']) {
+        withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
             nexusUpload(nexusUploadParams)
         }
 
