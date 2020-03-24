@@ -89,7 +89,7 @@ class DebugReport implements Serializable {
     }
 
     Map generateReport(Script script, boolean shareConfidentialInformation) {
-        String template = script.libraryResource 'debug_report.txt'
+        String template = script.libraryResource 'com.sap.piper/templates/debug_report.txt'
 
         if (!projectIdentifier) {
             projectIdentifier = 'NOT_SET'
