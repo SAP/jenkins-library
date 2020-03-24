@@ -53,7 +53,7 @@ class TransportManagementService implements Serializable {
         def response = sendApiRequest(parameters)
 
         if (config.verbose) {
-            echo("Received response with status ${response.status} from authentification request.")
+            echo("Received response with status ${response.status} from authentication request.")
         }
 
         echo("OAuth Token retrieved successfully.")
