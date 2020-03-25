@@ -34,7 +34,7 @@ void call(Map parameters = [:]) {
         */
 
         List credentials = [
-            [type: 'token', id: 'sonarTokenCredentialsId', env: ['SONAR_AUTH_TOKEN']],
+            [type: 'token', id: 'sonarTokenCredentialsId', env: ['SONAR_TOKEN']],
             [type: 'token', id: 'githubTokenCredentialsId', env: ['GITHUB_TOKEN']]
         ]
 
