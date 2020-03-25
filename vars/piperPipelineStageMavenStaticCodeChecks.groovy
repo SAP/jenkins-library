@@ -46,7 +46,7 @@ void call(Map parameters = [:]) {
 
         mavenExecuteStaticCodeChecks(script: script,
             spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath,
-            pmdRuleSets: [pmdRulesPath])
+            pmdRuleSets: ['rulesets/s4hana-qualities.xml'])
 
         Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
         // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
