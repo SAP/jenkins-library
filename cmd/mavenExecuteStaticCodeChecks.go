@@ -86,7 +86,7 @@ func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.E
 	}
 
 	mavenOptions := maven.ExecuteOptions{
-		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"},
+		Goals:   []string{"com.sap.cloud.sdk.quality:pmd-plugin:3.4.0:pmd"},
 		Defines: defines,
 	}
 
