@@ -1,5 +1,5 @@
 def call(Map parameters = [:], body) {
-    handleStepErrors(stepName: 'executeWithLockedCurrentBuildResult', stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: 'executeWithLockedCurrentBuildResult', stepParameters: parameters) {
         def script = parameters.script
         def errorStatus = parameters.errorStatus
         def errorHandler = parameters.errorHandler
