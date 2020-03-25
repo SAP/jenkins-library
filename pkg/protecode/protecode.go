@@ -110,7 +110,7 @@ func (pc *Protecode) SetOptions(options Options) {
 		pc.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")
 	}
 
-	httpOptions := piperHttp.ClientOptions{Timeout: options.Duration, Username: options.Username, Password: options.Password, Logger: options.Logger}
+	httpOptions := piperHttp.ClientOptions{MaxRequestDuration: options.Duration, Username: options.Username, Password: options.Password, Logger: options.Logger}
 	pc.client.SetOptions(httpOptions)
 }
 
