@@ -76,6 +76,10 @@ func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTests
 // retrieve step metadata
 func karmaExecuteTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "karmaExecuteTests",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{

@@ -3,13 +3,16 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
-	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/ghodss/yaml"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 )
 
 // Config defines the structure of the config files
@@ -43,7 +46,11 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 }
 
 // ApplyAliasConfig adds configuration values available on aliases to primary configuration parameters
-func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilters, stageName, stepName string) {
+func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilters, stageName, stepName string, stepAliases []Alias) {
+	// copy configuration from step alias to correct step
+	if len(stepAliases) > 0 {
+		c.copyStepAliasConfig(stepName, stepAliases)
+	}
 	for _, p := range parameters {
 		c.General = setParamValueFromAlias(c.General, filters.General, p)
 		if c.Stages[stageName] != nil {
@@ -81,8 +88,26 @@ func getDeepAliasValue(configMap map[string]interface{}, key string) interface{}
 	return configMap[key]
 }
 
+func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
+	for _, stepAlias := range stepAliases {
+		if c.Steps[stepAlias.Name] != nil {
+			if stepAlias.Deprecated {
+				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step configuration used for step '%v'. Please switch to '%v'!", stepAlias.Name, stepName)
+			}
+			for paramName, paramValue := range c.Steps[stepAlias.Name] {
+				if c.Steps[stepName] == nil {
+					c.Steps[stepName] = map[string]interface{}{}
+				}
+				if c.Steps[stepName][paramName] == nil {
+					c.Steps[stepName][paramName] = paramValue
+				}
+			}
+		}
+	}
+}
+
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, envParameters map[string]interface{}, stageName, stepName string) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -91,7 +116,8 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
 		}
 	}
-	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
+
+	c.ApplyAliasConfig(parameters, filters, stageName, stepName, stepAliases)
 
 	// consider custom defaults defined in config.yml
 	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
@@ -121,7 +147,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
-		def.ApplyAliasConfig(parameters, filters, stageName, stepName)
+		def.ApplyAliasConfig(parameters, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}

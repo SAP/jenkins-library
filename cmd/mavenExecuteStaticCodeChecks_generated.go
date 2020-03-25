@@ -14,13 +14,17 @@ import (
 )
 
 type mavenExecuteStaticCodeChecksOptions struct {
-	SpotBugs                  bool     `json:"spotBugs,omitempty"`
-	Pmd                       bool     `json:"pmd,omitempty"`
-	MavenModulesExcludes      []string `json:"mavenModulesExcludes,omitempty"`
-	SpotBugsExcludeFilterFile string   `json:"spotBugsExcludeFilterFile,omitempty"`
-	SpotBugsIncludeFilterFile string   `json:"spotBugsIncludeFilterFile,omitempty"`
-	PmdExcludes               []string `json:"pmdExcludes,omitempty"`
-	PmdRuleSets               []string `json:"pmdRuleSets,omitempty"`
+	SpotBugs                    bool     `json:"spotBugs,omitempty"`
+	Pmd                         bool     `json:"pmd,omitempty"`
+	MavenModulesExcludes        []string `json:"mavenModulesExcludes,omitempty"`
+	SpotBugsExcludeFilterFile   string   `json:"spotBugsExcludeFilterFile,omitempty"`
+	SpotBugsIncludeFilterFile   string   `json:"spotBugsIncludeFilterFile,omitempty"`
+	PmdExcludes                 []string `json:"pmdExcludes,omitempty"`
+	PmdRuleSets                 []string `json:"pmdRuleSets,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
@@ -70,12 +74,20 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 	cmd.Flags().StringVar(&stepConfig.SpotBugsIncludeFilterFile, "spotBugsIncludeFilterFile", os.Getenv("PIPER_spotBugsIncludeFilterFile"), "Path to a filter file with bug definitions which should be included.")
 	cmd.Flags().StringSliceVar(&stepConfig.PmdExcludes, "pmdExcludes", []string{}, "A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.")
 	cmd.Flags().StringSliceVar(&stepConfig.PmdRuleSets, "pmdRuleSets", []string{}, "The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 
 }
 
 // retrieve step metadata
 func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "mavenExecuteStaticCodeChecks",
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
@@ -134,6 +146,38 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "pmd/ruleSets"}},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "logSuccessfulMavenTransfers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
 			},

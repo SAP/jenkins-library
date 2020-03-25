@@ -10,9 +10,27 @@ import (
 	"testing"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
+
+type mockDownloader struct {
+	shouldFail     bool
+	requestedUrls  []string
+	requestedFiles []string
+}
+
+func (m *mockDownloader) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	m.requestedUrls = append(m.requestedUrls, url)
+	m.requestedFiles = append(m.requestedFiles, filename)
+	if m.shouldFail {
+		return errors.New("something happened")
+	}
+	return nil
+}
+
+func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {
+	return
+}
 
 func TestExecute(t *testing.T) {
 	t.Run("should return stdOut", func(t *testing.T) {
@@ -36,15 +54,13 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, expectedOutput, mavenOutput)
 	})
 	t.Run("should log that command failed if executing maven failed", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 		execMockRunner := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"mvn --file pom.xml --batch-mode": errors.New("error case")}}
 		opts := ExecuteOptions{PomPath: "pom.xml", ReturnStdout: false}
 
-		output, _ := Execute(&opts, &execMockRunner)
+		output, err := Execute(&opts, &execMockRunner)
 
-		assert.True(t, hasFailed, "failed to execute run command")
-		assert.Equal(t, output, "")
+		assert.EqualError(t, err, "failed to run executable, command: '[mvn --file pom.xml --batch-mode]', error: error case")
+		assert.Equal(t, "", output)
 	})
 	t.Run("should have all configured parameters in the exec call", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
@@ -59,8 +75,8 @@ func TestExecute(t *testing.T) {
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
 
-		assert.Equal(t, len(execMockRunner.Calls[0].Params), len(expectedParameters))
-		assert.Equal(t, execMockRunner.Calls[0], mock.ExecCall{Exec: "mvn", Params: expectedParameters})
+		assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters}, execMockRunner.Calls[0])
 		assert.Equal(t, "", mavenOutput)
 	})
 }
@@ -86,51 +102,36 @@ func TestEvaluate(t *testing.T) {
 	})
 }
 
-type mockDownloader struct {
-	shouldFail bool
-}
-
-func (m *mockDownloader) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	if m.shouldFail {
-		return errors.New("something happened")
-	}
-	return nil
-}
-
-func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {
-	return
-}
-
 func TestGetParameters(t *testing.T) {
 	t.Run("should resolve configured parameters and download the settings files", func(t *testing.T) {
 		mockClient := mockDownloader{shouldFail: false}
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
 		expectedParameters := []string{"--global-settings", "globalSettings.xml", "--settings", "projectSettings.xml", "--file", "pom.xml", "--batch-mode"}
 
-		parameters := getParametersFromOptions(&opts, &mockClient)
-
-		assert.Equal(t, len(parameters), len(expectedParameters))
-		assert.Equal(t, parameters, expectedParameters)
+		parameters, err := getParametersFromOptions(&opts, &mockClient)
+		if assert.NoError(t, err) {
+			assert.Equal(t, len(expectedParameters), len(parameters))
+			assert.Equal(t, expectedParameters, parameters)
+			if assert.Equal(t, 2, len(mockClient.requestedUrls)) {
+				assert.Equal(t, "https://mysettings.com", mockClient.requestedUrls[0])
+				assert.Equal(t, "globalSettings.xml", mockClient.requestedFiles[0])
+				assert.Equal(t, "http://myprojectsettings.com", mockClient.requestedUrls[1])
+				assert.Equal(t, "projectSettings.xml", mockClient.requestedFiles[1])
+			}
+		}
 	})
 }
 
 func TestDownloadSettingsFromURL(t *testing.T) {
 	t.Run("should pass if download is successful", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 		mockClient := mockDownloader{shouldFail: false}
-
-		downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
-
-		assert.False(t, hasFailed)
+		err := downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
+		assert.NoError(t, err)
 	})
 	t.Run("should fail if download fails", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 		mockClient := mockDownloader{shouldFail: true}
-
-		downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
-		assert.True(t, hasFailed, "expected command to exit with fatal")
+		err := downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
+		assert.EqualError(t, err, "failed to download maven settings from URL 'anyURL' to file 'settings.xml': something happened")
 	})
 }
 
