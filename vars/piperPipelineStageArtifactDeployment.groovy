@@ -73,9 +73,10 @@ def call(Map parameters = [:]) {
         // Add additional parameters only if they are set. This avoids the following problem:
         // Since the context parameters will be converted to JSON, put into an ENV variable,
         // and then decoded back using the piper binary's getConfig --contextConfig command,
-        // key that were present, but had a null String value, will now in fact have a value of
-        // type net.sf.json.JSONNull. This in turn will not evaluate to 'false' using Groovy
-        // Truth as null Strings would have.
+        // keys that were present, but had a null value, will now in fact have a value of
+        // type net.sf.json.JSONNull. This in turn will not evaluate to 'false' using Groovy.
+        // Worse, these parameters will take precedence over the project's config or default
+        // config.
         if (config.dockerImage) {
             nexusUploadParams.dockerImage = config.dockerImage
         }
