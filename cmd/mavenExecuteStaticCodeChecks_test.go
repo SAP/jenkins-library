@@ -34,7 +34,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dpmd.rulesets=myRule.xml,anotherRule.xml",
 				"--batch-mode",
 				"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs",
-				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd",
+				"com.sap.cloud.sdk.quality:pmd-plugin:3.4.0:pmd",
 			},
 		}
 
@@ -71,7 +71,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 			PmdRuleSets: []string{"myRule.xml", "anotherRule.xml"},
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"},
+			Goals:   []string{"com.sap.cloud.sdk.quality:pmd-plugin:3.4.0:pmd"},
 			Defines: []string{"-Dpmd.excludes=*test.java,*prod.java", "-Dpmd.rulesets=myRule.xml,anotherRule.xml"},
 		}
 
