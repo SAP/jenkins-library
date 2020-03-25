@@ -80,7 +80,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"}}
+			Goals: []string{"com.sap.cloud.sdk.quality:pmd-plugin:3.4.0:pmd"}}
 
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
 	})
