@@ -26,7 +26,7 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
+ * Execute static code checks for Maven based projects. This stage enforces SAP Cloud SDK specific PND rulesets as well as SpotBugs include filter.
  *
  */
 @GenerateStageDocumentation(defaultStageName = 'mavenExecuteStaticCodeChecks')
