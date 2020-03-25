@@ -62,15 +62,26 @@ def call(Map parameters = [:]) {
 
         def nexusConfig = config.nexus
 
-        // Merge maven and nexus config for nexusUpload step
+        // Add all mandatory parameters
         Map nexusUploadParams = [
             script: script,
             version: nexusConfig.version,
             url: nexusConfig.url,
             repository: nexusConfig.repository,
-            dockerImage: config.dockerImage,
-            dockerOptions: config.dockerOptions
         ]
+
+        // Add additional parameters only if they are set. This avoids the following problem:
+        // Since the context parameters will be converted to JSON, put into an ENV variable,
+        // and then decoded back using the piper binary's getConfig --contextConfig command,
+        // key that were present, but had a null String value, will now in fact have a value of
+        // type net.sf.json.JSONNull. This in turn will not evaluate to 'false' using Groovy
+        // Truth as null Strings would have.
+        if (config.dockerImage) {
+            nexusUploadParams.dockerImage = config.dockerImage
+        }
+        if (config.dockerOptions) {
+            nexusUploadParams.dockerOptions = config.dockerOptions
+        }
 
         nexusUploadParams = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script as Script, nexusUploadParams)
 
