@@ -18,9 +18,7 @@ import groovy.transform.Field
     /**Path to a filter file with bug definitions which should be included. */
     'spotBugsIncludeFilterFile',
     /**A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects. */
-    'pmdExcludes',
-    /**The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin. */
-    'pmdRuleSets'
+    'pmdExcludes'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -39,10 +37,6 @@ void call(Map parameters = [:]) {
         String spotBugsIncludeFilterFile = 'default_spotbugs_include_filter.xml'
         String spotBugsLocalIncludeFilterPath = ".pipeline/${spotBugsIncludeFilterFile}"
         writeFile file: spotBugsLocalIncludeFilterPath, text: libraryResource(spotBugsIncludeFilterFile)
-
-        String defaultPmdRulesFile = 'default_pmd_rulesets.xml'
-        String pmdRulesPath = ".pipeline/${defaultPmdRulesFile}"
-        writeFile file: pmdRulesPath, text: libraryResource(defaultPmdRulesFile)
 
         mavenExecuteStaticCodeChecks(script: script,
             spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath,
