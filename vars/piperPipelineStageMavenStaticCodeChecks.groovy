@@ -17,8 +17,12 @@ import groovy.transform.Field
     'spotBugsExcludeFilterFile',
     /**Path to a filter file with bug definitions which should be included. */
     'spotBugsIncludeFilterFile',
-    /**A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects. */
-    'pmdExcludes'
+    /**The maximum number of failures allowed before execution fails. */
+    'spotBugsMaxAllowedViolations',
+    /**What priority level to fail the build on. PMD violations are assigned a priority from 1 (most severe) to 5 (least severe) according the the rule's priority. Violations at or less than this priority level are considered failures and will fail the build if failOnViolation=true and the count exceeds maxAllowedViolations. The other violations will be regarded as warnings and will be displayed in the build output if verbose=true. Setting a value of 5 will treat all violations as failures, which may cause the build to fail. Setting a value of 1 will treat all violations as warnings. Only values from 1 to 5 are valid. */
+    'pmdFailurePriority',
+    /**The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed. Defaults to 5. */
+    'pmdMaxAllowedViolations'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -38,31 +42,32 @@ void call(Map parameters = [:]) {
         String spotBugsLocalIncludeFilterPath = ".pipeline/${spotBugsIncludeFilterFile}"
         writeFile file: spotBugsLocalIncludeFilterPath, text: libraryResource(spotBugsIncludeFilterFile)
 
-        mavenExecuteStaticCodeChecks(script: script,
-            spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath,
-            pmdRuleSets: ['rulesets/s4hana-qualities.xml'])
+        try {
+            mavenExecuteStaticCodeChecks(script: script, spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath)
+        } catch(Exception exception) {
+            Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
+            // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
+            if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
+                recordIssues(failedTotalHigh: 1,
+                    failedTotalNormal: 10,
+                    blameDisabled: true,
+                    enabledForFailure: true,
+                    aggregatingResults: false,
+                    tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
 
-        Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
-        // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
-        if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
-            recordIssues(failedTotalHigh: 1,
-                failedTotalNormal: 10,
-                blameDisabled: true,
-                enabledForFailure: true,
-                aggregatingResults: false,
-                tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
+                ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
+            }
+            if (configuration.mavenExecuteStaticCodeChecks?.pmd == null || configuration.mavenExecuteStaticCodeChecks?.pmd == true) {
+                recordIssues(failedTotalHigh: 1,
+                    failedTotalNormal: 10,
+                    blameDisabled: true,
+                    enabledForFailure: true,
+                    aggregatingResults: false,
+                    tool: pmdParser(pattern: '**/target/pmd.xml'))
 
-            ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
-        }
-        if (configuration.mavenExecuteStaticCodeChecks?.pmd == null || configuration.mavenExecuteStaticCodeChecks?.pmd == true) {
-            recordIssues(failedTotalHigh: 1,
-                failedTotalNormal: 10,
-                blameDisabled: true,
-                enabledForFailure: true,
-                aggregatingResults: false,
-                tool: pmdParser(pattern: '**/target/pmd.xml'))
-
-            ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
+                ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
+            }
+            throw exception
         }
     }
 }

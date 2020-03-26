@@ -1,12 +1,11 @@
 package cmd
 
 import (
-	"strings"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"strconv"
 )
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
@@ -67,9 +66,13 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 	if config.SpotBugsExcludeFilterFile != "" {
 		defines = append(defines, "-Dspotbugs.excludeFilterFile="+config.SpotBugsExcludeFilterFile)
 	}
+	if config.SpotBugsMaxAllowedViolations != 0 {
+		defines = append(defines, "-Dspotbugs.maxAllowedViolations="+strconv.Itoa(config.SpotBugsMaxAllowedViolations))
+	}
 
 	mavenOptions := maven.ExecuteOptions{
-		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"},
+		// check goal executes spotbugs goal first and fails the build if any bugs were found
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"},
 		Defines: defines,
 	}
 
@@ -78,15 +81,18 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 
 func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.ExecuteOptions {
 	var defines []string
-	if config.PmdExcludes != nil {
-		defines = append(defines, "-Dpmd.excludes="+strings.Join(config.PmdExcludes, ","))
+	if config.PmdMaxAllowedViolations != 0 {
+		defines = append(defines, "-Dpmd.maxAllowedViolations="+strconv.Itoa(config.PmdMaxAllowedViolations))
 	}
-	if config.PmdRuleSets != nil {
-		defines = append(defines, "-Dpmd.rulesets="+strings.Join(config.PmdRuleSets, ","))
+	if config.PmdFailurePriority >= 1 && config.PmdFailurePriority <= 5 {
+		defines = append(defines, "-Dpmd.failurePriority="+strconv.Itoa(config.PmdFailurePriority))
+	} else {
+		log.Entry().Warningf("Pmd failure priority must be a value between 1 and 5. %v was configured. Defaulting to 5.", config.PmdFailurePriority)
 	}
 
 	mavenOptions := maven.ExecuteOptions{
-		Goals:   []string{"com.sap.cloud.sdk.quality:pmd-plugin:3.4.0:pmd"},
+		// check goal executes pmd goal first and fails the build if any violations were found
+		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
 		Defines: defines,
 	}
 
