@@ -57,7 +57,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * This stage is responsible fpr releasing/deploying artifacts to a Nexus Repository Manager.<br />
  */
 @GenerateStageDocumentation(defaultStageName = 'artifactDeployment')
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     String stageName = 'artifactDeployment'
     final script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
