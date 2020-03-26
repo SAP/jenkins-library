@@ -68,7 +68,7 @@ return this
     Therefore, it is not possible to use extensions on this stage.
 
 !!! note "Disable Extensions Execution"
-    By default, there is a possibility for extensions to get executed. In case of disabling it, please ensure to set `env.PIPER_DISABLE_EXTENSIONS=true`.
+    By default, there is a possibility for extensions to get executed. In case of disabling it, please ensure to set `PIPER_DISABLE_EXTENSIONS` to `true`.
     Setting this parameter to `true` excludes the execution of extension files in `.pipeline/extensions/<StageName>.groovy`.
 
 

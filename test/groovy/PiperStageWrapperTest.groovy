@@ -1,9 +1,5 @@
 import com.sap.piper.DebugReport
-import com.sap.piper.k8s.SystemEnv
 import hudson.AbortException
-import hudson.EnvVars
-import hudson.slaves.EnvironmentVariablesNodeProperty
-import org.assertj.core.condition.DoesNotHave
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +13,7 @@ import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
@@ -192,7 +189,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         })
 
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
-        nullScript.env.PIPER_DISABLE_EXTENSIONS = true
+        nullScript.env.PIPER_DISABLE_EXTENSIONS = 'true'
 
         stepRule.step.piperStageWrapper(
             script: nullScript,
@@ -201,7 +198,7 @@ class PiperStageWrapperTest extends BasePiperTest {
             stageName: 'test_old_extension'
         ) {}
         //setting above parameter to 'true' bypasses the below message
-        assert !loggingRule.log.contains('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test_old_extension.groovy\' for test_old_extension.')
+        assertThat(loggingRule.log, not(containsString("[piperStageWrapper] Running project interceptor '.pipeline/extensions/test_old_extension.groovy' for test_old_extension.")))
     }
 
     @Test
