@@ -56,6 +56,7 @@ jobs:
     - name: verify
       run: git diff --name-only --exit-code
   integration:
+    if: github.repository=='SAP/jenkins-library' || startsWith(github.ref, 'it/')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/setup-go@v1
