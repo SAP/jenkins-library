@@ -54,7 +54,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 
 /**
- * This stage is responsible fpr releasing/deploying artifacts to a Nexus Repository Manager.<br />
+ * This stage is responsible for releasing/deploying artifacts to a Nexus Repository Manager.<br />
  */
 @GenerateStageDocumentation(defaultStageName = 'artifactDeployment')
 void call(Map parameters = [:]) {
