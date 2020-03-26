@@ -18,7 +18,7 @@ spec:
         - STAGES
         - STEPS
         - GENERAL
-        mandatory: true
+        mandatory: false
         aliases:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
@@ -29,7 +29,7 @@ spec:
         - STAGES
         - STEPS
         - GENERAL
-        mandatory: true
+        mandatory: false
         aliases:
           - name: cloudFoundry/org
       - name: cfServiceInstance
@@ -59,7 +59,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false
         aliases:
           - name: cloudFoundry/space
       - name: username

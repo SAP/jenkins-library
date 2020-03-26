@@ -73,9 +73,6 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.SoftwareComponent, "softwareComponent", os.Getenv("PIPER_softwareComponent"), "Specifies the Software Component")
 	cmd.Flags().StringVar(&stepConfig.Package, "package", os.Getenv("PIPER_package"), "Specifies the Package")
 
-	cmd.MarkFlagRequired("cfApiEndpoint")
-	cmd.MarkFlagRequired("cfOrg")
-	cmd.MarkFlagRequired("cfSpace")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("softwareComponent")
@@ -93,7 +90,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
@@ -101,7 +98,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
@@ -125,7 +122,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{

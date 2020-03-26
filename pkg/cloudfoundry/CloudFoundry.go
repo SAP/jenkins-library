@@ -32,7 +32,7 @@ func Login(options CloudFoundryLoginOptions) error {
 
 	result = cfLoginBytes.String()
 	if strings.Contains(result, "Not logged in") == false {
-		log.Entry().Info("You are already logged in to Cloud Foundry")
+		log.Entry().Info("Login check indicates you are already logged in to Cloud Foundry")
 		return nil
 	}
 
