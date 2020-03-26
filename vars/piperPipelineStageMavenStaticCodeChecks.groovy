@@ -45,7 +45,6 @@ void call(Map parameters = [:]) {
         try {
             mavenExecuteStaticCodeChecks(script: script, spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath)
         } catch (Exception exception) {
-            showIssues(script, stageName)
             throw exception
         }
         finally {
