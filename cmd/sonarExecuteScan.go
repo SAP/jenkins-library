@@ -116,7 +116,9 @@ func handlePullRequest(options sonarExecuteScanOptions) error {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
 			provider := strings.ToLower(options.PullRequestProvider)
 			if provider == "github" {
-				sonar.addOption("sonar.pullrequest.github.repository=" + options.Owner + "/" + options.Repository)
+				if len(options.Owner) > 0 && len(options.Repository) > 0 {
+					sonar.addOption("sonar.pullrequest.github.repository=" + options.Owner + "/" + options.Repository)
+				}
 			} else {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
