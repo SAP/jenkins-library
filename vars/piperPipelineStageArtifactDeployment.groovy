@@ -88,6 +88,9 @@ def call(Map parameters = [:]) {
         // Add all mandatory parameters
         Map nexusUploadParams = [
             script: script,
+            version: nexusConfig.version,
+            repository: nexusConfig.repository,
+            url: nexusConfig.url,
         ]
 
         nexusUploadParams = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script as Script, nexusUploadParams)
