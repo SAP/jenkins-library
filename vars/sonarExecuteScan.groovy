@@ -26,7 +26,7 @@ void call(Map parameters = [:]) {
         //.withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
         //.withMandatoryProperty('githubOrg', null, { isPullRequest() })
         //.withMandatoryProperty('githubRepo', null, { isPullRequest() })
-            
+
         /*
         if(!script.fileExists('.git')) {
             utils.unstash('git')
@@ -39,7 +39,7 @@ void call(Map parameters = [:]) {
         ]
 
         loadCertificates([
-            customTlsCertificateLinks: parameters.certificates, 
+            customTlsCertificateLinks: parameters.certificates,
             verbose: false
         ])
 
