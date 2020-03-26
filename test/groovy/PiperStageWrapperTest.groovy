@@ -1,5 +1,9 @@
 import com.sap.piper.DebugReport
+import com.sap.piper.k8s.SystemEnv
 import hudson.AbortException
+import hudson.EnvVars
+import hudson.slaves.EnvironmentVariablesNodeProperty
+import org.assertj.core.condition.DoesNotHave
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -179,6 +183,25 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
         assertThat(DebugReport.instance.localExtensions.test_old_extension, is('Extends'))
+    }
+
+    @Test
+    void testExtensionExec() {
+        helper.registerAllowedMethod('fileExists', [String.class], { path ->
+            return (path == '.pipeline/extensions/test_old_extension.groovy')
+        })
+
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
+        nullScript.env.PIPER_DISABLE_EXTENSIONS = true
+
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10,
+            stageName: 'test_old_extension'
+        ) {}
+        //setting above parameter to 'true' bypasses the below message
+        assert !loggingRule.log.contains('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test_old_extension.groovy\' for test_old_extension.')
     }
 
     @Test
