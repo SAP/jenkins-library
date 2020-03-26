@@ -106,6 +106,8 @@ void call(Map parameters = [:]) {
             nexusUploadParams.additionalClassifiers = "${toJson(nexusConfig.additionalClassifiers as List)}"
         }
 
+        nexusUploadParams.verbose = true
+
         // The withEnv wrapper can be removed before merging to master.
         withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
             nexusUpload(nexusUploadParams)
