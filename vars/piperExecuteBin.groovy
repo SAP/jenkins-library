@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
@@ -25,10 +26,17 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
-        withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+        List environment = [ "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}" ]
+
+        List customDefaults = DefaultValueCache.getCustomDefaults()
+        if (customDefaults.size() > 0 && customDefaults != ['.pipeline/defaults.yaml']) {
+            environment.add("PIPER_defaultConfig=${groovy.json.JsonOutput.toJson(customDefaults)}")
+        }
+
+        withEnv(
+            environment
             //ToDo: check if parameters make it into docker image on JaaS
-        ]) {
+        ) {
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
             echo "Config: ${config}"
