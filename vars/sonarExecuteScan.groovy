@@ -124,19 +124,21 @@ void call(Map parameters = [:]) {
         def worker = { config ->
             try {
                 withSonarQubeEnv(config.instance) {
+                    List envVars = []
 
-                        loadSonarScanner(config)
+                    loadSonarScanner(config)
 
-                        if(fileExists('.certificates/cacerts')){
-                            sh 'mv .certificates/cacerts .sonar-scanner/jre/lib/security/cacerts'
-                        }
+                    if(fileExists('.certificates/cacerts')){
+                        envVars = envVars.plus("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=${env.WORKSPACE}/.certificates/cacerts")
+                    }
 
-                        if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                        if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                        // prefix options
-                        config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
-
-                        sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                    // prefix options
+                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                    withEnv(envVars){
+                        sh "PATH=\$PATH:'${env.WORKSPACE}/.sonar-scanner/bin' sonar-scanner ${config.options.join(' ')}"
+                    }
                 }
             } finally {
                 sh 'rm -rf .sonar-scanner .certificates .scannerwork'

@@ -15,14 +15,14 @@ import (
 
 type mavenExecuteOptions struct {
 	PomPath                     string   `json:"pomPath,omitempty"`
-	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
-	M2Path                      string   `json:"m2Path,omitempty"`
 	Goals                       []string `json:"goals,omitempty"`
 	Defines                     []string `json:"defines,omitempty"`
 	Flags                       []string `json:"flags,omitempty"`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 // MavenExecuteCommand This step allows to run maven commands
@@ -62,14 +62,14 @@ func MavenExecuteCommand() *cobra.Command {
 
 func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", os.Getenv("PIPER_pomPath"), "Path to the pom file that should be used.")
-	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
-	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
-	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().StringSliceVar(&stepConfig.Goals, "goals", []string{}, "Maven goals that should be executed.")
 	cmd.Flags().StringSliceVar(&stepConfig.Defines, "defines", []string{}, "Additional properties in form of -Dkey=value.")
 	cmd.Flags().StringSliceVar(&stepConfig.Flags, "flags", []string{}, "Flags to provide when running mvn.")
-	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 	cmd.Flags().BoolVar(&stepConfig.ReturnStdout, "returnStdout", false, "Returns the output of the maven command for further processing.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 
 	cmd.MarkFlagRequired("goals")
 }
@@ -77,35 +77,15 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 // retrieve step metadata
 func mavenExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "mavenExecute",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
 						Name:        "pomPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "projectSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "globalSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "string",
@@ -137,7 +117,7 @@ func mavenExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "logSuccessfulMavenTransfers",
+						Name:        "returnStdout",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
@@ -145,12 +125,36 @@ func mavenExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "returnStdout",
+						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "logSuccessfulMavenTransfers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
 			},

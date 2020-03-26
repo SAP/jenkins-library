@@ -4,7 +4,9 @@ import com.cloudbees.groovy.cps.NonCPS
 import groovy.text.SimpleTemplateEngine
 
 @Singleton
-class DebugReport {
+class DebugReport implements Serializable {
+    static final long serialVersionUID = 1L
+
     String projectIdentifier = null
     Map environment = ['environment': 'custom']
     String buildTool = null
@@ -87,7 +89,7 @@ class DebugReport {
     }
 
     Map generateReport(Script script, boolean shareConfidentialInformation) {
-        String template = script.libraryResource 'debug_report.txt'
+        String template = script.libraryResource 'com.sap.piper/templates/debug_report.txt'
 
         if (!projectIdentifier) {
             projectIdentifier = 'NOT_SET'

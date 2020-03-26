@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -80,10 +81,11 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{Timeout: 10, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	opts := ClientOptions{TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
-	assert.Equal(t, opts.Timeout, c.timeout)
+	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)
 	assert.Equal(t, opts.Password, c.password)
 	assert.Equal(t, opts.Token, c.token)
@@ -94,8 +96,8 @@ func TestApplyDefaults(t *testing.T) {
 		client   Client
 		expected Client
 	}{
-		{client: Client{}, expected: Client{timeout: time.Second * 10, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
-		{client: Client{timeout: 10}, expected: Client{timeout: 10, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
+		{client: Client{}, expected: Client{transportTimeout: 10 * time.Second, maxRequestDuration: 0, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
+		{client: Client{transportTimeout: 10, maxRequestDuration: 5}, expected: Client{transportTimeout: 10, maxRequestDuration: 5, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 	}
 
 	for k, v := range tt {
@@ -229,9 +231,46 @@ func TestUploadRequest(t *testing.T) {
 		})
 	}
 }
-func TestUploadRequestWrongMethod(t *testing.T) {
 
+func TestUploadRequestWrongMethod(t *testing.T) {
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
 	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
 	assert.Error(t, err, "No error occured but was expected")
+}
+
+func TestTransportTimout(t *testing.T) {
+	t.Run("timeout works on transport level", func(t *testing.T) {
+		// init
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Sleep for longer than the configured timeout
+			time.Sleep(2 * time.Second)
+		}))
+		defer svr.Close()
+
+		client := Client{transportTimeout: 1 * time.Second}
+		buffer := bytes.Buffer{}
+
+		// test
+		_, err := client.SendRequest(http.MethodGet, svr.URL, &buffer, nil, nil)
+		// assert
+		assert.EqualError(t, err,
+			fmt.Sprintf("error opening %v: Get %v: net/http: timeout awaiting response headers",
+				svr.URL, svr.URL),
+			"expected request to fail")
+	})
+	t.Run("timeout is not hit on transport level", func(t *testing.T) {
+		// init
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Sleep for less than the configured timeout
+			time.Sleep(1 * time.Second)
+		}))
+		defer svr.Close()
+
+		client := Client{transportTimeout: 2 * time.Second}
+		buffer := bytes.Buffer{}
+		// test
+		_, err := client.SendRequest(http.MethodGet, svr.URL, &buffer, nil, nil)
+		// assert
+		assert.NoError(t, err)
+	})
 }

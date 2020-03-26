@@ -1,0 +1,126 @@
+metadata:
+  name: mavenExecuteStaticCodeChecks
+  aliases:
+    - name: mavenExecute
+      deprecated: false
+  description: Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
+  longDescription: |
+    Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
+    SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
+    For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
+    PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
+    For more information please visit https://pmd.github.io/
+spec:
+  inputs:
+    params:
+      - name: spotBugs
+        description: Parameter to turn off SpotBugs.
+        type: bool
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pmd
+        description: Parameter to turn off PMD.
+        type: bool
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: mavenModulesExcludes
+        description: Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.
+        type: '[]string'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: spotBugsExcludeFilterFile
+        description: Path to a filter file with bug definitions which should be excluded.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/excludeFilterFile
+      - name: spotBugsIncludeFilterFile
+        description: Path to a filter file with bug definitions which should be included.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/includeFilterFile
+      - name: pmdExcludes
+        description: A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.
+        type: '[]string'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/excludes
+      - name: pmdRuleSets
+        description: The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.
+        type: '[]string'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/ruleSets
+
+      # Global maven settings, should be added to all maven steps
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/m2Path
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        mandatory: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
+
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

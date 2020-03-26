@@ -56,6 +56,9 @@ class SonarExecuteScanTest extends BasePiperTest {
                 binding.setProperty(l[0].variable, null)
             }
         })
+        helper.registerAllowedMethod('withEnv', [List.class, Closure.class], { List envVars, Closure body ->
+            body()
+        })
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3-20180101')
     }
 

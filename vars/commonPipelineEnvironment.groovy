@@ -2,6 +2,7 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
+import groovy.json.JsonOutput
 
 class commonPipelineEnvironment implements Serializable {
 
@@ -163,6 +164,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
+        [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
     ]
 
     void writeToDisk(script) {
@@ -176,16 +178,22 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for value type and act accordingly?
-                script.writeFile file: fileName, text: value
+                if(value instanceof String) {
+                    script.writeFile file: fileName, text: value
+                } else {
+                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
+                }
             }
         })
 
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
-                //ToDo: check for value type and act accordingly?
-                script.writeFile file: fileName, text: value
+                if(value instanceof String) {
+                    script.writeFile file: fileName, text: value
+                } else {
+                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
+                }
             }
         })
     }

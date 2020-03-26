@@ -37,6 +37,12 @@ void call(Map parameters = [:]) {
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
+        List customDefaults = ['default_pipeline_environment.yml'].plus(parameters.customDefaults?:[])
+        customDefaults.each {
+            cd ->
+                writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
+        }
+
         String configFile = parameters.get('configFile')
 
         loadConfigurationFromFile(script, configFile)

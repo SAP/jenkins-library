@@ -20,7 +20,8 @@ type stepInfo struct {
 	ExportPrefix     string
 	FlagsFunc        string
 	Long             string
-	Metadata         []config.StepParameters
+	StepParameters   []config.StepParameters
+	StepAliases      []config.Alias
 	OSImport         bool
 	OutputResources  []map[string]string
 	Short            string
@@ -56,7 +57,7 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{- range $key, $value := .Metadata }}
+	{{- range $key, $value := .StepParameters }}
 	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
 }
 
@@ -104,20 +105,24 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := .Metadata }}
+	{{- range $key, $value := .StepParameters }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
-	{{- range $key, $value := .Metadata }}{{ if $value.Mandatory }}
+	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
 }
 
 // retrieve step metadata
 func {{ .StepName }}Metadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "{{ .StepName }}",
+			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: "{{ $alias.Name }}", Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					{{- range $key, $value := .Metadata }}
+					{{- range $key, $value := .StepParameters }}
 					{
 						Name:      "{{ $value.Name }}",
 						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ "{" }}Name: "{{ $ref.Name }}", Param: "{{ $ref.Param }}"{{ "}" }},{{ end }}{{ "}" }},
@@ -298,7 +303,8 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
 			Short:            stepData.Metadata.Description,
 			Long:             stepData.Metadata.LongDescription,
-			Metadata:         stepData.Spec.Inputs.Parameters,
+			StepParameters:   stepData.Spec.Inputs.Parameters,
+			StepAliases:      stepData.Metadata.Aliases,
 			FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 			OSImport:         osImport,
 			OutputResources:  oRes,
@@ -459,6 +465,7 @@ func golangName(name string) string {
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
 	properName = strings.Replace(properName, "json", "JSON", -1)
+	properName = strings.Replace(properName, "Tls", "TLS", -1)
 	return properName
 }
 
