@@ -13,36 +13,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/cloudFoundryCreateServiceKey.yaml'
 
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
-
-        def script = checkScript(this, parameters) ?: this
-
-        Map config
-        def utils = parameters.juStabUtils ?: new Utils()
-
-        script.commonPipelineEnvironment.writeToDisk(script)
-
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
-
-        withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-        ]) {
-            // get context configuration
-            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
-            // execute step
-            dockerExecute(
-                script: script,
-                dockerImage: config.dockerImage,
-                dockerWorkspace: config.dockerWorkspace
-            ) {
-                withCredentials([usernamePassword(
-                    credentialsId: config.cfCredentialsId,
-                    passwordVariable: 'PIPER_password',
-                    usernameVariable: 'PIPER_username'
-                )]) {
-                    sh "./piper cloudFoundryCreateServiceKey"
-                }
-            }
-        }
-    }
+        List credentials = [
+        [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+        ]
+        
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
