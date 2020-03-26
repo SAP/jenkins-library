@@ -73,3 +73,6 @@ jobs:
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
       run: go test -tags=integration ./integration/...
+  condition-test:
+    if: github.repository=='SAP/jenkins-library' || startsWith(github.ref, 'it/')
+    run: echo startsWith(github.ref, 'it/')
