@@ -45,7 +45,7 @@ void call(Map parameters = [:]) {
         try {
             mavenExecuteStaticCodeChecks(script: script, spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath)
         } catch (Exception exception) {
-            throw exception
+            error("Maven Static Code Checks execution failed. Please examine the reports which are also available in the Jenkins user interface.")
         }
         finally {
             showIssues(script, stageName)
