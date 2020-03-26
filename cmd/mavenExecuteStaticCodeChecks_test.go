@@ -16,10 +16,10 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		config := mavenExecuteStaticCodeChecksOptions{
-			SpotBugs: true,
-			Pmd:      true,
-			PmdMaxAllowedViolations: 10,
-			PmdFailurePriority: 2,
+			SpotBugs:                  true,
+			Pmd:                       true,
+			PmdMaxAllowedViolations:   10,
+			PmdFailurePriority:        2,
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
 			SpotBugsIncludeFilterFile: "includeFilter.xml",
 			MavenModulesExcludes:      []string{"testing-lib", "test-helpers"},
@@ -102,9 +102,9 @@ func TestGetPmdMavenParameters(t *testing.T) {
 func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven options with excludes-, include filters and max allowed violations", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{
-			SpotBugs:                  true,
-			SpotBugsExcludeFilterFile: "excludeFilter.xml",
-			SpotBugsIncludeFilterFile: "includeFilter.xml",
+			SpotBugs:                     true,
+			SpotBugsExcludeFilterFile:    "excludeFilter.xml",
+			SpotBugsIncludeFilterFile:    "includeFilter.xml",
 			SpotBugsMaxAllowedViolations: 123,
 		}
 		expected := maven.ExecuteOptions{
