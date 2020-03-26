@@ -74,5 +74,5 @@ jobs:
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
       run: go test -tags=integration ./integration/...
-  condition-test:
+  debug:
     run: echo startsWith(github.ref, 'it/')
