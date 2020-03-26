@@ -119,6 +119,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	if err != nil {
+		cloudfoundry.Logout()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
