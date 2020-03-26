@@ -59,7 +59,12 @@ jobs:
     if: github.repository=='SAP/jenkins-library' || startsWith(github.ref, 'it/')
     runs-on: ubuntu-latest
     steps:
-    - run: echo startsWith(github.ref, 'it/')
+    - name: debug1
+      run: github.repository
+    - name: debug2
+      run: github.ref
+    - name: debug3
+      run: echo startsWith(github.ref, 'it/')
     - uses: actions/setup-go@v1
       with:
         go-version: '1.13.x'
