@@ -12,7 +12,7 @@ metadata:
     For more information please visit https://pmd.github.io/.
     The plugins should be configured in the respective pom.xml.
     For SpotBugs include- and exclude filters as well as maximum allowed violations are conifgurable via .pipeline/config.yml.
-    For PMD the failure priority and the max allowed violations are configurable via pipeline/config.yml.
+    For PMD the failure priority and the max allowed violations are configurable via .pipeline/config.yml.
 
 spec:
   inputs:

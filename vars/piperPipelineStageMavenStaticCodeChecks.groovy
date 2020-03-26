@@ -69,6 +69,6 @@ private showIssues(Script script, String stageName) {
             enabledForFailure: true,
             aggregatingResults: false,
             tool: pmdParser(pattern: '**/target/pmd.xml'))
+        ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
     }
-    ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
 }
