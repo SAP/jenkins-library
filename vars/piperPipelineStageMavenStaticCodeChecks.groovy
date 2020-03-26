@@ -44,13 +44,10 @@ void call(Map parameters = [:]) {
 
         try {
             mavenExecuteStaticCodeChecks(script: script, spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath)
-        } catch(Exception exception) {
             Map configuration = ConfigurationLoader.stageConfiguration(script, stageName)
             // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
             if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
-                recordIssues(failedTotalHigh: 1,
-                    failedTotalNormal: 10,
-                    blameDisabled: true,
+                recordIssues(blameDisabled: true,
                     enabledForFailure: true,
                     aggregatingResults: false,
                     tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
@@ -58,15 +55,13 @@ void call(Map parameters = [:]) {
                 ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
             }
             if (configuration.mavenExecuteStaticCodeChecks?.pmd == null || configuration.mavenExecuteStaticCodeChecks?.pmd == true) {
-                recordIssues(failedTotalHigh: 1,
-                    failedTotalNormal: 10,
-                    blameDisabled: true,
+                recordIssues(blameDisabled: true,
                     enabledForFailure: true,
                     aggregatingResults: false,
                     tool: pmdParser(pattern: '**/target/pmd.xml'))
-
-                ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
             }
+            ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
+        } catch (Exception exception) {
             throw exception
         }
     }
