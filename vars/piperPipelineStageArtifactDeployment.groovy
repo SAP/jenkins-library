@@ -18,7 +18,8 @@ import static com.sap.piper.Prerequisites.checkScript
         /**
          * Version of Nexus. Can be nexus2 or nexus3.
          * @parentConfigKey nexus
-         * @defaultValue nexus3
+         * @default `nexus3`
+         * @possibleValues `nexus2`, `nexus3`
          */
         'version',
         /**
@@ -39,8 +40,10 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'additionalClassifiers',
         /**
-         * Credentials to be used for deployment.
+         * ID to the credentials which is used to connect to Nexus.
+         * Anonymous deployments do not require a credentialsId.
          * @parentConfigKey nexus
+         * @possibleValues Jenkins credential id
          */
         'credentialsId',
 ]
