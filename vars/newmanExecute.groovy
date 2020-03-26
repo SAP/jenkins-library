@@ -4,6 +4,8 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
+import com.sap.piper.CfUtils
+
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
@@ -64,8 +66,42 @@ import groovy.transform.Field
      * Define an additional repository where the test implementation is located.
      * For protected repositories the `testRepository` needs to contain the ssh git url.
      */
-    'testRepository'
+    'testRepository',
+    /**
+     * Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
+     * to the newman command that overrides the environment json entries
+     * (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+     */
+    'cfAppsWithSecrets',
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Credentials to be used for deployment.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
+
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -86,7 +122,7 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .use()
 
         new Utils().pushToSWA([
@@ -128,8 +164,33 @@ void call(Map parameters = [:]) {
                         config: config.plus([newmanCollection: collection]),
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
+                def command_secrets
+                if(config.cfAppsWithSecrets){
+                    CfUtils cfUtils = new CfUtils();
+                    config.cfAppsWithSecrets.each { appName ->
+                        def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
+                                                    config.cloudFoundry.org,
+                                                    config.cloudFoundry.space,
+                                                    config.cloudFoundry.credentialsId,
+                                                    appName,
+                                                    config.verbose ? true : false )
+                        command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
+                        echo "Appending secret for ${appName}: --env-var ${appName}_clientid=****  --env-var ${appName}_clientsecret=****"
+                    }
+                }
+
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                if (config.cfAppsWithSecrets && command_secrets){
+                    echo "PATH=\$PATH:~/.npm-global/bin newman ${command} **env/secrets**"
+                    sh """
+                        set +x
+                        PATH=\$PATH:~/.npm-global/bin newman ${command} ${command_secrets}
+                        set -x
+                    """
+                }
+                else{
+                    sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                }
             }
         }
     }
