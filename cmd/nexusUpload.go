@@ -197,6 +197,8 @@ func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions
 		M2Path:             options.M2Path,
 		GlobalSettingsFile: options.GlobalSettingsFile,
 	}
+	log.Entry().Infof("MavenExecuteOptions: m2Path: '%v', globalSettingsFile: '%v'",
+		options.M2Path, options.GlobalSettingsFile)
 	return mavenOptions
 }
 
