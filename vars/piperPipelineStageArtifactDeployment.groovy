@@ -1,6 +1,4 @@
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
@@ -17,17 +15,39 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STAGE_STEP_KEYS = [
     /** Parameters for deployment to a Nexus Repository Manager. */
     'nexus',
+        /**
+         * Version of Nexus. Can be nexus2 or nexus3.
+         * @parentConfigKey nexus
+         * @defaultValue nexus3
+         */
+        'version',
+        /**
+         * URL of the Nexus. The scheme part of the URL will not be considered,
+         * because only http is supported.
+         * @parentConfigKey nexus
+         */
+        'url',
+        /**
+         * Name of the Nexus repository.
+         * @parentConfigKey nexus
+         */
+        'repository',
+        /**
+         * List of additional classifiers that should be deployed to Nexus.
+         * Each item is a map of a type and a classifier name.
+         * @parentConfigKey nexus
+         */
+        'additionalClassifiers',
+        /**
+         * Credentials to be used for deployment.
+         * @parentConfigKey nexus
+         */
+        'credentialsId',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Artifact ID of the main build artifact. */
     'artifactId',
-    /** Group ID of the main build artifact. */
-    'groupId',
-    /** The docker image to use for executing the step. */
-    'dockerImage',
-    /** The options to be passed to docker when executing the step within a docker context. */
-    'dockerOptions',
 ])
 
 /**
@@ -60,33 +80,16 @@ def call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        def nexusConfig = config.nexus
+        Map nexusConfig = config.nexus as Map
 
         // Add all mandatory parameters
         Map nexusUploadParams = [
             script: script,
-            version: nexusConfig.version,
-            url: nexusConfig.url,
-            repository: nexusConfig.repository,
         ]
-
-        // Add additional parameters only if they are set. This avoids the following problem:
-        // Since the context parameters will be converted to JSON, put into an ENV variable,
-        // and then decoded back using the piper binary's getConfig --contextConfig command,
-        // keys that were present, but had a null value, will now in fact have a value of
-        // type net.sf.json.JSONNull. This in turn will not evaluate to 'false' using Groovy.
-        // Worse, these parameters will take precedence over the project's config or default
-        // config.
-        if (config.dockerImage) {
-            nexusUploadParams.dockerImage = config.dockerImage
-        }
-        if (config.dockerOptions) {
-            nexusUploadParams.dockerOptions = config.dockerOptions
-        }
 
         nexusUploadParams = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script as Script, nexusUploadParams)
 
-        // Set artifactId if configured, fall-back to artifactId from CPE if set
+        // Set artifactId if provided via parameters, fall-back to artifactId from CPE if set
         if (nexusConfig.artifactId) {
             nexusUploadParams.artifactId = nexusConfig.artifactId
         } else if (script.commonPipelineEnvironment.configuration.artifactId) {
