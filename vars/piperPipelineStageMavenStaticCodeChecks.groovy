@@ -37,13 +37,8 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
 
     piperStageWrapper(stageName: stageName, script: script) {
-
-        String spotBugsIncludeFilterFile = 'default_spotbugs_include_filter.xml'
-        String spotBugsLocalIncludeFilterPath = ".pipeline/${spotBugsIncludeFilterFile}"
-        writeFile file: spotBugsLocalIncludeFilterPath, text: libraryResource(spotBugsIncludeFilterFile)
-
         try {
-            mavenExecuteStaticCodeChecks(script: script, spotBugsIncludeFilterFile: spotBugsLocalIncludeFilterPath)
+            mavenExecuteStaticCodeChecks(script: script)
         } catch (Exception exception) {
             error("Maven Static Code Checks execution failed. Please examine the reports which are also available in the Jenkins user interface.")
         }
