@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
@@ -25,6 +26,23 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
+        // The default pipeline config, plus any custom default configs, have been
+        // extracted from the library resources into .pipeline/ by setupCommonPipelineEnvironment.groovy
+        // and fed into the DefaultValueCache. The 'default_pipeline_environment.yml' file
+        // is not reflected in the list returned by getCustomDefaults(), but has to be
+        // included in the --defaultConfig param. This makes sure that the same default configuration
+        // values are visible from the go side as from the Groovy side.
+        List customDefaults = ['default_pipeline_environment.yml']
+        customDefaults.addAll(DefaultValueCache.getInstance().getCustomDefaults())
+        for (int i = 0; i < customDefaults.size(); i++) {
+            customDefaults[i] = '".pipeline/' + customDefaults[i] + '"'
+        }
+        // Only pass --defaultConfig if different from the default value.
+        String customDefaultsString = ''
+        if (customDefaults != ['".pipeline/defaults.yaml"']) {
+            customDefaultsString = customDefaults.join(',')
+        }
+
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
@@ -33,9 +51,14 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
             echo "Config: ${config}"
 
+            String piperCommandLine = "./piper ${stepName}"
+            if (customDefaultsString) {
+                piperCommandLine += " --defaultConfig ${customDefaultsString}"
+            }
+
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}"
+                    sh piperCommandLine
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
