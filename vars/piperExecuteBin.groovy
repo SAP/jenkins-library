@@ -28,7 +28,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         List environment = [ "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}" ]
 
-        List customDefaults = DefaultValueCache.getCustomDefaults()
+        List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
         for (int i = 0; i < customDefaults.size(); i++) {
             if (!customDefaults[i].startsWith('.pipeline/'))
                 customDefaults[i] = '.pipeline/' + customDefaults[i]
