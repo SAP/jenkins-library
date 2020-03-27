@@ -78,8 +78,9 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         globalExtensions = fileExists(globalInterceptorFile)
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
+
         // First, check if a global extension exists via a dedicated repository
-        if (!Boolean.valueOf(script.env.PIPER_DISABLE_EXTENSIONS) && globalExtensions) {
+        if ((env.PIPER_DISABLE_EXTENSIONS==null || globalExtensions) && (!Boolean.valueOf(script.env.PIPER_DISABLE_EXTENSIONS) && globalExtensions)) {
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
             DebugReport.instance.globalExtensions.put(stageName, "Overwrites")
@@ -94,7 +95,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         }
 
         // Second, check if a project extension (within the same repository) exists
-        if (!Boolean.valueOf(script.env.PIPER_DISABLE_EXTENSIONS) && projectExtensions) {
+        if ((env.PIPER_DISABLE_EXTENSIONS ==null || projectExtensions) && (!Boolean.valueOf(script.env.PIPER_DISABLE_EXTENSIONS) && projectExtensions)) {
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
             if (projectExtensions && globalExtensions) {

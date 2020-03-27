@@ -133,7 +133,6 @@ class PiperStageWrapperTest extends BasePiperTest {
             return helper.loadScript('test/resources/stages/test_global_overwriting.groovy')
         })
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
-        nullScript.env.PIPER_DISABLE_EXTENSIONS = 'false'
 
         def executed = false
         stepRule.step.piperStageWrapper(
@@ -162,7 +161,6 @@ class PiperStageWrapperTest extends BasePiperTest {
         helper.registerAllowedMethod('load', [String.class], {
             return helper.loadScript('test/resources/stages/test_old_extension.groovy')
         })
-        nullScript.env.PIPER_DISABLE_EXTENSIONS = 'false'
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
 
         def executed = false
@@ -188,6 +186,10 @@ class PiperStageWrapperTest extends BasePiperTest {
     void testExtensionExec() {
         helper.registerAllowedMethod('fileExists', [String.class], { path ->
             return (path == '.pipeline/extensions/test_old_extension.groovy')
+        })
+
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_old_extension.groovy')
         })
 
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
