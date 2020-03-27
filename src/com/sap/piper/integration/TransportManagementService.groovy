@@ -98,7 +98,7 @@ class TransportManagementService implements Serializable {
         }
         if (! responseContent) {
             // should not happen. Instead there should be an exception thrown by the sh step
-            error "Cannot provide upload file response."
+            script.error "Cannot provide upload file response."
         }
         return jsonUtils.jsonStringToGroovyObject(responseContent)
     }
