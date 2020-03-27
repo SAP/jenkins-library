@@ -72,33 +72,29 @@ class TransportManagementService implements Serializable {
 
         def responseContent
 
-        try {
-
-        def responseFileUpload = 'response.txt'
-
-        def responseCode = sh returnStdout: true,
-                              script: """|#!/bin/sh -e
-                                         | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
-                                         |      --write-out '%{response_code}' \\
-                                         |      -H 'Authorization: Bearer ${token}' \\
-                                         |      -F 'file=@${file}' \\
-                                         |      -F 'namedUser=${namedUser}' \\
-                                         |      --output ${responseFileUpload} \\
-                                         |      '${url}/v2/files/upload'""".stripMargin()
+        def responseCode = script.sh returnStdout: true,
+                                     script: """|#!/bin/sh -e
+                                                | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                                |      --write-out '%{response_code}' \\
+                                                |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -F 'file=@${file}' \\
+                                                |      -F 'namedUser=${namedUser}' \\
+                                                |      --output ${responseFileUpload} \\
+                                                |      '${url}/v2/files/upload'""".stripMargin()
 
 
         def responseBody = 'n/a'
 
-        boolean gotResponse = fileExists(responseFileUpload)
+        boolean gotResponse = script.fileExists(responseFileUpload)
 
         if(gotResponse) {
-            responseBody = readFile(responseFileUpload)
+            responseBody = script.readFile(responseFileUpload)
         }
 
-        def HTTP_OK = '200'
+        def HTTP_CREATED = '201'
 
-        if (responseCode != HTTP_OK) {
-            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_OK} expected."
+        if (responseCode != HTTP_CREATED) {
+            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_CREATED} expected."
             echo "${message} Response body: ${responseBody}"
             script.error message
         }
