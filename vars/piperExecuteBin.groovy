@@ -26,29 +26,32 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
-        List environment = [ "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}" ]
-
         List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
         for (int i = 0; i < customDefaults.size(); i++) {
-            if (!customDefaults[i].startsWith('.pipeline/'))
-                customDefaults[i] = '.pipeline/' + customDefaults[i]
+            customDefaults[i] = '".pipeline/' + customDefaults[i] + '"'
         }
         echo("custom defaults list: ${customDefaults}")
-        if (customDefaults.size() > 0 && customDefaults != ['.pipeline/defaults.yaml']) {
-            environment.add("PIPER_defaultConfig=${groovy.json.JsonOutput.toJson(customDefaults)}")
+        String customDefaultsString = ''
+        if (customDefaults.size() > 0 && customDefaults != ['".pipeline/defaults.yaml"']) {
+            customDefaultsString = customDefaults.join(' ')
         }
 
-        withEnv(
-            environment
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
-        ) {
+        ]) {
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
             echo "Config: ${config}"
 
+            String piperCommandLine = "./piper ${stepName}"
+            if (customDefaultsString) {
+                piperCommandLine += " --defaultConfig ${customDefaultsString}"
+            }
+
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}"
+                    sh piperCommandLine
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
