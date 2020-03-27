@@ -26,13 +26,20 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
-        List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
+        // The default pipeline config, plus and custom default configs, have been
+        // extracted from the library resources into .pipeline/ by setupCommonPipelineEnvironment.groovy
+        // and fed into the DefaultValueCache. The 'default_pipeline_environment.yml' file
+        // is not reflected in the list returned by getCustomDefaults(), but has to be
+        // included in the --defaultConfig param. This makes sure that the same default configuration
+        // values are visible from the go side as from the Groovy side.
+        List customDefaults = ['default_pipeline_environment.yml']
+        customDefaults.addAll(DefaultValueCache.getInstance().getCustomDefaults())
         for (int i = 0; i < customDefaults.size(); i++) {
             customDefaults[i] = '".pipeline/' + customDefaults[i] + '"'
         }
-        echo("custom defaults list: ${customDefaults}")
+        // Only pass --defaultConfig if different from the default value.
         String customDefaultsString = ''
-        if (customDefaults.size() > 0 && customDefaults != ['".pipeline/defaults.yaml"']) {
+        if (customDefaults != ['".pipeline/defaults.yaml"']) {
             customDefaultsString = customDefaults.join(' ')
         }
 
