@@ -83,7 +83,7 @@ class TransportManagementService implements Serializable {
                                          |      -H 'Authorization: Bearer ${token}' \\
                                          |      -F 'file=@${file}' \\
                                          |      -F 'namedUser=${namedUser}' \\
-                                         |      -o ${responseFileUpload} \\
+                                         |      --output ${responseFileUpload} \\
                                          |      '${url}/v2/files/upload'""".stripMargin()
 
 
