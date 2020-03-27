@@ -73,34 +73,41 @@ class TransportManagementService implements Serializable {
         def responseContent
 
         try {
-            script.sh """#!/bin/sh -e
-                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o ${responseFileUpload}  --fail '${url}/v2/files/upload'
-            """
 
-            echo("File upload successful.")
+        def responseFileUpload = 'response.txt'
 
-        } catch (Exception e) {
-            String message = 'Exception caught during file upload.'
-            if (config.verbose) {
-                message += ' Consider re-running in verbose mode in order to get more details.'
-            }
-            echo(message)
-            throw e
-        } finally {
+        def responseCode = sh returnStdout: true,
+                              script: """|#!/bin/sh -e
+                                         | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                         |      -H 'Authorization: Bearer ${token}' \\
+                                         |      -F 'file=@${file}' \\
+                                         |      -F 'namedUser=${namedUser}' \\
+                                         |      -o ${responseFileUpload} \\
+                                         |      '${url}/v2/files/upload'""".stripMargin()
 
-            if (script.fileExists(responseFileUpload)) {
-                responseContent = script.readFile(responseFileUpload)
 
-                if (config.verbose) {
-                    echo("Upload file response: ${responseContent}")
-                }
-            }
+        def responseBody = 'n/a'
+
+        boolean gotResponse = fileExists(responseFileUpload)
+
+        if(gotResponse) {
+            responseBody = readFile(responseFileUpload)
         }
-        if (! responseContent) {
-            // should not happen. Instead there should be an exception thrown by the sh step
+
+        def HTTP_OK = '200'
+
+        if (responseCode != HTTP_OK) {
+            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_OK} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
+        }
+
+        echo("File upload successful.")
+
+        if (! gotResponse) {
             script.error "Cannot provide upload file response."
         }
-        return jsonUtils.jsonStringToGroovyObject(responseContent)
+        return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
 
 
