@@ -40,7 +40,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         // Only pass --defaultConfig if different from the default value.
         String customDefaultsString = ''
         if (customDefaults != ['".pipeline/defaults.yaml"']) {
-            customDefaultsString = customDefaults.join(' ')
+            customDefaultsString = customDefaults.join(',')
         }
 
         withEnv([
