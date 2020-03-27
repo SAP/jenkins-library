@@ -51,22 +51,13 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-        def responseStatusCode = response.status
-        if (responseStatusCode != 200) {
-            def errorMessage = "OAuth Token retrieval failed."
-            if (config.verbose) {
-                echo("OAuth Token retrieval failed due to unexpected response status ${response.status}.")
-                if (responseStatusCode >= 400) {
-                    echo("Response content '${response.content}'.")
-                }
-            } else {
-                errorMessage += " Consider re-running in verbose mode in order to get more details."
-            }
-            throw new Exception(errorMessage)
+        if (response.status != 200) {
+            def errorMessage = "OAuth Token retrieval failed (HTTP status code '${response.status}')."
+            signalAboutError(response, errorMessage)
+        } else {
+            echo("OAuth Token retrieved successfully.")
+            return jsonUtils.jsonStringToGroovyObject(response.content).access_token
         }
-        
-        echo("OAuth Token retrieved successfully.")
-        return jsonUtils.jsonStringToGroovyObject(response.content).access_token
 
     }
 
@@ -129,22 +120,13 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-        def responseStatusCode = response.status
-        if (responseStatusCode != 200) {
-            def errorMessage = "Node upload failed."
-            if (config.verbose) {
-                echo("Node upload failed due to unexpected response status ${response.status}.")
-                if (responseStatusCode >= 400) {
-                    echo("Response content '${response.content}'.")
-                }
-            } else {
-                errorMessage += " Consider re-running in verbose mode in order to get more details."
-            }
-            throw new Exception(errorMessage)
+        if (response.status != 200) {
+            def errorMessage = "Node upload failed (HTTP status code '${response.status}')."
+            signalAboutError(response, errorMessage)
+        } else {
+            echo("Node upload successful.")
+            return jsonUtils.jsonStringToGroovyObject(response.content)
         }
-        
-        echo("Node upload successful.")
-        return jsonUtils.jsonStringToGroovyObject(response.content)
 
     }
 
@@ -164,6 +146,17 @@ class TransportManagementService implements Serializable {
         }
 
         return response
+    }
+
+    private signalAboutError(response, errorMessage) {
+        if (config.verbose) {
+            if (response.status >= 400) {
+                errorMessage += " Response content '${response.content}'."
+            }
+        } else {
+            errorMessage += " Consider re-running in verbose mode in order to get more details for HTTP status codes 4xx and 5xx."
+        }
+        script.error "[${getClass().getSimpleName()}] ${errorMessage}"
     }
 
     private echo(message) {
