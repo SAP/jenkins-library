@@ -86,7 +86,7 @@ func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.E
 	}
 	if config.PmdFailurePriority >= 1 && config.PmdFailurePriority <= 5 {
 		defines = append(defines, "-Dpmd.failurePriority="+strconv.Itoa(config.PmdFailurePriority))
-	} else {
+	} else if config.PmdFailurePriority != 0 {
 		log.Entry().Warningf("Pmd failure priority must be a value between 1 and 5. %v was configured. Defaulting to 5.", config.PmdFailurePriority)
 	}
 
