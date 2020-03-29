@@ -64,15 +64,21 @@ void call(Map parameters = [:]) {
 }
 
 private loadConfigurationFromFile(script, String configFile) {
+    if (!configFile) {
+        // If not provided, fall back to either of those too, if they exists:
+        String defaultYmlConfigFile = '.pipeline/config.yml'
+        String defaultYamlConfigFile = '.pipeline/config.yaml'
+        if (fileExists(defaultYmlConfigFile)) {
+            configFile = defaultYmlConfigFile
+        } else if (fileExists(defaultYamlConfigFile)) {
+            configFile = defaultYamlConfigFile
+        }
+    }
 
-    String defaultYmlConfigFile = '.pipeline/config.yml'
-    String defaultYamlConfigFile = '.pipeline/config.yaml'
-
+    // Try to read the file now. If it was passed to the function,
+    // we intentionally do not check if the file exists before trying to read it.
     if (configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
-    } else if (fileExists(defaultYmlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
-    } else if (fileExists(defaultYamlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
+        script.commonPipelineEnvironment.configurationFile = configFile
     }
 }
