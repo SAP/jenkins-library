@@ -68,7 +68,7 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/checkmarx.yaml'], containsString('name: checkmarxExecuteScan'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan'))
+        assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan --defaultConfig ".pipeline/default_pipeline_environment.yml"'))
     }
 
     @Test

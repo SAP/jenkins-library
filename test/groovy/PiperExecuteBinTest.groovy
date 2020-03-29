@@ -127,7 +127,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/test.yaml'], containsString('name: testStep'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper testStep'))
+        assertThat(shellCallRule.shell[1], is('./piper testStep --defaultConfig ".pipeline/default_pipeline_environment.yml"'))
         assertThat(credentials.size(), is(3))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
         assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
@@ -182,7 +182,7 @@ class PiperExecuteBinTest extends BasePiperTest {
 
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/test.yaml'], containsString('name: testStep'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper testStep'))
+        assertThat(shellCallRule.shell[1], is('./piper testStep --defaultConfig ".pipeline/default_pipeline_environment.yml"'))
         assertThat(credentials.size(), is(0))
 
         assertThat(dockerExecuteRule.dockerParams.size(), is(0))

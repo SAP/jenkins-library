@@ -81,7 +81,7 @@ class KubernetesDeployTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/kubernetesdeploy.yaml'], containsString('name: kubernetesDeploy'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy'))
+        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy --defaultConfig ".pipeline/default_pipeline_environment.yml"'))
         assertThat(credentials.size(), is(3))
 
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/K8S:latest'))
@@ -96,7 +96,7 @@ class KubernetesDeployTest extends BasePiperTest {
             script: nullScript
         )
         // asserts
-        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy'))
+        assertThat(shellCallRule.shell[1], is('./piper kubernetesDeploy --defaultConfig ".pipeline/default_pipeline_environment.yml"'))
         assertThat(credentials.size(), is(2))
     }
 }

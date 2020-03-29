@@ -26,7 +26,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
-        // The default pipeline config, plus and custom default configs, have been
+        // The default pipeline config, plus any custom default configs, have been
         // extracted from the library resources into .pipeline/ by setupCommonPipelineEnvironment.groovy
         // and fed into the DefaultValueCache. The 'default_pipeline_environment.yml' file
         // is not reflected in the list returned by getCustomDefaults(), but has to be
@@ -52,8 +52,14 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "Config: ${config}"
 
             String piperCommandLine = "./piper ${stepName}"
+
+            // Extend command line for config files to align with Jenkins side
             if (customDefaultsString) {
                 piperCommandLine += " --defaultConfig ${customDefaultsString}"
+            }
+            if (script.commonPipelineEnvironment.configurationFile
+                && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
+                piperCommandLine += " --customConfig \"$script.commonPipelineEnvironment.configurationFile\""
             }
 
             dockerWrapper(script, config) {
