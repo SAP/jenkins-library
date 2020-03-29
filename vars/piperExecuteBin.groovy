@@ -52,8 +52,14 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "Config: ${config}"
 
             String piperCommandLine = "./piper ${stepName}"
+
+            // Extend command line for config files to align with Jenkins side
             if (customDefaultsString) {
                 piperCommandLine += " --defaultConfig ${customDefaultsString}"
+            }
+            if (script.commonPipelineEnvironment.configurationFile
+                && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
+                piperCommandLine += " --customConfig \"$script.commonPipelineEnvironment.configurationFile\""
             }
 
             dockerWrapper(script, config) {
