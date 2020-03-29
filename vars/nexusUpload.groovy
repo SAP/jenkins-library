@@ -1,3 +1,4 @@
+import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
 
 import static groovy.json.JsonOutput.toJson
@@ -14,6 +15,7 @@ void call(Map parameters = [:]) {
     if (parameters.additionalClassifiers) {
         parameters.additionalClassifiers = "${toJson(parameters.additionalClassifiers as List)}"
     }
+    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(parameters.script, parameters)
 
     List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)

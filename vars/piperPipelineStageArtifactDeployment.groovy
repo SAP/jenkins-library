@@ -1,11 +1,8 @@
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
 import com.sap.piper.Utils
 import groovy.transform.Field
-
-import static groovy.json.JsonOutput.toJson
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -59,8 +56,6 @@ void call(Map parameters = [:]) {
             url: nexusConfig.url,
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
-
-        nexusUploadParams = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script as Script, nexusUploadParams)
 
         // Set artifactId from CPE if set
         if (script.commonPipelineEnvironment.configuration.artifactId) {
