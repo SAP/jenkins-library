@@ -13,7 +13,6 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Parameters for deployment to a Nexus Repository Manager. */
     'nexus'
 ])
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_CONFIG_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
