@@ -183,24 +183,26 @@ class PiperStageWrapperTest extends BasePiperTest {
     }
 
     @Test
-    void testExtensionExec() {
+    void testExtensionDeactivation() {
         helper.registerAllowedMethod('fileExists', [String.class], { path ->
             return (path == '.pipeline/extensions/test_old_extension.groovy')
         })
-
         helper.registerAllowedMethod('load', [String.class], {
             return helper.loadScript('test/resources/stages/test_old_extension.groovy')
         })
 
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
-        nullScript.env.PIPER_DISABLE_EXTENSIONS = 'true'
-
-        stepRule.step.piperStageWrapper(
-            script: nullScript,
-            juStabUtils: utils,
-            ordinal: 10,
-            stageName: 'test_old_extension'
-        ) {}
+        binding.setProperty('PIPER_DISABLE_EXTENSIONS', 'true')
+        try {
+            stepRule.step.piperStageWrapper(
+                script: nullScript,
+                juStabUtils: utils,
+                ordinal: 10,
+                stageName: 'test_old_extension'
+            ) {}
+        } finally {
+            binding.setProperty('PIPER_DISABLE_EXTENSIONS', null)
+        }
         //setting above parameter to 'true' bypasses the below message
         assertThat(loggingRule.log, not(containsString("[piperStageWrapper] Running project interceptor '.pipeline/extensions/test_old_extension.groovy' for test_old_extension.")))
     }
