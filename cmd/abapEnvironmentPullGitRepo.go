@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +57,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
 	pullConnectionDetails.XCsrfToken = "fetch"
+	var expandLog = "?$expand=to_Execution_log,to_Transport_log"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
@@ -82,12 +86,12 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
-	if body == (abapEntity{}) {
+	if reflect.DeepEqual(abapEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
-	uriConnectionDetails.URL = body.Metadata.URI
+	uriConnectionDetails.URL = body.Metadata.URI + expandLog
 	return uriConnectionDetails, nil
 }
 
@@ -110,7 +114,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 		var abapResp map[string]*json.RawMessage
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["d"], &body)
-		if body == (abapEntity{}) {
+		if reflect.DeepEqual(abapEntity{}, body) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
@@ -118,6 +122,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 		status = body.Status
 		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
 		if body.Status != "R" {
+			printLogs(body)
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -204,9 +209,55 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 	if resp == nil {
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
+		var abapErrorResponse abapError
+		bodyText, _ := ioutil.ReadAll(resp.Body)
+		var abapResp map[string]*json.RawMessage
+		json.Unmarshal(bodyText, &abapResp)
+		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+		if (abapError{}) != abapErrorResponse {
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+		}
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 		resp.Body.Close()
 	}
+}
+
+func printLogs(entity abapEntity) {
+
+	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
+		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
+	})
+
+	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
+		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
+	})
+
+	log.Entry().Info("-------------------------")
+	log.Entry().Info("Transport Log")
+	log.Entry().Info("-------------------------")
+	for _, logEntry := range entity.ToTransportLog.Results {
+
+		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
+	}
+
+	log.Entry().Info("-------------------------")
+	log.Entry().Info("Execution Log")
+	log.Entry().Info("-------------------------")
+	for _, logEntry := range entity.ToExecutionLog.Results {
+		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
+	}
+	log.Entry().Info("-------------------------")
+
+}
+
+func convertTime(logTimeStamp string) time.Time {
+	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	t := time.Unix(n, 0).UTC()
+	return t
 }
 
 type abapEntity struct {
@@ -216,12 +267,23 @@ type abapEntity struct {
 	Namespace      string       `json:"namepsace"`
 	Status         string       `json:"status"`
 	StatusDescr    string       `json:"status_descr"`
-	ToExecutionLog deferred     `json:"to_Execution_log"`
-	ToTransportLog deferred     `json:"to_Transport_log"`
+	ToExecutionLog abapLogs     `json:"to_Execution_log"`
+	ToTransportLog abapLogs     `json:"to_Transport_log"`
 }
 
 type abapMetadata struct {
 	URI string `json:"uri"`
+}
+
+type abapLogs struct {
+	Results []logResults `json:"results"`
+}
+
+type logResults struct {
+	Index       string `json:"index_no"`
+	Type        string `json:"type"`
+	Description string `json:"descr"`
+	Timestamp   string `json:"timestamp"`
 }
 
 type serviceKey struct {
@@ -255,4 +317,14 @@ type connectionDetailsHTTP struct {
 	Password   string `json:"password"`
 	URL        string `json:"url"`
 	XCsrfToken string `json:"xcsrftoken"`
+}
+
+type abapError struct {
+	Code    string           `json:"code"`
+	Message abapErrorMessage `json:"message"`
+}
+
+type abapErrorMessage struct {
+	Lang  string `json:"lang"`
+	Value string `json:"value"`
 }

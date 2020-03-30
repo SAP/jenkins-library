@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
@@ -16,11 +17,12 @@ func TestTriggerPull(t *testing.T) {
 
 	t.Run("Test trigger pull: success case", func(t *testing.T) {
 
-		uriExpected := "example.com"
+		receivedURI := "example.com/Entity"
+		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
 		tokenExpected := "myToken"
 
 		client := &clientMock{
-			Body:  `{"d" : { "__metadata" : { "uri" : "` + uriExpected + `" } } }`,
+			Body:  `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
 			Token: tokenExpected,
 		}
 		config := abapEnvironmentPullGitRepoOptions{
@@ -158,6 +160,27 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 
+}
+
+func TestTimeConverter(t *testing.T) {
+	t.Run("Test example time", func(t *testing.T) {
+		inputDate := "/Date(1585576809000+0000)/"
+		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
+		result := convertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test Unix time", func(t *testing.T) {
+		inputDate := "/Date(0000000000000+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := convertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test unexpected format", func(t *testing.T) {
+		inputDate := "/Date(0012300000001+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := convertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
 }
 
 type clientMock struct {
