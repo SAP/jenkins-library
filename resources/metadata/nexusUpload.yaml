@@ -52,6 +52,8 @@ spec:
         scope:
         - PARAMETERS
         mandatory: false
+        aliases:
+          - name: nexus/groupId
       - name: artifactId
         type: string
         description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
