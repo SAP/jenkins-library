@@ -76,8 +76,8 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
 
     @Test
     void 'MavenExecuteStaticCodeChecks should be executed, results recorded and reported in Reportaggregator'() {
-        boolean spotBugsStepCalled = false
-        boolean pmdParserStepCalled = false
+        spotBugsStepCalled = false
+        pmdParserStepCalled = false
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [:]]
         stepRule.step.mavenExecuteStaticCodeChecks(
@@ -97,8 +97,8 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
 
     @Test
     void 'MavenExecuteStaticCodeChecks should not record results and not report in Reportaggregator when turned off'() {
-        boolean spotBugsStepCalled = false
-        boolean pmdParserStepCalled = false
+        spotBugsStepCalled = false
+        pmdParserStepCalled = false
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [mavenExecuteStaticCodeChecks: [spotBugs: false, pmd: false]]]
         stepRule.step.mavenExecuteStaticCodeChecks(
