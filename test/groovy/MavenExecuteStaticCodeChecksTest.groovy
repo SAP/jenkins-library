@@ -1,3 +1,4 @@
+import com.sap.piper.ReportAggregator
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,9 +16,11 @@ import util.Rules
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
@@ -29,6 +32,8 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     private List withEnvArgs = []
+    private boolean spotBugsStepCalled = false
+    private boolean pmdParserStepCalled = false
 
     @Rule
     public RuleChain rules = Rules
@@ -53,6 +58,16 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
             Map params, Closure c ->
             c.call()
         })
+        helper.registerAllowedMethod("recordIssues", [Map.class], { Map config
+            ->
+        })
+        helper.registerAllowedMethod("spotBugs", [Map.class], { Map config
+            -> spotBugsStepCalled = true
+        })
+        helper.registerAllowedMethod("pmdParser", [Map.class], { Map config
+            -> pmdParserStepCalled = true
+        })
+
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
     }
 
@@ -68,5 +83,8 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper mavenExecuteStaticCodeChecks'))
+        assertTrue(spotBugsStepCalled)
+        assertTrue(pmdParserStepCalled)
+        assertThat(ReportAggregator.instance.staticCodeScans, hasItems("Findbugs Static Code Checks", "PMD Static Code Checks"))
     }
 }
