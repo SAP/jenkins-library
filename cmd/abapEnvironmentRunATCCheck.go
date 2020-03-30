@@ -78,6 +78,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		resp, err = runATC("POST", details, body, &client)
 	}
 
+	var location string
 	//Poll ATC run
 	if err == nil {
 		/*
@@ -88,9 +89,14 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 					Fatal("Could not read response body")
 			}
 		*/
-		location := resp.Header.Get("Location")
+		location = resp.Header.Get("Location")
 		details.URL = abapEndpoint + location
-		resp, err = pollATCRun(details, body, &client, config)
+		location, err = pollATCRun(details, body, &client, config)
+	}
+
+	if err == nil {
+		details.URL = abapEndpoint + location
+		resp, err = getResultATCRun("GET", details, nil, &client)
 	}
 
 	//Parse response
@@ -102,20 +108,22 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 				Fatal("Could not read response body")
 		}
 		defer resp.Body.Close()
-		parsedXML := new(Result)
+		parsedXML := new(Run)
 		xml.Unmarshal([]byte(body), &parsedXML)
 
-		err = ioutil.WriteFile("result.xml", body, 0644)
-		if err != nil {
-			log.Entry().
-				WithError(err).
-				Fatal("Could not save XML file")
-		}
-		for _, s := range parsedXML.Files {
-			for _, t := range s.ATCErrors {
-				log.Entry().Error(t.Key)
+		/*
+			err = ioutil.WriteFile("result.xml", body, 0644)
+			if err != nil {
+				log.Entry().
+					WithError(err).
+					Fatal("Could not save XML file")
 			}
-		}
+			for _, s := range parsedXML.Files {
+				for _, t := range s.ATCErrors {
+					log.Entry().Error(t.Key)
+				}
+			}*/
+		fmt.Print("Hello")
 	}
 
 	if err != nil {
@@ -134,7 +142,6 @@ func runATC(requestType string, details connectionDetailsHTTP, body []byte, clie
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		fmt.Print(req)
 		return req, fmt.Errorf("Triggering ATC run failed: %w", err)
 	}
 	defer req.Body.Close()
@@ -188,18 +195,18 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	return details, err
 }
 
-func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender, config abapEnvironmentRunATCCheckOptions) (*http.Response, error) {
+func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender, config abapEnvironmentRunATCCheckOptions) (string, error) {
 
 	log.Entry().WithField("ABAP endpoint", details.URL).Info("Polling ATC run status")
 
 	for {
 		resp, err := getHTTPResponseATCRun("GET", details, nil, client)
 		if err != nil {
-			return resp, fmt.Errorf("Getting HTTP response failed: %w", err)
+			return "", fmt.Errorf("Getting HTTP response failed: %w", err)
 		}
 		bodyText, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return resp, fmt.Errorf("Reading response body failed: %w", err)
+			return "", fmt.Errorf("Reading response body failed: %w", err)
 		}
 
 		x := new(Run)
@@ -207,10 +214,10 @@ func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sen
 		log.Entry().WithField("StatusCode", resp.StatusCode).Info("Status: " + x.Status)
 
 		if x.Status == "Not Created" {
-			return resp, err
+			return "", err
 		}
 		if x.Status != "Running" && x.Status != "Not Yet Started" {
-			return resp, err
+			return x.Link[0].Key, err
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -222,6 +229,21 @@ func getHTTPResponseATCRun(requestType string, details connectionDetailsHTTP, bo
 
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
+
+	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	if err != nil {
+		return req, fmt.Errorf("Getting HTTP response failed: %w", err)
+	}
+	return req, err
+}
+
+func getResultATCRun(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+
+	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting ATC results")
+
+	header := make(map[string][]string)
+	header["x-csrf-token"] = []string{details.XCsrfToken}
+	header["Accept"] = []string{"application/vnd.sap.atc.checkstyle.v1+xml"}
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
