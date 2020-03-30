@@ -127,7 +127,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		for _, f := range GeneralConfig.DefaultConfig {
 			//ToDo: support also https as source
 			fc, err := openFile(f)
-			log.Entry().Infof("Appending default config '%v': %v", f, err)
+			if err != nil {
+				log.Entry().Infof("Failed to add default config '%s': %v", f, err)
+			} else {
+				log.Entry().Infof("Added default config '%s'", f)
+			}
 			defaultConfig = append(defaultConfig, fc)
 		}
 
