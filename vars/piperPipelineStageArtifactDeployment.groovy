@@ -48,12 +48,10 @@ void call(Map parameters = [:]) {
 
         Map nexusConfig = config.nexus as Map
 
-        // Add all mandatory parameters
+        // Pull additionalClassifiers param from resolved config here for legacy compatibility.
+        // The parameter will become obsolete soon.
         Map nexusUploadParams = [
             script: script,
-//            version: nexusConfig.version,
-//            repository: nexusConfig.repository,
-//            url: nexusConfig.url,
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
 
