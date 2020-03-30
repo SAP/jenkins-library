@@ -111,19 +111,20 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		parsedXML := new(Run)
 		xml.Unmarshal([]byte(body), &parsedXML)
 
+		err = ioutil.WriteFile("result.xml", body, 0644)
+		if err != nil {
+			log.Entry().
+				WithError(err).
+				Fatal("Could not save XML file")
+		}
 		/*
-			err = ioutil.WriteFile("result.xml", body, 0644)
-			if err != nil {
-				log.Entry().
-					WithError(err).
-					Fatal("Could not save XML file")
-			}
 			for _, s := range parsedXML.Files {
 				for _, t := range s.ATCErrors {
 					log.Entry().Error(t.Key)
 				}
-			}*/
-		fmt.Print("Hello")
+			}
+			fmt.Print("Hello")
+		*/
 	}
 
 	if err != nil {
