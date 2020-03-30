@@ -46,6 +46,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
         .around(stepRule)
         .around(writeFileRule)
         .around(fileExistsRule)
+
     @Before
     void init() {
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], { arguments, closure ->
@@ -56,7 +57,7 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
         })
         helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class], {
             Map params, Closure c ->
-            c.call()
+                c.call()
         })
         helper.registerAllowedMethod("recordIssues", [Map.class], { Map config
             ->

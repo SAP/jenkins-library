@@ -43,4 +43,3 @@ private showIssues(Script script) {
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
     }
 }
-
