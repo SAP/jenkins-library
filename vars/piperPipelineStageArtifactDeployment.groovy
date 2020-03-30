@@ -62,8 +62,8 @@ void call(Map parameters = [:]) {
             nexusUploadParams.artifactId = script.commonPipelineEnvironment.configuration.artifactId
         }
 
-        // The withEnv wrapper can be removed before merging to master.
-        withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
+        // REPOSITORY_UNDER_TEST and LIBRARY_VERSION_UNDER_TEST have to be removed from withEnv before merging to master.
+        withEnv(["STAGE_NAME=${stageName}", 'REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
             nexusUpload(nexusUploadParams)
         }
 
