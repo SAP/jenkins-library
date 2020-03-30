@@ -37,7 +37,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg()}"
+                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg(script)}"
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
@@ -64,7 +64,7 @@ static String getCustomDefaultConfigsArg() {
 }
 
 static String getCustomConfigArg(def script) {
-    if (script.commonPipelineEnvironment.configurationFile
+    if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
         return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
