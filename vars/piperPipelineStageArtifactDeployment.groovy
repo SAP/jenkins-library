@@ -1,7 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
-import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -23,7 +22,6 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     String stageName = 'artifactDeployment'
     final script = checkScript(this, parameters) ?: this
-    def utils = parameters.juStabUtils ?: new Utils()
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -42,9 +40,6 @@ void call(Map parameters = [:]) {
             unstableSteps = []
             commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
         }
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
 
         Map nexusConfig = config.nexus as Map
 
