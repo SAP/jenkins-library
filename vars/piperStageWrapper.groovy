@@ -190,5 +190,5 @@ private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
 }
 
 private boolean allowExtensions(){
-    return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == true
+    return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == false
 }
