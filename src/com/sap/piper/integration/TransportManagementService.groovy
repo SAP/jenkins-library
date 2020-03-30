@@ -51,9 +51,13 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-        echo("OAuth Token retrieved successfully.")
-
-        return jsonUtils.jsonStringToGroovyObject(response).access_token
+        if (response.status != 200) {
+            def errorMessage = "OAuth Token retrieval failed (HTTP status code '${response.status}')."
+            signalAboutError(response, errorMessage)
+        } else {
+            echo("OAuth Token retrieved successfully.")
+            return jsonUtils.jsonStringToGroovyObject(response.content).access_token
+        }
 
     }
 
@@ -116,9 +120,13 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-        echo("Node upload successful.")
-
-        return jsonUtils.jsonStringToGroovyObject(response)
+        if (response.status != 200) {
+            def errorMessage = "Node upload failed (HTTP status code '${response.status}')."
+            signalAboutError(response, errorMessage)
+        } else {
+            echo("Node upload successful.")
+            return jsonUtils.jsonStringToGroovyObject(response.content)
+        }
 
     }
 
@@ -128,7 +136,7 @@ class TransportManagementService implements Serializable {
             quiet                 : !config.verbose,
             consoleLogResponseBody: false, // must be false, otherwise this reveals the api-token in the auth-request
             ignoreSslErrors       : true,
-            validResponseCodes    : "100:399"
+            validResponseCodes    : "100:599"
         ]
 
         def response = script.httpRequest(defaultParameters + parameters)
@@ -137,7 +145,18 @@ class TransportManagementService implements Serializable {
             echo("Received response '${response.content}' with status ${response.status}.")
         }
 
-        return response.content
+        return response
+    }
+
+    private signalAboutError(response, errorMessage) {
+        if (config.verbose) {
+            if (response.status >= 400) {
+                errorMessage += " Response content '${response.content}'."
+            }
+        } else {
+            errorMessage += " Consider re-running in verbose mode in order to get more details for HTTP status codes 4xx and 5xx."
+        }
+        script.error "[${getClass().getSimpleName()}] ${errorMessage}"
     }
 
     private echo(message) {
