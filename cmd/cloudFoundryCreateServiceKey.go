@@ -49,7 +49,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 		}
 		log.Entry().
 			WithError(err).
-			Fatal("Error occured.")
+			Fatal("Error occured during step.")
 	}
 }
 
