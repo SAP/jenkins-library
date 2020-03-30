@@ -4,7 +4,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = getClass().getName()
+//@Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/cloudFoundryCreateServiceKey.yaml'
 
 void call(Map parameters = [:]) {
@@ -12,5 +12,6 @@ void call(Map parameters = [:]) {
         [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']]
         ]
         
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+        //piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+        piperExecuteBin(parameters, METADATA_FILE, credentials)
 }
