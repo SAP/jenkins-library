@@ -50,11 +50,6 @@ void call(Map parameters = [:]) {
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
 
-        // Set artifactId from CPE if set
-        if (script.commonPipelineEnvironment.configuration.artifactId) {
-            nexusUploadParams.artifactId = script.commonPipelineEnvironment.configuration.artifactId
-        }
-
         // REPOSITORY_UNDER_TEST and LIBRARY_VERSION_UNDER_TEST have to be removed from withEnv before merging to master.
         withEnv(["STAGE_NAME=${stageName}", 'REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
             nexusUpload(nexusUploadParams)
