@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Parameters for deployment to a Nexus Repository Manager. */
     'nexus'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STAGE_CONFIG_KEYS
 
 /**
  * This stage is responsible for releasing/deploying artifacts to a Nexus Repository Manager.<br />
