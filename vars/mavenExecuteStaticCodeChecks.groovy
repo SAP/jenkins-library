@@ -26,8 +26,8 @@ void call(Map parameters = [:]) {
 
 private showIssues(Script script) {
     Map configuration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-    // the checks are executed by default, even if they are not configured. They aren't executed only in case they are turned off with `false`
-    if (configuration.mavenExecuteStaticCodeChecks?.spotBugs == null || configuration.mavenExecuteStaticCodeChecks?.spotBugs == true) {
+    // Every check is executed by default. Only if configured with `false` the check won't be executed
+    if (!(configuration.spotBugs == false)) {
         recordIssues(blameDisabled: true,
             enabledForFailure: true,
             aggregatingResults: false,
@@ -35,7 +35,7 @@ private showIssues(Script script) {
 
         ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
     }
-    if (configuration.mavenExecuteStaticCodeChecks?.pmd == null || configuration.mavenExecuteStaticCodeChecks?.pmd == true) {
+    if (!(configuration.pmd == false)) {
         recordIssues(blameDisabled: true,
             enabledForFailure: true,
             aggregatingResults: false,

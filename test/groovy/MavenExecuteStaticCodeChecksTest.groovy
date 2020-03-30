@@ -1,4 +1,5 @@
 import com.sap.piper.ReportAggregator
+import org.hamcrest.Matcher
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -19,6 +20,7 @@ import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
+import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
@@ -73,19 +75,44 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
     }
 
     @Test
-    void testMavenExecuteStaticCodeChecksDefault() {
+    void 'MavenExecuteStaticCodeChecks should be executed, results recorded and reported in Reportaggregator'() {
+        boolean spotBugsStepCalled = false
+        boolean pmdParserStepCalled = false
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [:]]
         stepRule.step.mavenExecuteStaticCodeChecks(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
             testParam: "This is test content",
             script: nullScript
         )
-        // asserts
+
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper mavenExecuteStaticCodeChecks'))
         assertTrue(spotBugsStepCalled)
         assertTrue(pmdParserStepCalled)
         assertThat(ReportAggregator.instance.staticCodeScans, hasItems("Findbugs Static Code Checks", "PMD Static Code Checks"))
+    }
+
+    @Test
+    void 'MavenExecuteStaticCodeChecks should not record results and not report in Reportaggregator when turned off'() {
+        boolean spotBugsStepCalled = false
+        boolean pmdParserStepCalled = false
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [mavenExecuteStaticCodeChecks: [spotBugs: false, pmd: false]]]
+        stepRule.step.mavenExecuteStaticCodeChecks(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            testParam: "This is test content",
+            script: nullScript
+        )
+
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml'], containsString('name: mavenExecuteStaticCodeChecks'))
+        assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
+        assertThat(shellCallRule.shell[1], is('./piper mavenExecuteStaticCodeChecks'))
+        assertFalse(spotBugsStepCalled)
+        assertFalse(pmdParserStepCalled)
+        assertTrue(ReportAggregator.instance.staticCodeScans.isEmpty())
     }
 }

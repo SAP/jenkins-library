@@ -9,14 +9,6 @@ import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = [
-    /** Execute static code checks for Maven based projects. This stage enforces SAP Cloud SDK specific PND rulesets as well as SpotBugs include filter.  */
-    'mavenExecuteStaticCodeChecks'
-]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
-
 /**
  * Execute static code checks for Maven based projects. This stage enforces SAP Cloud SDK specific PND rulesets as well as SpotBugs include filter.
  *
