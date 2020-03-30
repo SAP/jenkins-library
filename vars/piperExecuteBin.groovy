@@ -65,7 +65,7 @@ static String getCustomDefaultConfigsArg() {
 
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
-        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
+        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml') {
         return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
