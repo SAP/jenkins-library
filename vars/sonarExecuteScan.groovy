@@ -50,6 +50,11 @@ import java.nio.charset.StandardCharsets
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
+    * Non-Pull-Request voting only:
+    * Name of the SonarQube branch that should be used to report findings to. If empty, SonarQube uses its main branch per default.
+    */
+    'branchName',
+    /**
      * List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
      */
     'customTlsCertificateLinks',
@@ -190,6 +195,8 @@ void call(Map parameters = [:]) {
                     workerForGithubAuth(config)
                 }
             }
+        }  else {
+            if(config.branchName) configuration.options.add("sonar.branch.name=${config.branchName}")
         }
 
         dockerExecute(
