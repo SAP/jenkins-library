@@ -51,9 +51,9 @@ void call(Map parameters = [:]) {
         // Add all mandatory parameters
         Map nexusUploadParams = [
             script: script,
-            version: nexusConfig.version,
-            repository: nexusConfig.repository,
-            url: nexusConfig.url,
+//            version: nexusConfig.version,
+//            repository: nexusConfig.repository,
+//            url: nexusConfig.url,
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
 
