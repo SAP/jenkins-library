@@ -37,7 +37,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg()}"
+                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg(script)}"
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
