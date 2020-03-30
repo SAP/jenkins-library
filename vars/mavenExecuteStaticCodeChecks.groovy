@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.DownloadCacheUtils
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.QualityCheck
 import com.sap.piper.ReportAggregator
 import groovy.transform.Field
