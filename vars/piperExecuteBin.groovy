@@ -50,7 +50,7 @@ static String getCustomDefaultConfigs() {
     // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
     List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
     for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/customDefaults[i]")
+        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
     }
     return customDefaults.join(',')
 }
