@@ -49,6 +49,7 @@ func Execute() {
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
@@ -61,6 +62,7 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
+	rootCmd.AddCommand(NexusUploadCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -124,7 +126,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
 			//ToDo: support also https as source
-			fc, _ := openFile(f)
+			fc, err := openFile(f)
+			if err != nil {
+				log.Entry().Infof("Failed to add default config '%s': %v", f, err)
+			} else {
+				log.Entry().Infof("Added default config '%s'", f)
+			}
 			defaultConfig = append(defaultConfig, fc)
 		}
 
