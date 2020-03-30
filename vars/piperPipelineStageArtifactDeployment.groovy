@@ -63,7 +63,9 @@ void call(Map parameters = [:]) {
         }
 
         // The withEnv wrapper can be removed before merging to master.
-        withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
+        withEnv(['REPOSITORY_UNDER_TEST=SAP/jenkins-library',
+                 'LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment',
+                 "STAGE_NAME=$stageName"]) {
             nexusUpload(nexusUploadParams)
         }
 
