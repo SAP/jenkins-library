@@ -26,6 +26,7 @@ const (
 // BuildDescriptor acts as a general purpose accessor to coordinates
 type BuildDescriptor interface {
 	GetVersion() string
+	SetVersion(string)
 }
 
 // MavenDescriptor holds the unique identifier combination for Maven built Java artifacts
@@ -42,6 +43,11 @@ func (desc *MavenDescriptor) GetVersion() string {
 	return desc.Version
 }
 
+// SetVersion sets the Maven descriptor version property
+func (desc *MavenDescriptor) SetVersion(v string) {
+	desc.Version = v
+}
+
 // PipDescriptor holds the unique identifier combination for pip built Python artifacts
 type PipDescriptor struct {
 	GroupID    string
@@ -50,9 +56,14 @@ type PipDescriptor struct {
 	Packaging  string
 }
 
-// GetVersion returns the Maven descriptor version property
+// GetVersion returns the Pip descriptor version property
 func (desc *PipDescriptor) GetVersion() string {
 	return desc.Version
+}
+
+// SetVersion sets the Pip descriptor version property
+func (desc *PipDescriptor) SetVersion(v string) {
+	desc.Version = v
 }
 
 // GetMavenCoordinates reads the coordinates from the maven pom.xml descriptor file

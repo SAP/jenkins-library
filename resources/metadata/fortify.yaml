@@ -336,7 +336,23 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ${pip} install --user .
+      default: "{{.Pip}} install --user ."
+    - name: reportTemplateId
+      type: int
+      description: Report template ID to be used for generating the Fortify report
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 18
+    - name: filterSetTitle
+      type: string
+      description: Title of the filter set to use for analysing the results
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: "SAP"
     - name: pullRequestName
       type: string
       description: The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version

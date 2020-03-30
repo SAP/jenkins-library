@@ -51,12 +51,11 @@ type System interface {
 	MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error
 	GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error)
 	GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error)
-	GetIssueFilterSelectorOfProjectVersionByName(id int64, names ...string) (*models.IssueFilterSelectorSet, error)
-	GetProjectIssuesByIDAndFilterSetGroupedByFolder(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
-	GetProjectIssuesByIDAndFilterSetGroupedByCategory(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
-	GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error)
+	GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error)
+	GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error)
+	ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet
 	GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error)
-	GenerateQGateReport(projectID, projectVersionID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
+	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
@@ -366,42 +365,63 @@ func (sys *SystemInstance) GetFilterSetOfProjectVersionByTitle(id int64, title s
 	if err != nil {
 		return nil, err
 	}
+	var defaultFilterSet *models.FilterSet
 	for _, filterSet := range result.GetPayload().Data {
 		if len(title) > 0 && filterSet.Title == title {
 			return filterSet, nil
 		}
-		if len(title) == 0 && filterSet.DefaultFilterSet {
-			return filterSet, nil
+		if filterSet.DefaultFilterSet {
+			defaultFilterSet = filterSet
 		}
 	}
-	return nil, fmt.Errorf("Failed to identify requested filter set or default one")
+	if len(title) > 0 {
+		log.Entry().Warnf("Failed to load filter set with title '%v', falling back to default filter set", title)
+	}
+	if nil != defaultFilterSet {
+		return defaultFilterSet, nil
+	}
+	return nil, fmt.Errorf("Failed to identify requested filter set and default filter")
 }
 
 // GetIssueFilterSelectorOfProjectVersionByName returns the groupings with the given names related to the project version addressed with id
-func (sys *SystemInstance) GetIssueFilterSelectorOfProjectVersionByName(id int64, names ...string) (*models.IssueFilterSelectorSet, error) {
+func (sys *SystemInstance) GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error) {
 	params := &issue_selector_set_of_project_version_controller.GetIssueSelectorSetOfProjectVersionParams{ParentID: id}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.IssueSelectorSetOfProjectVersionController.GetIssueSelectorSetOfProjectVersion(params, sys)
 	if err != nil {
 		return nil, err
 	}
+	return sys.ReduceIssueFilterSelectorSet(result.GetPayload().Data, names, options), nil
+}
+
+// ReduceIssueFilterSelectorSet filters the set to the relevant filter display names
+func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
 	groupingList := []*models.IssueSelector{}
-	if result.GetPayload().Data.GroupBySet != nil {
-		for _, group := range result.GetPayload().Data.GroupBySet {
+	if issueFilterSelectorSet.GroupBySet != nil {
+		for _, group := range issueFilterSelectorSet.GroupBySet {
 			if piperutils.ContainsString(names, *group.DisplayName) {
 				groupingList = append(groupingList, group)
 			}
 		}
 	}
 	filterList := []*models.IssueFilterSelector{}
-	if result.GetPayload().Data.FilterBySet != nil {
-		for _, filter := range result.GetPayload().Data.FilterBySet {
+	if issueFilterSelectorSet.FilterBySet != nil {
+		for _, filter := range issueFilterSelectorSet.FilterBySet {
 			if piperutils.ContainsString(names, filter.DisplayName) {
+				if options != nil && len(options) > 0 {
+					newOptions := []*models.SelectorOption{}
+					for _, option := range filter.SelectorOptions {
+						if piperutils.ContainsString(options, option.DisplayName) {
+							newOptions = append(newOptions, option)
+						}
+					}
+					filter.SelectorOptions = newOptions
+				}
 				filterList = append(filterList, filter)
 			}
 		}
 	}
-	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}, nil
+	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}
 }
 
 func (sys *SystemInstance) getIssuesOfProjectVersion(id int64, filter, filterset, groupingtype string) ([]*models.ProjectVersionIssueGroup, error) {
@@ -418,69 +438,14 @@ func (sys *SystemInstance) getIssuesOfProjectVersion(id int64, filter, filterset
 	return result.GetPayload().Data, nil
 }
 
-// GetProjectIssuesByIDAndFilterSetGroupedByFolder returns issues of the project version addressed with id filtered with the respective set and grouped by folder
-func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByFolder(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
-	filterset := ""
-	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
-	if filterSets != nil {
-		filterset = filterSets.GUID
-	}
-	groupingtype := ""
-	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Folder")
-	if filterSelector != nil {
-		groupingtype = *filterSelector.GroupBySet[0].GUID
+// GetProjectIssuesByIDAndFilterSetGroupedBySelector returns issues of the project version addressed with id filtered with the respective set and grouped by the issue filter selector grouping
+func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
+	groupingTypeGUID := ""
+	if issueFilterSelectorSet != nil {
+		groupingTypeGUID = *issueFilterSelectorSet.GroupBySet[0].GUID
 	}
 
-	result, err := sys.getIssuesOfProjectVersion(id, "", filterset, groupingtype)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (sys *SystemInstance) getFilterValueByName(filterSets *models.FilterSet, name string) string {
-	for _, folder := range filterSets.Folders {
-		if folder.Name == name {
-			return folder.GUID
-		}
-	}
-	return ""
-}
-
-// GetProjectIssuesByIDAndFilterSetGroupedByCategory returns issues of the project version addressed with id filtered with the respective set and grouped by category
-func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByCategory(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
-	filterset := ""
-	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
-	if filterSets != nil {
-		filterset = filterSets.GUID
-	}
-	groupingtype := ""
-	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Category")
-	if filterSelector != nil {
-		groupingtype = *filterSelector.GroupBySet[0].GUID
-	}
-
-	result, err := sys.getIssuesOfProjectVersion(id, sys.getFilterValueByName(filterSets, "Spot Checks of Each Category"), filterset, groupingtype)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-// GetProjectIssuesByIDAndFilterSetGroupedByAnalysis returns issues of the project version addressed with id filtered with the respective set and grouped by analysis
-func (sys *SystemInstance) GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(id int64, filterSetTitle string) ([]*models.ProjectVersionIssueGroup, error) {
-	filterset := ""
-	filterSets, _ := sys.GetFilterSetOfProjectVersionByTitle(id, filterSetTitle)
-	if filterSets != nil {
-		filterset = filterSets.GUID
-	}
-	groupingtype := ""
-	filterSelector, _ := sys.GetIssueFilterSelectorOfProjectVersionByName(id, "Analysis")
-	if filterSelector != nil {
-		groupingtype = *filterSelector.GroupBySet[0].GUID
-	}
-
-	result, err := sys.getIssuesOfProjectVersion(id, "", filterset, groupingtype)
+	result, err := sys.getIssuesOfProjectVersion(id, filter, filterSetGUID, groupingTypeGUID)
 	if err != nil {
 		return nil, err
 	}
@@ -499,16 +464,15 @@ func (sys *SystemInstance) GetIssueStatisticsOfProjectVersion(id int64) ([]*mode
 }
 
 // GenerateQGateReport returns the issue statistics related to the project version addressed with id
-func (sys *SystemInstance) GenerateQGateReport(projectID, projectVersionID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
+func (sys *SystemInstance) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	paramIdentifier := "projectVersionId"
-	paramReportDefinitionID := int64(18)
 	paramType := "SINGLE_PROJECT"
 	paramName := "Q-gate-report"
 	reportType := "PORTFOLIO"
 	inputReportParameters := []*models.InputReportParameter{&models.InputReportParameter{Name: &paramName, Identifier: &paramIdentifier, ParamValue: projectVersionID, Type: &paramType}}
 	reportProjectVersions := []*models.ReportProjectVersion{&models.ReportProjectVersion{ID: projectVersionID, Name: projectVersionName}}
 	reportProjects := []*models.ReportProject{&models.ReportProject{ID: projectID, Name: projectName, Versions: reportProjectVersions}}
-	report := models.SavedReport{Name: "FortifyReport", Type: &reportType, ReportDefinitionID: &paramReportDefinitionID, Format: &reportFormat, Projects: reportProjects, InputReportParameters: inputReportParameters}
+	report := models.SavedReport{Name: fmt.Sprintf("FortifyReport: %v:%v", projectName, projectVersionName), Type: &reportType, ReportDefinitionID: &reportTemplateID, Format: &reportFormat, Projects: reportProjects, InputReportParameters: inputReportParameters}
 	params := &saved_report_controller.CreateSavedReportParams{Resource: &report}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.SavedReportController.CreateSavedReport(params, sys)
@@ -582,10 +546,9 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 	header.Add("Pragma", "no-cache")
 
 	formFields := map[string]string{}
-	formFields["mat"] = token.Token
 	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
 
-	_, err = sys.httpClient.UploadRequest(http.MethodPost, fmt.Sprintf("%v%v", sys.serverURL, endpoint), file, "file", formFields, fileContent, header, nil)
+	_, err = sys.httpClient.UploadRequest(http.MethodPost, fmt.Sprintf("%v%v?mat=%v", sys.serverURL, endpoint, token.Token), file, "file", formFields, fileContent, header, nil)
 	return err
 }
 

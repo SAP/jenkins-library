@@ -49,6 +49,8 @@ type fortifyExecuteScanOptions struct {
 	FprDownloadEndpoint          string `json:"fprDownloadEndpoint,omitempty"`
 	ProjectVersion               string `json:"projectVersion,omitempty"`
 	PythonInstallCommand         string `json:"pythonInstallCommand,omitempty"`
+	ReportTemplateID             int    `json:"reportTemplateId,omitempty"`
+	FilterSetTitle               string `json:"filterSetTitle,omitempty"`
 	PullRequestName              string `json:"pullRequestName,omitempty"`
 	NameVersionMapping           string `json:"nameVersionMapping,omitempty"`
 	PullRequestMessageRegex      string `json:"pullRequestMessageRegex,omitempty"`
@@ -168,7 +170,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", "/transfer/reportDownload.html", "Fortify SSC endpoint for Report downloads")
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
-	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Array of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
+	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", "/api/v1", "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", "PDF", "The type of report to be generated")
 	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", "./lib", "The addional path which can be used in `scanType: 'pip'` for customization purposes")
@@ -185,7 +187,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", "/download/currentStateFprDownload.html", "Fortify SSC endpoint  for FPR downloads")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", "{{.Version}}", "The project version used for reporting results in SSC")
-	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", "${pip} install --user .", "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
+	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", "{{.Pip}} install --user .", "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
+	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
+	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", "SAP", "Title of the filter set to use for analysing the results")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
 	cmd.Flags().StringVar(&stepConfig.NameVersionMapping, "nameVersionMapping", os.Getenv("PIPER_nameVersionMapping"), "Allows modifying associated project name and version in `scanType: 'mta'` with a map of lists where the map's key is the path to the build descriptor file and the list value contains project name as first, and project version as second parameter, those may be `null` to force only overwriting one parameter")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", ".*Merge pull request #(\\d+) from.*", "Regex used to identify the PR-XXX reference within the merge commit message")
@@ -474,6 +478,22 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "pythonInstallCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "reportTemplateId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "filterSetTitle",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

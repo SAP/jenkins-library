@@ -529,7 +529,7 @@ func TestGetIssueFilterSelectorOfProjectVersionByName(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success one", func(t *testing.T) {
-		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Analysis")
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, []string{"Analysis"}, nil)
 		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
 		assert.NotNil(t, result, "Expected non nil value")
 		assert.Equal(t, 1, len(result.FilterBySet), "Different result expected")
@@ -537,7 +537,7 @@ func TestGetIssueFilterSelectorOfProjectVersionByName(t *testing.T) {
 	})
 
 	t.Run("test success several", func(t *testing.T) {
-		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Analysis", "Folder")
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, []string{"Analysis", "Folder"}, nil)
 		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
 		assert.NotNil(t, result, "Expected non nil value")
 		assert.Equal(t, 2, len(result.FilterBySet), "Different result expected")
@@ -545,7 +545,7 @@ func TestGetIssueFilterSelectorOfProjectVersionByName(t *testing.T) {
 	})
 
 	t.Run("test empty", func(t *testing.T) {
-		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, "Some", "Other")
+		result, err := sys.GetIssueFilterSelectorOfProjectVersionByName(10172, []string{"Some", "Other"}, nil)
 		assert.NoError(t, err, "GetIssueFilterSelectorOfProjectVersionByName call not successful")
 		assert.NotNil(t, result, "Expected non nil value")
 		assert.Equal(t, 0, len(result.FilterBySet), "Different result expected")
@@ -553,7 +553,24 @@ func TestGetIssueFilterSelectorOfProjectVersionByName(t *testing.T) {
 	})
 }
 
-func TestGetProjectIssuesByIDAndFilterSetGroupedByFolder(t *testing.T) {
+func TestReduceIssueFilterSelectorSet(t *testing.T) {
+	sys, _ := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {})
+	name1 := "Special"
+	name2 := "Other"
+	guid := "FOLDER"
+	options := []*models.SelectorOption{&models.SelectorOption{GUID: "1234567", DisplayName: "Test"}, &models.SelectorOption{GUID: "1234568", DisplayName: "Test2"}}
+	filterSet := models.IssueFilterSelectorSet{FilterBySet: []*models.IssueFilterSelector{}, GroupBySet: []*models.IssueSelector{}}
+	filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name1, SelectorOptions: options})
+	filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name2})
+	filterSet.GroupBySet = append(filterSet.GroupBySet, &models.IssueSelector{DisplayName: &name2, GUID: &guid})
+	reducedFilterSet := sys.ReduceIssueFilterSelectorSet(&filterSet, []string{"Special"}, []string{"Test"})
+	assert.Equal(t, 1, len(reducedFilterSet.FilterBySet), "Different result expected")
+	assert.Equal(t, 1, len(reducedFilterSet.FilterBySet[0].SelectorOptions), "Different result expected")
+	assert.Equal(t, "Test", reducedFilterSet.FilterBySet[0].SelectorOptions[0].DisplayName, "Different result expected")
+	assert.Equal(t, 0, len(reducedFilterSet.GroupBySet), "Different result expected")
+}
+
+func TestGetProjectIssuesByIDAndFilterSetGroupedBySelector(t *testing.T) {
 	// Start a local HTTP server
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/projectVersions/10172/filterSets" {
@@ -567,13 +584,6 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByFolder(t *testing.T) {
 				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
 			return
 		}
-		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
-			header := rw.Header()
-			header.Add("Content-type", "application/json")
-			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "ISSUE","guid": "FOLDER","displayName": "Folder","value": "FOLDER",
-			"description": ""}],"filterBySet":[]},"responseCode":200}}`))
-			return
-		}
 		if req.URL.Path == "/projectVersions/10172/issueGroups" {
 			assert.Equal(t, "filterset=666&groupingtype=FOLDER&showsuppressed=true", req.URL.RawQuery)
 			return
@@ -584,7 +594,12 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByFolder(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByFolder(10172, "Special")
+		name := "Special"
+		guid := "FOLDER"
+		filterSet := models.IssueFilterSelectorSet{FilterBySet: []*models.IssueFilterSelector{}, GroupBySet: []*models.IssueSelector{}}
+		filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name})
+		filterSet.GroupBySet = append(filterSet.GroupBySet, &models.IssueSelector{DisplayName: &name, GUID: &guid})
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(10172, "", "666", &filterSet)
 		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByFolder call not successful")
 	})
 }
@@ -603,13 +618,6 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByCategory(t *testing.T) {
 				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
 			return
 		}
-		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
-			header := rw.Header()
-			header.Add("Content-type", "application/json")
-			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "ISSUE","guid": "11111111-1111-1111-1111-111111111165",
-			"displayName": "Category","value": "11111111-1111-1111-1111-111111111165","description": ""}],"filterBySet":[]},"responseCode":200}}`))
-			return
-		}
 		if req.URL.Path == "/projectVersions/10172/issueGroups" {
 			assert.Equal(t, "filter=4713&filterset=666&groupingtype=11111111-1111-1111-1111-111111111165&showsuppressed=true", req.URL.RawQuery)
 			return
@@ -620,7 +628,12 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByCategory(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByCategory(10172, "Special")
+		name := "Special"
+		guid := "11111111-1111-1111-1111-111111111165"
+		filterSet := models.IssueFilterSelectorSet{FilterBySet: []*models.IssueFilterSelector{}, GroupBySet: []*models.IssueSelector{}}
+		filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name})
+		filterSet.GroupBySet = append(filterSet.GroupBySet, &models.IssueSelector{DisplayName: &name, GUID: &guid})
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(10172, "4713", "666", &filterSet)
 		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByCategory call not successful")
 	})
 }
@@ -639,13 +652,6 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByAnalysis(t *testing.T) {
 				"guid":"666","title":"Special"}],"count":1,"responseCode":200}}`))
 			return
 		}
-		if req.URL.Path == "/projectVersions/10172/issueSelectorSet" {
-			header := rw.Header()
-			header.Add("Content-type", "application/json")
-			rw.Write([]byte(`{"data":{"groupBySet": [{"entityType": "CUSTOMTAG","guid": "87f2364f-dcd4-49e6-861d-f8d3f351686b","displayName": "Analysis",
-			"value": "87f2364f-dcd4-49e6-861d-f8d3f351686b","description": ""}],"filterBySet":[]},"responseCode":200}}`))
-			return
-		}
 		if req.URL.Path == "/projectVersions/10172/issueGroups" {
 			assert.Equal(t, "filterset=666&groupingtype=87f2364f-dcd4-49e6-861d-f8d3f351686b&showsuppressed=true", req.URL.RawQuery)
 			return
@@ -656,7 +662,12 @@ func TestGetProjectIssuesByIDAndFilterSetGroupedByAnalysis(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedByAnalysis(10172, "Special")
+		name := "Special"
+		guid := "87f2364f-dcd4-49e6-861d-f8d3f351686b"
+		filterSet := models.IssueFilterSelectorSet{FilterBySet: []*models.IssueFilterSelector{}, GroupBySet: []*models.IssueSelector{}}
+		filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name})
+		filterSet.GroupBySet = append(filterSet.GroupBySet, &models.IssueSelector{DisplayName: &name, GUID: &guid})
+		_, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(10172, "", "666", &filterSet)
 		assert.NoError(t, err, "GetProjectIssuesByIDAndFilterSetGroupedByAnalysis call not successful")
 	})
 }
@@ -706,7 +717,7 @@ func TestGenerateQGateReport(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GenerateQGateReport(2837, 17540, "Fortify", "develop", "PDF")
+		result, err := sys.GenerateQGateReport(2837, 17540, 18, "Fortify", "develop", "PDF")
 		assert.NoError(t, err, "GetArtifactsOfProjectVersion call not successful")
 		assert.Equal(t, int64(2837), result.Projects[0].ID, "Different result content expected")
 		assert.Equal(t, int64(17540), result.Projects[0].Versions[0].ID, "Different result content expected")
@@ -864,7 +875,7 @@ func TestUploadResultFile(t *testing.T) {
 			getTokenCalled = true
 			return
 		}
-		if req.URL.Path == "/upload/resultFileUpload.html" {
+		if req.URL.Path == "/upload/resultFileUpload.html" && req.URL.RawQuery == "mat=89ee873" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			bodyBytes, _ := ioutil.ReadAll(req.Body)
@@ -887,8 +898,6 @@ func TestUploadResultFile(t *testing.T) {
 		err := sys.UploadResultFile("/upload/resultFileUpload.html", testFile.Name(), 10770)
 		assert.NoError(t, err, "UploadFile call not successful")
 		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="file"; filename=`, "Expected different content in request body")
-		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="mat"`, "Expected different content in request body")
-		assert.Contains(t, bodyContent, `89ee873`, "Expected different content in request body")
 		assert.Contains(t, bodyContent, `Content-Disposition: form-data; name="entityId"`, "Expected different content in request body")
 		assert.Contains(t, bodyContent, `10770`, "Expected different content in request body")
 		assert.Equal(t, true, getTokenCalled, "Expected GetUploadToken to be called")
