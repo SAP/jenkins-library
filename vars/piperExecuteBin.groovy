@@ -1,3 +1,4 @@
+import com.sap.piper.BashUtils
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
@@ -49,7 +50,7 @@ static String getCustomDefaultConfigs() {
     // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
     List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
     for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = '".pipeline/' + customDefaults[i] + '"'
+        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/customDefaults[i]")
     }
     return customDefaults.join(',')
 }
@@ -65,7 +66,7 @@ static String getCustomDefaultConfigsArg() {
 static String getCustomConfigArg(def script) {
     if (script.commonPipelineEnvironment.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
-        return " --customConfig \"$script.commonPipelineEnvironment.configurationFile\""
+        return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
 }
