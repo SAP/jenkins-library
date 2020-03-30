@@ -51,6 +51,8 @@ spec:
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
         scope:
         - PARAMETERS
+        - STAGES
+        - STEPS
         mandatory: false
         aliases:
           - name: nexus/groupId

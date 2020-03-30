@@ -114,7 +114,7 @@ func nexusUploadMetadata() config.StepData {
 					{
 						Name:        "groupId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "nexus/groupId"}},
