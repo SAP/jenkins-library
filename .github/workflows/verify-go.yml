@@ -56,15 +56,9 @@ jobs:
     - name: verify
       run: git diff --name-only --exit-code
   integration:
-    if: github.repository=='SAP/jenkins-library' || startsWith(github.ref, 'it/')
+    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER')
     runs-on: ubuntu-latest
     steps:
-    - name: debug1
-      run: github.repository
-    - name: debug2
-      run: github.ref
-    - name: debug3
-      run: echo startsWith(github.ref, 'it/')
     - uses: actions/setup-go@v1
       with:
         go-version: '1.13.x'
@@ -79,5 +73,3 @@ jobs:
       env:
         PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
       run: go test -tags=integration ./integration/...
-  debug:
-    run: echo startsWith(github.ref, 'it/')
