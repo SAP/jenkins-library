@@ -253,8 +253,10 @@ func TestTransportTimout(t *testing.T) {
 		// test
 		_, err := client.SendRequest(http.MethodGet, svr.URL, &buffer, nil, nil)
 		// assert
-		assert.Error(t, err, "expected request to fail")
-		assert.Contains(t, err.Error(), "timeout awaiting response headers")
+		assert.EqualError(t, err,
+			fmt.Sprintf("error opening %v: Get %v: net/http: timeout awaiting response headers",
+				svr.URL, svr.URL),
+			"expected request to fail")
 	})
 	t.Run("timeout is not hit on transport level", func(t *testing.T) {
 		// init
