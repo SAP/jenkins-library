@@ -1,0 +1,25 @@
+name: Attach artifacts to release (manually created)
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Prepare Release
+        run: |
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
+          cp ./piper_master ./piper
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: latest
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
