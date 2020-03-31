@@ -41,7 +41,8 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		log.Entry().WithError(err).Fatal("Pull failed on the ABAP System")
 	}
 
-	var status, er = pollEntity(config, uriConnectionDetails, &client, 10*time.Second)
+	pollIntervall := 10 * time.Second
+	var status, er = pollEntity(config, uriConnectionDetails, &client, pollIntervall)
 	if er != nil {
 		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
 	}
@@ -62,7 +63,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
+		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -74,7 +75,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, uriConnectionDetails)
+		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -103,7 +104,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	for {
 		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
-			handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, connectionDetails)
+			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, connectionDetails)
 			return "", err
 		}
 		defer resp.Body.Close()
@@ -205,10 +206,11 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 	return req, err
 }
 
-func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) {
+func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) error {
 	if resp == nil {
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
+		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 		var abapErrorResponse abapError
 		bodyText, _ := ioutil.ReadAll(resp.Body)
 		var abapResp map[string]*json.RawMessage
@@ -216,10 +218,12 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
 		if (abapError{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
+			err = errors.Wrap(abapError, err.Error())
 		}
-		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 		resp.Body.Close()
 	}
+	return err
 }
 
 func printLogs(entity abapEntity) {
