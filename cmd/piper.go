@@ -115,7 +115,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
 				if customConfig, err = openFile(projectConfigFile); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
 				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
@@ -132,7 +132,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
-        log.Entry().Infof("Added default config '%s'", f)
+				log.Entry().Infof("Added default config '%s'", f)
 			}
 		}
 
