@@ -48,6 +48,36 @@ func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, repository string)
 	return nil
 }
 
+func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
+	if nexusURL == "" {
+		return "", errors.New("nexusURL must not be empty")
+	}
+	nexusURL = strings.ToLower(nexusURL)
+	var protocols = []string{"http://", "https://"}
+	for _, protocol := range protocols {
+		if strings.HasPrefix(nexusURL, protocol) {
+			nexusURL = strings.TrimPrefix(nexusURL, protocol)
+			break
+		}
+	}
+	if repository == "" {
+		return "", errors.New("repository must not be empty")
+	}
+	baseURL := nexusURL
+	switch nexusVersion {
+	case "nexus2":
+		baseURL += "/content/repositories/"
+	case "nexus3":
+		baseURL += "/repository/"
+	default:
+		return "", fmt.Errorf("unsupported Nexus version '%s', must be 'nexus2' or 'nexus3'", nexusVersion)
+	}
+	baseURL += repository + "/"
+	// Replace any double slashes, as nexus does not like them
+	baseURL = strings.ReplaceAll(baseURL, "//", "/")
+	return baseURL, nil
+}
+
 // GetRepoURL returns the base URL for the nexus repository.
 func (nexusUpload *Upload) GetRepoURL() string {
 	return nexusUpload.repoURL
@@ -143,30 +173,4 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 // Clear removes any contained artifact descriptions.
 func (nexusUpload *Upload) Clear() {
 	nexusUpload.artifacts = []ArtifactDescription{}
-}
-
-func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
-	if nexusURL == "" {
-		return "", errors.New("nexusURL must not be empty")
-	}
-	nexusURL = strings.ToLower(nexusURL)
-	if strings.HasPrefix(nexusURL, "http://") || strings.HasPrefix(nexusURL, "https://") {
-		return "", errors.New("nexusURL must not start with 'http://' or 'https://'")
-	}
-	if repository == "" {
-		return "", errors.New("repository must not be empty")
-	}
-	baseURL := nexusURL
-	switch nexusVersion {
-	case "nexus2":
-		baseURL += "/content/repositories/"
-	case "nexus3":
-		baseURL += "/repository/"
-	default:
-		return "", fmt.Errorf("unsupported Nexus version '%s', must be 'nexus2' or 'nexus3'", nexusVersion)
-	}
-	baseURL += repository + "/"
-	// Replace any double slashes, as nexus does not like them
-	baseURL = strings.ReplaceAll(baseURL, "//", "/")
-	return baseURL, nil
 }

@@ -133,6 +133,7 @@ public class CommonStepsTest extends BasePiperTest{
         'nexusUpload', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'piperPipelineStageArtifactDeployment', //stage without step flags
     ]
 
     @Test
