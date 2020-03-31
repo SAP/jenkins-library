@@ -21,13 +21,16 @@ import (
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
-	var connectionDetails, error = getAbapCommunicationArrangementInfo(config, &c)
-	if error != nil {
-		log.Entry().WithError(error).Fatal("Parameters for the ABAP Connection not available")
+	connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c)
+	if errorGetInfo != nil {
+		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
 
 	client := piperhttp.Client{}
-	cookieJar, _ := cookiejar.New(nil)
+	cookieJar, errorCookieJar := cookiejar.New(nil)
+	if errorCookieJar != nil {
+		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
+	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 60 * time.Second,
 		CookieJar:          cookieJar,
@@ -36,15 +39,15 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	}
 	client.SetOptions(clientOptions)
 
-	var uriConnectionDetails, err = triggerPull(config, connectionDetails, &client)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Pull failed on the ABAP System")
+	uriConnectionDetails, errorTriggerPull := triggerPull(config, connectionDetails, &client)
+	if errorTriggerPull != nil {
+		log.Entry().WithError(errorTriggerPull).Fatal("Pull failed on the ABAP System")
 	}
 
 	pollIntervall := 10 * time.Second
-	var status, er = pollEntity(config, uriConnectionDetails, &client, pollIntervall)
-	if er != nil {
-		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
+	status, errorPollEntity := pollEntity(config, uriConnectionDetails, &client, pollIntervall)
+	if errorPollEntity != nil {
+		log.Entry().WithError(errorPollEntity).Fatal("Pull failed on the ABAP System")
 	}
 	if status == "E" {
 		log.Entry().Fatal("Pull failed on the ABAP System")
@@ -58,7 +61,6 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
 	pullConnectionDetails.XCsrfToken = "fetch"
-	var expandLog = "?$expand=to_Execution_log,to_Transport_log"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
@@ -92,6 +94,8 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 		var err = errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
+
+	expandLog := "?$expand=to_Execution_log,to_Transport_log"
 	uriConnectionDetails.URL = body.Metadata.URI + expandLog
 	return uriConnectionDetails, nil
 }
@@ -212,7 +216,10 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 		var abapErrorResponse abapError
-		bodyText, _ := ioutil.ReadAll(resp.Body)
+		bodyText, readError := ioutil.ReadAll(resp.Body)
+		if readError != nil {
+			return readError
+		}
 		var abapResp map[string]*json.RawMessage
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
