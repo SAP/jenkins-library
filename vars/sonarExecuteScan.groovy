@@ -196,7 +196,7 @@ void call(Map parameters = [:]) {
                 }
             }
         }  else {
-            if(config.branchName) configuration.options.add("sonar.branch.name=${config.branchName}")
+            if(configuration.branchName) configuration.options.add("sonar.branch.name=${configuration.branchName}")
         }
 
         dockerExecute(
