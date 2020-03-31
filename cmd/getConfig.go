@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"os"
-	"syscall"
 )
 
 type configCommandOptions struct {
@@ -57,7 +56,7 @@ func generateConfig() error {
 
 	customConfig, err := configOptions.openFile(GeneralConfig.CustomConfig)
 	if err != nil {
-		if errors.Unwrap(err) != syscall.ENOENT {
+		if !os.IsNotExist(err) {
 			return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
 		}
 		customConfig = nil
