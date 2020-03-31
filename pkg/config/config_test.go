@@ -249,7 +249,7 @@ steps:
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
 		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, []StepParameters{}, nil, "stage1", "step1", []Alias{})
-		assert.EqualError(t, err, "failed to parse pipeline default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	//ToDo: test merging of env and parameters/flags
