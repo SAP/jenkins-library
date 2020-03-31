@@ -20,12 +20,15 @@ import (
 )
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
+
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	c := command.Command{}
 	connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c)
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
 
+	// Configuring the HTTP Client and CookieJar
 	client := piperhttp.Client{}
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
@@ -39,11 +42,13 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	}
 	client.SetOptions(clientOptions)
 
+	// Triggering the Pull of the repository into the ABAP Environment system
 	uriConnectionDetails, errorTriggerPull := triggerPull(config, connectionDetails, &client)
 	if errorTriggerPull != nil {
 		log.Entry().WithError(errorTriggerPull).Fatal("Pull failed on the ABAP System")
 	}
 
+	// Polling the status of the repository import on the ABAP Environment system
 	pollIntervall := 10 * time.Second
 	status, errorPollEntity := pollEntity(config, uriConnectionDetails, &client, pollIntervall)
 	if errorPollEntity != nil {
@@ -218,9 +223,12 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 
 func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) error {
 	if resp == nil {
+		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
+
+		// Include the error message of the ABAP Environment system, if available
 		var abapErrorResponse abapError
 		bodyText, readError := ioutil.ReadAll(resp.Body)
 		if readError != nil {
@@ -241,6 +249,7 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 
 func printLogs(entity abapEntity) {
 
+	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
 		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
 	})
@@ -268,6 +277,7 @@ func printLogs(entity abapEntity) {
 }
 
 func convertTime(logTimeStamp string) time.Time {
+	// The ABAP Environment system returns the date in the following format: /Date(1585576807000+0000)/
 	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
 	n, error := strconv.ParseInt(seconds, 10, 64)
 	if error != nil {
