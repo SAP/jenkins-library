@@ -35,6 +35,7 @@ func TestTriggerPull(t *testing.T) {
 			CfServiceKey:      "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			RepositoryName:    "testRepo",
 		}
 
 		con := connectionDetailsHTTP{
@@ -42,7 +43,8 @@ func TestTriggerPull(t *testing.T) {
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		entityConnection, _ := triggerPull(config, con, client)
+		entityConnection, err := triggerPull(config, con, client)
+		assert.Nil(t, err)
 		assert.Equal(t, uriExpected, entityConnection.URL)
 		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
 	})
