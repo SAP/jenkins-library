@@ -50,6 +50,10 @@ void call(Map parameters = [:]) {
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
 
+        if (nexusConfig.credentialsId) {
+            nexusUploadParams.nexusCredentialsId = nexusConfig.credentialsId
+        }
+
         withEnv(["STAGE_NAME=${stageName}"]) {
             nexusUpload(nexusUploadParams)
         }
