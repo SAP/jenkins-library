@@ -63,7 +63,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	pullConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	resp, err := getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
 		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
@@ -89,15 +89,15 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	// Parse Response
 	var body abapEntity
 	var abapResp map[string]*json.RawMessage
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	bodyText, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
 		return uriConnectionDetails, err
 	}
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abapEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-		var err = errors.New("Request to ABAP System not successful")
+		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
 
