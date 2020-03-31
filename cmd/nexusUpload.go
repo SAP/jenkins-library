@@ -29,6 +29,9 @@ type nexusUploadUtils interface {
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
+	walk(root string, walkFn filepath.WalkFunc) error
+	dir(path string) string
+	base(path string) string
 }
 
 type utilsBundle struct {
@@ -93,6 +96,18 @@ func (u *utilsBundle) getExecRunner() execRunner {
 
 func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
 	return maven.Evaluate(pomFile, expression, u.getExecRunner())
+}
+
+func (u *utilsBundle) dir(path string) string {
+	return filepath.Dir(path)
+}
+
+func (u *utilsBundle) base(path string) string {
+	return filepath.Base(path)
+}
+
+func (u *utilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
+	return filepath.Walk(root, walkFn)
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
@@ -348,16 +363,20 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if filepath.Base(path) == "pom.xml" {
-			parentDir := filepath.Dir(path)
-			fmt.Println("Debug: parentDir: " + parentDir)
-			err = uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"),
-				options.AdditionalClassifiers)
+	err := utils.walk(".", func(path string, info os.FileInfo, err error) error {
+		parentDir := utils.dir(path)
+		fileName := utils.base(path)
 
-			if err != nil {
-				return err
-			}
+		if parentDir == "integration-tests" || fileName != "pom.xml" {
+			return nil
+		}
+
+		log.Entry().Info("Deploying maven module " + parentDir)
+		err = uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"),
+			options.AdditionalClassifiers)
+
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -377,9 +396,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	if groupID == "" {
 		groupID = options.GroupID
 	}
-	fmt.Println("Debug: pomFile " + pomFile)
 	artifactID, err := utils.evaluate(pomFile, "project.artifactId")
-	fmt.Println("Debug: artifactID " + artifactID)
 	var artifactsVersion string
 	if err == nil {
 		artifactsVersion, err = utils.evaluate(pomFile, "project.version")

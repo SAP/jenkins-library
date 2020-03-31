@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -97,6 +98,19 @@ func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
 		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
 	}
 	return value, nil
+}
+
+func (m *mockUtilsBundle) dir(path string) string {
+	return "."
+}
+
+func (m *mockUtilsBundle) base(path string) string {
+	return "pom.xml"
+}
+
+func (m *mockUtilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
+	walkFn(".", nil, nil)
+	return nil
 }
 
 type mockUploader struct {
@@ -389,15 +403,6 @@ func TestUploadArtifacts(t *testing.T) {
 }
 
 func TestUploadMavenProjects(t *testing.T) {
-	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, true)
-		uploader := mockUploader{}
-		options := createOptions()
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "pom.xml not found")
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
-	})
 	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
