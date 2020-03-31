@@ -18,8 +18,8 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
-			PmdExcludes:               []string{"*test.java", "*prod.java"},
-			PmdRuleSets:               []string{"myRule.xml", "anotherRule.xml"},
+			PmdMaxAllowedViolations:   10,
+			PmdFailurePriority:        2,
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
 			SpotBugsIncludeFilterFile: "includeFilter.xml",
 			MavenModulesExcludes:      []string{"testing-lib", "test-helpers"},
@@ -30,11 +30,11 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-pl", "!testing-lib", "-pl", "!test-helpers",
 				"-Dspotbugs.includeFilterFile=includeFilter.xml",
 				"-Dspotbugs.excludeFilterFile=excludeFilter.xml",
-				"-Dpmd.excludes=*test.java,*prod.java",
-				"-Dpmd.rulesets=myRule.xml,anotherRule.xml",
+				"-Dpmd.maxAllowedViolations=10",
+				"-Dpmd.failurePriority=2",
 				"--batch-mode",
-				"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs",
-				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd",
+				"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check",
+				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",
 			},
 		}
 
@@ -64,15 +64,28 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 }
 
 func TestGetPmdMavenParameters(t *testing.T) {
-	t.Run("should return maven options with excludes and rulesets", func(t *testing.T) {
+	t.Run("should return maven options with max allowed violations and failrure priority", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{
-			Pmd:         true,
-			PmdExcludes: []string{"*test.java", "*prod.java"},
-			PmdRuleSets: []string{"myRule.xml", "anotherRule.xml"},
+			Pmd:                     true,
+			PmdFailurePriority:      2,
+			PmdMaxAllowedViolations: 5,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"},
-			Defines: []string{"-Dpmd.excludes=*test.java,*prod.java", "-Dpmd.rulesets=myRule.xml,anotherRule.xml"},
+			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+			Defines: []string{"-Dpmd.maxAllowedViolations=5", "-Dpmd.failurePriority=2"},
+		}
+
+		assert.Equal(t, &expected, getPmdMavenParameters(&config))
+	})
+	t.Run("should return maven options without failure priority if out of bounds", func(t *testing.T) {
+		config := mavenExecuteStaticCodeChecksOptions{
+			Pmd:                     true,
+			PmdFailurePriority:      123,
+			PmdMaxAllowedViolations: 5,
+		}
+		expected := maven.ExecuteOptions{
+			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+			Defines: []string{"-Dpmd.maxAllowedViolations=5"},
 		}
 
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
@@ -80,22 +93,23 @@ func TestGetPmdMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:pmd"}}
+			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"}}
 
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
 	})
 }
 
 func TestGetSpotBugsMavenParameters(t *testing.T) {
-	t.Run("should return maven options with excludes and include filters", func(t *testing.T) {
+	t.Run("should return maven options with excludes-, include filters and max allowed violations", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{
-			SpotBugs:                  true,
-			SpotBugsExcludeFilterFile: "excludeFilter.xml",
-			SpotBugsIncludeFilterFile: "includeFilter.xml",
+			SpotBugs:                     true,
+			SpotBugsExcludeFilterFile:    "excludeFilter.xml",
+			SpotBugsIncludeFilterFile:    "includeFilter.xml",
+			SpotBugsMaxAllowedViolations: 123,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"},
-			Defines: []string{"-Dspotbugs.includeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml"},
+			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"},
+			Defines: []string{"-Dspotbugs.includeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml", "-Dspotbugs.maxAllowedViolations=123"},
 		}
 
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
@@ -103,7 +117,7 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:spotbugs"}}
+			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"}}
 
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
 	})
