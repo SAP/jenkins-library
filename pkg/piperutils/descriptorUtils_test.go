@@ -127,3 +127,32 @@ func TestGetPipGAVVersionViaInterface(t *testing.T) {
 		assert.Equal(t, "1.0.0", descriptor.Version)
 	})
 }
+
+func TestDetermineProjectCoordinates(t *testing.T) {
+	nameTemplate := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
+	versionTemplate := `{{(split "." (split "-" .Version)._0)._0}}`
+
+	t.Run("maven", func(t *testing.T) {
+		var gav BuildDescriptor
+		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "1.2.3"}
+		name, version := DetermineProjectCoordinates(nameTemplate, versionTemplate, gav)
+		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different result")
+		assert.Equal(t, "1", version, "Expected different result")
+	})
+
+	t.Run("maven snapshot", func(t *testing.T) {
+		var gav BuildDescriptor
+		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "0-SNAPSHOT"}
+		name, version := DetermineProjectCoordinates(nameTemplate, versionTemplate, gav)
+		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different result")
+		assert.Equal(t, "0", version, "Expected different result")
+	})
+
+	t.Run("python", func(t *testing.T) {
+		var gav BuildDescriptor
+		gav = &PipDescriptor{GroupID: "", ArtifactID: "python-test", Version: "2.2.3"}
+		name, version := DetermineProjectCoordinates(nameTemplate, versionTemplate, gav)
+		assert.Equal(t, "python-test", name, "Expected different result")
+		assert.Equal(t, "2", version, "Expected different result")
+	})
+}

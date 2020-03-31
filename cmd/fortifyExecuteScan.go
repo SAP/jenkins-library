@@ -52,9 +52,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
-	gav.SetVersion(strings.Split(gav.GetVersion(), "-")[0])
-	gav.SetVersion(strings.Split(gav.GetVersion(), ".")[0])
-	fortifyProjectName, fortifyProjectVersion := determineProjectCoordinates(config, &gav)
+	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
@@ -514,18 +512,6 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
 		return string(matches[config.PullRequestMessageRegexGroup])
 	}
 	return ""
-}
-
-func determineProjectCoordinates(config fortifyExecuteScanOptions, gav *piperutils.BuildDescriptor) (string, string) {
-	projectName, err := piperutils.ExecuteTemplate(config.ProjectName, *gav)
-	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project name %v", err)
-	}
-	projectVersion, err := piperutils.ExecuteTemplate(config.ProjectVersion, *gav)
-	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project version %v", err)
-	}
-	return strings.Trim(projectName, "-"), strings.Trim(projectVersion, "-")
 }
 
 func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[string]string) []string {

@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Masterminds/sprig"
+
 	piperCmd "github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 
@@ -174,4 +176,17 @@ func getVersionFromFile(file string) (string, error) {
 		return strings.TrimSpace(versionString), nil
 	}
 	return "", nil
+}
+
+// DetermineProjectCoordinates resolve the coordinates of the project for use in 3rd party scan tools
+func DetermineProjectCoordinates(nameTemplate, versionTemplate string, gav BuildDescriptor) (string, string) {
+	projectName, err := ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
+	if err != nil {
+		log.Entry().Warnf("Unable to resolve fortify project name %v", err)
+	}
+	projectVersion, err := ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
+	if err != nil {
+		log.Entry().Warnf("Unable to resolve fortify project version %v", err)
+	}
+	return projectName, projectVersion
 }

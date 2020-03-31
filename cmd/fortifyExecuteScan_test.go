@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type execRunnerMock struct {
@@ -63,17 +65,17 @@ func TestTranslateProject(t *testing.T) {
 	})
 
 	t.Run("asp", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"","src":"./**/*"}]`}
+		config := fortifyExecuteScanOptions{ScanType: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "./**/*"}, execRunner.parameters, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "-libdirs", "tmp/", "./**/*"}, execRunner.parameters, "Expected different executable")
 	})
 
 	t.Run("java", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "java", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","source":"1.8","src":"./**/*"}]`}
+		config := fortifyExecuteScanOptions{ScanType: "java", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-source", "1.8", "./**/*"}, execRunner.parameters, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.parameters, "Expected different executable")
 	})
 }
 

@@ -147,7 +147,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: -exclude ./**/test/**/*
+      default: -exclude ./**/tests/**/*;./**/setup.py
     - name: reportDownloadEndpoint
       aliases:
       - name: fortifyReportDownloadEndpoint
@@ -245,7 +245,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: "{{.GroupID}}-{{.ArtifactID}}"
+      default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
     - name: pythonIncludes
       type: string
       description: 'The includes pattern used in `scanType: ''pip''` for including
@@ -326,7 +326,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: "{{.Version}}"
+      default: '{{(split "." (split "-" .Version)._0)._0}}'
     - name: pythonInstallCommand
       type: string
       description: 'Additional install command that can be run when `scanType: ''pip''`
