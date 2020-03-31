@@ -87,6 +87,9 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	var body abapEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return uriConnectionDetails, err
+	}
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abapEntity{}, body) {
@@ -172,31 +175,31 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	// Logging into the Cloud Foundry via CF CLI
 	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
 	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
-	error := c.RunExecutable("cf", cfLoginSlice...)
-	if error != nil {
+	errorRunExecutable := c.RunExecutable("cf", cfLoginSlice...)
+	if errorRunExecutable != nil {
 		log.Entry().Error("Login at cloud foundry failed.")
-		return abapServiceKey, error
+		return abapServiceKey, errorRunExecutable
 	}
 
 	// Reading the Service Key via CF CLI
 	var serviceKeyBytes bytes.Buffer
 	c.Stdout(&serviceKeyBytes)
 	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKey}
-	error = c.RunExecutable("cf", cfReadServiceKeySlice...)
+	errorRunExecutable = c.RunExecutable("cf", cfReadServiceKeySlice...)
 	var serviceKeyJSON string
 	if len(serviceKeyBytes.String()) > 0 {
 		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
 		serviceKeyJSON = strings.Join(lines[2:], "")
 	}
-	if error != nil {
-		return abapServiceKey, error
+	if errorRunExecutable != nil {
+		return abapServiceKey, errorRunExecutable
 	}
 	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Read service key for service instance")
 	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (serviceKey{}) {
 		return abapServiceKey, errors.New("Parsing the service key failed")
 	}
-	return abapServiceKey, error
+	return abapServiceKey, errorRunExecutable
 }
 
 func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
