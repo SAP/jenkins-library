@@ -18,6 +18,7 @@ targets/
 documentation/docs-gen
 
 consumer-test/**/workspace
+.pipeline/commonPipelineEnvironment
 
 *.code-workspace
 /piper
