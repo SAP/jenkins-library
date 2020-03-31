@@ -99,7 +99,7 @@ spec:
       - STEPS
     - name: versioningType
       type: string
-      description: "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag: automatic based on latest tag)"
+      description: "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag (not available yet): automatic based on latest tag)"
       scope:
       - PARAMETERS
       - STAGES
