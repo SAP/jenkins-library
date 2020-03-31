@@ -74,7 +74,10 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Pull of a Repository
-	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
+	if config.RepositoryName == "" {
+		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
+	}
+	jsonBody := []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
 		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, uriConnectionDetails)
