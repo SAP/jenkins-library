@@ -132,6 +132,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
+        log.Entry().Infof("Added default config '%s'", f)
 			}
 		}
 

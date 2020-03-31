@@ -1,3 +1,5 @@
+import com.sap.piper.BashUtils
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
@@ -35,12 +37,38 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}"
+                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg(script)}"
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
         }
     }
+}
+
+static String getCustomDefaultConfigs() {
+    // The default config files were extracted from merged library
+    // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
+    List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
+    for (int i = 0; i < customDefaults.size(); i++) {
+        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
+    }
+    return customDefaults.join(',')
+}
+
+static String getCustomDefaultConfigsArg() {
+    String customDefaults = getCustomDefaultConfigs()
+    if (customDefaults) {
+        return " --defaultConfig ${customDefaults}"
+    }
+    return ''
+}
+
+static String getCustomConfigArg(def script) {
+    if (script?.commonPipelineEnvironment?.configurationFile
+        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
+        return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
+    }
+    return ''
 }
 
 void dockerWrapper(script, config, body) {
