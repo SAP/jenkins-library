@@ -50,8 +50,7 @@ void call(Map parameters = [:]) {
             additionalClassifiers: nexusConfig.additionalClassifiers,
         ]
 
-        // REPOSITORY_UNDER_TEST and LIBRARY_VERSION_UNDER_TEST have to be removed from withEnv before merging to master.
-        withEnv(["STAGE_NAME=${stageName}", 'REPOSITORY_UNDER_TEST=SAP/jenkins-library','LIBRARY_VERSION_UNDER_TEST=stage-artifact-deployment']) {
+        withEnv(["STAGE_NAME=${stageName}"]) {
             nexusUpload(nexusUploadParams)
         }
 
