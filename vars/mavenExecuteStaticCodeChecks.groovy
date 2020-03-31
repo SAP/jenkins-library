@@ -9,7 +9,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/mavenStaticCodeChecks.yaml'
 @Field String STEP_NAME = getClass().getName()
 
-
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
     List credentials = []
