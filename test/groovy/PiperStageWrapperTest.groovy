@@ -13,6 +13,7 @@ import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
@@ -179,6 +180,27 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
         assertThat(DebugReport.instance.localExtensions.test_old_extension, is('Extends'))
+    }
+
+    @Test
+    void testExtensionDeactivation() {
+        helper.registerAllowedMethod('fileExists', [String.class], { path ->
+            return (path == '.pipeline/extensions/test_old_extension.groovy')
+        })
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_old_extension.groovy')
+        })
+
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
+        binding.setVariable('env', [PIPER_DISABLE_EXTENSIONS: 'true'])
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10,
+            stageName: 'test_old_extension'
+        ) {}
+        //setting above parameter to 'true' bypasses the below message
+        assertThat(loggingRule.log, not(containsString("[piperStageWrapper] Running project interceptor '.pipeline/extensions/test_old_extension.groovy' for test_old_extension.")))
     }
 
     @Test
