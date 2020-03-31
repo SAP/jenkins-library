@@ -242,7 +242,7 @@ type artifactDefines struct {
 	types       string
 }
 
-const deployGoal = "org.apache.maven.plugins:maven-deploy-plugin:2.7:deploy-file"
+const deployGoal = "org.apache.maven.plugins:maven-deploy-plugin:2.8.2:deploy-file"
 
 func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	generatePOM bool) error {
@@ -348,20 +348,21 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := uploadMavenArtifacts(utils, uploader, options, "", "target", "")
-	if err != nil {
-		return err
-	}
+	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if filepath.Base(path) == "pom.xml" {
+			parentDir := filepath.Dir(path)
+			fmt.Println("Debug: parentDir: " + parentDir)
+			err = uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"),
+				options.AdditionalClassifiers)
 
-	// Test if a sub-folder "application" exists and upload the artifacts from there as well.
-	// This means there are built-in assumptions about the project structure (archetype),
-	// that nexusUpload supports. To make this more flexible should be the scope of another PR.
-	err = uploadMavenArtifacts(utils, uploader, options, "application", "application/target",
-		options.AdditionalClassifiers)
-	if err == errPomNotFound {
-		// Ignore for missing application module
-		err = nil
-	}
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
 	return err
 }
 
@@ -376,7 +377,9 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	if groupID == "" {
 		groupID = options.GroupID
 	}
+	fmt.Println("Debug: pomFile " + pomFile)
 	artifactID, err := utils.evaluate(pomFile, "project.artifactId")
+	fmt.Println("Debug: artifactID " + artifactID)
 	var artifactsVersion string
 	if err == nil {
 		artifactsVersion, err = utils.evaluate(pomFile, "project.version")
@@ -421,6 +424,7 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader,
 		packaging = "jar"
 	}
 	filePath := composeFilePath(targetFolder, finalBuildName, packaging)
+
 	return addArtifact(utils, uploader, filePath, "", packaging)
 }
 
