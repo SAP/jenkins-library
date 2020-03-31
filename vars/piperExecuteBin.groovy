@@ -31,13 +31,16 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
+            String defaultConfigArgs = getCustomDefaultConfigsArg()
+            String customConfigArg = getCustomConfigArg(script)
+
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Config: ${config}"
 
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg(script)}"
+                    sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
