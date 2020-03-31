@@ -228,6 +228,7 @@ steps:
     stashContent: []
   dockerExecuteOnKubernetes:
     dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
