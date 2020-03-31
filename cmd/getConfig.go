@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"io"
+	"os"
+	"syscall"
 )
 
 type configCommandOptions struct {
@@ -57,7 +57,10 @@ func generateConfig() error {
 
 	customConfig, err := configOptions.openFile(GeneralConfig.CustomConfig)
 	if err != nil {
-		return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
+		if errors.Unwrap(err) != syscall.ENOENT {
+			return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
+		}
+		customConfig = nil
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
