@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -56,20 +55,9 @@ func generateConfig() error {
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
-	var customConfig io.ReadCloser
-	{
-		exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
-
-		if e != nil {
-			return e
-		}
-
-		if exists {
-			customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
-			if err != nil {
-				return errors.Wrap(err, "config: open failed")
-			}
-		}
+	customConfig, err := configOptions.openFile(GeneralConfig.CustomConfig)
+	if err != nil {
+		return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
@@ -83,7 +71,9 @@ func generateConfig() error {
 		if err != nil && f != ".pipeline/defaults.yaml" {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 		}
-		defaultConfig = append(defaultConfig, fc)
+		if err == nil {
+			defaultConfig = append(defaultConfig, fc)
+		}
 	}
 
 	var flags map[string]interface{}
@@ -132,7 +122,7 @@ func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCl
 		return []io.ReadCloser{defaults}, metadata.GetContextParameterFilters(), nil
 	}
 	//ToDo: retrieve default values from metadata
-	return nil, metadata.GetParameterFilters(), nil
+	return []io.ReadCloser{}, metadata.GetParameterFilters(), nil
 }
 
 func applyContextConditions(metadata config.StepData, stepConfig *config.StepConfig) {
