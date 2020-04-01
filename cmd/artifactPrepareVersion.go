@@ -19,6 +19,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type gitRepository interface {
@@ -257,8 +258,11 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			//ToDo proper conversion of http url to git ssh url
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
-			//pushOptions.RemoteName = remoteURL
 			updateRemoteOriginUrl(repository, remoteURL)
+			pushOptions.Auth, err = ssh.NewSSHAgentAuth("<userID>")
+			if err != nil {
+				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
+			}
 			log.Entry().Infof("using remote '%v'", remoteURL)
 			log.Entry().Info("Relying on environment to provide ssh credentials")
 		}
