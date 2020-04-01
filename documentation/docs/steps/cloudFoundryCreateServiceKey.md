@@ -4,8 +4,10 @@
 
 ## Prerequisites
 
+* This step is for creating a Service Key for an existing Service in Cloud Foundry.
 * Cloud Foundry API endpoint, organization, space, user and service instance are available
 * Credentials have been configured in Jenkins with a dedicated Id
+* Additionally you can set the optional serviceKeyConfig flag to configure the Service Key creation with your respective JSON configuration.
 
 ## ${docGenParameters}
 
@@ -26,7 +28,7 @@ cloudFoundryCreateServiceKey(
       org: 'cfOrg',
       space: 'cfSpace',
       serviceInstance: 'myServiceInstance',
-      serviceKey: 'myServiceKey',
+      serviceKeyName: 'myServiceKey',
       serviceKeyConfig: '{ \"key\" : \"value\" }'
   ])
 ```
