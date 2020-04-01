@@ -81,6 +81,10 @@ func addCloudFoundryCreateServiceKeyFlags(cmd *cobra.Command, stepConfig *cloudF
 // retrieve step metadata
 func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "cloudFoundryCreateServiceKey",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
