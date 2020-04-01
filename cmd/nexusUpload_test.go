@@ -109,8 +109,8 @@ func (m *mockUtilsBundle) base(path string) string {
 }
 
 func (m *mockUtilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
-	walkFn(".", nil, nil)
-	return nil
+	err := walkFn(root, nil, nil)
+	return err
 }
 
 type mockUploader struct {
