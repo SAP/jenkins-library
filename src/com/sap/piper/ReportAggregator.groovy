@@ -131,7 +131,7 @@ class ReportAggregator {
     }
 
     def generateReport(Script script) {
-        String template = script.libraryResource "pipeline_report.txt"
+        String template = script.libraryResource "com.sap.piper/templates/pipeline_report.txt"
 
         if (!projectIdentifier) {
             script.error "This should not happen: Could not generate a certification report as the project identifier was not set"
