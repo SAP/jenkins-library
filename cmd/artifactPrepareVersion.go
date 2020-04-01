@@ -252,10 +252,16 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	}
 	if strings.HasPrefix(urls[0], "http") {
 		if len(config.Username) == 0 || len(config.Password) == 0 {
-			return commitID, fmt.Errorf("git username/password missing")
+			// handling compatibility: try to use ssh in case no credentials are available
+			log.Entry().Info("git username/password missing - switching to ssh")
+			remoteURL := strings.Replace(url[0], "https://", "git@")
+			pushOptions.RemoteName = remoteURL
+			log.Entry().Infof("using remote '%v'", remoteURL)
+			log.Entry().Info("Relying on environment to provide ssh credentials")
 		}
 		pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 	} else {
+		log.Entry().Info("Relying on environment to provide ssh credentials")
 		// ssh authentication has to be provided from the outside.
 		// for example via sshagent Jenkins step
 		// current tests show: SEEMS SUFFICIENT FOR COMPATIBILITY USE CASE!
