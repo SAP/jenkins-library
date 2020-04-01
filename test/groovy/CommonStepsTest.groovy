@@ -59,7 +59,8 @@ public class CommonStepsTest extends BasePiperTest{
             'buildSetResult',
             'nexusUpload',
             'mavenBuild',
-            'mavenExecuteStaticCodeChecks'
+            'mavenExecuteStaticCodeChecks',
+            'cloudFoundryCreateServiceKey'
         ]
 
         List steps = getSteps().stream()
