@@ -61,6 +61,7 @@ public class CommonStepsTest extends BasePiperTest{
             'mavenBuild',
             'mavenExecuteStaticCodeChecks',
             'cloudFoundryCreateServiceKey'
+            'abapEnvironmentRunATCCheck',
         ]
 
         List steps = getSteps().stream()
@@ -136,6 +137,7 @@ public class CommonStepsTest extends BasePiperTest{
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
     ]
 
     @Test
