@@ -254,7 +254,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		if len(config.Username) == 0 || len(config.Password) == 0 {
 			// handling compatibility: try to use ssh in case no credentials are available
 			log.Entry().Info("git username/password missing - switching to ssh")
-			remoteURL := strings.Replace(url[0], "https://", "git@")
+			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			pushOptions.RemoteName = remoteURL
 			log.Entry().Infof("using remote '%v'", remoteURL)
 			log.Entry().Info("Relying on environment to provide ssh credentials")
