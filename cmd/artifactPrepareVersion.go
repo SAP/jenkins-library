@@ -19,7 +19,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type gitRepository interface {
@@ -258,10 +257,10 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 	} else {
 		// ToDo: handle ssh authentication (e.g. via sshagent)
-		pushOptions.Auth, err = ssh.NewSSHAgentAuth("")
-		if err != nil {
-			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
-		}
+		//pushOptions.Auth, err = ssh.NewSSHAgentAuth("")
+		//if err != nil {
+		//	return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
+		//}
 	}
 
 	err = repository.Push(&pushOptions)
