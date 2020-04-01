@@ -60,6 +60,7 @@ func Execute() {
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
