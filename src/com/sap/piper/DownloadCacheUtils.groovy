@@ -64,7 +64,7 @@ class DownloadCacheUtils {
             return ''
         }
 
-        String mavenSettingsTemplate = script.libraryResource("mvn_download_cache_proxy_settings.xml")
+        String mavenSettingsTemplate = script.libraryResource("com.sap.piper/templates/mvn_download_cache_proxy_settings.xml")
         String mavenSettings = mavenSettingsTemplate.replace('__HOSTNAME__', hostname)
 
         if (!script.fileExists('.pipeline')) {
