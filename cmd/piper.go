@@ -137,7 +137,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -154,7 +154,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 
 	confJSON, _ := json.Marshal(stepConfig.Config)
-	json.Unmarshal(confJSON, &options)
+	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
