@@ -1,52 +1,86 @@
-import com.sap.piper.GenerateDocumentation
-
+import static com.sap.piper.Prerequisites.checkScript
+import com.sap.piper.PiperGoUtils
+import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/sonar.yaml'
-
     /**
      * The name of the SonarQube instance defined in the Jenkins settings.
      */
 //    'instance',
 
-/**
- * The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.
- */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+        def stepParameters = [:].plus(parameters)
 
-        //.addIfEmpty('projectVersion', script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0))
-        //.addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
-        //.addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
-        // check mandatory parameters
-        //.withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
-        //.withMandatoryProperty('githubOrg', null, { isPullRequest() })
-        //.withMandatoryProperty('githubRepo', null, { isPullRequest() })
+        def script = checkScript(this, parameters) ?: this
+        stepParameters.remove('script')
 
-        /*
-        if(!script.fileExists('.git')) {
-            utils.unstash('git')
-        }
-        */
+        def utils = parameters.juStabUtils ?: new Utils()
+        stepParameters.remove('juStabUtils')
 
-        List credentials = [
-            [type: 'token', id: 'sonarTokenCredentialsId', env: ['SONAR_TOKEN']],
-            [type: 'token', id: 'githubTokenCredentialsId', env: ['GITHUB_TOKEN']]
-        ]
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        stepParameters.remove('jenkinsUtilsStub')
 
-        loadCertificates([
-            customTlsCertificateLinks: parameters.certificates,
-            verbose: false
-        ])
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
+        script.commonPipelineEnvironment.writeToDisk(script)
 
-        withSonarQubeEnv(parameters.instance) {
-            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+        writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
+
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+        ]) {
+            // get context configuration
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
+            echo "Config: ${config}"
+            // determine credentials to load
+            List credentials = []
+            if (config.sonarTokenCredentialsId) 
+                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
+            if(isPullRequest()){
+                checkMandatoryParameter(config, "owner")
+                checkMandatoryParameter(config, "repository")
+                if(config.legacyPRHandling) {
+                    checkMandatoryParameter(config, "githubTokenCredentialsId")
+                    if (config.githubTokenCredentialsId)
+                        credentials.add(string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_githubToken'))
+                }
+            }
+            // load certificates into cacerts file
+            loadCertificates([customTlsCertificateLinks: config.customTlsCertificateLinks, verbose: config.verbose])
+            // execute step
+            dockerExecute(
+                script: script,
+                dockerImage: config.dockerImage
+            ) {
+                if(!fileExists('.git')) {		
+                    utils.unstash('git')		
+                }
+                //TODO: fix instance
+                withSonarQubeEnv(parameters.instance) {
+                    withCredentials(credentials) {
+                        sh "./piper ${STEP_NAME}"
+                    }
+                }
+                jenkinsUtils.handleStepResults(STEP_NAME, false, false)
+            }
         }
     }
+}
+
+private void checkMandatoryParameter(config, key){
+    if (!config[key]) {
+        throw new IllegalArgumentException( "ERROR - NO VALUE AVAILABLE FOR ${key}")
+    }
+}
+ 
+private Boolean isPullRequest(){
+    return env.CHANGE_ID		
 }
 
 private void loadCertificates(Map config) {
