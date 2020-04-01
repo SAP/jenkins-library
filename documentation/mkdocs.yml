@@ -65,6 +65,7 @@ nav:
         - karmaExecuteTests: steps/karmaExecuteTests.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
