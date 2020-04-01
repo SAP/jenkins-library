@@ -263,6 +263,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
+			log.Entry().Infof("Push options; %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
 			log.Entry().Info("Relying on environment to provide ssh credentials")
 		}
