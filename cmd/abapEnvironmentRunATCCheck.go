@@ -108,7 +108,9 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 				Fatal("Could not read response body")
 		}
 		defer resp.Body.Close()
-		parsedXML := new(Run)
+
+		//Testing
+		parsedXML := new(Result)
 		xml.Unmarshal([]byte(body), &parsedXML)
 
 		err = ioutil.WriteFile("result.xml", body, 0644)
@@ -117,20 +119,19 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 				WithError(err).
 				Fatal("Could not save XML file")
 		}
-		/*
-			for _, s := range parsedXML.Files {
-				for _, t := range s.ATCErrors {
-					log.Entry().Error(t.Key)
-				}
+		for _, s := range parsedXML.Files {
+			for _, t := range s.ATCErrors {
+				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
 			}
-			fmt.Print("Hello")
-		*/
+		}
 	}
 
 	if err != nil {
 		cloudfoundry.Logout()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+
+	log.Entry().Info("ATC run completed succesfully")
 }
 
 func runATC(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
