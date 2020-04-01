@@ -49,6 +49,7 @@ func Execute() {
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
@@ -114,7 +115,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
 				if customConfig, err = openFile(projectConfigFile); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
 				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
@@ -124,9 +125,15 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
-			//ToDo: support also https as source
-			fc, _ := openFile(f)
-			defaultConfig = append(defaultConfig, fc)
+			fc, err := openFile(f)
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
+				log.Entry().Infof("Added default config '%s'", f)
+			}
 		}
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)

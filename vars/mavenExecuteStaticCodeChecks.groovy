@@ -1,47 +1,45 @@
-import com.sap.piper.PiperGoUtils
-import com.sap.piper.Utils
+import com.sap.piper.ConfigurationLoader
+import com.sap.piper.DownloadCacheUtils
+import com.sap.piper.QualityCheck
+import com.sap.piper.ReportAggregator
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String METADATA_FILE = 'metadata/mavenStaticCodeChecks.yaml'
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
-
 
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    final script = checkScript(this, parameters) ?: null
+    List credentials = []
+    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
-        final script = checkScript(this, parameters) ?: null
+    try {
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    } catch (Exception exception) {
+        error("Maven Static Code Checks execution failed. Please examine the reports which are also available in the Jenkins user interface.")
+    }
+    finally {
+        showIssues(script)
+    }
+}
 
-        if (!script) {
-            error "Reference to surrounding pipeline script not provided (script: this)."
-        }
-        def utils = parameters.juStabUtils ?: new Utils()
-        new PiperGoUtils(this, utils).unstashPiperBin()
+private showIssues(Script script) {
+    Map configuration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
+    // Every check is executed by default. Only if configured with `false` the check won't be executed
+    if (!(configuration.spotBugs == false)) {
+        recordIssues(blameDisabled: true,
+            enabledForFailure: true,
+            aggregatingResults: false,
+            tool: spotBugs(pattern: '**/target/spotbugsXml.xml'))
 
-        // Make a shallow copy of the passed-in Map in order to prevent removal of top-level keys
-        // to be visible in calling code, just in case the map is still used there.
-        parameters = [:] << parameters
-
-        // do not forward these parameters to the go layer
-        parameters.remove('juStabUtils')
-        parameters.remove('piperGoUtils')
-        parameters.remove('script')
-
-
-        script.commonPipelineEnvironment.writeToDisk(script)
-        writeFile(file: "${METADATA_FOLDER}/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
-
-        withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-        ]) {
-            // get context configuration
-            Map contextConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}'"))
-
-            dockerExecute([script: script].plus([dockerImage: contextConfig.dockerImage])) {
-                sh "./piper mavenExecuteStaticCodeChecks"
-            }
-        }
+        ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.FindbugsCheck)
+    }
+    if (!(configuration.pmd == false)) {
+        recordIssues(blameDisabled: true,
+            enabledForFailure: true,
+            aggregatingResults: false,
+            tool: pmdParser(pattern: '**/target/pmd.xml'))
+        ReportAggregator.instance.reportStaticCodeExecution(QualityCheck.PmdCheck)
     }
 }
