@@ -67,6 +67,11 @@ return this
     Please note that the `Init` stage also checks out your current repository including your extensions.<br />
     Therefore, it is not possible to use extensions on this stage.
 
+!!! note "Disable Extensions Execution"
+    By default, there is a possibility for extensions to get executed. In case of disabling it, please ensure to set `PIPER_DISABLE_EXTENSIONS` to `true`.
+    Setting this parameter to `true` excludes the execution of extension files in `.pipeline/extensions/<StageName>.groovy`.
+
+
 ### Practical example
 
 For a more practical example, you can use extensions in the SAP Cloud SDK pipeline to add custom linters to your pipeline.

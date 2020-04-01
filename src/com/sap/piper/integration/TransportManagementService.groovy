@@ -51,6 +51,9 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
+
+        echo("Received response with status ${response.status} from authentication request.")
+
         if (response.status != 200) {
             def errorMessage = "OAuth Token retrieval failed (HTTP status code '${response.status}')."
             signalAboutError(response, errorMessage)
@@ -58,7 +61,6 @@ class TransportManagementService implements Serializable {
             echo("OAuth Token retrieved successfully.")
             return jsonUtils.jsonStringToGroovyObject(response.content).access_token
         }
-
     }
 
 
@@ -124,7 +126,8 @@ class TransportManagementService implements Serializable {
             def errorMessage = "Node upload failed (HTTP status code '${response.status}')."
             signalAboutError(response, errorMessage)
         } else {
-            echo("Node upload successful.")
+
+            echo("Node upload successful. ${response.content}")
             return jsonUtils.jsonStringToGroovyObject(response.content)
         }
 
@@ -139,13 +142,7 @@ class TransportManagementService implements Serializable {
             validResponseCodes    : "100:599"
         ]
 
-        def response = script.httpRequest(defaultParameters + parameters)
-
-        if (config.verbose) {
-            echo("Received response '${response.content}' with status ${response.status}.")
-        }
-
-        return response
+        return script.httpRequest(defaultParameters + parameters)
     }
 
     private signalAboutError(response, errorMessage) {
