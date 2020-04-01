@@ -259,7 +259,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
 			updateRemoteOriginUrl(repository, remoteURL)
-			pushOptions.Auth, err = ssh.NewSSHAgentAuth("")
+			pushOptions.Auth, err = ssh.NewSSHAgentAuth("D032835")
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
