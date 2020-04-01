@@ -40,8 +40,8 @@ void call(Map parameters = [:]) {
             echo "Config: ${config}"
             // determine credentials to load
             List credentials = []
-            if (config.sonarTokenCredentialsId) 
-                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
+            if (config.sonarTokenCredentialsId) //TODO: use PIPER_token
+                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'SONAR_TOKEN'))
             if(isPullRequest()){
                 checkMandatoryParameter(config, "owner")
                 checkMandatoryParameter(config, "repository")
@@ -57,7 +57,9 @@ void call(Map parameters = [:]) {
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: config.dockerImage
+                dockerImage: config.dockerImage,
+                dockerWorkspace: config.dockerWorkspace,
+                dockerOptions: config.dockerOptions,
             ) {
                 if(!fileExists('.git')) {		
                     utils.unstash('git')		
