@@ -79,9 +79,10 @@ type StepResources struct {
 
 // StepSecrets defines the secrets to be provided by the step context, e.g. Jenkins pipeline
 type StepSecrets struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type,omitempty"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Type        string  `json:"type,omitempty"`
+	Aliases     []Alias `json:"aliases,omitempty"`
 }
 
 // StepOutputs defines the outputs of a step step, typically one or multiple resources
