@@ -28,6 +28,7 @@ spec:
       description: Defines the tool which is used for building the artifact.
       mandatory: true
       scope:
+      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
