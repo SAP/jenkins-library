@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -419,16 +420,12 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 		err = addMavenTargetArtifact(utils, uploader, pomFile, targetFolder, finalBuildName)
 	}
 	if err == nil {
-		err = addMavenTargetSubArtifacts(utils, uploader, additionalClassifiers, targetFolder, finalBuildName)
-	}
-	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, true)
 	}
 	return err
 }
 
-func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader,
-	pomFile, targetFolder, finalBuildName string) error {
+func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName string) error {
 	packaging, err := utils.evaluate(pomFile, "project.packaging")
 	if err != nil {
 		return err
@@ -440,32 +437,17 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader,
 	if packaging == "" {
 		packaging = "jar"
 	}
-	filePath := composeFilePath(targetFolder, finalBuildName, packaging)
 
-	return addArtifact(utils, uploader, filePath, "", packaging)
-}
-
-func addMavenTargetSubArtifacts(utils nexusUploadUtils, uploader nexus.Uploader,
-	additionalClassifiers, targetFolder, finalBuildName string) error {
-	if additionalClassifiers == "" {
-		return nil
-	}
-	classifiers, err := getClassifiers(additionalClassifiers)
+	matches, err := filepath.Glob(targetFolder + "/*.jar")
 	if err != nil {
 		return err
 	}
-	for _, classifier := range classifiers {
-		if classifier.Classifier == "" || classifier.FileType == "" {
-			return fmt.Errorf("invalid additional classifier description (classifier: '%s', type: '%s')",
-				classifier.Classifier, classifier.FileType)
-		}
-		filePath := composeFilePath(targetFolder, finalBuildName+"-"+classifier.Classifier, classifier.FileType)
-		err = addArtifact(utils, uploader, filePath, classifier.Classifier, classifier.FileType)
-		if err != nil {
-			return err
-		}
+	fmt.Println("Debug: " + strings.Join(matches, ", "))
+	for _, filename := range matches {
+		err = addArtifact(utils, uploader, filename, "", packaging)  //fixme classifier
 	}
-	return nil
+
+	return err
 }
 
 func composeFilePath(folder, name, extension string) string {

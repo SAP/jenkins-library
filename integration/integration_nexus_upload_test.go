@@ -81,6 +81,10 @@ func TestNexusUpload(t *testing.T) {
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.jar: %s", resp.Status)
 
+	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0-classes.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0-classes.jar: %s", resp.Status)
+
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.yaml: %s", resp.Status)
