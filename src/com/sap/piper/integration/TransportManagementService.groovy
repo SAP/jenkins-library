@@ -78,7 +78,7 @@ class TransportManagementService implements Serializable {
         def responseContent
 
         def responseCode = script.sh returnStdout: true,
-                                     script: """|#!/bin/sh -e
+                                      script:"""|#!/bin/sh -e
                                                 | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
                                                 |      --write-out '%{response_code}' \\
                                                 |      -H 'Authorization: Bearer ${token}' \\
