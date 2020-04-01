@@ -101,12 +101,12 @@ type Container struct {
 	Shell           string      `json:"shell"`
 	WorkingDir      string      `json:"workingDir"`
 	Conditions      []Condition `json:"conditions,omitempty"`
-	Options         []Option    `json:"options,omitempt"`
+	Options         []Option    `json:"options,omitempty"`
 	//VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// ToDo: Add the missing Volumes part to enable the volume mount completly
-// VolumeMount defines an mount path
+// ToDo: Add the missing Volumes part to enable the volume mount completely
+// VolumeMount defines a mount path
 // type VolumeMount struct {
 //	MountPath string `json:"mountPath"`
 //	Name      string `json:"name"`
