@@ -256,11 +256,15 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		}
 		pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 	} else {
-		// ToDo: handle ssh authentication (e.g. via sshagent)
-		//pushOptions.Auth, err = ssh.NewSSHAgentAuth("")
-		//if err != nil {
-		//	return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
-		//}
+		// ssh authentication has to be provided from the outside.
+		// for example via sshagent Jenkins step
+		// current tests show: SEEMS SUFFICIENT FOR COMPATIBILITY USE CASE!
+
+		// ToDo: evaluate to handle ssh authentication via sshaghent within the piper binary:
+		// pushOptions.Auth, err = ssh.NewSSHAgentAuth("<userID>")
+		// if err != nil {
+		//	 return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
+		// }
 	}
 
 	err = repository.Push(&pushOptions)
