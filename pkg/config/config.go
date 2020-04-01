@@ -78,6 +78,9 @@ func setParamValueFromAlias(configMap map[string]interface{}, filter []string, n
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
 				configMap[name] = aliasVal
+				if a.Deprecated {
+					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+				}
 			}
 			if configMap[name] != nil {
 				return configMap
