@@ -54,6 +54,7 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
+            'abapEnvironmentRunATCCheck',
         ]
 
         List steps = getSteps().stream()
@@ -123,6 +124,7 @@ public class CommonStepsTest extends BasePiperTest{
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
+        'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
     ]
 
     @Test
