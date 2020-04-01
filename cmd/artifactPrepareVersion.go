@@ -257,7 +257,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			//ToDo proper conversion of http url to git ssh url
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
-			pushOptions.RemoteName = remoteURL
+			//pushOptions.RemoteName = remoteURL
+			updateRemoteOriginUrl(repository, remoteURL)
 			log.Entry().Infof("using remote '%v'", remoteURL)
 			log.Entry().Info("Relying on environment to provide ssh credentials")
 		}
@@ -306,6 +307,16 @@ func originUrls(repository gitRepository) []string {
 		}
 	}
 	return []string{}
+}
+
+func updateRemoteOriginUrl(repository gitRepository, originURL string) {
+	remotes, _ := repository.Remotes()
+	for _, remote := range remotes {
+		rConfig := remote.Config()
+		if rConfig.Name == "origin" {
+			rConfig.URLs[0] = originURL
+		}
+	}
 }
 
 func templateCompatibility(groovyTemplate string) (versioningType string, useTimestamp bool, useCommitID bool) {
