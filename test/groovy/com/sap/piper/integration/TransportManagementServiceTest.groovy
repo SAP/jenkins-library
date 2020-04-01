@@ -80,15 +80,18 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '201')
+
         def tms = new TransportManagementService(nullScript, [:])
         def responseDetails = tms.uploadFile(url, token, file, namedUser)
 
-        def oAuthShellCall = shellRule.shell[0]
+        // replace needed since the curl command is spread over several lines.
+        def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-        assertThat(oAuthShellCall, endsWith("curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --fail '${url}/v2/files/upload'"))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' --output responseFileUpload.txt '${url}/v2/files/upload'"))
         assertThat(responseDetails, hasEntry("fileId", 1234))
     }
 
