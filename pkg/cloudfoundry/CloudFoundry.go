@@ -13,7 +13,8 @@ import (
 
 var c = command.Command{}
 
-func Login(options CloudFoundryLoginOptions) error {
+func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
+
 	var err error
 
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
@@ -27,13 +28,34 @@ func Login(options CloudFoundryLoginOptions) error {
 	err = c.RunExecutable("cf", cfCheckLoginScript...)
 
 	if err != nil {
-		return fmt.Errorf("Failed to check if logged in: %w", err)
+		return false, fmt.Errorf("Failed to check if logged in: %w", err)
 	}
 
 	result = cfLoginBytes.String()
+
+	//Logged in
 	if strings.Contains(result, "Not logged in") == false {
 		log.Entry().Info("Login check indicates you are already logged in to Cloud Foundry")
-		return nil
+		return true, err
+	}
+
+	//Not logged in
+	log.Entry().Info("Login check indicates you are not yet logged in to Cloud Foundry")
+	return false, err
+}
+
+func Login(options CloudFoundryLoginOptions) error {
+	var err error
+
+	var loggedIn bool
+
+	loggedIn, err = LoginCheck(options)
+	if err != nil {
+		return fmt.Errorf("Failed to check if logged in: %w", err)
+	}
+
+	if loggedIn == true {
+		return err
 	}
 
 	log.Entry().Info("Logging in to Cloud Foundry")
