@@ -506,14 +506,6 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
 		uploader := mockUploader{}
 		options := createOptions()
-		options.AdditionalClassifiers = `
-			[
-				{
-					"classifier" : "classes",
-					"type"       : "jar"
-				}
-			]
-		`
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
