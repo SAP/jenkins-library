@@ -265,9 +265,9 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			}
 			log.Entry().Infof("Push options; %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
-			//log.Entry().Info("Relying on environment to provide ssh credentials")
+		} else {
+			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 		}
-		pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 	} else {
 		log.Entry().Info("Relying on environment to provide ssh credentials")
 		// ssh authentication has to be provided from the outside.
