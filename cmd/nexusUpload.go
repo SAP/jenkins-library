@@ -444,8 +444,7 @@ func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, po
 			}
 		}
 	}
-
-	return err
+	return nil
 }
 
 func composeFilePath(folder, name, extension string) string {

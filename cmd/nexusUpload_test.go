@@ -8,6 +8,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"sort"
 	"testing"
 )
 
@@ -100,6 +101,20 @@ func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
 	return value, nil
 }
 
+type byLen []string
+
+func (a byLen) Len() int {
+	return len(a)
+}
+
+func (a byLen) Less(i, j int) bool {
+	return len(a[i]) < len(a[j])
+}
+
+func (a byLen) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
 func (m *mockUtilsBundle) glob(pattern string) ([]string, error) {
 	var matches []string
 	for path := range m.files {
@@ -108,6 +123,8 @@ func (m *mockUtilsBundle) glob(pattern string) ([]string, error) {
 			matches = append(matches, path)
 		}
 	}
+	// The order in m.files is not deterministic, this would result in flaky tests.
+	sort.Sort(byLen(matches))
 	return matches, nil
 }
 
