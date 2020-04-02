@@ -21,8 +21,11 @@ type artifactPrepareVersionOptions struct {
 	FilePath            string `json:"filePath,omitempty"`
 	GitUserEMail        string `json:"gitUserEMail,omitempty"`
 	GitUserName         string `json:"gitUserName,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID     bool   `json:"includeCommitId,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
 	Password            string `json:"password,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	TagPrefix           string `json:"tagPrefix,omitempty"`
 	Username            string `json:"username,omitempty"`
 	VersioningTemplate  string `json:"versioningTemplate,omitempty"`
@@ -111,8 +114,11 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)")
 	cmd.Flags().StringVar(&stepConfig.GitUserEMail, "gitUserEMail", os.Getenv("PIPER_gitUserEMail"), "Allows to overwrite the global git setting 'user.email' available on your Jenkins server.")
 	cmd.Flags().StringVar(&stepConfig.GitUserName, "gitUserName", os.Getenv("PIPER_gitUserName"), "Allows to overwrite the global git setting 'user.name' available on your Jenkins server.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (versioningType 'cloud') should include the commit id hash .")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
@@ -172,6 +178,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
 						Name:        "includeCommitId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -180,12 +194,28 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
 						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
 						Name:        "tagPrefix",

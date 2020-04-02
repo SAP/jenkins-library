@@ -70,9 +70,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
-		ProjectSettingsFile: "",
-		GlobalSettingsFile:  "",
-		M2Path:              "",
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		ProjectSettingsFile: config.ProjectSettingsFile,
 	}
 
 	var err error
