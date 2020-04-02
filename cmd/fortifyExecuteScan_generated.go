@@ -14,47 +14,49 @@ import (
 )
 
 type fortifyExecuteScanOptions struct {
-	AuthToken                    string `json:"authToken,omitempty"`
-	MvnCustomArgs                string `json:"mvnCustomArgs,omitempty"`
-	ModulePath                   string `json:"modulePath,omitempty"`
-	PythonRequirementsFile       string `json:"pythonRequirementsFile,omitempty"`
-	PythonVersion                string `json:"pythonVersion,omitempty"`
-	UploadResults                bool   `json:"uploadResults,omitempty"`
-	BuildDescriptorFile          string `json:"buildDescriptorFile,omitempty"`
-	CommitID                     string `json:"commitId,omitempty"`
-	CommitMessage                string `json:"commitMessage,omitempty"`
-	RepoURL                      string `json:"repoUrl,omitempty"`
-	Repository                   string `json:"repository,omitempty"`
-	Memory                       string `json:"memory,omitempty"`
-	UpdateRulePack               bool   `json:"updateRulePack,omitempty"`
-	PythonExcludes               string `json:"pythonExcludes,omitempty"`
-	ReportDownloadEndpoint       string `json:"reportDownloadEndpoint,omitempty"`
-	PollingMinutes               int    `json:"pollingMinutes,omitempty"`
-	QuickScan                    bool   `json:"quickScan,omitempty"`
-	Translate                    string `json:"translate,omitempty"`
-	APIEndpoint                  string `json:"apiEndpoint,omitempty"`
-	ReportType                   string `json:"reportType,omitempty"`
-	PythonAdditionalPath         string `json:"pythonAdditionalPath,omitempty"`
-	ArtifactURL                  string `json:"artifactUrl,omitempty"`
-	ConsiderSuspicious           bool   `json:"considerSuspicious,omitempty"`
-	FprUploadEndpoint            string `json:"fprUploadEndpoint,omitempty"`
-	ProjectName                  string `json:"projectName,omitempty"`
-	PythonIncludes               string `json:"pythonIncludes,omitempty"`
-	Reporting                    bool   `json:"reporting,omitempty"`
-	ServerURL                    string `json:"serverUrl,omitempty"`
-	BuildDescriptorExcludeList   string `json:"buildDescriptorExcludeList,omitempty"`
-	PullRequestMessageRegexGroup int    `json:"pullRequestMessageRegexGroup,omitempty"`
-	DeltaMinutes                 int    `json:"deltaMinutes,omitempty"`
-	SpotCheckMinimum             int    `json:"spotCheckMinimum,omitempty"`
-	FprDownloadEndpoint          string `json:"fprDownloadEndpoint,omitempty"`
-	ProjectVersion               string `json:"projectVersion,omitempty"`
-	PythonInstallCommand         string `json:"pythonInstallCommand,omitempty"`
-	ReportTemplateID             int    `json:"reportTemplateId,omitempty"`
-	FilterSetTitle               string `json:"filterSetTitle,omitempty"`
-	PullRequestName              string `json:"pullRequestName,omitempty"`
-	NameVersionMapping           string `json:"nameVersionMapping,omitempty"`
-	PullRequestMessageRegex      string `json:"pullRequestMessageRegex,omitempty"`
-	ScanType                     string `json:"scanType,omitempty"`
+	AuthToken                       string `json:"authToken,omitempty"`
+	MvnCustomArgs                   string `json:"mvnCustomArgs,omitempty"`
+	ModulePath                      string `json:"modulePath,omitempty"`
+	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
+	AutodetectClasspathCommand      string `json:"autodetectClasspathCommand,omitempty"`
+	PythonRequirementsInstallSuffix string `json:"pythonRequirementsInstallSuffix,omitempty"`
+	PythonVersion                   string `json:"pythonVersion,omitempty"`
+	UploadResults                   bool   `json:"uploadResults,omitempty"`
+	BuildDescriptorFile             string `json:"buildDescriptorFile,omitempty"`
+	CommitID                        string `json:"commitId,omitempty"`
+	CommitMessage                   string `json:"commitMessage,omitempty"`
+	RepoURL                         string `json:"repoUrl,omitempty"`
+	Repository                      string `json:"repository,omitempty"`
+	Memory                          string `json:"memory,omitempty"`
+	UpdateRulePack                  bool   `json:"updateRulePack,omitempty"`
+	PythonExcludes                  string `json:"pythonExcludes,omitempty"`
+	ReportDownloadEndpoint          string `json:"reportDownloadEndpoint,omitempty"`
+	PollingMinutes                  int    `json:"pollingMinutes,omitempty"`
+	QuickScan                       bool   `json:"quickScan,omitempty"`
+	Translate                       string `json:"translate,omitempty"`
+	APIEndpoint                     string `json:"apiEndpoint,omitempty"`
+	ReportType                      string `json:"reportType,omitempty"`
+	PythonAdditionalPath            string `json:"pythonAdditionalPath,omitempty"`
+	ArtifactURL                     string `json:"artifactUrl,omitempty"`
+	ConsiderSuspicious              bool   `json:"considerSuspicious,omitempty"`
+	FprUploadEndpoint               string `json:"fprUploadEndpoint,omitempty"`
+	ProjectName                     string `json:"projectName,omitempty"`
+	PythonIncludes                  string `json:"pythonIncludes,omitempty"`
+	Reporting                       bool   `json:"reporting,omitempty"`
+	ServerURL                       string `json:"serverUrl,omitempty"`
+	BuildDescriptorExcludeList      string `json:"buildDescriptorExcludeList,omitempty"`
+	PullRequestMessageRegexGroup    int    `json:"pullRequestMessageRegexGroup,omitempty"`
+	DeltaMinutes                    int    `json:"deltaMinutes,omitempty"`
+	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
+	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
+	ProjectVersion                  string `json:"projectVersion,omitempty"`
+	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
+	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
+	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
+	PullRequestName                 string `json:"pullRequestName,omitempty"`
+	NameVersionMapping              string `json:"nameVersionMapping,omitempty"`
+	PullRequestMessageRegex         string `json:"pullRequestMessageRegex,omitempty"`
+	ScanType                        string `json:"scanType,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -157,6 +159,8 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
+	cmd.Flags().StringVar(&stepConfig.AutodetectClasspathCommand, "autodetectClasspathCommand", `mvn dependency:build-classpath -Dmdep.outputFile={{.File}} -DincludeScope=compile`, "Allows providing additional Maven command line parameters")
+	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `scanType: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`: `./setup.py`, scanType=`mta`: determined automatically")
@@ -166,7 +170,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository for identifing artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.Memory, "memory", `-Xmx4G -Xms512M`, "The amount of memory granted to the translate/scan executions")
 	cmd.Flags().BoolVar(&stepConfig.UpdateRulePack, "updateRulePack", true, "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not")
-	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/test/**/*`, "The excludes pattern used in `scanType: 'pip'` for excluding specific .py files i.e. tests")
+	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/tests/**/*;./**/setup.py`, "The excludes pattern used in `scanType: 'pip'` for excluding specific .py files i.e. tests")
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", `/transfer/reportDownload.html`, "Fortify SSC endpoint for Report downloads")
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
@@ -230,6 +234,30 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "pythonRequirementsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "autodetectClasspathCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "autodetectClasspathCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "pythonRequirementsInstallSuffix",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

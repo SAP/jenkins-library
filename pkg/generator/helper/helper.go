@@ -7,8 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -54,8 +57,13 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{- range $key, $value := .Metadata }}
-	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
+	{{- $names := list ""}}
+	{{- range $key, $value := uniqueName .Metadata }}
+	{{ if ne (has $value.Name $names) true -}}
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
+	{{- else -}}
+	{{- $names = append $names $value.Name }} {{ end -}}
+	{{ end }}
 }
 
 {{ range $notused, $oRes := .OutputResources }}
@@ -102,7 +110,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := .Metadata }}
+	{{- range $key, $value := uniqueName .Metadata }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .Metadata }}{{ if $value.Mandatory }}
@@ -374,12 +382,12 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 func stepTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-		"longName":   longName,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["longName"] = longName
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
 	checkError(err)
@@ -393,11 +401,11 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 
 func stepTestTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
 	checkError(err)
@@ -411,9 +419,9 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 func stepImplementation(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"title": strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
 	checkError(err)
@@ -476,4 +484,28 @@ func getStringSliceFromInterface(iSlice interface{}) []string {
 	}
 
 	return s
+}
+
+func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error) {
+	tp := reflect.TypeOf(list).Kind()
+	switch tp {
+	case reflect.Slice, reflect.Array:
+		l2 := reflect.ValueOf(list)
+
+		l := l2.Len()
+		names := []string{}
+		dest := []config.StepParameters{}
+		var item config.StepParameters
+		for i := 0; i < l; i++ {
+			item = l2.Index(i).Interface().(config.StepParameters)
+			if !piperutils.ContainsString(names, item.Name) {
+				names = append(names, item.Name)
+				dest = append(dest, item)
+			}
+		}
+
+		return dest, nil
+	default:
+		return nil, fmt.Errorf("Cannot find uniq on type %s", tp)
+	}
 }

@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type execRunnerMock struct {
