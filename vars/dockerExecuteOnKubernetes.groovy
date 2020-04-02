@@ -211,6 +211,11 @@ def getOptions(config) {
     if (!config.verbose) {
         options.showRawYaml = false
     }
+
+    if(config.jenkinsKubernetes.inheritFrom){
+        options.inheritFrom = config.jenkinsKubernetes.inheritFrom
+        options.yamlMergeStrategy  = 'merge'
+    }
     return options
 }
 
