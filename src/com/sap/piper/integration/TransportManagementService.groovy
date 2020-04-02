@@ -51,9 +51,14 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
+
+        if (config.verbose) {
+            echo("Received response with status ${response.status} from authentication request.")
+        }
+
         echo("OAuth Token retrieved successfully.")
 
-        return jsonUtils.jsonStringToGroovyObject(response).access_token
+        return jsonUtils.jsonStringToGroovyObject(response.content).access_token
 
     }
 
@@ -116,9 +121,14 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
+
+        if (config.verbose) {
+            echo("Received response '${response.content}' with status ${response.status}.")
+        }
+
         echo("Node upload successful.")
 
-        return jsonUtils.jsonStringToGroovyObject(response)
+        return jsonUtils.jsonStringToGroovyObject(response.content)
 
     }
 
@@ -126,18 +136,12 @@ class TransportManagementService implements Serializable {
         def defaultParameters = [
             acceptType            : 'APPLICATION_JSON',
             quiet                 : !config.verbose,
-            consoleLogResponseBody: !config.verbose,
+            consoleLogResponseBody: false, // must be false, otherwise this reveals the api-token in the auth-request
             ignoreSslErrors       : true,
             validResponseCodes    : "100:399"
         ]
 
-        def response = script.httpRequest(defaultParameters + parameters)
-
-        if (config.verbose) {
-            echo("Received response '${response.content}' with status ${response.status}.")
-        }
-
-        return response.content
+        return script.httpRequest(defaultParameters + parameters)
     }
 
     private echo(message) {
