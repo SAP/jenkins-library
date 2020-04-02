@@ -94,6 +94,9 @@ class TransportManagementService implements Serializable {
 
         if(gotResponse) {
             responseBody = script.readFile(responseFileUpload)
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }
         }
 
         def HTTP_CREATED = '201'

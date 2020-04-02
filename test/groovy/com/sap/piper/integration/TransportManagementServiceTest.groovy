@@ -103,7 +103,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", {throw new AbortException()})
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
         readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload']
 
@@ -123,7 +123,9 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '201')
+        fileExistsRule.existingFiles.add('responseFileUpload.txt')
+        readFileRule.files.put('responseFileUpload.txt', '{"fileId": 1234}')
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFile(url, token, file, namedUser)
