@@ -8,7 +8,6 @@ spec:
       - name: instance
         type: string
         description: "Jenkins only: The name of the SonarQube instance defined in Jenkins. DEPRECATED: use host parameter instead"
-        default: 'SonarCloud'
         scope:
           - PARAMETERS
           - STAGES
