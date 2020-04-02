@@ -14,6 +14,7 @@ import (
 )
 
 type sonarExecuteScanOptions struct {
+	Instance                  string `json:"instance,omitempty"`
 	Host                      string `json:"host,omitempty"`
 	Token                     string `json:"token,omitempty"`
 	Organization              string `json:"organization,omitempty"`
@@ -69,6 +70,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 }
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", "SonarCloud", "Jenkins only: The name of the SonarQube instance defined in Jenkins. DEPRECATED: use host parameter instead")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
@@ -99,6 +101,14 @@ func sonarExecuteScanMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "instance",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
