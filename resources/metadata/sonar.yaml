@@ -70,6 +70,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      # Parameters for non-PR scans
+      - name: branchName
+        type: string
+        description: "Pull-Request only: The name of the pull-request branch."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       # Parameters for PR-Handling
       - name: changeId
         type: string
