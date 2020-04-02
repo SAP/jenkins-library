@@ -411,7 +411,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 		err = addArtifact(utils, uploader, pomFile, "", "pom")
 	}
 	if err == nil {
-		err = addMavenTargetArtifact(utils, uploader, pomFile, targetFolder, finalBuildName)
+		err = addMavenTargetArtifacts(utils, uploader, pomFile, targetFolder, finalBuildName)
 	}
 	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, true)
@@ -419,7 +419,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	return err
 }
 
-func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName string) error {
+func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName string) error {
 	packaging, err := utils.evaluate(pomFile, "project.packaging")
 	if err != nil {
 		return err
@@ -432,23 +432,31 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pom
 		packaging = "jar"
 	}
 
-	// TODO: Searching only for "/*.packaging" doesn't find artifacts of other types!
+	fileTypes := []string{packaging}
+	if packaging != "jar" {
+		fileTypes = append(fileTypes, "jar")
+	}
 
-	pattern := composeFilePath(targetFolder, "*", packaging)
-	matches, _ := utils.glob(pattern)
-	fmt.Println("Glob matches: " + strings.Join(matches, ", "))
+	for _, fileType := range fileTypes {
+		pattern := composeFilePath(targetFolder, "*", fileType)
+		matches, _ := utils.glob(pattern)
+		fmt.Println("Glob matches: " + strings.Join(matches, ", "))
 
-	prefix := filepath.Join(targetFolder, finalBuildName) + "-"
-	suffix := "." + packaging
-	for _, filename := range matches {
-		classifier := ""
-		temp := filename
-		if strings.HasPrefix(temp, prefix) && strings.HasSuffix(temp, suffix) {
-			temp = strings.TrimPrefix(temp, prefix)
-			temp = strings.TrimSuffix(temp, suffix)
-			classifier = temp
+		prefix := filepath.Join(targetFolder, finalBuildName) + "-"
+		suffix := "." + fileType
+		for _, filename := range matches {
+			classifier := ""
+			temp := filename
+			if strings.HasPrefix(temp, prefix) && strings.HasSuffix(temp, suffix) {
+				temp = strings.TrimPrefix(temp, prefix)
+				temp = strings.TrimSuffix(temp, suffix)
+				classifier = temp
+			}
+			err = addArtifact(utils, uploader, filename, classifier, fileType)
+			if err != nil {
+				return err
+			}
 		}
-		err = addArtifact(utils, uploader, filename, classifier, packaging)
 	}
 
 	return err

@@ -561,11 +561,11 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.version", "1.0")
 		utils.setProperty("application/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
-		utils.setProperty("application/pom.xml", "project.packaging", "jar")
+		utils.setProperty("application/pom.xml", "project.packaging", "war")
 		utils.setProperty("application/pom.xml", "project.build.finalName", "final-artifact")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
-		utils.files["application/target/final-artifact.jar"] = []byte("contentsOfJar")
+		utils.files["application/target/final-artifact.war"] = []byte("contentsOfJar")
 		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
 		uploader := mockUploader{}
 		options := createOptions()
@@ -591,8 +591,8 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "application/pom.xml", artifacts[1].File)
 			assert.Equal(t, "pom", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/final-artifact.jar", artifacts[2].File)
-			assert.Equal(t, "jar", artifacts[2].Type)
+			assert.Equal(t, "application/target/final-artifact.war", artifacts[2].File)
+			assert.Equal(t, "war", artifacts[2].Type)
 
 			assert.Equal(t, "application/target/final-artifact-classes.jar", artifacts[3].File)
 			assert.Equal(t, "jar", artifacts[3].Type)
@@ -617,9 +617,9 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DartifactId=my-app-app",
 				"-Dfile=application/pom.xml",
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/final-artifact.jar,application/target/final-artifact-classes.jar",
+				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
 				"-Dclassifiers=,classes",
-				"-Dtypes=jar,jar",
+				"-Dtypes=war,jar",
 				"--batch-mode",
 				deployGoal}
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
