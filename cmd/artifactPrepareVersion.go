@@ -263,7 +263,9 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
-			log.Entry().Infof("Push options; %v", pushOptions)
+			remotes, _ := repository.Remotes()
+			log.Entry().Infof("Remote urls: %v", remotes[0].Config().URLs)
+			log.Entry().Infof("Push options: %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
 		} else {
 			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
