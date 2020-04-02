@@ -69,8 +69,6 @@ void call(Map parameters = [:]) {
                 }
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
-        }  else {
-            if(configuration.branchName) configuration.options.add("sonar.branch.name=${configuration.branchName}")
         }
     }
 }
