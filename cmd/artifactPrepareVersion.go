@@ -24,8 +24,10 @@ import (
 
 type gitRepository interface {
 	CreateTag(string, plumbing.Hash, *git.CreateTagOptions) (*plumbing.Reference, error)
-	Push(o *git.PushOptions) error
-	Remotes() ([]*git.Remote, error)
+	CreateRemote(*gitConfig.RemoteConfig) (*git.Remote, error)
+	DeleteRemote(string) error
+	Push(*git.PushOptions) error
+	Remote(string) (*git.Remote, error)
 	ResolveRevision(plumbing.Revision) (*plumbing.Hash, error)
 	Worktree() (*git.Worktree, error)
 }
@@ -247,6 +249,12 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		RefSpecs: []gitConfig.RefSpec{gitConfig.RefSpec(ref)},
 	}
 
+	currentRemoteOrigin, err := repository.Remote("origin")
+	if err != nil {
+		return commitID, errors.Wrap(err, "failed to retrieve current remote origin")
+	}
+	var updatedRemoteOrigin *git.Remote
+
 	urls := originUrls(repository)
 	if len(urls) == 0 {
 		return commitID, fmt.Errorf("no remote url maintained")
@@ -258,25 +266,28 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			//ToDo proper conversion of http url to git ssh url
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
-			updateRemoteOriginUrl(repository, remoteURL)
+
+			// update remote origin url to point to ssh url instead of http(s) url
+			err = repository.DeleteRemote("origin")
+			if err != nil {
+				return commitID, errors.Wrap(err, "failed to update remote origin - remove")
+			}
+			updatedRemoteOrigin, err := repository.CreateRemote(&gitConfig.RemoteConfig{Name: "origin", URLs: []string{remoteURL}})
+			if err != nil {
+				return commitID, errors.Wrap(err, "failed to update remote origin - create")
+			}
+
 			pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
-			remotes, _ := repository.Remotes()
-			log.Entry().Infof("Remote urls: %v", remotes[0].Config().URLs)
+			log.Entry().Infof("Remote urls: %v", updatedRemoteOrigin.Config().URLs)
 			log.Entry().Infof("Push options: %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
 		} else {
 			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 		}
 	} else {
-		log.Entry().Info("Relying on environment to provide ssh credentials")
-		// ssh authentication has to be provided from the outside.
-		// for example via sshagent Jenkins step
-		// current tests show: SEEMS SUFFICIENT FOR COMPATIBILITY USE CASE!
-
-		// ToDo: evaluate to handle ssh authentication via sshaghent within the piper binary:
 		pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
 		if err != nil {
 			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
@@ -286,6 +297,17 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	err = repository.Push(&pushOptions)
 	if err != nil {
 		return commitID, err
+	}
+
+	if updatedRemoteOrigin != currentRemoteOrigin {
+		err = repository.DeleteRemote("origin")
+		if err != nil {
+			return commitID, errors.Wrap(err, "failed to restore remote origin - remove")
+		}
+		_, err := repository.CreateRemote(currentRemoteOrigin.Config())
+		if err != nil {
+			return commitID, errors.Wrap(err, "failed to restorete remote origin - create")
+		}
 	}
 
 	return commitID, nil
@@ -306,24 +328,11 @@ func addAndCommit(worktree gitWorktree, newVersion string, t time.Time) (plumbin
 }
 
 func originUrls(repository gitRepository) []string {
-	remotes, _ := repository.Remotes()
-	for _, remote := range remotes {
-		rConfig := remote.Config()
-		if rConfig.Name == "origin" {
-			return rConfig.URLs
-		}
+	remote, err := repository.Remote("origin")
+	if err != nil || remote == nil {
+		return []string{}
 	}
-	return []string{}
-}
-
-func updateRemoteOriginUrl(repository gitRepository, originURL string) {
-	remotes, _ := repository.Remotes()
-	for _, remote := range remotes {
-		rConfig := remote.Config()
-		if rConfig.Name == "origin" {
-			rConfig.URLs[0] = originURL
-		}
-	}
+	return remote.Config().URLs
 }
 
 func templateCompatibility(groovyTemplate string) (versioningType string, useTimestamp bool, useCommitID bool) {

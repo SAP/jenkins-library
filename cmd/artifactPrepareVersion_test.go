@@ -45,19 +45,22 @@ func (a *artifactVersioningMock) SetVersion(version string) error {
 }
 
 type gitRepositoryMock struct {
-	pushCalled    bool
-	pushOptions   *git.PushOptions
-	pushError     string
-	remotes       []*git.Remote
-	remoteError   string
-	revision      string
-	revisionHash  plumbing.Hash
-	revisionError string
-	tag           string
-	tagHash       plumbing.Hash
-	tagError      string
-	worktree      *git.Worktree
-	worktreeError string
+	createRemoteConfigs []*gitConfig.RemoteConfig
+	createRemoteCalls   int
+	createRemoteError   []string
+	pushCalled          bool
+	pushOptions         *git.PushOptions
+	pushError           string
+	remote              *git.Remote
+	remoteError         string
+	revision            string
+	revisionHash        plumbing.Hash
+	revisionError       string
+	tag                 string
+	tagHash             plumbing.Hash
+	tagError            string
+	worktree            *git.Worktree
+	worktreeError       string
 }
 
 func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git.CreateTagOptions) (*plumbing.Reference, error) {
@@ -69,6 +72,20 @@ func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git
 	return nil, nil
 }
 
+func (r *gitRepositoryMock) CreateRemote(config *gitConfig.RemoteConfig) (*git.Remote, error) {
+	r.createRemoteCalls++
+	if len(r.createRemoteError) >= r.createRemoteCalls {
+		return nil, fmt.Errorf(r.createRemoteError[r.createRemoteCalls-1])
+	}
+	r.createRemoteConfigs = append(r.createRemoteConfigs, config)
+	return nil, nil
+}
+
+func (r *gitRepositoryMock) DeleteRemote(name string) error {
+	//ToDo: fill with test coding
+	return nil
+}
+
 func (r *gitRepositoryMock) Push(o *git.PushOptions) error {
 	if len(r.pushError) > 0 {
 		return fmt.Errorf(r.pushError)
@@ -78,11 +95,11 @@ func (r *gitRepositoryMock) Push(o *git.PushOptions) error {
 	return nil
 }
 
-func (r *gitRepositoryMock) Remotes() ([]*git.Remote, error) {
+func (r *gitRepositoryMock) Remote(name string) (*git.Remote, error) {
 	if len(r.remoteError) > 0 {
-		return []*git.Remote{}, fmt.Errorf(r.remoteError)
+		return &git.Remote{}, fmt.Errorf(r.remoteError)
 	}
-	return r.remotes, nil
+	return r.remote, nil
 }
 
 func (r *gitRepositoryMock) ResolveRevision(rev plumbing.Revision) (*plumbing.Hash, error) {
@@ -158,11 +175,10 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		worktree := gitWorktreeMock{}
 
 		conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
-		remote := git.NewRemote(nil, &conf)
 
 		repo := gitRepositoryMock{
 			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
-			remotes:      []*git.Remote{remote},
+			remote:       git.NewRemote(nil, &conf),
 		}
 
 		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
@@ -400,7 +416,7 @@ func TestPushChanges(t *testing.T) {
 
 	t.Run("success - username/password", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****"}
-		repo := gitRepositoryMock{remotes: []*git.Remote{remote}}
+		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
@@ -455,7 +471,7 @@ func TestPushChanges(t *testing.T) {
 
 	t.Run("error - no user/pwd", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{}
-		repo := gitRepositoryMock{remotes: []*git.Remote{remote}}
+		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
@@ -465,7 +481,7 @@ func TestPushChanges(t *testing.T) {
 
 	t.Run("error - push", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****"}
-		repo := gitRepositoryMock{remotes: []*git.Remote{remote}, pushError: "push error"}
+		repo := gitRepositoryMock{remote: remote, pushError: "push error"}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
