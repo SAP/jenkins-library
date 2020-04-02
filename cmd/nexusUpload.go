@@ -135,18 +135,12 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		// This will fail anyway if the file doesn't exist
 		mtaPath = "mta.yml"
 	}
-	version, err := getVersionFromMtaFile(utils, mtaPath)
-	var artifactID = options.ArtifactID
-	if artifactID == "" {
-		artifactID = utils.getEnvParameter(".pipeline/commonPipelineEnvironment/configuration", "artifactId")
-		if artifactID == "" {
-			err = fmt.Errorf("the 'artifactId' parameter was not provided and could not be retrieved from the Common Pipeline Environment")
-		} else {
-			log.Entry().Debugf("mtar artifact id from CPE: '%s'", artifactID)
-		}
-	}
+	mtaInfo, err := getInfoFromMtaFile(utils, mtaPath)
 	if err == nil {
-		err = uploader.SetInfo(options.GroupID, artifactID, version)
+		if options.ArtifactID != "" {
+			mtaInfo.ID = options.ArtifactID
+		}
+		err = uploader.SetInfo(options.GroupID, mtaInfo.ID, mtaInfo.Version)
 		if err == nexus.ErrEmptyVersion {
 			err = fmt.Errorf("the project descriptor file 'mta.yaml' has an invalid version: %w", err)
 		}
@@ -170,25 +164,25 @@ type mtaYaml struct {
 	Version string `json:"version"`
 }
 
-func getVersionFromMtaFile(utils nexusUploadUtils, filePath string) (string, error) {
+func getInfoFromMtaFile(utils nexusUploadUtils, filePath string) (*mtaYaml, error) {
 	mtaYamlContent, err := utils.fileRead(filePath)
 	if err != nil {
-		return "", fmt.Errorf("could not read from required project descriptor file '%s'",
+		return nil, fmt.Errorf("could not read from required project descriptor file '%s'",
 			filePath)
 	}
-	return getVersionFromMtaYaml(mtaYamlContent, filePath)
+	return getInfoFromMtaYaml(mtaYamlContent, filePath)
 }
 
-func getVersionFromMtaYaml(mtaYamlContent []byte, filePath string) (string, error) {
+func getInfoFromMtaYaml(mtaYamlContent []byte, filePath string) (*mtaYaml, error) {
 	var mtaYaml mtaYaml
 	err := yaml.Unmarshal(mtaYamlContent, &mtaYaml)
 	if err != nil {
 		// Eat the original error as it is unhelpful and confusingly mentions JSON, while the
 		// user thinks it should parse YAML (it is transposed by the implementation).
-		return "", fmt.Errorf("failed to parse contents of the project descriptor file '%s'",
+		return nil, fmt.Errorf("failed to parse contents of the project descriptor file '%s'",
 			filePath)
 	}
-	return mtaYaml.Version, nil
+	return &mtaYaml, nil
 }
 
 func createMavenExecuteOptions(options *nexusUploadOptions) maven.ExecuteOptions {

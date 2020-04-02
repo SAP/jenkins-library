@@ -25,7 +25,9 @@ type sonarSettings struct {
 	options     []string
 }
 
-func (s *sonarSettings) addEnvironment(element string) { s.environment = append(s.environment, element) }
+func (s *sonarSettings) addEnvironment(element string) {
+	s.environment = append(s.environment, element)
+}
 
 func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
 
@@ -61,7 +63,7 @@ func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runn
 		sonar.addEnvironment("SONAR_HOST_URL=" + options.Host)
 	}
 	if len(options.Token) > 0 {
-		sonar.addEnvironment("SONAR_AUTH_TOKEN=" + options.Token)
+		sonar.addEnvironment("SONAR_TOKEN=" + options.Token)
 	}
 	if len(options.Organization) > 0 {
 		sonar.addOption("sonar.organization=" + options.Organization)
