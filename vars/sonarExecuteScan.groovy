@@ -8,6 +8,12 @@ import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/sonar.yaml'
+
+    /**
+    * Non-Pull-Request voting only:
+    * Name of the SonarQube branch that should be used to report findings to. If empty, SonarQube uses its main branch per default.
+    */
+//    'branchName',
     /**
      * The name of the SonarQube instance defined in the Jenkins settings.
      */
@@ -72,6 +78,8 @@ void call(Map parameters = [:]) {
                 }
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
+        }  else {
+            if(configuration.branchName) configuration.options.add("sonar.branch.name=${configuration.branchName}")
         }
     }
 }

@@ -25,7 +25,9 @@ type sonarSettings struct {
 	options     []string
 }
 
-func (s *sonarSettings) addEnvironment(element string) { s.environment = append(s.environment, element) }
+func (s *sonarSettings) addEnvironment(element string) {
+	s.environment = append(s.environment, element)
+}
 
 func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
 

@@ -18,7 +18,17 @@ do
 done
 
 export CLASSPATH_FILE='target/cp.txt'
-mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
+mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE}
+
+if [ "$?" != "0" ];then
+    echo "[ERROR] maven test / build-classpath failed"
+    exit 1
+fi
+
+if [ ! -f "${CLASSPATH_FILE}" ];then
+    echo "[ERROR] Classpath file required for docu generation does not exist"
+    exit 1
+fi
 
 # --in: is created by the unit tests. It contains a mapping between the test case (name is
 # already adjusted).
