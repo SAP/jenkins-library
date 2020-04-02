@@ -1,23 +1,12 @@
-import static com.sap.piper.Prerequisites.checkScript
-import com.sap.piper.PiperGoUtils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
-
 import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/sonar.yaml'
-
-    /**
-    * Non-Pull-Request voting only:
-    * Name of the SonarQube branch that should be used to report findings to. If empty, SonarQube uses its main branch per default.
-    */
-//    'branchName',
-    /**
-     * The name of the SonarQube instance defined in the Jenkins settings.
-     */
-//    'instance',
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -44,10 +33,14 @@ void call(Map parameters = [:]) {
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
             echo "Config: ${config}"
+
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
+            echo "StepConfig: ${stepConfig}"
+
             // determine credentials to load
             List credentials = []
-            if (config.sonarTokenCredentialsId) //TODO: use PIPER_token
-                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'SONAR_TOKEN'))
+            if (config.sonarTokenCredentialsId)
+                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
             if(isPullRequest()){
                 checkMandatoryParameter(config, "owner")
                 checkMandatoryParameter(config, "repository")
@@ -58,8 +51,7 @@ void call(Map parameters = [:]) {
                 }
             }
             // load certificates into cacerts file
-                //TODO: fix certificates
-            loadCertificates([customTlsCertificateLinks: parameters.customTlsCertificateLinks, verbose: config.verbose])
+            loadCertificates([customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose])
             // execute step
             dockerExecute(
                 script: script,
@@ -70,8 +62,7 @@ void call(Map parameters = [:]) {
                 if(!fileExists('.git')) {		
                     utils.unstash('git')		
                 }
-                //TODO: fix instance
-                withSonarQubeEnv(parameters.instance) {
+                withSonarQubeEnv(stepConfig.instance) {
                     withCredentials(credentials) {
                         sh "./piper ${STEP_NAME}"
                     }
