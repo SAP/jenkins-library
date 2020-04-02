@@ -51,7 +51,7 @@ void call(Map parameters = [:]) {
                 }
             }
             // load certificates into cacerts file
-            loadCertificates([customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose])
+            loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
             // execute step
             dockerExecute(
                 script: script,

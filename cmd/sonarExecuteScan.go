@@ -132,10 +132,8 @@ func handlePullRequest(options sonarExecuteScanOptions) error {
 			sonar.addOption("sonar.pullrequest.branch=" + options.ChangeBranch)
 			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
-	} else {
-		if len(options.BranchName) > 0 {
-			sonar.addOption("sonar.branch.name=" + options.BranchName)
-		}
+	} else if len(options.BranchName) > 0 {
+		sonar.addOption("sonar.branch.name=" + options.BranchName)
 	}
 	return nil
 }
