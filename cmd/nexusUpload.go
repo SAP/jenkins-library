@@ -440,7 +440,7 @@ func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, po
 	for _, fileType := range fileTypes {
 		pattern := composeFilePath(targetFolder, "*", fileType)
 		matches, _ := utils.glob(pattern)
-		fmt.Println("Glob matches: " + strings.Join(matches, ", "))
+		log.Entry().Infof("Glob matches for %s: %s", pattern, strings.Join(matches, ", "))
 
 		prefix := filepath.Join(targetFolder, finalBuildName) + "-"
 		suffix := "." + fileType
