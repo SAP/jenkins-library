@@ -71,7 +71,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 }
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.Instance, "instance", "SonarCloud", "Jenkins only: The name of the SonarQube instance defined in Jenkins. DEPRECATED: use host parameter instead")
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", "SonarCloud", "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use host parameter instead")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
@@ -79,7 +79,7 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.3.0.2102-linux.zip", "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube.")
 	cmd.Flags().StringVar(&stepConfig.Options, "options", os.Getenv("PIPER_options"), "A list of options which are passed to the sonar-scanner.")
-	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Pull-Request only: The name of the pull-request branch.")
+	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request.")
 	cmd.Flags().StringVar(&stepConfig.ChangeBranch, "changeBranch", os.Getenv("PIPER_changeBranch"), "Pull-Request only: The name of the pull-request branch.")
 	cmd.Flags().StringVar(&stepConfig.ChangeTarget, "changeTarget", os.Getenv("PIPER_changeTarget"), "Pull-Request only: The name of the base branch.")

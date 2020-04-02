@@ -7,7 +7,7 @@ spec:
     params:
       - name: instance
         type: string
-        description: "Jenkins only: The name of the SonarQube instance defined in Jenkins. DEPRECATED: use host parameter instead"
+        description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use host parameter instead"
         scope:
           - PARAMETERS
           - STAGES
@@ -72,7 +72,7 @@ spec:
       # Parameters for non-PR scans
       - name: branchName
         type: string
-        description: "Pull-Request only: The name of the pull-request branch."
+        description: "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to."
         scope:
           - PARAMETERS
           - STAGES
