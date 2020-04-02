@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
@@ -29,7 +30,6 @@ type nexusUploadUtils interface {
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
-	walk(root string, walkFn filepath.WalkFunc) error
 	glob(pattern string) (matches []string, err error)
 }
 
@@ -102,7 +102,7 @@ func (u *utilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
 }
 
 func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
-	return filepath.Glob(pattern)
+	return doublestar.Glob(pattern)
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
@@ -352,36 +352,26 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	pomFound := false
+	pomFiles, _ := utils.glob("**/pom.xml")
+	if len(pomFiles) == 0 {
+		return errPomNotFound
+	}
 
-	err := utils.walk(".", func(path string, info os.FileInfo, err error) error {
-		parentDir := filepath.Dir(path)
-		fileName := filepath.Base(path)
-
-		if parentDir == "integration-tests" || fileName != "pom.xml" {
-			return nil
+	for _, pomFile := range pomFiles {
+		parentDir := filepath.Dir(pomFile)
+		if parentDir == "integration-tests" {
+			continue
 		}
-		pomFound = true
-
-		log.Entry().Info("Deploying maven module " + parentDir)
-		err = uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"),
-			options.AdditionalClassifiers)
-
+		err := uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"))
 		if err != nil {
 			return err
 		}
-
-		return nil
-	})
-
-	if !pomFound {
-		return errPomNotFound
 	}
-	return err
+	return nil
 }
 
 func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
-	pomPath, targetFolder, additionalClassifiers string) error {
+	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 	exists, _ := utils.fileExists(pomFile)
 	if !exists {
@@ -440,7 +430,7 @@ func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, po
 	for _, fileType := range fileTypes {
 		pattern := composeFilePath(targetFolder, "*", fileType)
 		matches, _ := utils.glob(pattern)
-		log.Entry().Infof("Glob matches for %s: %s", pattern, strings.Join(matches, ", "))
+		log.Entry().Debugf("Glob matches for %s: %s", pattern, strings.Join(matches, ", "))
 
 		prefix := filepath.Join(targetFolder, finalBuildName) + "-"
 		suffix := "." + fileType
