@@ -259,13 +259,13 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
 			updateRemoteOriginUrl(repository, remoteURL)
-			pushOptions.Auth, err = ssh.NewSSHAgentAuth("")
+			pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
 			log.Entry().Infof("Push options; %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
-			log.Entry().Info("Relying on environment to provide ssh credentials")
+			//log.Entry().Info("Relying on environment to provide ssh credentials")
 		}
 		pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 	} else {
@@ -275,10 +275,10 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		// current tests show: SEEMS SUFFICIENT FOR COMPATIBILITY USE CASE!
 
 		// ToDo: evaluate to handle ssh authentication via sshaghent within the piper binary:
-		// pushOptions.Auth, err = ssh.NewSSHAgentAuth("<userID>")
-		// if err != nil {
-		//	 return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
-		// }
+		pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
+		if err != nil {
+			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
+		}
 	}
 
 	err = repository.Push(&pushOptions)
