@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
@@ -31,6 +30,7 @@ type nexusUploadUtils interface {
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
 	walk(root string, walkFn filepath.WalkFunc) error
+	glob(pattern string) (matches []string, err error)
 }
 
 type utilsBundle struct {
@@ -99,6 +99,10 @@ func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
 
 func (u *utilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
 	return filepath.Walk(root, walkFn)
+}
+
+func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
+	return filepath.Glob(pattern)
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
@@ -428,13 +432,23 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pom
 		packaging = "jar"
 	}
 
-	matches, err := filepath.Glob(targetFolder + "/*.jar")
-	if err != nil {
-		return err
-	}
-	fmt.Println("Debug: " + strings.Join(matches, ", "))
+	// TODO: Searching only for "/*.packaging" doesn't find artifacts of other types!
+
+	pattern := composeFilePath(targetFolder, "*", packaging)
+	matches, _ := utils.glob(pattern)
+	fmt.Println("Glob matches: " + strings.Join(matches, ", "))
+
+	prefix := filepath.Join(targetFolder, finalBuildName) + "-"
+	suffix := "." + packaging
 	for _, filename := range matches {
-		err = addArtifact(utils, uploader, filename, "", packaging) //fixme classifier
+		classifier := ""
+		temp := filename
+		if strings.HasPrefix(temp, prefix) && strings.HasSuffix(temp, suffix) {
+			temp = strings.TrimPrefix(temp, prefix)
+			temp = strings.TrimSuffix(temp, suffix)
+			classifier = temp
+		}
+		err = addArtifact(utils, uploader, filename, classifier, packaging)
 	}
 
 	return err
@@ -443,15 +457,4 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pom
 func composeFilePath(folder, name, extension string) string {
 	fileName := name + "." + extension
 	return filepath.Join(folder, fileName)
-}
-
-type classifierDescription struct {
-	Classifier string `json:"classifier"`
-	FileType   string `json:"type"`
-}
-
-func getClassifiers(classifiersAsJSON string) ([]classifierDescription, error) {
-	var classifiers []classifierDescription
-	err := json.Unmarshal([]byte(classifiersAsJSON), &classifiers)
-	return classifiers, err
 }

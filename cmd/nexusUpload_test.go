@@ -163,6 +163,17 @@ func (m *mockUtilsBundle) walk(_ string, walkFn filepath.WalkFunc) error {
 	return nil
 }
 
+func (m *mockUtilsBundle) glob(pattern string) ([]string, error) {
+	var matches []string
+	for path := range m.files {
+		matched, _ := filepath.Match(pattern, path)
+		if matched {
+			matches = append(matches, path)
+		}
+	}
+	return matches, nil
+}
+
 type mockUploader struct {
 	nexus.Upload
 	uploadedArtifacts []nexus.ArtifactDescription
@@ -683,79 +694,6 @@ func TestUploadUnknownProjectFails(t *testing.T) {
 
 	err := runNexusUpload(&utils, &uploader, &options)
 	assert.EqualError(t, err, "unsupported project structure")
-}
-
-func TestAdditionalClassifierEmpty(t *testing.T) {
-	t.Run("Empty additional classifiers", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "")
-		assert.NoError(t, err, "expected empty additional classifiers to succeed")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is invalid JSON", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "some random string")
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but wrong JSON", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				},
-				{}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 1, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but does not exist", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.EqualError(t, err, "artifact file not found 'some folder/artifact-id-source.jar'")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is valid JSON", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				},
-				{
-					"classifier" : "classes",
-					"type"       : "jar"
-				}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		utils.files["some folder/artifact-id-classes.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.NoError(t, err, "expected valid additional classifiers to succeed")
-		assert.Equal(t, 2, len(client.GetArtifacts()))
-	})
-}
-
-func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
-	client := nexus.Upload{}
-	_ = client.SetInfo("group.id", "artifact-id", "1.0")
-	//return &client, addMavenTargetSubArtifacts(utils, &client, additionalClassifiers,
-	//	"some folder", "artifact-id")
-	return &client, nil
 }
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
