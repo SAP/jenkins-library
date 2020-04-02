@@ -203,7 +203,7 @@ func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVe
 	}
 	projectVersion, err := sys.CreateProjectVersion(projectVersionDto)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create new project version %v for projectName", projectVersionName, projectName)
+		return nil, errors.Wrapf(err, "Failed to create new project version %v for projectName %v", projectVersionName, projectName)
 	}
 	_, err = sys.CommitProjectVersion(projectVersion.ID)
 	if err != nil {
