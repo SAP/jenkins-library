@@ -59,8 +59,8 @@ void call(Map parameters = [:]) {
                 dockerWorkspace: config.dockerWorkspace,
                 dockerOptions: config.dockerOptions,
             ) {
-                if(!fileExists('.git')) {		
-                    utils.unstash('git')		
+                if(!fileExists('.git')) {
+                    utils.unstash('git')
                 }
                 withSonarQubeEnv(stepConfig.instance) {
                     withCredentials(credentials) {
@@ -78,9 +78,9 @@ private void checkMandatoryParameter(config, key){
         throw new IllegalArgumentException( "ERROR - NO VALUE AVAILABLE FOR ${key}")
     }
 }
- 
+
 private Boolean isPullRequest(){
-    return env.CHANGE_ID		
+    return env.CHANGE_ID
 }
 
 private void loadCertificates(Map config) {
