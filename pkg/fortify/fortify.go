@@ -38,10 +38,11 @@ import (
 
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
-	GetProjectByName(name string) (*models.Project, error)
-	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string) (*models.ProjectVersion, error)
+	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)
+	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error)
 	GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error)
 	SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error)
+	CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error)
 	LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error)
 	CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error)
 	ProjectVersionCopyFromPartial(sourceID, targetID int64) error
@@ -110,26 +111,40 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 }
 
 // GetProjectByName returns the project identified by the name provided
-func (sys *SystemInstance) GetProjectByName(name string) (*models.Project, error) {
-	nameParam := fmt.Sprintf("name=%v", name)
-	fullText := true
-	params := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
+// autoCreate and projectVersion parameters only used if autoCreate=true
+func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
+	nameParam := fmt.Sprintf("name=%v", projectName)
+	fullText  := true
+	params    := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)
 	if err != nil {
 		return nil, err
 	}
 	for _, project := range result.GetPayload().Data {
-		if *project.Name == name {
+		if *project.Name == projectName {
 			return project, nil
 		}
 	}
-	return nil, fmt.Errorf("Project with name %v not found in backend", name)
+
+	// Project with specified name was NOT found, check if autoCreate flag is set, if so: create it automatically
+	if autoCreate {
+		log.Entry().Debug("No projects found with name: ", projectName, " auto-creating one now...")
+		projectVersion, err := sys.CreateProjectVersionIfNotExist(projectName, projectVersionName, "Created by Go script")
+		if err != nil {
+			return nil, err
+		}
+		log.Entry().Debug("Finished creating project: ", projectVersion)
+		return projectVersion.Project, nil
+
+	}
+	return nil, fmt.Errorf("Project with name %v not found in backend and --autoCreate not set", projectName)
 }
 
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
-func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string) (*models.ProjectVersion, error) {
-	nameParam := fmt.Sprintf("name=%v", name)
+// projectName parameter is only used if autoCreate=true
+func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
+	nameParam := fmt.Sprintf("name=%v", versionName)
 	fullText := true
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam, Fulltextsearch: &fullText}
 	params.WithTimeout(sys.timeout)
@@ -138,16 +153,67 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 		return nil, err
 	}
 	for _, projectVersion := range result.GetPayload().Data {
-		if *projectVersion.Name == name {
+		if *projectVersion.Name == versionName {
 			return projectVersion, nil
 		}
 	}
-	return nil, fmt.Errorf("Project version with name %v not found in for project with ID %v", name, id)
+	// projectVersion not found for specified project id and name, check if autoCreate is enabled
+	if autoCreate {
+		log.Entry().Debug("Could not find project version with name ", versionName, " under project", projectName, " auto-creating one now...")
+		version, err := sys.CreateProjectVersionIfNotExist(projectName, versionName, "Created by Go script")
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not create project version: ", versionName, " for project ", projectName)
+		}
+		log.Entry().Debug("Successfully created project version ", versionName, " for project ", projectName)
+		return version, nil
+	}
+	return nil, errors.Wrapf(err, "Project version with name %v not found in for project with ID %v and --autoCreate not set", versionName, id)
 }
 
+// Create a new ProjectVersion if it does not already exist.
+// If the projectName also does not exist, it will create that as well.
+func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error) {
+	var projectId int64 = 0
+	// check if project with projectName exists
+	projectResp, err := sys.GetProjectByName(projectName, false,  "")
+	if err == nil {
+		// project already exists, all we need to do is append a new ProjectVersion to it
+		// save the project id for later
+		projectId = projectResp.ID
+	}
+
+	issueTemplateId   := "4c5799c9-1940-4abe-b57a-3bcad88eb041"
+	active            := true
+	committed         := true
+	projectVersionDto := &models.ProjectVersion{
+		Name:            &projectVersionName,
+		Description:     &description,
+		IssueTemplateID: &issueTemplateId,
+		Active:          &active,
+		Committed:       &committed,
+		Project: &models.Project{ID: projectId},
+	}
+
+	if projectVersionDto.Project.ID == 0 { // project does not exist, set one up
+		projectVersionDto.Project = &models.Project {
+			Name:            &projectName,
+			Description:     description,
+			IssueTemplateID: &issueTemplateId,
+		}
+	}
+	projectVersion, err := sys.CreateProjectVersion(projectVersionDto)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create new project version %v for projectName", projectVersionName, projectName)
+	}
+	_, err = sys.CommitProjectVersion(projectVersion.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to commit project version %v: %v", projectVersion.ID, err)
+	}
+	return projectVersion, nil
+}
 // LookupOrCreateProjectVersionDetailsForPullRequest looks up a project version for pull requests or creates it from scratch
 func (sys *SystemInstance) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
-	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName)
+	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName, false, "")
 	if nil != projectVersion {
 		return projectVersion, nil
 	}
@@ -339,7 +405,7 @@ func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Art
 
 // MergeProjectVersionStateOfPRIntoMaster merges the PR project version's fpr result file into the master project version
 func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
-	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName)
+	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName, false, "")
 	if nil != prProjectVersion {
 		data, err := sys.DownloadResultFile(downloadEndpoint, prProjectVersion.ID)
 		if err != nil {

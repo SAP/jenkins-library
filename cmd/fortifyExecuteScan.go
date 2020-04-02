@@ -53,14 +53,15 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
 	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, gav)
-	project, err := sys.GetProjectByName(fortifyProjectName)
+	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
 	}
-	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion)
+	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project version %v: %v", fortifyProjectVersion, err)
 	}
+
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
@@ -452,9 +453,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 }
 
 func translateProject(config fortifyExecuteScanOptions, command execRunner, buildID string) {
-	log.Entry().Debugf("Translate options are %v", config.Translate)
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
+	log.Entry().Debugf("Translating with options: %v", translateList)
 	for _, translate := range translateList {
 		handleSingleTranslate(config, command, buildID, translate)
 	}

@@ -39,6 +39,7 @@ type fortifyExecuteScanOptions struct {
 	ConsiderSuspicious           bool   `json:"considerSuspicious,omitempty"`
 	FprUploadEndpoint            string `json:"fprUploadEndpoint,omitempty"`
 	ProjectName                  string `json:"projectName,omitempty"`
+	AutoCreate                   bool   `json:"autoCreate,omitempty"`
 	PythonIncludes               string `json:"pythonIncludes,omitempty"`
 	Reporting                    bool   `json:"reporting,omitempty"`
 	ServerURL                    string `json:"serverUrl,omitempty"`
@@ -178,6 +179,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
+	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether the project should be created automatically if it does not already exist")
 	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `scanType: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
@@ -403,6 +405,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
+					},
+					{
+						Name:        "autoCreate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "pythonIncludes",
