@@ -180,18 +180,20 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
-	t.Run("Uploading MTA project without artifactId parameter fails", func(t *testing.T) {
+	t.Run("Uploading MTA project without artifactId parameter works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
 		utils.files["mta.yaml"] = testMtaYml
+		utils.files["test.mtar"] = []byte("contentsOfMtar")
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
 		options.ArtifactID = ""
 
 		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "the 'artifactId' parameter was not provided and could not be retrieved from the Common Pipeline Environment")
-		assert.Equal(t, 0, len(uploader.GetArtifacts()))
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, len(uploader.uploadedArtifacts))
+			assert.Equal(t, "test", uploader.GetArtifactsID())
+		}
 	})
 	t.Run("Uploading MTA project fails due to missing yaml file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -287,30 +289,6 @@ func TestUploadMTAProjects(t *testing.T) {
 
 		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 		assert.Equal(t, "artifact.id", uploader.GetArtifactsID())
-
-		artifacts := uploader.uploadedArtifacts
-		if assert.Equal(t, 2, len(artifacts)) {
-			assert.Equal(t, "mta.yml", artifacts[0].File)
-			assert.Equal(t, "yaml", artifacts[0].Type)
-
-			assert.Equal(t, "test.mtar", artifacts[1].File)
-			assert.Equal(t, "mtar", artifacts[1].Type)
-		}
-	})
-	t.Run("Test uploading mta.yml project works with artifactID from CPE", func(t *testing.T) {
-		utils := newMockUtilsBundle(true, false)
-		utils.files["mta.yml"] = testMtaYml
-		utils.files["test.mtar"] = []byte("contentsOfMtar")
-		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
-		utils.cpe[".pipeline/commonPipelineEnvironment/configuration/artifactId"] = "my-artifact-id"
-		uploader := mockUploader{}
-		options := createOptions()
-		// Clear artifact ID to trigger reading it from the CPE
-		options.ArtifactID = ""
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.NoError(t, err, "expected mta.yml project upload to work")
-		assert.Equal(t, "my-artifact-id", uploader.GetArtifactsID())
 
 		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
