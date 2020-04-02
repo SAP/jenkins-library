@@ -214,7 +214,7 @@ def getOptions(config) {
 
     if(config.jenkinsKubernetes.inheritFrom){
         options.inheritFrom = config.jenkinsKubernetes.inheritFrom
-        options.yamlMergeStrategy  = 'merge'
+        options.yamlMergeStrategy  = merge()
     }
     return options
 }
