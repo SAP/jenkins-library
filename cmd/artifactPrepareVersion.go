@@ -61,6 +61,8 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	log.Entry().Info("SUCCESS")
 }
 
+var sshAgentAuth = ssh.NewSSHAgentAuth
+
 func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, runner execRunner, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
 	telemetryData.Custom1Label = "buildTool"
@@ -263,6 +265,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		if len(config.Username) == 0 || len(config.Password) == 0 {
 			// handling compatibility: try to use ssh in case no credentials are available
 			log.Entry().Info("git username/password missing - switching to ssh")
+
 			//ToDo proper conversion of http url to git ssh url
 			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
 			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
@@ -272,23 +275,21 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to update remote origin - remove")
 			}
-			updatedRemoteOrigin, err := repository.CreateRemote(&gitConfig.RemoteConfig{Name: "origin", URLs: []string{remoteURL}})
+			updatedRemoteOrigin, err = repository.CreateRemote(&gitConfig.RemoteConfig{Name: "origin", URLs: []string{remoteURL}})
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to update remote origin - create")
 			}
 
-			pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
+			pushOptions.Auth, err = sshAgentAuth("git")
 			if err != nil {
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
-			log.Entry().Infof("Remote urls: %v", updatedRemoteOrigin.Config().URLs)
-			log.Entry().Infof("Push options: %v", pushOptions)
 			log.Entry().Infof("using remote '%v'", remoteURL)
 		} else {
 			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 		}
 	} else {
-		pushOptions.Auth, err = ssh.NewSSHAgentAuth("git")
+		pushOptions.Auth, err = sshAgentAuth("git")
 		if err != nil {
 			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 		}
@@ -306,7 +307,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		}
 		_, err := repository.CreateRemote(currentRemoteOrigin.Config())
 		if err != nil {
-			return commitID, errors.Wrap(err, "failed to restorete remote origin - create")
+			return commitID, errors.Wrap(err, "failed to restore remote origin - create")
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/go-git/go-git/v5"
@@ -14,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type artifactVersioningMock struct {
@@ -48,6 +48,9 @@ type gitRepositoryMock struct {
 	createRemoteConfigs []*gitConfig.RemoteConfig
 	createRemoteCalls   int
 	createRemoteError   []string
+	deleteRemoteNames   []string
+	deleteRemoteCalls   int
+	deleteRemoteError   []string
 	pushCalled          bool
 	pushOptions         *git.PushOptions
 	pushError           string
@@ -74,7 +77,7 @@ func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git
 
 func (r *gitRepositoryMock) CreateRemote(config *gitConfig.RemoteConfig) (*git.Remote, error) {
 	r.createRemoteCalls++
-	if len(r.createRemoteError) >= r.createRemoteCalls {
+	if len(r.createRemoteError) >= r.createRemoteCalls && len(r.createRemoteError[r.createRemoteCalls-1]) > 0 {
 		return nil, fmt.Errorf(r.createRemoteError[r.createRemoteCalls-1])
 	}
 	r.createRemoteConfigs = append(r.createRemoteConfigs, config)
@@ -82,7 +85,11 @@ func (r *gitRepositoryMock) CreateRemote(config *gitConfig.RemoteConfig) (*git.R
 }
 
 func (r *gitRepositoryMock) DeleteRemote(name string) error {
-	//ToDo: fill with test coding
+	r.deleteRemoteCalls++
+	if len(r.deleteRemoteError) >= r.deleteRemoteCalls && len(r.deleteRemoteError[r.deleteRemoteCalls-1]) > 0 {
+		return fmt.Errorf(r.deleteRemoteError[r.deleteRemoteCalls-1])
+	}
+	r.deleteRemoteNames = append(r.deleteRemoteNames, name)
 	return nil
 }
 
@@ -429,6 +436,43 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &http.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
 	})
 
+	t.Run("success - ssh fallback", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		originalSSHAgentAuth := sshAgentAuth
+		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		sshAgentAuth = originalSSHAgentAuth
+
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
+		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, "1.2.3", repo.tag)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
+	})
+
+	t.Run("success - ssh", func(t *testing.T) {
+		confSSH := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"git@my.test.server"}}
+		remoteSSH := git.NewRemote(nil, &confSSH)
+
+		config := artifactPrepareVersionOptions{}
+		repo := gitRepositoryMock{remote: remoteSSH}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		originalSSHAgentAuth := sshAgentAuth
+		sshAgentAuth = func(u string) (*ssh.PublicKeysCallback, error) { return &ssh.PublicKeysCallback{}, nil }
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		sshAgentAuth = originalSSHAgentAuth
+
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
+	})
+
 	t.Run("error - git add", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{}
 		repo := gitRepositoryMock{}
@@ -469,14 +513,36 @@ func TestPushChanges(t *testing.T) {
 		assert.EqualError(t, err, "no remote url maintained")
 	})
 
-	t.Run("error - no user/pwd", func(t *testing.T) {
+	t.Run("error - ssh fallback", func(t *testing.T) {
+
 		config := artifactPrepareVersionOptions{}
-		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
-		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
-		assert.EqualError(t, err, "git username/password missing")
+		sshSuccess := func(u string) (*ssh.PublicKeysCallback, error) { return nil, nil }
+		sshFailure := func(u string) (*ssh.PublicKeysCallback, error) { return nil, fmt.Errorf("ssh error") }
+
+		tt := []struct {
+			repo          gitRepositoryMock
+			sshAgentAuth  func(string) (*ssh.PublicKeysCallback, error)
+			expectedError string
+		}{
+			{repo: gitRepositoryMock{remote: remote, deleteRemoteError: []string{"delete error"}}, sshAgentAuth: sshSuccess, expectedError: "failed to update remote origin - remove: delete error"},
+			{repo: gitRepositoryMock{remote: remote, createRemoteError: []string{"update error"}}, sshAgentAuth: sshSuccess, expectedError: "failed to update remote origin - create: update error"},
+			{repo: gitRepositoryMock{remote: remote}, sshAgentAuth: sshFailure, expectedError: "failed to retrieve ssh authentication: ssh error"},
+			{repo: gitRepositoryMock{remote: remote, deleteRemoteError: []string{"", "delete error"}}, sshAgentAuth: sshSuccess, expectedError: "failed to restore remote origin - remove: delete error"},
+			{repo: gitRepositoryMock{remote: remote, createRemoteError: []string{"", "update error"}}, sshAgentAuth: sshSuccess, expectedError: "failed to restore remote origin - create: update error"},
+		}
+
+		originalSSHAgentAuth := sshAgentAuth
+
+		for _, test := range tt {
+			sshAgentAuth = test.sshAgentAuth
+			commitID, err := pushChanges(&config, newVersion, &test.repo, &worktree, testTime)
+			sshAgentAuth = originalSSHAgentAuth
+
+			assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+			assert.EqualError(t, err, test.expectedError)
+		}
 	})
 
 	t.Run("error - push", func(t *testing.T) {
