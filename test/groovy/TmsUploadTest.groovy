@@ -22,7 +22,7 @@ public class TmsUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
-    private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar'])
+    private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar', 'dummy.mtaext'])
 
     def tmsStub
     def jenkinsUtilsStub
@@ -165,6 +165,31 @@ public class TmsUploadTest extends BasePiperTest {
         assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'My custom description for testing.')"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Corresponding Transport Request: 'My custom description for testing.' (Id: '2000')"))
     }
+	
+	@Test
+	public void addMtaExtensionDescriptor__isSuccessful() {
+		List<Long> nodeIds = [ 1 ]
+		
+		jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+		binding.workspace = "."
+		envRule.env.gitCommitId = "testCommitId"
+
+		stepRule.step.tmsUpload(
+			script: nullScript,
+			juStabUtils: utils,
+			jenkinsUtilsStub: jenkinsUtilsStub,
+			transportManagementService: tmsStub,
+			mtaPath: 'dummy.mtar',
+			nodeName: 'myNode',
+			credentialsId: 'TMS_ServiceKey',
+			mtaExtDescriptorPath: 'dummy.mtaext',
+			mtaVersion: '0.0.1',
+			nodeIds: nodeIds,
+		)
+
+		assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (Id: '1') successfully uploaded to Node with id '1'."))
+		assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', '1', './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+	}
 
     @Test
     public void failOnMissingMtaFile() {
@@ -186,6 +211,52 @@ public class TmsUploadTest extends BasePiperTest {
             customDescription: 'My custom description for testing.'
         )
     }
+	
+	@Test
+	public void failOnMissingMtaExtDescriptorFile() {
+
+		thrown.expect(AbortException)
+		thrown.expectMessage('Mta extension descriptor file \'dummy.mtaext\' does not exist.')
+
+		fileExistsRules.existingFiles.remove('dummy.mtaext')
+		jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+
+		stepRule.step.tmsUpload(
+			script: nullScript,
+			juStabUtils: utils,
+			jenkinsUtilsStub: jenkinsUtilsStub,
+			transportManagementService: tmsStub,
+			mtaPath: 'dummy.mtar',
+			nodeName: 1,
+			credentialsId: 'TMS_ServiceKey',
+			mtaExtDescriptorPath: 'dummy.mtaext',
+			mtaVersion: '0.0.1',
+			nodeIds: [1],
+		)
+	}
+	
+	@Test
+	public void failOnEmptyNodeIdList() {
+
+		thrown.expect(AbortException)
+		thrown.expectMessage('List of Node id should not be empty.')
+
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+        binding.workspace = "."
+        envRule.env.gitCommitId = "testCommitId"
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+			mtaExtDescriptorPath: 'dummy.mtaext',
+			mtaVersion: '0.0.1'
+        )
+	}
 
     def mockTransportManagementService() {
         return new TransportManagementService(nullScript, [:]) {
@@ -203,6 +274,11 @@ public class TmsUploadTest extends BasePiperTest {
                 calledTmsMethodsWithArgs << "uploadFileToNode('${url}', '${token}', '${nodeName}', '${fileId}', '${description}')"
                 return [transportRequestDescription: description, transportRequestId: 2000, queueEntries: [nodeName: 'myNode', nodeId: 1000]]
             }
+
+			def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
+				calledTmsMethodsWithArgs << "uploadMtaExtDescriptorToNode('${url}', '${token}', '${nodeId}', '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
+				return [fileId: 1, fileName: file]
+			}
         }
     }
 }

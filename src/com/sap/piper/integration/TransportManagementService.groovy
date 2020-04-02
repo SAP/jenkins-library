@@ -121,6 +121,43 @@ class TransportManagementService implements Serializable {
         return jsonUtils.jsonStringToGroovyObject(response)
 
     }
+	
+    def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
+
+        echo("Extension descriptor upload started.")
+
+        if (config.verbose) {
+            echo("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'")
+        }
+
+        def bodyMap = [file: file, mtaVersion: mtaVersion, description: description, namedUser: namedUser]
+
+        def parameters = [
+            url          : "${url}/v2/nodes/'${nodeId}'/mtaExtDescriptors",
+            httpMode     : "POST",
+            contentType  : 'multipart/form-data',
+            requestBody  : jsonUtils.groovyObjectToPrettyJsonString(bodyMap),
+            customHeaders: [
+                [
+                    maskValue: true,
+                    name     : 'authorization',
+                    value    : "Bearer ${token}"
+                ]
+            ]
+        ]
+
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+
+        if (proxy){
+            parameters["httpProxy"] = proxy
+        }
+
+        def response = sendApiRequest(parameters)
+        echo("Extension descriptor upload successful.")
+
+        return jsonUtils.jsonStringToGroovyObject(response)
+
+    }
 
     private sendApiRequest(parameters) {
         def defaultParameters = [

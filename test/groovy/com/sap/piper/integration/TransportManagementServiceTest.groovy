@@ -177,5 +177,58 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("\"upload\": \"success\""))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful."))
     }
+	
+	@Test
+	void uploadMtaExtDescriptorToNode__successfully() {
+		Map requestParams
+		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+			requestParams = m
+			return [content: '{ "fileId": 5678 }']
+		})
+		
+		def url = 'http://dummy.com/oauth'
+		def token = 'myToken'
+		def nodeId = 1
+		def file = 'myFile.mtaext'
+		def mtaVersion = '0.0.1'
+		def description = "My description."
+		def namedUser = 'myUser'
+
+		def tms = new TransportManagementService(nullScript, [:])
+		def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+		def bodyRegEx = /^\{\s+"file":\s+"myFile.mtaext",\s+"mtaVersion":\s+"0.0.1",\s+"description":\s+"My\s+description.",\s+"namedUser":\s+"myUser"\s+}$/
+
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+		assertThat(requestParams, hasEntry('url', "${url}/v2/nodes/'${nodeId}'/mtaExtDescriptors"))
+		assert requestParams.requestBody ==~ bodyRegEx
+		assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
+		assertThat(responseDetails, hasEntry("fileId", 5678))
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+	}
+	
+	@Test
+	void uploadMtaExtDescriptorToNode__inVerboseMode__yieldsMoreEchos() {
+		Map requestParams
+		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+			requestParams = m
+			return [content: '{ "fileId": 5678 }']
+		})
+		
+		def url = 'http://dummy.com/oauth'
+		def token = 'myToken'
+		def nodeId = 1
+		def file = 'myFile.mtaext'
+		def mtaVersion = '0.0.1'
+		def description = "My description."
+		def namedUser = 'myUser'
+
+		def tms = new TransportManagementService(nullScript, [verbose: true])
+		def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+		assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
+		assertThat(responseDetails, hasEntry("fileId", 5678))
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+	}
 
 }

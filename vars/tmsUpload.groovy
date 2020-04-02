@@ -30,6 +30,18 @@ import static com.sap.piper.Prerequisites.checkScript
      * Defines the name of the node to which the *.mtar file should be uploaded.
      */
     'nodeName',
+	/**
+	 * Defines the path to *.mtaext for the upload to the Transport Management Service.
+	 */
+	'mtaExtDescriptorPath',
+	/**
+	 * Defines the MTA version of the corresponding MTA id that MTA Extension Descriptor can be applied.
+	 */
+	'mtaVersion',
+	/**
+	 * A list of node id where the MTA Extension Descriptor should upload.
+	 */
+	'nodeIds',
     /**
      * Credentials to be used for the file and node uploads to the Transport Management Service.
      */
@@ -97,10 +109,22 @@ void call(Map parameters = [:]) {
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
+		
+		def mtaExtDescriptorPath = config.mtaExtDescriptorPath
+		def mtaVersion = config.mtaVersion ? "${config.mtaVersion}" : "*"
+		List<String> nodeIds = config.nodeIds ?: []
 
         if(!fileExists(mtaPath)) {
             error("Mta file '${mtaPath}' does not exist.")
         }
+		
+		if(mtaExtDescriptorPath && !fileExists(mtaExtDescriptorPath)) {
+			error("Mta extension descriptor file '${mtaExtDescriptorPath}' does not exist.")
+		}
+		
+		if(mtaExtDescriptorPath && nodeIds.isEmpty()) {
+			error("List of Node id should not be empty.")
+		}
 
         if (config.verbose) {
             echo "[TransportManagementService] CredentialsId: '${config.credentialsId}'"
@@ -133,6 +157,12 @@ void call(Map parameters = [:]) {
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
             echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription}' (Id: '${uploadFileToNodeResponse.transportRequestId}')"
 
+			if(mtaExtDescriptorPath) {
+				for (Long nodeId : nodeIds) {
+					def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, nodeId, "${workspace}/${mtaExtDescriptorPath}", mtaVersion, description, namedUser)
+					echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${nodeId}'."
+				}
+			}
         }
 
     }
