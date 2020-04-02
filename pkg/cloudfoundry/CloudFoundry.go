@@ -32,6 +32,7 @@ func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
 	}
 
 	result = cfLoginBytes.String()
+	log.Entry().WithField("result: ", result).Info("Login check")
 
 	//Logged in
 	if strings.Contains(result, "Not logged in") == false {
