@@ -97,10 +97,6 @@ func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
 	return maven.Evaluate(pomFile, expression, u.getExecRunner())
 }
 
-func (u *utilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
-	return filepath.Walk(root, walkFn)
-}
-
 func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
