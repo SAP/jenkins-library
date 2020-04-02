@@ -184,8 +184,6 @@ func versioningTemplate(scheme string) (string, error) {
 	return "", fmt.Errorf("versioning scheme '%v' not supported", scheme)
 }
 
-// ToDo: calculate new version correctly
-// sample template: '${version}-${timestamp}${commitId?"_"+commitId:""}'
 func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID bool, t time.Time) (string, error) {
 	tmpl, err := template.New("version").Parse(versioningTemplate)
 	if err != nil {
@@ -266,9 +264,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			// handling compatibility: try to use ssh in case no credentials are available
 			log.Entry().Info("git username/password missing - switching to ssh")
 
-			//ToDo proper conversion of http url to git ssh url
-			remoteURL := strings.Replace(urls[0], "https://", "git@", 1)
-			remoteURL = strings.Replace(remoteURL, "/", ":", 1)
+			remoteURL := convertHTTPToSSHURL(urls[0])
 
 			// update remote origin url to point to ssh url instead of http(s) url
 			err = repository.DeleteRemote("origin")
@@ -334,6 +330,11 @@ func originUrls(repository gitRepository) []string {
 		return []string{}
 	}
 	return remote.Config().URLs
+}
+
+func convertHTTPToSSHURL(url string) string {
+	sshURL := strings.Replace(url, "https://", "git@", 1)
+	return strings.Replace(sshURL, "/", ":", 1)
 }
 
 func templateCompatibility(groovyTemplate string) (versioningType string, useTimestamp bool, useCommitID bool) {

@@ -575,3 +575,16 @@ func TestTemplateCompatibility(t *testing.T) {
 		assert.Equal(t, test.commitID, commitID)
 	}
 }
+
+func TestConvertHTTPToSSHURL(t *testing.T) {
+	tt := []struct {
+		httpURL  string
+		expected string
+	}{
+		{httpURL: "https://my.test.server/owner/repo.git", expected: "git@my.test.server:owner/repo.git"},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expected, convertHTTPToSSHURL(test.httpURL))
+	}
+}
