@@ -18,7 +18,7 @@ func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
 	var err error
 
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
-	var cfCheckLoginScript = []string{"api"}
+	var cfCheckLoginScript = []string{"api", options.CfAPIEndpoint}
 
 	var cfLoginBytes bytes.Buffer
 	c.Stdout(&cfLoginBytes)
