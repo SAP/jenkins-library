@@ -59,9 +59,11 @@ func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) 
 }
 
 func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
+	//TODO: check if SONAR_HOST_URL is already set
 	if len(options.Host) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + options.Host)
 	}
+	//TODO check if SONAR_TOKEN is already set
 	if len(options.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + options.Token)
 	}
@@ -129,6 +131,10 @@ func handlePullRequest(options sonarExecuteScanOptions) error {
 			sonar.addOption("sonar.pullrequest.base=" + options.ChangeTarget)
 			sonar.addOption("sonar.pullrequest.branch=" + options.ChangeBranch)
 			sonar.addOption("sonar.pullrequest.provider=" + provider)
+		}
+	} else {
+		if len(options.BranchName) > 0 {
+			sonar.addOption("sonar.branch.name=" + options.BranchName)
 		}
 	}
 	return nil
