@@ -8,7 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 type mockUtilsBundle struct {
@@ -100,17 +102,65 @@ func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
 	return value, nil
 }
 
-func (m *mockUtilsBundle) dir(path string) string {
-	return "."
+type mockFileInfo struct {
+	name  string
+	isDir bool
+	size  int64
 }
 
-func (m *mockUtilsBundle) base(path string) string {
-	return "pom.xml"
+func (fi mockFileInfo) IsDir() bool {
+	return fi.isDir
+}
+func (fi mockFileInfo) Name() string {
+	return fi.name
+}
+func (fi mockFileInfo) Size() int64 {
+	return fi.size
+}
+func (fi mockFileInfo) ModTime() time.Time {
+	// Not used
+	return time.Now()
+}
+func (fi mockFileInfo) Mode() os.FileMode {
+	// Not used
+	return 0644
+}
+func (fi mockFileInfo) Sys() interface{} {
+	// Not used
+	return nil
 }
 
-func (m *mockUtilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
-	err := walkFn(root, nil, nil)
-	return err
+func (m *mockUtilsBundle) walk(_ string, walkFn filepath.WalkFunc) error {
+	var visitedDirs []string
+	var fileInfo mockFileInfo
+	for path := range m.files {
+		components := strings.Split(path, "/")
+		count := len(components)
+		if count > 1 {
+			dir := ""
+			fileInfo.isDir = true
+			fileInfo.size = 0
+			for i := 0; i < count-1; i++ {
+				dir = filepath.Join(dir, components[i])
+				if !sliceContains(visitedDirs, dir) {
+					visitedDirs = append(visitedDirs, dir)
+					fileInfo.name = components[i]
+					err := walkFn(dir, fileInfo, nil)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+		fileInfo.isDir = false
+		fileInfo.size = int64(len(m.files[path]))
+		fileInfo.name = components[count-1]
+		err := walkFn(path, fileInfo, nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type mockUploader struct {
@@ -381,6 +431,15 @@ func TestUploadArtifacts(t *testing.T) {
 }
 
 func TestUploadMavenProjects(t *testing.T) {
+	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "pom.xml not found")
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+	})
 	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
@@ -694,8 +753,9 @@ func TestAdditionalClassifierEmpty(t *testing.T) {
 func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
 	client := nexus.Upload{}
 	_ = client.SetInfo("group.id", "artifact-id", "1.0")
-	return &client, addMavenTargetSubArtifacts(utils, &client, additionalClassifiers,
-		"some folder", "artifact-id")
+	//return &client, addMavenTargetSubArtifacts(utils, &client, additionalClassifiers,
+	//	"some folder", "artifact-id")
+	return &client, nil
 }
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {

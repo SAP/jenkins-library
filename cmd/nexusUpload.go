@@ -31,8 +31,6 @@ type nexusUploadUtils interface {
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
 	walk(root string, walkFn filepath.WalkFunc) error
-	dir(path string) string
-	base(path string) string
 }
 
 type utilsBundle struct {
@@ -97,14 +95,6 @@ func (u *utilsBundle) getExecRunner() execRunner {
 
 func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
 	return maven.Evaluate(pomFile, expression, u.getExecRunner())
-}
-
-func (u *utilsBundle) dir(path string) string {
-	return filepath.Dir(path)
-}
-
-func (u *utilsBundle) base(path string) string {
-	return filepath.Base(path)
 }
 
 func (u *utilsBundle) walk(root string, walkFn filepath.WalkFunc) error {
@@ -358,13 +348,16 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	pomFound := false
+
 	err := utils.walk(".", func(path string, info os.FileInfo, err error) error {
-		parentDir := utils.dir(path)
-		fileName := utils.base(path)
+		parentDir := filepath.Dir(path)
+		fileName := filepath.Base(path)
 
 		if parentDir == "integration-tests" || fileName != "pom.xml" {
 			return nil
 		}
+		pomFound = true
 
 		log.Entry().Info("Deploying maven module " + parentDir)
 		err = uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"),
@@ -377,6 +370,9 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 		return nil
 	})
 
+	if !pomFound {
+		return errPomNotFound
+	}
 	return err
 }
 
@@ -438,7 +434,7 @@ func addMavenTargetArtifact(utils nexusUploadUtils, uploader nexus.Uploader, pom
 	}
 	fmt.Println("Debug: " + strings.Join(matches, ", "))
 	for _, filename := range matches {
-		err = addArtifact(utils, uploader, filename, "", packaging)  //fixme classifier
+		err = addArtifact(utils, uploader, filename, "", packaging) //fixme classifier
 	}
 
 	return err
