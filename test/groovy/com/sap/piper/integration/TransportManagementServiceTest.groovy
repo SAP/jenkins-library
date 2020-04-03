@@ -34,7 +34,7 @@ class TransportManagementServiceTest extends BasePiperTest {
             return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://this.is.some.fake.url.bla.bla/oauth'
+        def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
@@ -51,13 +51,11 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__inVerboseMode__yieldsMoreEchos() {
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://this.is.some.fake.url.bla.bla/oauth'
+        def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
@@ -65,49 +63,44 @@ class TransportManagementServiceTest extends BasePiperTest {
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'"))
-        assertThat(loggingRule.log, containsString("Received response with status 200 from authentication request."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
         assertThat(token, is('myOAuthToken'))
     }
 
     @Test
     void retrieveOAuthToken__failure() {
-        def uaaUrl = 'http://this.is.some.fake.url.bla.bla/oauth'
+        def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
         def responseStatusCode = 400
-        def responseContent = 'Here an error message is expected'
+        def responseContent = 'Here an error message is expected (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)'
 
         thrown.expect(AbortException)
-        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Consider re-running in verbose mode in order to get more details for HTTP status codes 4xx and 5xx.")
+        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
         loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
 
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]
         })
 
-        def tms = new TransportManagementService(nullScript, [:])
+        def tms = new TransportManagementService(nullScript, [verbose: false])
         tms.authentication(uaaUrl, clientId, clientSecret)
     }
 
     @Test
     void retrieveOAuthToken__failure__status__400__inVerboseMode() {
-        def uaaUrl = 'http://this.is.some.fake.url.bla.bla/oauth'
+        def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
         def responseStatusCode = 400
-        def responseContent = 'Here an error message is expected'
+        def responseContent = 'Here an error message is expected (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)'
 
         thrown.expect(AbortException)
         thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
         loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
         loggingRule.expect("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'")
 
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]
         })
 
@@ -118,7 +111,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__successfully() {
 
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -138,7 +131,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Ignore
     void uploadFile__withHttpErrorResponse__throwsError() {
 
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -155,7 +148,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__inVerboseMode__yieldsMoreEchos() {
 
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -179,7 +172,7 @@ class TransportManagementServiceTest extends BasePiperTest {
             return [content: '{ "upload": "success" }', status: 200]
         })
 
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
@@ -201,18 +194,17 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void uploadFileToNode__inVerboseMode__yieldsMoreEchos() {
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
-            return [content: '{ "upload": "success" }', status: 200]
-        })
-
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
         def description = "My description."
         def namedUser = 'myUser'
+        def responseContent = '{ "upload": "success" }'
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: 200]
+        })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
@@ -220,53 +212,49 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'"))
         assertThat(loggingRule.log, containsString("\"upload\": \"success\""))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful. Response content '${responseContent}'."))
     }
 
     @Test
     void uploadFileToNode__failure() {
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
         def description = "My description."
         def namedUser = 'myUser'
         def responseStatusCode = 400
-        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error." }'
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)." }'
 
         thrown.expect(AbortException)
-        thrown.expectMessage("[TransportManagementService] Node upload failed (HTTP status code '${responseStatusCode}'). Consider re-running in verbose mode in order to get more details for HTTP status codes 4xx and 5xx.")
+        thrown.expectMessage("[TransportManagementService] Node upload failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
         loggingRule.expect("[TransportManagementService] Node upload started.")
 
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]
         })
 
-        def tms = new TransportManagementService(nullScript, [:])
+        def tms = new TransportManagementService(nullScript, [verbose: false])
         tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
     }
 
     @Test
     void uploadFileToNode__failure__status__400__inVerboseMode() {
-        def url = 'http://this.is.some.fake.url.bla.bla'
+        def url = 'http://dummy.com/oauth'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
         def description = "My description."
         def namedUser = 'myUser'
         def responseStatusCode = 400
-        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error." }'
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)." }'
 
         thrown.expect(AbortException)
         thrown.expectMessage("[TransportManagementService] Node upload failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
         loggingRule.expect("[TransportManagementService] Node upload started.")
         loggingRule.expect("[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'")
 
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]
         })
 

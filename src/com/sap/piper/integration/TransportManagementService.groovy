@@ -51,16 +51,12 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-
-        echo("Received response with status ${response.status} from authentication request.")
-
         if (response.status != 200) {
-            def errorMessage = "OAuth Token retrieval failed (HTTP status code '${response.status}')."
-            signalAboutError(response, errorMessage)
-        } else {
-            echo("OAuth Token retrieved successfully.")
-            return jsonUtils.jsonStringToGroovyObject(response.content).access_token
+            prepareAndThrowException(response, "OAuth Token retrieval failed (HTTP status code '${response.status}').")
         }
+
+        echo("OAuth Token retrieved successfully.")
+        return jsonUtils.jsonStringToGroovyObject(response.content).access_token
     }
 
 
@@ -123,14 +119,15 @@ class TransportManagementService implements Serializable {
 
         def response = sendApiRequest(parameters)
         if (response.status != 200) {
-            def errorMessage = "Node upload failed (HTTP status code '${response.status}')."
-            signalAboutError(response, errorMessage)
-        } else {
-
-            echo("Node upload successful. ${response.content}")
-            return jsonUtils.jsonStringToGroovyObject(response.content)
+            prepareAndThrowException(response, "Node upload failed (HTTP status code '${response.status}').")
         }
 
+        def successMessage = "Node upload successful."
+        if (config.verbose) {
+            successMessage += " Response content '${response.content}'."
+        }
+        echo(successMessage)
+        return jsonUtils.jsonStringToGroovyObject(response.content)
     }
 
     private sendApiRequest(parameters) {
@@ -145,13 +142,9 @@ class TransportManagementService implements Serializable {
         return script.httpRequest(defaultParameters + parameters)
     }
 
-    private signalAboutError(response, errorMessage) {
-        if (config.verbose) {
-            if (response.status >= 400) {
-                errorMessage += " Response content '${response.content}'."
-            }
-        } else {
-            errorMessage += " Consider re-running in verbose mode in order to get more details for HTTP status codes 4xx and 5xx."
+    private prepareAndThrowException(response, errorMessage) {
+        if (response.status >= 400) {
+            errorMessage += " Response content '${response.content}'."
         }
         script.error "[${getClass().getSimpleName()}] ${errorMessage}"
     }
