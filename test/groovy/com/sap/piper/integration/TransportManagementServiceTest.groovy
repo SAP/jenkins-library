@@ -105,13 +105,13 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload']
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload (WE ARE ON VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
         thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
 
         loggingRule.expect('[TransportManagementService] URL: \'http://dummy.com/oauth\', File: \'myFile.mtar\'')
-        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload (WE ARE ON VERBOSE MODE)')
 
         // The log entries which are present in non verbose mode must be present in verbose mode also, of course
         loggingRule.expect('[TransportManagementService] File upload started.')
@@ -129,15 +129,16 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
+        // 418 (tea-pot)? Other than 400 which is used in verbose mode
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
         readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
+        thrown.expectMessage('Unexpected response code received from file upload (418). 201 expected')
 
         loggingRule.expect('[TransportManagementService] File upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (400). 201 expected. Response body: Something went wrong during file upload')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (418). 201 expected. Response body: Something went wrong during file upload')
 
         new TransportManagementService(nullScript, [verbose:false])
             .uploadFile(url, token, file, namedUser)
