@@ -29,7 +29,7 @@ void call(Map parameters = [:]) {
             commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
         }
 
-        withEnv(["STAGE_NAME=${stageName}", "REPOSITORY_UNDER_TEST=SAP/jenkins-library", "LIBRARY_VERSION_UNDER_TEST=deploy-any-mvn-to-nexus"]) {
+        withEnv(["STAGE_NAME=${stageName}"]) {
             nexusUpload(script: script)
         }
 
