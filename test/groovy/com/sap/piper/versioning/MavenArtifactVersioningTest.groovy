@@ -49,7 +49,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'pom.xml'])
         assertEquals(version, av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
+        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
     }
 
     @Test
@@ -57,6 +57,6 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
+        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
     }
 }
