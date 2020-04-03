@@ -340,7 +340,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
-		assert.Equal(t, "failed to write version: setVersion error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to write version: setVersion error")
 	})
 
 	t.Run("error - failed to push changes", func(t *testing.T) {
