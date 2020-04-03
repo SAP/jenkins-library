@@ -382,8 +382,8 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	if err == nil {
 		finalBuildName, _ = utils.evaluate(pomFile, "project.build.finalName")
 		if finalBuildName == "" {
-			// Fallback to using artifactID as base-name of artifact files.
-			finalBuildName = artifactID
+			// Fallback to using artifactID-artifactsVersion as base-name of artifact files.
+			finalBuildName = artifactID + "-" + artifactsVersion
 		}
 	}
 	if err == nil {

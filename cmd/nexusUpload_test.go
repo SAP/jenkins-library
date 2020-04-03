@@ -556,6 +556,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
 		uploader := mockUploader{}
@@ -570,6 +571,29 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+	})
+	t.Run("Test uploading Maven project with no finalName", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
+
+		artifacts := uploader.uploadedArtifacts
+		if assert.Equal(t, 2, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "pom", artifacts[0].Type)
+
+			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, "jar", artifacts[1].Type)
+		}
 	})
 	t.Run("Write credentials settings", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
