@@ -62,7 +62,7 @@ func TestMavenGetVersion(t *testing.T) {
 			Runner: &runner,
 		}
 		version, err := mvn.GetVersion()
-		assert.Equal(t, "Maven - getting version failed: maven eval failed", fmt.Sprint(err))
+		assert.EqualError(t, err, "Maven - getting version failed: maven eval failed")
 		assert.Equal(t, "", version)
 	})
 
