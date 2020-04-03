@@ -94,6 +94,7 @@ void dockerWrapper(script, config, body) {
 void credentialWrapper(config, List credentialInfo, body) {
     if (credentialInfo.size() > 0) {
         def creds = []
+        def sshCreds = []
         credentialInfo.each { cred ->
             switch(cred.type) {
                 case "file":
@@ -105,14 +106,27 @@ void credentialWrapper(config, List credentialInfo, body) {
                 case "usernamePassword":
                     if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
                     break
+                case "ssh":
+                    if (config[cred.id]) sshCreds.add(config[cred.id])
+                    break
                 default:
                     error ("invalid credential type: ${cred.type}")
             }
         }
-        withCredentials(creds) {
-            body()
+
+        if (sshCreds.size() > 0) {
+            sshagent (sshCreds) {
+                withCredentials(creds) {
+                    body()
+                }
+            }
+        } else {
+            withCredentials(creds) {
+                body()
+            }
         }
     } else {
         body()
     }
 }
+
