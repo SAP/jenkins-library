@@ -305,7 +305,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return nil, fmt.Errorf("worktree error") })
-		assert.Equal(t, "failed to retrieve git worktree: worktree error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to retrieve git worktree: worktree error")
 	})
 
 	t.Run("error - failed to initialize git worktree: ", func(t *testing.T) {
