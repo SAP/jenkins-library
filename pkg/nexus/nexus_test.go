@@ -110,12 +110,16 @@ func TestSetBaseURL(t *testing.T) {
 	t.Run("Test host wrongly includes protocol http://", func(t *testing.T) {
 		nexusUpload := Upload{}
 		err := nexusUpload.SetRepoURL("htTp://localhost:8081", "nexus3", "maven-releases")
-		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid host)")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.repoURL)
+		}
 	})
 	t.Run("Test host wrongly includes protocol https://", func(t *testing.T) {
 		nexusUpload := Upload{}
 		err := nexusUpload.SetRepoURL("htTpS://localhost:8081", "nexus3", "maven-releases")
-		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid host)")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.repoURL)
+		}
 	})
 	t.Run("Test invalid version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
