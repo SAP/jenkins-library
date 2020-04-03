@@ -57,7 +57,6 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
-            'nexusUpload',
             'mavenBuild',
             'mavenExecuteStaticCodeChecks',
             'cloudFoundryCreateServiceKey'
