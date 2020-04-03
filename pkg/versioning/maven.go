@@ -74,8 +74,8 @@ func (m *Maven) SetVersion(version string) error {
 		M2Path:              m.M2Path,
 		Goals:               []string{"org.codehaus.mojo:versions-maven-plugin:2.7:set"},
 		Defines: []string{
-			fmt.Sprintf("-DnewVersion=%v}", version),
-			fmt.Sprintf("-DgroupId=%v}", groupID),
+			fmt.Sprintf("-DnewVersion=%v", version),
+			fmt.Sprintf("-DgroupId=%v", groupID),
 			"-DartifactId=*",
 			"-DoldVersion=*",
 			"-DgenerateBackupPoms=false",

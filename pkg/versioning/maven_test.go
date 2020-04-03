@@ -82,7 +82,7 @@ func TestMavenSetVersion(t *testing.T) {
 		}
 		expectedOptions := maven.ExecuteOptions{
 			PomPath:             "path/to/pom.xml",
-			Defines:             []string{"-DnewVersion=1.2.4}", "-DgroupId=testGroup}", "-DartifactId='*'", "-DoldVersion='*'", "-DgenerateBackupPoms=false"},
+			Defines:             []string{"-DnewVersion=1.2.4", "-DgroupId=testGroup", "-DartifactId=*", "-DoldVersion=*", "-DgenerateBackupPoms=false"},
 			Goals:               []string{"org.codehaus.mojo:versions-maven-plugin:2.7:set"},
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
