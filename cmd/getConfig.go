@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"io"
+	"os"
 )
 
 type configCommandOptions struct {
@@ -57,7 +56,10 @@ func generateConfig() error {
 
 	customConfig, err := configOptions.openFile(GeneralConfig.CustomConfig)
 	if err != nil {
-		return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
+		if !os.IsNotExist(err) {
+			return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
+		}
+		customConfig = nil
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
@@ -83,7 +85,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
@@ -109,7 +111,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
-	cmd.MarkFlagRequired("stepMetadata")
+	_ = cmd.MarkFlagRequired("stepMetadata")
 
 }
 
