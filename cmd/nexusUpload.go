@@ -431,12 +431,16 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName, packaging string) error {
 	fileTypes := []string{packaging}
 	if packaging != "jar" {
+		// Try to find additional artifacts with a classifier
 		fileTypes = append(fileTypes, "jar")
 	}
 
 	for _, fileType := range fileTypes {
 		pattern := targetFolder + "/*." + fileType
 		matches, _ := utils.glob(pattern)
+		if len(matches) == 0 && fileType == packaging {
+			return fmt.Errorf("target artifact not found for packaging '%s'", packaging)
+		}
 		log.Entry().Debugf("Glob matches for %s: %s", pattern, strings.Join(matches, ", "))
 
 		prefix := filepath.Join(targetFolder, finalBuildName) + "-"

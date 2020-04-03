@@ -438,6 +438,22 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 	})
+	t.Run("Test uploading Maven project with JAR packaging fails without main target", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/dummy"] = []byte("contentsOfJar") // causes "target" folder to exist
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "target artifact not found for packaging 'jar'")
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+	})
 	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
@@ -514,6 +530,33 @@ func TestUploadMavenProjects(t *testing.T) {
 		if assert.Equal(t, 1, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
+		}
+	})
+	t.Run("Test uploading Maven project with fall-back for finalBuildName works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "awesome.group")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, "localhost:8081/repository/maven-releases/",
+			uploader.GetRepoURL())
+		assert.Equal(t, "1.0", uploader.GetArtifactsVersion())
+		assert.Equal(t, "my-app", uploader.GetArtifactsID())
+
+		artifacts := uploader.uploadedArtifacts
+		if assert.Equal(t, 2, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "pom", artifacts[0].Type)
+			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
 	t.Run("Test uploading Maven project with application module and finalName works", func(t *testing.T) {
