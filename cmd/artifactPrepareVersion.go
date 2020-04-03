@@ -285,14 +285,10 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 		}
 	} else {
-		log.Entry().Info("re-using ssh authentication from repository")
-		// test drive without ssh authentication since not necessary
-		/*
-			pushOptions.Auth, err = sshAgentAuth("git")
-			if err != nil {
-				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
-			}
-		*/
+		pushOptions.Auth, err = sshAgentAuth("git")
+		if err != nil {
+			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
+		}
 	}
 
 	err = repository.Push(&pushOptions)
