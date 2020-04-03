@@ -25,7 +25,6 @@ import (
 var auditStatus map[string]string
 
 const checkString = "<---CHECK FORTIFY---"
-const classpathFile = "cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
 	auditStatus = map[string]string{}
@@ -419,9 +418,9 @@ func executeTemplatedCommand(command execRunner, cmdTemplate string, context map
 func autoresolveClasspath(config fortifyExecuteScanOptions, command execRunner, context map[string]string) string {
 	if config.AutodetectClasspath {
 		executeTemplatedCommand(command, config.AutodetectClasspathCommand, context)
-		data, err := ioutil.ReadFile(classpathFile)
+		data, err := ioutil.ReadFile(context["File"])
 		if err != nil {
-			log.Entry().WithError(err).WithField("command", command).Fatal("failed to read java classpath file")
+			log.Entry().WithError(err).Fatalf("failed to read java classpath file %v", context["File"])
 		}
 		return string(data)
 	}
@@ -436,7 +435,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	}
 
 	// Determine classpath
-	classpath := autoresolveClasspath(config, command, map[string]string{"Pip": pipVersion, "PythonVersion": config.PythonVersion, "File": classpathFile})
+	classpath := autoresolveClasspath(config, command, map[string]string{"Pip": pipVersion, "PythonVersion": config.PythonVersion, "File": "cp.txt"})
 	if config.ScanType == "maven" {
 		if len(config.Translate) == 0 {
 			config.Translate = `[{"classpath":"`
@@ -554,8 +553,8 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		return append(options, tokenize(t["src"])...)
 	}
 	if config.ScanType == "maven" {
-		if len(t["autoClassPath"]) > 0 {
-			options = append(options, "-cp", t["autoClassPath"])
+		if len(t["autoClasspath"]) > 0 {
+			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
 			options = append(options, "-cp", t["classpath"])
 		}
@@ -577,8 +576,8 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		return append(options, tokenize(t["src"])...)
 	}
 	if config.ScanType == "pip" {
-		if len(t["autoClassPath"]) > 0 {
-			options = append(options, "-python-path", t["autoClassPath"])
+		if len(t["autoClasspath"]) > 0 {
+			options = append(options, "-python-path", t["autoClasspath"])
 		} else if len(t["pythonPath"]) > 0 {
 			options = append(options, "-python-path", t["pythonPath"])
 		}

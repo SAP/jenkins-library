@@ -84,7 +84,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: "{{.PythonVersion}} -c 'import sys;p=sys.path;p.remove('');print(';'.join(p))' > {{.File}}"
+      default: "{{.PythonVersion}} -c \"import sys;p=sys.path;p.remove('');print(';'.join(p))\" > {{.File}}"
       conditions:
       - conditionRef: strings-equal
         params:
