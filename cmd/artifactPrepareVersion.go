@@ -110,9 +110,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			return errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
 		}
 
-		t := time.Now()
+		now := time.Now()
 
-		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, t)
+		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, now)
 		if err != nil {
 			return errors.Wrap(err, "failed to calculate new version")
 		}
@@ -141,7 +141,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		//ToDo: what about closure in current Groovy step. Discard the possibility or provide extension mechanism?
 
 		// commit changes and push to repository (including new version tag)
-		gitCommitID, err = pushChanges(config, newVersion, repository, worktree, t)
+		gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 		if err != nil {
 			return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 		}
