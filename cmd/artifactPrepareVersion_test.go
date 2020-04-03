@@ -322,7 +322,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
-		assert.Equal(t, "failed to initialize worktree: checkout error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to initialize worktree: checkout error")
 	})
 
 	t.Run("error - failed to set version", func(t *testing.T) {
