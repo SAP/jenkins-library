@@ -116,6 +116,6 @@ func TestMavenSetVersion(t *testing.T) {
 			PomPath: "path/to/pom.xml",
 		}
 		err := mvn.SetVersion("1.2.4")
-		assert.Equal(t, "Maven - setting version 1.2.4 failed: maven exec failed", fmt.Sprint(err))
+		assert.EqualError(t, err, "Maven - setting version 1.2.4 failed: maven exec failed")
 	})
 }

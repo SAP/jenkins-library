@@ -266,7 +266,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, nil, nil)
-		assert.Equal(t, "failed to retrieve version: getVersion error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to retrieve version: getVersion error")
 
 	})
 
