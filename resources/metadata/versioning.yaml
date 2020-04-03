@@ -7,7 +7,7 @@ metadata:
   description: Prepares and potentially updates the artifact's version before building the artifact.
   longDescription: |-
     Prepares and potentially updates the artifact's version before building the artifact.
-    
+
     The continuous delivery process requires that each build is done with a unique version number.
 
     The version generated using this step will contain:
