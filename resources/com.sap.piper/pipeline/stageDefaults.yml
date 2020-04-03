@@ -18,6 +18,7 @@ stages:
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
+          - 'cloudFoundry/space'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
@@ -49,6 +50,9 @@ stages:
         configKeys:
           - 'cfSpace'
           - 'cloudFoundry/space'
+      neoDeploy:
+        configKeys:
+          - 'neo/account'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
