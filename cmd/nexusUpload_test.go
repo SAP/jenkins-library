@@ -556,7 +556,6 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
-		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
 		uploader := mockUploader{}
