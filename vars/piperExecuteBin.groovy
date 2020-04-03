@@ -129,4 +129,3 @@ void credentialWrapper(config, List credentialInfo, body) {
         body()
     }
 }
-
