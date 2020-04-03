@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
-import com.sap.piper.CfUtils
+import com.sap.piper.integration.CfUtils
 
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
@@ -173,9 +173,9 @@ void call(Map parameters = [:]) {
                                                     config.cloudFoundry.space,
                                                     config.cloudFoundry.credentialsId,
                                                     appName,
-                                                    config.verbose ? true : false )
+                                                    config.verbose )
                         command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
-                        echo "Appending secret for ${appName}: --env-var ${appName}_clientid=****  --env-var ${appName}_clientsecret=****"
+                        echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
                     }
                 }
 
