@@ -17,9 +17,25 @@ import hudson.AbortException
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
-     * Define settings used by the Jenkins Kuberenetes plugin.
+     * Define settings used by the Jenkins Kubernetes plugin.
      */
     'jenkinsKubernetes',
+        /**
+         * Jnlp agent Docker images which should be used to create new pods.
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'jnlpAgent',
+        /**
+         * Namespace that should be used to create a new pod
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'namespace',
+        /**
+         * Name of the pod template that should be inherited from.
+         * The pod template can be defined in the Jenkins UI
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'inheritFrom',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
