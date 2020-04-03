@@ -83,7 +83,7 @@ func TestMavenSetVersion(t *testing.T) {
 		expectedOptions := maven.ExecuteOptions{
 			PomPath:             "path/to/pom.xml",
 			Defines:             []string{"-DnewVersion=1.2.4}", "-DgroupId=testGroup}", "-DartifactId='*'", "-DoldVersion='*'", "-DgenerateBackupPoms=false"},
-			Goals:               []string{"versions:set"},
+			Goals:               []string{"org.codehaus.mojo:versions-maven-plugin:2.7:set"},
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
 			M2Path:              "m2/path",
@@ -103,7 +103,7 @@ func TestMavenSetVersion(t *testing.T) {
 			PomPath: "path/to/pom.xml",
 		}
 		err := mvn.SetVersion("1.2.4")
-		assert.Equal(t, "Maven - getting groupId failed: maven eval failed", fmt.Sprint(err))
+		assert.EqualError(t, err, "Maven - getting groupId failed: maven eval failed")
 	})
 
 	t.Run("execute error", func(t *testing.T) {

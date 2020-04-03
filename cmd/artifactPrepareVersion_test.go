@@ -281,7 +281,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{revisionError: "revision error"}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, nil)
-		assert.Equal(t, "failed to retrieve git commit ID: revision error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to retrieve git commit ID: revision error")
 	})
 
 	t.Run("error - versioning template", func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return nil, fmt.Errorf("worktree error") })
-		assert.Equal(t, "failed to retrieve git worktree: worktree error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to retrieve git worktree: worktree error")
 	})
 
 	t.Run("error - failed to initialize git worktree: ", func(t *testing.T) {
@@ -330,7 +330,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
-		assert.Equal(t, "failed to initialize worktree: checkout error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to initialize worktree: checkout error")
 	})
 
 	t.Run("error - failed to set version", func(t *testing.T) {
@@ -348,7 +348,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
-		assert.Equal(t, "failed to write version: setVersion error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to write version: setVersion error")
 	})
 
 	t.Run("error - failed to push changes", func(t *testing.T) {

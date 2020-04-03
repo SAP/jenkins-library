@@ -191,7 +191,7 @@ void call(Map parameters = [:], Closure body = null) {
 
             try {
                 sh """#!/bin/bash
-                    git add .
+                    git add . --update
                     git ${gitConfig} commit -m 'update version ${newVersion}'
                     git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()

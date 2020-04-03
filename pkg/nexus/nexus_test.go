@@ -1,12 +1,8 @@
 package nexus
 
 import (
-	"fmt"
-	"io"
-	"net/http"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +11,6 @@ func TestAddArtifact(t *testing.T) {
 		nexusUpload := Upload{}
 
 		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "artifact.id",
 			Classifier: "",
 			Type:       "pom",
 			File:       "pom.xml",
@@ -24,42 +19,14 @@ func TestAddArtifact(t *testing.T) {
 		assert.NoError(t, err, "Expected to add valid artifact")
 		assert.True(t, len(nexusUpload.artifacts) == 1)
 
-		assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
 		assert.True(t, nexusUpload.artifacts[0].Classifier == "")
 		assert.True(t, nexusUpload.artifacts[0].Type == "pom")
 		assert.True(t, nexusUpload.artifacts[0].File == "pom.xml")
-	})
-	t.Run("Test missing ID", func(t *testing.T) {
-		nexusUpload := Upload{}
-
-		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "",
-			Classifier: "",
-			Type:       "pom",
-			File:       "pom.xml",
-		})
-
-		assert.Error(t, err, "Expected to fail adding invalid artifact")
-		assert.True(t, len(nexusUpload.artifacts) == 0)
-	})
-	t.Run("Test invalid ID", func(t *testing.T) {
-		nexusUpload := Upload{}
-
-		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "artifact/id",
-			Classifier: "",
-			Type:       "pom",
-			File:       "pom.xml",
-		})
-
-		assert.Error(t, err, "Expected to fail adding invalid artifact")
-		assert.True(t, len(nexusUpload.artifacts) == 0)
 	})
 	t.Run("Test missing type", func(t *testing.T) {
 		nexusUpload := Upload{}
 
 		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "artifact",
 			Classifier: "",
 			Type:       "",
 			File:       "pom.xml",
@@ -72,7 +39,6 @@ func TestAddArtifact(t *testing.T) {
 		nexusUpload := Upload{}
 
 		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "artifact",
 			Classifier: "",
 			Type:       "pom",
 			File:       "",
@@ -85,13 +51,11 @@ func TestAddArtifact(t *testing.T) {
 		nexusUpload := Upload{}
 
 		_ = nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "blob",
 			Classifier: "",
 			Type:       "pom",
 			File:       "pom.xml",
 		})
 		err := nexusUpload.AddArtifact(ArtifactDescription{
-			ID:         "blob",
 			Classifier: "",
 			Type:       "pom",
 			File:       "pom.xml",
@@ -105,7 +69,6 @@ func TestGetArtifacts(t *testing.T) {
 	nexusUpload := Upload{}
 
 	err := nexusUpload.AddArtifact(ArtifactDescription{
-		ID:         "artifact.id",
 		Classifier: "",
 		Type:       "pom",
 		File:       "pom.xml",
@@ -115,245 +78,123 @@ func TestGetArtifacts(t *testing.T) {
 	artifacts := nexusUpload.GetArtifacts()
 	// Overwrite array entry in the returned array...
 	artifacts[0] = ArtifactDescription{
-		ID:         "another.id",
 		Classifier: "",
-		Type:       "pom",
-		File:       "pom.xml",
+		Type:       "jar",
+		File:       "app.jar",
 	}
 	// ... but expect the entry in nexusUpload object to be unchanged
-	assert.True(t, nexusUpload.artifacts[0].ID == "artifact.id")
+	assert.Equal(t, "pom", nexusUpload.artifacts[0].Type)
+	assert.Equal(t, "pom.xml", nexusUpload.artifacts[0].File)
 }
 
 func TestGetBaseURL(t *testing.T) {
-	// Invalid parameters to getBaseURL() already tested via SetBaseURL() tests
+	// Invalid parameters to getBaseURL() already tested via SetRepoURL() tests
 	t.Run("Test base URL for nexus2 is sensible", func(t *testing.T) {
-		baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases", "some.group.id")
+		baseURL, err := getBaseURL("localhost:8081/nexus", "nexus2", "maven-releases")
 		assert.NoError(t, err, "Expected getBaseURL() to succeed")
-		assert.Equal(t, "localhost:8081/nexus/content/repositories/maven-releases/some/group/id/", baseURL)
+		assert.Equal(t, "localhost:8081/nexus/content/repositories/maven-releases/", baseURL)
 	})
 	t.Run("Test base URL for nexus3 is sensible", func(t *testing.T) {
-		baseURL, err := getBaseURL("localhost:8081", "nexus3", "maven-releases", "some.group.id")
+		baseURL, err := getBaseURL("localhost:8081", "nexus3", "maven-releases")
 		assert.NoError(t, err, "Expected getBaseURL() to succeed")
-		assert.Equal(t, "localhost:8081/repository/maven-releases/some/group/id/", baseURL)
+		assert.Equal(t, "localhost:8081/repository/maven-releases/", baseURL)
 	})
 }
 
 func TestSetBaseURL(t *testing.T) {
 	t.Run("Test no host provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("", "nexus3", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (no host)")
+		err := nexusUpload.SetRepoURL("", "nexus3", "maven-releases")
+		assert.Error(t, err, "Expected SetRepoURL() to fail (no host)")
 	})
 	t.Run("Test host wrongly includes protocol http://", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("htTp://localhost:8081", "nexus3", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (invalid host)")
+		err := nexusUpload.SetRepoURL("htTp://localhost:8081", "nexus3", "maven-releases")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.repoURL)
+		}
 	})
 	t.Run("Test host wrongly includes protocol https://", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("htTpS://localhost:8081", "nexus3", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (invalid host)")
+		err := nexusUpload.SetRepoURL("htTpS://localhost:8081", "nexus3", "maven-releases")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.repoURL)
+		}
 	})
 	t.Run("Test invalid version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("localhost:8081", "3", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (invalid nexus version)")
+		err := nexusUpload.SetRepoURL("localhost:8081", "3", "maven-releases")
+		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid nexus version)")
 	})
 	t.Run("Test no repository provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("localhost:8081", "nexus3", "", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (no repository)")
-	})
-	t.Run("Test no group id provided", func(t *testing.T) {
-		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (no groupID)")
+		err := nexusUpload.SetRepoURL("localhost:8081", "nexus3", "")
+		assert.Error(t, err, "Expected SetRepoURL() to fail (no repository)")
 	})
 	t.Run("Test no nexus version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (unsupported nexus version)")
+		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases")
+		assert.Error(t, err, "Expected SetRepoURL() to fail (unsupported nexus version)")
 	})
 	t.Run("Test unsupported nexus version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetBaseURL("localhost:8081", "nexus1", "maven-releases", "some.group.id")
-		assert.Error(t, err, "Expected SetBaseURL() to fail (unsupported nexus version)")
+		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases")
+		assert.Error(t, err, "Expected SetRepoURL() to fail (unsupported nexus version)")
 	})
 }
 
-func TestSetArtifactsVersion(t *testing.T) {
+func TestSetInfo(t *testing.T) {
 	t.Run("Test invalid artifact version", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetArtifactsVersion("")
-		assert.Error(t, err, "Expected SetArtifactsVersion() to fail (empty version)")
+		err := nexusUpload.SetInfo("my.group", "artifact.id", "")
+		assert.Error(t, err, "Expected SetInfo() to fail (empty version)")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
 	t.Run("Test valid artifact version", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetArtifactsVersion("1.0.0-SNAPSHOT")
-		assert.NoError(t, err, "Expected SetArtifactsVersion() to succeed")
+		err := nexusUpload.SetInfo("my.group", "artifact.id", "1.0.0-SNAPSHOT")
+		assert.NoError(t, err, "Expected SetInfo() to succeed")
 	})
-}
-
-type simpleHttpMock struct {
-	responseStatus string
-	responseError  error
-}
-
-func (m *simpleHttpMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return &http.Response{Status: m.responseStatus}, m.responseError
-}
-
-func (m *simpleHttpMock) SetOptions(options piperhttp.ClientOptions) {
-}
-
-func TestUploadNoInit(t *testing.T) {
-	var mockedHttp = simpleHttpMock{
-		responseStatus: "200 OK",
-		responseError:  nil,
-	}
-
-	t.Run("Expect that upload fails without base-URL", func(t *testing.T) {
+	t.Run("Test empty artifactID", func(t *testing.T) {
 		nexusUpload := Upload{}
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.EqualError(t, err, "the nexus.Upload needs to be configured by calling SetBaseURL() first")
+		err := nexusUpload.SetInfo("my.group", "", "1.0")
+		assert.Error(t, err, "Expected to fail setting empty artifactID")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
-
-	t.Run("Expect that upload fails without version", func(t *testing.T) {
+	t.Run("Test empty groupID", func(t *testing.T) {
 		nexusUpload := Upload{}
-		_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.EqualError(t, err, "the nexus.Upload needs to be configured by calling SetArtifactsVersion() first")
+		err := nexusUpload.SetInfo("", "id", "1.0")
+		assert.Error(t, err, "Expected to fail setting empty groupID")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
-
-	t.Run("Expect that upload fails without artifacts", func(t *testing.T) {
+	t.Run("Test invalid ID", func(t *testing.T) {
 		nexusUpload := Upload{}
-		_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
-		_ = nexusUpload.SetArtifactsVersion("1.0")
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.EqualError(t, err, "no artifacts to upload, call AddArtifact() first")
+		err := nexusUpload.SetInfo("my.group", "artifact/id", "1.0.0-SNAPSHOT")
+		assert.Error(t, err, "Expected to fail adding invalid artifact")
+		assert.Equal(t, "", nexusUpload.groupID)
+		assert.Equal(t, "", nexusUpload.artifactID)
+		assert.Equal(t, "", nexusUpload.version)
 	})
 }
 
-type request struct {
-	method string
-	url    string
-}
-
-type requestReply struct {
-	response string
-	err      error
-}
-
-type httpMock struct {
-	username       string
-	password       string
-	requestIndex   int
-	requestReplies []requestReply
-	requests       []request
-}
-
-func (m *httpMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	// store the request
-	m.requests = append(m.requests, request{method: method, url: url})
-
-	// Return the configured response for this request's index
-	response := m.requestReplies[m.requestIndex].response
-	err := m.requestReplies[m.requestIndex].err
-
-	m.requestIndex++
-
-	return &http.Response{Status: response}, err
-}
-
-func (m *httpMock) SetOptions(options piperhttp.ClientOptions) {
-	m.username = options.Username
-	m.password = options.Password
-}
-
-func (m *httpMock) appendReply(reply requestReply) {
-	m.requestReplies = append(m.requestReplies, reply)
-}
-
-func createConfiguredNexusUpload() Upload {
+func TestClear(t *testing.T) {
 	nexusUpload := Upload{}
-	_ = nexusUpload.SetBaseURL("localhost:8081", "nexus3", "maven-releases", "my.group.id")
-	_ = nexusUpload.SetArtifactsVersion("1.0")
-	_ = nexusUpload.AddArtifact(ArtifactDescription{ID: "artifact.id", Classifier: "", Type: "pom", File: "../../pom.xml"})
-	return nexusUpload
-}
 
-func TestUploadArtifacts(t *testing.T) {
-	t.Run("Test upload works", func(t *testing.T) {
-		var mockedHttp = httpMock{}
-		// There will be three requests, md5, sha1 and the file itself
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-
-		nexusUpload := createConfiguredNexusUpload()
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.NoError(t, err, "Expected that uploading the artifact works")
-
-		assert.Equal(t, 3, mockedHttp.requestIndex, "Expected 3 HTTP requests")
-
-		assert.Equal(t, http.MethodPut, mockedHttp.requests[0].method)
-		assert.Equal(t, http.MethodPut, mockedHttp.requests[1].method)
-		assert.Equal(t, http.MethodPut, mockedHttp.requests[2].method)
-
-		assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.md5",
-			mockedHttp.requests[0].url)
-		assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom.sha1",
-			mockedHttp.requests[1].url)
-		assert.Equal(t, "http://localhost:8081/repository/maven-releases/my/group/id/artifact.id/1.0/artifact.id-1.0.pom",
-			mockedHttp.requests[2].url)
+	err := nexusUpload.AddArtifact(ArtifactDescription{
+		Classifier: "",
+		Type:       "pom",
+		File:       "pom.xml",
 	})
-	t.Run("Test upload fails at md5 hash", func(t *testing.T) {
-		var mockedHttp = httpMock{}
-		// There will be three requests, md5, sha1 and the file itself
-		mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
+	assert.NoError(t, err, "Expected to succeed adding valid artifact")
+	assert.Equal(t, 1, len(nexusUpload.GetArtifacts()))
 
-		nexusUpload := createConfiguredNexusUpload()
+	nexusUpload.Clear()
 
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.Error(t, err, "Expected that uploading the artifact failed")
-
-		assert.Equal(t, 1, mockedHttp.requestIndex, "Expected only one HTTP requests")
-		assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
-	})
-	t.Run("Test upload fails at sha1 hash", func(t *testing.T) {
-		var mockedHttp = httpMock{}
-		// There will be three requests, md5, sha1 and the file itself
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-
-		nexusUpload := createConfiguredNexusUpload()
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.Error(t, err, "Expected that uploading the artifact failed")
-
-		assert.Equal(t, 2, mockedHttp.requestIndex, "Expected only two HTTP requests")
-		assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
-	})
-	t.Run("Test upload fails at file", func(t *testing.T) {
-		var mockedHttp = httpMock{}
-		// There will be three requests, md5, sha1 and the file itself
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "200 OK", err: nil})
-		mockedHttp.appendReply(requestReply{response: "404 Error", err: fmt.Errorf("failed")})
-
-		nexusUpload := createConfiguredNexusUpload()
-
-		err := nexusUpload.uploadArtifacts(&mockedHttp)
-		assert.Error(t, err, "Expected that uploading the artifact failed")
-
-		assert.Equal(t, 3, mockedHttp.requestIndex, "Expected only three HTTP requests")
-		assert.Equal(t, 1, len(nexusUpload.artifacts), "Expected the artifact to be still present in the nexusUpload")
-	})
+	assert.Equal(t, 0, len(nexusUpload.GetArtifacts()))
 }
