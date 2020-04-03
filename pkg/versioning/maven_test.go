@@ -103,7 +103,7 @@ func TestMavenSetVersion(t *testing.T) {
 			PomPath: "path/to/pom.xml",
 		}
 		err := mvn.SetVersion("1.2.4")
-		assert.Equal(t, "Maven - getting groupId failed: maven eval failed", fmt.Sprint(err))
+		assert.EqualError(t, err, "Maven - getting groupId failed: maven eval failed")
 	})
 
 	t.Run("execute error", func(t *testing.T) {
