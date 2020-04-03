@@ -129,7 +129,9 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        // 418 (tea-pot)? Other than 400 which is used in verbose mode
+        // 418 (tea-pot)? Other than 400 which is used in verbose mode in order to be sure that we don't mix up
+        // with any details from the other test for the verbose mode. The log message below (Unexpected reponse code ...)
+        // reflects that 418 instead of 400.
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
         readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload']
