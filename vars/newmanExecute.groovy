@@ -173,7 +173,7 @@ void call(Map parameters = [:]) {
                                                     config.cloudFoundry.space,
                                                     config.cloudFoundry.credentialsId,
                                                     appName,
-                                                    config.verbose )
+                                                    config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
                         command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
                         echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
                     }
