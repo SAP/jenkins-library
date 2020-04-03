@@ -15,6 +15,8 @@ class TransportManagementServiceTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+	private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
+	private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt', 'responseExtDescirptorUpload.txt'])
 
     @Rule
     public RuleChain rules = Rules
@@ -23,7 +25,8 @@ class TransportManagementServiceTest extends BasePiperTest {
         .around(new JenkinsReadJsonRule(this))
         .around(shellRule)
         .around(loggingRule)
-        .around(new JenkinsReadFileRule(this, 'test/resources/TransportManagementService'))
+        .around(readFileRule)
+        .around(fileExistsRule)
         .around(thrown)
 
     @Test
@@ -179,12 +182,6 @@ class TransportManagementServiceTest extends BasePiperTest {
 	
 	@Test
 	void uploadMtaExtDescriptorToNode__successfully() {
-		Map requestParams
-		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-			requestParams = m
-			return [content: '{ "fileId": 5678 }']
-		})
-		
 		def url = 'http://dummy.com/oauth'
 		def token = 'myToken'
 		def nodeId = 1
@@ -193,26 +190,21 @@ class TransportManagementServiceTest extends BasePiperTest {
 		def description = "My description."
 		def namedUser = 'myUser'
 
+		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '200')
+		
 		def tms = new TransportManagementService(nullScript, [:])
 		def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
-		def bodyRegEx = /^\{\s+"file":\s+"myFile.mtaext",\s+"mtaVersion":\s+"0.0.1",\s+"description":\s+"My\s+description.",\s+"namedUser":\s+"myUser"\s+}$/
+		def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
 		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
-		assertThat(requestParams, hasEntry('url', "${url}/v2/nodes/'${nodeId}'/mtaExtDescriptors"))
-		assert requestParams.requestBody ==~ bodyRegEx
-		assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
+		assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
+		assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescirptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
 		assertThat(responseDetails, hasEntry("fileId", 5678))
 		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
 	}
 	
 	@Test
 	void uploadMtaExtDescriptorToNode__inVerboseMode__yieldsMoreEchos() {
-		Map requestParams
-		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-			requestParams = m
-			return [content: '{ "fileId": 5678 }']
-		})
-		
 		def url = 'http://dummy.com/oauth'
 		def token = 'myToken'
 		def nodeId = 1
@@ -221,13 +213,17 @@ class TransportManagementServiceTest extends BasePiperTest {
 		def description = "My description."
 		def namedUser = 'myUser'
 
-		def tms = new TransportManagementService(nullScript, [verbose: true])
-		def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
+		fileExistsRule.existingFiles.add('responseExtDescirptorUpload.txt')
+		readFileRule.files.put('responseExtDescirptorUpload.txt', '{"fileId": 5678}')
 
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
-		assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
-		assertThat(responseDetails, hasEntry("fileId", 5678))
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+        assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
+		assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
 	}
 
 }

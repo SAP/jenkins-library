@@ -140,33 +140,50 @@ class TransportManagementService implements Serializable {
             echo("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'")
         }
 
-        def bodyMap = [file: file, mtaVersion: mtaVersion, description: description, namedUser: namedUser]
-
-        def parameters = [
-            url          : "${url}/v2/nodes/'${nodeId}'/mtaExtDescriptors",
-            httpMode     : "POST",
-            contentType  : 'multipart/form-data',
-            requestBody  : jsonUtils.groovyObjectToPrettyJsonString(bodyMap),
-            customHeaders: [
-                [
-                    maskValue: true,
-                    name     : 'authorization',
-                    value    : "Bearer ${token}"
-                ]
-            ]
-        ]
-
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
-        if (proxy){
-            parameters["httpProxy"] = proxy
+        def responseExtDescirptorUpload = 'responseExtDescirptorUpload.txt'
+
+        def responseContent
+
+        def responseCode = script.sh returnStdout: true,
+                                     script: """|#!/bin/sh -e
+                                                | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                                |      --write-out '%{response_code}' \\
+                                                |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -F 'file=@${file}' \\
+                                                |      -F 'mtaVersion=${mtaVersion}' \\
+                                                |      -F 'description=${description}' \\
+                                                |      -F 'namedUser=${namedUser}' \\
+                                                |      --output ${responseExtDescirptorUpload} \\
+                                                |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
+
+
+        def responseBody = 'n/a'
+
+        boolean gotResponse = script.fileExists(responseExtDescirptorUpload)
+
+        if(gotResponse) {
+            responseBody = script.readFile(responseExtDescirptorUpload)
+			if(config.verbose) {
+				echo("Response body: ${responseBody}")
+			}
         }
 
-        def response = sendApiRequest(parameters)
+        def HTTP_OK = '200'
+
+        if (responseCode != HTTP_OK) {
+            def message = "Unexpected response code received from MTA extension descriptor upload (${responseCode}). ${HTTP_OK} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
+        }
+
         echo("Extension descriptor upload successful.")
-
-        return jsonUtils.jsonStringToGroovyObject(response)
-
+		
+        if (! gotResponse) {
+            script.error "Cannot provide upload file response."
+        }
+        return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
 
     private sendApiRequest(parameters) {
