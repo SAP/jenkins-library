@@ -77,7 +77,7 @@ spec:
         aliases:
           - name: pmd/failurePriority
       - name: pmdMaxAllowedViolations
-        description: The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed. Defaults to 5.
+        description: The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed.
         type: int
         scope:
           - PARAMETERS
