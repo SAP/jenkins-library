@@ -517,10 +517,24 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("application/pom.xml", "project.packaging", "war")
 		utils.setProperty("application/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("integration-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("integration-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("integration-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("integration-tests/pom.xml", "project.packaging", "jar")
+		utils.setProperty("integration-tests/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("unit-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("unit-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("unit-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("unit-tests/pom.xml", "project.packaging", "jar")
+		utils.setProperty("unit-tests/pom.xml", "project.build.finalName", "final-artifact")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
 		utils.files["application/target/final-artifact.war"] = []byte("contentsOfJar")
 		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
+		utils.files["integration-tests/pom.xml"] = testPomXml
+		utils.files["integration-tests/target/final-artifact.jar"] = []byte("contentsOfClassesJar")
+		utils.files["unit-tests/pom.xml"] = testPomXml
+		utils.files["unit-tests/target/final-artifact.jar"] = []byte("contentsOfClassesJar")
 		uploader := mockUploader{}
 		options := createOptions()
 

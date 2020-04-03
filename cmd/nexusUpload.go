@@ -355,7 +355,7 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 
 	for _, pomFile := range pomFiles {
 		parentDir := filepath.Dir(pomFile)
-		if parentDir == "integration-tests" {
+		if parentDir == "integration-tests" || parentDir == "unit-tests" {
 			continue
 		}
 		err := uploadMavenArtifacts(utils, uploader, options, parentDir, filepath.Join(parentDir, "target"))
