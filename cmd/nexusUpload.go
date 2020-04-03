@@ -25,6 +25,7 @@ type nexusUploadUtils interface {
 	fileRead(path string) ([]byte, error)
 	fileWrite(path string, content []byte, perm os.FileMode) error
 	fileRemove(path string)
+	dirExists(path string) (bool, error)
 	usesMta() bool
 	usesMaven() bool
 	getEnvParameter(path, name string) string
@@ -70,6 +71,19 @@ func (u *utilsBundle) fileRemove(path string) {
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to remove file '%s'.", path)
 	}
+}
+
+func (u *utilsBundle) dirExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return info.IsDir(), nil
 }
 
 func (u *utilsBundle) usesMta() bool {
@@ -369,6 +383,19 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
+
+	packaging, _ := utils.evaluate(pomFile, "project.packaging")
+	if packaging == "" {
+		packaging = "jar"
+	}
+	if packaging != "pom" {
+		// Ignore this module if there is no 'target' folder
+		hasTarget, _ := utils.dirExists(targetFolder)
+		if !hasTarget {
+			log.Entry().Warnf("Ignoring module '%s' as it has no 'target' folder", pomPath)
+			return nil
+		}
+	}
 	groupID, _ := utils.evaluate(pomFile, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
@@ -392,8 +419,8 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	if err == nil {
 		err = addArtifact(utils, uploader, pomFile, "", "pom")
 	}
-	if err == nil {
-		err = addMavenTargetArtifacts(utils, uploader, pomFile, targetFolder, finalBuildName)
+	if err == nil && packaging != "pom" {
+		err = addMavenTargetArtifacts(utils, uploader, pomFile, targetFolder, finalBuildName, packaging)
 	}
 	if err == nil {
 		err = uploadArtifacts(utils, uploader, options, true)
@@ -401,19 +428,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	return err
 }
 
-func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName string) error {
-	packaging, err := utils.evaluate(pomFile, "project.packaging")
-	if err != nil {
-		return err
-	}
-	if packaging == "pom" {
-		// Only pom.xml itself is the artifact
-		return nil
-	}
-	if packaging == "" {
-		packaging = "jar"
-	}
-
+func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, pomFile, targetFolder, finalBuildName, packaging string) error {
 	fileTypes := []string{packaging}
 	if packaging != "jar" {
 		fileTypes = append(fileTypes, "jar")
@@ -434,7 +449,7 @@ func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, po
 				temp = strings.TrimSuffix(temp, suffix)
 				classifier = temp
 			}
-			err = addArtifact(utils, uploader, filename, classifier, fileType)
+			err := addArtifact(utils, uploader, filename, classifier, fileType)
 			if err != nil {
 				return err
 			}

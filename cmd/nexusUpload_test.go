@@ -8,6 +8,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 )
@@ -66,6 +67,16 @@ func (m *mockUtilsBundle) fileRemove(path string) {
 	if contents != nil {
 		m.removedFiles[path] = contents
 	}
+}
+
+func (m *mockUtilsBundle) dirExists(path string) (bool, error) {
+	for file := range m.files {
+		dir := filepath.Dir(file)
+		if dir == path {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
@@ -519,22 +530,27 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.build.finalName", "final-artifact")
 		utils.setProperty("integration-tests/pom.xml", "project.version", "1.0")
 		utils.setProperty("integration-tests/pom.xml", "project.groupId", "com.mycompany.app")
-		utils.setProperty("integration-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("integration-tests/pom.xml", "project.artifactId", "my-app-app-integration-tests")
 		utils.setProperty("integration-tests/pom.xml", "project.packaging", "jar")
 		utils.setProperty("integration-tests/pom.xml", "project.build.finalName", "final-artifact")
 		utils.setProperty("unit-tests/pom.xml", "project.version", "1.0")
 		utils.setProperty("unit-tests/pom.xml", "project.groupId", "com.mycompany.app")
-		utils.setProperty("unit-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("unit-tests/pom.xml", "project.artifactId", "my-app-app-unit-tests")
 		utils.setProperty("unit-tests/pom.xml", "project.packaging", "jar")
 		utils.setProperty("unit-tests/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("performance-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("performance-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("performance-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("performance-tests/pom.xml", "project.packaging", "")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
 		utils.files["application/target/final-artifact.war"] = []byte("contentsOfJar")
 		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
 		utils.files["integration-tests/pom.xml"] = testPomXml
-		utils.files["integration-tests/target/final-artifact.jar"] = []byte("contentsOfClassesJar")
+		utils.files["integration-tests/target/final-artifact-integration-tests.jar"] = []byte("contentsOfJar")
 		utils.files["unit-tests/pom.xml"] = testPomXml
-		utils.files["unit-tests/target/final-artifact.jar"] = []byte("contentsOfClassesJar")
+		utils.files["unit-tests/target/final-artifact-unit-tests.jar"] = []byte("contentsOfJar")
+		utils.files["performance-tests/pom.xml"] = testPomXml
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -585,26 +601,6 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.execRunner.Calls[1])
 		}
-	})
-	t.Run("Test uploading Maven project fails without packaging", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, true)
-		utils.setProperty("pom.xml", "project.version", "1.0")
-		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
-		utils.setProperty("pom.xml", "project.artifactId", "my-app")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
-		uploader := mockUploader{}
-		options := createOptions()
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "property 'project.packaging' not found in 'pom.xml'")
-
-		artifacts := uploader.GetArtifacts()
-		if assert.Equal(t, 1, len(artifacts)) {
-			assert.Equal(t, "pom.xml", artifacts[0].File)
-			assert.Equal(t, "pom", artifacts[0].Type)
-		}
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Write credentials settings", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
