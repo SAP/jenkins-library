@@ -24,6 +24,9 @@ spec:
         - STEPS
         mandatory: false
         default: nexus3
+        possibleValues:
+          - nexus2
+          - nexus3
         aliases:
           - name: nexus/version
       - name: url
@@ -82,12 +85,12 @@ spec:
           - name: maven/m2Path
       - name: user
         type: string
-        description: User
+        description: Username for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
       - name: password
         type: string
-        description: Password
+        description: Password for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
   containers:
