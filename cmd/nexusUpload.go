@@ -369,10 +369,6 @@ func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexus
 func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions,
 	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
-	exists, _ := utils.fileExists(pomFile)
-	if !exists {
-		return errPomNotFound
-	}
 	groupID, _ := utils.evaluate(pomFile, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
