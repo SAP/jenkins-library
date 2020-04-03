@@ -14,16 +14,18 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
-	err := runMavenBuild(&config, telemetryData, &c)
+	utils := piperutils.Files{}
+
+	err := runMavenBuild(&config, telemetryData, &c, &utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command execRunner, utils piperutils.FileUtils) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
-	exists, _ := piperutils.FileExists("integration-tests/pom.xml")
+	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
 		flags = append(flags, "-pl", "!integration-tests")
 	}
