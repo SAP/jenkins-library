@@ -179,7 +179,9 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
-		worktree := gitWorktreeMock{}
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
 
 		conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
 
@@ -201,6 +203,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.True(t, repo.pushCalled)
 
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
 
 		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven"}, telemetryData)
 	})
@@ -241,13 +244,18 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
-		worktree := gitWorktreeMock{}
-		repo := gitRepositoryMock{}
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+		}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 
 		assert.NoError(t, err)
 		assert.Equal(t, "1.2.3", cpe.artifactVersion)
+		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
 	})
 
 	t.Run("error - failed to retrive version", func(t *testing.T) {

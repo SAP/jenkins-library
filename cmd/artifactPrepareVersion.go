@@ -149,7 +149,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	log.Entry().Infof("New version: '%v'", newVersion)
 
-	//ToDo: write gitCommitId to commonPipelineEnvironment
+	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 
 	return nil

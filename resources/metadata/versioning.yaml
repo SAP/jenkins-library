@@ -147,3 +147,4 @@ spec:
         type: piperEnvironment
         params:
           - name: artifactVersion
+          - name: git/commitId
