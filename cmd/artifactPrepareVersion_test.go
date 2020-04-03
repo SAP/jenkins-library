@@ -273,7 +273,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		repo := gitRepositoryMock{revisionError: "revision error"}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, nil)
-		assert.Equal(t, "failed to retrieve git commit ID: revision error", fmt.Sprint(err))
+		assert.EqualError(t, err, "failed to retrieve git commit ID: revision error")
 	})
 
 	t.Run("error - versioning template", func(t *testing.T) {
