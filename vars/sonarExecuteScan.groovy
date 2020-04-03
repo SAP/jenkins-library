@@ -33,10 +33,10 @@ void call(Map parameters = [:]) {
             String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
             String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${defaultConfigArgs}${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Config: ${config}"
             // get step configuration to access `instance` & `customTlsCertificateLinks`
-            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${defaultConfigArgs}${customConfigArg}"))
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "StepConfig: ${stepConfig}"
 
             // determine credentials to load
@@ -64,7 +64,7 @@ void call(Map parameters = [:]) {
                 if(!fileExists('.git')) utils.unstash('git')
                 withSonarQubeEnv(stepConfig.instance) {
                     withCredentials(credentials) {
-                        sh "./piper ${STEP_NAME}${defaultConfigArgs}${customConfigArg}"
+                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                     }
                 }
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
