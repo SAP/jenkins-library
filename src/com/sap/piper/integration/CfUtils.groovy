@@ -6,10 +6,10 @@ def getXsuaaCredentials(String apiEndpoint, String org, String space, String cre
 }
 
 def getAppEnvironment(String apiEndpoint, String org, String space, String credentialsId, String appName, boolean verbose){
-    def auth_endpoint = getAuthEndPoint(apiEndpoint, verbose)
-    def bearerToken = getBearerToken(auth_endpoint, credentialsId, verbose)
-    def app_url = getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
-    def env = httpRequest url: "${app_url}/env", quiet: !verbose,
+    def authEndpoint = getAuthEndPoint(apiEndpoint, verbose)
+    def bearerToken = getBearerToken(authEndpoint, credentialsId, verbose)
+    def appUrl = getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
+    def env = httpRequest url: "${appUrl}/env", quiet: !verbose,
                     customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
     def responseJson = readJSON text:"${env.content}"
     return responseJson
@@ -33,9 +33,9 @@ def getBearerToken(String authorizationEndpoint, String credentialsId, boolean v
 }
 
 def getAppRefUrl(String apiEndpoint, String org, String space, String bearerToken, String appName, boolean verbose){
-    def org_guid = getOrgGuid(apiEndpoint, org, bearerToken, verbose)
-    def space_guid = getSpaceGuid(apiEndpoint, org_guid, space, bearerToken, verbose)
-    def appInfo = httpRequest  url:"${apiEndpoint}/v3/apps?names=${appName},${appName}_blue,${appName}_green,space_guids=${space_guid}",  quiet: !verbose,
+    def orgGuid = getOrgGuid(apiEndpoint, org, bearerToken, verbose)
+    def spaceGuid = getSpaceGuid(apiEndpoint, orgGuid, space, bearerToken, verbose)
+    def appInfo = httpRequest  url:"${apiEndpoint}/v3/apps?names=${appName},${appName}_blue,${appName}_green,space_guids=${spaceGuid}",  quiet: !verbose,
                         customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
     def responseJson = readJSON text:"${appInfo.content}"
     return responseJson.resources[0].links.self.href.trim()
