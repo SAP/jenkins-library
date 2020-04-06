@@ -17,7 +17,7 @@ type YAMLfile struct {
 	WriteFile func(string, []byte, os.FileMode) error
 }
 
-func (j *YAMLfile) init() {
+func (y *YAMLfile) init() {
 	if j.ReadFile == nil {
 		j.ReadFile = ioutil.ReadFile
 	}
@@ -28,7 +28,7 @@ func (j *YAMLfile) init() {
 }
 
 // GetVersion returns the current version of the artifact with a JSON build descriptor
-func (j *YAMLfile) GetVersion(versionField string) (string, error) {
+func (y *YAMLfile) GetVersion(versionField string) (string, error) {
 	j.init()
 
 	content, err := j.ReadFile(j.Path)
@@ -45,7 +45,7 @@ func (j *YAMLfile) GetVersion(versionField string) (string, error) {
 }
 
 // SetVersion updates the version of the artifact with a JSON build descriptor
-func (j *YAMLfile) SetVersion(versionField, version string) error {
+func (y *YAMLfile) SetVersion(versionField, version string) error {
 	j.init()
 
 	if j.Content == nil {
