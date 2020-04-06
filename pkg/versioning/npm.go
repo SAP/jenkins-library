@@ -1,15 +1,11 @@
 package versioning
 
 import (
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
-
-	"github.com/pkg/errors"
 )
 
-// Npm ...
+// Npm defines an npm artifact used for versioning
 type Npm struct {
 	PackageJSONPath    string
 	PackageJSONContent map[string]interface{}
@@ -17,7 +13,6 @@ type Npm struct {
 	WriteFile          func(string, []byte, os.FileMode) error
 }
 
-// InitBuildDescriptor ...
 func (n *Npm) init() {
 	if len(n.PackageJSONPath) == 0 {
 		n.PackageJSONPath = "package.json"
@@ -31,48 +26,25 @@ func (n *Npm) init() {
 	}
 }
 
-// VersioningScheme ...
+// VersioningScheme returns the relevant versioning scheme
 func (n *Npm) VersioningScheme() string {
 	return "semver2"
 }
 
-// GetVersion ...
+// GetVersion returns the current version of the artifact
 func (n *Npm) GetVersion() (string, error) {
 	n.init()
 
-	content, err := n.ReadFile(n.PackageJSONPath)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", n.PackageJSONPath)
-	}
+	packageJSON := JSONfile{Path: n.PackageJSONPath, ReadFile: n.ReadFile, WriteFile: n.WriteFile}
 
-	err = json.Unmarshal(content, &n.PackageJSONContent)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read package.json content")
-	}
-
-	return fmt.Sprint(n.PackageJSONContent["version"]), nil
+	return packageJSON.GetVersion("version")
 }
 
-// SetVersion ...
+// SetVersion updates the version of the artifact
 func (n *Npm) SetVersion(version string) error {
 	n.init()
 
-	if n.PackageJSONContent == nil {
-		_, err := n.GetVersion()
-		if err != nil {
-			return err
-		}
-	}
-	n.PackageJSONContent["version"] = version
+	packageJSON := JSONfile{Path: n.PackageJSONPath, ReadFile: n.ReadFile, WriteFile: n.WriteFile}
 
-	content, err := json.MarshalIndent(n.PackageJSONContent, "", "  ")
-	if err != nil {
-		return errors.Wrap(err, "failed to create json content for package.json")
-	}
-	err = n.WriteFile(n.PackageJSONPath, content, 0700)
-	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", n.PackageJSONPath)
-	}
-
-	return nil
+	return packageJSON.SetVersion("version", version)
 }

@@ -21,7 +21,7 @@ type mavenRunner interface {
 	Evaluate(string, string, mavenExecRunner) (string, error)
 }
 
-// Maven ...
+// Maven defines a maven artifact used for versioning
 type Maven struct {
 	PomPath             string
 	Runner              mavenRunner
@@ -31,7 +31,6 @@ type Maven struct {
 	M2Path              string
 }
 
-// InitBuildDescriptor ...
 func (m *Maven) init() {
 	if len(m.PomPath) == 0 {
 		m.PomPath = "pom.xml"
@@ -42,12 +41,12 @@ func (m *Maven) init() {
 	}
 }
 
-// VersioningScheme ...
+// VersioningScheme returns the relevant versioning scheme
 func (m *Maven) VersioningScheme() string {
 	return "maven"
 }
 
-// GetVersion ...
+// GetVersion returns the current version of the artifact
 func (m *Maven) GetVersion() (string, error) {
 	m.init()
 
@@ -59,7 +58,7 @@ func (m *Maven) GetVersion() (string, error) {
 	return version, nil
 }
 
-// SetVersion ...
+// SetVersion updates the version of the artifact
 func (m *Maven) SetVersion(version string) error {
 	m.init()
 

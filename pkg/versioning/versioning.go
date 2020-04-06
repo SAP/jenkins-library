@@ -33,6 +33,14 @@ func (m *mvnRunner) Evaluate(pomFile, expression string, execRunner mavenExecRun
 func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execRunner mavenExecRunner) (Artifact, error) {
 	var artifact Artifact
 	switch buildTool {
+	case "dub":
+		artifact = &Dub{
+			DubJSONPath: buildDescriptorFilePath,
+		}
+	case "golang", "version":
+		artifact = &Versionfile{
+			Path: buildDescriptorFilePath,
+		}
 	case "maven":
 		artifact = &Maven{
 			Runner:              &mvnRunner{},
@@ -42,9 +50,21 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			GlobalSettingsFile:  opts.GlobalSettingsFile,
 			M2Path:              opts.M2Path,
 		}
+	case "mta":
+		artifact = &Mta{
+			MtaYAMLPath: buildDescriptorFilePath,
+		}
 	case "npm":
 		artifact = &Npm{
 			PackageJSONPath: buildDescriptorFilePath,
+		}
+	case "pip":
+		artifact = &Pip{
+			VersionPath: buildDescriptorFilePath,
+		}
+	case "sbt":
+		artifact = &Sbt{
+			DescriptorPath: buildDescriptorFilePath,
 		}
 	default:
 		return artifact, fmt.Errorf("build tool '%v' not supported", buildTool)

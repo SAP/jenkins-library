@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInit(t *testing.T) {
+func TestNpmInit(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		npm := Npm{}
 		npm.init()
@@ -22,12 +22,12 @@ func TestInit(t *testing.T) {
 	})
 }
 
-func TestVersioningScheme(t *testing.T) {
+func TestNpmVersioningScheme(t *testing.T) {
 	npm := Npm{}
 	assert.Equal(t, "semver2", npm.VersioningScheme())
 }
 
-func TestGetVersion(t *testing.T) {
+func TestNpmGetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		npm := Npm{
 			PackageJSONPath: "my/package.json",
@@ -48,7 +48,7 @@ func TestGetVersion(t *testing.T) {
 	})
 }
 
-func TestSetVersion(t *testing.T) {
+func TestNpmSetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		var content []byte
 		npm := Npm{
