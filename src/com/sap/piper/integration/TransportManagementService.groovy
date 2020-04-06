@@ -51,15 +51,12 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-
-        if (config.verbose) {
-            echo("Received response with status ${response.status} from authentication request.")
+        if (response.status != 200) {
+            prepareAndThrowException(response, "OAuth Token retrieval failed (HTTP status code '${response.status}').")
         }
 
         echo("OAuth Token retrieved successfully.")
-
         return jsonUtils.jsonStringToGroovyObject(response.content).access_token
-
     }
 
 
@@ -147,15 +144,16 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-
-        if (config.verbose) {
-            echo("Received response '${response.content}' with status ${response.status}.")
+        if (response.status != 200) {
+            prepareAndThrowException(response, "Node upload failed (HTTP status code '${response.status}').")
         }
 
-        echo("Node upload successful.")
-
+        def successMessage = "Node upload successful."
+        if (config.verbose) {
+            successMessage += " Response content '${response.content}'."
+        }
+        echo(successMessage)
         return jsonUtils.jsonStringToGroovyObject(response.content)
-
     }
 
     private sendApiRequest(parameters) {
@@ -164,10 +162,17 @@ class TransportManagementService implements Serializable {
             quiet                 : !config.verbose,
             consoleLogResponseBody: false, // must be false, otherwise this reveals the api-token in the auth-request
             ignoreSslErrors       : true,
-            validResponseCodes    : "100:399"
+            validResponseCodes    : "100:599"
         ]
 
         return script.httpRequest(defaultParameters + parameters)
+    }
+
+    private prepareAndThrowException(response, errorMessage) {
+        if (response.status >= 400) {
+            errorMessage += " Response content '${response.content}'."
+        }
+        script.error "[${getClass().getSimpleName()}] ${errorMessage}"
     }
 
     private echo(message) {
