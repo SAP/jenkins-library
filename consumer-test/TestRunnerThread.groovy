@@ -106,7 +106,7 @@ class TestRunnerThread extends Thread {
 
         if (returnCode > 0) {
             throw new ReturnCodeNotZeroException("Test case: [${uniqueName}]; " +
-                "shell command '${command} exited with return code '${returnCode}")
+                "shell command '${command} exited with return code '${returnCode}, error message: ${stdErr}")
         }
     }
 
