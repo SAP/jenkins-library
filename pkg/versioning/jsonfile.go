@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// JSONfile defines an npm artifact used for versioning
+// JSONfile defines an artifact using a json file for versioning
 type JSONfile struct {
 	Path      string
 	Content   map[string]interface{}

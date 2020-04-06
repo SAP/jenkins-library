@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// YAMLfile defines an npm artifact used for versioning
+// YAMLfile defines an artifact using a yaml file for versioning
 type YAMLfile struct {
 	Path      string
 	Content   map[string]interface{}
@@ -28,7 +28,7 @@ func (y *YAMLfile) init() {
 	}
 }
 
-// GetVersion returns the current version of the artifact with a JSON build descriptor
+// GetVersion returns the current version of the artifact with a YAML build descriptor
 func (y *YAMLfile) GetVersion(versionField string) (string, error) {
 	y.init()
 
@@ -45,7 +45,7 @@ func (y *YAMLfile) GetVersion(versionField string) (string, error) {
 	return strings.TrimSpace(fmt.Sprint(y.Content[versionField])), nil
 }
 
-// SetVersion updates the version of the artifact with a JSON build descriptor
+// SetVersion updates the version of the artifact with a YAML build descriptor
 func (y *YAMLfile) SetVersion(versionField, version string) error {
 	y.init()
 
