@@ -31,22 +31,25 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__successfully() {
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
-            return [content: '{ "access_token": "myOAuthToken" }', status: 200]
-        })
-
         def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
+        def expectedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.Gfx6VO9tcxwk6xqx9yYzSfebfeakZp5JYIgP_edcw_A'
+        def responseContent = '{ "access_token": "' + expectedToken + '" }'
 
-        def tms = new TransportManagementService(nullScript, [:])
+        Map requestParams
+        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+            requestParams = m
+            return [content: responseContent, status: 200]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: false])
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
-        assertThat(token, is('myOAuthToken'))
+        assertThat(loggingRule.log, not(containsString(expectedToken)))
+        assertThat(token, is(expectedToken))
         assertThat(requestParams, hasEntry('url', "${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token"))
         assertThat(requestParams, hasEntry('requestBody', "grant_type=password&username=${clientId}&password=${clientSecret}".toString()))
         assertThat(requestParams.customHeaders[1].value, is("Basic ${"${clientId}:${clientSecret}".bytes.encodeBase64()}"))
@@ -54,20 +57,24 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__inVerboseMode__yieldsMoreEchos() {
-        helper.registerAllowedMethod('httpRequest', [Map.class], {
-            return [content: '{ "access_token": "myOAuthToken" }', status: 200]
-        })
-
         def uaaUrl = 'http://dummy.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
+        def expectedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.Gfx6VO9tcxwk6xqx9yYzSfebfeakZp5JYIgP_edcw_A'
+        def responseContent = '{ "access_token": "' + expectedToken + '" }'
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: 200]
+        })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
+
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
-        assertThat(token, is('myOAuthToken'))
+        assertThat(loggingRule.log, not(containsString(expectedToken)))
+        assertThat(token, is(expectedToken))
     }
 
     @Test
