@@ -73,20 +73,46 @@ class TransportManagementService implements Serializable {
 
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
-        script.sh """#!/bin/sh -e
-                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
-            """
+        def responseFileUpload = 'responseFileUpload.txt'
 
-        def responseContent = script.readFile("responseFileUpload.txt")
+        def responseContent
 
-        if (config.verbose) {
-            echo("${responseContent}")
+        def responseCode = script.sh returnStdout: true,
+                                      script:"""|#!/bin/sh -e
+                                                | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                                |      --write-out '%{response_code}' \\
+                                                |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -F 'file=@${file}' \\
+                                                |      -F 'namedUser=${namedUser}' \\
+                                                |      --output ${responseFileUpload} \\
+                                                |      '${url}/v2/files/upload'""".stripMargin()
+
+
+        def responseBody = 'n/a'
+
+        boolean gotResponse = script.fileExists(responseFileUpload)
+
+        if(gotResponse) {
+            responseBody = script.readFile(responseFileUpload)
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }
+        }
+
+        def HTTP_CREATED = '201'
+
+        if (responseCode != HTTP_CREATED) {
+            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_CREATED} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
         }
 
         echo("File upload successful.")
 
-        return jsonUtils.jsonStringToGroovyObject(responseContent)
-
+        if (! gotResponse) {
+            script.error "Cannot provide upload file response."
+        }
+        return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
 
 
