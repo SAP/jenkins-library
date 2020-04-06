@@ -36,9 +36,9 @@ spec:
         type: string
         description: "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: filePath
         type: string
         description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)"
@@ -88,6 +88,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: commitVersion
+        type: bool
+        description: "Controls if the changed version is committed and pushed to the git repository. If this is enabled (which is the default), you need to provide git coordinates for pushing."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: password
         type: string
         description: Password/token for git authentication

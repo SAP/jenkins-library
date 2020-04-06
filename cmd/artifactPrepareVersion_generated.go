@@ -24,6 +24,7 @@ type artifactPrepareVersionOptions struct {
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID     bool   `json:"includeCommitId,omitempty"`
 	M2Path              string `json:"m2Path,omitempty"`
+	CommitVersion       bool   `json:"commitVersion,omitempty"`
 	Password            string `json:"password,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	TagPrefix           string `json:"tagPrefix,omitempty"`
@@ -121,6 +122,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (versioningType 'cloud') should include the commit id hash .")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.CommitVersion, "commitVersion", false, "Controls if the changed version is committed and pushed to the git repository. If this is enabled (which is the default), you need to provide git coordinates for pushing.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run.")
@@ -204,6 +206,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "commitVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "password",

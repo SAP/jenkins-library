@@ -169,6 +169,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			TagPrefix:       "v",
 			Username:        "testUser",
 			VersioningType:  "cloud",
+			CommitVersion:   true,
 		}
 		telemetryData := telemetry.CustomData{}
 
