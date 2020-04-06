@@ -20,7 +20,7 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
 TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
-TestRunnerThread.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+TestRunnerThread.repositoryUnderTest = System.getenv('REPOSITORY_UNDER_TEST') :? System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 def testCaseThreads
 def cli = new CliBuilder(
@@ -57,7 +57,7 @@ if (!RUNNING_LOCALLY) {
     The commit which we need for notifying about a build status is in this case simply
     TRAVIS_COMMIT itself.
     */
-    COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
+    COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT') ?: LIBRARY_VERSION_UNDER_TEST
 
     if (changeDoesNotNeedConsumerTesting()) {
         println 'No consumer tests necessary.'
@@ -171,7 +171,7 @@ def notifyGithub(state, description) {
 
     def postBody = [
         state      : state,
-        target_url : System.getenv('TRAVIS_BUILD_WEB_URL'),
+        target_url : System.getenv('TRAVIS_BUILD_WEB_URL') ?: System.getenv('BUILD_WEB_URL'),
         description: description,
         context    : "integration-tests"
     ]
@@ -191,7 +191,8 @@ def notifyGithub(state, description) {
 }
 
 def changeDoesNotNeedConsumerTesting() {
-    if (System.getenv('TRAVIS_BRANCH') == 'master') {
+    def branchName = System.getenv('TRAVIS_BRANCH') ?: System.getenv('BRANCH_NAME')
+    if (branchName == 'master') {
         return false
     }
 
