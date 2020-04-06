@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
-import com.sap.piper.integration.CfUtils
+import com.sap.piper.integration.CloudFoundry
 
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
@@ -166,7 +166,7 @@ void call(Map parameters = [:]) {
                     ]).toString()
                 def command_secrets
                 if(config.cfAppsWithSecrets){
-                    CfUtils cfUtils = new CfUtils();
+                    CloudFoundry cfUtils = new CloudFoundry();
                     config.cfAppsWithSecrets.each { appName ->
                         def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
                                                     config.cloudFoundry.org,
@@ -185,7 +185,6 @@ void call(Map parameters = [:]) {
                     sh """
                         set +x
                         PATH=\$PATH:~/.npm-global/bin newman ${command} ${command_secrets}
-                        set -x
                     """
                 }
                 else{
