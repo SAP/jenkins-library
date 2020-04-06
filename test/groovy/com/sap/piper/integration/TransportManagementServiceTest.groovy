@@ -15,6 +15,8 @@ class TransportManagementServiceTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt'])
 
     @Rule
     public RuleChain rules = Rules
@@ -23,7 +25,8 @@ class TransportManagementServiceTest extends BasePiperTest {
         .around(new JenkinsReadJsonRule(this))
         .around(shellRule)
         .around(loggingRule)
-        .around(new JenkinsReadFileRule(this, 'test/resources/TransportManagementService'))
+        .around(readFileRule)
+        .around(fileExistsRule)
         .around(thrown)
 
     @Test
@@ -116,33 +119,70 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '201')
+
         def tms = new TransportManagementService(nullScript, [:])
         def responseDetails = tms.uploadFile(url, token, file, namedUser)
 
-        def oAuthShellCall = shellRule.shell[0]
+        // replace needed since the curl command is spread over several lines.
+        def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-        assertThat(oAuthShellCall, endsWith("curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --fail '${url}/v2/files/upload'"))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' --output responseFileUpload.txt '${url}/v2/files/upload'"))
         assertThat(responseDetails, hasEntry("fileId", 1234))
     }
 
-    @Ignore
-    void uploadFile__withHttpErrorResponse__throwsError() {
+    @Test
+    void uploadFile__verboseMode__withHttpErrorResponse__throwsError() {
 
         def url = 'http://dummy.com/oauth'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", {throw new AbortException()})
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
+
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload (WE ARE IN VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
+        thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
 
-        def tms = new TransportManagementService(nullScript, [:])
-        tms.uploadFile(url, token, file, namedUser)
+        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.com/oauth\', File: \'myFile.mtar\'')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload (WE ARE IN VERBOSE MODE)')
 
+        // The log entries which are present in non verbose mode must be present in verbose mode also, of course
+        loggingRule.expect('[TransportManagementService] File upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (400). 201 expected. Response body: Something went wrong during file upload')
+
+        new TransportManagementService(nullScript, [verbose:true])
+            .uploadFile(url, token, file, namedUser)
+    }
+
+    @Test
+    void uploadFile__NonVerboseMode__withHttpErrorResponse__throwsError() {
+
+        def url = 'http://dummy.com/oauth'
+        def token = 'myWrongToken'
+        def file = 'myFile.mtar'
+        def namedUser = 'myUser'
+
+        // 418 (tea-pot)? Other than 400 which is used in verbose mode in order to be sure that we don't mix up
+        // with any details from the other test for the verbose mode. The log message below (Unexpected response code ...)
+        // reflects that 418 instead of 400.
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
+
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload. WE ARE IN NON VERBOSE MODE.']
+
+        thrown.expect(AbortException.class)
+        thrown.expectMessage('Unexpected response code received from file upload (418). 201 expected')
+
+        loggingRule.expect('[TransportManagementService] File upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (418). 201 expected. Response body: Something went wrong during file upload. WE ARE IN NON VERBOSE MODE.')
+
+        new TransportManagementService(nullScript, [verbose:false])
+            .uploadFile(url, token, file, namedUser)
     }
 
     @Test
@@ -153,7 +193,9 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '201')
+        fileExistsRule.existingFiles.add('responseFileUpload.txt')
+        readFileRule.files.put('responseFileUpload.txt', '{"fileId": 1234}')
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFile(url, token, file, namedUser)
