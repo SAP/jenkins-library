@@ -8,7 +8,7 @@ jobs:
 
   consumer-tests:
     name: Consumer Tests
-    
+
     runs-on: ubuntu-latest
     if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER')
 
@@ -29,7 +29,7 @@ jobs:
           ref: ${{ steps.branchname.outputs.branchname }}
       - uses: actions/setup-java@v1
         with:
-          java-version: '11'          
+          java-version: '11'
       - name: install groovy
         run: sudo apt-get update && sudo apt-get install groovy -y
       - name: setup git
@@ -46,10 +46,10 @@ jobs:
           NEO_DEPLOY_USERNAME: ${{ secrets.NEO_DEPLOY_USERNAME }}
           NEO_DEPLOY_PASSWORD: ${{ secrets.NEO_DEPLOY_PASSWORD }}
           CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
-        
+
   go-integration-tests:
     name: Go Integration Tests
-    
+
     runs-on: ubuntu-latest
     if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER')
 
