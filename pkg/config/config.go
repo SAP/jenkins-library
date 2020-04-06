@@ -47,30 +47,42 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 }
 
 // ApplyAliasConfig adds configuration values available on aliases to primary configuration parameters
-func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilters, stageName, stepName string, stepAliases []Alias) {
+func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSecrets, filters StepFilters, stageName, stepName string, stepAliases []Alias) {
 	// copy configuration from step alias to correct step
 	if len(stepAliases) > 0 {
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p)
+		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p)
+			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p)
+			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+		}
+	}
+	for _, s := range secrets {
+		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		if c.Stages[stageName] != nil {
+			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+		}
+		if c.Steps[stepName] != nil {
+			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
 
-func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p StepParameters) map[string]interface{} {
-	if configMap != nil && configMap[p.Name] == nil && sliceContains(filter, p.Name) {
-		for _, a := range p.Aliases {
+func setParamValueFromAlias(configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
+		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
-				configMap[p.Name] = aliasVal
+				configMap[name] = aliasVal
+				if a.Deprecated {
+					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+				}
 			}
-			if configMap[p.Name] != nil {
+			if configMap[name] != nil {
 				return configMap
 			}
 		}
@@ -108,7 +120,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -118,7 +130,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 
-	c.ApplyAliasConfig(parameters, filters, stageName, stepName, stepAliases)
+	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
 	// consider custom defaults defined in config.yml
 	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
@@ -143,7 +155,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
-		def.ApplyAliasConfig(parameters, filters, stageName, stepName, stepAliases)
+		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}
@@ -162,14 +174,17 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
-		json.Unmarshal([]byte(paramJSON), &params)
+		err := json.Unmarshal([]byte(paramJSON), &params)
+		if err != nil {
+			log.Entry().Warnf("failed to parse parameters from environment: %v", err)
+		} else {
+			//apply aliases
+			for _, p := range parameters {
+				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
+			}
 
-		//apply aliases
-		for _, p := range parameters {
-			params = setParamValueFromAlias(params, filters.Parameters, p)
+			stepConfig.mixIn(params, filters.Parameters)
 		}
-
-		stepConfig.mixIn(params, filters.Parameters)
 	}
 
 	// merge command line flags
@@ -201,7 +216,10 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 
 	stepConfigMap := map[string]interface{}{}
 
-	json.Unmarshal([]byte(stepConfigJSON), &stepConfigMap)
+	err := json.Unmarshal([]byte(stepConfigJSON), &stepConfigMap)
+	if err != nil {
+		log.Entry().Warnf("invalid stepConfig JSON: %v", err)
+	}
 
 	stepConfig.mixIn(stepConfigMap, filters.All)
 
@@ -232,7 +250,10 @@ func OpenPiperFile(name string) (io.ReadCloser, error) {
 	// support http(s) urls next to file path - url cannot be protected
 	client := http.Client{}
 	response, err := client.SendRequest("GET", name, nil, nil, nil)
-	return response.Body, err
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
 }
 
 func envValues(filter []string) map[string]interface{} {
