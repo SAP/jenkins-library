@@ -1,15 +1,16 @@
-name: trigger integration tests
+name: Trigger Integration Tests
 
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  consumer-tests:
-    name: consumer tests
 
+  consumer-tests:
+    name: Consumer Tests
+    
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'collaborator' || github.event.comment.author_association == 'owner')
+    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER')
 
     steps:
       - name: get pull request url
@@ -28,29 +29,29 @@ jobs:
           ref: ${{ steps.branchname.outputs.branchname }}
       - uses: actions/setup-java@v1
         with:
-          java-version: "11"
+          java-version: '11'          
       - name: install groovy
         run: sudo apt-get update && sudo apt-get install groovy -y
       - name: setup git
         run: git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
       - name: run consumer tests
-        run: cd consumer-test && groovy consumertestcontroller.groovy
+        run: cd consumer-test && groovy consumerTestController.groovy
         env:
-          repository_under_test: ${{ steps.repository.outputs.repository }}
-          branch_name: ${{ steps.branchname.outputs.branchname }}
-          build_web_url: https://github.com/sap/jenkins-library/actions/runs/${{ github.run_id }}
-          integration_test_voting_token: ${{ secrets.integration_test_voting_token }}
-          cx_infra_it_cf_username: ${{ secrets.cx_infra_it_cf_username }}
-          cx_infra_it_cf_password: ${{ secrets.cx_infra_it_cf_password }}
-          neo_deploy_username: ${{ secrets.neo_deploy_username }}
-          neo_deploy_password: ${{ secrets.neo_deploy_password }}
-          cx_infra_it_tms_upload: ${{ secrets.cx_infra_it_tms_upload }}
-
+          REPOSITORY_UNDER_TEST: ${{ steps.repository.outputs.repository }}
+          BRANCH_NAME: ${{ steps.branchname.outputs.branchname }}
+          BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
+          INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+          CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
+          CX_INFRA_IT_CF_PASSWORD: ${{ secrets.CX_INFRA_IT_CF_PASSWORD }}
+          NEO_DEPLOY_USERNAME: ${{ secrets.NEO_DEPLOY_USERNAME }}
+          NEO_DEPLOY_PASSWORD: ${{ secrets.NEO_DEPLOY_PASSWORD }}
+          CX_INFRA_IT_TMS_UPLOAD: ${{ secrets.CX_INFRA_IT_TMS_UPLOAD }}
+        
   go-integration-tests:
-    name: go integration tests
-
+    name: Go Integration Tests
+    
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'collaborator' || github.event.comment.author_association == 'owner')
+    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER')
 
     steps:
       - name: get pull request url
@@ -68,27 +69,27 @@ jobs:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branchname.outputs.branchname }}
       - name: get commit id
-        id: commitid
-        run: echo "::set-output name=commitid::$(git log --format=%h -n 1)"
+        id: commitId
+        run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
       - name: update status
         run: |
-          curl --location --request post 'https://api.github.com/repos/sap/jenkins-library/statuses/${{ steps.commitid.outputs.commitid }}' -h 'content-type: application/json' --data '{"state": "pending", "context": "go / integration-tests", "target_url": "https://github.com/sap/jenkins-library/actions/runs/${{ github.run_id }}"}' -h 'authorization: token ${{secrets.integration_test_voting_token}}'
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.13.x"
+          go-version: '1.13.x'
       - name: build
         env:
-          cgo_enabled: 0
-        # with `-tags release` we ensure that shared test utilities won't end up in the binary
+          CGO_ENABLED: 0
+      # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: go build -o piper -tags release
       - name: test
         env:
-          piper_integration_github_token: ${{secrets.piper_integration_github_token}}
+          PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
         run: go test -tags=integration ./integration/...
       - name: update status
         run: |
-          curl --location --request post 'https://api.github.com/repos/sap/jenkins-library/statuses/${{ steps.commitid.outputs.commitid }}' -h 'content-type: application/json' --data '{"state": "success", "context": "go / integration-tests", "target_url": "https://github.com/sap/jenkins-library/actions/runs/${{ github.run_id }}"}' -h 'authorization: token ${{secrets.integration_test_voting_token}}'
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "success", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - name: update status
         if: failure()
         run: |
-          curl --location --request post 'https://api.github.com/repos/sap/jenkins-library/statuses/${{ steps.commitid.outputs.commitid }}' -h 'content-type: application/json' --data '{"state": "failure", "context": "go / integration-tests", "target_url": "https://github.com/sap/jenkins-library/actions/runs/${{ github.run_id }}"}' -h 'authorization: token ${{secrets.integration_test_voting_token}}'
+          curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "failure", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
