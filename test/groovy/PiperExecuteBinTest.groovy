@@ -165,6 +165,37 @@ class PiperExecuteBinTest extends BasePiperTest {
     }
 
     @Test
+    void testPiperExecuteBinSSHCredentials() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"sshCredentialsId":"sshKey", "tokenCredentialsId":"credToken"}')
+
+        List sshKey = []
+        helper.registerAllowedMethod("sshagent", [List, Closure], {s, c ->
+            sshKey = s
+            c()
+        })
+
+        List stepCredentials = [
+            [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            [type: 'ssh', id: 'sshCredentialsId'],
+        ]
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            stepCredentials
+        )
+        // asserts
+        assertThat(credentials.size(), is(1))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
+        assertThat(sshKey, is(['sshKey']))
+    }
+
+    @Test
     void testPiperExecuteBinNoDockerNoCredentials() {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
 

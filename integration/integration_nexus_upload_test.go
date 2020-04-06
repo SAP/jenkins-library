@@ -69,6 +69,10 @@ func TestNexusUpload(t *testing.T) {
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
+	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app-parent/1.0/my-app-parent-1.0.pom")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-parent-1.0.pom: %s", resp.Status)
+
 	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.pom: %s", resp.Status)
@@ -76,6 +80,10 @@ func TestNexusUpload(t *testing.T) {
 	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.jar: %s", resp.Status)
+
+	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0-classes.jar")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0-classes.jar: %s", resp.Status)
 
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
 	assert.NoError(t, err, "Downloading artifact failed")
@@ -138,7 +146,11 @@ func TestNexus2Upload(t *testing.T) {
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
 
-	resp, err := http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
+	resp, err := http.Get(url + "content/repositories/releases/com/mycompany/app/my-app-parent/1.0/my-app-parent-1.0.pom")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-parent-1.0.pom: %s", resp.Status)
+
+	resp, err = http.Get(url + "content/repositories/releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.pom: %s", resp.Status)
 
