@@ -20,7 +20,7 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
 TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
-TestRunnerThread.repositoryUnderTest = System.getenv('REPOSITORY_UNDER_TEST') :? System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+TestRunnerThread.repositoryUnderTest = System.getenv('REPOSITORY_UNDER_TEST') ?: System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 def testCaseThreads
 def cli = new CliBuilder(
