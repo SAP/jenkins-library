@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -18,51 +19,51 @@ type YAMLfile struct {
 }
 
 func (y *YAMLfile) init() {
-	if j.ReadFile == nil {
-		j.ReadFile = ioutil.ReadFile
+	if y.ReadFile == nil {
+		y.ReadFile = ioutil.ReadFile
 	}
 
-	if j.WriteFile == nil {
-		j.WriteFile = ioutil.WriteFile
+	if y.WriteFile == nil {
+		y.WriteFile = ioutil.WriteFile
 	}
 }
 
 // GetVersion returns the current version of the artifact with a JSON build descriptor
 func (y *YAMLfile) GetVersion(versionField string) (string, error) {
-	j.init()
+	y.init()
 
-	content, err := j.ReadFile(j.Path)
+	content, err := y.ReadFile(y.Path)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", j.Path)
+		return "", errors.Wrapf(err, "failed to read file '%v'", y.Path)
 	}
 
-	err = yaml.Unmarshal(content, &j.Content)
+	err = yaml.Unmarshal(content, &y.Content)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read yaml content of file '%v'", j.Content)
+		return "", errors.Wrapf(err, "failed to read yaml content of file '%v'", y.Content)
 	}
 
-	return fmt.Sprint(j.Content[versionField]), nil
+	return strings.TrimSpace(fmt.Sprint(y.Content[versionField])), nil
 }
 
 // SetVersion updates the version of the artifact with a JSON build descriptor
 func (y *YAMLfile) SetVersion(versionField, version string) error {
-	j.init()
+	y.init()
 
-	if j.Content == nil {
-		_, err := j.GetVersion(versionField)
+	if y.Content == nil {
+		_, err := y.GetVersion(versionField)
 		if err != nil {
 			return err
 		}
 	}
-	j.Content[versionField] = version
+	y.Content[versionField] = version
 
-	content, err := yaml.Marshal(j.Content)
+	content, err := yaml.Marshal(y.Content)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create yaml content for '%v'", j.Path)
+		return errors.Wrapf(err, "failed to create yaml content for '%v'", y.Path)
 	}
-	err = j.WriteFile(j.Path, content, 0700)
+	err = y.WriteFile(y.Path, content, 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", j.Path)
+		return errors.Wrapf(err, "failed to write file '%v'", y.Path)
 	}
 
 	return nil
