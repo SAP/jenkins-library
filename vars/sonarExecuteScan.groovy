@@ -41,6 +41,7 @@ void call(Map parameters = [:]) {
 
             // determine credentials to load
             List credentials = []
+            List environment = []
             if (config.sonarTokenCredentialsId)
                 credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
             if(isPullRequest()){
@@ -51,6 +52,9 @@ void call(Map parameters = [:]) {
                     if (config.githubTokenCredentialsId)
                         credentials.add(string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_githubToken'))
                 }
+                environment.add("PIPER_changeId=${env.CHANGE_ID}")
+                environment.add("PIPER_changeBranch=${env.CHANGE_TARGET}")
+                environment.add("PIPER_changeTarget=${env.CHANGE_BRANCH}")
             }
             // load certificates into cacerts file
             loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
@@ -64,7 +68,9 @@ void call(Map parameters = [:]) {
                 if(!fileExists('.git')) utils.unstash('git')
                 withSonarQubeEnv(stepConfig.instance) {
                     withCredentials(credentials) {
-                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                        withEnv(environment){
+                            sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                        }
                     }
                 }
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
