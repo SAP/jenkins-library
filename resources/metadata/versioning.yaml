@@ -9,17 +9,34 @@ metadata:
     Prepares and potentially updates the artifact's version before building the artifact.
 
     The continuous delivery process requires that each build is done with a unique version number.
+    There are two common patterns found:
 
-    The version generated using this step will contain:
+    ### 1. Continuous Deployment pattern with automatic versioning
 
-    * Version (major.minor.patch) from descriptor file in master repository is preserved. Developers should be able to autonomously decide on increasing either part of this version number.
-    * Timestamp
-    * CommitId (by default the long version of the hash)
+    The team has full authority on `<major>.<minor>.<patch>` and can increase any part whenever required.
+    Nonetheless, the automatic versioning makes sure that every build will create a unique version by appending `<major>.<minor>.<patch>` with a buildversion (we use a timestamp) and optinally the commitId.
 
-    Optionally, but enabled by default, the new version is pushed as a new tag into the source code repository (e.g. GitHub).
-    If this option is chosen, git credentials and the repository URL needs to be provided.
-    Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the `commitVersion` parameter as described below.
-    If you require strict reproducibility of your builds, this should be used.
+    In order to represent this version also in the version control system the new unique version will be pushed with a dedicated tag (`<tagPrefix><major>.<minor>.<patch><unique extension>`).
+
+    Depending on the build tool used and thus the allowed versioning format the `<unique extension>` varies.
+
+    **Remarks:**
+
+    * There is no commit to master since this would create a perpetuum mobile and just trigger the next automatic build with automatic versioning, and so on ...
+    * Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
+
+    **This pattern is the default** behavior (`versioningType: cloud`) since this is suitable for for most cloud deliveries.
+
+    ### 2. Pure version `<major>.<minor>.<patch>`
+
+    This pattern is often used by teams that have cloud deliveries with no fully automated procedure, e.g. delivery after each takt.
+    Another typical use-case is development of a library with regular releases where the versioning pattern should be consumable and thus ideally complies to a `<major>.<minor>.<patch>` pattern.
+
+    The version is then either manually set by the team in the course of the development process or automatically pushed to master after a successful release.
+
+    Unlike for the _Continuous Deloyment_ pattern descibed above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
+
+    Configuration of this pattern is done via `versioningType: library`.
 spec:
   inputs:
     params:
@@ -32,30 +49,26 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      - name: commitUserName
+        aliases:
+          - name: gitUserName
+        type: string
+        description: "Defines the user name which is appears in version control for the versioning update (in case `versioningType: cloud`)."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: Project Piper
       - name: dockerVersionSource
         type: string
-        description: "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`"
+        description: "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`."
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
       - name: filePath
         type: string
-        description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)"
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: gitUserEMail
-        type: string
-        description: Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: gitUserName
-        type: string
-        description: Allows to overwrite the global git setting 'user.name' available on your Jenkins server.
+        description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`)."
         scope:
         - PARAMETERS
         - STAGES
@@ -72,7 +85,7 @@ spec:
           - PARAMETERS
       - name: includeCommitId
         type: bool
-        description: Defines if the automatically generated version (versioningType 'cloud') should include the commit id hash .
+        description: "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash."
         scope:
         - PARAMETERS
         - STAGES
@@ -90,7 +103,7 @@ spec:
           - PARAMETERS
       - name: password
         type: string
-        description: Password/token for git authentication
+        description: Password/token for git authentication.
         scope:
         - PARAMETERS
         - STAGES
@@ -107,7 +120,7 @@ spec:
           - PARAMETERS
       - name: tagPrefix
         type: string
-        description: Defines the prefix which is used for the git tag which is written during the versioning run.
+        description: "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`)."
         scope:
         - PARAMETERS
         - STAGES
@@ -130,7 +143,7 @@ spec:
         - STEPS
       - name: versioningType
         type: string
-        description: "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag (not available yet): automatic based on latest tag)"
+        description: "Defines the type of versioning (`cloud`: fully automatic, `library`: manual)"
         scope:
         - PARAMETERS
         - STAGES

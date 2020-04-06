@@ -430,7 +430,7 @@ func TestPushChanges(t *testing.T) {
 	remote := git.NewRemote(nil, &conf)
 
 	t.Run("success - username/password", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****"}
+		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****", CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
@@ -445,7 +445,7 @@ func TestPushChanges(t *testing.T) {
 	})
 
 	t.Run("success - ssh fallback", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{}
+		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
