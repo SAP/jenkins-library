@@ -9,6 +9,7 @@ START_TIME_MS = System.currentTimeMillis()
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
+REPOSITORY_UNDER_TEST = System.getenv('REPOSITORY_UNDER_TEST') ?: System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^documentation\/.*$/,
@@ -20,7 +21,7 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
 TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
-TestRunnerThread.repositoryUnderTest = System.getenv('REPOSITORY_UNDER_TEST') ?: System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+TestRunnerThread.repositoryUnderTest = REPOSITORY_UNDER_TEST
 
 def testCaseThreads
 def cli = new CliBuilder(
@@ -162,7 +163,7 @@ def listTestCaseThreads() {
 def notifyGithub(state, description) {
     println "[INFO] Notifying about state '${state}' for commit '${COMMIT_HASH}'."
 
-    URL url = new URL("https://api.github.com/repos/SAP/jenkins-library/statuses/${COMMIT_HASH}")
+    URL url = new URL("https://api.github.com/repos/${REPOSITORY_UNDER_TEST}/statuses/${COMMIT_HASH}")
     HttpURLConnection con = (HttpURLConnection) url.openConnection()
     con.setRequestMethod('POST')
     con.setRequestProperty("Content-Type", "application/json; utf-8");
@@ -175,6 +176,9 @@ def notifyGithub(state, description) {
         description: description,
         context    : "integration-tests"
     ]
+
+    println postBody.toString()
+    println postBody.toString()
 
     con.setDoOutput(true)
     con.getOutputStream().withStream { os ->
