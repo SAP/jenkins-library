@@ -142,7 +142,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	// Generate report
 	if config.Reporting {
-		generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0x700)
+
+		//generateAndDownloadQGateReport(config, sys, project, projectVersion)
 	}
 
 	// Perform audit compliance checks
