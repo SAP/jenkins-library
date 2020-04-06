@@ -17,9 +17,9 @@ import (
 
 type artifactPrepareVersionOptions struct {
 	BuildTool           string `json:"buildTool,omitempty"`
+	CommitUserName      string `json:"commitUserName,omitempty"`
 	DockerVersionSource string `json:"dockerVersionSource,omitempty"`
 	FilePath            string `json:"filePath,omitempty"`
-	CommitUserName      string `json:"commitUserName,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID     bool   `json:"includeCommitId,omitempty"`
 	M2Path              string `json:"m2Path,omitempty"`
@@ -130,9 +130,9 @@ Configuration of this pattern is done via ` + "`" + `versioningType: library` + 
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
+	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which is appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
-	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", os.Getenv("PIPER_commitUserName"), "Defines the user name which is appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
@@ -165,6 +165,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "commitUserName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "gitUserName"}},
+					},
+					{
 						Name:        "dockerVersionSource",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -179,14 +187,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "commitUserName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "gitUserName"}},
 					},
 					{
 						Name:        "globalSettingsFile",
