@@ -1,0 +1,150 @@
+metadata:
+  name: artifactPrepareVersion
+  aliases:
+    - name: artifactSetVersion
+    - name: setVersion
+      deprecated: true
+  description: Prepares and potentially updates the artifact's version before building the artifact.
+  longDescription: |-
+    Prepares and potentially updates the artifact's version before building the artifact.
+
+    The continuous delivery process requires that each build is done with a unique version number.
+
+    The version generated using this step will contain:
+
+    * Version (major.minor.patch) from descriptor file in master repository is preserved. Developers should be able to autonomously decide on increasing either part of this version number.
+    * Timestamp
+    * CommitId (by default the long version of the hash)
+
+    Optionally, but enabled by default, the new version is pushed as a new tag into the source code repository (e.g. GitHub).
+    If this option is chosen, git credentials and the repository URL needs to be provided.
+    Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the `commitVersion` parameter as described below.
+    If you require strict reproducibility of your builds, this should be used.
+spec:
+  inputs:
+    params:
+      - name: buildTool
+        type: string
+        description: Defines the tool which is used for building the artifact.
+        mandatory: true
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: dockerVersionSource
+        type: string
+        description: "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`"
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: filePath
+        type: string
+        description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)"
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: gitUserEMail
+        type: string
+        description: Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: gitUserName
+        type: string
+        description: Allows to overwrite the global git setting 'user.name' available on your Jenkins server.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: globalSettingsFile
+        aliases:
+          - name: maven/globalSettingsFile
+        type: string
+        description:  Maven only - Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: includeCommitId
+        type: bool
+        description: Defines if the automatically generated version (versioningType 'cloud') should include the commit id hash .
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: true
+      - name: m2Path
+        aliases:
+          - name: maven/m2Path
+        type: string
+        description: Maven only - Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: password
+        type: string
+        description: Password/token for git authentication
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: projectSettingsFile
+        aliases:
+          - name: maven/projectSettingsFile
+        type: string
+        description: Maven only - Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: tagPrefix
+        type: string
+        description: Defines the prefix which is used for the git tag which is written during the versioning run.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: build_
+      - name: username
+        type: string
+        description: User name for git authentication
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: versioningTemplate
+        type: string
+        description: "DEPRECATED: Defines the template for the automatic version which will be created"
+        mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: versioningType
+        type: string
+        description: "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag (not available yet): automatic based on latest tag)"
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: cloud
+    secrets:
+    - name: gitHttpsCredentialsId
+      type: jenkins
+    - name: gitSshKeyCredentialsId
+      type: jenkins
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: artifactVersion
+          - name: git/commitId

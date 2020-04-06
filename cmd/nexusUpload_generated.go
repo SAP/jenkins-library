@@ -14,16 +14,15 @@ import (
 )
 
 type nexusUploadOptions struct {
-	Version               string `json:"version,omitempty"`
-	Url                   string `json:"url,omitempty"`
-	Repository            string `json:"repository,omitempty"`
-	GroupID               string `json:"groupId,omitempty"`
-	ArtifactID            string `json:"artifactId,omitempty"`
-	GlobalSettingsFile    string `json:"globalSettingsFile,omitempty"`
-	M2Path                string `json:"m2Path,omitempty"`
-	AdditionalClassifiers string `json:"additionalClassifiers,omitempty"`
-	User                  string `json:"user,omitempty"`
-	Password              string `json:"password,omitempty"`
+	Version            string `json:"version,omitempty"`
+	Url                string `json:"url,omitempty"`
+	Repository         string `json:"repository,omitempty"`
+	GroupID            string `json:"groupId,omitempty"`
+	ArtifactID         string `json:"artifactId,omitempty"`
+	GlobalSettingsFile string `json:"globalSettingsFile,omitempty"`
+	M2Path             string `json:"m2Path,omitempty"`
+	User               string `json:"user,omitempty"`
+	Password           string `json:"password,omitempty"`
 }
 
 // NexusUploadCommand Upload artifacts to Nexus
@@ -35,7 +34,7 @@ func NexusUploadCommand() *cobra.Command {
 	var createNexusUploadCmd = &cobra.Command{
 		Use:   "nexusUpload",
 		Short: "Upload artifacts to Nexus",
-		Long:  `Upload build artifacts to a Nexus Repository Manager`,
+		Long:  `Upload build artifacts to a Nexus Repository Manager. Supports MTA and (multi-module) Maven projects.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("nexusUpload")
@@ -69,9 +68,8 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "The path to the local .m2 directory, only used for Maven projects.")
-	cmd.Flags().StringVar(&stepConfig.AdditionalClassifiers, "additionalClassifiers", os.Getenv("PIPER_additionalClassifiers"), "List of additional classifiers that should be deployed to nexus. Each item is a map of a type and a classifier name.")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
+	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "Username for accessing the Nexus endpoint.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for accessing the Nexus endpoint.")
 
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("repository")
@@ -93,7 +91,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "nexus/version"}},
 					},
 					{
 						Name:        "url",
@@ -101,7 +99,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "nexus/url"}},
 					},
 					{
 						Name:        "repository",
@@ -109,7 +107,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "nexus/repository"}},
 					},
 					{
 						Name:        "groupId",
@@ -117,12 +115,12 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "nexus/groupId"}},
 					},
 					{
 						Name:        "artifactId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -144,17 +142,9 @@ func nexusUploadMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
-						Name:        "additionalClassifiers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "user",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -162,7 +152,7 @@ func nexusUploadMetadata() config.StepData {
 					{
 						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

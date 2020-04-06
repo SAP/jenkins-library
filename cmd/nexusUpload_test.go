@@ -5,8 +5,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
+	"github.com/bmatcuk/doublestar"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 )
 
@@ -66,6 +69,16 @@ func (m *mockUtilsBundle) fileRemove(path string) {
 	}
 }
 
+func (m *mockUtilsBundle) dirExists(path string) (bool, error) {
+	for file := range m.files {
+		dir := filepath.Dir(file)
+		if dir == path {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 	path = path + "/" + name
 	return m.cpe[path]
@@ -97,6 +110,33 @@ func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
 		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
 	}
 	return value, nil
+}
+
+type byLen []string
+
+func (a byLen) Len() int {
+	return len(a)
+}
+
+func (a byLen) Less(i, j int) bool {
+	return len(a[i]) < len(a[j])
+}
+
+func (a byLen) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (m *mockUtilsBundle) glob(pattern string) ([]string, error) {
+	var matches []string
+	for path := range m.files {
+		matched, _ := doublestar.Match(pattern, path)
+		if matched {
+			matches = append(matches, path)
+		}
+	}
+	// The order in m.files is not deterministic, this would result in flaky tests.
+	sort.Sort(byLen(matches))
+	return matches, nil
 }
 
 type mockUploader struct {
@@ -166,18 +206,20 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.GetArtifacts()))
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
-	t.Run("Uploading MTA project without artifactId parameter fails", func(t *testing.T) {
+	t.Run("Uploading MTA project without artifactId parameter works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
 		utils.files["mta.yaml"] = testMtaYml
+		utils.files["test.mtar"] = []byte("contentsOfMtar")
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
 		options.ArtifactID = ""
 
 		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "the 'artifactId' parameter was not provided and could not be retrieved from the Common Pipeline Environment")
-		assert.Equal(t, 0, len(uploader.GetArtifacts()))
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, len(uploader.uploadedArtifacts))
+			assert.Equal(t, "test", uploader.GetArtifactsID())
+		}
 	})
 	t.Run("Uploading MTA project fails due to missing yaml file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false)
@@ -273,30 +315,6 @@ func TestUploadMTAProjects(t *testing.T) {
 
 		assert.Equal(t, "0.3.0", uploader.GetArtifactsVersion())
 		assert.Equal(t, "artifact.id", uploader.GetArtifactsID())
-
-		artifacts := uploader.uploadedArtifacts
-		if assert.Equal(t, 2, len(artifacts)) {
-			assert.Equal(t, "mta.yml", artifacts[0].File)
-			assert.Equal(t, "yaml", artifacts[0].Type)
-
-			assert.Equal(t, "test.mtar", artifacts[1].File)
-			assert.Equal(t, "mtar", artifacts[1].Type)
-		}
-	})
-	t.Run("Test uploading mta.yml project works with artifactID from CPE", func(t *testing.T) {
-		utils := newMockUtilsBundle(true, false)
-		utils.files["mta.yml"] = testMtaYml
-		utils.files["test.mtar"] = []byte("contentsOfMtar")
-		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
-		utils.cpe[".pipeline/commonPipelineEnvironment/configuration/artifactId"] = "my-artifact-id"
-		uploader := mockUploader{}
-		options := createOptions()
-		// Clear artifact ID to trigger reading it from the CPE
-		options.ArtifactID = ""
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.NoError(t, err, "expected mta.yml project upload to work")
-		assert.Equal(t, "my-artifact-id", uploader.GetArtifactsID())
 
 		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 2, len(artifacts)) {
@@ -420,6 +438,22 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 	})
+	t.Run("Test uploading Maven project with JAR packaging fails without main target", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/dummy"] = []byte("contentsOfJar") // causes "target" folder to exist
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.EqualError(t, err, "target artifact not found for packaging 'jar'")
+		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
+	})
 	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
@@ -498,6 +532,33 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[0].Type)
 		}
 	})
+	t.Run("Test uploading Maven project with fall-back for finalBuildName works", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, true)
+		utils.setProperty("pom.xml", "project.version", "1.0")
+		utils.setProperty("pom.xml", "project.groupId", "awesome.group")
+		utils.setProperty("pom.xml", "project.artifactId", "my-app")
+		utils.setProperty("pom.xml", "project.packaging", "jar")
+		utils.files["pom.xml"] = testPomXml
+		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		uploader := mockUploader{}
+		options := createOptions()
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected Maven upload to work")
+
+		assert.Equal(t, "localhost:8081/repository/maven-releases/",
+			uploader.GetRepoURL())
+		assert.Equal(t, "1.0", uploader.GetArtifactsVersion())
+		assert.Equal(t, "my-app", uploader.GetArtifactsID())
+
+		artifacts := uploader.uploadedArtifacts
+		if assert.Equal(t, 2, len(artifacts)) {
+			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, "pom", artifacts[0].Type)
+			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, "jar", artifacts[1].Type)
+		}
+	})
 	t.Run("Test uploading Maven project with application module and finalName works", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
 		utils.setProperty("pom.xml", "project.version", "1.0")
@@ -508,22 +569,33 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("application/pom.xml", "project.version", "1.0")
 		utils.setProperty("application/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("application/pom.xml", "project.artifactId", "my-app-app")
-		utils.setProperty("application/pom.xml", "project.packaging", "jar")
+		utils.setProperty("application/pom.xml", "project.packaging", "war")
 		utils.setProperty("application/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("integration-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("integration-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("integration-tests/pom.xml", "project.artifactId", "my-app-app-integration-tests")
+		utils.setProperty("integration-tests/pom.xml", "project.packaging", "jar")
+		utils.setProperty("integration-tests/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("unit-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("unit-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("unit-tests/pom.xml", "project.artifactId", "my-app-app-unit-tests")
+		utils.setProperty("unit-tests/pom.xml", "project.packaging", "jar")
+		utils.setProperty("unit-tests/pom.xml", "project.build.finalName", "final-artifact")
+		utils.setProperty("performance-tests/pom.xml", "project.version", "1.0")
+		utils.setProperty("performance-tests/pom.xml", "project.groupId", "com.mycompany.app")
+		utils.setProperty("performance-tests/pom.xml", "project.artifactId", "my-app-app")
+		utils.setProperty("performance-tests/pom.xml", "project.packaging", "")
 		utils.files["pom.xml"] = testPomXml
 		utils.files["application/pom.xml"] = testPomXml
-		utils.files["application/target/final-artifact.jar"] = []byte("contentsOfJar")
+		utils.files["application/target/final-artifact.war"] = []byte("contentsOfJar")
 		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
+		utils.files["integration-tests/pom.xml"] = testPomXml
+		utils.files["integration-tests/target/final-artifact-integration-tests.jar"] = []byte("contentsOfJar")
+		utils.files["unit-tests/pom.xml"] = testPomXml
+		utils.files["unit-tests/target/final-artifact-unit-tests.jar"] = []byte("contentsOfJar")
+		utils.files["performance-tests/pom.xml"] = testPomXml
 		uploader := mockUploader{}
 		options := createOptions()
-		options.AdditionalClassifiers = `
-			[
-				{
-					"classifier" : "classes",
-					"type"       : "jar"
-				}
-			]
-		`
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
@@ -538,8 +610,8 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "application/pom.xml", artifacts[1].File)
 			assert.Equal(t, "pom", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/final-artifact.jar", artifacts[2].File)
-			assert.Equal(t, "jar", artifacts[2].Type)
+			assert.Equal(t, "application/target/final-artifact.war", artifacts[2].File)
+			assert.Equal(t, "war", artifacts[2].Type)
 
 			assert.Equal(t, "application/target/final-artifact-classes.jar", artifacts[3].File)
 			assert.Equal(t, "jar", artifacts[3].Type)
@@ -564,34 +636,14 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DartifactId=my-app-app",
 				"-Dfile=application/pom.xml",
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/final-artifact.jar,application/target/final-artifact-classes.jar",
+				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
 				"-Dclassifiers=,classes",
-				"-Dtypes=jar,jar",
+				"-Dtypes=war,jar",
 				"--batch-mode",
 				deployGoal}
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.execRunner.Calls[1])
 		}
-	})
-	t.Run("Test uploading Maven project fails without packaging", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, true)
-		utils.setProperty("pom.xml", "project.version", "1.0")
-		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
-		utils.setProperty("pom.xml", "project.artifactId", "my-app")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
-		uploader := mockUploader{}
-		options := createOptions()
-
-		err := runNexusUpload(&utils, &uploader, &options)
-		assert.EqualError(t, err, "property 'project.packaging' not found in 'pom.xml'")
-
-		artifacts := uploader.GetArtifacts()
-		if assert.Equal(t, 1, len(artifacts)) {
-			assert.Equal(t, "pom.xml", artifacts[0].File)
-			assert.Equal(t, "pom", artifacts[0].Type)
-		}
-		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Write credentials settings", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true)
@@ -641,78 +693,6 @@ func TestUploadUnknownProjectFails(t *testing.T) {
 
 	err := runNexusUpload(&utils, &uploader, &options)
 	assert.EqualError(t, err, "unsupported project structure")
-}
-
-func TestAdditionalClassifierEmpty(t *testing.T) {
-	t.Run("Empty additional classifiers", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "")
-		assert.NoError(t, err, "expected empty additional classifiers to succeed")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is invalid JSON", func(t *testing.T) {
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, "some random string")
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but wrong JSON", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				},
-				{}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.Error(t, err, "expected invalid additional classifiers to fail")
-		assert.Equal(t, 1, len(client.GetArtifacts()))
-	})
-	t.Run("Classifiers valid but does not exist", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.EqualError(t, err, "artifact file not found 'some folder/artifact-id-source.jar'")
-		assert.Equal(t, 0, len(client.GetArtifacts()))
-	})
-	t.Run("Additional classifiers is valid JSON", func(t *testing.T) {
-		json := `
-			[
-				{
-					"classifier" : "source",
-					"type"       : "jar"
-				},
-				{
-					"classifier" : "classes",
-					"type"       : "jar"
-				}
-			]
-		`
-		utils := newMockUtilsBundle(false, false)
-		utils.files["some folder/artifact-id-source.jar"] = []byte("contentsOfJar")
-		utils.files["some folder/artifact-id-classes.jar"] = []byte("contentsOfJar")
-		client, err := testAdditionalClassifierArtifacts(&utils, json)
-		assert.NoError(t, err, "expected valid additional classifiers to succeed")
-		assert.Equal(t, 2, len(client.GetArtifacts()))
-	})
-}
-
-func testAdditionalClassifierArtifacts(utils nexusUploadUtils, additionalClassifiers string) (*nexus.Upload, error) {
-	client := nexus.Upload{}
-	_ = client.SetInfo("group.id", "artifact-id", "1.0")
-	return &client, addMavenTargetSubArtifacts(utils, &client, additionalClassifiers,
-		"some folder", "artifact-id")
 }
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {

@@ -43,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'proxy'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
 /**
  * This step allows you to upload an MTA file (multi-target application archive) into a TMS (SAP Cloud Platform Transport Management Service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
