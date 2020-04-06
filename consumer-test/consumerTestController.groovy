@@ -163,7 +163,7 @@ def listTestCaseThreads() {
 def notifyGithub(state, description) {
     println "[INFO] Notifying about state '${state}' for commit '${COMMIT_HASH}'."
 
-    URL url = new URL("https://api.github.com/repos/daniel-kurzynski/jenkins-library/statuses/${COMMIT_HASH}")
+    URL url = new URL("https://api.github.com/repos/SAP/jenkins-library/statuses/${COMMIT_HASH}")
     HttpURLConnection con = (HttpURLConnection) url.openConnection()
     con.setRequestMethod('POST')
     con.setRequestProperty("Content-Type", "application/json; utf-8");
@@ -176,10 +176,6 @@ def notifyGithub(state, description) {
         description: description,
         context    : "integration-tests"
     ]
-
-    println url
-    println System.getenv('INTEGRATION_TEST_VOTING_TOKEN')
-    println postBody.toString()
 
     con.setDoOutput(true)
     con.getOutputStream().withStream { os ->
