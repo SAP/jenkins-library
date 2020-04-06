@@ -35,7 +35,7 @@ void call(Map parameters = [:]) {
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Config: ${config}"
-            // get step configuration to access `instance` & `customTlsCertificateLinks`
+            // get step configuration to access `instance` & `customTlsCertificateLinks & owner & repository`
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "StepConfig: ${stepConfig}"
 
@@ -44,8 +44,8 @@ void call(Map parameters = [:]) {
             if (config.sonarTokenCredentialsId)
                 credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
             if(isPullRequest()){
-                checkMandatoryParameter(config, "owner")
-                checkMandatoryParameter(config, "repository")
+                checkMandatoryParameter(stepConfig, "owner")
+                checkMandatoryParameter(stepConfig, "repository")
                 if(config.legacyPRHandling) {
                     checkMandatoryParameter(config, "githubTokenCredentialsId")
                     if (config.githubTokenCredentialsId)
