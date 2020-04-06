@@ -355,6 +355,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 	t.Run("error - failed to push changes", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{
 			VersioningType: "cloud",
+			CommitVersion:  true,
 		}
 
 		versioningMock := artifactVersioningMock{
