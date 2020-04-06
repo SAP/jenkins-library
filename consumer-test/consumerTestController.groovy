@@ -178,7 +178,7 @@ def notifyGithub(state, description) {
     ]
 
     println url
-    println ${System.getenv('INTEGRATION_TEST_VOTING_TOKEN')
+    println System.getenv('INTEGRATION_TEST_VOTING_TOKEN')
     println postBody.toString()
 
     con.setDoOutput(true)
