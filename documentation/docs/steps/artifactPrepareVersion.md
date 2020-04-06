@@ -23,5 +23,3 @@ piper artifactPrepareVersion --buildTool maven
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
-
-
