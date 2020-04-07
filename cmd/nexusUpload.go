@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	b64 "encoding/base64"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -28,6 +30,7 @@ type nexusUploadUtils interface {
 	dirExists(path string) (bool, error)
 	usesMta() bool
 	usesMaven() bool
+	usesNpm() bool
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
@@ -94,6 +97,10 @@ func (u *utilsBundle) usesMaven() bool {
 	return u.projectStructure.UsesMaven()
 }
 
+func (u *utilsBundle) usesNpm() bool {
+	return u.projectStructure.UsesNpm()
+}
+
 func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
@@ -130,15 +137,36 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 	if err != nil {
 		return err
 	}
+
+	if utils.usesNpm() {
+		log.Entry().Info("NPM project structure detected")
+		err = uploadNpmArtifacts(utils, uploader, options)
+	}
+	if err != nil {
+		return err
+	}
+
 	if utils.usesMta() {
 		log.Entry().Info("MTA project structure detected")
 		return uploadMTA(utils, uploader, options)
 	} else if utils.usesMaven() {
 		log.Entry().Info("Maven project structure detected")
 		return uploadMaven(utils, uploader, options)
-	} else {
-		return fmt.Errorf("unsupported project structure")
 	}
+	return nil
+}
+
+func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	execRunner := utils.getExecRunner()
+	environment := []string{"npm_config_registry=http://" + uploader.GetRepoURL(), "npm_config_email=project-piper@no-reply.com"} //fixme use npmRepository
+	if options.User != "" && options.Password != "" {
+		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
+		environment = append(environment, "npm_config__auth="+auth)
+	}
+	execRunner.SetEnv(environment)
+	fmt.Println(strings.Join(environment, ", "))
+	err := execRunner.RunExecutable("npm", "publish", "-ddd")
+	return err
 }
 
 func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
