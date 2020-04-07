@@ -53,8 +53,8 @@ void call(Map parameters = [:]) {
                         credentials.add(string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_githubToken'))
                 }
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
-                environment.add("PIPER_changeBranch=${env.CHANGE_TARGET}")
-                environment.add("PIPER_changeTarget=${env.CHANGE_BRANCH}")
+                environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
+                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET }")
             }
             // load certificates into cacerts file
             loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
