@@ -60,7 +60,7 @@ spec:
         aliases:
           - name: gitUserName
         type: string
-        description: "Defines the user name which is appears in version control for the versioning update (in case `versioningType: cloud`)."
+        description: "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`)."
         scope:
         - PARAMETERS
         - STAGES
