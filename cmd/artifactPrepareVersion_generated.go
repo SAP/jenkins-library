@@ -89,8 +89,15 @@ Depending on the build tool used and thus the allowed versioning format the ` + 
 
 * There is no commit to master since this would create a perpetuum mobile and just trigger the next automatic build with automatic versioning, and so on ...
 * Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
+* You need to ensure that your CI/CD system can push back to your SCM (via providing ssh or HTTP(s) credentials)
 
 **This pattern is the default** behavior (` + "`" + `versioningType: cloud` + "`" + `) since this is suitable for for most cloud deliveries.
+
+It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which has a slighly different behavior than described above:
+
+* The new version will NOT be written as tag into the SCM but it is only available in the corresponding CI/CD workspace
+* IMPORTANT NOTICE: Using the option ` + "`" + `cloud_noTag` + "`" + ` should not be picked in case you need to ensure a fully traceable path from SCM commit to your build artifact.
+
 
 ### 2. Pure version ` + "`" + `<major>.<minor>.<patch>` + "`" + `
 
@@ -141,7 +148,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
-	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `library`: manual)")
+	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)")
 
 	cmd.MarkFlagRequired("buildTool")
 }
