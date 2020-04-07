@@ -19,7 +19,7 @@ func Prefix(in []string, prefix string) []string {
 	return _prefix(in, prefix, true)
 }
 
-//PrefixIfNeeded adds a prefix to each element of the slice if it is not already having that prefix
+//PrefixIfNeeded adds a prefix to each element of the slice if not already prefixed
 func PrefixIfNeeded(in []string, prefix string) []string {
 	return _prefix(in, prefix, false)
 }
@@ -27,10 +27,9 @@ func PrefixIfNeeded(in []string, prefix string) []string {
 func _prefix(in []string, prefix string, always bool) (out []string) {
 	for _, element := range in {
 		if always || !strings.HasPrefix(element, prefix) {
-			out = append(out, prefix+element)
-		} else {
-			out = append(out, element)
+			element = prefix + element
 		}
+		out = append(out, element)
 	}
 	return
 }
