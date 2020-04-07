@@ -65,10 +65,12 @@ nav:
         - karmaExecuteTests: steps/karmaExecuteTests.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
+        - nexusUpload: steps/nexusUpload.md
         - npmExecute: steps/npmExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md

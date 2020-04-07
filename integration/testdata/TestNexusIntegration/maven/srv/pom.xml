@@ -1,0 +1,12 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.mycompany.app</groupId>
+    <artifactId>my-app</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+    <parent>
+        <artifactId>my-app-parent</artifactId>
+        <groupId>com.mycompany.app</groupId>
+        <version>1.0</version>
+    </parent>
+</project>
