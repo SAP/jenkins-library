@@ -14,25 +14,25 @@ import (
 )
 
 type sonarExecuteScanOptions struct {
-	Instance                  string `json:"instance,omitempty"`
-	Host                      string `json:"host,omitempty"`
-	Token                     string `json:"token,omitempty"`
-	Organization              string `json:"organization,omitempty"`
-	CustomTLSCertificateLinks string `json:"customTlsCertificateLinks,omitempty"`
-	SonarScannerDownloadURL   string `json:"sonarScannerDownloadUrl,omitempty"`
-	ProjectVersion            string `json:"projectVersion,omitempty"`
-	Options                   string `json:"options,omitempty"`
-	BranchName                string `json:"branchName,omitempty"`
-	ChangeID                  string `json:"changeId,omitempty"`
-	ChangeBranch              string `json:"changeBranch,omitempty"`
-	ChangeTarget              string `json:"changeTarget,omitempty"`
-	PullRequestProvider       string `json:"pullRequestProvider,omitempty"`
-	Owner                     string `json:"owner,omitempty"`
-	Repository                string `json:"repository,omitempty"`
-	GithubToken               string `json:"githubToken,omitempty"`
-	DisableInlineComments     bool   `json:"disableInlineComments,omitempty"`
-	LegacyPRHandling          bool   `json:"legacyPRHandling,omitempty"`
-	GithubAPIURL              string `json:"githubApiUrl,omitempty"`
+	Instance                  string   `json:"instance,omitempty"`
+	Host                      string   `json:"host,omitempty"`
+	Token                     string   `json:"token,omitempty"`
+	Organization              string   `json:"organization,omitempty"`
+	CustomTLSCertificateLinks string   `json:"customTlsCertificateLinks,omitempty"`
+	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
+	ProjectVersion            string   `json:"projectVersion,omitempty"`
+	Options                   []string `json:"options,omitempty"`
+	BranchName                string   `json:"branchName,omitempty"`
+	ChangeID                  string   `json:"changeId,omitempty"`
+	ChangeBranch              string   `json:"changeBranch,omitempty"`
+	ChangeTarget              string   `json:"changeTarget,omitempty"`
+	PullRequestProvider       string   `json:"pullRequestProvider,omitempty"`
+	Owner                     string   `json:"owner,omitempty"`
+	Repository                string   `json:"repository,omitempty"`
+	GithubToken               string   `json:"githubToken,omitempty"`
+	DisableInlineComments     bool     `json:"disableInlineComments,omitempty"`
+	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
+	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
 }
 
 // SonarExecuteScanCommand Executes the Sonar scanner
@@ -78,7 +78,7 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", os.Getenv("PIPER_customTlsCertificateLinks"), "List of comma-separated download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.3.0.2102-linux.zip", "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube.")
-	cmd.Flags().StringVar(&stepConfig.Options, "options", os.Getenv("PIPER_options"), "A list of options which are passed to the sonar-scanner.")
+	cmd.Flags().StringSliceVar(&stepConfig.Options, "options", []string{}, "A list of options which are passed to the sonar-scanner.")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request.")
 	cmd.Flags().StringVar(&stepConfig.ChangeBranch, "changeBranch", os.Getenv("PIPER_changeBranch"), "Pull-Request only: The name of the pull-request branch.")
@@ -163,7 +163,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name:        "options",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

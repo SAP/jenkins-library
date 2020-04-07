@@ -63,7 +63,7 @@ spec:
           - name: commonPipelineEnvironment
             param: artifactVersion
       - name: options
-        type: string
+        type: "[]string"
         description: A list of options which are passed to the sonar-scanner.
         scope:
           - PARAMETERS

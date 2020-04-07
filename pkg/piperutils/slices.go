@@ -15,9 +15,22 @@ func ContainsInt(s []int, e int) bool {
 }
 
 //Prefix adds a prefix to each element of the slice
-func Prefix(in []string, prefix string) (out []string) {
+func Prefix(in []string, prefix string) []string {
+	return _prefix(in, prefix, true)
+}
+
+//PrefixIfNeeded adds a prefix to each element of the slice if it is not already having that prefix
+func PrefixIfNeeded(in []string, prefix string) []string {
+	return _prefix(in, prefix, false)
+}
+
+func _prefix(in []string, prefix string, always bool) (out []string) {
 	for _, element := range in {
-		out = append(out, prefix+element)
+		if always || !strings.HasPrefix(element, prefix) {
+			out = append(out, prefix+element)
+		} else {
+			out = append(out, element)
+		}
 	}
 	return
 }
