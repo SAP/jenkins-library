@@ -33,7 +33,6 @@ metadata:
     * The new version will NOT be written as tag into the SCM but it is only available in the corresponding CI/CD workspace
     * IMPORTANT NOTICE: Using the option `cloud_noTag` should not be picked in case you need to ensure a fully traceable path from SCM commit to your build artifact.
 
-
     ### 2. Pure version `<major>.<minor>.<patch>`
 
     This pattern is often used by teams that have cloud deliveries with no fully automated procedure, e.g. delivery after each takt.
