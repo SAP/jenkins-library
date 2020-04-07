@@ -34,18 +34,19 @@ class TransportManagementServiceTest extends BasePiperTest {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '{ "access_token": "myOAuthToken" }']
+            return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
-        def tms = new TransportManagementService(nullScript, [:])
+        def tms = new TransportManagementService(nullScript, [verbose: false])
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
+        assertThat(loggingRule.log, not(containsString("myOAuthToken")))
         assertThat(token, is('myOAuthToken'))
         assertThat(requestParams, hasEntry('url', "${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token"))
         assertThat(requestParams, hasEntry('requestBody', "grant_type=password&username=${clientId}&password=${clientSecret}".toString()))
@@ -54,28 +55,69 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__inVerboseMode__yieldsMoreEchos() {
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
-        tms.authentication(uaaUrl, clientId, clientSecret)
+        def token = tms.authentication(uaaUrl, clientId, clientSecret)
+
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'"))
-        assertThat(loggingRule.log, containsString("Received response with status 200 from authentication request."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
+        assertThat(loggingRule.log, not(containsString("myOAuthToken")))
+        assertThat(token, is('myOAuthToken'))
+    }
+
+    @Test
+    void retrieveOAuthToken__failure() {
+        def uaaUrl = 'http://dummy.sap.com/oauth'
+        def clientId = 'myId'
+        def clientSecret = 'mySecret'
+        def responseStatusCode = 400
+        def responseContent = 'Here an error message is expected (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: false])
+        tms.authentication(uaaUrl, clientId, clientSecret)
+    }
+
+    @Test
+    void retrieveOAuthToken__failure__status__400__inVerboseMode() {
+        def uaaUrl = 'http://dummy.sap.com/oauth'
+        def clientId = 'myId'
+        def clientSecret = 'mySecret'
+        def responseStatusCode = 400
+        def responseContent = 'Here an error message is expected (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
+        loggingRule.expect("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'")
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.authentication(uaaUrl, clientId, clientSecret)
     }
 
     @Test
     void uploadFile__successfully() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -98,7 +140,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__verboseMode__withHttpErrorResponse__throwsError() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -110,7 +152,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         thrown.expect(AbortException.class)
         thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
 
-        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.com/oauth\', File: \'myFile.mtar\'')
+        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', File: \'myFile.mtar\'')
         loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload (WE ARE IN VERBOSE MODE)')
 
         // The log entries which are present in non verbose mode must be present in verbose mode also, of course
@@ -124,7 +166,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__NonVerboseMode__withHttpErrorResponse__throwsError() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -149,7 +191,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__inVerboseMode__yieldsMoreEchos() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -172,10 +214,10 @@ class TransportManagementServiceTest extends BasePiperTest {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '{ "upload": "success" }']
+            return [content: '{ "upload": "success" }', status: 200]
         })
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
@@ -197,18 +239,17 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void uploadFileToNode__inVerboseMode__yieldsMoreEchos() {
-        Map requestParams
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            requestParams = m
-            return [content: '{ "upload": "success" }']
-        })
-
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
         def description = "My description."
         def namedUser = 'myUser'
+        def responseContent = '{ "upload": "success" }'
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: 200]
+        })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
@@ -216,7 +257,53 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'"))
         assertThat(loggingRule.log, containsString("\"upload\": \"success\""))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Node upload successful. Response content '${responseContent}'."))
     }
 
+    @Test
+    void uploadFileToNode__failure() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def nodeName = 'myNode'
+        def fileId = 1234
+        def description = "My description."
+        def namedUser = 'myUser'
+        def responseStatusCode = 400
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)." }'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] Node upload failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        loggingRule.expect("[TransportManagementService] Node upload started.")
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: false])
+        tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
+    }
+
+    @Test
+    void uploadFileToNode__failure__status__400__inVerboseMode() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def nodeName = 'myNode'
+        def fileId = 1234
+        def description = "My description."
+        def namedUser = 'myUser'
+        def responseStatusCode = 400
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)." }'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] Node upload failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        loggingRule.expect("[TransportManagementService] Node upload started.")
+        loggingRule.expect("[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'")
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
+    }
 }
