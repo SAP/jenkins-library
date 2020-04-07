@@ -37,7 +37,7 @@ class TransportManagementServiceTest extends BasePiperTest {
             return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
@@ -58,7 +58,7 @@ class TransportManagementServiceTest extends BasePiperTest {
             return [content: '{ "access_token": "myOAuthToken" }', status: 200]
         })
 
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
@@ -72,7 +72,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__failure() {
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
         def responseStatusCode = 400
@@ -92,7 +92,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void retrieveOAuthToken__failure__status__400__inVerboseMode() {
-        def uaaUrl = 'http://dummy.com/oauth'
+        def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
         def responseStatusCode = 400
@@ -114,7 +114,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__successfully() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -137,7 +137,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__verboseMode__withHttpErrorResponse__throwsError() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -149,7 +149,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         thrown.expect(AbortException.class)
         thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
 
-        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.com/oauth\', File: \'myFile.mtar\'')
+        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', File: \'myFile.mtar\'')
         loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload (WE ARE IN VERBOSE MODE)')
 
         // The log entries which are present in non verbose mode must be present in verbose mode also, of course
@@ -163,7 +163,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__NonVerboseMode__withHttpErrorResponse__throwsError() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myWrongToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -188,7 +188,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__inVerboseMode__yieldsMoreEchos() {
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
@@ -214,7 +214,7 @@ class TransportManagementServiceTest extends BasePiperTest {
             return [content: '{ "upload": "success" }', status: 200]
         })
 
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
@@ -236,7 +236,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void uploadFileToNode__inVerboseMode__yieldsMoreEchos() {
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
@@ -259,7 +259,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void uploadFileToNode__failure() {
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
@@ -282,7 +282,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
     @Test
     void uploadFileToNode__failure__status__400__inVerboseMode() {
-        def url = 'http://dummy.com/oauth'
+        def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeName = 'myNode'
         def fileId = 1234
