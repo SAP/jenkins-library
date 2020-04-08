@@ -208,6 +208,45 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven"}, telemetryData)
 	})
 
+	t.Run("success case - cloud_noTag", func(t *testing.T) {
+
+		config := artifactPrepareVersionOptions{
+			BuildTool:       "maven",
+			IncludeCommitID: true,
+			Password:        "****",
+			TagPrefix:       "v",
+			Username:        "testUser",
+			VersioningType:  "cloud_noTag",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+		}
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+
+		conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
+
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+			remote:       git.NewRemote(nil, &conf),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.NoError(t, err)
+
+		assert.False(t, repo.pushCalled)
+		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
+	})
+
 	t.Run("success case - compatibility", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{
 			BuildTool:          "maven",
@@ -430,7 +469,7 @@ func TestPushChanges(t *testing.T) {
 	remote := git.NewRemote(nil, &conf)
 
 	t.Run("success - username/password", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****"}
+		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****", CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 
@@ -445,7 +484,7 @@ func TestPushChanges(t *testing.T) {
 	})
 
 	t.Run("success - ssh fallback", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{}
+		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
 

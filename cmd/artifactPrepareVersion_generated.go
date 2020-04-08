@@ -17,10 +17,9 @@ import (
 
 type artifactPrepareVersionOptions struct {
 	BuildTool           string `json:"buildTool,omitempty"`
+	CommitUserName      string `json:"commitUserName,omitempty"`
 	DockerVersionSource string `json:"dockerVersionSource,omitempty"`
 	FilePath            string `json:"filePath,omitempty"`
-	GitUserEMail        string `json:"gitUserEMail,omitempty"`
-	GitUserName         string `json:"gitUserName,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID     bool   `json:"includeCommitId,omitempty"`
 	M2Path              string `json:"m2Path,omitempty"`
@@ -75,17 +74,40 @@ func ArtifactPrepareVersionCommand() *cobra.Command {
 		Long: `Prepares and potentially updates the artifact's version before building the artifact.
 
 The continuous delivery process requires that each build is done with a unique version number.
+There are two common patterns found:
 
-The version generated using this step will contain:
+### 1. Continuous Deployment pattern with automatic versioning
 
-* Version (major.minor.patch) from descriptor file in master repository is preserved. Developers should be able to autonomously decide on increasing either part of this version number.
-* Timestamp
-* CommitId (by default the long version of the hash)
+The team has full authority on ` + "`" + `<major>.<minor>.<patch>` + "`" + ` and can increase any part whenever required.
+Nonetheless, the automatic versioning makes sure that every build will create a unique version by appending ` + "`" + `<major>.<minor>.<patch>` + "`" + ` with a buildversion (we use a timestamp) and optinally the commitId.
 
-Optionally, but enabled by default, the new version is pushed as a new tag into the source code repository (e.g. GitHub).
-If this option is chosen, git credentials and the repository URL needs to be provided.
-Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the ` + "`" + `commitVersion` + "`" + ` parameter as described below.
-If you require strict reproducibility of your builds, this should be used.`,
+In order to represent this version also in the version control system the new unique version will be pushed with a dedicated tag (` + "`" + `<tagPrefix><major>.<minor>.<patch><unique extension>` + "`" + `).
+
+Depending on the build tool used and thus the allowed versioning format the ` + "`" + `<unique extension>` + "`" + ` varies.
+
+**Remarks:**
+
+* There is no commit to master since this would create a perpetuum mobile and just trigger the next automatic build with automatic versioning, and so on ...
+* Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
+* You need to ensure that your CI/CD system can push back to your SCM (via providing ssh or HTTP(s) credentials)
+
+**This pattern is the default** behavior (` + "`" + `versioningType: cloud` + "`" + `) since this is suitable for for most cloud deliveries.
+
+It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which has a slighly different behavior than described above:
+
+* The new version will NOT be written as tag into the SCM but it is only available in the corresponding CI/CD workspace
+* IMPORTANT NOTICE: Using the option ` + "`" + `cloud_noTag` + "`" + ` should not be picked in case you need to ensure a fully traceable path from SCM commit to your build artifact.
+
+### 2. Pure version ` + "`" + `<major>.<minor>.<patch>` + "`" + `
+
+This pattern is often used by teams that have cloud deliveries with no fully automated procedure, e.g. delivery after each takt.
+Another typical use-case is development of a library with regular releases where the versioning pattern should be consumable and thus ideally complies to a ` + "`" + `<major>.<minor>.<patch>` + "`" + ` pattern.
+
+The version is then either manually set by the team in the course of the development process or automatically pushed to master after a successful release.
+
+Unlike for the _Continuous Deloyment_ pattern descibed above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
+
+Configuration of this pattern is done via ` + "`" + `versioningType: library` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("artifactPrepareVersion")
@@ -114,19 +136,18 @@ If you require strict reproducibility of your builds, this should be used.`,
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
-	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)")
-	cmd.Flags().StringVar(&stepConfig.GitUserEMail, "gitUserEMail", os.Getenv("PIPER_gitUserEMail"), "Allows to overwrite the global git setting 'user.email' available on your Jenkins server.")
-	cmd.Flags().StringVar(&stepConfig.GitUserName, "gitUserName", os.Getenv("PIPER_gitUserName"), "Allows to overwrite the global git setting 'user.name' available on your Jenkins server.")
+	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
+	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`.")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
-	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (versioningType 'cloud') should include the commit id hash .")
+	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
-	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run.")
+	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
-	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag (not available yet): automatic based on latest tag)")
+	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -150,6 +171,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "commitUserName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "gitUserName"}},
+					},
+					{
 						Name:        "dockerVersionSource",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -159,22 +188,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 					},
 					{
 						Name:        "filePath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "gitUserEMail",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "gitUserName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

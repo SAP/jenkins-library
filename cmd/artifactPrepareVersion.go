@@ -104,7 +104,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	newVersion := version
 
-	if versioningType == "cloud" {
+	if versioningType == "cloud" || versioningType == "cloud_noTag" {
 		versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
 		if err != nil {
 			return errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
@@ -140,10 +140,12 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		//ToDo: what about closure in current Groovy step. Discard the possibility or provide extension mechanism?
 
-		// commit changes and push to repository (including new version tag)
-		gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
-		if err != nil {
-			return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
+		if versioningType == "cloud" {
+			// commit changes and push to repository (including new version tag)
+			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
+			if err != nil {
+				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
+			}
 		}
 	}
 
@@ -230,7 +232,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	var commitID string
 
-	commit, err := addAndCommit(worktree, newVersion, t)
+	commit, err := addAndCommit(config, worktree, newVersion, t)
 	if err != nil {
 		return commit.String(), err
 	}
@@ -310,14 +312,14 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	return commitID, nil
 }
 
-func addAndCommit(worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
 	_, err := worktree.Add(".")
 	if err != nil {
 		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
 	}
 
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: config.CommitUserName, When: t}})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}
