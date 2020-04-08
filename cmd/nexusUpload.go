@@ -167,10 +167,12 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	execRunner := utils.getExecRunner()
-	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"} //fixme use npmRepository
+	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
 	if options.User != "" && options.Password != "" {
 		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
+	} else {
+		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
 	}
 	execRunner.SetEnv(environment)
 	fmt.Println(strings.Join(environment, ", "))
