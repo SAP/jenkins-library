@@ -67,12 +67,16 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	telemetryData.Custom1Label = "buildTool"
 	telemetryData.Custom1 = config.BuildTool
+	telemetryData.Custom2Label = "filePath"
+	telemetryData.Custom2 = config.FilePath
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
+		VersionField:        config.VersionSource,
+		VersionSection:      config.VersionSection,
 	}
 
 	var err error

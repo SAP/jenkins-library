@@ -11,13 +11,17 @@ import (
 
 // JSONfile defines an artifact using a json file for versioning
 type JSONfile struct {
-	Path      string
-	Content   map[string]interface{}
-	ReadFile  func(string) ([]byte, error)
-	WriteFile func(string, []byte, os.FileMode) error
+	Path         string
+	Content      map[string]interface{}
+	VersionField string
+	ReadFile     func(string) ([]byte, error)
+	WriteFile    func(string, []byte, os.FileMode) error
 }
 
 func (j *JSONfile) init() {
+	if len(j.VersionField) == 0 {
+		j.VersionField = "version"
+	}
 	if j.ReadFile == nil {
 		j.ReadFile = ioutil.ReadFile
 	}
@@ -27,8 +31,13 @@ func (j *JSONfile) init() {
 	}
 }
 
-// GetVersion returns the current version of the artifact with a JSON build descriptor
-func (j *JSONfile) GetVersion(versionField string) (string, error) {
+// VersioningScheme returns the relevant versioning scheme
+func (j *JSONfile) VersioningScheme() string {
+	return "semver2"
+}
+
+// GetVersion returns the current version of the artifact with a JSON-based build descriptor
+func (j *JSONfile) GetVersion() (string, error) {
 	j.init()
 
 	content, err := j.ReadFile(j.Path)
@@ -41,20 +50,20 @@ func (j *JSONfile) GetVersion(versionField string) (string, error) {
 		return "", errors.Wrapf(err, "failed to read json content of file '%v'", j.Content)
 	}
 
-	return fmt.Sprint(j.Content[versionField]), nil
+	return fmt.Sprint(j.Content[j.VersionField]), nil
 }
 
-// SetVersion updates the version of the artifact with a JSON build descriptor
-func (j *JSONfile) SetVersion(versionField, version string) error {
+// SetVersion updates the version of the artifact with a JSON-based build descriptor
+func (j *JSONfile) SetVersion(version string) error {
 	j.init()
 
 	if j.Content == nil {
-		_, err := j.GetVersion(versionField)
+		_, err := j.GetVersion()
 		if err != nil {
 			return err
 		}
 	}
-	j.Content[versionField] = version
+	j.Content[j.VersionField] = version
 
 	content, err := json.MarshalIndent(j.Content, "", "  ")
 	if err != nil {

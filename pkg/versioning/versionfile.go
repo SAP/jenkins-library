@@ -10,9 +10,10 @@ import (
 
 // Versionfile defines an artifact containing the version in a file, e.g. VERSION
 type Versionfile struct {
-	Path      string
-	ReadFile  func(string) ([]byte, error)
-	WriteFile func(string, []byte, os.FileMode) error
+	Path             string
+	ReadFile         func(string) ([]byte, error)
+	WriteFile        func(string, []byte, os.FileMode) error
+	versioningScheme string
 }
 
 func (v *Versionfile) init() {
@@ -30,7 +31,12 @@ func (v *Versionfile) init() {
 
 // VersioningScheme returns the relevant versioning scheme
 func (v *Versionfile) VersioningScheme() string {
-	return "semver2"
+	if len(v.versioningScheme) == 0 {
+		return "semver2"
+	} else {
+		return v.versioningScheme
+	}
+
 }
 
 // GetVersion returns the current version of the artifact

@@ -12,13 +12,17 @@ import (
 
 // YAMLfile defines an artifact using a yaml file for versioning
 type YAMLfile struct {
-	Path      string
-	Content   map[string]interface{}
-	ReadFile  func(string) ([]byte, error)
-	WriteFile func(string, []byte, os.FileMode) error
+	Path         string
+	Content      map[string]interface{}
+	VersionField string
+	ReadFile     func(string) ([]byte, error)
+	WriteFile    func(string, []byte, os.FileMode) error
 }
 
 func (y *YAMLfile) init() {
+	if len(y.VersionField) == 0 {
+		y.VersionField = "version"
+	}
 	if y.ReadFile == nil {
 		y.ReadFile = ioutil.ReadFile
 	}
@@ -28,8 +32,13 @@ func (y *YAMLfile) init() {
 	}
 }
 
-// GetVersion returns the current version of the artifact with a YAML build descriptor
-func (y *YAMLfile) GetVersion(versionField string) (string, error) {
+// VersioningScheme returns the relevant versioning scheme
+func (y *YAMLfile) VersioningScheme() string {
+	return "semver2"
+}
+
+// GetVersion returns the current version of the artifact with a YAML-based build descriptor
+func (y *YAMLfile) GetVersion() (string, error) {
 	y.init()
 
 	content, err := y.ReadFile(y.Path)
@@ -42,20 +51,20 @@ func (y *YAMLfile) GetVersion(versionField string) (string, error) {
 		return "", errors.Wrapf(err, "failed to read yaml content of file '%v'", y.Content)
 	}
 
-	return strings.TrimSpace(fmt.Sprint(y.Content[versionField])), nil
+	return strings.TrimSpace(fmt.Sprint(y.Content[y.VersionField])), nil
 }
 
-// SetVersion updates the version of the artifact with a YAML build descriptor
-func (y *YAMLfile) SetVersion(versionField, version string) error {
+// SetVersion updates the version of the artifact with a YAML-based build descriptor
+func (y *YAMLfile) SetVersion(version string) error {
 	y.init()
 
 	if y.Content == nil {
-		_, err := y.GetVersion(versionField)
+		_, err := y.GetVersion()
 		if err != nil {
 			return err
 		}
 	}
-	y.Content[versionField] = version
+	y.Content[y.VersionField] = version
 
 	content, err := yaml.Marshal(y.Content)
 	if err != nil {
