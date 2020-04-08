@@ -40,7 +40,7 @@ type Uploader interface {
 	Clear()
 }
 
-// SetRepoURL constructs the base URL to the Nexus repository. No parameter can be empty.
+// SetRepoURL constructs the base URL to the Nexus repository. mavenRepository or npmRepository may be empty.
 func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error {
 	mavenRepoURL, err := getBaseURL(nexusURL, nexusVersion, mavenRepository)
 	if err != nil {

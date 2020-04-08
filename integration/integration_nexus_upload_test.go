@@ -22,7 +22,7 @@ func TestNexusUpload(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "sonatype/nexus3:3.22.0",
 		ExposedPorts: []string{"8081/tcp"},
-		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false", "NEXUS_SCRIPTS_ALLOWCREATION": "true"},
+		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
 		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
 	}
 	nexusContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -82,7 +82,7 @@ func TestNexusUpload(t *testing.T) {
 	}
 
 	// Create npm repo for this test because nexus does not create one by default
-	request, err := http.NewRequest("POST", url + "/service/rest/beta/repositories/npm/hosted", strings.NewReader(`{"name": "npm-repo", "online": true, "storage": {"blobStoreName": "default", "strictContentTypeValidation": true, "writePolicy": "ALLOW_ONCE"}}`))
+	request, err := http.NewRequest("POST", url+"/service/rest/beta/repositories/npm/hosted", strings.NewReader(`{"name": "npm-repo", "online": true, "storage": {"blobStoreName": "default", "strictContentTypeValidation": true, "writePolicy": "ALLOW_ONCE"}}`))
 	assert.NoError(t, err)
 	request.Header.Set("Content-Type", "application/json")
 	request.SetBasicAuth("admin", "admin123")
@@ -188,7 +188,7 @@ func TestNexus2Upload(t *testing.T) {
 
 	// Create npm repo for this test because nexus does not create one by default
 	payload := strings.NewReader("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<repository><data><name>npm-repo</name><repoPolicy>RELEASE</repoPolicy><repoType>hosted</repoType><id>npm-repo</id><exposed>true</exposed><provider>npm-hosted</provider><providerRole>org.sonatype.nexus.proxy.repository.Repository</providerRole><format>npm</format></data></repository>")
-	request, _ := http.NewRequest("POST", url + "service/local/repositories", payload)
+	request, _ := http.NewRequest("POST", url+"service/local/repositories", payload)
 	request.Header.Add("Content-Type", "application/xml")
 	request.Header.Add("Authorization", "Basic YWRtaW46YWRtaW4xMjM=")
 	response, err := http.DefaultClient.Do(request)
