@@ -98,7 +98,9 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see transportRequestCreate */
     'changeDocumentId',
-    /** The id of the transport request to upload the file.*/
+    /** The id of the transport request to upload the file. This parameter is only taken into account
+      * when provided via signature to the step.
+      */
     'transportRequestId'])
 
 /** Uploads a file to a Transport Request. */
