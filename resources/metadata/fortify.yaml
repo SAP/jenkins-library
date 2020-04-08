@@ -63,7 +63,48 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
+    - name: autodetectClasspath
+      type: bool
+      description: Whether `autodetectClasspathCommand` is used to determine the classpath via tooling or not
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: autodetectClasspathCommand
+      type: string
+      description: Command used to automatically determine the classpath for translating the sources
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: "mvn dependency:build-classpath -Dmdep.outputFile={{.File}} -DincludeScope=compile"
+      conditions:
+      - conditionRef: strings-equal
+        params:
+        - name: scanType
+          value: maven
+    - name: autodetectClasspathCommand
+      type: string
+      description: Command used to automatically determine the classpath for translating the sources
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: "{{.PythonVersion}} -c \"import sys;p=sys.path;p.remove('');print(';'.join(p))\" > {{.File}}"
+      conditions:
+      - conditionRef: strings-equal
+        params:
+        - name: scanType
+          value: pip
+    - name: pythonRequirementsInstallSuffix
+      type: string
+      description: 'The suffix for the command used to install the requirements file in `scanType: ''pip''` to populate
+        the build environment with the necessary dependencies'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
     - name: pythonVersion
       type: string
       description: 'Python version to be used in `scanType: ''pip''`'

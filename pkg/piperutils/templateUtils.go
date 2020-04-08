@@ -11,7 +11,7 @@ func ExecuteTemplate(txtTemplate string, context interface{}) (string, error) {
 	return ExecuteTemplateFunctions(txtTemplate, nil, context)
 }
 
-// ExecuteTemplateFunctions parses the provided template, applies the transformation dunctions, substitutes values and returns the output
+// ExecuteTemplateFunctions parses the provided template, applies the transformation functions, substitutes values and returns the output
 func ExecuteTemplateFunctions(txtTemplate string, functionMap template.FuncMap, context interface{}) (string, error) {
 	template := template.New("tmp")
 	if functionMap != nil {

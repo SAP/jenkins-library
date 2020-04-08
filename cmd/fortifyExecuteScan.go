@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -84,28 +83,23 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	repoURL := strings.ReplaceAll(config.RepoURL, ".git", "")
 	buildLabel := fmt.Sprintf("%v/commit/%v", repoURL, config.CommitID)
 
-	// Create sourceanalyzer / maven command based on configuration
-	if config.ScanType == "maven" {
-		// Create and execute special maven command
+	// Create sourceanalyzer command based on configuration
+	buildID := uuid.New().String()
+	command.Dir(config.ModulePath)
+	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
 
-	} else {
-		buildID := uuid.New().String()
-		command.Dir(config.ModulePath)
-		os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
-
-		if config.UpdateRulePack {
-			err := command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
-			if err != nil {
-				log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to update rule pack")
-			}
-			err = command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
-			if err != nil {
-				log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to fetch details of installed rule pack")
-			}
+	if config.UpdateRulePack {
+		err := command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
+		if err != nil {
+			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to update rule pack")
 		}
-
-		triggerFortifyScan(config, command, buildID, buildLabel)
+		err = command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
+		if err != nil {
+			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to fetch details of installed rule pack")
+		}
 	}
+
+	triggerFortifyScan(config, command, buildID, buildLabel)
 
 	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
@@ -341,7 +335,7 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, p
 		log.Entry().Infof("Most recent artifact uploaded on %v of Project Version %v is still in status %v...", artifact.UploadDate, projectVersionID, artifact.Status)
 		time.Sleep(10 * time.Second)
 		verifyScanResultsFinishedUploading(config, sys, projectVersionID, buildLabel, filterSet, numInvokes)
-		return true
+		return false
 	}
 	if "REQUIRE_AUTH" == artifact.Status {
 		// verify no manual issue approval needed
@@ -350,7 +344,7 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, p
 	if "ERROR_PROCESSING" == artifact.Status {
 		log.Entry().Warnf("There are artifacts that failed processing for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
 	}
-	return false
+	return true
 }
 
 func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, numInvokes int) {
@@ -413,34 +407,59 @@ func calculateTimeDifferenceToLastUpload(config fortifyExecuteScanOptions, uploa
 	return absoluteSeconds
 }
 
+func executeTemplatedCommand(command execRunner, cmdTemplate string, context map[string]string) {
+	cmd, err := piperutils.ExecuteTemplate(cmdTemplate, context)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Failed to transform template for command: %v", cmdTemplate)
+	}
+	commandTokens := tokenize(cmd)
+	err = command.RunExecutable(commandTokens[0], commandTokens[1:]...)
+	if err != nil {
+		log.Entry().WithError(err).WithField("command", cmd).Fatal("Failed to execute command")
+	}
+}
+
+func autoresolveClasspath(config fortifyExecuteScanOptions, command execRunner, context map[string]string) string {
+	if config.AutodetectClasspath {
+		executeTemplatedCommand(command, config.AutodetectClasspathCommand, context)
+		data, err := ioutil.ReadFile(context["File"])
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("failed to read java classpath file %v", context["File"])
+		}
+		return string(data)
+	}
+	return ""
+}
+
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+	// Do special Python related prep
+	pipVersion := "pip3"
+	if config.PythonVersion != "python3" {
+		pipVersion = "pip2"
+	}
+
+	// Determine classpath
+	classpath := autoresolveClasspath(config, command, map[string]string{"Pip": pipVersion, "PythonVersion": config.PythonVersion, "File": "cp.txt"})
+	if config.ScanType == "maven" {
+		if len(config.Translate) == 0 {
+			config.Translate = `[{"classpath":"`
+			config.Translate += classpath
+			config.Translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
+		}
+	}
 	if config.ScanType == "pip" {
-		// Do special Python related prep
-		pipVersion := "pip3"
-		if config.PythonVersion != "python3" {
-			pipVersion = "pip2"
+		// install the dev dependencies
+		if len(config.PythonRequirementsFile) > 0 {
+			context := map[string]string{"Pip": pipVersion, "PythonRequirementsFile": config.PythonRequirementsFile, "PythonRequirementsInstallSuffix": config.PythonRequirementsInstallSuffix}
+			executeTemplatedCommand(command, "{{.Pip}} install --user -r {{.PythonRequirementsFile}} {{.PythonRequirementsInstallSuffix}}", context)
 		}
-		installCommand, err := piperutils.ExecuteTemplate(config.PythonInstallCommand, map[string]string{"Pip": pipVersion})
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Failed to execute template for PythonInstallCommand: %v", config.PythonInstallCommand)
-		}
-		installCommandTokens := tokenize(installCommand)
-		err = command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
-		if err != nil {
-			log.Entry().WithError(err).WithField("command", config.PythonInstallCommand).Fatal("Failed to execute python install command")
-		}
+
+		executeTemplatedCommand(command, config.PythonInstallCommand, map[string]string{"Pip": pipVersion})
 
 		if len(config.Translate) == 0 {
-			buf := new(bytes.Buffer)
-			command.Stdout(buf)
-			err := command.RunExecutable(config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))")
-			command.Stdout(log.Entry().Writer())
-
 			config.Translate = `[{"pythonPath":"`
-			if err == nil {
-				config.Translate += strings.TrimSpace(buf.String())
-				config.Translate += ";"
-			}
+			config.Translate += classpath
+			config.Translate += ":"
 			config.Translate += config.PythonAdditionalPath
 			config.Translate += `","pythonIncludes":"`
 			config.Translate += config.PythonIncludes
@@ -450,16 +469,19 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		}
 	}
 
-	translateProject(config, command, buildID)
+	translateProject(config, command, buildID, classpath)
 
 	scanProject(config, command, buildID, buildLabel)
 }
 
-func translateProject(config fortifyExecuteScanOptions, command execRunner, buildID string) {
+func translateProject(config fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
 	for _, translate := range translateList {
+		if len(classpath) > 0 {
+			translate["autoClasspath"] = classpath
+		}
 		handleSingleTranslate(config, command, buildID, translate)
 	}
 }
@@ -532,10 +554,12 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		if len(t["libDirs"]) > 0 {
 			options = append(options, "-libdirs", t["libDirs"])
 		}
-		return append(options, t["src"])
+		return append(options, tokenize(t["src"])...)
 	}
-	if config.ScanType == "java" {
-		if len(t["classpath"]) > 0 {
+	if config.ScanType == "maven" {
+		if len(t["autoClasspath"]) > 0 {
+			options = append(options, "-cp", t["autoClasspath"])
+		} else if len(t["classpath"]) > 0 {
 			options = append(options, "-cp", t["classpath"])
 		}
 		if len(t["extdirs"]) > 0 {
@@ -553,10 +577,12 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
 		}
-		return append(options, t["src"])
+		return append(options, tokenize(t["src"])...)
 	}
 	if config.ScanType == "pip" {
-		if len(t["pythonPath"]) > 0 {
+		if len(t["autoClasspath"]) > 0 {
+			options = append(options, "-python-path", t["autoClasspath"])
+		} else if len(t["pythonPath"]) > 0 {
 			options = append(options, "-python-path", t["pythonPath"])
 		}
 		if len(t["pythonExcludes"]) > 0 {
