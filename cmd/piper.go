@@ -45,6 +45,7 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
+	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
