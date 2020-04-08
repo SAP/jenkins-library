@@ -134,8 +134,25 @@ spec:
         - STEPS
       - name: versioningTemplate
         type: string
-        description: "DEPRECATED: Defines the template for the automatic version which will be created."
+        description: "DEPRECATED: Defines the template for the automatic version which will be created"
         mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: versionSection
+        type: string
+        description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: versionSource
+        aliases:
+          - name: dockerVersionSource
+          - deprecated: true
+        type: string
+        description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
         scope:
         - PARAMETERS
         - STAGES
@@ -148,23 +165,6 @@ spec:
         - STAGES
         - STEPS
         default: cloud
-      - name: versionSection
-        type: string
-        description: "For `buildTool: custom` only: defines the version section in case a *.cfg/*.ini file is used."
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: versionSource
-        aliases:
-          - name: dockerVersionSource
-            deprecated: true
-        type: string
-        description: "For `buildTool: custom`: defines the name of the version field in the build descriptor."
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
     secrets:
     - name: gitHttpsCredentialsId
       type: jenkins

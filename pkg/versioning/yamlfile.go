@@ -12,23 +12,23 @@ import (
 
 // YAMLfile defines an artifact using a yaml file for versioning
 type YAMLfile struct {
-	Path         string
-	Content      map[string]interface{}
-	VersionField string
-	ReadFile     func(string) ([]byte, error)
-	WriteFile    func(string, []byte, os.FileMode) error
+	path         string
+	content      map[string]interface{}
+	versionField string
+	readFile     func(string) ([]byte, error)
+	writeFile    func(string, []byte, os.FileMode) error
 }
 
 func (y *YAMLfile) init() {
-	if len(y.VersionField) == 0 {
-		y.VersionField = "version"
+	if len(y.versionField) == 0 {
+		y.versionField = "version"
 	}
-	if y.ReadFile == nil {
-		y.ReadFile = ioutil.ReadFile
+	if y.readFile == nil {
+		y.readFile = ioutil.ReadFile
 	}
 
-	if y.WriteFile == nil {
-		y.WriteFile = ioutil.WriteFile
+	if y.writeFile == nil {
+		y.writeFile = ioutil.WriteFile
 	}
 }
 
@@ -41,38 +41,38 @@ func (y *YAMLfile) VersioningScheme() string {
 func (y *YAMLfile) GetVersion() (string, error) {
 	y.init()
 
-	content, err := y.ReadFile(y.Path)
+	content, err := y.readFile(y.path)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", y.Path)
+		return "", errors.Wrapf(err, "failed to read file '%v'", y.path)
 	}
 
-	err = yaml.Unmarshal(content, &y.Content)
+	err = yaml.Unmarshal(content, &y.content)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read yaml content of file '%v'", y.Content)
+		return "", errors.Wrapf(err, "failed to read yaml content of file '%v'", y.content)
 	}
 
-	return strings.TrimSpace(fmt.Sprint(y.Content[y.VersionField])), nil
+	return strings.TrimSpace(fmt.Sprint(y.content[y.versionField])), nil
 }
 
 // SetVersion updates the version of the artifact with a YAML-based build descriptor
 func (y *YAMLfile) SetVersion(version string) error {
 	y.init()
 
-	if y.Content == nil {
+	if y.content == nil {
 		_, err := y.GetVersion()
 		if err != nil {
 			return err
 		}
 	}
-	y.Content[y.VersionField] = version
+	y.content[y.versionField] = version
 
-	content, err := yaml.Marshal(y.Content)
+	content, err := yaml.Marshal(y.content)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create yaml content for '%v'", y.Path)
+		return errors.Wrapf(err, "failed to create yaml content for '%v'", y.path)
 	}
-	err = y.WriteFile(y.Path, content, 0700)
+	err = y.writeFile(y.path, content, 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", y.Path)
+		return errors.Wrapf(err, "failed to write file '%v'", y.path)
 	}
 
 	return nil

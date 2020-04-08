@@ -54,8 +54,8 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "dub.json"
 		}
 		artifact = &JSONfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: "version",
+			path:         buildDescriptorFilePath,
+			versionField: "version",
 		}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
@@ -66,35 +66,35 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			}
 		}
 		artifact = &Versionfile{
-			Path: buildDescriptorFilePath,
+			path: buildDescriptorFilePath,
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "pom.xml"
 		}
 		artifact = &Maven{
-			Runner:              &mvnRunner{},
-			ExecRunner:          execRunner,
-			PomPath:             buildDescriptorFilePath,
-			ProjectSettingsFile: opts.ProjectSettingsFile,
-			GlobalSettingsFile:  opts.GlobalSettingsFile,
-			M2Path:              opts.M2Path,
+			runner:              &mvnRunner{},
+			execRunner:          execRunner,
+			pomPath:             buildDescriptorFilePath,
+			projectSettingsFile: opts.ProjectSettingsFile,
+			globalSettingsFile:  opts.GlobalSettingsFile,
+			m2Path:              opts.M2Path,
 		}
 	case "mta":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "mta.yaml"
 		}
 		artifact = &YAMLfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: "version",
+			path:         buildDescriptorFilePath,
+			versionField: "version",
 		}
 	case "npm":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "package.json"
 		}
 		artifact = &JSONfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: "version",
+			path:         buildDescriptorFilePath,
+			versionField: "version",
 		}
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
@@ -105,7 +105,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			}
 		}
 		artifact = &Versionfile{
-			Path:             buildDescriptorFilePath,
+			path:             buildDescriptorFilePath,
 			versioningScheme: "pep440",
 		}
 	case "sbt":
@@ -113,8 +113,8 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "sbtDescriptor.json"
 		}
 		artifact = &JSONfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: "version",
+			path:         buildDescriptorFilePath,
+			versionField: "version",
 		}
 	default:
 		return artifact, fmt.Errorf("build tool '%v' not supported", buildTool)
@@ -142,23 +142,23 @@ func customArtifact(buildDescriptorFilePath, field, section string) (Artifact, e
 	switch filepath.Ext(buildDescriptorFilePath) {
 	case ".cfg", ".ini":
 		return &INIfile{
-			Path:           buildDescriptorFilePath,
-			VersionField:   field,
-			VersionSection: section,
+			path:           buildDescriptorFilePath,
+			versionField:   field,
+			versionSection: section,
 		}, nil
 	case ".json":
 		return &JSONfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: field,
+			path:         buildDescriptorFilePath,
+			versionField: field,
 		}, nil
 	case ".yaml", ".yml":
 		return &YAMLfile{
-			Path:         buildDescriptorFilePath,
-			VersionField: field,
+			path:         buildDescriptorFilePath,
+			versionField: field,
 		}, nil
 	case ".txt", "":
 		return &Versionfile{
-			Path: buildDescriptorFilePath,
+			path: buildDescriptorFilePath,
 		}, nil
 	default:
 		return nil, fmt.Errorf("file type not supported: '%v'", buildDescriptorFilePath)

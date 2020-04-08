@@ -12,32 +12,32 @@ import (
 
 // INIfile defines an artifact using a json file for versioning
 type INIfile struct {
-	Path           string
-	Content        *ini.File
-	VersionSection string
-	VersionField   string
-	ReadFile       func(string) ([]byte, error)
-	WriteFile      func(string, []byte, os.FileMode) error
+	path           string
+	content        *ini.File
+	versionSection string
+	versionField   string
+	readFile       func(string) ([]byte, error)
+	writeFile      func(string, []byte, os.FileMode) error
 }
 
 func (i *INIfile) init() error {
-	if len(i.VersionField) == 0 {
-		i.VersionField = "version"
+	if len(i.versionField) == 0 {
+		i.versionField = "version"
 	}
-	if i.ReadFile == nil {
-		i.ReadFile = ioutil.ReadFile
+	if i.readFile == nil {
+		i.readFile = ioutil.ReadFile
 	}
-	if i.WriteFile == nil {
-		i.WriteFile = ioutil.WriteFile
+	if i.writeFile == nil {
+		i.writeFile = ioutil.WriteFile
 	}
-	if i.Content == nil {
-		conf, err := i.ReadFile(i.Path)
+	if i.content == nil {
+		conf, err := i.readFile(i.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", i.Path)
+			return errors.Wrapf(err, "failed to read file '%v'", i.path)
 		}
-		i.Content, err = ini.Load(conf)
+		i.content, err = ini.Load(conf)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load content from file '%v'", i.Path)
+			return errors.Wrapf(err, "failed to load content from file '%v'", i.path)
 		}
 	}
 	return nil
@@ -50,34 +50,34 @@ func (i *INIfile) VersioningScheme() string {
 
 // GetVersion returns the current version of the artifact with a ini-file-based build descriptor
 func (i *INIfile) GetVersion() (string, error) {
-	if i.Content == nil {
+	if i.content == nil {
 		err := i.init()
 		if err != nil {
 			return "", err
 		}
 	}
-	section := i.Content.Section(i.VersionSection)
-	if section.HasKey(i.VersionField) {
-		return section.Key(i.VersionField).String(), nil
+	section := i.content.Section(i.versionSection)
+	if section.HasKey(i.versionField) {
+		return section.Key(i.versionField).String(), nil
 	}
-	return "", fmt.Errorf("field '%v' not found in section '%v'", i.VersionField, i.VersionSection)
+	return "", fmt.Errorf("field '%v' not found in section '%v'", i.versionField, i.versionSection)
 }
 
 // SetVersion updates the version of the artifact with a ini-file-based build descriptor
 func (i *INIfile) SetVersion(version string) error {
-	if i.Content == nil {
+	if i.content == nil {
 		err := i.init()
 		if err != nil {
 			return err
 		}
 	}
-	section := i.Content.Section(i.VersionSection)
-	section.Key(i.VersionField).SetValue(version)
+	section := i.content.Section(i.versionSection)
+	section.Key(i.versionField).SetValue(version)
 	var buf bytes.Buffer
-	i.Content.WriteTo(&buf)
-	err := i.WriteFile(i.Path, buf.Bytes(), 0700)
+	i.content.WriteTo(&buf)
+	err := i.writeFile(i.path, buf.Bytes(), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", i.Path)
+		return errors.Wrapf(err, "failed to write file '%v'", i.path)
 	}
 	return nil
 }

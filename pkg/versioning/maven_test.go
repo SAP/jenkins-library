@@ -43,8 +43,8 @@ func TestMavenGetVersion(t *testing.T) {
 			stdout: "1.2.3",
 		}
 		mvn := &Maven{
-			Runner:  &runner,
-			PomPath: "path/to/pom.xml",
+			runner:  &runner,
+			pomPath: "path/to/pom.xml",
 		}
 		version, err := mvn.GetVersion()
 		assert.NoError(t, err)
@@ -59,7 +59,7 @@ func TestMavenGetVersion(t *testing.T) {
 			evaluateErrorString: "maven eval failed",
 		}
 		mvn := &Maven{
-			Runner: &runner,
+			runner: &runner,
 		}
 		version, err := mvn.GetVersion()
 		assert.EqualError(t, err, "Maven - getting version failed: maven eval failed")
@@ -74,11 +74,11 @@ func TestMavenSetVersion(t *testing.T) {
 			stdout: "testGroup",
 		}
 		mvn := &Maven{
-			Runner:              &runner,
-			PomPath:             "path/to/pom.xml",
-			ProjectSettingsFile: "project-settings.xml",
-			GlobalSettingsFile:  "global-settings.xml",
-			M2Path:              "m2/path",
+			runner:              &runner,
+			pomPath:             "path/to/pom.xml",
+			projectSettingsFile: "project-settings.xml",
+			globalSettingsFile:  "global-settings.xml",
+			m2Path:              "m2/path",
 		}
 		expectedOptions := maven.ExecuteOptions{
 			PomPath:             "path/to/pom.xml",
@@ -99,8 +99,8 @@ func TestMavenSetVersion(t *testing.T) {
 			evaluateErrorString: "maven eval failed",
 		}
 		mvn := &Maven{
-			Runner:  &runner,
-			PomPath: "path/to/pom.xml",
+			runner:  &runner,
+			pomPath: "path/to/pom.xml",
 		}
 		err := mvn.SetVersion("1.2.4")
 		assert.EqualError(t, err, "Maven - getting groupId failed: maven eval failed")
@@ -112,8 +112,8 @@ func TestMavenSetVersion(t *testing.T) {
 			executeErrorString: "maven exec failed",
 		}
 		mvn := &Maven{
-			Runner:  &runner,
-			PomPath: "path/to/pom.xml",
+			runner:  &runner,
+			pomPath: "path/to/pom.xml",
 		}
 		err := mvn.SetVersion("1.2.4")
 		assert.EqualError(t, err, "Maven - setting version 1.2.4 failed: maven exec failed")

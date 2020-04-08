@@ -10,22 +10,22 @@ import (
 
 // Versionfile defines an artifact containing the version in a file, e.g. VERSION
 type Versionfile struct {
-	Path             string
-	ReadFile         func(string) ([]byte, error)
-	WriteFile        func(string, []byte, os.FileMode) error
+	path             string
+	readFile         func(string) ([]byte, error)
+	writeFile        func(string, []byte, os.FileMode) error
 	versioningScheme string
 }
 
 func (v *Versionfile) init() {
-	if len(v.Path) == 0 {
-		v.Path = "VERSION"
+	if len(v.path) == 0 {
+		v.path = "VERSION"
 	}
-	if v.ReadFile == nil {
-		v.ReadFile = ioutil.ReadFile
+	if v.readFile == nil {
+		v.readFile = ioutil.ReadFile
 	}
 
-	if v.WriteFile == nil {
-		v.WriteFile = ioutil.WriteFile
+	if v.writeFile == nil {
+		v.writeFile = ioutil.WriteFile
 	}
 }
 
@@ -43,9 +43,9 @@ func (v *Versionfile) VersioningScheme() string {
 func (v *Versionfile) GetVersion() (string, error) {
 	v.init()
 
-	content, err := v.ReadFile(v.Path)
+	content, err := v.readFile(v.path)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", v.Path)
+		return "", errors.Wrapf(err, "failed to read file '%v'", v.path)
 	}
 
 	return strings.TrimSpace(string(content)), nil
@@ -55,9 +55,9 @@ func (v *Versionfile) GetVersion() (string, error) {
 func (v *Versionfile) SetVersion(version string) error {
 	v.init()
 
-	err := v.WriteFile(v.Path, []byte(version), 0700)
+	err := v.writeFile(v.path, []byte(version), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", v.Path)
+		return errors.Wrapf(err, "failed to write file '%v'", v.path)
 	}
 
 	return nil

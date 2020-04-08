@@ -11,8 +11,8 @@ import (
 func TestYAMLfileGetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		yamlfile := YAMLfile{
-			Path:     "my.yaml",
-			ReadFile: func(filename string) ([]byte, error) { return []byte(`version: 1.2.3`), nil },
+			path:     "my.yaml",
+			readFile: func(filename string) ([]byte, error) { return []byte(`version: 1.2.3`), nil },
 		}
 		version, err := yamlfile.GetVersion()
 		assert.NoError(t, err)
@@ -21,9 +21,9 @@ func TestYAMLfileGetVersion(t *testing.T) {
 
 	t.Run("error case", func(t *testing.T) {
 		yamlfile := YAMLfile{
-			Path:         "my.yaml",
-			VersionField: "theversion",
-			ReadFile:     func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
+			path:         "my.yaml",
+			versionField: "theversion",
+			readFile:     func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
 		}
 		_, err := yamlfile.GetVersion()
 		assert.EqualError(t, err, "failed to read file 'my.yaml': read error")
@@ -34,10 +34,10 @@ func TestYAMLfileSetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		var content []byte
 		yamlfile := YAMLfile{
-			Path:         "my.yaml",
-			VersionField: "theversion",
-			ReadFile:     func(filename string) ([]byte, error) { return []byte(`theversion: 1.2.3`), nil },
-			WriteFile:    func(filename string, filecontent []byte, mode os.FileMode) error { content = filecontent; return nil },
+			path:         "my.yaml",
+			versionField: "theversion",
+			readFile:     func(filename string) ([]byte, error) { return []byte(`theversion: 1.2.3`), nil },
+			writeFile:    func(filename string, filecontent []byte, mode os.FileMode) error { content = filecontent; return nil },
 		}
 		err := yamlfile.SetVersion("1.2.4")
 		assert.NoError(t, err)
@@ -46,10 +46,10 @@ func TestYAMLfileSetVersion(t *testing.T) {
 
 	t.Run("error case", func(t *testing.T) {
 		yamlfile := YAMLfile{
-			Path:         "my.yaml",
-			VersionField: "theversion",
-			ReadFile:     func(filename string) ([]byte, error) { return []byte(`theversion: 1.2.3`), nil },
-			WriteFile:    func(filename string, filecontent []byte, mode os.FileMode) error { return fmt.Errorf("write error") },
+			path:         "my.yaml",
+			versionField: "theversion",
+			readFile:     func(filename string) ([]byte, error) { return []byte(`theversion: 1.2.3`), nil },
+			writeFile:    func(filename string, filecontent []byte, mode os.FileMode) error { return fmt.Errorf("write error") },
 		}
 		err := yamlfile.SetVersion("1.2.4")
 		assert.EqualError(t, err, "failed to write file 'my.yaml': write error")

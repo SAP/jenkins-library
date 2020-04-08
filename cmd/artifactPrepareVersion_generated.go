@@ -27,9 +27,9 @@ type artifactPrepareVersionOptions struct {
 	TagPrefix           string `json:"tagPrefix,omitempty"`
 	Username            string `json:"username,omitempty"`
 	VersioningTemplate  string `json:"versioningTemplate,omitempty"`
-	VersioningType      string `json:"versioningType,omitempty"`
 	VersionSection      string `json:"versionSection,omitempty"`
 	VersionSource       string `json:"versionSource,omitempty"`
+	VersioningType      string `json:"versioningType,omitempty"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -137,11 +137,7 @@ Configuration of this pattern is done via ` + "`" + `versioningType: library` + 
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. maven: pom.xml, npm: package.json, mta: mta.yaml)")
-	cmd.Flags().StringVar(&stepConfig.GitUserEMail, "gitUserEMail", os.Getenv("PIPER_gitUserEMail"), "Allows to overwrite the global git setting 'user.email' available on your Jenkins server.")
-	cmd.Flags().StringVar(&stepConfig.GitUserName, "gitUserName", os.Getenv("PIPER_gitUserName"), "Allows to overwrite the global git setting 'user.name' available on your Jenkins server.")
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
-	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
@@ -150,11 +146,9 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
-	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created.")
-	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (cloud: fully automatic, library: manual, libraryTag (not available yet): automatic based on latest tag).")
-	cmd.Flags().StringVar(&stepConfig.VersionSection, "versionSection", os.Getenv("PIPER_versionSection"), "For `buildTool: custom` only: defines the version section in case a *.cfg/*.ini file is used.")
-	cmd.Flags().StringVar(&stepConfig.VersionSource, "versionSource", os.Getenv("PIPER_versionSource"), "For `buildTool: custom`: defines the name of the version field in the build descriptor.")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
+	cmd.Flags().StringVar(&stepConfig.VersionSection, "versionSection", os.Getenv("PIPER_versionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
+	cmd.Flags().StringVar(&stepConfig.VersionSource, "versionSource", os.Getenv("PIPER_versionSource"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)")
 
 	cmd.MarkFlagRequired("buildTool")
@@ -179,25 +173,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "filePath",
 						Name:        "commitUserName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "gitUserEMail",
 						Aliases:     []config.Alias{{Name: "gitUserName"}},
-					},
-					{
-						Name:        "dockerVersionSource",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "filePath",
@@ -272,14 +253,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "versioningType",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "versionSection",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -293,7 +266,15 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerVersionSource"}},
+						Aliases:     []config.Alias{{Name: "dockerVersionSource"}, {Name: ""}},
+					},
+					{
+						Name:        "versioningType",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
