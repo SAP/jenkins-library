@@ -16,9 +16,6 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Define settings used by the Jenkins Kubernetes plugin.
-     */
     'jenkinsKubernetes',
         /**
          * Jnlp agent Docker images which should be used to create new pods.
