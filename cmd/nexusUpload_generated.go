@@ -16,7 +16,7 @@ import (
 type nexusUploadOptions struct {
 	Version            string `json:"version,omitempty"`
 	Url                string `json:"url,omitempty"`
-	Repository         string `json:"repository,omitempty"`
+	MavenRepository    string `json:"mavenRepository,omitempty"`
 	NpmRepository      string `json:"npmRepository,omitempty"`
 	GroupID            string `json:"groupId,omitempty"`
 	ArtifactID         string `json:"artifactId,omitempty"`
@@ -64,8 +64,8 @@ func NexusUploadCommand() *cobra.Command {
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", "nexus3", "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
-	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the nexus repository for Maven and MTA deployments.")
-	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments.")
+	cmd.Flags().StringVar(&stepConfig.MavenRepository, "mavenRepository", os.Getenv("PIPER_mavenRepository"), "Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.")
+	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts. Only used in MTA projects, ignored for Maven.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactID, "artifactId", os.Getenv("PIPER_artifactId"), "The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
@@ -74,7 +74,6 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for accessing the Nexus endpoint.")
 
 	cmd.MarkFlagRequired("url")
-	cmd.MarkFlagRequired("repository")
 }
 
 // retrieve step metadata
@@ -104,12 +103,12 @@ func nexusUploadMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "nexus/url"}},
 					},
 					{
-						Name:        "repository",
+						Name:        "mavenRepository",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "nexus/repository"}},
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}},
 					},
 					{
 						Name:        "npmRepository",
@@ -117,7 +116,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}},
 					},
 					{
 						Name:        "groupId",

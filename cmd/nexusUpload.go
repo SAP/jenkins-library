@@ -133,32 +133,41 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 }
 
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
+	performMavenUpload := len(options.MavenRepository) > 0
+	performNpmUpload := len(options.NpmRepository) > 0
+	err := uploader.SetRepoURL(options.Url, options.Version, options.MavenRepository, options.NpmRepository)
 	if err != nil {
 		return err
 	}
 
-	if utils.usesNpm() {
+	if utils.usesNpm() && performNpmUpload {
 		log.Entry().Info("NPM project structure detected")
 		err = uploadNpmArtifacts(utils, uploader, options)
+	} else {
+		log.Entry().Info("Skipping npm upload because either no package json was found or NpmRepository option is not provided.")
 	}
 	if err != nil {
 		return err
 	}
 
-	if utils.usesMta() {
-		log.Entry().Info("MTA project structure detected")
-		return uploadMTA(utils, uploader, options)
-	} else if utils.usesMaven() {
-		log.Entry().Info("Maven project structure detected")
-		return uploadMaven(utils, uploader, options)
+	if performMavenUpload {
+		if utils.usesMta() {
+			log.Entry().Info("MTA project structure detected")
+			return uploadMTA(utils, uploader, options)
+		} else if utils.usesMaven() {
+			log.Entry().Info("Maven project structure detected")
+			return uploadMaven(utils, uploader, options)
+		}
+	} else {
+		log.Entry().Info("Skipping maven and mta upload because mavenRepository option is not provided.")
 	}
+
 	return nil
 }
 
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	execRunner := utils.getExecRunner()
-	environment := []string{"npm_config_registry=http://" + uploader.GetRepoURL(), "npm_config_email=project-piper@no-reply.com"} //fixme use npmRepository
+	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"} //fixme use npmRepository
 	if options.User != "" && options.Password != "" {
 		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
@@ -298,7 +307,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	var defines []string
-	defines = append(defines, "-Durl=http://"+uploader.GetRepoURL())
+	defines = append(defines, "-Durl=http://"+uploader.GetMavenRepoURL())
 	defines = append(defines, "-DgroupId="+uploader.GetGroupID())
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())

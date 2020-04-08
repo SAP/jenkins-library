@@ -39,24 +39,24 @@ spec:
         mandatory: true
         aliases:
           - name: nexus/url
-      - name: repository
+      - name: mavenRepository
         type: string
-        description: Name of the nexus repository for Maven and MTA deployments.
+        description: Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
         aliases:
-          - name: nexus/repository
+          - name: nexus/mavenRepository
       - name: npmRepository
         type: string
-        description: Name of the nexus repository for npm deployments.
+        description: Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
+        aliases:
+          - name: nexus/mavenRepository
       - name: groupId
         type: string
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
