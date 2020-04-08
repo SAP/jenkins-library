@@ -10,6 +10,16 @@ spec:
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
     params:
+      - name: ATCRunConfig
+        type: string
+        description: YAML configuration for Packages and Software Components to be checked during ATC run
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        aliases:
+          - name: ATCRunConfig
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint

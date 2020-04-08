@@ -14,6 +14,7 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
+	ATCRunConfig      string `json:"ATCRunConfig,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
@@ -62,6 +63,7 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunATCCheckOptions) {
+	cmd.Flags().StringVar(&stepConfig.ATCRunConfig, "ATCRunConfig", os.Getenv("PIPER_ATCRunConfig"), "YAML configuration for Packages and Software Components to be checked during ATC run")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
@@ -73,6 +75,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.SoftwareComponent, "softwareComponent", os.Getenv("PIPER_softwareComponent"), "Specifies the Software Component")
 	cmd.Flags().StringVar(&stepConfig.Package, "package", os.Getenv("PIPER_package"), "Specifies the Package")
 
+	cmd.MarkFlagRequired("ATCRunConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("softwareComponent")
@@ -82,9 +85,21 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 // retrieve step metadata
 func abapEnvironmentRunATCCheckMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "abapEnvironmentRunATCCheck",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "ATCRunConfig",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "ATCRunConfig"}},
+					},
 					{
 						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},

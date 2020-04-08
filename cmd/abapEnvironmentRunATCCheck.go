@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -14,6 +17,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/ghodss/yaml"
 )
 
 func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
@@ -68,9 +72,41 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 
+	//Parse YAML ATC run configuration as body for ATC run trigger
+	filename, _ := filepath.Abs(config.ATCRunConfig)
+	yamlFile, err := ioutil.ReadFile(filename)
+	var ATCRunConfig ATCconfig
+	if err == nil {
+		var result []byte
+		result, err = yaml.YAMLToJSON(yamlFile)
+		json.Unmarshal(result, &ATCRunConfig)
+	}
+
+	var packageString = ""
+	var softwareComponentString string
+	if err == nil {
+		if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
+			err = fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked!")
+		}
+
+		//Build Package XML body
+		packageString += "<obj:packages>"
+		for _, s := range ATCRunConfig.Objects.Package {
+			packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
+		}
+		packageString += "</obj:packages>"
+
+		//Build SC XML body
+		softwareComponentString += "<obj:softwarecomponents>"
+		for _, s := range ATCRunConfig.Objects.SoftwareComponent {
+			softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
+		}
+		softwareComponentString += "</obj:softwarecomponents>"
+	}
+
 	//Trigger ATC run
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"><obj:objectSet><obj:softwarecomponents><obj:softwarecomponent value="` + config.SoftwareComponent + `"/></obj:softwarecomponents><obj:packages><obj:package value="` + config.Package + `" includeSubpackages="false"/></obj:packages></obj:objectSet></atc:runparameters>`
+	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
 	var body = []byte(bodyString)
 
 	if err == nil {
@@ -81,14 +117,6 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	var location string
 	//Poll ATC run
 	if err == nil {
-		/*
-			_, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Entry().
-					WithError(err).
-					Fatal("Could not read response body")
-			}
-		*/
 		location = resp.Header.Get("Location")
 		details.URL = abapEndpoint + location
 		location, err = pollATCRun(details, body, &client, config)
@@ -102,26 +130,17 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	//Parse response
 	if err == nil {
 		body, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Entry().
-				WithError(err).
-				Fatal("Could not read response body")
-		}
+	}
+	if err == nil {
 		defer resp.Body.Close()
-
-		//Testing
 		parsedXML := new(Result)
 		xml.Unmarshal([]byte(body), &parsedXML)
-
 		err = ioutil.WriteFile("result.xml", body, 0644)
-		if err != nil {
-			log.Entry().
-				WithError(err).
-				Fatal("Could not save XML file")
-		}
-		for _, s := range parsedXML.Files {
-			for _, t := range s.ATCErrors {
-				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
+		if err == nil {
+			for _, s := range parsedXML.Files {
+				for _, t := range s.ATCErrors {
+					log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
+				}
 			}
 		}
 	}
@@ -131,7 +150,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
-	log.Entry().Info("ATC run completed succesfully")
+	log.Entry().Info("ATC run completed succesfully. The respective run results are listes below.")
 }
 
 func runATC(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
@@ -252,6 +271,24 @@ func getResultATCRun(requestType string, details connectionDetailsHTTP, body []b
 		return req, fmt.Errorf("Getting HTTP response failed: %w", err)
 	}
 	return req, err
+}
+
+type ATCconfig struct {
+	Objects ATCObjects `json:"atcobjects"`
+}
+
+type ATCObjects struct {
+	Package           []Package           `json:"package"`
+	SoftwareComponent []SoftwareComponent `json:"softwarecomponent"`
+}
+
+type Package struct {
+	Name               string `json:"name"`
+	IncludeSubpackages bool   `json:"includesubpackage"`
+}
+
+type SoftwareComponent struct {
+	Name string `json:"name"`
 }
 
 type Run struct {
