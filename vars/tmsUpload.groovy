@@ -31,17 +31,13 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'nodeName',
 	/**
-	 * Defines the path to *.mtaext for the upload to the Transport Management Service.
-	 */
-	'mtaExtDescriptorPath',
-	/**
 	 * Defines the MTA version of the corresponding MTA id that MTA Extension Descriptor can be applied.
 	 */
 	'mtaVersion',
 	/**
-	 * A list of node id where the MTA Extension Descriptor should upload.
+	 * Map which defines per node (ID) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMappings: [1234: 'example.mtaext']`.
 	 */
-	'nodeIds',
+	'nodeExtDescriptorMapping',
     /**
      * Credentials to be used for the file and node uploads to the Transport Management Service.
      */
@@ -110,20 +106,23 @@ void call(Map parameters = [:]) {
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
 		
-		def mtaExtDescriptorPath = config.mtaExtDescriptorPath
 		def mtaVersion = config.mtaVersion ? "${config.mtaVersion}" : "*"
-		List<String> nodeIds = config.nodeIds ?: []
+		Map nodeExtDescriptorMapping = (config.nodeExtDescriptorMapping && config.nodeExtDescriptorMapping.size()>0) ? config.nodeExtDescriptorMapping : null
 
         if(!fileExists(mtaPath)) {
             error("Mta file '${mtaPath}' does not exist.")
         }
 		
-		if(mtaExtDescriptorPath && !fileExists(mtaExtDescriptorPath)) {
-			error("Mta extension descriptor file '${mtaExtDescriptorPath}' does not exist.")
-		}
-		
-		if(mtaExtDescriptorPath && nodeIds.isEmpty()) {
-			error("List of Node id should not be empty.")
+		if(nodeExtDescriptorMapping) {
+			def errorList = []
+			nodeExtDescriptorMapping.each{ key, value ->
+				if(!fileExists(value)) {
+					errorList.add(value)
+				}
+			}
+			if(!errorList.isEmpty()) {
+				error("Mta extension descriptor files '${errorList}' don't exist.")
+			}
 		}
 
         if (config.verbose) {
@@ -156,11 +155,11 @@ void call(Map parameters = [:]) {
 
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
             echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription}' (Id: '${uploadFileToNodeResponse.transportRequestId}')"
-
-			if(mtaExtDescriptorPath) {
-				for (Long nodeId : nodeIds) {
-					def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, nodeId, "${workspace}/${mtaExtDescriptorPath}", mtaVersion, description, namedUser)
-					echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${nodeId}'."
+			
+			if(nodeExtDescriptorMapping) {
+				nodeExtDescriptorMapping.each{ key, value ->
+					def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
+					echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
 				}
 			}
         }

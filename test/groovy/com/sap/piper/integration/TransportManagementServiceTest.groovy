@@ -352,4 +352,57 @@ class TransportManagementServiceTest extends BasePiperTest {
 		assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
 		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
 	}
+	
+	@Test
+	void uploadMtaExtDescriptorToNode__verboseMode__withHttpErrorResponse__throwsError() {
+
+		def url = 'http://dummy.sap.com'
+		def token = 'myWrongToken'
+		def namedUser = 'myUser'
+		def nodeId = 1
+		def file = 'myFile.mtaext'
+		def mtaVersion = '0.0.1'
+		def description = "My description."
+
+		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
+
+		readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
+
+		thrown.expect(AbortException.class)
+		thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (400). 200 expected')
+
+		loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', NodeId: \'1\', File: \'myFile.mtaext\', MtaVersion: \'0.0.1\'')
+		loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)')
+
+		loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
+		loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (400). 200 expected. Response body: Something went wrong during MTA extension descriptor upload')
+
+		new TransportManagementService(nullScript, [verbose:true])
+			.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+	}
+
+	@Test
+	void uploadMtaExtDescriptorToNode__NonVerboseMode__withHttpErrorResponse__throwsError() {
+
+		def url = 'http://dummy.sap.com'
+		def token = 'myWrongToken'
+		def namedUser = 'myUser'
+		def nodeId = 1
+		def file = 'myFile.mtaext'
+		def mtaVersion = '0.0.1'
+		def description = "My description."
+
+		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
+
+		readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
+
+		thrown.expect(AbortException.class)
+		thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (418). 200 expected')
+
+		loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
+		loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (418). 200 expected. Response body: Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.')
+
+		new TransportManagementService(nullScript, [verbose:false])
+			.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+	}
 }

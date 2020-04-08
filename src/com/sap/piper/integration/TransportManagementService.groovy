@@ -205,7 +205,7 @@ class TransportManagementService implements Serializable {
         echo("Extension descriptor upload successful.")
 		
         if (! gotResponse) {
-            script.error "Cannot provide upload file response."
+            script.error "Cannot provide upload MTA extension descriptor response."
         }
         return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
