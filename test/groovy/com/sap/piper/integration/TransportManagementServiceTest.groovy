@@ -41,11 +41,12 @@ class TransportManagementServiceTest extends BasePiperTest {
         def clientId = 'myId'
         def clientSecret = 'mySecret'
 
-        def tms = new TransportManagementService(nullScript, [:])
+        def tms = new TransportManagementService(nullScript, [verbose: false])
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
+        assertThat(loggingRule.log, not(containsString("myOAuthToken")))
         assertThat(token, is('myOAuthToken'))
         assertThat(requestParams, hasEntry('url', "${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token"))
         assertThat(requestParams, hasEntry('requestBody', "grant_type=password&username=${clientId}&password=${clientSecret}".toString()))
@@ -64,9 +65,11 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         def token = tms.authentication(uaaUrl, clientId, clientSecret)
+
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieval started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] OAuth Token retrieved successfully."))
+        assertThat(loggingRule.log, not(containsString("myOAuthToken")))
         assertThat(token, is('myOAuthToken'))
     }
 
