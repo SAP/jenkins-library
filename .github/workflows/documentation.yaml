@@ -1,0 +1,70 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+    - master
+#  pull_request:
+#    branches:
+#    - master
+
+jobs:
+  github-pages:
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '11'
+        
+    - uses: actions/setup-go@v1
+      with:
+        go-version: '1.13.x'
+
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.6'
+        architecture: 'x64'
+
+#    - name: Install Groovy
+#      run: sudo apt-get update && sudo apt-get install groovy -y
+
+#    - name: Create ClassPath File
+#      run: mvn dependency:build-classpath -Dmdep.outputFile=target/classpath -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+#    - name: Generate Groovy Docs
+#      run: 
+
+    - name: Generate Golang Docs
+      run: go run pkg/generator/step-metadata.go --docuDir=documentation/docs/steps/ --docuGen=true
+
+    - name: Install MKDocs Dependencies
+      run: |
+        python3 -m pip install \
+          "mkdocs==1.0.3" \
+          "mkdocs-material==3.0.4" \
+          "Markdown==2.6.11" \
+          "Pygments==2.2.0" \
+          "pymdown-extensions==5.0"
+
+    - name: Build
+      run: mkdocs build --clean --strict --site-dir docs-gen --config-file documentation/mkdocs.yml
+
+#    - name: unknown
+#      run: |
+#        mkdir -p documentation/docs-gen/misc
+#        cp target/docuMetaData.json documentation/docs-gen/misc
+
+    - name: Deploy
+      if: true == false
+      #if: we are on master branch
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./documentation/docs-gen
+        user_name: 'project-piper[bot]'
+        user_email: 'project-piper[bot]@users.noreply.github.com'
+        keep_files: true
+        force_orphan: true
