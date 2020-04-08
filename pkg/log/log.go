@@ -59,12 +59,6 @@ func DeferExitHandler(handler func()) {
 	logrus.DeferExitHandler(handler)
 }
 
-func RegisterSecrets(secrets []string) {
-	for _, secret := range secrets {
-		RegisterSecret(secret)
-	}
-}
-
 func RegisterSecret(secret string) {
 	if len(secret) > 0 {
 		secrets = append(secrets, secret)
