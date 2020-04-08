@@ -114,6 +114,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        secret: true
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -139,6 +140,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        secret: true
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"

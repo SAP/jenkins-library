@@ -88,11 +88,13 @@ spec:
         description: Username for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
+        secret: true
       - name: password
         type: string
         description: Password for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
+        secret: true
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
