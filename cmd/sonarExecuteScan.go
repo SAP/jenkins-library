@@ -82,17 +82,17 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 
-	log.Entry().
-		WithField("command", sonar.binary).
-		WithField("options", sonar.options).
-		WithField("environment", sonar.environment).
-		Debug("Executing sonar scan command")
-
 	if len(config.Options) > 0 {
 		sonar.options = append(sonar.options, config.Options...)
 	}
 
 	sonar.options = SliceUtils.PrefixIfNeeded(SliceUtils.Trim(sonar.options), "-D")
+
+	log.Entry().
+		WithField("command", sonar.binary).
+		WithField("options", sonar.options).
+		WithField("environment", sonar.environment).
+		Debug("Executing sonar scan command")
 
 	runner.SetEnv(sonar.environment)
 	return runner.RunExecutable(sonar.binary, sonar.options...)
