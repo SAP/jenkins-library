@@ -73,7 +73,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	//Parse YAML ATC run configuration as body for ATC run trigger
-	filename, _ := filepath.Abs(config.ATCRunConfig)
+	filename, _ := filepath.Abs(".pipeline/tmp/metadata/" + config.ATCRunConfig)
 	yamlFile, err := ioutil.ReadFile(filename)
 	var ATCRunConfig ATCconfig
 	if err == nil {
