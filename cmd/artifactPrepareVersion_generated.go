@@ -98,7 +98,6 @@ It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which ha
 * The new version will NOT be written as tag into the SCM but it is only available in the corresponding CI/CD workspace
 * IMPORTANT NOTICE: Using the option ` + "`" + `cloud_noTag` + "`" + ` should not be picked in case you need to ensure a fully traceable path from SCM commit to your build artifact.
 
-
 ### 2. Pure version ` + "`" + `<major>.<minor>.<patch>` + "`" + `
 
 This pattern is often used by teams that have cloud deliveries with no fully automated procedure, e.g. delivery after each takt.
@@ -137,7 +136,7 @@ Configuration of this pattern is done via ` + "`" + `versioningType: library` + 
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
-	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which is appears in version control for the versioning update (in case `versioningType: cloud`).")
+	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
