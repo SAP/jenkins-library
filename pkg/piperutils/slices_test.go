@@ -28,6 +28,17 @@ func TestPrefix(t *testing.T) {
 	assert.Contains(t, s, "appleapplejuice")
 }
 
+func TestPrefixIfNeeded(t *testing.T) {
+	// init
+	s := []string{"tree", "pie", "applejuice"}
+	// test
+	s = PrefixIfNeeded(s, "apple")
+	// assert
+	assert.Contains(t, s, "appletree")
+	assert.Contains(t, s, "applepie")
+	assert.Contains(t, s, "applejuice")
+}
+
 func TestTrim(t *testing.T) {
 	// init
 	s := []string{" orange", "banana ", "	apple", "mango	", " ", ""}
