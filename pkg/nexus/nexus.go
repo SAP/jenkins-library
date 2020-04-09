@@ -90,7 +90,7 @@ func (nexusUpload *Upload) GetMavenRepoURL() string {
 	return nexusUpload.mavenRepoURL
 }
 
-// GetMavenRepoURL returns the base URL for the nexus-npm repository.
+// GetNpmRepoURL returns the base URL for the nexus-npm repository.
 func (nexusUpload *Upload) GetNpmRepoURL() string {
 	return nexusUpload.npmRepoURL
 }
