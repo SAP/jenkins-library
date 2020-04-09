@@ -65,6 +65,8 @@ spec:
           - STEPS
         aliases:
           - name: nexus/mavenRepository
+          - name: nexus/repository
+            deprecated: true
       - name: npmRepository
         type: string
         description: Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.
