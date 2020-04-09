@@ -7,5 +7,6 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     List credentials = [ ]
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(parameters.script, parameters)
+    echo parameters.toString()
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
