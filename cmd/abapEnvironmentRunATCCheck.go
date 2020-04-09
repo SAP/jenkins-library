@@ -73,7 +73,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	//Parse YAML ATC run configuration as body for ATC run trigger
-	filelocation, err := filepath.Glob(config.atcrunConfig)
+	filelocation, err := filepath.Glob(config.AtcrunConfig)
 	var yamlFile []byte
 	if err == nil {
 		fmt.Println("File location: ", filelocation)
