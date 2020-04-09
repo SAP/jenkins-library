@@ -50,7 +50,9 @@ Publishing npm projects makes use of npm's "publish" command.
 It requires a "package.json" file in the project's root directory which has "version" set and is not delared as "private".
 To find out what will be published, run "npm publish --dry-run" in the project's root folder.
 It will use your gitignore file to exclude the mached files from publishing.
-Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".`,
+Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".
+
+If an image for mavenExecute is configured, and npm packages are to be published, the image must have npm installed.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("nexusUpload")
