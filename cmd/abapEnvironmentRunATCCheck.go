@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -73,12 +72,13 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	//Parse YAML ATC run configuration as body for ATC run trigger
-	filelocation, err := filepath.Glob(config.AtcrunConfig)
+	//filelocation, err := filepath.Glob(config.AtcrunConfig)
 	var yamlFile []byte
+	filename := ".pipeline/tmp/metadata" + config.AtcrunConfig
 
 	if err == nil {
-		fmt.Println("File location: ", filelocation)
-		filename, _ := filepath.Abs(filelocation[0])
+		//fmt.Println("File location: ", filelocation)
+		//filename, _ := filepath.Abs(filelocation[0])
 		yamlFile, err = ioutil.ReadFile(filename)
 	}
 	var ATCRunConfig ATCconfig
