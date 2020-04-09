@@ -26,7 +26,7 @@ type nexusUploadOptions struct {
 	Password           string `json:"password,omitempty"`
 }
 
-// NexusUploadCommand Upload artifacts to Nexus
+// NexusUploadCommand Upload artifacts to Nexus Repository Manager
 func NexusUploadCommand() *cobra.Command {
 	metadata := nexusUploadMetadata()
 	var stepConfig nexusUploadOptions
@@ -34,8 +34,23 @@ func NexusUploadCommand() *cobra.Command {
 
 	var createNexusUploadCmd = &cobra.Command{
 		Use:   "nexusUpload",
-		Short: "Upload artifacts to Nexus",
-		Long:  `Upload build artifacts to a Nexus Repository Manager. Supports MTA and (multi-module) Maven projects.`,
+		Short: "Upload artifacts to Nexus Repository Manager",
+		Long: `Upload build artifacts to a Nexus Repository Manager.
+
+Supports MTA, npm and (multi-module) Maven projects.
+MTA files will be uploaded to a Maven repository.
+
+The uploaded file-type depends on your project structure and step configuration.
+To upload Maven projects, you need a pom.xml in the project root and set the mavenRepository option.
+To upload MTA projects, you need a mta.yaml in the project root and set the mavenRepository option.
+To upload npm projects, you need a package.json in the project root and set the npmRepository option.
+
+npm:
+Publishing npm projects makes use of npm's "publish" command.
+It requires a "package.json" file in the project's root directory which has "version" set and is not delared as "private".
+To find out what will be published, run "npm publish --dry-run" in the project's root folder.
+It will use your gitignore file to exclude the mached files from publishing.
+Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("nexusUpload")
@@ -116,7 +131,7 @@ func nexusUploadMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}},
+						Aliases:     []config.Alias{{Name: "nexus/npmRepository"}},
 					},
 					{
 						Name:        "groupId",
