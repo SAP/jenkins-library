@@ -96,7 +96,7 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1.2.3")
 		assert.Contains(t, sonar.options, "-Dsonar.organization=SAP")
 		assert.Contains(t, sonar.environment, "SONAR_HOST_URL=https://sonar.sap.com")
-		assert.Contains(t, sonar.environment, "SONAR_AUTH_TOKEN=secret-ABC")
+		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+path.Join(getWorkingDir(), ".certificates", "cacerts"))
 	})
 	t.Run("with custom options", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			Options: "-Dsonar.projectKey=piper",
+			Options: []string{"-Dsonar.projectKey=piper"},
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
