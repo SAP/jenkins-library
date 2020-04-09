@@ -13,6 +13,7 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
 	github.com/google/go-github/v28 v28.1.1
 	github.com/google/uuid v1.1.1
+	github.com/magiconair/properties v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
