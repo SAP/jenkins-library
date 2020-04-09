@@ -21,6 +21,7 @@ type Options struct {
 	ProjectSettingsFile string
 	GlobalSettingsFile  string
 	M2Path              string
+	VersionSource       string
 	VersionSection      string
 	VersionField        string
 }
@@ -48,6 +49,13 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		artifact, err = customArtifact(buildDescriptorFilePath, opts.VersionField, opts.VersionSection)
 		if err != nil {
 			return artifact, err
+		}
+	case "docker":
+		artifact = &Docker{
+			execRunner:    execRunner,
+			options:       opts,
+			path:          buildDescriptorFilePath,
+			versionSource: opts.VersionSource,
 		}
 	case "dub":
 		if len(buildDescriptorFilePath) == 0 {

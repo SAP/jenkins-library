@@ -33,10 +33,8 @@ func (v *Versionfile) init() {
 func (v *Versionfile) VersioningScheme() string {
 	if len(v.versioningScheme) == 0 {
 		return "semver2"
-	} else {
-		return v.versioningScheme
 	}
-
+	return v.versioningScheme
 }
 
 // GetVersion returns the current version of the artifact

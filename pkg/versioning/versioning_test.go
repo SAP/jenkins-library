@@ -20,6 +20,19 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", custom.VersioningScheme())
 	})
 
+	t.Run("docker", func(t *testing.T) {
+		docker, err := GetArtifact("docker", "test.ini", &Options{VersionSource: "custom", VersionField: "theversion", VersionSection: "test"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := docker.(*Docker)
+		assert.True(t, ok)
+		assert.Equal(t, "test.ini", theType.path)
+		assert.Equal(t, "theversion", theType.options.VersionField)
+		assert.Equal(t, "test", theType.options.VersionSection)
+		assert.Equal(t, "maven", docker.VersioningScheme())
+	})
+
 	t.Run("dub", func(t *testing.T) {
 		dub, err := GetArtifact("dub", "", &Options{VersionField: "theversion"}, nil)
 
