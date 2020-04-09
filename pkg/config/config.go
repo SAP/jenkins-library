@@ -41,7 +41,7 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 
 	err = yaml.Unmarshal(content, &c)
 	if err != nil {
-		return NewParseError(fmt.Sprintf("error unmarshalling %q: %v", content, err))
+		return NewParseError(fmt.Sprintf("format of configuration is invalid %q: %v", content, err))
 	}
 	return nil
 }
