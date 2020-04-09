@@ -13,9 +13,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
@@ -107,12 +107,12 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 	// write reports JSON
-	var reports, links []piperutils.Path
-	links = append(links, piperutils.Path{
+	var reports, links []StepResults.Path
+	links = append(links, StepResults.Path{
 		Target: taskReport.DashboardURL,
 		Name:   "Sonar Web UI",
 	})
-	piperutils.PersistReportsAndLinks("sonarExecuteScan", "./", reports, links)
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", "./", reports, links)
 
 	return nil
 }
