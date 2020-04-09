@@ -83,7 +83,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
-			if(err != nil){
+			if err != nil {
 				return err
 			}
 			{{- range $key, $value := .StepSecrets }}
