@@ -198,6 +198,12 @@ var testPomXml = []byte(`
 </project>
 `)
 
+var testPackageJson = []byte(`{
+  "name": "npm-nexus-upload-test",
+  "version": "1.0.0"
+}
+`)
+
 func TestUploadMTAProjects(t *testing.T) {
 	t.Run("Uploading MTA project without groupId parameter fails", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
@@ -409,6 +415,25 @@ func TestUploadArtifacts(t *testing.T) {
 			deployGoal}
 		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
 		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+	})
+}
+
+func TestUploadNpmProjects(t *testing.T) {
+	t.Run("Test uploading simple npm project", func(t *testing.T) {
+		utils := newMockUtilsBundle(false, false, true)
+		utils.files["package.json"] = testPackageJson
+		uploader := mockUploader{}
+		options := createOptions()
+		options.User = "admin"
+		options.Password = "admin123"
+
+		err := runNexusUpload(&utils, &uploader, &options)
+		assert.NoError(t, err, "expected npm upload to work")
+
+		assert.Equal(t, "localhost:8081/repository/npm-repo/", uploader.GetNpmRepoURL())
+
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"publish"}}, utils.execRunner.Calls[0])
+		assert.Equal(t, []string{"npm_config_registry=http://localhost:8081/repository/npm-repo/", "npm_config_email=project-piper@no-reply.com", "npm_config__auth=YWRtaW46YWRtaW4xMjM="}, utils.execRunner.Env)
 	})
 }
 

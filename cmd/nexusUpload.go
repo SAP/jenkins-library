@@ -175,8 +175,7 @@ func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options
 		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
 	}
 	execRunner.SetEnv(environment)
-	fmt.Println(strings.Join(environment, ", "))
-	err := execRunner.RunExecutable("npm", "publish", "-ddd")
+	err := execRunner.RunExecutable("npm", "publish")
 	return err
 }
 

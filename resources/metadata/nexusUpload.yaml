@@ -3,9 +3,24 @@ metadata:
   aliases:
     - name: mavenExecute
       deprecated: false
-  description: Upload artifacts to Nexus
+  description: Upload artifacts to Nexus Repository Manager
   longDescription: |
-    Upload build artifacts to a Nexus Repository Manager. Supports MTA and (multi-module) Maven projects.
+    Upload build artifacts to a Nexus Repository Manager.
+
+    Supports MTA, npm and (multi-module) Maven projects.
+    MTA files will be uploaded to a Maven repository.
+
+    The uploaded file-type depends on your project structure and step configuration.
+    To upload Maven projects, you need a pom.xml in the project root and set the mavenRepository option.
+    To upload MTA projects, you need a mta.yaml in the project root and set the mavenRepository option.
+    To upload npm projects, you need a package.json in the project root and set the npmRepository option.
+
+    npm:
+    Publishing npm projects makes use of npm's "publish" command.
+    It requires a "package.json" file in the project's root directory which has "version" set and is not delared as "private".
+    To find out what will be published, run "npm publish --dry-run" in the project's root folder.
+    It will use your gitignore file to exclude the mached files from publishing.
+    Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".
 spec:
   inputs:
     secrets:
@@ -56,7 +71,7 @@ spec:
           - STAGES
           - STEPS
         aliases:
-          - name: nexus/mavenRepository
+          - name: nexus/npmRepository
       - name: groupId
         type: string
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
@@ -104,4 +119,7 @@ spec:
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
+      imagePullPolicy: Never
+    - name: node
+      image: node:12-buster-slim
       imagePullPolicy: Never
