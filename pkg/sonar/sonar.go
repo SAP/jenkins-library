@@ -6,9 +6,9 @@ import (
 	"github.com/magiconair/properties"
 )
 
-// ReportTaskData ...
+// TaskReportData ...
 // https://pkg.go.dev/github.com/magiconair/properties@v1.8.0?tab=doc#Properties.Decode
-type ReportTaskData struct {
+type TaskReportData struct {
 	ProjectKey    string `properties:"projectKey"`
 	TaskID        string `properties:"ceTaskId"`
 	DashboardURL  string `properties:"dashboardUrl"`
@@ -18,7 +18,7 @@ type ReportTaskData struct {
 }
 
 //ReadTaskReport ...
-func ReadTaskReport(workspace string) (result ReportTaskData, err error) {
+func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	reportFile := path.Join(workspace, ".scannerwork", "report-task.txt")
 	// read file content
 	reportContent, err := properties.LoadFile(reportFile, properties.UTF8)
