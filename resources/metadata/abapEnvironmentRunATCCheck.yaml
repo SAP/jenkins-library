@@ -19,7 +19,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: ATCRunConfig
+          - name: atcrunConfig
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint
