@@ -21,6 +21,8 @@ metadata:
     To find out what will be published, run "npm publish --dry-run" in the project's root folder.
     It will use your gitignore file to exclude the mached files from publishing.
     Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".
+
+    If an image for mavenExecute is configured, and npm packages are to be published, the image must have npm installed.
 spec:
   inputs:
     secrets:
@@ -117,9 +119,7 @@ spec:
         scope:
         - PARAMETERS
   containers:
-    - name: mvn
-      image: maven:3.6-jdk-8
-      imagePullPolicy: Never
-    - name: node
-      image: node:12-buster-slim
+    # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
+    - name: mvn-npm
+      image: devxci/mbtci:1.0.4
       imagePullPolicy: Never
