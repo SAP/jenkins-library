@@ -134,7 +134,7 @@ If, on the other hand, ESLint configuration files exist in the project, they wil
 The execution happens according to ESLint's default execution behavior, i.e., for each JS file the ESLint config in that directory or one of the parent directories will be used to lint the file.
 Note, in this case only those files will be linted, for which an ESLint config exists.
 More details on the execution behavior of ESLint and the usage of configuration files can be found in the [related documentation](https://eslint.org/docs/user-guide/configuring#configuration-cascading-and-hierarchy).
-Note, if you want to disable the default linting behavior, it is possible to, e.g., define a script `"ci-lint" : "exit 0"` in your `package.json`.
+Note, if it is necessary to disable the default linting behavior, it is possible to, e.g., define a script `"ci-lint" : "exit 0"` in your `package.json`.
 
 We recommend the use of a custom defined `ci-lint` script in your `package.json` to address project specific linting requirements.
 
