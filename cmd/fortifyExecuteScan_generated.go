@@ -14,50 +14,48 @@ import (
 )
 
 type fortifyExecuteScanOptions struct {
-	AuthToken                       string `json:"authToken,omitempty"`
-	MvnCustomArgs                   string `json:"mvnCustomArgs,omitempty"`
-	ModulePath                      string `json:"modulePath,omitempty"`
-	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
-	AutodetectClasspath             bool   `json:"autodetectClasspath,omitempty"`
-	AutodetectClasspathCommand      string `json:"autodetectClasspathCommand,omitempty"`
-	PythonRequirementsInstallSuffix string `json:"pythonRequirementsInstallSuffix,omitempty"`
-	PythonVersion                   string `json:"pythonVersion,omitempty"`
-	UploadResults                   bool   `json:"uploadResults,omitempty"`
-	BuildDescriptorFile             string `json:"buildDescriptorFile,omitempty"`
-	CommitID                        string `json:"commitId,omitempty"`
-	CommitMessage                   string `json:"commitMessage,omitempty"`
-	RepoURL                         string `json:"repoUrl,omitempty"`
-	Repository                      string `json:"repository,omitempty"`
-	Memory                          string `json:"memory,omitempty"`
-	UpdateRulePack                  bool   `json:"updateRulePack,omitempty"`
-	PythonExcludes                  string `json:"pythonExcludes,omitempty"`
-	ReportDownloadEndpoint          string `json:"reportDownloadEndpoint,omitempty"`
-	PollingMinutes                  int    `json:"pollingMinutes,omitempty"`
-	QuickScan                       bool   `json:"quickScan,omitempty"`
-	Translate                       string `json:"translate,omitempty"`
-	APIEndpoint                     string `json:"apiEndpoint,omitempty"`
-	ReportType                      string `json:"reportType,omitempty"`
-	PythonAdditionalPath            string `json:"pythonAdditionalPath,omitempty"`
-	ArtifactURL                     string `json:"artifactUrl,omitempty"`
-	ConsiderSuspicious              bool   `json:"considerSuspicious,omitempty"`
-	FprUploadEndpoint               string `json:"fprUploadEndpoint,omitempty"`
-	ProjectName                     string `json:"projectName,omitempty"`
-	PythonIncludes                  string `json:"pythonIncludes,omitempty"`
-	Reporting                       bool   `json:"reporting,omitempty"`
-	ServerURL                       string `json:"serverUrl,omitempty"`
-	BuildDescriptorExcludeList      string `json:"buildDescriptorExcludeList,omitempty"`
-	PullRequestMessageRegexGroup    int    `json:"pullRequestMessageRegexGroup,omitempty"`
-	DeltaMinutes                    int    `json:"deltaMinutes,omitempty"`
-	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
-	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
-	ProjectVersion                  string `json:"projectVersion,omitempty"`
-	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
-	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
-	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
-	PullRequestName                 string `json:"pullRequestName,omitempty"`
-	NameVersionMapping              string `json:"nameVersionMapping,omitempty"`
-	PullRequestMessageRegex         string `json:"pullRequestMessageRegex,omitempty"`
-	ScanType                        string `json:"scanType,omitempty"`
+	AuthToken                    string `json:"authToken,omitempty"`
+	MvnCustomArgs                string `json:"mvnCustomArgs,omitempty"`
+	ModulePath                   string `json:"modulePath,omitempty"`
+	PythonRequirementsFile       string `json:"pythonRequirementsFile,omitempty"`
+	PythonVersion                string `json:"pythonVersion,omitempty"`
+	UploadResults                bool   `json:"uploadResults,omitempty"`
+	BuildDescriptorFile          string `json:"buildDescriptorFile,omitempty"`
+	CommitID                     string `json:"commitId,omitempty"`
+	CommitMessage                string `json:"commitMessage,omitempty"`
+	RepoURL                      string `json:"repoUrl,omitempty"`
+	Repository                   string `json:"repository,omitempty"`
+	Memory                       string `json:"memory,omitempty"`
+	UpdateRulePack               bool   `json:"updateRulePack,omitempty"`
+	PythonExcludes               string `json:"pythonExcludes,omitempty"`
+	ReportDownloadEndpoint       string `json:"reportDownloadEndpoint,omitempty"`
+	PollingMinutes               int    `json:"pollingMinutes,omitempty"`
+	QuickScan                    bool   `json:"quickScan,omitempty"`
+	Translate                    string `json:"translate,omitempty"`
+	APIEndpoint                  string `json:"apiEndpoint,omitempty"`
+	ReportType                   string `json:"reportType,omitempty"`
+	PythonAdditionalPath         string `json:"pythonAdditionalPath,omitempty"`
+	ArtifactURL                  string `json:"artifactUrl,omitempty"`
+	ConsiderSuspicious           bool   `json:"considerSuspicious,omitempty"`
+	FprUploadEndpoint            string `json:"fprUploadEndpoint,omitempty"`
+	ProjectName                  string `json:"projectName,omitempty"`
+	AutoCreate                   bool   `json:"autoCreate,omitempty"`
+	PythonIncludes               string `json:"pythonIncludes,omitempty"`
+	Reporting                    bool   `json:"reporting,omitempty"`
+	ServerURL                    string `json:"serverUrl,omitempty"`
+	BuildDescriptorExcludeList   string `json:"buildDescriptorExcludeList,omitempty"`
+	PullRequestMessageRegexGroup int    `json:"pullRequestMessageRegexGroup,omitempty"`
+	DeltaMinutes                 int    `json:"deltaMinutes,omitempty"`
+	SpotCheckMinimum             int    `json:"spotCheckMinimum,omitempty"`
+	FprDownloadEndpoint          string `json:"fprDownloadEndpoint,omitempty"`
+	ProjectVersion               string `json:"projectVersion,omitempty"`
+	PythonInstallCommand         string `json:"pythonInstallCommand,omitempty"`
+	ReportTemplateID             int    `json:"reportTemplateId,omitempty"`
+	FilterSetTitle               string `json:"filterSetTitle,omitempty"`
+	PullRequestName              string `json:"pullRequestName,omitempty"`
+	NameVersionMapping           string `json:"nameVersionMapping,omitempty"`
+	PullRequestMessageRegex      string `json:"pullRequestMessageRegex,omitempty"`
+	ScanType                     string `json:"scanType,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -184,6 +182,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
+	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether the project should be created automatically if it does not already exist")
 	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `scanType: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
@@ -441,6 +440,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
+					},
+					{
+						Name:        "autoCreate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "pythonIncludes",

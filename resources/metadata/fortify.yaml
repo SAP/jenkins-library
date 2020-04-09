@@ -32,6 +32,13 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
+    - name: autoCreate
+      type: bool
+      description: Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend 
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
     - name: mvnCustomArgs
       type: string
       description: Allows providing additional Maven command line parameters

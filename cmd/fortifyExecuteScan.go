@@ -52,14 +52,15 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
 	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, gav)
-	project, err := sys.GetProjectByName(fortifyProjectName)
+	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
 	}
-	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion)
+	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project version %v: %v", fortifyProjectVersion, err)
 	}
+
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
@@ -135,7 +136,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	// Generate report
 	if config.Reporting {
-		generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0x700)
+
+		//generateAndDownloadQGateReport(config, sys, project, projectVersion)
 	}
 
 	// Perform audit compliance checks
@@ -471,9 +475,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 }
 
 func translateProject(config fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
-	log.Entry().Debugf("Translate options are %v", config.Translate)
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
+	log.Entry().Debugf("Translating with options: %v", translateList)
 	for _, translate := range translateList {
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
