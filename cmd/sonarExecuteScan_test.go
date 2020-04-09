@@ -107,7 +107,7 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			Options: "-Dsonar.projectKey=piper",
+			Options: []string{"-Dsonar.projectKey=piper"},
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() {
