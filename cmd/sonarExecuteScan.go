@@ -13,8 +13,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -93,9 +95,26 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		WithField("options", sonar.options).
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
-
+	// execute scan
 	runner.SetEnv(sonar.environment)
-	return runner.RunExecutable(sonar.binary, sonar.options...)
+	err := runner.RunExecutable(sonar.binary, sonar.options...)
+	if err != nil {
+		return err
+	}
+	// load task results
+	taskReport, err := SonarUtils.ReadTaskReport("./")
+	if err != nil {
+		return err
+	}
+	// write reports JSON
+	var reports, links []piperutils.Path
+	links = append(links, piperutils.Path{
+		Target: taskReport.DashboardURL,
+		Name:   "Sonar Web UI",
+	})
+	piperutils.PersistReportsAndLinks("sonarExecuteScan", "./", reports, links)
+
+	return nil
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {
