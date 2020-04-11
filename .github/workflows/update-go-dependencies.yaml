@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.x'
       - name: Perform update
         run: |
           git checkout -B gh-action-update-golang-dependencies
