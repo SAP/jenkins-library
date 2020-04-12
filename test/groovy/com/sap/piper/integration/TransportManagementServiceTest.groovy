@@ -310,7 +310,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 	
 	@Test
 	void uploadMtaExtDescriptorToNode__successfully() {
-		def url = 'http://dummy.com/oauth'
+		def url = 'http://dummy.sap.com'
 		def token = 'myToken'
 		def nodeId = 1
 		def file = 'myFile.mtaext'
@@ -333,7 +333,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 	
 	@Test
 	void uploadMtaExtDescriptorToNode__inVerboseMode__yieldsMoreEchos() {
-		def url = 'http://dummy.com/oauth'
+		def url = 'http://dummy.sap.com'
 		def token = 'myToken'
 		def nodeId = 1
 		def file = 'myFile.mtaext'

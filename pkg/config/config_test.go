@@ -247,7 +247,7 @@ steps:
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
 		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
-		assert.EqualError(t, err, "failed to parse custom pipeline configuration: error unmarshalling \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		assert.EqualError(t, err, "failed to parse custom pipeline configuration: format of configuration is invalid \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	t.Run("Failure case defaults", func(t *testing.T) {
