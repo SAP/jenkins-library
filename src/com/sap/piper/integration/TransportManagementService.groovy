@@ -209,7 +209,45 @@ class TransportManagementService implements Serializable {
         }
         return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
+	
 
+    def getNodes(String url, String token) {
+
+        if (config.verbose) {
+			echo("Get nodes started from URL: '${url}'")
+        }
+
+        def parameters = [
+            url          : "${url}/v2/nodes",
+            httpMode     : "GET",
+            contentType  : 'APPLICATION_JSON',
+            customHeaders: [
+                [
+                    maskValue: true,
+                    name     : 'authorization',
+                    value    : "Bearer ${token}"
+                ]
+            ]
+        ]
+
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+
+        if (proxy){
+            parameters["httpProxy"] = proxy
+        }
+
+        def response = sendApiRequest(parameters)
+        if (response.status != 200) {
+            prepareAndThrowException(response, "Get nodes failed (HTTP status code '${response.status}').")
+        }
+
+        if (config.verbose) {
+			echo("Get nodes successful. Response content '${response.content}'.")
+        }
+        
+        return jsonUtils.jsonStringToGroovyObject(response.content)
+    }
+	
     private sendApiRequest(parameters) {
         def defaultParameters = [
             acceptType            : 'APPLICATION_JSON',

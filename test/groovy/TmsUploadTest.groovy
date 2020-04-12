@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
+import util.JenkinsReadYamlRule
 
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
@@ -22,7 +23,9 @@ public class TmsUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
-    private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar', 'dummy.mtaext', 'dummy2.mtaext'])
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
+    private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar', 'mta.yaml', 'dummy.mtaext', 'dummy2.mtaext', 'invalidDummy.mtaext'])
+	private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
 
     def tmsStub
     def jenkinsUtilsStub
@@ -40,7 +43,7 @@ public class TmsUploadTest extends BasePiperTest {
                                 }
                                }
                              """
-
+	
     class JenkinsUtilsMock extends JenkinsUtils {
         def userId
 
@@ -56,7 +59,7 @@ public class TmsUploadTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(thrown)
-        .around(new JenkinsReadYamlRule(this))
+        .around(readYamlRule)
         .around(stepRule)
         .around(loggingRule)
         .around(envRule)
@@ -68,6 +71,10 @@ public class TmsUploadTest extends BasePiperTest {
     public void setup() {
         tmsStub = mockTransportManagementService()
         helper.registerAllowedMethod("unstash", [String.class], { s -> return [s] })
+		readYamlRule.registerYaml("mta.yaml", new FileInputStream(new File("test/resources/TransportManagementService/mta.yaml")))
+					.registerYaml("dummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy.mtaext")))
+					.registerYaml("dummy2.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy2.mtaext")))
+					.registerYaml("invalidDummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/invalidDummy.mtaext")))
     }
 
     @After
@@ -168,7 +175,7 @@ public class TmsUploadTest extends BasePiperTest {
 	
 	@Test
 	public void uploadMtaExtensionDescriptor__isSuccessful() {
-		Map nodeExtDescriptorMap = [1: "dummy.mtaext", 2: "dummy2.mtaext"]
+		Map nodeExtDescriptorMap = ["testNode1": "dummy.mtaext", "testNode2": "dummy2.mtaext"]
 		
 		jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
 		binding.workspace = "."
@@ -187,9 +194,9 @@ public class TmsUploadTest extends BasePiperTest {
 		)
 
 		assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (Id: '1') successfully uploaded to Node with id '1'."))
-		assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+		assertThat(calledTmsMethodsWithArgs[2], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
 		assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (Id: '2') successfully uploaded to Node with id '2'."))
-		assertThat(calledTmsMethodsWithArgs[4], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+		assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
 	}
 
     @Test
@@ -214,25 +221,28 @@ public class TmsUploadTest extends BasePiperTest {
     }
 
     @Test
-    public void failOnMissingMtaExtDescriptorFiles() {
+    public void failOnInvalidNodeExtDescriptorMapping() {
     	thrown.expect(AbortException)
-    	thrown.expectMessage("Mta extension descriptor files '[notexisted.mtaext, notexisted2.mtaext]' don't exist.")
-    	
-    	Map nodeExtDescriptorMap = [1: "dummy.mtaext", 2: "notexisted.mtaext", 3: "notexisted2.mtaext"]
+    	thrown.expectMessage("MTA extension descriptor files [notexisted.mtaext, notexisted2.mtaext] don't exist.")
+		thrown.expectMessage("Nodes [testNode3, testNode4] don't exist. Please check the node name or creat these nodes.")
+		thrown.expectMessage("MTA ID in MTA extension descriptor files [invalidDummy.mtaext] is incorrect. ")
+		
+		// test on all kinds of errors: node doesn't exist, MTA ID in .mtaext is incorrect, and .mtaext file doesn't exist
+    	Map nodeExtDescriptorMap = ["testNode1": "invalidDummy.mtaext", "testNode3": "notexisted.mtaext", "testNode4": "notexisted2.mtaext"]
     			
-    			jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+		jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
     			
-    			stepRule.step.tmsUpload(
-    					script: nullScript,
-    					juStabUtils: utils,
-    					jenkinsUtilsStub: jenkinsUtilsStub,
-    					transportManagementService: tmsStub,
-    					mtaPath: 'dummy.mtar',
-    					nodeName: 'myNode',
-    					credentialsId: 'TMS_ServiceKey',
-    					nodeExtDescriptorMapping: nodeExtDescriptorMap,
-    					mtaVersion: '0.0.1',
-    					)
+    	stepRule.step.tmsUpload(
+    		script: nullScript,
+    		juStabUtils: utils,
+    		jenkinsUtilsStub: jenkinsUtilsStub,
+    		transportManagementService: tmsStub,
+    		mtaPath: 'dummy.mtar',
+    		nodeName: 'myNode',
+    		credentialsId: 'TMS_ServiceKey',
+    		nodeExtDescriptorMapping: nodeExtDescriptorMap,
+    		mtaVersion: '0.0.1',
+    	)
     }
     
     def mockTransportManagementService() {
@@ -255,6 +265,11 @@ public class TmsUploadTest extends BasePiperTest {
 			def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
 				calledTmsMethodsWithArgs << "uploadMtaExtDescriptorToNode('${url}', '${token}', ${nodeId}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
 				return [fileId: nodeId, fileName: file]
+			}
+			
+			def getNodes(String url, String token) {
+				calledTmsMethodsWithArgs << "getNodes('${url}', '${token}')"
+				return [nodes: [[id: 1, name: "testNode1"], [id: 2, name: "testNode2"]]]
 			}
         }
     }

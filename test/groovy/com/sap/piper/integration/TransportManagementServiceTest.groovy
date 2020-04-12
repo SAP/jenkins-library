@@ -10,6 +10,7 @@ import util.*
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertFalse
 
 class TransportManagementServiceTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -341,7 +342,6 @@ class TransportManagementServiceTest extends BasePiperTest {
 		def namedUser = 'myUser'
 
 		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
-		fileExistsRule.existingFiles.add('responseExtDescirptorUpload.txt')
 		readFileRule.files.put('responseExtDescirptorUpload.txt', '{"fileId": 5678}')
 
 		def tms = new TransportManagementService(nullScript, [verbose: true])
@@ -404,5 +404,81 @@ class TransportManagementServiceTest extends BasePiperTest {
 
 		new TransportManagementService(nullScript, [verbose:false])
 			.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+	}
+	
+	@Test
+	void getNodes__successfully() {
+		Map requestParams
+		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+			requestParams = m
+			return [content: '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }', status: 200]
+		})
+
+		def url = 'http://dummy.sap.com'
+		def token = 'myToken'
+
+		def tms = new TransportManagementService(nullScript, [:])
+		def responseDetails = tms.getNodes(url, token)
+
+		assertFalse(loggingRule.log.contains("[TransportManagementService] Get nodes successful."))
+		assertThat(requestParams, hasEntry('url', "${url}/v2/nodes"))
+		assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
+		assertThat(responseDetails.getAt("nodes").get(0), hasEntry("id", 1))
+		assertThat(responseDetails.getAt("nodes").get(1), hasEntry("id", 2))
+	}
+	
+	@Test
+	void getNodes__inVerboseMode__yieldsMoreEchos() {
+		def url = 'http://dummy.sap.com'
+		def token = 'myToken'
+		def responseContent = '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }'
+		
+		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+			Map requestParams = m
+			return [content: responseContent, status: 200]
+		})
+
+		def tms = new TransportManagementService(nullScript, [verbose: true])
+		def responseDetails = tms.getNodes(url, token)
+
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes started from URL: '${url}'"))
+		assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes successful. Response content '${responseContent}'."))
+	}
+
+	@Test
+	void getNodes__failure() {
+		def url = 'http://dummy.sap.com'
+		def token = 'myToken'
+		def responseStatusCode = 500
+		def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)." }'
+
+		thrown.expect(AbortException)
+		thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+
+		helper.registerAllowedMethod('httpRequest', [Map.class], {
+			return [content: responseContent, status: responseStatusCode]
+		})
+
+		def tms = new TransportManagementService(nullScript, [verbose: false])
+		tms.getNodes(url, token)
+	}
+
+	@Test
+	void getNodes__failure__status__500__inVerboseMode() {
+		def url = 'http://dummy.sap.com'
+		def token = 'myToken'
+		def responseStatusCode = 500
+		def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)." }'
+
+		thrown.expect(AbortException)
+		thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+		loggingRule.expect("[TransportManagementService] Get nodes started from URL: '${url}'")
+
+		helper.registerAllowedMethod('httpRequest', [Map.class], {
+			return [content: responseContent, status: responseStatusCode]
+		})
+
+		def tms = new TransportManagementService(nullScript, [verbose: true])
+		tms.getNodes(url, token)
 	}
 }

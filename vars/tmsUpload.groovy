@@ -35,7 +35,7 @@ import static com.sap.piper.Prerequisites.checkScript
 	 */
 	'mtaVersion',
 	/**
-	 * Map which defines per node (ID) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMappings: [1234: 'example.mtaext']`.
+	 * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMappings: [1234: 'example.mtaext']`.
 	 */
 	'nodeExtDescriptorMapping',
     /**
@@ -112,18 +112,6 @@ void call(Map parameters = [:]) {
         if(!fileExists(mtaPath)) {
             error("Mta file '${mtaPath}' does not exist.")
         }
-		
-		if(nodeExtDescriptorMapping) {
-			def errorList = []
-			nodeExtDescriptorMapping.each{ key, value ->
-				if(!fileExists(value)) {
-					errorList.add(value)
-				}
-			}
-			if(!errorList.isEmpty()) {
-				error("Mta extension descriptor files '${errorList}' don't exist.")
-			}
-		}
 
         if (config.verbose) {
             echo "[TransportManagementService] CredentialsId: '${config.credentialsId}'"
@@ -150,19 +138,85 @@ void call(Map parameters = [:]) {
             }
 
             def token = tms.authentication(uaaUrl, clientId, clientSecret)
+			Map nodeIdExtDesMap = [:]
+			
+			// validate the whole mapping and then throw errors together, 
+			// so that user can get them in one pipeline run
+			// put the validation here, because we need uri and token to call tms get nodes api
+			if(nodeExtDescriptorMapping) {
+				def errorPathList = []
+				def errorMtaId = []
+				def errorNodeNameList = []
+				def errorMsg = ""
+				def mtaYaml
+				List nodes = tms.getNodes(uri, token).getAt("nodes");
+				
+				// get mta.yml to validate mta version and mta id
+				if(fileExists("mta.yaml")) {
+					mtaYaml = readYaml file: "mta.yaml"
+					if (!mtaYaml.ID) {
+						error "Property 'ID' is not found in mta.yaml."
+					}
+				} else {
+					error "mta.yaml is not found in the root folder of the project."
+				}
+				
+				if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
+					errorMsg = "Parameter 'mtaVersion' dose not match the MTA version in mta.yaml. "
+				}
+				
+				nodeExtDescriptorMapping.each{ key, value ->
+					if(nodes.any {it.name == key}) {
+						nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), value)
+					} else {
+						errorNodeNameList.add(key)
+					}
+					
+					if(!fileExists(value)) {
+						errorPathList.add(value)
+					} else {
+						if(mtaYaml.ID != getMtaId("${value}")) {
+							errorMtaId.add(value)
+						}
+					}
+				}
+				
+				if(!errorPathList.isEmpty() || !errorMtaId.isEmpty() || !errorNodeNameList.isEmpty() ) {
+					if(!errorPathList.isEmpty()) {
+						errorMsg += "MTA extension descriptor files ${errorPathList} don't exist. "
+					}
+					if(!errorMtaId.isEmpty()) {
+						errorMsg += "MTA ID in MTA extension descriptor files ${errorMtaId} is incorrect. "
+					}
+					if(!errorNodeNameList.isEmpty()) {
+						errorMsg += "Nodes ${errorNodeNameList} don't exist. Please check the node name or creat these nodes."
+					}
+					error(errorMsg)
+				}
+			}
+			
+			if(nodeIdExtDesMap) {
+				nodeIdExtDesMap.each{ key, value ->
+					def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
+					echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
+				}
+			}
+			
             def fileUploadResponse = tms.uploadFile(uri, token, "${workspace}/${mtaPath}", namedUser)
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
 
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
             echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription}' (Id: '${uploadFileToNodeResponse.transportRequestId}')"
-			
-			if(nodeExtDescriptorMapping) {
-				nodeExtDescriptorMapping.each{ key, value ->
-					def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
-					echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
-				}
-			}
         }
 
     }
+}
+
+def String getMtaId(String filePath){
+	def extDescriptor = readYaml file: filePath
+	def mtaId = ""
+	if (extDescriptor.extends) {
+		mtaId = extDescriptor.extends
+	}
+	return mtaId
 }
