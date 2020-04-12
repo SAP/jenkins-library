@@ -43,6 +43,8 @@ void call(Map parameters = [:]) {
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
+        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
+
         String configFile = parameters.get('configFile')
 
         loadConfigurationFromFile(script, configFile)

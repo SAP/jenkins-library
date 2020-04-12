@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	b64 "encoding/base64"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -28,6 +30,7 @@ type nexusUploadUtils interface {
 	dirExists(path string) (bool, error)
 	usesMta() bool
 	usesMaven() bool
+	usesNpm() bool
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
 	evaluate(pomFile, expression string) (string, error)
@@ -94,6 +97,10 @@ func (u *utilsBundle) usesMaven() bool {
 	return u.projectStructure.UsesMaven()
 }
 
+func (u *utilsBundle) usesNpm() bool {
+	return u.projectStructure.UsesNpm()
+}
+
 func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
@@ -126,19 +133,50 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 }
 
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	err := uploader.SetRepoURL(options.Url, options.Version, options.Repository)
+	performMavenUpload := len(options.MavenRepository) > 0
+	performNpmUpload := len(options.NpmRepository) > 0
+	err := uploader.SetRepoURL(options.Url, options.Version, options.MavenRepository, options.NpmRepository)
 	if err != nil {
 		return err
 	}
-	if utils.usesMta() {
-		log.Entry().Info("MTA project structure detected")
-		return uploadMTA(utils, uploader, options)
-	} else if utils.usesMaven() {
-		log.Entry().Info("Maven project structure detected")
-		return uploadMaven(utils, uploader, options)
+
+	if utils.usesNpm() && performNpmUpload {
+		log.Entry().Info("NPM project structure detected")
+		err = uploadNpmArtifacts(utils, uploader, options)
 	} else {
-		return fmt.Errorf("unsupported project structure")
+		log.Entry().Info("Skipping npm upload because either no package json was found or NpmRepository option is not provided.")
 	}
+	if err != nil {
+		return err
+	}
+
+	if performMavenUpload {
+		if utils.usesMta() {
+			log.Entry().Info("MTA project structure detected")
+			return uploadMTA(utils, uploader, options)
+		} else if utils.usesMaven() {
+			log.Entry().Info("Maven project structure detected")
+			return uploadMaven(utils, uploader, options)
+		}
+	} else {
+		log.Entry().Info("Skipping maven and mta upload because mavenRepository option is not provided.")
+	}
+
+	return nil
+}
+
+func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
+	execRunner := utils.getExecRunner()
+	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
+	if options.User != "" && options.Password != "" {
+		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
+		environment = append(environment, "npm_config__auth="+auth)
+	} else {
+		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
+	}
+	execRunner.SetEnv(environment)
+	err := execRunner.RunExecutable("npm", "publish")
+	return err
 }
 
 func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
@@ -270,7 +308,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	var defines []string
-	defines = append(defines, "-Durl=http://"+uploader.GetRepoURL())
+	defines = append(defines, "-Durl=http://"+uploader.GetMavenRepoURL())
 	defines = append(defines, "-DgroupId="+uploader.GetGroupID())
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
