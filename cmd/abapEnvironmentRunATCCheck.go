@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -72,13 +73,11 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	//Parse YAML ATC run configuration as body for ATC run trigger
-	//filelocation, err := filepath.Glob(config.AtcrunConfig)
+	filelocation, err := filepath.Glob(config.AtcrunConfig)
 	var yamlFile []byte
-	filename := ".pipeline/tmp/metadata" + config.AtcrunConfig
 
 	if err == nil {
-		//fmt.Println("File location: ", filelocation)
-		//filename, _ := filepath.Abs(filelocation[0])
+		filename, _ := filepath.Abs(filelocation[0])
 		yamlFile, err = ioutil.ReadFile(filename)
 	}
 	var ATCRunConfig ATCconfig
@@ -156,7 +155,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
-	log.Entry().Info("ATC run completed succesfully. The respective run results are listes below.")
+	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
 }
 
 func runATC(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
