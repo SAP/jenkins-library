@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -43,15 +45,26 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
+	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
+	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(MtaBuildCommand())
+	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
+	rootCmd.AddCommand(MavenExecuteCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
+	rootCmd.AddCommand(MavenBuildCommand())
+	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
+	rootCmd.AddCommand(NexusUploadCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -99,29 +112,33 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
-			exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
+			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-			if e != nil {
-				return e
-			}
-
+			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
-				if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
+				if customConfig, err = openFile(projectConfigFile); err != nil {
+					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
-				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
+				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
 				customConfig = nil
 			}
+
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
-			//ToDo: support also https as source
-			fc, _ := openFile(f)
-			defaultConfig = append(defaultConfig, fc)
+			fc, err := openFile(f)
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
+				log.Entry().Infof("Added default config '%s'", f)
+			}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -138,9 +155,28 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 
 	confJSON, _ := json.Marshal(stepConfig.Config)
-	json.Unmarshal(confJSON, &options)
+	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func getProjectConfigFile(name string) string {
+
+	var altName string
+	if ext := filepath.Ext(name); ext == ".yml" {
+		altName = fmt.Sprintf("%v.yaml", strings.TrimSuffix(name, ext))
+	} else if ext == "yaml" {
+		altName = fmt.Sprintf("%v.yml", strings.TrimSuffix(name, ext))
+	}
+
+	fileExists, _ := piperutils.FileExists(name)
+	altExists, _ := piperutils.FileExists(altName)
+
+	// configured filename will always take precedence, even if not existing
+	if !fileExists && altExists {
+		return altName
+	}
+	return name
 }

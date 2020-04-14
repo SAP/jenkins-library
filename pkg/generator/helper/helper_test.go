@@ -16,6 +16,9 @@ import (
 func configOpenFileMock(name string) (io.ReadCloser, error) {
 	meta1 := `metadata:
   name: testStep
+  aliases:
+    - name: testStepAlias
+      deprecated: true
   description: Test description
   longDescription: |
     Long Test description
@@ -101,6 +104,19 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		assert.Equal(t, expected, files["cmd/testStep_generated_test.go"])
+	})
+
+	t.Run("custom step code", func(t *testing.T) {
+		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
+		ProcessMetaFiles([]string{"test.yaml"}, stepHelperData, docuHelperData)
+
+		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		if err != nil {
+			t.Fatalf("failed reading %v", goldenFilePath)
+		}
+		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 }
 
@@ -206,7 +222,7 @@ func TestGetStepInfo(t *testing.T) {
 	assert.Equal(t, "createTestStepCmd", myStepInfo.CreateCmdVar, "CreateCmdVar incorrect")
 	assert.Equal(t, "Test description", myStepInfo.Short, "Short incorrect")
 	assert.Equal(t, "Long Test description", myStepInfo.Long, "Long incorrect")
-	assert.Equal(t, stepData.Spec.Inputs.Parameters, myStepInfo.Metadata, "Metadata incorrect")
+	assert.Equal(t, stepData.Spec.Inputs.Parameters, myStepInfo.StepParameters, "Metadata incorrect")
 	assert.Equal(t, "addTestStepFlags", myStepInfo.FlagsFunc, "FlagsFunc incorrect")
 	assert.Equal(t, "addTestStepFlags", myStepInfo.FlagsFunc, "FlagsFunc incorrect")
 

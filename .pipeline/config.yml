@@ -1,4 +1,20 @@
 steps:
   githubPublishRelease:
-    owner: SAP
-    repository: jenkins-library
+    addClosedIssues: true
+    addDeltaToLastRelease: true
+    excludeLabels:
+      - 'discussion'
+      - 'duplicate'
+      - 'invalid'
+      - 'question'
+      - 'wontfix'
+    owner: 'SAP'
+    repository: 'jenkins-library'
+    releaseBodyHeader: ''
+  githubCreatePullRequest:
+    base: master
+    owner: 'SAP'
+    repository: 'jenkins-library'
+    labels:
+      - 'REVIEW'
+      - 'go-piper'

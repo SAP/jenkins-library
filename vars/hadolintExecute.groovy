@@ -35,7 +35,11 @@ import groovy.transform.Field
     /**
      * Name of the result file used locally within the step.
      */
-    'reportFile'
+    'reportFile',
+    /**
+     * Name of the checkstyle report being generated our of the results.
+     */
+    'reportName'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
@@ -90,15 +94,28 @@ void call(Map parameters = [:]) {
             stashContent: existingStashes
         ) {
             // HaDoLint status code is ignore, results will be handled by recordIssues / archiveArtifacts
-            def ignore = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
+            def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
             archiveArtifacts configuration.reportFile
             recordIssues(
-                tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
+                tools: [checkStyle(
+                    name: configuration.reportName,
+                    pattern: configuration.reportFile,
+                    id: configuration.reportName
+                )],
                 qualityGates: configuration.qualityGates,
                 enabledForFailure: true,
                 blameDisabled: true
             )
+
+            def resultFileSize = 0
+            if (fileExists(configuration.reportFile)) {
+                resultFileSize = readFile(configuration.reportFile).length()
+            }
+
+            if (result != 0 && resultFileSize == 0) {
+                error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."
+            }
         }
     }
 }

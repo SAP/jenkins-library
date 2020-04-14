@@ -20,17 +20,17 @@ func TestPersistReportAndLinks(t *testing.T) {
 
 	reports := []Path{Path{Target: "testFile1.json", Mandatory: true}, Path{Target: "testFile2.json"}}
 	links := []Path{Path{Target: "https://1234568.com/test", Name: "Weblink"}}
-	PersistReportsAndLinks(workspace, reports, links)
+	PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
 
-	reportsJSONPath := filepath.Join(workspace, "reports.json")
+	reportsJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_reports.json")
 	reportsFileExists, err := FileExists(reportsJSONPath)
 	assert.NoError(t, err, "No error expected but got one")
-	assert.Equal(t, true, reportsFileExists, "reports.json missing")
+	assert.Equal(t, true, reportsFileExists, "checkmarxExecuteScan_reports.json missing")
 
-	linksJSONPath := filepath.Join(workspace, "links.json")
+	linksJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_links.json")
 	linksFileExists, err := FileExists(linksJSONPath)
 	assert.NoError(t, err, "No error expected but got one")
-	assert.Equal(t, true, linksFileExists, "links.json missing")
+	assert.Equal(t, true, linksFileExists, "checkmarxExecuteScan_links.json missing")
 
 	var reportsLoaded []Path
 	var linksLoaded []Path

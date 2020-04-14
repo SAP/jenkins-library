@@ -199,6 +199,8 @@ steps:
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
+  debugReportArchive:
+    shareConfidentialInformation: false
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -226,6 +228,7 @@ steps:
     stashContent: []
   dockerExecuteOnKubernetes:
     dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -337,13 +340,13 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaBuildTool: classic
+    mtaBuildTool: cloudMbt
     platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
     cloudMbt:
-      dockerImage: 'devxci/mbtci:1.0.4'
+      dockerImage: 'devxci/mbtci:1.0.10'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
@@ -457,7 +460,7 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, **/Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
@@ -521,12 +524,6 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
-  sonarExecuteScan:
-    dockerImage: 'node:lts-stretch'
-    instance: 'SonarCloud'
-    options: []
-    pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
     keyFileCredentialsId: 'spinnaker-client-key'

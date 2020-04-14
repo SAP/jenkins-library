@@ -229,9 +229,9 @@ func TestZipFolder(t *testing.T) {
 	t.Run("zip files", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "test zip files")
 		if err != nil {
-			t.Fatal("Failed to create temporary directory")
+			t.Fatal("Failed to create temporary directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(dir)
 
 		ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte{byte(1), byte(2), byte(3)}, 0700)
@@ -275,9 +275,9 @@ func TestGetDetailedResults(t *testing.T) {
 		</CxXMLResults>`)}
 		dir, err := ioutil.TempDir("", "test detailed results")
 		if err != nil {
-			t.Fatal("Failed to create temporary directory")
+			t.Fatal("Failed to create temporary directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(dir)
 		result := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635)
 		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
@@ -294,9 +294,9 @@ func TestRunScan(t *testing.T) {
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
 	influx := checkmarxExecuteScanInflux{}
@@ -312,9 +312,9 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace2")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
 	influx := checkmarxExecuteScanInflux{}
@@ -330,9 +330,9 @@ func TestRunScanForPullRequest(t *testing.T) {
 	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace3")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
 	influx := checkmarxExecuteScanInflux{}
@@ -348,9 +348,9 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
 	influx := checkmarxExecuteScanInflux{}
@@ -386,9 +386,9 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace5")
 		if err != nil {
-			t.Fatal("Failed to create temporary workspace directory")
+			t.Fatal("Failed to create temporary workspace directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(workspace)
 
 		influx := checkmarxExecuteScanInflux{}
@@ -430,9 +430,9 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace6")
 		if err != nil {
-			t.Fatal("Failed to create temporary workspace directory")
+			t.Fatal("Failed to create temporary workspace directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(workspace)
 
 		influx := checkmarxExecuteScanInflux{}

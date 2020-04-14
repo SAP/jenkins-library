@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func TestVersion(t *testing.T) {
@@ -51,10 +53,9 @@ func runVersionCommand(t *testing.T, commitID, tag string) string {
 	//
 
 	var myVersionOptions versionOptions
-	e = version(myVersionOptions)
-	if e != nil {
-		t.Error("Version command failed.")
-	}
+	telemetryData := telemetry.CustomData{}
+
+	version(myVersionOptions, &telemetryData)
 
 	w.Close()
 

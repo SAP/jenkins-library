@@ -52,6 +52,11 @@ func (g *ghRCMock) GetLatestRelease(ctx context.Context, owner string, repo stri
 	if g.latestStatusCode != 0 {
 		hc.StatusCode = g.latestStatusCode
 	}
+
+	if len(owner) == 0 {
+		return g.latestRelease, nil, g.latestErr
+	}
+
 	ghResp := github.Response{Response: &hc}
 	return g.latestRelease, &ghResp, g.latestErr
 }
@@ -188,10 +193,27 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		ghRepoClient := ghRCMock{
 			latestErr: fmt.Errorf("Latest release error"),
 		}
-		myGithubPublishReleaseOptions := githubPublishReleaseOptions{}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.Equal(t, "Error occured when retrieving latest GitHub release.: Latest release error", fmt.Sprint(err))
+		assert.Equal(t, "Error occured when retrieving latest GitHub release (TEST/test): Latest release error", fmt.Sprint(err))
+	})
+
+	t.Run("Error - get release no response", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{
+			latestErr: fmt.Errorf("Latest release error, no response"),
+		}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "",
+			Repository: "test",
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+
+		assert.Equal(t, "Error occured when retrieving latest GitHub release (/test): Latest release error, no response", fmt.Sprint(err))
 	})
 
 	t.Run("Error - create release", func(t *testing.T) {

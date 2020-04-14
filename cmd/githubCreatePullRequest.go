@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v28/github"
 	"github.com/pkg/errors"
 
@@ -18,30 +19,28 @@ type githubIssueService interface {
 	Edit(ctx context.Context, owner string, repo string, number int, issue *github.IssueRequest) (*github.Issue, *github.Response, error)
 }
 
-func githubCreatePullRequest(myGithubCreatePullRequestOptions githubCreatePullRequestOptions) error {
-	ctx, client, err := piperGithub.NewClient(myGithubCreatePullRequestOptions.Token, myGithubCreatePullRequestOptions.APIURL, "")
+func githubCreatePullRequest(config githubCreatePullRequestOptions, telemetryData *telemetry.CustomData) {
+	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "")
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
 
-	err = runGithubCreatePullRequest(ctx, &myGithubCreatePullRequestOptions, client.PullRequests, client.Issues)
+	err = runGithubCreatePullRequest(ctx, &config, client.PullRequests, client.Issues)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to create GitHub pull request")
 	}
-
-	return nil
 }
 
-func runGithubCreatePullRequest(ctx context.Context, myGithubCreatePullRequestOptions *githubCreatePullRequestOptions, ghPRService githubPRService, ghIssueService githubIssueService) error {
+func runGithubCreatePullRequest(ctx context.Context, config *githubCreatePullRequestOptions, ghPRService githubPRService, ghIssueService githubIssueService) error {
 
 	prRequest := github.NewPullRequest{
-		Title: &myGithubCreatePullRequestOptions.Title,
-		Head:  &myGithubCreatePullRequestOptions.Head,
-		Base:  &myGithubCreatePullRequestOptions.Base,
-		Body:  &myGithubCreatePullRequestOptions.Body,
+		Title: &config.Title,
+		Head:  &config.Head,
+		Base:  &config.Base,
+		Body:  &config.Body,
 	}
 
-	newPR, resp, err := ghPRService.Create(ctx, myGithubCreatePullRequestOptions.Owner, myGithubCreatePullRequestOptions.Repository, &prRequest)
+	newPR, resp, err := ghPRService.Create(ctx, config.Owner, config.Repository, &prRequest)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
 		return errors.Wrap(err, "Error occured when creating pull request")
@@ -49,11 +48,11 @@ func runGithubCreatePullRequest(ctx context.Context, myGithubCreatePullRequestOp
 	log.Entry().Debugf("New pull request created: %v", newPR)
 
 	issueRequest := github.IssueRequest{
-		Labels:    &myGithubCreatePullRequestOptions.Labels,
-		Assignees: &myGithubCreatePullRequestOptions.Assignees,
+		Labels:    &config.Labels,
+		Assignees: &config.Assignees,
 	}
 
-	updatedPr, resp, err := ghIssueService.Edit(ctx, myGithubCreatePullRequestOptions.Owner, myGithubCreatePullRequestOptions.Repository, newPR.GetNumber(), &issueRequest)
+	updatedPr, resp, err := ghIssueService.Edit(ctx, config.Owner, config.Repository, newPR.GetNumber(), &issueRequest)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
 		return errors.Wrap(err, "Error occured when editing pull request")

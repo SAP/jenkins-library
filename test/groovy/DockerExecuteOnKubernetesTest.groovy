@@ -62,6 +62,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    def inheritFrom
+    def yamlMergeStrategy
     List stashList = []
 
     @Before
@@ -76,10 +78,15 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body -> container(config){body()}
         })
+        helper.registerAllowedMethod('merge', [], {
+            return 'merge'
+        })
         helper.registerAllowedMethod('podTemplate', [Map.class, Closure.class], { Map options, Closure body ->
             podName = options.name
             podLabel = options.label
             namespace = options.namespace
+            inheritFrom = options.inheritFrom
+            yamlMergeStrategy = options.yamlMergeStrategy
             podNodeSelector = options.nodeSelector
             def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
@@ -142,6 +149,20 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
+    void testInheritFromPodTemplate() throws Exception {
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['inheritFrom': 'default']]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            container(name: 'mavenexecute') {
+                bodyExecuted = true
+            }
+        }
+        assertEquals(inheritFrom, 'default')
+        assertEquals(yamlMergeStrategy, 'merge')
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithContainerMap() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
         stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
@@ -157,6 +178,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(imageList.contains('myJnalpAgent'))
         assertTrue(bodyExecuted)
     }
+
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithDockerImage() throws Exception {
@@ -294,6 +316,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             dockerEnvVars: ['http_proxy': 'http://proxy:8000'],
             dockerWorkspace: '/home/piper',
             sidecarEnvVars: ['testEnv': 'testVal'],
+            sidecarWorkspace: '/home/piper/sidecar',
             sidecarImage: 'postgres',
             sidecarName: 'postgres',
             sidecarReadyCommand: 'pg_isready'
@@ -305,6 +328,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
         assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
         assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres')))
+
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'testEnv'), hasEntry ('value','testVal')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'HOME'), hasEntry ('value','/home/piper/sidecar')))))
     }
 
     @Test
@@ -510,11 +536,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         }
         assertThat(stashList, hasItem(allOf(
             not(hasEntry('allowEmpty', true)),
-            hasEntry('includes','workspace/include.test'), 
+            hasEntry('includes','workspace/include.test'),
             hasEntry('excludes','workspace/exclude.test'))))
         assertThat(stashList, hasItem(allOf(
             not(hasEntry('allowEmpty', true)),
-            hasEntry('includes','container/include.test'), 
+            hasEntry('includes','container/include.test'),
             hasEntry('excludes','container/exclude.test'))))
     }
 

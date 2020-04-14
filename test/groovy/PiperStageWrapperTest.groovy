@@ -1,6 +1,9 @@
+import com.sap.piper.DebugReport
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
@@ -9,10 +12,13 @@ import util.JenkinsStepRule
 import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
-import static org.hamcrest.CoreMatchers.is
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
+
+    private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -24,6 +30,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(thrown)
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
@@ -117,6 +124,35 @@ class PiperStageWrapperTest extends BasePiperTest {
     }
 
     @Test
+    void testGlobalOverwritingExtension() {
+        helper.registerAllowedMethod('fileExists', [String.class], {s ->
+            return (s == 'test_global_overwriting.groovy')
+        })
+
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_global_overwriting.groovy')
+        })
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
+
+        def executed = false
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10,
+            stageName: 'test_global_overwriting'
+        ) {
+            executed = true
+        }
+
+        assertThat(executed, is(false))
+        assertThat(loggingRule.log, containsString('Stage Name: test_global_overwriting'))
+        assertThat(loggingRule.log, containsString('Config: ['))
+        assertThat(loggingRule.log, containsString('testBranch'))
+        assertThat(loggingRule.log, containsString('Not calling test_global_overwriting'))
+        assertThat(DebugReport.instance.globalExtensions.test_global_overwriting, is('Overwrites'))
+    }
+
+    @Test
     void testStageOldInterceptor() {
         helper.registerAllowedMethod('fileExists', [String.class], { path ->
             return (path == '.pipeline/extensions/test_old_extension.groovy')
@@ -143,5 +179,71 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Stage Name: test_old_extension'))
         assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
+        assertThat(DebugReport.instance.localExtensions.test_old_extension, is('Extends'))
+    }
+
+    @Test
+    void testExtensionDeactivation() {
+        helper.registerAllowedMethod('fileExists', [String.class], { path ->
+            return (path == '.pipeline/extensions/test_old_extension.groovy')
+        })
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_old_extension.groovy')
+        })
+
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
+        binding.setVariable('env', [PIPER_DISABLE_EXTENSIONS: 'true'])
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10,
+            stageName: 'test_old_extension'
+        ) {}
+        //setting above parameter to 'true' bypasses the below message
+        assertThat(loggingRule.log, not(containsString("[piperStageWrapper] Running project interceptor '.pipeline/extensions/test_old_extension.groovy' for test_old_extension.")))
+    }
+
+    @Test
+    void testPipelineResilienceMandatoryStep() {
+        thrown.expectMessage('expected error')
+
+        nullScript.commonPipelineEnvironment.configuration = [general: [failOnError: false]]
+
+        stepRule.step.piperStageWrapper (script: nullScript, stageLocking: false, stageName: 'testStage', juStabUtils: utils) {
+            throw new AbortException('expected error')
+        }
+    }
+
+    @Test
+    void testStageCrashesInExtension() {
+        helper.registerAllowedMethod('fileExists', [String.class], { path ->
+            return (path == 'test_crashing_extension.groovy')
+        })
+
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_crashing_extension.groovy')
+        })
+
+        Throwable caught = null
+        def executed = false
+
+        try {
+            stepRule.step.piperStageWrapper(
+                script: nullScript,
+                juStabUtils: utils,
+                ordinal: 10,
+                stageName: 'test_crashing_extension'
+            ) {
+                executed = true
+            }
+        } catch (Throwable t) {
+            caught = t
+        }
+
+        assertThat(executed, is(true))
+        assertThat(loggingRule.log, containsString('[piperStageWrapper] Found global interceptor \'test_crashing_extension.groovy\' for test_crashing_extension.'))
+        assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension'))
+        assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
+        assertThat(DebugReport.instance.failedBuild.reason, is(caught))
     }
 }

@@ -25,8 +25,8 @@ import groovy.transform.Field
  * Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), which is used throughout the complete pipeline.
  *
  * !!! tip
- *    This step needs to run at the beginning of a pipeline right after the SCM checkout.
- *    Then subsequent pipeline steps consume the information from `commonPipelineEnvironment`; it does not need to be passed to pipeline steps explicitly.
+ *     This step needs to run at the beginning of a pipeline right after the SCM checkout.
+ *     Then subsequent pipeline steps consume the information from `commonPipelineEnvironment`; it does not need to be passed to pipeline steps explicitly.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -36,6 +36,14 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters)
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+
+        List customDefaults = ['default_pipeline_environment.yml'].plus(parameters.customDefaults?:[])
+        customDefaults.each {
+            cd ->
+                writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
+        }
+
+        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
         String configFile = parameters.get('configFile')
 
@@ -58,15 +66,19 @@ void call(Map parameters = [:]) {
 }
 
 private loadConfigurationFromFile(script, String configFile) {
+    if (!configFile) {
+        String defaultYmlConfigFile = '.pipeline/config.yml'
+        String defaultYamlConfigFile = '.pipeline/config.yaml'
+        if (fileExists(defaultYmlConfigFile)) {
+            configFile = defaultYmlConfigFile
+        } else if (fileExists(defaultYamlConfigFile)) {
+            configFile = defaultYamlConfigFile
+        }
+    }
 
-    String defaultYmlConfigFile = '.pipeline/config.yml'
-    String defaultYamlConfigFile = '.pipeline/config.yaml'
-
+    // A file passed to the function is not checked for existence in order to fail the pipeline.
     if (configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
-    } else if (fileExists(defaultYmlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
-    } else if (fileExists(defaultYamlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
+        script.commonPipelineEnvironment.configurationFile = configFile
     }
 }

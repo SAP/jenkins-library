@@ -1,6 +1,7 @@
 import util.CommandLineMatcher
 import util.JenkinsLockRule
 import util.JenkinsWithEnvRule
+import util.JenkinsWriteFileRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -53,6 +54,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
@@ -62,6 +64,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
+        .around(writeFileRule)
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
@@ -119,15 +122,18 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
+            platform: 'NEO',
+        )
 
         //
         // the mta build call:
+
         assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('java -jar /opt/sap/mta/lib/mta.jar'),  // default mtaJarLocation
+                                allOf(  containsString('mbt build'),
                                         containsString('--mtar test.mtar'),
-                                        containsString('--build-target=NEO'),
-                                        containsString('build'))))
+                                        containsString('--platform NEO'),
+                                        containsString('--target ./'))))
 
         //
         // the deployable is exchanged between the involved steps via this property:

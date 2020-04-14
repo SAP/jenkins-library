@@ -1,0 +1,32 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <script id='sap-ui-bootstrap'
+        src='https://sapui5.hana.ondemand.com/resources/sap-ui-core.js'
+        data-sap-ui-theme='sap_belize'
+        data-sap-ui-libs='sap.m'
+        data-sap-ui-compatVersion='edge'
+        data-sap-ui-preload='async'
+        data-sap-ui-resourceroots='{
+            "sap.ui.piper": "./"
+         }' >
+    </script>
+
+    <script>
+         sap.ui.getCore().attachInit(function () {
+            new sap.ui.core.ComponentContainer({
+               name : "sap.ui.piper"
+            }).placeAt("content");
+
+         });
+      </script>
+</head>
+
+<body class='sapUiBody'>
+    <div id='content'></div>
+</body>
+</html>

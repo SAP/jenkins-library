@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -31,8 +32,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
 
-		e := execMockRunner{
-			stdoutReturn: map[string]string{
+		e := mock.ExecMockRunner{
+			StdoutReturn: map[string]string{
 				"kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=******** --dry-run=true --output=json": dockerConfigJSON,
 			},
 		}
@@ -41,13 +42,13 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "helm", e.calls[0].exec, "Wrong init command")
-		assert.Equal(t, []string{"init", "--client-only"}, e.calls[0].params, "Wrong init parameters")
+		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong init command")
+		assert.Equal(t, []string{"init", "--client-only"}, e.Calls[0].Params, "Wrong init parameters")
 
-		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong secret creation command")
-		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.calls[1].params, "Wrong secret creation parameters")
+		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret creation command")
+		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.Calls[1].Params, "Wrong secret creation parameters")
 
-		assert.Equal(t, "helm", e.calls[2].exec, "Wrong upgrade command")
+		assert.Equal(t, "helm", e.Calls[2].Exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
@@ -65,7 +66,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"testCluster",
 			"--testParam",
 			"testValue",
-		}, e.calls[2].params, "Wrong upgrade parameters")
+		}, e.Calls[2].Params, "Wrong upgrade parameters")
 	})
 
 	t.Run("test kubectl - create secret/kubeconfig", func(t *testing.T) {
@@ -96,17 +97,17 @@ spec:
 
 		ioutil.WriteFile(opts.AppTemplate, []byte(kubeYaml), 0755)
 
-		e := execMockRunner{
-			shouldFailOnCommand: map[string]error{
+		e := mock.ExecMockRunner{
+			ShouldFailOnCommand: map[string]error{
 				"kubectl --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster get secret regSecret": fmt.Errorf("secret not found"),
 			},
 		}
 		var stdout bytes.Buffer
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, e.env[0], []string{"KUBECONFIG=This is my kubeconfig"})
+		assert.Equal(t, e.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
-		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong secret lookup command")
+		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong secret lookup command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
@@ -114,9 +115,9 @@ spec:
 			"get",
 			"secret",
 			opts.ContainerRegistrySecret,
-		}, e.calls[0].params, "kubectl parameters incorrect")
+		}, e.Calls[0].Params, "kubectl parameters incorrect")
 
-		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong secret create command")
+		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret create command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
@@ -128,9 +129,9 @@ spec:
 			"--docker-server=my.registry:55555",
 			fmt.Sprintf("--docker-username=%v", opts.ContainerRegistryUser),
 			fmt.Sprintf("--docker-password=%v", opts.ContainerRegistryPassword),
-		}, e.calls[1].params, "kubectl parameters incorrect")
+		}, e.Calls[1].Params, "kubectl parameters incorrect")
 
-		assert.Equal(t, "kubectl", e.calls[2].exec, "Wrong apply command")
+		assert.Equal(t, "kubectl", e.Calls[2].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
@@ -140,7 +141,7 @@ spec:
 			opts.AppTemplate,
 			"--testParam",
 			"testValue",
-		}, e.calls[2].params, "kubectl parameters incorrect")
+		}, e.Calls[2].Params, "kubectl parameters incorrect")
 
 		appTemplate, err := ioutil.ReadFile(opts.AppTemplate)
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
@@ -166,28 +167,28 @@ spec:
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		var stdout bytes.Buffer
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong secret lookup command")
+		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong secret lookup command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
 			"get",
 			"secret",
 			opts.ContainerRegistrySecret,
-		}, e.calls[0].params, "kubectl parameters incorrect")
+		}, e.Calls[0].Params, "kubectl parameters incorrect")
 
-		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong apply command")
+		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
 			"apply",
 			"--filename",
 			opts.AppTemplate,
-		}, e.calls[1].params, "kubectl parameters incorrect")
+		}, e.Calls[1].Params, "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - token only", func(t *testing.T) {
@@ -210,13 +211,13 @@ spec:
 
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
 
-		e := execMockRunner{
-			shouldFailOnCommand: map[string]error{},
+		e := mock.ExecMockRunner{
+			ShouldFailOnCommand: map[string]error{},
 		}
 		var stdout bytes.Buffer
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong apply command")
+		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
@@ -225,7 +226,7 @@ spec:
 			"apply",
 			"--filename",
 			opts.AppTemplate,
-		}, e.calls[0].params, "kubectl parameters incorrect")
+		}, e.Calls[0].Params, "kubectl parameters incorrect")
 	})
 }
 

@@ -12,17 +12,17 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func kubernetesDeploy(config kubernetesDeployOptions) error {
+func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Entry().Writer())
 	runKubernetesDeploy(config, &c, log.Entry().Writer())
-	return nil
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
 	if config.DeployTool == "helm" {
 		runHelmDeploy(config, command, stdout)
 	} else {
@@ -30,7 +30,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, 
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -51,8 +51,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 	if len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
-	log.Entry().Debugf("Helm Env: %v", helmEnv)
-	command.Env(helmEnv)
+	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
+	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
 	initParams := []string{"init", "--client-only"}
@@ -130,7 +130,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command execRunner) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -144,7 +144,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
 		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-		command.Env(kubeEnv)
+		command.SetEnv(kubeEnv)
 		if len(config.KubeContext) > 0 {
 			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}

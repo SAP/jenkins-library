@@ -5,6 +5,7 @@ import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 import util.BasePiperTest
 import util.JenkinsStepRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
@@ -15,11 +16,13 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     def usedConfigFile
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(stepRule)
+        .around(writeFileRule)
 
     @Before
     void init() {

@@ -2,9 +2,6 @@
 
 Configure your project through a yml-file, which is located at `.pipeline/config.yml` in the **master branch** of your source code repository.
 
-!!! note "Cloud SDK Pipeline"
-    Cloud SDK Pipelines are configured in a file called `pipeline_config.yml`. See [SAP Cloud SDK Pipeline Configuration Docs](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md).
-
 Your configuration inherits from the default configuration located at [https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml](https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml).
 
 !!! caution "Adding custom parameters"

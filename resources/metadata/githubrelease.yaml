@@ -18,10 +18,6 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
-    resources:
-      - name: commonPipelineEnvironment
-        resourceSpec:
-          type: piperEnvironment
     params:
       - name: addClosedIssues
         description: 'If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`'

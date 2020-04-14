@@ -7,6 +7,8 @@
 1. [Generating step framework](#generating-step-framework)
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
+1. [Debugging](#debugging)
+1. [Release](#release)
 
 ## Getting started
 
@@ -65,7 +67,7 @@ you need to do the following in addition:
 
 * [Install Groovy](https://groovy-lang.org/install.html)
 * [Install Maven](https://maven.apache.org/install.html)
-* Get a local Jenkins installed: Use for example [cx-server](toDo: add link)
+* Get a local Jenkins installed: Use for example [cx-server](https://github.com/SAP/devops-docker-cx-server)
 
 ### Jenkins pipelines
 
@@ -86,7 +88,7 @@ Use Docker:
 
 You can extract the binary using Docker means to your local filesystem:
 
-```
+```sh
 docker create --name piper piper:latest
 docker cp piper:/piper .
 docker rm piper
@@ -107,9 +109,47 @@ Examples are:
 * spec - containers
 * spec - sidecars
 
+There are certain extensions:
+
+* **aliases** allow alternative parameter names also supporting deeper configuration structures. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+* **resources** allow to read for example from a shared `commonPipelineEnvironment` which contains information which has been provided by a previous step in the pipeline via an output. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/githubrelease.yaml)
+* **secrets** allow to specify references to Jenkins credentials which can be used in the `groovy` library. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+* **outputs** allow to write to dedicated outputs like
+
+  * Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
+  * Sharing data via `commonPipelineEnvironment` which can be used by another step as input
+
+* **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+
 ## Logging
 
-to be added
+Logging is done through [sirupsen/logrus](https://github.com/sirupsen/logrus) framework.
+It can conveniently be accessed through:
+
+```golang
+import (
+    "github.com/SAP/jenkins-library/pkg/log"
+)
+
+func myStep ...
+    ...
+    log.Entry().Info("This is my info.")
+    ...
+}
+```
+
+If a fatal error occurs your code should act similar to:
+
+```golang
+    ...
+    if err != nil {
+        log.Entry().
+            WithError(err).
+            Fatal("failed to execute step ...")
+    }
+```
+
+Calling `Fatal` results in an `os.Exit(0)` and before exiting some cleanup actions (e.g. writing output data, writing telemetry data if not deactivated by the user, ...) are performed.
 
 ## Error handling
 
@@ -130,3 +170,39 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 Unit tests are done using basic `golang` means.
 
 Additionally we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert) in order to have slimmer assertions if you like.
+
+## Debugging
+
+Debugging can be initiated with VS code fairly easily. Compile the binary with spcific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
+
+Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exatly to the binary that you just built with above command - must be an absolute path. In addition add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
+
+```javascript
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "go",
+            "request": "launch",
+            "mode": "exec",
+            "program": "C:/CF@HCP/git/jenkins-library-public/piper.exe",
+            "env": {},
+            "args": ["checkmarxExecuteScan", "--password", "abcd", "--username", "1234", "--projectName", "testProject4711", "--serverUrl", "https://cx.server.com/"]
+        }
+    ]
+}
+```
+
+Finally set your breakpoints and use the `Launch` button in the VS code UI to start debugging.
+
+## Release
+
+Releases are performed using [Project "Piper" Action](https://github.com/SAP/project-piper-action).
+We release on schedule (once a week) and on demand.
+To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
+It requires a personal access token for GitHub with `repo` scope.
+Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.

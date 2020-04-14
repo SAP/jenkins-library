@@ -19,13 +19,13 @@ type Command struct {
 	env    []string
 }
 
-// Dir sets the working directory for the execution
-func (c *Command) Dir(d string) {
+// SetDir sets the working directory for the execution
+func (c *Command) SetDir(d string) {
 	c.dir = d
 }
 
-// Env sets explicit environment variables to be used for execution
-func (c *Command) Env(e []string) {
+// SetEnv sets explicit environment variables to be used for execution
+func (c *Command) SetEnv(e []string) {
 	c.env = e
 }
 
@@ -53,9 +53,7 @@ func (c *Command) RunShell(shell, script string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		cmd.Env = c.env
-	}
+	appendEnvironment(cmd, c.env)
 
 	in := bytes.Buffer{}
 	in.Write([]byte(script))
@@ -68,6 +66,8 @@ func (c *Command) RunShell(shell, script string) error {
 }
 
 // RunExecutable runs the specified executable with parameters
+// !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
+//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	_out, _err := prepareOut(c.stdout, c.stderr)
@@ -78,14 +78,39 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
-	if len(c.env) > 0 {
-		cmd.Env = c.env
-	}
+	appendEnvironment(cmd, c.env)
 
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
+}
+
+func appendEnvironment(cmd *exec.Cmd, env []string) {
+
+	if len(env) > 0 {
+
+		// When cmd.Env is nil the environment variables from the current
+		// process are also used by the forked process. Our environment variables
+		// should not replace the existing environment, but they should be appended.
+		// Hence we populate cmd.Env first with the current environment in case we
+		// find it empty. In case there is already something, we append to that environment.
+		// In that case we assume the current values of `cmd.Env` has either been setup based
+		// on `os.Environ()` or that was initialized in another way for a good reason.
+		//
+		// In case we have the same environment variable as in the current environment (`os.Environ()`)
+		// and in `env`, the environment variable from `env` is effectively used since this is the
+		// later one. There is no merging between both environment variables.
+		//
+		// cf. https://golang.org/pkg/os/exec/#Command
+		//     If Env contains duplicate environment keys, only the last
+		//     value in the slice for each duplicate key is used.
+
+		if len(cmd.Env) == 0 {
+			cmd.Env = os.Environ()
+		}
+		cmd.Env = append(cmd.Env, env...)
+	}
 }
 
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {

@@ -114,6 +114,10 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
+            sh returnStatus: true, script: """
+                node --version
+                npm --version
+            """
             sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()

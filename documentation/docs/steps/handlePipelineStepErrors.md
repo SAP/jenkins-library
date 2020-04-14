@@ -16,6 +16,7 @@ none
 
 ```groovy
 handlePipelineStepErrors (stepName: 'executeHealthCheck', stepParameters: parameters) {
+  // The code you want to get controlled by the error handler goes right here into the closure
   def url = new Utils().getMandatoryParameter(parameters, 'url', null)
   def statusCode = curl(url)
   if (statusCode != '200')
