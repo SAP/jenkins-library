@@ -1,10 +1,12 @@
 name: Update go dependencies and create PR
 
 on:
+  # Allow to trigger this manually just in case updates are required outside of the schedule. See https://goobar.io/2019/12/07/manually-trigger-a-github-actions-workflow/ for info on how that works.
   repository_dispatch:
     types: update-dependencies
+  # Schedule after our weekly release, so we can update the dependencies for the new development cycle on the master branch.
   schedule:
-    - cron:  '0 12 * * 1'
+    - cron:  '0 10 * * 1'
 
 jobs:
   build:
