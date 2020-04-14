@@ -31,7 +31,7 @@ void call(Map parameters = [:], body) {
     stageLocking(config) {
         // failOnError needs to be set to not harm resilience feature
         // if not set to true: failures in mandatory steps will be caught here and neglected
-        handlePipelineStepErrors(stepName: stageName, stepParameters: parameters, failOnError: true) {
+        errorHandling(stageName, parameters, true) {
             def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
             if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
                 DebugReport.instance.environment.put("environment", "Kubernetes")
@@ -53,6 +53,16 @@ private void stageLocking(Map config, Closure body) {
     if (config.stageLocking) {
         lock(resource: "${env.JOB_NAME}/${config.ordinal}", inversePrecedence: true) {
             milestone config.ordinal
+            body()
+        }
+    } else {
+        body()
+    }
+}
+
+private void errorHandling(stageName, parameters, failOnError, Closure body) {
+    if (!parameters.errorHandlingDisabled) {
+        handlePipelineStepErrors(stepName: stageName, stepParameters: parameters, failOnError: failOnError) {
             body()
         }
     } else {
