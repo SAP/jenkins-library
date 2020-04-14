@@ -155,7 +155,7 @@ class TransportManagementService implements Serializable {
         echo(successMessage)
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
-	
+    
     def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
 
         echo("Extension descriptor upload started.")
@@ -189,9 +189,9 @@ class TransportManagementService implements Serializable {
 
         if(gotResponse) {
             responseBody = script.readFile(responseExtDescirptorUpload)
-			if(config.verbose) {
-				echo("Response body: ${responseBody}")
-			}
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }
         }
 
         def HTTP_OK = '200'
@@ -203,18 +203,18 @@ class TransportManagementService implements Serializable {
         }
 
         echo("Extension descriptor upload successful.")
-		
+        
         if (! gotResponse) {
             script.error "Cannot provide upload MTA extension descriptor response."
         }
         return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
-	
+    
 
     def getNodes(String url, String token) {
 
         if (config.verbose) {
-			echo("Get nodes started from URL: '${url}'")
+            echo("Get nodes started from URL: '${url}'")
         }
 
         def parameters = [
@@ -242,12 +242,12 @@ class TransportManagementService implements Serializable {
         }
 
         if (config.verbose) {
-			echo("Get nodes successful. Response content '${response.content}'.")
+            echo("Get nodes successful. Response content '${response.content}'.")
         }
         
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
-	
+    
     private sendApiRequest(parameters) {
         def defaultParameters = [
             acceptType            : 'APPLICATION_JSON',

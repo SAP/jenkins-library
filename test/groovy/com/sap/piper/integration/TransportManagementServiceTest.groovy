@@ -16,8 +16,8 @@ class TransportManagementServiceTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-	private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
-	private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt', 'responseExtDescirptorUpload.txt'])
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt', 'responseExtDescirptorUpload.txt'])
 
     @Rule
     public RuleChain rules = Rules
@@ -307,178 +307,178 @@ class TransportManagementServiceTest extends BasePiperTest {
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFileToNode(url, token, nodeName, fileId, description, namedUser)
     }
-	
-	@Test
-	void uploadMtaExtDescriptorToNode__successfully() {
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
-		def nodeId = 1
-		def file = 'myFile.mtaext'
-		def mtaVersion = '0.0.1'
-		def description = "My description."
-		def namedUser = 'myUser'
+    
+    @Test
+    void uploadMtaExtDescriptorToNode__successfully() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def nodeId = 1
+        def file = 'myFile.mtaext'
+        def mtaVersion = '0.0.1'
+        def description = "My description."
+        def namedUser = 'myUser'
 
-		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '200')
-		
-		def tms = new TransportManagementService(nullScript, [:])
-		def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
-		def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '200')
+        
+        def tms = new TransportManagementService(nullScript, [:])
+        def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+        def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
-		assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-		assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescirptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
-		assertThat(responseDetails, hasEntry("fileId", 5678))
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
-	}
-	
-	@Test
-	void uploadMtaExtDescriptorToNode__inVerboseMode__yieldsMoreEchos() {
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
-		def nodeId = 1
-		def file = 'myFile.mtaext'
-		def mtaVersion = '0.0.1'
-		def description = "My description."
-		def namedUser = 'myUser'
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+        assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescirptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
+        assertThat(responseDetails, hasEntry("fileId", 5678))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+    }
+    
+    @Test
+    void uploadMtaExtDescriptorToNode__inVerboseMode__yieldsMoreEchos() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def nodeId = 1
+        def file = 'myFile.mtaext'
+        def mtaVersion = '0.0.1'
+        def description = "My description."
+        def namedUser = 'myUser'
 
-		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
-		readFileRule.files.put('responseExtDescirptorUpload.txt', '{"fileId": 5678}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
+        readFileRule.files.put('responseExtDescirptorUpload.txt', '{"fileId": 5678}')
 
-		def tms = new TransportManagementService(nullScript, [verbose: true])
-		tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
 
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
-		assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
-		assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
-	}
-	
-	@Test
-	void uploadMtaExtDescriptorToNode__verboseMode__withHttpErrorResponse__throwsError() {
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+        assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
+        assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+    }
+    
+    @Test
+    void uploadMtaExtDescriptorToNode__verboseMode__withHttpErrorResponse__throwsError() {
 
-		def url = 'http://dummy.sap.com'
-		def token = 'myWrongToken'
-		def namedUser = 'myUser'
-		def nodeId = 1
-		def file = 'myFile.mtaext'
-		def mtaVersion = '0.0.1'
-		def description = "My description."
+        def url = 'http://dummy.sap.com'
+        def token = 'myWrongToken'
+        def namedUser = 'myUser'
+        def nodeId = 1
+        def file = 'myFile.mtaext'
+        def mtaVersion = '0.0.1'
+        def description = "My description."
 
-		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-		readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
+        readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
 
-		thrown.expect(AbortException.class)
-		thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (400). 200 expected')
+        thrown.expect(AbortException.class)
+        thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (400). 200 expected')
 
-		loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', NodeId: \'1\', File: \'myFile.mtaext\', MtaVersion: \'0.0.1\'')
-		loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)')
+        loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', NodeId: \'1\', File: \'myFile.mtaext\', MtaVersion: \'0.0.1\'')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)')
 
-		loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
-		loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (400). 200 expected. Response body: Something went wrong during MTA extension descriptor upload')
+        loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (400). 200 expected. Response body: Something went wrong during MTA extension descriptor upload')
 
-		new TransportManagementService(nullScript, [verbose:true])
-			.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
-	}
+        new TransportManagementService(nullScript, [verbose:true])
+            .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+    }
 
-	@Test
-	void uploadMtaExtDescriptorToNode__NonVerboseMode__withHttpErrorResponse__throwsError() {
+    @Test
+    void uploadMtaExtDescriptorToNode__NonVerboseMode__withHttpErrorResponse__throwsError() {
 
-		def url = 'http://dummy.sap.com'
-		def token = 'myWrongToken'
-		def namedUser = 'myUser'
-		def nodeId = 1
-		def file = 'myFile.mtaext'
-		def mtaVersion = '0.0.1'
-		def description = "My description."
+        def url = 'http://dummy.sap.com'
+        def token = 'myWrongToken'
+        def namedUser = 'myUser'
+        def nodeId = 1
+        def file = 'myFile.mtaext'
+        def mtaVersion = '0.0.1'
+        def description = "My description."
 
-		shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
-		readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
+        readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
 
-		thrown.expect(AbortException.class)
-		thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (418). 200 expected')
+        thrown.expect(AbortException.class)
+        thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (418). 200 expected')
 
-		loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
-		loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (418). 200 expected. Response body: Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.')
+        loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (418). 200 expected. Response body: Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.')
 
-		new TransportManagementService(nullScript, [verbose:false])
-			.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
-	}
-	
-	@Test
-	void getNodes__successfully() {
-		Map requestParams
-		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-			requestParams = m
-			return [content: '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }', status: 200]
-		})
+        new TransportManagementService(nullScript, [verbose:false])
+            .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
+    }
+    
+    @Test
+    void getNodes__successfully() {
+        Map requestParams
+        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+            requestParams = m
+            return [content: '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }', status: 200]
+        })
 
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
 
-		def tms = new TransportManagementService(nullScript, [:])
-		def responseDetails = tms.getNodes(url, token)
+        def tms = new TransportManagementService(nullScript, [:])
+        def responseDetails = tms.getNodes(url, token)
 
-		assertFalse(loggingRule.log.contains("[TransportManagementService] Get nodes successful."))
-		assertThat(requestParams, hasEntry('url', "${url}/v2/nodes"))
-		assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
-		assertThat(responseDetails.getAt("nodes").get(0), hasEntry("id", 1))
-		assertThat(responseDetails.getAt("nodes").get(1), hasEntry("id", 2))
-	}
-	
-	@Test
-	void getNodes__inVerboseMode__yieldsMoreEchos() {
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
-		def responseContent = '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }'
-		
-		helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-			Map requestParams = m
-			return [content: responseContent, status: 200]
-		})
+        assertFalse(loggingRule.log.contains("[TransportManagementService] Get nodes successful."))
+        assertThat(requestParams, hasEntry('url', "${url}/v2/nodes"))
+        assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
+        assertThat(responseDetails.getAt("nodes").get(0), hasEntry("id", 1))
+        assertThat(responseDetails.getAt("nodes").get(1), hasEntry("id", 2))
+    }
+    
+    @Test
+    void getNodes__inVerboseMode__yieldsMoreEchos() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def responseContent = '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }'
+        
+        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
+            Map requestParams = m
+            return [content: responseContent, status: 200]
+        })
 
-		def tms = new TransportManagementService(nullScript, [verbose: true])
-		def responseDetails = tms.getNodes(url, token)
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        def responseDetails = tms.getNodes(url, token)
 
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes started from URL: '${url}'"))
-		assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes successful. Response content '${responseContent}'."))
-	}
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes started from URL: '${url}'"))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes successful. Response content '${responseContent}'."))
+    }
 
-	@Test
-	void getNodes__failure() {
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
-		def responseStatusCode = 500
-		def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)." }'
+    @Test
+    void getNodes__failure() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def responseStatusCode = 500
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN NON-VERBOSE MODE)." }'
 
-		thrown.expect(AbortException)
-		thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
 
-		helper.registerAllowedMethod('httpRequest', [Map.class], {
-			return [content: responseContent, status: responseStatusCode]
-		})
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
 
-		def tms = new TransportManagementService(nullScript, [verbose: false])
-		tms.getNodes(url, token)
-	}
+        def tms = new TransportManagementService(nullScript, [verbose: false])
+        tms.getNodes(url, token)
+    }
 
-	@Test
-	void getNodes__failure__status__500__inVerboseMode() {
-		def url = 'http://dummy.sap.com'
-		def token = 'myToken'
-		def responseStatusCode = 500
-		def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)." }'
+    @Test
+    void getNodes__failure__status__500__inVerboseMode() {
+        def url = 'http://dummy.sap.com'
+        def token = 'myToken'
+        def responseStatusCode = 500
+        def responseContent = '{ "errorType": "TsInternalServerErrorException", "message": "The application has encountered an unexpected error (THIS PART IS HERE TO CHECK THAT ERROR MESSAGE IS EXPOSED IN VERBOSE MODE)." }'
 
-		thrown.expect(AbortException)
-		thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
-		loggingRule.expect("[TransportManagementService] Get nodes started from URL: '${url}'")
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
+        loggingRule.expect("[TransportManagementService] Get nodes started from URL: '${url}'")
 
-		helper.registerAllowedMethod('httpRequest', [Map.class], {
-			return [content: responseContent, status: responseStatusCode]
-		})
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
 
-		def tms = new TransportManagementService(nullScript, [verbose: true])
-		tms.getNodes(url, token)
-	}
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.getNodes(url, token)
+    }
 }
