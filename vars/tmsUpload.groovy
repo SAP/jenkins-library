@@ -35,7 +35,7 @@ import static com.sap.piper.Prerequisites.checkScript
 	 */
 	'mtaVersion',
 	/**
-	 * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMappings: [1234: 'example.mtaext']`.
+	 * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext']`.
 	 */
 	'nodeExtDescriptorMapping',
     /**
@@ -54,7 +54,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
 /**
- * This step allows you to upload an MTA file (multi-target application archive) into a TMS (SAP Cloud Platform Transport Management Service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
+ * This step allows you to upload an MTA file (multi-target application archive) and mutiple MTA extension descriptors into a TMS (SAP Cloud Platform Transport Management Service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
  * TMS lets you manage transports between SAP Cloud Platform accounts in Neo and Cloud Foundry, such as from DEV to TEST and PROD accounts.
  * For more information, see [official documentation of Transport Management Service](https://help.sap.com/viewer/p/TRANSPORT_MANAGEMENT_SERVICE)
  *
