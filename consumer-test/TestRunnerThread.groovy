@@ -86,7 +86,7 @@ class TestRunnerThread extends Thread {
     private void setLibraryVersionInJenkinsfile() {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
-            "@Library(\"piper-library-os@${libraryVersionUnderTest}\") _\n" +
+            "@Library(\"piper-lib-os@${libraryVersionUnderTest}\") _\n" +
                 jenkinsfile.text
         jenkinsfile.write(manipulatedText)
     }
