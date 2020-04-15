@@ -183,23 +183,29 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 			// We can only convert from strings at the moment
 			continue
 		}
+		logWarning := true
 		switch field.Type.Kind() {
 		case reflect.String:
 			// Types match, ignore
+			logWarning = false
 		case reflect.Slice:
 			fallthrough
 		case reflect.Array:
 			if field.Type.Elem().Kind() == reflect.String {
 				config[key] = []string{entry.String()}
+				logWarning = false
 			}
 		case reflect.Bool:
 			value := strings.ToLower(entry.String())
 			if value == "true" {
 				config[key] = true
+				logWarning = false
 			} else if value == "false" {
 				config[key] = false
+				logWarning = false
 			}
-		default:
+		}
+		if logWarning {
 			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", key)
 		}
 	}
