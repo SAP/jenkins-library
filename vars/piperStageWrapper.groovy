@@ -147,8 +147,8 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 }
 
 private void callInterceptor(Script script, String extensionFileName, Closure originalStage, String stageName, Map configuration) {
-    Script interceptor = load(extensionFileName)
     try {
+        Script interceptor = load(extensionFileName)
         if (isOldInterceptorInterfaceUsed(interceptor)) {
             echo("[Warning] The interface to implement extensions has changed. " +
                 "The extension $extensionFileName has to implement a method named 'call' with exactly one parameter of type Map. " +
