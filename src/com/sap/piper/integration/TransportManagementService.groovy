@@ -51,10 +51,12 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
+        if (response.status != 200) {
+            prepareAndThrowException(response, "OAuth Token retrieval failed (HTTP status code '${response.status}').")
+        }
+
         echo("OAuth Token retrieved successfully.")
-
-        return jsonUtils.jsonStringToGroovyObject(response).access_token
-
+        return jsonUtils.jsonStringToGroovyObject(response.content).access_token
     }
 
 
@@ -68,20 +70,46 @@ class TransportManagementService implements Serializable {
 
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
-        script.sh """#!/bin/sh -e
-                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
-            """
+        def responseFileUpload = 'responseFileUpload.txt'
 
-        def responseContent = script.readFile("responseFileUpload.txt")
+        def responseContent
 
-        if (config.verbose) {
-            echo("${responseContent}")
+        def responseCode = script.sh returnStdout: true,
+                                      script:"""|#!/bin/sh -e
+                                                | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                                |      --write-out '%{response_code}' \\
+                                                |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -F 'file=@${file}' \\
+                                                |      -F 'namedUser=${namedUser}' \\
+                                                |      --output ${responseFileUpload} \\
+                                                |      '${url}/v2/files/upload'""".stripMargin()
+
+
+        def responseBody = 'n/a'
+
+        boolean gotResponse = script.fileExists(responseFileUpload)
+
+        if(gotResponse) {
+            responseBody = script.readFile(responseFileUpload)
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }
+        }
+
+        def HTTP_CREATED = '201'
+
+        if (responseCode != HTTP_CREATED) {
+            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_CREATED} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
         }
 
         echo("File upload successful.")
 
-        return jsonUtils.jsonStringToGroovyObject(responseContent)
-
+        if (! gotResponse) {
+            script.error "Cannot provide upload file response."
+        }
+        return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
 
 
@@ -116,10 +144,16 @@ class TransportManagementService implements Serializable {
         }
 
         def response = sendApiRequest(parameters)
-        echo("Node upload successful.")
+        if (response.status != 200) {
+            prepareAndThrowException(response, "Node upload failed (HTTP status code '${response.status}').")
+        }
 
-        return jsonUtils.jsonStringToGroovyObject(response)
-
+        def successMessage = "Node upload successful."
+        if (config.verbose) {
+            successMessage += " Response content '${response.content}'."
+        }
+        echo(successMessage)
+        return jsonUtils.jsonStringToGroovyObject(response.content)
     }
 
     private sendApiRequest(parameters) {
@@ -128,16 +162,17 @@ class TransportManagementService implements Serializable {
             quiet                 : !config.verbose,
             consoleLogResponseBody: false, // must be false, otherwise this reveals the api-token in the auth-request
             ignoreSslErrors       : true,
-            validResponseCodes    : "100:399"
+            validResponseCodes    : "100:599"
         ]
 
-        def response = script.httpRequest(defaultParameters + parameters)
+        return script.httpRequest(defaultParameters + parameters)
+    }
 
-        if (config.verbose) {
-            echo("Received response '${response.content}' with status ${response.status}.")
+    private prepareAndThrowException(response, errorMessage) {
+        if (response.status >= 400) {
+            errorMessage += " Response content '${response.content}'."
         }
-
-        return response.content
+        script.error "[${getClass().getSimpleName()}] ${errorMessage}"
     }
 
     private echo(message) {
