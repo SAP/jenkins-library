@@ -173,8 +173,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 
 	for key := range config {
 		// Find the field in options who's name equals 'key'
-		lowerKey := strings.ToLower(key)
-		field := findField(lowerKey, typedOptions, optionsType)
+		field := findField(key, typedOptions, optionsType)
 		if field == nil {
 			continue
 		}
@@ -208,6 +207,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 }
 
 func findField(name string, typedOptions reflect.Value, optionsType reflect.Type) *reflect.StructField {
+	name = strings.ToLower(name)
 	for i := 0; i < typedOptions.NumField(); i++ {
 		field := optionsType.Field(i)
 		if name == strings.ToLower(field.Name) {
