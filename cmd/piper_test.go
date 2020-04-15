@@ -132,7 +132,7 @@ func TestGetProjectConfigFile(t *testing.T) {
 
 func TestConvertTypes(t *testing.T) {
 	// Init
-	options := struct{
+	options := struct {
 		Foo []string `json:"foo,omitempty"`
 		Bar bool     `json:"bar,omitempty"`
 		Baz string   `json:"baz,omitempty"`

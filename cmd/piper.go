@@ -216,7 +216,7 @@ func findField(name string, typedOptions reflect.Value, optionsType reflect.Type
 	for i := 0; i < typedOptions.NumField(); i++ {
 		field := optionsType.Field(i)
 		tag := field.Tag.Get("json")
-		if name == tag || name + ",omitempty" == tag {
+		if name == tag || name+",omitempty" == tag {
 			return &field
 		}
 	}
