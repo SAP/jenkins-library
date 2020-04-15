@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -154,11 +155,65 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
+	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
+	return nil
+}
+
+func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+	typedOptions := reflect.ValueOf(options)
+	if typedOptions.Kind() == reflect.Ptr {
+		typedOptions = typedOptions.Elem()
+	}
+	optionsType := typedOptions.Type()
+
+	for key := range config {
+		// Find the field in options who's name equals 'key'
+		lowerKey := strings.ToLower(key)
+		field := findField(lowerKey, typedOptions, optionsType)
+		if field == nil {
+			continue
+		}
+
+		entry := reflect.ValueOf(config[key])
+		if entry.Kind() != reflect.String {
+			// We can only convert from strings at the moment
+			continue
+		}
+		switch field.Type.Kind() {
+		case reflect.String:
+			// Types match, ignore
+		case reflect.Slice:
+			fallthrough
+		case reflect.Array:
+			if field.Type.Elem().Kind() == reflect.String {
+				config[key] = []string{entry.String()}
+			}
+		case reflect.Bool:
+			value := strings.ToLower(entry.String())
+			if value == "true" {
+				config[key] = true
+			} else if value == "false" {
+				config[key] = false
+			}
+		default:
+			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", key)
+		}
+	}
+	return config
+}
+
+func findField(name string, typedOptions reflect.Value, optionsType reflect.Type) *reflect.StructField {
+	for i := 0; i < typedOptions.NumField(); i++ {
+		field := optionsType.Field(i)
+		if name == strings.ToLower(field.Name) {
+			return &field
+		}
+	}
 	return nil
 }
 
