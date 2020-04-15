@@ -43,12 +43,38 @@ metadata:
     Unlike for the _Continuous Deloyment_ pattern descibed above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
 
     Configuration of this pattern is done via `versioningType: library`.
+
+    ### Support of additional build tools
+
+    Besides the `buildTools` provided out of the box (like `maven`, `mta`, `npm`, ...) it is possible to set `buildTool: custom`.
+
+    This allows you to provide automatic versioning for tools using a:
+
+    #### file with the version as only content:
+
+    Define `buildTool: custom` as well as `filePath: <path to your file>`
+
+    **Please note:** `<path to your file>` need to point either to a `*.txt` file or to a file without extension.
+
+    #### `ini` file containing the version:
+
+    Define `buildTool: custom`, `filePath: <path to your ini-file>` as well as parameters `versionSection` and `versionSource` to point to the version location (section & parameter name) within the file.
+
+    **Please note:** `<path to your file>` need to point either to a `*.cfg` or a `*.ini` file.
+
+    #### `json` file containing the version:
+
+    Define `buildTool: custom`, `filePath: <path to your *.json file` as well as parameter `versionSource` to point to the parameter containing the version.
+
+    #### `yaml` file containing the version
+
+    Define `buildTool: custom`, `filePath: <path to your *.yml/*.yaml file` as well as parameter `versionSource` to point to the parameter containing the version.
 spec:
   inputs:
     params:
       - name: buildTool
         type: string
-        description: Defines the tool which is used for building the artifact.
+        description: Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.
         mandatory: true
         scope:
         - GENERAL
@@ -65,9 +91,23 @@ spec:
         - STAGES
         - STEPS
         default: Project Piper
+      - name: customversionField
+        type: string
+        description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: customVersionSection
+        type: string
+        description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
       - name: dockerVersionSource
         type: string
-        description: "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`."
+        description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."
         scope:
         - PARAMETERS
         - STAGES
