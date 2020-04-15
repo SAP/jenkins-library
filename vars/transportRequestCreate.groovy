@@ -168,7 +168,7 @@ void call(parameters = [:]) {
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
                         .withMandatoryProperty('changeDocumentId',
-                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                            "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
         }
 
         configuration = configHelper.use()

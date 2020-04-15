@@ -124,14 +124,14 @@ void call(parameters = [:]) {
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('changeDocumentId',
-                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                            "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
 
         }
 
         configuration = configHelper
                             .mixin([transportRequestId: transportRequestId?.trim() ?: null], ['transportRequestId'] as Set)
                             .withMandatoryProperty('transportRequestId',
-                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+                                "Transport request id not provided (parameter: \'transportRequestId\' provided to the step call or via commit history).")
                             .use()
 
         def closingMessage = ["[INFO] Closing transport request '${configuration.transportRequestId}'"]
