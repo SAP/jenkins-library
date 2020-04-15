@@ -226,6 +226,8 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         Throwable caught = null
         def executed = false
+        // Clear DebugReport to avoid left-overs from another UnitTest
+        DebugReport.instance.failedBuild = [:]
 
         try {
             stepRule.step.piperStageWrapper(
