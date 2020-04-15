@@ -207,10 +207,10 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 }
 
 func findField(name string, typedOptions reflect.Value, optionsType reflect.Type) *reflect.StructField {
-	name = strings.ToLower(name)
 	for i := 0; i < typedOptions.NumField(); i++ {
 		field := optionsType.Field(i)
-		if name == strings.ToLower(field.Name) {
+		tag := field.Tag.Get("json")
+		if name == tag || name + ",omitempty" == tag {
 			return &field
 		}
 	}
