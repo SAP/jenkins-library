@@ -21,10 +21,6 @@ cache:
 # Travis GHPages deploy provider: https://docs.travis-ci.com/user/deployment/pages/
 jobs:
   include:
-    - stage: Tests
-      name: Consumer Tests
-      if: repo = "SAP/jenkins-library" && ( (type != pull_request && branch =~ /^master$|^it\/.*$/) || (type == pull_request && head_repo = "SAP/jenkins-library" && head_branch =~ /^it\/.*$/) )
-      script: cd consumer-test && groovy consumerTestController.groovy
     - stage: Docs
       name: Create Documentation
       install: docker pull squidfunk/mkdocs-material:3.0.4
