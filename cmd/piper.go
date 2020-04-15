@@ -172,7 +172,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 	optionsType := typedOptions.Type()
 
 	for key := range config {
-		// Find the field in options who's name equals 'key'
+		// Find the field in options which will be mapped to 'key'
 		field := findField(key, typedOptions, optionsType)
 		if field == nil {
 			continue
