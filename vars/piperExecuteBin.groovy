@@ -112,6 +112,9 @@ void credentialWrapper(config, List credentialInfo, body) {
                 default:
                     error ("invalid credential type: ${cred.type}")
             }
+            if (! config[cred.id]) {
+                echo "[WARNING] Tried to lookup a credentials id via configuration entry '${cred.id}'. But there is no parameter '${cred.id}' contained in the configuration. The corresponding credentials will not be provided."
+            }
         }
 
         if (sshCreds.size() > 0) {
