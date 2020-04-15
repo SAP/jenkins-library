@@ -29,21 +29,17 @@ void call(Map parameters = [:], body) {
         .use()
 
     stageLocking(config) {
-        // failOnError needs to be set to not harm resilience feature
-        // if not set to true: failures in mandatory steps will be caught here and neglected
-        handlePipelineStepErrors(stepName: stageName, stepParameters: parameters, failOnError: true) {
-            def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
-            if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
-                DebugReport.instance.environment.put("environment", "Kubernetes")
-                withEnv(["POD_NAME=${stageName}"]) {
-                    dockerExecuteOnKubernetes(script: script, containerMap: containerMap, stageName: stageName) {
-                        executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
-                    }
-                }
-            } else {
-                node(config.nodeLabel) {
+        def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
+        if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
+            DebugReport.instance.environment.put("environment", "Kubernetes")
+            withEnv(["POD_NAME=${stageName}"]) {
+                dockerExecuteOnKubernetes(script: script, containerMap: containerMap, stageName: stageName) {
                     executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
                 }
+            }
+        } else {
+            node(config.nodeLabel) {
+                executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
             }
         }
     }
@@ -151,21 +147,28 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 }
 
 private void callInterceptor(Script script, String extensionFileName, Closure originalStage, String stageName, Map configuration) {
-    Script interceptor = load(extensionFileName)
-    if (isOldInterceptorInterfaceUsed(interceptor)) {
-        echo("[Warning] The interface to implement extensions has changed. " +
-            "The extension $extensionFileName has to implement a method named 'call' with exactly one parameter of type Map. " +
-            "This map will have the properties script, originalStage, stageName, config. " +
-            "For example: def call(Map parameters) { ... }")
-        interceptor.call(originalStage, stageName, configuration, configuration)
-    } else {
-        validateInterceptor(interceptor, extensionFileName)
-        interceptor.call([
-            script       : script,
-            originalStage: originalStage,
-            stageName    : stageName,
-            config       : configuration
-        ])
+    try {
+        Script interceptor = load(extensionFileName)
+        if (isOldInterceptorInterfaceUsed(interceptor)) {
+            echo("[Warning] The interface to implement extensions has changed. " +
+                "The extension $extensionFileName has to implement a method named 'call' with exactly one parameter of type Map. " +
+                "This map will have the properties script, originalStage, stageName, config. " +
+                "For example: def call(Map parameters) { ... }")
+            interceptor.call(originalStage, stageName, configuration, configuration)
+        } else {
+            validateInterceptor(interceptor, extensionFileName)
+            interceptor.call([
+                script       : script,
+                originalStage: originalStage,
+                stageName    : stageName,
+                config       : configuration
+            ])
+        }
+    } catch (Throwable error) {
+        if (!DebugReport.instance.failedBuild.step) {
+            DebugReport.instance.storeStepFailure("${stageName}(extended)", error, true)
+        }
+        throw error
     }
 }
 

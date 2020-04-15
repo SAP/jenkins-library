@@ -15,10 +15,12 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
 	github.com/testcontainers/testcontainers-go v0.2.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	gopkg.in/ini.v1 v1.55.0
 	gopkg.in/yaml.v2 v2.2.4
 )
