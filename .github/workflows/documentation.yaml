@@ -17,48 +17,58 @@ jobs:
 
     - uses: actions/setup-java@v1
       with:
-        java-version: '11'
-        
+        java-version: '1.8'
+
     - uses: actions/setup-go@v1
       with:
         go-version: '1.13.x'
 
-    - uses: actions/setup-python@v1
-      with:
-        python-version: '3.6'
-        architecture: 'x64'
+# TODO: find action or run via Maven?
 
-#    - name: Install Groovy
-#      run: sudo apt-get update && sudo apt-get install groovy -y
+    - name: Install Groovy
+      run: sudo apt-get update && sudo apt-get install groovy -y
 
-#    - name: Create ClassPath File
-#      run: mvn dependency:build-classpath -Dmdep.outputFile=target/classpath -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+# TODO: use caching for -m2 directory
 
-#    - name: Generate Groovy Docs
-#      run: 
+#    - name: Cache node modules
+#      uses: actions/cache@v1
+#      env:
+#        cache-name: cache-node-modules
+#      with:
+#        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+#        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+#        restore-keys: |
+#          ${{ runner.os }}-build-${{ env.cache-name }}-
+#          ${{ runner.os }}-build-
+#          ${{ runner.os }}-
+
+    - run: docker pull ppiper/jenkinsfile-runner:latest
+
+    - name: Generate Groovy Docs
+      env:
+        MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      run: documentation/bin/createDocu.sh
 
     - name: Generate Golang Docs
       run: go run pkg/generator/step-metadata.go --docuDir=documentation/docs/steps/ --docuGen=true
 
-    - name: Install MKDocs Dependencies
-      run: |
-        python3 -m pip install \
-          "mkdocs==1.0.3" \
-          "mkdocs-material==3.0.4" \
-          "Markdown==2.6.11" \
-          "Pygments==2.2.0" \
-          "pymdown-extensions==5.0"
+    - run: docker pull squidfunk/mkdocs-material:3.0.4
 
     - name: Build
-      run: mkdocs build --clean --strict --site-dir docs-gen --config-file documentation/mkdocs.yml
+      run: |
+        docker run \
+          -u $(id -u):$(id -g) \
+          -v ${GITHUB_WORKSPACE}/documentation:/docs \
+          squidfunk/mkdocs-material:3.0.4 build --clean --strict
 
-#    - name: unknown
-#      run: |
-#        mkdir -p documentation/docs-gen/misc
-#        cp target/docuMetaData.json documentation/docs-gen/misc
+    - name: Provide Docs Metadata
+      run: |
+        mkdir -p documentation/docs-gen/misc
+        cp target/docuMetaData.json documentation/docs-gen/misc
 
     - name: Deploy
       if: true == false
+      #if: github.ref == master
       #if: we are on master branch
       uses: peaceiris/actions-gh-pages@v3
       with:
