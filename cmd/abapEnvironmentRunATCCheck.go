@@ -37,22 +37,25 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	client.SetOptions(clientOptions)
 
 	//Cloud Foundry Authentication
-	cfloginconfig := cloudfoundry.CloudFoundryLoginOptions{
+	/*cfloginconfig := cloudfoundry.CloudFoundryLoginOptions{
 		CfAPIEndpoint: config.CfAPIEndpoint,
 		CfOrg:         config.CfOrg,
 		CfSpace:       config.CfSpace,
 		Username:      config.Username,
 		Password:      config.Password,
-	}
-	err = cloudfoundry.Login(cfloginconfig)
+	}*/
 
 	var details connectionDetailsHTTP
 	var abapEndpoint string
-
 	//If Host flag is empty read Service Key instead
 	if err == nil {
 		details, err = checkHost(config, details)
 	}
+
+	/* Check if login is needed before & after reading service key
+	if config.CfAPIEndpoint != "" && err == nil {
+		err = cloudfoundry.Login(cfloginconfig)
+	}*/
 
 	//Fetch Xcrsf-Token
 	if err == nil {
