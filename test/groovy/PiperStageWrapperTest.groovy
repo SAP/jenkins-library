@@ -226,6 +226,8 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         Throwable caught = null
         def executed = false
+        // Clear DebugReport to avoid left-overs from another UnitTest
+        DebugReport.instance.failedBuild = [:]
 
         try {
             stepRule.step.piperStageWrapper(
@@ -242,7 +244,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         assertThat(executed, is(true))
         assertThat(loggingRule.log, containsString('[piperStageWrapper] Found global interceptor \'test_crashing_extension.groovy\' for test_crashing_extension.'))
-        assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension'))
+        assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension(extended)'))
         assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
         assertThat(DebugReport.instance.failedBuild.reason, is(caught))
     }
