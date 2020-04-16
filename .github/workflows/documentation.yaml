@@ -8,13 +8,6 @@ on:
 #    branches:
 #    - master
 
-name: Documentation
-
-on:
-  push:
-    branches: 
-    - master
-
 jobs:
   github-pages:
     runs-on: ubuntu-latest
