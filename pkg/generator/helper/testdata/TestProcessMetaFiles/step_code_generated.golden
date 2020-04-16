@@ -106,11 +106,7 @@ func TestStepCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("testStep")
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "testStep", &stepConfig, config.OpenPiperFile)
-			if(err != nil){
-				return err
-			}
-			return nil
+			return PrepareConfig(cmd, &metadata, "testStep", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
