@@ -39,7 +39,11 @@ func MavenExecuteCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("mavenExecute")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecute", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "mavenExecute", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
