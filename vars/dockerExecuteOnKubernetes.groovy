@@ -83,7 +83,7 @@ import hudson.AbortException
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used.
+     * Optional name of the docker image that should be used. If no docker image is provided, the closure will be executed in the jnlp agent container.
      */
     'dockerImage',
     /**
