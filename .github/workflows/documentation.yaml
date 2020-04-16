@@ -8,6 +8,13 @@ on:
 #    branches:
 #    - master
 
+name: Documentation
+
+on:
+  push:
+    branches: 
+    - master
+
 jobs:
   github-pages:
     runs-on: ubuntu-latest
@@ -23,24 +30,25 @@ jobs:
       with:
         go-version: '1.13.x'
 
-# TODO: find action or run via Maven?
-
+    # TODO: find action or run via Maven?
     - name: Install Groovy
       run: sudo apt-get update && sudo apt-get install groovy -y
 
-# TODO: use caching for -m2 directory
-
-#    - name: Cache node modules
-#      uses: actions/cache@v1
-#      env:
-#        cache-name: cache-node-modules
-#      with:
-#        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
-#        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-#        restore-keys: |
-#          ${{ runner.os }}-build-${{ env.cache-name }}-
-#          ${{ runner.os }}-build-
-#          ${{ runner.os }}-
+    - name: Cache Maven Packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+          
+    - name: Cache Go Packages
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - run: docker pull ppiper/jenkinsfile-runner:latest
 
