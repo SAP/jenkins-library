@@ -17,6 +17,18 @@ func TestContainsInt(t *testing.T) {
 	assert.Equal(t, false, ContainsInt(intList, 13), "False expected but returned true")
 }
 
+func TestContainsString(t *testing.T) {
+	var stringList []string
+	assert.False(t, ContainsString(stringList, "test"), "False expected but returned true")
+	assert.False(t, ContainsString(stringList, ""), "False expected but returned true")
+
+	stringList = append(stringList, "", "foo", "bar", "foo")
+	assert.True(t, ContainsString(stringList, ""), "True expected but returned false")
+	assert.True(t, ContainsString(stringList, "bar"), "True expected but returned false")
+	assert.True(t, ContainsString(stringList, "foo"), "True expected but returned false")
+	assert.False(t, ContainsString(stringList, "baz"), "False expected but returned true")
+}
+
 func TestPrefix(t *testing.T) {
 	// init
 	s := []string{"tree", "pie", "applejuice"}
