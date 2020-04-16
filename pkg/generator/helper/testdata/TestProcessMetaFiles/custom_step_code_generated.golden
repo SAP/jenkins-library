@@ -108,7 +108,7 @@ func TestStepCommand() *cobra.Command {
 			log.SetStepName("testStep")
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
 			err := piperOsCmd.PrepareConfig(cmd, &metadata, "testStep", &stepConfig, config.OpenPiperFile)
-			if ( err != nil) {
+			if err != nil {
 				return err 
 			}
 			return nil
