@@ -15,9 +15,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(echo ${GITHUB_REF#refs/heads/})"
       - uses: actions/setup-java@v1
         with:
           java-version: '11'
@@ -46,9 +43,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
       - name: get commit id
         id: commitId
         run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
