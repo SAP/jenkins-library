@@ -23,7 +23,6 @@ jobs:
       with:
         go-version: '1.13.x'
 
-    # TODO: find action or run via Maven?
     - name: Install Groovy
       run: sudo apt-get update && sudo apt-get install groovy -y
 
@@ -34,7 +33,7 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-          
+
     - name: Cache Go Packages
       uses: actions/cache@v1
       with:
