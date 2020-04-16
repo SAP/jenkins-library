@@ -97,7 +97,13 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("protecodeExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "protecodeExecuteScan", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "protecodeExecuteScan", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
