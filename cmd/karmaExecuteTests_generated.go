@@ -42,7 +42,11 @@ In the Docker network, the containers can be referenced by the values provided i
 			startTime = time.Now()
 			log.SetStepName("karmaExecuteTests")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "karmaExecuteTests", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
