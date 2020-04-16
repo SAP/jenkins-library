@@ -1,0 +1,25 @@
+metadata:
+  name: nodeJsBuild
+  description: todo
+spec:
+  inputs:
+    params:
+      - name: install
+        type: bool
+        description: Run install/ci depending on ..
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: runScripts
+        type: '[]string'
+        description: ..
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: node
+      image: node:12-buster-slim
+      imagePullPolicy: Never
