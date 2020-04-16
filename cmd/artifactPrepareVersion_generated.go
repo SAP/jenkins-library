@@ -140,7 +140,13 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			startTime = time.Now()
 			log.SetStepName("artifactPrepareVersion")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "artifactPrepareVersion", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "artifactPrepareVersion", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

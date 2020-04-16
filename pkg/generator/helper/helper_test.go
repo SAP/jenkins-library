@@ -93,7 +93,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		assert.Equal(t, string(expected), string(files["cmd/testStep_generated.go"]))
 		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 
@@ -103,7 +103,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, expected, files["cmd/testStep_generated_test.go"])
+		assert.Equal(t, string(expected), string(files["cmd/testStep_generated_test.go"]))
 	})
 
 	t.Run("custom step code", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		assert.Equal(t, string(expected), string(files["cmd/testStep_generated.go"]))
 		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 }
