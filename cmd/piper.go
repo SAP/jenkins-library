@@ -168,7 +168,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 	optionsType := getStepOptionsStructType(options)
 
 	for paramName := range config {
-		optionsField := findStructFieldByJsonTag(paramName, optionsType)
+		optionsField := findStructFieldByJSONTag(paramName, optionsType)
 		if optionsField == nil {
 			continue
 		}
@@ -209,7 +209,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 	return config
 }
 
-func findStructFieldByJsonTag(tagName string, optionsType reflect.Type) *reflect.StructField {
+func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
 	for i := 0; i < optionsType.NumField(); i++ {
 		field := optionsType.Field(i)
 		tag := field.Tag.Get("json")
