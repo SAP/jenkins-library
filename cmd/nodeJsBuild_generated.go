@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -13,11 +14,13 @@ import (
 )
 
 type nodeJsBuildOptions struct {
-	Install    bool     `json:"install,omitempty"`
-	RunScripts []string `json:"runScripts,omitempty"`
+	Install            bool     `json:"install,omitempty"`
+	RunScripts         []string `json:"runScripts,omitempty"`
+	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
+	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
 }
 
-// NodeJsBuildCommand todo
+// NodeJsBuildCommand Build a JavaScript backend (node js) project
 func NodeJsBuildCommand() *cobra.Command {
 	metadata := nodeJsBuildMetadata()
 	var stepConfig nodeJsBuildOptions
@@ -25,8 +28,8 @@ func NodeJsBuildCommand() *cobra.Command {
 
 	var createNodeJsBuildCmd = &cobra.Command{
 		Use:   "nodeJsBuild",
-		Short: "todo",
-		Long:  ``,
+		Short: "Build a JavaScript backend (node js) project",
+		Long:  `todo`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("nodeJsBuild")
@@ -53,8 +56,10 @@ func NodeJsBuildCommand() *cobra.Command {
 }
 
 func addNodeJsBuildFlags(cmd *cobra.Command, stepConfig *nodeJsBuildOptions) {
-	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run install/ci depending on ..")
-	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "..")
+	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run npm install or similar commands depending on the project structure.")
+	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additinal run scripts to execute from package.json.")
+	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", "https://npm.sap.com", "The default npm registry url to be used as the remote mirror for the SAP npm packages.")
 
 }
 
@@ -81,6 +86,22 @@ func nodeJsBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "defaultNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "sapNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
