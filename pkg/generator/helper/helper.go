@@ -27,6 +27,7 @@ type stepInfo struct {
 	Short            string
 	StepFunc         string
 	StepName         string
+	StepSecrets      []string
 }
 
 //StepGoTemplate ...
@@ -81,7 +82,13 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
+			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			{{- range $key, $value := .StepSecrets }}
+			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -309,8 +316,20 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			OSImport:         osImport,
 			OutputResources:  oRes,
 			ExportPrefix:     exportPrefix,
+			StepSecrets:      getSecretFields(stepData),
 		},
 		err
+}
+
+func getSecretFields(stepData *config.StepData) []string {
+	var secretFields []string
+
+	for _, parameter := range stepData.Spec.Inputs.Parameters {
+		if parameter.Secret {
+			secretFields = append(secretFields, parameter.Name)
+		}
+	}
+	return secretFields
 }
 
 func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, error) {

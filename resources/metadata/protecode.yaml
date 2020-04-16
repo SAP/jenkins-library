@@ -144,6 +144,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      secret: true
     - name: password
       type: string
       description: Password which is used for the user
@@ -152,6 +153,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      secret: true
     - name: artifactVersion
       type: string
       description: The version of the artifact to allow identification in protecode backend

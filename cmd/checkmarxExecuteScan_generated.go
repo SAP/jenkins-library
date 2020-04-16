@@ -182,7 +182,13 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			startTime = time.Now()
 			log.SetStepName("checkmarxExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
