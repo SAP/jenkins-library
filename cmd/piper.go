@@ -168,8 +168,8 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 	optionsType := getStepOptionsStructType(options)
 
 	for paramName := range config {
-		field := findStructFieldByJsonTag(paramName, optionsType)
-		if field == nil {
+		optionsField := findStructFieldByJsonTag(paramName, optionsType)
+		if optionsField == nil {
 			continue
 		}
 
@@ -178,28 +178,30 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 			// We can only convert from strings at the moment
 			continue
 		}
+
+		paramValue := paramValueType.String()
 		logWarning := true
-		switch field.Type.Kind() {
+
+		switch optionsField.Type.Kind() {
 		case reflect.String:
-			// Types match, ignore
+			// Types already match, ignore
 			logWarning = false
-		case reflect.Slice:
-			fallthrough
-		case reflect.Array:
-			if field.Type.Elem().Kind() == reflect.String {
-				config[paramName] = []string{paramValueType.String()}
+		case reflect.Slice, reflect.Array:
+			if optionsField.Type.Elem().Kind() == reflect.String {
+				config[paramName] = []string{paramValue}
 				logWarning = false
 			}
 		case reflect.Bool:
-			value := strings.ToLower(paramValueType.String())
-			if value == "true" {
+			paramValue = strings.ToLower(paramValue)
+			if paramValue == "true" {
 				config[paramName] = true
 				logWarning = false
-			} else if value == "false" {
+			} else if paramValue == "false" {
 				config[paramName] = false
 				logWarning = false
 			}
 		}
+
 		if logWarning {
 			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
 		}
