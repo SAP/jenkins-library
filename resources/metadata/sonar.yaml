@@ -27,6 +27,7 @@ spec:
         description: Token used to authenticate with the Sonar Server.
         scope:
           - PARAMETERS
+        secret: true
         aliases:
           - name: sonarToken
       - name: organization
@@ -133,6 +134,7 @@ spec:
         description: "Pull-Request only: Token for Github to set status on the Pull-Request."
         scope:
           - PARAMETERS
+        secret: true
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2"

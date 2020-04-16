@@ -43,7 +43,12 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			startTime = time.Now()
 			log.SetStepName("githubCreatePullRequest")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

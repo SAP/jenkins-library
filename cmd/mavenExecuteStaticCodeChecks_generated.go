@@ -49,7 +49,11 @@ For PMD the failure priority and the max allowed violations are configurable via
 			startTime = time.Now()
 			log.SetStepName("mavenExecuteStaticCodeChecks")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

@@ -6,6 +6,8 @@
 #Project Setup
 general:
   collectTelemetryData: true
+  jenkinsKubernetes:
+    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'

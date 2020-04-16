@@ -79,6 +79,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -97,6 +98,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
         type: string
@@ -105,6 +107,7 @@ spec:
           - STAGES
           - STEPS
         default: regsecret
+        secret: true
       - name: createDockerRegistrySecret
         type: bool
         description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.
@@ -186,6 +189,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
       - name: namespace
         aliases:
           - name: helmDeploymentNamespace
