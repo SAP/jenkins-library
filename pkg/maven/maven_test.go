@@ -2,6 +2,7 @@ package maven
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -9,17 +10,17 @@ import (
 	"net/http"
 	"testing"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockDownloader struct {
+type mockUtils struct {
 	shouldFail     bool
 	requestedUrls  []string
 	requestedFiles []string
+	files          map[string][]byte
 }
 
-func (m *mockDownloader) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (m *mockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	m.requestedUrls = append(m.requestedUrls, url)
 	m.requestedFiles = append(m.requestedFiles, filename)
 	if m.shouldFail {
@@ -28,8 +29,18 @@ func (m *mockDownloader) DownloadFile(url, filename string, header http.Header, 
 	return nil
 }
 
-func (m *mockDownloader) SetOptions(options piperHttp.ClientOptions) {
-	return
+func (m *mockUtils) FileExists(path string) (bool, error) {
+	content := m.files[path]
+	if content == nil {
+		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
+	}
+	return true, nil
+}
+
+func newMockUtils(downloadShouldFail bool) mockUtils {
+	utils := mockUtils{shouldFail: downloadShouldFail}
+	utils.files = map[string][]byte{}
+	return utils
 }
 
 func TestExecute(t *testing.T) {
@@ -104,52 +115,74 @@ func TestEvaluate(t *testing.T) {
 
 func TestGetParameters(t *testing.T) {
 	t.Run("should resolve configured parameters and download the settings files", func(t *testing.T) {
-		mockClient := mockDownloader{shouldFail: false}
+		utils := newMockUtils(false)
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
-		expectedParameters := []string{"--global-settings", "globalSettings.xml", "--settings", "projectSettings.xml", "--file", "pom.xml", "--batch-mode"}
+		expectedParameters := []string{
+			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
+			"--settings", ".pipeline/mavenProjectSettings.xml",
+			"--file", "pom.xml", "--batch-mode"}
 
-		parameters, err := getParametersFromOptions(&opts, &mockClient)
+		parameters, err := getParametersFromOptions(&opts, &utils)
 		if assert.NoError(t, err) {
 			assert.Equal(t, len(expectedParameters), len(parameters))
 			assert.Equal(t, expectedParameters, parameters)
-			if assert.Equal(t, 2, len(mockClient.requestedUrls)) {
-				assert.Equal(t, "https://mysettings.com", mockClient.requestedUrls[0])
-				assert.Equal(t, "globalSettings.xml", mockClient.requestedFiles[0])
-				assert.Equal(t, "http://myprojectsettings.com", mockClient.requestedUrls[1])
-				assert.Equal(t, "projectSettings.xml", mockClient.requestedFiles[1])
+			if assert.Equal(t, 2, len(utils.requestedUrls)) {
+				assert.Equal(t, "https://mysettings.com", utils.requestedUrls[0])
+				assert.Equal(t, ".pipeline/mavenGlobalSettings.xml", utils.requestedFiles[0])
+				assert.Equal(t, "http://myprojectsettings.com", utils.requestedUrls[1])
+				assert.Equal(t, ".pipeline/mavenProjectSettings.xml", utils.requestedFiles[1])
 			}
+		}
+	})
+	t.Run("should resolve configured parameters and not download existing settings files", func(t *testing.T) {
+		utils := newMockUtils(false)
+		utils.files[".pipeline/mavenGlobalSettings.xml"] = []byte("dummyContent")
+		utils.files[".pipeline/mavenProjectSettings.xml"] = []byte("dummyContent")
+		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
+		expectedParameters := []string{
+			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
+			"--settings", ".pipeline/mavenProjectSettings.xml",
+			"--file", "pom.xml", "--batch-mode"}
+
+		parameters, err := getParametersFromOptions(&opts, &utils)
+		if assert.NoError(t, err) {
+			assert.Equal(t, len(expectedParameters), len(parameters))
+			assert.Equal(t, expectedParameters, parameters)
+			assert.Equal(t, 0, len(utils.requestedUrls))
 		}
 	})
 }
 
 func TestDownloadSettingsFromURL(t *testing.T) {
 	t.Run("should pass if download is successful", func(t *testing.T) {
-		mockClient := mockDownloader{shouldFail: false}
-		err := downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
+		utils := newMockUtils(false)
+		err := downloadSettingsFromURL("anyURL", "settings.xml", &utils)
 		assert.NoError(t, err)
 	})
 	t.Run("should fail if download fails", func(t *testing.T) {
-		mockClient := mockDownloader{shouldFail: true}
-		err := downloadSettingsFromURL("anyURL", "settings.xml", &mockClient)
+		utils := newMockUtils(true)
+		err := downloadSettingsFromURL("anyURL", "settings.xml", &utils)
 		assert.EqualError(t, err, "failed to download maven settings from URL 'anyURL' to file 'settings.xml': something happened")
 	})
 }
 
 func TestGetTestModulesExcludes(t *testing.T) {
 	t.Run("Should return excludes for unit- and integration-tests", func(t *testing.T) {
-		currentDir, err := os.Getwd()
-		if err != nil {
-			t.Fatal("Failed to get current working directory")
-		}
-		defer os.Chdir(currentDir)
-		err = os.Chdir("../../test/resources/maven")
-		if err != nil {
-			t.Fatal("Failed to change to test directory")
-		}
+		utils := newMockUtils(false)
+		utils.files["unit-tests/pom.xml"] = []byte("dummyPomContent")
+		utils.files["integration-tests/pom.xml"] = []byte("dummyPomContent")
 
 		expected := []string{"-pl", "!unit-tests", "-pl", "!integration-tests"}
 
-		modulesExcludes := GetTestModulesExcludes()
+		modulesExcludes := getTestModulesExcludes(&utils)
+		assert.Equal(t, expected, modulesExcludes)
+	})
+	t.Run("Should not return excludes for unit- and integration-tests", func(t *testing.T) {
+		utils := newMockUtils(false)
+
+		var expected []string
+
+		modulesExcludes := getTestModulesExcludes(&utils)
 		assert.Equal(t, expected, modulesExcludes)
 	})
 }
