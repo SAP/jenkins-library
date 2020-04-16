@@ -29,7 +29,7 @@ jobs:
         run: cd consumer-test && groovy consumerTestController.groovy
         env:
           REPOSITORY_UNDER_TEST: ${{ github.repository }}
-          BRANCH_NAME: ${{ steps.branchname.outputs.branchname }}
+          BRANCH_NAME: ${GITHUB_REF#refs/heads/}
           BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
           INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
           CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
