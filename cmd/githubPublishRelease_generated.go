@@ -53,7 +53,12 @@ The result looks like
 			startTime = time.Now()
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "githubPublishRelease", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

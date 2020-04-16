@@ -35,7 +35,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
-        - artifactSetVersion: steps/artifactSetVersion.md
+        - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
@@ -65,10 +65,12 @@ nav:
         - karmaExecuteTests: steps/karmaExecuteTests.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
+        - nexusUpload: steps/nexusUpload.md
         - npmExecute: steps/npmExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
@@ -92,6 +94,8 @@ nav:
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - xsDeploy: steps/xsDeploy.md
+    - 'Library Steps (deprecated)':
+        - artifactSetVersion: steps/artifactSetVersion.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md
 

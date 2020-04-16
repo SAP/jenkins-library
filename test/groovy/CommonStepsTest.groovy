@@ -47,6 +47,7 @@ public class CommonStepsTest extends BasePiperTest{
 
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
+            'artifactPrepareVersion',
             'commonPipelineEnvironment',
             'checkmarxExecuteScan',
             'kubernetesDeploy',
@@ -57,6 +58,9 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
+            'mavenBuild',
+            'mavenExecuteStaticCodeChecks',
+            'cloudFoundryCreateServiceKey'
         ]
 
         List steps = getSteps().stream()
@@ -107,6 +111,7 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'artifactPrepareVersion',
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
         'piperPipeline', // special step (infrastructure)
@@ -126,7 +131,13 @@ public class CommonStepsTest extends BasePiperTest{
         'protecodeExecuteScan', //implementing new golang pattern without fields
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
+        'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'nexusUpload', //implementing new golang pattern without fields
+        'mavenBuild', //implementing new golang pattern without fields
+        'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'piperPipelineStageArtifactDeployment', //stage without step flags
+        'sonarExecuteScan', //implementing new golang pattern without fields
     ]
 
     @Test

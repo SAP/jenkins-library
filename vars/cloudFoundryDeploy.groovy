@@ -347,10 +347,13 @@ private void handleCFNativeDeployment(Map config, script) {
                 CF_HOME           : "${config.dockerWorkspace}",
                 CF_PLUGIN_HOME    : "${config.dockerWorkspace}",
                 // if the Docker registry requires authentication the DOCKER_PASSWORD env variable must be set
-                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ''}",
+                CF_DOCKER_PASSWORD: "${dockerCredentials.isEmpty() ? '' : dockerPassword}",
                 STATUS_CODE       : "${config.smokeTestStatusCode}"
             ]
         ) {
+            if(dockerCredentials.size() > 0) {
+                config.dockerUsername = dockerUsername
+            }
             deployCfNative(config)
         }
     }
@@ -461,8 +464,8 @@ def deployCfNative(config) {
         config.cloudFoundry.appName,
         config.deployOptions,
         config.cloudFoundry.manifest ? "-f '${config.cloudFoundry.manifest}'" : null,
-        config.deployDockerImage ? "--docker-image ${config.deployDockerImage}" : null,
-        binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : null,
+        config.deployDockerImage && config.deployType != 'blue-green' ? "--docker-image ${config.deployDockerImage}" : null,
+        config.dockerUsername && config.deployType != 'blue-green' ? "--docker-username ${dockerUsername}" : null,
         config.smokeTest,
         config.cfNativeDeployParameters
     ].findAll { s -> s != null && s != '' }.join(" ")

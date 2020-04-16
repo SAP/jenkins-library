@@ -29,7 +29,11 @@ func VersionCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("version")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "version", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "version", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

@@ -62,6 +62,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    def inheritFrom
+    def yamlMergeStrategy
     List stashList = []
 
     @Before
@@ -76,10 +78,15 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body -> container(config){body()}
         })
+        helper.registerAllowedMethod('merge', [], {
+            return 'merge'
+        })
         helper.registerAllowedMethod('podTemplate', [Map.class, Closure.class], { Map options, Closure body ->
             podName = options.name
             podLabel = options.label
             namespace = options.namespace
+            inheritFrom = options.inheritFrom
+            yamlMergeStrategy = options.yamlMergeStrategy
             podNodeSelector = options.nodeSelector
             def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
@@ -142,6 +149,20 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
+    void testInheritFromPodTemplate() throws Exception {
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['inheritFrom': 'default']]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            container(name: 'mavenexecute') {
+                bodyExecuted = true
+            }
+        }
+        assertEquals(inheritFrom, 'default')
+        assertEquals(yamlMergeStrategy, 'merge')
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithContainerMap() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
         stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
@@ -157,6 +178,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(imageList.contains('myJnalpAgent'))
         assertTrue(bodyExecuted)
     }
+
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithDockerImage() throws Exception {

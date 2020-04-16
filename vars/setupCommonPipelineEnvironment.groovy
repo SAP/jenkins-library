@@ -43,6 +43,8 @@ void call(Map parameters = [:]) {
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
+        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
+
         String configFile = parameters.get('configFile')
 
         loadConfigurationFromFile(script, configFile)
@@ -64,15 +66,19 @@ void call(Map parameters = [:]) {
 }
 
 private loadConfigurationFromFile(script, String configFile) {
+    if (!configFile) {
+        String defaultYmlConfigFile = '.pipeline/config.yml'
+        String defaultYamlConfigFile = '.pipeline/config.yaml'
+        if (fileExists(defaultYmlConfigFile)) {
+            configFile = defaultYmlConfigFile
+        } else if (fileExists(defaultYamlConfigFile)) {
+            configFile = defaultYamlConfigFile
+        }
+    }
 
-    String defaultYmlConfigFile = '.pipeline/config.yml'
-    String defaultYamlConfigFile = '.pipeline/config.yaml'
-
+    // A file passed to the function is not checked for existence in order to fail the pipeline.
     if (configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
-    } else if (fileExists(defaultYmlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
-    } else if (fileExists(defaultYamlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
+        script.commonPipelineEnvironment.configurationFile = configFile
     }
 }

@@ -31,7 +31,9 @@ class commonPipelineEnvironment implements Serializable {
     Map configuration = [:]
     Map containerProperties = [:]
     Map defaultConfiguration = [:]
-
+    // Location of the file from where the configuration was parsed. See setupCommonPipelineEnvironment.groovy
+    // Useful for making sure that the piper binary uses the same file when called from Jenkins.
+    String configurationFile = ''
 
     String mtarFilePath
     private Map valueMap = [:]
@@ -164,6 +166,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
+        [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
     ]
 
     void writeToDisk(script) {

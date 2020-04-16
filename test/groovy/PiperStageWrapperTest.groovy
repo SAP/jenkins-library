@@ -13,6 +13,7 @@ import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
@@ -182,6 +183,27 @@ class PiperStageWrapperTest extends BasePiperTest {
     }
 
     @Test
+    void testExtensionDeactivation() {
+        helper.registerAllowedMethod('fileExists', [String.class], { path ->
+            return (path == '.pipeline/extensions/test_old_extension.groovy')
+        })
+        helper.registerAllowedMethod('load', [String.class], {
+            return helper.loadScript('test/resources/stages/test_old_extension.groovy')
+        })
+
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
+        binding.setVariable('env', [PIPER_DISABLE_EXTENSIONS: 'true'])
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10,
+            stageName: 'test_old_extension'
+        ) {}
+        //setting above parameter to 'true' bypasses the below message
+        assertThat(loggingRule.log, not(containsString("[piperStageWrapper] Running project interceptor '.pipeline/extensions/test_old_extension.groovy' for test_old_extension.")))
+    }
+
+    @Test
     void testPipelineResilienceMandatoryStep() {
         thrown.expectMessage('expected error')
 
@@ -204,6 +226,8 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         Throwable caught = null
         def executed = false
+        // Clear DebugReport to avoid left-overs from another UnitTest
+        DebugReport.instance.failedBuild = [:]
 
         try {
             stepRule.step.piperStageWrapper(
@@ -220,7 +244,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
         assertThat(executed, is(true))
         assertThat(loggingRule.log, containsString('[piperStageWrapper] Found global interceptor \'test_crashing_extension.groovy\' for test_crashing_extension.'))
-        assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension'))
+        assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension(extended)'))
         assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
         assertThat(DebugReport.instance.failedBuild.reason, is(caught))
     }
