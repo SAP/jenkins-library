@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -70,7 +69,6 @@ func (c *Command) RunShell(shell, script string) error {
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
-	fmt.Println(strings.Join(params, ", "))
 	_out, _err := prepareOut(c.stdout, c.stderr)
 
 	cmd := ExecCommand(executable, params...)

@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/bmatcuk/doublestar"
 )
 
 func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData) {
@@ -26,9 +27,20 @@ func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData)
 }
 
 func runNodeJsBuild(config *nodeJsBuildOptions, telemetryData *telemetry.CustomData, command execRunner) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+	packageJsonFiles, err2 := doublestar.Glob("**/package.json")
+	if err2 != nil {
+		return err2
+	}
+
+	for _, file := range packageJsonFiles {
+		log.Entry().Info(file)
+	}
 
 	packageLockExists, err := FileUtils.FileExists("package-lock.json")
+	if err != nil {
+		return err
+	}
+	yarnLockExists, err := FileUtils.FileExists("yarn.lock")
 	if err != nil {
 		return err
 	}
@@ -36,6 +48,11 @@ func runNodeJsBuild(config *nodeJsBuildOptions, telemetryData *telemetry.CustomD
 		log.Entry().Info("run install")
 		if packageLockExists {
 			err = command.RunExecutable("npm", "ci")
+			if err != nil {
+				return err
+			}
+		} else if yarnLockExists {
+			err = command.RunExecutable("yarn", "install")
 			if err != nil {
 				return err
 			}
