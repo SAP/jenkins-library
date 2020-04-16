@@ -165,21 +165,16 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 }
 
 func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
-	typedOptions := reflect.ValueOf(options)
-	if typedOptions.Kind() == reflect.Ptr {
-		typedOptions = typedOptions.Elem()
-	}
-	optionsType := typedOptions.Type()
+	optionsType := getStepOptionsStructType(options)
 
-	for key := range config {
-		// Find the field in options which will be mapped to 'key'
-		field := findField(key, typedOptions, optionsType)
+	for paramName := range config {
+		field := findStructFieldByJsonTag(paramName, optionsType)
 		if field == nil {
 			continue
 		}
 
-		entry := reflect.ValueOf(config[key])
-		if entry.Kind() != reflect.String {
+		paramValueType := reflect.ValueOf(config[paramName])
+		if paramValueType.Kind() != reflect.String {
 			// We can only convert from strings at the moment
 			continue
 		}
@@ -192,35 +187,43 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 			fallthrough
 		case reflect.Array:
 			if field.Type.Elem().Kind() == reflect.String {
-				config[key] = []string{entry.String()}
+				config[paramName] = []string{paramValueType.String()}
 				logWarning = false
 			}
 		case reflect.Bool:
-			value := strings.ToLower(entry.String())
+			value := strings.ToLower(paramValueType.String())
 			if value == "true" {
-				config[key] = true
+				config[paramName] = true
 				logWarning = false
 			} else if value == "false" {
-				config[key] = false
+				config[paramName] = false
 				logWarning = false
 			}
 		}
 		if logWarning {
-			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", key)
+			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
 		}
 	}
 	return config
 }
 
-func findField(name string, typedOptions reflect.Value, optionsType reflect.Type) *reflect.StructField {
-	for i := 0; i < typedOptions.NumField(); i++ {
+func findStructFieldByJsonTag(tagName string, optionsType reflect.Type) *reflect.StructField {
+	for i := 0; i < optionsType.NumField(); i++ {
 		field := optionsType.Field(i)
 		tag := field.Tag.Get("json")
-		if name == tag || name+",omitempty" == tag {
+		if tagName == tag || tagName+",omitempty" == tag {
 			return &field
 		}
 	}
 	return nil
+}
+
+func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
+	typedOptions := reflect.ValueOf(stepOptions)
+	if typedOptions.Kind() == reflect.Ptr {
+		typedOptions = typedOptions.Elem()
+	}
+	return typedOptions.Type()
 }
 
 func getProjectConfigFile(name string) string {
