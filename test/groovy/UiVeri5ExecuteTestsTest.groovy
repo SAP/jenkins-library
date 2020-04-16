@@ -1,5 +1,7 @@
 import static org.hamcrest.Matchers.*
 
+import hudson.AbortException
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -150,8 +152,8 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testWithFailOnError() throws Exception {
-        thrown.expect(RuntimeException)
-        thrown.expectMessage('Test Error')
+        thrown.expect(AbortException)
+        thrown.expectMessage('[uiVeri5ExecuteTests] ERROR: The execution of the uiveri5 test failed, see the log for details.')
         // execute test
         stepRule.step.uiVeri5ExecuteTests([
             juStabUtils: utils,
