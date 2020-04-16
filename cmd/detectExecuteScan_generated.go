@@ -38,7 +38,12 @@ func DetectExecuteScanCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("detectExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "detectExecuteScan", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "detectExecuteScan", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.APIToken)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
