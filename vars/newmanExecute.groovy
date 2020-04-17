@@ -132,7 +132,7 @@ void call(Map parameters = [:]) {
                 try {
                     sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
                 } catch (e) {
-                    error "[${STEP_NAME}] ERROR: The execution of the newman test failed, see the log for details."
+                    error "[${STEP_NAME}] ERROR: The execution of the newman tests failed, see the log for details."
                 }
             }
         }
