@@ -83,7 +83,7 @@ import hudson.AbortException
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used.
+     * Optional name of the docker image that should be used. If no docker image is provided, the closure will be executed in the jnlp agent container.
      */
     'dockerImage',
     /**
@@ -198,8 +198,7 @@ void call(Map parameters = [:], body) {
             stepParam1   : parameters?.script == null
         ], config)
 
-        if (!config.containerMap) {
-            configHelper.withMandatoryProperty('dockerImage')
+        if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
