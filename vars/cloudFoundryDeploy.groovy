@@ -72,13 +72,6 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'space',
     /**
-     * Provides more output. May reveal sensitive information.
-     * @possibleValues true, false
-     */
-    'verbose',
-]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
      * Defines the tool which should be used for deployment.
      * @possibleValues 'cf_native', 'mtaDeployPlugin'
      */
@@ -137,6 +130,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'smokeTestStatusCode',
     /**
+     * Provides more output. May reveal sensitive information.
+     * @possibleValues true, false
+     */
+    'verbose',
+    /**
      * Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker].
      * If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is
      * passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG).
@@ -149,8 +147,9 @@ import static com.sap.piper.Prerequisites.checkScript
      * If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization
      * this defines the credentials to be used.
      */
-    'dockerCredentialsId'
-])
+    'dockerCredentialsId',
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
