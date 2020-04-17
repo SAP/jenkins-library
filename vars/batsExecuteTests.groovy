@@ -97,7 +97,7 @@ void call(Map parameters = [:]) {
                 InfluxData.addField('step_data', 'bats', true)
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
-                if (config.failOnError) throw err
+                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the bats tests failed, see the log for details."
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {

@@ -75,8 +75,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         containerCommands = []
         bodyExecuted = false
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
-        helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
-        helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body -> container(config){body()}
+        helper.registerAllowedMethod('sh', [Map.class], { return whichDockerReturnValue })
+        helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
+            container(config) {
+                body()
+            }
         })
         helper.registerAllowedMethod('merge', [], {
             return 'merge'
@@ -96,7 +99,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 containersList.add(container.name)
                 imageList.add(container.image.toString())
                 envList.add(container.env)
-                if(container.ports) {
+                if (container.ports) {
                     portList.add(container.ports)
                 }
                 if (container.command) {
@@ -106,7 +109,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
-        helper.registerAllowedMethod('stash', [Map.class], {m ->
+        helper.registerAllowedMethod('stash', [Map.class], { m ->
             stashList.add(m)
         })
 
@@ -121,7 +124,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             dockerOptions: '-it',
             dockerVolumeBind: ['my_vol': '/my_vol'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000'], dockerWorkspace: '/home/piper'
-        ){
+        ) {
             bodyExecuted = true
         }
         assertThat(containersList, hasItem('container-exec'))
@@ -131,6 +134,18 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(envList.toString(), containsString('/home/piper'))
         assertThat(bodyExecuted, is(true))
         assertThat(containerCommands.size(), is(1))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerMap: [:],
+            dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
+            bodyExecuted = true
+        }
+        assertTrue(bodyExecuted)
     }
 
     @Test
@@ -239,24 +254,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
-        exception.expect(IllegalArgumentException.class)
-            stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
-                juStabUtils: utils,
-                containerMap: [:],
-                dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
-                container(name: 'jnlp') {
-                    bodyExecuted = true
-                }
-            }
-        assertFalse(bodyExecuted)
-    }
-
-    @Test
     void testSidecarDefaultWithContainerMap() {
         List portMapping = []
-        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+        helper.registerAllowedMethod('portMapping', [Map.class], { m ->
             portMapping.add(m)
             return m
         })
@@ -268,7 +268,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 'selenium/standalone-chrome': ['customEnvKey': 'customEnvValue']
             ],
             containerMap: [
-                'maven:3.5-jdk-8-alpine': 'mavenexecute',
+                'maven:3.5-jdk-8-alpine'    : 'mavenexecute',
                 'selenium/standalone-chrome': 'selenium'
             ],
             containerName: 'mavenexecute',
@@ -296,13 +296,13 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ))
         assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
-        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry('value', 'customEnvValue')))))
     }
 
     @Test
     void testSidecarDefaultWithParameters() {
         List portMapping = []
-        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+        helper.registerAllowedMethod('portMapping', [Map.class], { m ->
             portMapping.add(m)
             return m
         })
@@ -329,8 +329,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
         assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres')))
 
-        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'testEnv'), hasEntry ('value','testVal')))))
-        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'HOME'), hasEntry ('value','/home/piper/sidecar')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'testEnv'), hasEntry('value', 'testVal')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'HOME'), hasEntry('value', '/home/piper/sidecar')))))
     }
 
     @Test
@@ -384,7 +384,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 'selenium/standalone-chrome': ['customEnvKey': 'customEnvValue']
             ],
             containerMap: [
-                'maven:3.5-jdk-8-alpine': 'mavenexecute',
+                'maven:3.5-jdk-8-alpine'    : 'mavenexecute',
                 'selenium/standalone-chrome': 'selenium'
             ],
             containerName: 'mavenexecute',
@@ -392,7 +392,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 'selenium/standalone-chrome': ''
             ],
             containerPullImageFlags: [
-                'maven:3.5-jdk-8-alpine': true,
+                'maven:3.5-jdk-8-alpine'    : true,
                 'selenium/standalone-chrome': false
             ],
             dockerWorkspace: '/home/piper'
@@ -410,25 +410,25 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [namespace: expectedNamespace]]]
 
         stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
-                juStabUtils: utils,
-                dockerImage: 'maven:3.5-jdk-8-alpine',
-                ) { bodyExecuted = true }
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(namespace, is(equalTo(expectedNamespace)))
     }
 
     @Test
     void testDockerExecuteOnKubernetesWithSecurityContext() {
-        def expectedSecurityContext = [ runAsUser: 1000, fsGroup: 1000 ]
+        def expectedSecurityContext = [runAsUser: 1000, fsGroup: 1000]
         nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
-                    securityContext: expectedSecurityContext]]]
+            securityContext: expectedSecurityContext]]]
 
         stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
-                juStabUtils: utils,
-                dockerImage: 'maven:3.5-jdk-8-alpine',
-                ) { bodyExecuted = true }
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
     }
@@ -536,12 +536,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         }
         assertThat(stashList, hasItem(allOf(
             not(hasEntry('allowEmpty', true)),
-            hasEntry('includes','workspace/include.test'),
-            hasEntry('excludes','workspace/exclude.test'))))
+            hasEntry('includes', 'workspace/include.test'),
+            hasEntry('excludes', 'workspace/exclude.test'))))
         assertThat(stashList, hasItem(allOf(
             not(hasEntry('allowEmpty', true)),
-            hasEntry('includes','container/include.test'),
-            hasEntry('excludes','container/exclude.test'))))
+            hasEntry('includes', 'container/include.test'),
+            hasEntry('excludes', 'container/exclude.test'))))
     }
 
 

@@ -6,12 +6,14 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
+import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
@@ -26,6 +28,8 @@ class PiperStageWrapperTest extends BasePiperTest {
     private Map lockMap = [:]
     private int countNodeUsage = 0
     private String nodeLabel = ''
+    private boolean executedOnKubernetes = false
+    private List customEnv = []
 
     @Rule
     public RuleChain rules = Rules
@@ -53,6 +57,18 @@ class PiperStageWrapperTest extends BasePiperTest {
             body()
 
         })
+
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {params, body ->
+            executedOnKubernetes = true
+            body()
+        })
+
+        helper.registerAllowedMethod('withEnv', [List.class, Closure.class], {env, body ->
+            customEnv = env
+            body()
+        })
+
+
         helper.registerAllowedMethod('fileExists', [String.class], {s ->
             return false
         })
@@ -71,6 +87,7 @@ class PiperStageWrapperTest extends BasePiperTest {
             executed = true
         }
         assertThat(executed, is(true))
+        assertThat(executedOnKubernetes, is(false))
         assertThat(lockMap.size(), is(2))
         assertThat(countNodeUsage, is(1))
     }
@@ -93,6 +110,26 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(lockMap.size(), is(0))
         assertThat(countNodeUsage, is(1))
         assertThat(nodeLabel, is('testLabel'))
+    }
+
+    @Test
+    void testExecuteStageOnKubernetes() {
+        def executed = false
+
+        binding.variables.env.ON_K8S = true
+        nullScript.commonPipelineEnvironment.configuration = [general: [runStageInPod: true]]
+
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            stageName: 'test',
+            ordinal: 10
+        ) {
+            executed = true
+        }
+        assertThat(executed, is(true))
+        assertThat(executedOnKubernetes, is(true))
+        assertThat(customEnv[0].toString(), is("POD_NAME=test"))
     }
 
     @Test

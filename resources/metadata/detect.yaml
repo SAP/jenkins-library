@@ -21,6 +21,7 @@ spec:
         description: Api token to be used for connectivity with Synopsis Detect server.
         type: string
         mandatory: true
+        secret: true
         scope:
         - PARAMETERS
         - STAGES

@@ -44,7 +44,13 @@ Please provide either of the following options:
 			startTime = time.Now()
 			log.SetStepName("abapEnvironmentPullGitRepo")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
