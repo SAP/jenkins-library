@@ -64,7 +64,7 @@ func mockOsRename(t *testing.T, expectOld, expectNew string) func(string, string
 	}
 }
 
-func TestSonarRun(t *testing.T) {
+func TestRunSonar(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockClient := mockDownloader{shouldFail: false}
 
