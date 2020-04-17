@@ -21,12 +21,12 @@ jobs:
           git checkout -B gh-action-update-golang-dependencies
           go get -u
           go mod tidy
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git commit -am "Automated go dependency update"
           git push origin gh-action-update-golang-dependencies -f
       - name: Create Pull Request
         uses: SAP/project-piper-action@master
         with:
           command: githubCreatePullRequest
-          flags: --body="Update Go dependencies" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GITHUB_TOKEN }}
+          flags: --body="Update Go dependencies" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GO_DEPENDENCY_UPDATE_TOKEN }}

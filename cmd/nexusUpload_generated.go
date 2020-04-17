@@ -57,7 +57,13 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			startTime = time.Now()
 			log.SetStepName("nexusUpload")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "nexusUpload", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "nexusUpload", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

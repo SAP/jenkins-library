@@ -37,7 +37,13 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("cloudFoundryDeleteService")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "cloudFoundryDeleteService", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "cloudFoundryDeleteService", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
