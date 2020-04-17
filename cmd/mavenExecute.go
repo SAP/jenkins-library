@@ -25,9 +25,9 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 		ProjectSettingsFile:         config.ProjectSettingsFile,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		M2Path:                      config.M2Path,
-		Goals:                       separateAndTrimParams(config.Goals),
-		Defines:                     separateAndTrimParams(config.Defines),
-		Flags:                       separateAndTrimParams(config.Flags),
+		Goals:                       splitAndTrimParams(config.Goals),
+		Defines:                     splitAndTrimParams(config.Defines),
+		Flags:                       splitAndTrimParams(config.Flags),
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		ReturnStdout:                config.ReturnStdout,
 	}
@@ -39,7 +39,9 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	return err
 }
 
-func separateAndTrimParams(params []string) []string {
+// splitAndTrimParams iterates over the strings in params and splits each string on spaces. Each resulting
+// sub-string is then a separate entry in the returned array. Duplicate entries are eliminated.
+func splitAndTrimParams(params []string) []string {
 	if len(params) == 0 {
 		return params
 	}

@@ -23,7 +23,8 @@ func TestMavenExecute(t *testing.T) {
 			"--fail-fast",
 			"-DoutputFile=mvnDependencyTree.txt",
 			"--batch-mode",
-			"dependency:tree"}
+			"dependency:tree",
+		}
 
 		assert.NoError(t, err)
 		assert.Equal(t, "mvn", mockRunner.Calls[0].Exec)
