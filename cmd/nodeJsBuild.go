@@ -11,27 +11,66 @@ import (
 	"strings"
 )
 
-func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+type nodeJsBuildUtils interface {
+	fileExists(path string) (bool, error)
+	glob(pattern string) (matches []string, err error)
+	getwd() (dir string, err error)
+	dir(path string) string
+	chdir(dir string) error
+	getExecRunner() execRunner
+}
 
-	err := runNodeJsBuild(&config, telemetryData, &c)
+type nodeJsBuildUtilsBundle struct {
+	fileUtils  FileUtils.Files
+	execRunner *command.Command
+}
+
+func (u *nodeJsBuildUtilsBundle) fileExists(path string) (bool, error) {
+	return u.fileUtils.FileExists(path)
+}
+
+func (u *nodeJsBuildUtilsBundle) glob(pattern string) (matches []string, err error) {
+	return doublestar.Glob(pattern)
+}
+
+func (u *nodeJsBuildUtilsBundle) getwd() (dir string, err error) {
+	return os.Getwd()
+}
+
+func (u *nodeJsBuildUtilsBundle) dir(fileName string) string {
+	return path.Dir(fileName)
+}
+
+func (u *nodeJsBuildUtilsBundle) chdir(dir string) error {
+	return os.Chdir(dir)
+}
+
+func (u *nodeJsBuildUtilsBundle) getExecRunner() execRunner {
+	if u.execRunner == nil {
+		u.execRunner = &command.Command{}
+		u.execRunner.Stdout(log.Entry().Writer())
+		u.execRunner.Stderr(log.Entry().Writer())
+	}
+	return u.execRunner
+}
+
+func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData) {
+	utils := nodeJsBuildUtilsBundle{}
+
+	err := runNodeJsBuild(&utils, &config)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-
-func runNodeJsBuild(config *nodeJsBuildOptions, telemetryData *telemetry.CustomData, command execRunner) error {
-
-	environment := []string{"npm_config_@sap:registry=" + config.SapNpmRegistry}
-	if config.DefaultNpmRegistry != "" {
-		environment = append(environment, "npm_config_registry=" + config.DefaultNpmRegistry)
+func runNodeJsBuild(utils nodeJsBuildUtils, options *nodeJsBuildOptions) error {
+	execRunner := utils.getExecRunner()
+	environment := []string{"npm_config_@sap:registry=" + options.SapNpmRegistry}
+	if options.DefaultNpmRegistry != "" {
+		environment = append(environment, "npm_config_registry="+options.DefaultNpmRegistry)
 	}
-	command.SetEnv(environment)
+	execRunner.SetEnv(environment)
 
-	unfilteredListOfPackageJsonFiles, err := doublestar.Glob("**/package.json")
+	unfilteredListOfPackageJsonFiles, err := utils.glob("**/package.json")
 	if err != nil {
 		return err
 	}
@@ -46,29 +85,29 @@ func runNodeJsBuild(config *nodeJsBuildOptions, telemetryData *telemetry.CustomD
 		log.Entry().Info("Discovered package.json file " + file)
 	}
 
-	oldWorkingDirectory, err := os.Getwd()
+	oldWorkingDirectory, err := utils.getwd()
 
 	for _, file := range packageJsonFiles {
-		base := path.Base(file)
-		_ = os.Chdir(base)
-		packageLockExists, err := FileUtils.FileExists("package-lock.json")
+		dir := utils.dir(file)
+		_ = utils.chdir(dir)
+		packageLockExists, err := utils.fileExists("package-lock.json")
 
 		if err != nil {
 			return err
 		}
-		yarnLockExists, err := FileUtils.FileExists("yarn.lock")
+		yarnLockExists, err := utils.fileExists("yarn.lock")
 		if err != nil {
 			return err
 		}
-		if config.Install {
-			log.Entry().WithField("WorkingDirectory", base).Info("Running install")
+		if options.Install {
+			log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 			if packageLockExists {
-				err = command.RunExecutable("npm", "ci")
+				err = execRunner.RunExecutable("npm", "ci")
 				if err != nil {
 					return err
 				}
 			} else if yarnLockExists {
-				err = command.RunExecutable("yarn", "install", "--frozen-lockfile")
+				err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
 				if err != nil {
 					return err
 				}
@@ -77,21 +116,21 @@ func runNodeJsBuild(config *nodeJsBuildOptions, telemetryData *telemetry.CustomD
 					"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
 					" Add this file to your version control. " +
 					"By doing so, the builds of your application become more reliable.")
-				err = command.RunExecutable("npm", "install")
+				err = execRunner.RunExecutable("npm", "install")
 				if err != nil {
 					return err
 				}
 			}
 		}
 
-		for _, v := range config.RunScripts {
-			log.Entry().WithField("WorkingDirectory", base).Info("run-script " + v)
-			err = command.RunExecutable("npm", "run-script", v, "--if-present")
+		for _, v := range options.RunScripts {
+			log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + v)
+			err = execRunner.RunExecutable("npm", "run-script", v, "--if-present")
 			if err != nil {
 				return err
 			}
 		}
-		_ = os.Chdir(oldWorkingDirectory)
+		_ = utils.chdir(oldWorkingDirectory)
 	}
 
 	return err
