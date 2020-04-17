@@ -16,19 +16,21 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool           string `json:"buildTool,omitempty"`
-	CommitUserName      string `json:"commitUserName,omitempty"`
-	DockerVersionSource string `json:"dockerVersionSource,omitempty"`
-	FilePath            string `json:"filePath,omitempty"`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
-	IncludeCommitID     bool   `json:"includeCommitId,omitempty"`
-	M2Path              string `json:"m2Path,omitempty"`
-	Password            string `json:"password,omitempty"`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	TagPrefix           string `json:"tagPrefix,omitempty"`
-	Username            string `json:"username,omitempty"`
-	VersioningTemplate  string `json:"versioningTemplate,omitempty"`
-	VersioningType      string `json:"versioningType,omitempty"`
+	BuildTool            string `json:"buildTool,omitempty"`
+	CommitUserName       string `json:"commitUserName,omitempty"`
+	CustomversionField   string `json:"customversionField,omitempty"`
+	CustomVersionSection string `json:"customVersionSection,omitempty"`
+	DockerVersionSource  string `json:"dockerVersionSource,omitempty"`
+	FilePath             string `json:"filePath,omitempty"`
+	GlobalSettingsFile   string `json:"globalSettingsFile,omitempty"`
+	IncludeCommitID      bool   `json:"includeCommitId,omitempty"`
+	M2Path               string `json:"m2Path,omitempty"`
+	Password             string `json:"password,omitempty"`
+	ProjectSettingsFile  string `json:"projectSettingsFile,omitempty"`
+	TagPrefix            string `json:"tagPrefix,omitempty"`
+	Username             string `json:"username,omitempty"`
+	VersioningTemplate   string `json:"versioningTemplate,omitempty"`
+	VersioningType       string `json:"versioningType,omitempty"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -107,12 +109,44 @@ The version is then either manually set by the team in the course of the develop
 
 Unlike for the _Continuous Deloyment_ pattern descibed above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
 
-Configuration of this pattern is done via ` + "`" + `versioningType: library` + "`" + `.`,
+Configuration of this pattern is done via ` + "`" + `versioningType: library` + "`" + `.
+
+### Support of additional build tools
+
+Besides the ` + "`" + `buildTools` + "`" + ` provided out of the box (like ` + "`" + `maven` + "`" + `, ` + "`" + `mta` + "`" + `, ` + "`" + `npm` + "`" + `, ...) it is possible to set ` + "`" + `buildTool: custom` + "`" + `.
+
+This allows you to provide automatic versioning for tools using a:
+
+#### file with the version as only content:
+
+Define ` + "`" + `buildTool: custom` + "`" + ` as well as ` + "`" + `filePath: <path to your file>` + "`" + `
+
+**Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.txt` + "`" + ` file or to a file without extension.
+
+#### ` + "`" + `ini` + "`" + ` file containing the version:
+
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your ini-file>` + "`" + ` as well as parameters ` + "`" + `versionSection` + "`" + ` and ` + "`" + `versionSource` + "`" + ` to point to the version location (section & parameter name) within the file.
+
+**Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.cfg` + "`" + ` or a ` + "`" + `*.ini` + "`" + ` file.
+
+#### ` + "`" + `json` + "`" + ` file containing the version:
+
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.
+
+#### ` + "`" + `yaml` + "`" + ` file containing the version
+
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("artifactPrepareVersion")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "artifactPrepareVersion", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "artifactPrepareVersion", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -135,9 +169,11 @@ Configuration of this pattern is done via ` + "`" + `versioningType: library` + 
 }
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.")
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
-	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For Docker only: Specifies the source to be used for for generating the automatic version. * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2` * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`.")
+	cmd.Flags().StringVar(&stepConfig.CustomversionField, "customversionField", os.Getenv("PIPER_customversionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
+	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
+	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
@@ -177,6 +213,22 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "gitUserName"}},
+					},
+					{
+						Name:        "customversionField",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "customVersionSection",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "dockerVersionSource",

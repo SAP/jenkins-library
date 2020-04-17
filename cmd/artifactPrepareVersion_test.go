@@ -205,7 +205,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
 
-		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven"}, telemetryData)
+		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven", Custom2Label: "filePath", Custom2: ""}, telemetryData)
 	})
 
 	t.Run("success case - cloud_noTag", func(t *testing.T) {

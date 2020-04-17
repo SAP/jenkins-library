@@ -28,6 +28,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: password
         type: string
         description: User Password for CF User
@@ -36,6 +37,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: cfOrg
         type: string
         description: CF org

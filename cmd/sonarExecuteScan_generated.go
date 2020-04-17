@@ -49,7 +49,13 @@ func SonarExecuteScanCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("sonarExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "sonarExecuteScan", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "sonarExecuteScan", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+			log.RegisterSecret(stepConfig.GithubToken)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
