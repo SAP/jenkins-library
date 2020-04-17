@@ -132,6 +132,7 @@ spec:
         - STEPS
         type: string
         mandatory: true
+        secret: true
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl
