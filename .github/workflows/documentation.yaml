@@ -9,7 +9,7 @@ on:
     - master
 
 jobs:
-  github-pages:
+  Build:
     runs-on: ubuntu-latest
     steps:
 
