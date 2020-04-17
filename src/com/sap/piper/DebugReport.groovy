@@ -42,6 +42,9 @@ class DebugReport implements Serializable {
             String dockerImage = EnvironmentUtils.getDockerFile(serverConfigContents)
             environment.put('docker_image', dockerImage)
         }
+        else if(Boolean.valueOf(env.ON_K8S)){
+            DebugReport.instance.environment.put("environment", "Kubernetes")
+        }
     }
 
     private static String getServerConfigContents(String... possibleFileLocations) {
