@@ -25,24 +25,3 @@ jobs:
       name: Consumer Tests
       if: repo = "SAP/jenkins-library" && ( (type != pull_request && branch =~ /^master$|^it\/.*$/) || (type == pull_request && head_repo = "SAP/jenkins-library" && head_branch =~ /^it\/.*$/) )
       script: cd consumer-test && groovy consumerTestController.groovy
-    - stage: Docs
-      name: Create Documentation
-      install: docker pull squidfunk/mkdocs-material:3.0.4
-      before_script:
-        - documentation/bin/createDocu.sh
-        - docker run -u `id -u`:`id -g` --rm -it -e GOCACHE=/tmp -v ${TRAVIS_BUILD_DIR}:/docu-gen golang sh -c "cd /docu-gen && go get github.com/SAP/jenkins-library/... && go run /docu-gen/pkg/generator/step-metadata.go --docuDir=/docu-gen/documentation/docs/steps/ --docuGen=true "
-      script:
-        - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}/documentation:/docs squidfunk/mkdocs-material:3.0.4 build --clean --strict
-      after_script:
-        - mkdir -p documentation/docs-gen/misc
-        - cp target/docuMetaData.json documentation/docs-gen/misc
-      deploy:
-        on:
-          branch: master
-        provider: pages
-        skip_cleanup: true
-        github_token: ${GITHUB_TOKEN}
-        name: 'Travis CI Publisher'
-        local_dir: 'documentation/docs-gen'
-        keep_history: true
-        #verbose: true
