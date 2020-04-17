@@ -135,7 +135,7 @@ void call(Map parameters = [:]) {
             } catch (err) {
                 echo "[${STEP_NAME}] Test execution failed"
                 script.currentBuild.result = 'UNSTABLE'
-                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the uiveri5 test failed, see the log for details."
+                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the uiveri5 tests failed, see the log for details."
             }
         }
     }
