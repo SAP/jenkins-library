@@ -39,7 +39,11 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			startTime = time.Now()
 			log.SetStepName("mavenBuild")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenBuild", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "mavenBuild", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
