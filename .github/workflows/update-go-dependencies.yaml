@@ -29,4 +29,4 @@ jobs:
         uses: SAP/project-piper-action@master
         with:
           command: githubCreatePullRequest
-          flags: --body="Update Go dependencies" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GITHUB_TOKEN }}
+          flags: --body="Update Go dependencies" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GO_DEPENDENCY_UPDATE_TOKEN }}

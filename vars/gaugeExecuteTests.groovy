@@ -159,7 +159,7 @@ void call(Map parameters = [:]) {
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
                 script.currentBuild.result = 'UNSTABLE'
-                if (config.failOnError) throw err
+                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the gauge tests failed, see the log for details."
             }
         }
     }

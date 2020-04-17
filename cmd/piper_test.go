@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -127,4 +128,39 @@ func TestGetProjectConfigFile(t *testing.T) {
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
 		})
 	}
+}
+
+func TestConvertTypes(t *testing.T) {
+	// Init
+	options := struct {
+		Foo []string `json:"foo,omitempty"`
+		Bar bool     `json:"bar,omitempty"`
+		Baz string   `json:"baz,omitempty"`
+		Bla int      `json:"bla,omitempty"`
+	}{}
+
+	stepConfig := map[string]interface{}{}
+	stepConfig["baz"] = "ignore"
+	stepConfig["foo"] = "element"
+	stepConfig["bar"] = "True"
+	stepConfig["bla"] = "42"
+
+	// Test
+	stepConfig = convertTypes(stepConfig, options)
+
+	confJSON, _ := json.Marshal(stepConfig)
+	_ = json.Unmarshal(confJSON, &options)
+
+	// Assert
+	assert.Equal(t, []string{"element"}, stepConfig["foo"])
+	assert.Equal(t, true, stepConfig["bar"])
+
+	assert.Equal(t, []string{"element"}, options.Foo)
+	assert.Equal(t, true, options.Bar)
+
+	assert.Equal(t, "ignore", stepConfig["baz"])
+	assert.Equal(t, "42", stepConfig["bla"])
+
+	assert.Equal(t, "ignore", options.Baz)
+	assert.Equal(t, 0, options.Bla)
 }
