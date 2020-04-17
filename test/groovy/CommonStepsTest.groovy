@@ -59,6 +59,7 @@ public class CommonStepsTest extends BasePiperTest{
             'setupCommonPipelineEnvironment',
             'buildSetResult',
             'mavenBuild',
+            'mavenExecute',
             'mavenExecuteStaticCodeChecks',
             'cloudFoundryCreateServiceKey'
         ]
@@ -132,6 +133,7 @@ public class CommonStepsTest extends BasePiperTest{
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
+        'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
