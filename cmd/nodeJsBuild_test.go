@@ -18,6 +18,7 @@ func (u *nodeJsBuildMockUtilsBundle) fileExists(path string) (bool, error) {
 	return exists, nil
 }
 
+// duplicated from nexusUpload_test.go for now, refactor later?
 func (u *nodeJsBuildMockUtilsBundle) glob(pattern string) ([]string, error) {
 	var matches []string
 	for path := range u.files {
@@ -65,6 +66,7 @@ func TestNodeJsBuild(t *testing.T) {
 		utils := nodeJsBuildMockUtilsBundle{}
 		utils.files = map[string][]byte{}
 		utils.files["package.json"] = []byte(`abc`)
+		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
 		utils.files["package-lock.json"] = []byte(`abc`)
 		options := nodeJsBuildOptions{}
 		options.Install = true
@@ -76,6 +78,29 @@ func TestNodeJsBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, 3, len(utils.execRunner.Calls))
+	})
+
+	t.Run("Project with two package lock files", func(t *testing.T) {
+		utils := nodeJsBuildMockUtilsBundle{}
+		utils.files = map[string][]byte{}
+		utils.files["package.json"] = []byte(`abc`)
+		utils.files["foo/bar/package.json"] = []byte(`abc`)
+		utils.files["package-lock.json"] = []byte(`abc`)
+		options := nodeJsBuildOptions{}
+		options.Install = true
+		options.RunScripts = []string{"foo", "bar"}
+
+		err := runNodeJsBuild(&utils, &options)
+
+		assert.NoError(t, err)
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[5])
+		assert.Equal(t, 6, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with yarn lock", func(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type nodeJsBuildUtils interface {
+type nodeJsBuildUtilsInterface interface {
 	fileExists(path string) (bool, error)
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
@@ -62,7 +62,7 @@ func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData)
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-func runNodeJsBuild(utils nodeJsBuildUtils, options *nodeJsBuildOptions) error {
+func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions) error {
 	execRunner := utils.getExecRunner()
 	environment := []string{"npm_config_@sap:registry=" + options.SapNpmRegistry}
 	if options.DefaultNpmRegistry != "" {
