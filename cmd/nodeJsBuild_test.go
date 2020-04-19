@@ -71,6 +71,7 @@ func TestNodeJsBuild(t *testing.T) {
 		options := nodeJsBuildOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
+		options.DefaultNpmRegistry = "foo.bar"
 
 		err := runNodeJsBuild(&utils, &options)
 
@@ -79,6 +80,7 @@ func TestNodeJsBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
 		assert.Equal(t, 3, len(utils.execRunner.Calls))
+		assert.Equal(t, []string{"npm_config_@sap:registry=", "npm_config_registry=foo.bar"},  utils.execRunner.Env)
 	})
 
 	t.Run("Project with two package lock files", func(t *testing.T) {
