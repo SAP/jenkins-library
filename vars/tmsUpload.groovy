@@ -54,7 +54,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + GENERAL_CONFIG_KEYS
 
 /**
- * This step allows you to upload an MTA file (multi-target application archive) and mutiple MTA extension descriptors into a TMS (SAP Cloud Platform Transport Management Service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
+ * This step allows you to upload an MTA file (multi-target application archive) and multiple MTA extension descriptors into a TMS (SAP Cloud Platform Transport Management Service) landscape for further TMS-controlled distribution through a TMS-configured landscape.
  * TMS lets you manage transports between SAP Cloud Platform accounts in Neo and Cloud Foundry, such as from DEV to TEST and PROD accounts.
  * For more information, see [official documentation of Transport Management Service](https://help.sap.com/viewer/p/TRANSPORT_MANAGEMENT_SERVICE)
  *
@@ -138,73 +138,24 @@ void call(Map parameters = [:]) {
             }
 
             def token = tms.authentication(uaaUrl, clientId, clientSecret)
-            Map nodeIdExtDesMap = [:]
             
-            // validate the whole mapping and then throw errors together, 
-            // so that user can get them in one pipeline run
-            // put the validation here, because we need uri and token to call tms get nodes api
             if(nodeExtDescriptorMapping) {
-                def errorPathList = []
-                def errorMtaId = []
-                def errorNodeNameList = []
-                def errorMsg = ""
-                def mtaYaml
+                // validate the whole mapping and then throw errors together,
+                // so that user can get them in one pipeline run
+                // put the validation here, because we need uri and token to call tms get nodes api
                 List nodes = tms.getNodes(uri, token).getAt("nodes");
+                Map nodeIdExtDesMap = validateNodeExtDescriptorMapping(nodeExtDescriptorMapping, nodes, mtaVersion)
                 
-                // get mta.yml to validate mta version and mta id
-                if(fileExists("mta.yaml")) {
-                    mtaYaml = readYaml file: "mta.yaml"
-                    if (!mtaYaml.ID) {
-                        error "Property 'ID' is not found in mta.yaml."
+                if(nodeIdExtDesMap) {
+                    nodeIdExtDesMap.each{ key, value ->
+                        def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
+                        echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (fileId: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
                     }
-                } else {
-                    error "mta.yaml is not found in the root folder of the project."
-                }
-                
-                if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
-                    errorMsg = "Parameter 'mtaVersion' dose not match the MTA version in mta.yaml. "
-                }
-                
-                nodeExtDescriptorMapping.each{ key, value ->
-                    if(nodes.any {it.name == key}) {
-                        nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), value)
-                    } else {
-                        errorNodeNameList.add(key)
-                    }
-                    
-                    if(!fileExists(value)) {
-                        errorPathList.add(value)
-                    } else {
-                        if(mtaYaml.ID != getMtaId("${value}")) {
-                            errorMtaId.add(value)
-                        }
-                    }
-                }
-                
-                if(!errorPathList.isEmpty() || !errorMtaId.isEmpty() || !errorNodeNameList.isEmpty() ) {
-                    if(!errorPathList.isEmpty()) {
-                        errorMsg += "MTA extension descriptor files ${errorPathList} don't exist. "
-                    }
-                    if(!errorMtaId.isEmpty()) {
-                        errorMsg += "MTA ID in MTA extension descriptor files ${errorMtaId} is incorrect. "
-                    }
-                    if(!errorNodeNameList.isEmpty()) {
-                        errorMsg += "Nodes ${errorNodeNameList} don't exist. Please check the node name or creat these nodes."
-                    }
-                    error(errorMsg)
-                }
-            }
-            
-            if(nodeIdExtDesMap) {
-                nodeIdExtDesMap.each{ key, value ->
-                    def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
-                    echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (Id: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
                 }
             }
             
             def fileUploadResponse = tms.uploadFile(uri, token, "${workspace}/${mtaPath}", namedUser)
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
-
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
             echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription}' (Id: '${uploadFileToNodeResponse.transportRequestId}')"
         }
@@ -212,11 +163,65 @@ void call(Map parameters = [:]) {
     }
 }
 
-def String getMtaId(String filePath){
-    def extDescriptor = readYaml file: filePath
+def String getMtaId(String extDescriptorFilePath){
+    def extDescriptor = readYaml file: extDescriptorFilePath
     def mtaId = ""
     if (extDescriptor.extends) {
         mtaId = extDescriptor.extends
     }
     return mtaId
+}
+
+def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List nodes, String mtaVersion) {
+    def errorPathList = []
+    def errorMtaId = []
+    def errorNodeNameList = []
+    def errorMsg = ""
+    def mtaYaml
+    Map nodeIdExtDesMap = [:]
+    
+    // get mta.yml to validate mta version and mta id
+    if(fileExists("mta.yaml")) {
+        mtaYaml = readYaml file: "mta.yaml"
+        if (!mtaYaml.ID) {
+            error "Property 'ID' is not found in mta.yaml."
+        }
+    } else {
+        error "mta.yaml is not found in the root folder of the project."
+    }
+    
+    if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
+        errorMsg = "Parameter 'mtaVersion' does not match the MTA version in mta.yaml. "
+    }
+    
+    nodeExtDescriptorMapping.each{ key, value ->
+        if(nodes.any {it.name == key}) {
+            nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), value)
+        } else {
+            errorNodeNameList.add(key)
+        }
+        
+        if(!fileExists(value)) {
+            errorPathList.add(value)
+        } else {
+            if(mtaYaml.ID != getMtaId("${value}")) {
+                errorMtaId.add(value)
+            }
+        }
+    }
+    
+    if(!errorPathList.isEmpty() || !errorMtaId.isEmpty() || !errorNodeNameList.isEmpty() ) {
+        if(!errorPathList.isEmpty()) {
+            errorMsg += "MTA extension descriptor files ${errorPathList} don't exist. "
+        }
+        if(!errorMtaId.isEmpty()) {
+            errorMsg += "Parameter [extends] in MTA extension descriptor files ${errorMtaId} is not the same as MTA ID."
+        }
+        if(!errorNodeNameList.isEmpty()) {
+            errorMsg += "Nodes ${errorNodeNameList} don't exist. Please check the node name or create these nodes."
+        }
+        error(errorMsg)
+    }
+    
+    return nodeIdExtDesMap
 }

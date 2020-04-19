@@ -23,7 +23,6 @@ public class TmsUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
-    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
     private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar', 'mta.yaml', 'dummy.mtaext', 'dummy2.mtaext', 'invalidDummy.mtaext'])
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
 
@@ -193,9 +192,9 @@ public class TmsUploadTest extends BasePiperTest {
             mtaVersion: '0.0.1',
         )
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (Id: '1') successfully uploaded to Node with id '1'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (fileId: '1') successfully uploaded to Node with id '1'."))
         assertThat(calledTmsMethodsWithArgs[2], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (Id: '2') successfully uploaded to Node with id '2'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (fileId: '2') successfully uploaded to Node with id '2'."))
         assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
     }
 
@@ -221,11 +220,57 @@ public class TmsUploadTest extends BasePiperTest {
     }
 
     @Test
+    public void failOnMissingMtaYaml() {
+        thrown.expect(AbortException)
+        thrown.expectMessage("mta.yaml is not found in the root folder of the project.")
+        
+        Map nodeExtDescriptorMap = ["testNode1": "dummy.mtaext"]
+        
+        fileExistsRules.existingFiles.remove('mta.yaml')
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+                
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+            nodeExtDescriptorMapping: nodeExtDescriptorMap,
+            mtaVersion: '0.0.1',
+        )
+    }
+    
+    @Test
+    public void failOnMissingMtaIdInMtaYaml() {
+        thrown.expect(AbortException)
+        thrown.expectMessage("Property 'ID' is not found in mta.yaml.")
+        
+        Map nodeExtDescriptorMap = ["testNode1": "dummy.mtaext"]
+        
+        readYamlRule.registerYaml("mta.yaml", "version: 0.0.1")
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+                
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+            nodeExtDescriptorMapping: nodeExtDescriptorMap,
+            mtaVersion: '0.0.1',
+        )
+    }
+    
+    @Test
     public void failOnInvalidNodeExtDescriptorMapping() {
         thrown.expect(AbortException)
         thrown.expectMessage("MTA extension descriptor files [notexisted.mtaext, notexisted2.mtaext] don't exist.")
-        thrown.expectMessage("Nodes [testNode3, testNode4] don't exist. Please check the node name or creat these nodes.")
-        thrown.expectMessage("MTA ID in MTA extension descriptor files [invalidDummy.mtaext] is incorrect. ")
+        thrown.expectMessage("Nodes [testNode3, testNode4] don't exist. Please check the node name or create these nodes.")
+        thrown.expectMessage("Parameter [extends] in MTA extension descriptor files [invalidDummy.mtaext] is not the same as MTA ID.")
         
         // test on all kinds of errors: node doesn't exist, MTA ID in .mtaext is incorrect, and .mtaext file doesn't exist
         Map nodeExtDescriptorMap = ["testNode1": "invalidDummy.mtaext", "testNode3": "notexisted.mtaext", "testNode4": "notexisted2.mtaext"]

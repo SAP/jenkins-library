@@ -17,7 +17,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/TransportManagementService')
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt', 'responseExtDescirptorUpload.txt'])
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['responseFileUpload.txt', 'responseExtDescriptorUpload.txt'])
 
     @Rule
     public RuleChain rules = Rules
@@ -326,7 +326,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescirptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescriptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
         assertThat(responseDetails, hasEntry("fileId", 5678))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
     }
@@ -342,7 +342,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         def namedUser = 'myUser'
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
-        readFileRule.files.put('responseExtDescirptorUpload.txt', '{"fileId": 5678}')
+        readFileRule.files.put('responseExtDescriptorUpload.txt', '{"fileId": 5678}')
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -366,7 +366,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-        readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
+        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
         thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (400). 200 expected')
@@ -394,7 +394,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
-        readFileRule.files << [ 'responseExtDescirptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
+        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
 
         thrown.expect(AbortException.class)
         thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (418). 200 expected')
@@ -433,15 +433,14 @@ class TransportManagementServiceTest extends BasePiperTest {
         def token = 'myToken'
         def responseContent = '{ "nodes": [{ "id": 1, "name": "testNode1" }, { "id": 2, "name": "testNode2" }] }'
         
-        helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
-            Map requestParams = m
+        helper.registerAllowedMethod('httpRequest', [Map.class], { 
             return [content: responseContent, status: 200]
         })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         def responseDetails = tms.getNodes(url, token)
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes started from URL: '${url}'"))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes started. URL: '${url}'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Get nodes successful. Response content '${responseContent}'."))
     }
 
@@ -472,7 +471,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         thrown.expect(AbortException)
         thrown.expectMessage("[TransportManagementService] Get nodes failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
-        loggingRule.expect("[TransportManagementService] Get nodes started from URL: '${url}'")
+        loggingRule.expect("[TransportManagementService] Get nodes started. URL: '${url}'")
 
         helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]

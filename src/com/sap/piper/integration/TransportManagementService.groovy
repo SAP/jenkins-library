@@ -166,9 +166,7 @@ class TransportManagementService implements Serializable {
 
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
-        def responseExtDescirptorUpload = 'responseExtDescirptorUpload.txt'
-
-        def responseContent
+        def responseExtDescriptorUpload = 'responseExtDescriptorUpload.txt'
 
         def responseCode = script.sh returnStdout: true,
                                      script: """|#!/bin/sh -e
@@ -179,16 +177,16 @@ class TransportManagementService implements Serializable {
                                                 |      -F 'mtaVersion=${mtaVersion}' \\
                                                 |      -F 'description=${description}' \\
                                                 |      -F 'namedUser=${namedUser}' \\
-                                                |      --output ${responseExtDescirptorUpload} \\
+                                                |      --output ${responseExtDescriptorUpload} \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
 
 
         def responseBody = 'n/a'
 
-        boolean gotResponse = script.fileExists(responseExtDescirptorUpload)
+        boolean gotResponse = script.fileExists(responseExtDescriptorUpload)
 
         if(gotResponse) {
-            responseBody = script.readFile(responseExtDescirptorUpload)
+            responseBody = script.readFile(responseExtDescriptorUpload)
             if(config.verbose) {
                 echo("Response body: ${responseBody}")
             }
@@ -214,7 +212,7 @@ class TransportManagementService implements Serializable {
     def getNodes(String url, String token) {
 
         if (config.verbose) {
-            echo("Get nodes started from URL: '${url}'")
+            echo("Get nodes started. URL: '${url}'")
         }
 
         def parameters = [
