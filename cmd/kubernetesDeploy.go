@@ -48,14 +48,17 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
 	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-	if len(config.TillerNamespace) > 0 {
+	if config.HelmVersion == 2 && len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
 	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
-	initParams := []string{"init", "--client-only"}
+	initParams := []string{"init"}
+	if config.HelmVersion == 2 {
+		initParams = append(initParams, "--client-only")
+	}
 	if err := command.RunExecutable("helm", initParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm init called failed")
 	}
