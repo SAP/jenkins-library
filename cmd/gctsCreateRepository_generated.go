@@ -98,7 +98,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "username"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "password",
@@ -106,7 +106,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "password"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "repository",
@@ -114,7 +114,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "repository"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "host",
@@ -122,7 +122,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "host"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "client",
@@ -130,7 +130,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "client"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "remoteRepositoryURL",
@@ -138,7 +138,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "remoteRepositoryURL"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "role",
@@ -146,7 +146,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "role"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "vSID",
@@ -154,7 +154,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "vSID"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "type",
@@ -162,7 +162,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "type"}},
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

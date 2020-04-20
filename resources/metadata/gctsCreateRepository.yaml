@@ -19,8 +19,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: username
       - name: password
         type: string
         description: Password to authenticate to the ABAP system
@@ -29,8 +27,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: password
       - name: repository
         type: string
         description: Specifies the name (ID) of the local repository
@@ -39,8 +35,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: repository
       - name: host
         type: string
         description: Specifies the host address of the ABAP system including the port
@@ -49,8 +43,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: host
       - name: client
         type: string
         description: Specifies the client of the ABAP system to be adressed
@@ -59,8 +51,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: client
       - name: remoteRepositoryURL
         type: string
         description: URL of the corresponding remote repository
@@ -68,8 +58,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        aliases:
-          - name: remoteRepositoryURL
       - name: role
         type: string
         description: Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes.
@@ -77,8 +65,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        aliases:
-          - name: role
       - name: vSID
         type: string
         description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository.
@@ -86,8 +72,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        aliases:
-          - name: vSID
       - name: type
         type: string
         description: Type of the used source code management tool.
@@ -96,5 +80,3 @@ spec:
         - STAGES
         - STEPS
         default: GIT
-        aliases:
-          - name: type
