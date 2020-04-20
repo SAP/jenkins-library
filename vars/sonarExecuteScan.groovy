@@ -73,6 +73,7 @@ void call(Map parameters = [:]) {
                         }
                     }
                 }
+                archiveArtifacts artifacts: "sonarExecuteScan_*.json", allowEmptyArchive: true
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
         }
