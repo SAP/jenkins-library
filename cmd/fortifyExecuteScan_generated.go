@@ -15,6 +15,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AuthToken                       string `json:"authToken,omitempty"`
+	AutoCreate                      bool   `json:"autoCreate,omitempty"`
 	MvnCustomArgs                   string `json:"mvnCustomArgs,omitempty"`
 	ModulePath                      string `json:"modulePath,omitempty"`
 	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
@@ -157,6 +158,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
+	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
@@ -216,6 +218,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "autoCreate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
