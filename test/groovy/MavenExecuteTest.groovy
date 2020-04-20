@@ -14,8 +14,7 @@ import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class MavenExecuteTest extends BasePiperTest {
@@ -44,13 +43,6 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Before
     void init() {
-        helper.registerAllowedMethod('fileExists', [Map], {
-            if (m.file == 'mavenExecute_reports.json')
-                return false
-            if (m.file == 'mavenExecute_links.json')
-                return false
-            return true
-        })
         helper.registerAllowedMethod("withEnv", [List, Closure], { arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
@@ -65,7 +57,7 @@ class MavenExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testDeployPom() {
+    void testExecute() {
         stepRule.step.mavenExecute(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
