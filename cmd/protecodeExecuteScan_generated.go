@@ -30,7 +30,7 @@ type protecodeExecuteScanOptions struct {
 	FetchURL                    string `json:"fetchUrl,omitempty"`
 	Group                       string `json:"group,omitempty"`
 	ReuseExisting               bool   `json:"reuseExisting,omitempty"`
-	User                        string `json:"user,omitempty"`
+	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
 	ArtifactVersion             string `json:"artifactVersion,omitempty"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
@@ -101,7 +101,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 			return nil
 		},
@@ -140,14 +140,14 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User which is used for the protecode scan")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
-	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
 
@@ -274,12 +274,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "user",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "user"}},
 					},
 					{
 						Name:        "password",
