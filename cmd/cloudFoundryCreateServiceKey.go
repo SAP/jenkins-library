@@ -68,6 +68,7 @@ func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions
 		//cfCreateServiceKeyScript[4] = strings.TrimSpace(cfCreateServiceKeyScript[4])
 	}
 
+	fmt.Println(cfCreateServiceKeyScript)
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 
 	if err != nil {
