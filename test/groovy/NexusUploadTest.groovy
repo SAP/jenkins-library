@@ -35,14 +35,7 @@ class NexusUploadTest extends BasePiperTest {
 
     @Before
     void init() {
-        helper.registerAllowedMethod('fileExists', [Map], {
-            return true
-        })
         helper.registerAllowedMethod("readJSON", [Map], { m ->
-            if (m.file == 'nexusUpload_reports.json')
-                return [[target: "1234.pdf", mandatory: true]]
-            if (m.file == 'nexusUpload_links.json')
-                return []
             if (m.text != null)
                 return new JsonSlurper().parseText(m.text)
         })
