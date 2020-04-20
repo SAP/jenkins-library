@@ -70,19 +70,9 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 	}
 	execRunner.SetEnv(environment)
 
-	unfilteredListOfPackageJsonFiles, err := utils.glob("**/package.json")
+	packageJsonFiles, err := findPackageJSONFiles(utils)
 	if err != nil {
 		return err
-	}
-
-	var packageJsonFiles []string
-
-	for _, file := range unfilteredListOfPackageJsonFiles {
-		if strings.Contains(file, "node_modules") {
-			continue
-		}
-		packageJsonFiles = append(packageJsonFiles, file)
-		log.Entry().Info("Discovered package.json file " + file)
 	}
 
 	oldWorkingDirectory, err := utils.getwd()
@@ -100,26 +90,9 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 			return err
 		}
 		if options.Install {
-			log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
-			if packageLockExists {
-				err = execRunner.RunExecutable("npm", "ci")
-				if err != nil {
-					return err
-				}
-			} else if yarnLockExists {
-				err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
-				if err != nil {
-					return err
-				}
-			} else {
-				log.Entry().Warn("No package lock file found. " +
-					"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
-					" Add this file to your version control. " +
-					"By doing so, the builds of your application become more reliable.")
-				err = execRunner.RunExecutable("npm", "install")
-				if err != nil {
-					return err
-				}
+			err = installDependencies(dir, packageLockExists, err, execRunner, yarnLockExists)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -134,4 +107,47 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 	}
 
 	return err
+}
+
+func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
+	unfilteredListOfPackageJSONFiles, err := utils.glob("**/package.json")
+	if err != nil {
+		return nil, err
+	}
+
+	var packageJsonFiles []string
+
+	for _, file := range unfilteredListOfPackageJSONFiles {
+		if strings.Contains(file, "node_modules") {
+			continue
+		}
+		packageJsonFiles = append(packageJsonFiles, file)
+		log.Entry().Info("Discovered package.json file " + file)
+	}
+	return packageJsonFiles, nil
+}
+
+func installDependencies(dir string, packageLockExists bool, err error, execRunner execRunner, yarnLockExists bool) error {
+	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
+	if packageLockExists {
+		err = execRunner.RunExecutable("npm", "ci")
+		if err != nil {
+			return err
+		}
+	} else if yarnLockExists {
+		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Entry().Warn("No package lock file found. " +
+			"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
+			" Add this file to your version control. " +
+			"By doing so, the builds of your application become more reliable.")
+		err = execRunner.RunExecutable("npm", "install")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
