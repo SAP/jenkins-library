@@ -6,7 +6,6 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
-import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class NexusUploadTest extends BasePiperTest {
@@ -18,7 +17,6 @@ class NexusUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
-    //private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this, [])
 
     private List withEnvArgs = []
 
@@ -33,7 +31,6 @@ class NexusUploadTest extends BasePiperTest {
         .around(stepRule)
         .around(writeFileRule)
         .around(fileExistsRule)
-    //    .around(dockerExecuteRule)
 
     @Before
     void init() {
@@ -54,9 +51,6 @@ class NexusUploadTest extends BasePiperTest {
             }
             return closure()
         })
-//        helper.registerAllowedMethod("dockerExecute", [Map, Closure], { map, closure ->
-//            // ignore
-//        })
         credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
         shellCallRule.setReturnValue(
             './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/nexusUpload.yaml\'',
