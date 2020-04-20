@@ -1,19 +1,19 @@
 metadata:
   name: gctsCreateRepository
-  description: Creates a Git repository
+  description: Creates a Git repository on an ABAP system
   longDescription: |
-    Creates a local Git repository if it does not already exist.
+    Creates a local Git repository on an ABAP system if it does not already exist.
 
 spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the ABAP system you want to clone the repository to
+        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to create the repository
         type: jenkins
     params:
       - name: username
         type: string
-        description: User to authenticate to the ABAP system
+        description: Username to authenticate to the ABAP system
         scope:
         - PARAMETERS
         - STAGES
@@ -33,7 +33,7 @@ spec:
           - name: password
       - name: repositoryName
         type: string
-        description: Specifies the name (ID) of the repsitory to be cloned
+        description: Specifies the name (ID) of the local repository
         scope:
         - PARAMETERS
         - STAGES
@@ -90,7 +90,7 @@ spec:
           - name: vSID
       - name: type
         type: string
-        description: Type of the used source code management tool. So far, only Git is supported.
+        description: Type of the used source code management tool.
         scope:
         - PARAMETERS
         - STAGES
