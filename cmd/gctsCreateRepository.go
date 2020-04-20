@@ -91,7 +91,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 			Role:            config.Role,
 			Type:            config.Type,
 			VSID:            config.VSID,
-			GithubURLstring: config.GithubURL,
+			GithubURLstring: config.RemoteRepositoryURL,
 		},
 	}
 	jsonBody, marshalErr := json.Marshal(reqBody)

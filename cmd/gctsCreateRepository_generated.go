@@ -14,15 +14,15 @@ import (
 )
 
 type gctsCreateRepositoryOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
-	GithubURL  string `json:"githubURL,omitempty"`
-	Role       string `json:"role,omitempty"`
-	VSID       string `json:"vSID,omitempty"`
-	Type       string `json:"type,omitempty"`
+	Username            string `json:"username,omitempty"`
+	Password            string `json:"password,omitempty"`
+	Repository          string `json:"repository,omitempty"`
+	Host                string `json:"host,omitempty"`
+	Client              string `json:"client,omitempty"`
+	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
+	Role                string `json:"role,omitempty"`
+	VSID                string `json:"vSID,omitempty"`
+	Type                string `json:"type,omitempty"`
 }
 
 // GctsCreateRepositoryCommand Creates a Git repository on an ABAP system
@@ -70,7 +70,7 @@ func addGctsCreateRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCreateRepo
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repository")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the ABAP system including the port")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be adressed")
-	cmd.Flags().StringVar(&stepConfig.GithubURL, "githubURL", os.Getenv("PIPER_githubURL"), "URL of the corresponding remote repository")
+	cmd.Flags().StringVar(&stepConfig.RemoteRepositoryURL, "remoteRepositoryURL", os.Getenv("PIPER_remoteRepositoryURL"), "URL of the corresponding remote repository")
 	cmd.Flags().StringVar(&stepConfig.Role, "role", os.Getenv("PIPER_role"), "Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes.")
 	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository.")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", "GIT", "Type of the used source code management tool.")
@@ -133,12 +133,12 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "client"}},
 					},
 					{
-						Name:        "githubURL",
+						Name:        "remoteRepositoryURL",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "githubURL"}},
+						Aliases:     []config.Alias{{Name: "remoteRepositoryURL"}},
 					},
 					{
 						Name:        "role",

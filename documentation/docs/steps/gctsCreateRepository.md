@@ -24,7 +24,7 @@ gctsCreateRepository(
   client: "000",
   credentialsId: 'ABAPUserPasswordCredentialsId',
   repository: "myrepo",
-  githubURL: "https://github.com/user/myrepo",
+  remoteRepositoryURL: "https://github.com/user/myrepo",
   role: "SOURCE",
   vSID: "ABC"
   )
@@ -41,7 +41,7 @@ steps:
     username: "ABAPUsername"
     password: "ABAPPassword"
     repository: "myrepo"
-    githubURL: "https://github.com/user/myrepo",
+    remoteRepositoryURL: "https://github.com/user/myrepo",
     role: "SOURCE",
     vSID: "ABC"
 ```

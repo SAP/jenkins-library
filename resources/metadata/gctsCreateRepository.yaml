@@ -61,7 +61,7 @@ spec:
         mandatory: true
         aliases:
           - name: client
-      - name: githubURL
+      - name: remoteRepositoryURL
         type: string
         description: URL of the corresponding remote repository
         scope:
@@ -69,7 +69,7 @@ spec:
         - STAGES
         - STEPS
         aliases:
-          - name: githubURL
+          - name: remoteRepositoryURL
       - name: role
         type: string
         description: Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes.
