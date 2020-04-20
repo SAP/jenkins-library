@@ -15,6 +15,7 @@ void call(Map parameters = [:]) {
     // No credentials required/supported as of now
     List credentials = []
 
+    parameters['dockerOptions'] = DownloadCacheUtils.getDockerOptions(script)
     withEnv(["npm_config_registry=http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"]) {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     }
