@@ -12,7 +12,6 @@ import (
 )
 
 func TestPersistReportAndLinks(t *testing.T) {
-
 	t.Run("default", func(t *testing.T) {
 		workspace, err := ioutil.TempDir("", "workspace5")
 		require.NoError(t, err, "Failed to create temporary workspace directory")
@@ -72,18 +71,11 @@ func TestPersistReportAndLinks(t *testing.T) {
 		// test
 		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links)
 		// assert
-		assert.FileExists(t, reportsJSONPath)
-		assert.FileExists(t, linksJSONPath)
-
 		for _, reportFile := range []string{reportsJSONPath, linksJSONPath} {
 			assert.FileExists(t, reportFile)
 			reportsFileData, err := ioutil.ReadFile(reportFile)
-			reportsFileDataString := string(reportsFileData)
 			require.NoError(t, err, "No error expected but got one")
-			println(reportsFileData)
-			println(reportsFileDataString)
-			assert.NotEmpty(t, reportsFileData)
-			assert.Equal(t, "[]", reportsFileDataString)
+			assert.Equal(t, "[]", string(reportsFileData))
 		}
 	})
 }
