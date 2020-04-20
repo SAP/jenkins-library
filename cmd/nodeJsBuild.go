@@ -90,7 +90,7 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 			return err
 		}
 		if options.Install {
-			err = installDependencies(dir, packageLockExists, err, execRunner, yarnLockExists)
+			err = installDependencies(dir, packageLockExists, yarnLockExists, execRunner)
 			if err != nil {
 				return err
 			}
@@ -127,7 +127,7 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 	return packageJsonFiles, nil
 }
 
-func installDependencies(dir string, packageLockExists bool, err error, execRunner execRunner, yarnLockExists bool) error {
+func installDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
 		err = execRunner.RunExecutable("npm", "ci")
