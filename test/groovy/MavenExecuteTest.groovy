@@ -21,11 +21,9 @@ class MavenExecuteTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
 
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
-    private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     private List withEnvArgs = []
 
@@ -35,11 +33,11 @@ class MavenExecuteTest extends BasePiperTest {
         .around(exception)
         .around(new JenkinsReadYamlRule(this))
         .around(credentialsRule)
-        .around(readJsonRule)
+        .around(new JenkinsReadJsonRule(this))
         .around(shellCallRule)
         .around(stepRule)
         .around(writeFileRule)
-        .around(fileExistsRule)
+        .around(new JenkinsFileExistsRule(this, []))
 
     @Before
     void init() {
