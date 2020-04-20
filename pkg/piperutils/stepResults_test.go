@@ -71,9 +71,6 @@ func TestPersistReportAndLinks(t *testing.T) {
 		// test
 		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links)
 		// assert
-		assert.FileExists(t, reportsJSONPath)
-		assert.FileExists(t, linksJSONPath)
-
 		for _, reportFile := range []string{reportsJSONPath, linksJSONPath} {
 			assert.FileExists(t, reportFile)
 			reportsFileData, err := ioutil.ReadFile(reportFile)
