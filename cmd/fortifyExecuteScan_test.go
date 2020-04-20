@@ -106,15 +106,15 @@ func TestScanProject(t *testing.T) {
 }
 
 func TestAutoresolveClasspath(t *testing.T) {
-	config := fortifyExecuteScanOptions{AutodetectClasspath: false, AutodetectClasspathCommand: "{{.PythonVersion}} -c 'import sys;p=sys.path;p.remove('');print(';'.join(p))' > {{.File}}"}
+	config := fortifyExecuteScanOptions{AutodetectClasspath: false, PythonVersion: "python2"}
 	execRunner := execRunnerMock{}
 
 	t.Run("turned off", func(t *testing.T) {
-		result := autoresolveClasspath(config, &execRunner, nil)
+		result := autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "cp.txt", &execRunner)
 		assert.Equal(t, "", result, "Expected different executable")
 	})
 
-	t.Run("turned on", func(t *testing.T) {
+	t.Run("turned on w/ existing file", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
@@ -124,10 +124,9 @@ func TestAutoresolveClasspath(t *testing.T) {
 
 		config.AutodetectClasspath = true
 		config.ScanType = "pip"
-		context := map[string]string{"PythonVersion": "python2", "File": file}
-		result := autoresolveClasspath(config, &execRunner, context)
+		result := autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))", file}, file, &execRunner)
 		assert.Equal(t, "python2", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-c", "'import", "sys;p=sys.path;p.remove('');print(';'.join(p))'", ">", file}, execRunner.parameters, "Expected different parameters")
+		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))", file}, execRunner.parameters, "Expected different parameters")
 		assert.Equal(t, classpath, result, "Expected different result")
 	})
 }

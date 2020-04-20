@@ -25,6 +25,7 @@ import (
 var auditStatus map[string]string
 
 const checkString = "<---CHECK FORTIFY---"
+const classpathFileName = "cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
 	auditStatus = map[string]string{}
@@ -51,7 +52,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
-	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, gav)
+	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, config.ProjectVersioningScheme, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
@@ -403,28 +404,46 @@ func calculateTimeDifferenceToLastUpload(config fortifyExecuteScanOptions, uploa
 	return absoluteSeconds
 }
 
-func executeTemplatedCommand(command execRunner, cmdTemplate string, context map[string]string) {
-	cmd, err := piperutils.ExecuteTemplate(cmdTemplate, context)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Failed to transform template for command: %v", cmdTemplate)
+func executeTemplatedCommand(command execRunner, cmdTemplate []string, context map[string]string) {
+	for index, cmdTemplatePart := range cmdTemplate {
+		result, err := piperutils.ExecuteTemplate(cmdTemplatePart, context)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to transform template for command fragment: %v", cmdTemplatePart)
+		}
+		cmdTemplate[index] = result
 	}
-	commandTokens := tokenize(cmd)
-	err = command.RunExecutable(commandTokens[0], commandTokens[1:]...)
+	err := command.RunExecutable(cmdTemplate[0], cmdTemplate[1:]...)
 	if err != nil {
-		log.Entry().WithError(err).WithField("command", cmd).Fatal("Failed to execute command")
+		log.Entry().WithError(err).WithField("command", cmdTemplate).Fatal("Failed to execute command")
 	}
 }
 
-func autoresolveClasspath(config fortifyExecuteScanOptions, command execRunner, context map[string]string) string {
-	if config.AutodetectClasspath {
-		executeTemplatedCommand(command, config.AutodetectClasspathCommand, context)
-		data, err := ioutil.ReadFile(context["File"])
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("failed to read java classpath file %v", context["File"])
+func autoresolveClasspath(config fortifyExecuteScanOptions, autodetectClasspathCommand []string, file string, command execRunner) string {
+	if config.AutodetectClasspath && len(autodetectClasspathCommand) > 0 {
+		redirectStdout := false
+		if !piperutils.ContainsStringPart(autodetectClasspathCommand, file) {
+			// redirect stdout and create cp file from command output
+			redirectStdout = true
+			outfile, err := os.Create(file)
+			if err != nil {
+				log.Entry().WithError(err).Fatal("Failed to create classpath file")
+			}
+			defer outfile.Close()
+			command.Stdout(outfile)
 		}
-		return string(data)
+		err := command.RunExecutable(autodetectClasspathCommand[0], autodetectClasspathCommand[1:]...)
+		if err != nil {
+			log.Entry().WithError(err).WithField("command", autodetectClasspathCommand).Fatal("Failed to run classpath autodetection command")
+		}
+		if redirectStdout {
+			command.Stdout(os.Stdout)
+		}
 	}
-	return ""
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
+	}
+	return strings.TrimSpace(string(data))
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
@@ -434,9 +453,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		pipVersion = "pip2"
 	}
 
-	// Determine classpath
-	classpath := autoresolveClasspath(config, command, map[string]string{"Pip": pipVersion, "PythonVersion": config.PythonVersion, "File": "cp.txt"})
+	var classpath string
 	if config.ScanType == "maven" {
+		classpath = autoresolveClasspath(config, []string{"mvn", "dependency:build-classpath", fmt.Sprintf("-Dmdep.outputFile=%v", classpathFileName), "-DincludeScope=compile"}, classpathFileName, command)
 		if len(config.Translate) == 0 {
 			config.Translate = `[{"classpath":"`
 			config.Translate += classpath
@@ -444,18 +463,21 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		}
 	}
 	if config.ScanType == "pip" {
+		classpath = autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, classpathFileName, command)
 		// install the dev dependencies
 		if len(config.PythonRequirementsFile) > 0 {
-			context := map[string]string{"Pip": pipVersion, "PythonRequirementsFile": config.PythonRequirementsFile, "PythonRequirementsInstallSuffix": config.PythonRequirementsInstallSuffix}
-			executeTemplatedCommand(command, "{{.Pip}} install --user -r {{.PythonRequirementsFile}} {{.PythonRequirementsInstallSuffix}}", context)
+			context := map[string]string{}
+			cmdTemplate := []string{pipVersion, "install", "--user", "-r", config.PythonRequirementsFile}
+			cmdTemplate = append(cmdTemplate, tokenize(config.PythonRequirementsInstallSuffix)...)
+			executeTemplatedCommand(command, cmdTemplate, context)
 		}
 
-		executeTemplatedCommand(command, config.PythonInstallCommand, map[string]string{"Pip": pipVersion})
+		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
 		if len(config.Translate) == 0 {
 			config.Translate = `[{"pythonPath":"`
 			config.Translate += classpath
-			config.Translate += ":"
+			config.Translate += ";"
 			config.Translate += config.PythonAdditionalPath
 			config.Translate += `","pythonIncludes":"`
 			config.Translate += config.PythonIncludes

@@ -17,6 +17,12 @@ import (
 )
 
 const (
+	// SchemeMajorVersion is the versioning scheme based on the major version only
+	SchemeMajorVersion = `{{(split "." (split "-" .Version)._0)._0}}`
+	// SchemeSemanticVersion is the versioning scheme based on the major.minor.micro version
+	SchemeSemanticVersion = `{{(split "-" .Version)._0}}`
+	// SchemeFullVersion is the versioning scheme based on the full version
+	SchemeFullVersion = "{{.Version}}"
 	// NameRegex is used to match the pip descriptor artifact name
 	NameRegex = "(?s)(.*)name=['\"](.*?)['\"](.*)"
 	// VersionRegex is used to match the pip descriptor artifact version
@@ -179,11 +185,23 @@ func getVersionFromFile(file string) (string, error) {
 }
 
 // DetermineProjectCoordinates resolve the coordinates of the project for use in 3rd party scan tools
-func DetermineProjectCoordinates(nameTemplate, versionTemplate string, gav BuildDescriptor) (string, string) {
+func DetermineProjectCoordinates(nameTemplate, version, versionScheme string, gav BuildDescriptor) (string, string) {
 	projectName, err := ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
 		log.Entry().Warnf("Unable to resolve fortify project name %v", err)
 	}
+
+	versionTemplate := gav.GetVersion()
+	if versionScheme == "full" {
+		versionTemplate = SchemeFullVersion
+	}
+	if versionScheme == "semantic" {
+		versionTemplate = SchemeSemanticVersion
+	}
+	if versionScheme == "major" {
+		versionTemplate = SchemeMajorVersion
+	}
+
 	projectVersion, err := ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
 		log.Entry().Warnf("Unable to resolve fortify project version %v", err)

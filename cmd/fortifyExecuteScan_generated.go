@@ -19,7 +19,6 @@ type fortifyExecuteScanOptions struct {
 	ModulePath                      string `json:"modulePath,omitempty"`
 	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
 	AutodetectClasspath             bool   `json:"autodetectClasspath,omitempty"`
-	AutodetectClasspathCommand      string `json:"autodetectClasspathCommand,omitempty"`
 	PythonRequirementsInstallSuffix string `json:"pythonRequirementsInstallSuffix,omitempty"`
 	PythonVersion                   string `json:"pythonVersion,omitempty"`
 	UploadResults                   bool   `json:"uploadResults,omitempty"`
@@ -51,6 +50,7 @@ type fortifyExecuteScanOptions struct {
 	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
 	ProjectVersion                  string `json:"projectVersion,omitempty"`
+	ProjectVersioningScheme         string `json:"projectVersioningScheme,omitempty"`
 	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
@@ -160,8 +160,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
-	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether `autodetectClasspathCommand` is used to determine the classpath via tooling or not")
-	cmd.Flags().StringVar(&stepConfig.AutodetectClasspathCommand, "autodetectClasspathCommand", `mvn dependency:build-classpath -Dmdep.outputFile={{.File}} -DincludeScope=compile`, "Command used to automatically determine the classpath for translating the sources")
+	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `scanType: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
@@ -193,6 +192,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint  for FPR downloads")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", `{{(split "." (split "-" .Version)._0)._0}}`, "The project version used for reporting results in SSC")
+	cmd.Flags().StringVar(&stepConfig.ProjectVersioningScheme, "projectVersioningScheme", `major`, "The project versioning scheme used for creating the version to report results in SSC, can be one of `'major'`, `'semantic'`, `'full'`, `'text'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
@@ -247,22 +247,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "autodetectClasspathCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "autodetectClasspathCommand",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -513,6 +497,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyProjectVersion"}},
+					},
+					{
+						Name:        "projectVersioningScheme",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "pythonInstallCommand",
