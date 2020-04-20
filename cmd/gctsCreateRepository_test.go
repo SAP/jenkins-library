@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"bytes"
+	"errors"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"testing"
 )
 
@@ -87,9 +93,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 		err := createRepository(&config, nil, nil, &httpClient)
 
 		assert.NoError(t, err)
-
 	})
-
 }
 func TestGctsCreateRepositoryFailure(t *testing.T) {
 
@@ -104,7 +108,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 		VSID:           "TST",
 	}
 
-	t.Run("creating repository locally failed", func(t *testing.T) {
+	t.Run("a http error occurred", func(t *testing.T) {
 
 		httpClient := httpMock{StatusCode: 500, ResponseBody: `{
 			"log": [
@@ -139,7 +143,44 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 		err := createRepository(&config, nil, nil, &httpClient)
 
 		assert.EqualError(t, err, "creating the repository locally failed: a http error occurred")
-
 	})
+}
 
+type httpMock struct {
+	Method       string                  // is set during test execution
+	URL          string                  // is set before test execution
+	Header       map[string][]string     // is set before test execution
+	ResponseBody string                  // is set before test execution
+	Options      piperhttp.ClientOptions // is set during test
+	StatusCode   int                     // is set during test
+}
+
+func (c *httpMock) SetOptions(options piperhttp.ClientOptions) {
+	c.Options = options
+}
+
+func (c *httpMock) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	c.Method = method
+	c.URL = url
+
+	if r != nil {
+		_, err := ioutil.ReadAll(r)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	res := http.Response{
+		StatusCode: c.StatusCode,
+		Header:     c.Header,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
+	}
+
+	if c.StatusCode >= 400 {
+		return &res, errors.New("a http error occurred")
+	}
+
+	return &res, nil
 }
