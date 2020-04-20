@@ -106,13 +106,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if err != nil {
 		return err
 	}
-	// write reports JSON
-	var reports, links []StepResults.Path
-	links = append(links, StepResults.Path{
-		Target: taskReport.DashboardURL,
-		Name:   "Sonar Web UI",
-	})
-	StepResults.PersistReportsAndLinks("sonarExecuteScan", "./", reports, links)
+	// write links JSON
+	links := []StepResults.Path{
+		StepResults.Path{
+			Target: taskReport.DashboardURL,
+			Name:   "Sonar Web UI",
+		},
+	}
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", "./", nil, links)
 
 	return nil
 }
