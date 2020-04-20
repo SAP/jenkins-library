@@ -32,7 +32,6 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
 	c := command.Command{}
 	// reroute command output to loging framework
-	// also log stdout as Karma reports into it
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	c.Env(os.Environ())
@@ -440,7 +439,7 @@ func autoresolveClasspath(config fortifyExecuteScanOptions, autodetectClasspathC
 			log.Entry().WithError(err).WithField("command", autodetectClasspathCommand).Fatal("Failed to run classpath autodetection command")
 		}
 		if redirectStdout {
-			command.Stdout(os.Stdout)
+			command.Stdout(log.Entry().Writer())
 		}
 	}
 	data, err := ioutil.ReadFile(file)
