@@ -1,10 +1,10 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
-import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 
 /**
  * By default a user &quot;anonymous&quot; with password &quot;********&quot;
@@ -29,6 +29,11 @@ class JenkinsCredentialsRule implements TestRule {
 
     JenkinsCredentialsRule withCredentials(String credentialsId, String token) {
         credentials.put(credentialsId, [token: token])
+        return this
+    }
+
+    JenkinsCredentialsRule reset(){
+        credentials.clear()
         return this
     }
 
@@ -63,44 +68,49 @@ class JenkinsCredentialsRule implements TestRule {
                     })
 
                 testInstance.helper.registerAllowedMethod('withCredentials', [List, Closure], { config, closure ->
+                    // there can be multiple credentials defined for the closure; collecting the necessary binding
+                    // preparations and destructions before executing closure
+                    def preparations = []
+                    def destructions = []
+                    config.each { cred ->
+                        def credsId = cred.credentialsId
+                        def credentialsBindingType = bindingTypes.get(credsId)
+                        def creds = credentials.get(credsId)
 
-                    def credsId = config[0].credentialsId
-                    def credentialsBindingType = bindingTypes.get(credsId)
-                    def creds = credentials.get(credsId)
-
-                    def tokenVariable, usernameVariable, passwordVariable, prepare, destruct
-                    if(credentialsBindingType == "usernamePassword") {
-                        passwordVariable = config[0].passwordVariable
-                        usernameVariable = config[0].usernameVariable
-                        prepare = {
-                            binding.setProperty(usernameVariable, creds?.user)
-                            binding.setProperty(passwordVariable, creds?.passwd)
+                        def tokenVariable, usernameVariable, passwordVariable, prepare, destruct
+                        if (credentialsBindingType == "usernamePassword") {
+                            passwordVariable = cred.passwordVariable
+                            usernameVariable = cred.usernameVariable
+                            preparations.add({
+                                binding.setProperty(usernameVariable, creds?.user)
+                                binding.setProperty(passwordVariable, creds?.passwd)
+                            })
+                            destructions.add({
+                                binding.setProperty(usernameVariable, null)
+                                binding.setProperty(passwordVariable, null)
+                            })
+                        } else if (credentialsBindingType == "string") {
+                            tokenVariable = cred.variable
+                            preparations.add({
+                                binding.setProperty(tokenVariable, creds?.token)
+                            })
+                            destructions.add({
+                                binding.setProperty(tokenVariable, null)
+                            })
+                        } else {
+                            throw new RuntimeException("Unknown binding type")
                         }
-                        destruct = {
-                            binding.setProperty(usernameVariable, null)
-                            binding.setProperty(passwordVariable, null)
-                        }
-                    } else if(credentialsBindingType == "string") {
-                        tokenVariable = config[0].variable
-                        prepare = {
-                            binding.setProperty(tokenVariable, creds?.token)
-                        }
-                        destruct = {
-                            binding.setProperty(tokenVariable, null)
-                        }
-                    } else {
-                        throw new RuntimeException("Unknown binding type")
                     }
 
-                    prepare()
+                    preparations.each { it() }
                     try {
                         closure()
                     } finally {
-                        destruct()
+                        destructions.each { it() }
                     }
                 })
 
-             base.evaluate()
+                base.evaluate()
             }
         }
     }

@@ -17,7 +17,7 @@ The log was generated at: `$utcTimestamp UTC`
 <% print failedBuild.get("stack_trace") ? "```" : "" %>
 <% print failedBuild.get("stack_trace").collect({each -> "${each}"}).join("\n") %>
 <% print failedBuild.get("stack_trace") ? "```" : "" %>
-<% print failedBuild.get("fatal") ? "#### Failure was fatal." : "" %>
+<% print failedBuild.get("fatal") ? "#### Failure was fatal." : "#### Failure was non-fatal." %>
 
 ## Pipeline Environment
 

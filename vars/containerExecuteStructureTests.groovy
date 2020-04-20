@@ -133,7 +133,7 @@ container-structure-test test ${testConfigArgs} --driver ${config.testDriver} --
         } catch (err) {
             echo "[${STEP_NAME}] Test execution failed"
             script.currentBuild.result = 'UNSTABLE'
-            if (config.failOnError) throw err
+            if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the container structure tests failed, see the log for details."
         } finally {
             echo "${readFile(config.testReportFilePath)}"
             archiveArtifacts artifacts: config.testReportFilePath, allowEmptyArchive: true

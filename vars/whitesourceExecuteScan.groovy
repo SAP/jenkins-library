@@ -521,10 +521,10 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
     def projectsMetaInformation = repository.fetchProjectsMetaInfo()
     def vulnerabilities = repository.fetchVulnerabilities(projectsMetaInformation)
     def severeVulnerabilities = 0
-    vulnerabilities.each {
-        item ->
-            if ((item.vulnerability.score >= config.whitesource.cvssSeverityLimit || item.vulnerability.cvss3_score >= config.whitesource.cvssSeverityLimit) && config.whitesource.cvssSeverityLimit >= 0)
-                severeVulnerabilities++
+    for(int i = 0; i < vulnerabilities.size(); i++) {
+        def item = vulnerabilities.get(i)
+        if ((item.vulnerability.score >= config.whitesource.cvssSeverityLimit || item.vulnerability.cvss3_score >= config.whitesource.cvssSeverityLimit) && config.whitesource.cvssSeverityLimit >= 0)
+            severeVulnerabilities++
     }
 
     writeFile(file: "${config.vulnerabilityReportFileName}.json", text: new JsonUtils().groovyObjectToPrettyJsonString(vulnerabilities))

@@ -223,8 +223,8 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 	}
 
 	options := piperHttp.ClientOptions{
-		Token:   token,
-		Timeout: time.Second * 60,
+		Token:              token,
+		MaxRequestDuration: 60 * time.Second,
 	}
 	sys.client.SetOptions(options)
 
@@ -599,7 +599,7 @@ func (sys *SystemInstance) GetResults(scanID int) ResultsStatistics {
 	return results
 }
 
-// RequestNewReport triggers the gereration of a  report for a specific scan addressed by scanID
+// RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID int, reportType string) (bool, Report) {
 	report := Report{}
 	jsonData := map[string]interface{}{

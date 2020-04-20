@@ -21,9 +21,10 @@ type StepData struct {
 
 // StepMetadata defines the metadata for a step, like step descriptions, parameters, ...
 type StepMetadata struct {
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	LongDescription string `json:"longDescription,omitempty"`
+	Name            string  `json:"name"`
+	Aliases         []Alias `json:"aliases,omitempty"`
+	Description     string  `json:"description"`
+	LongDescription string  `json:"longDescription,omitempty"`
 }
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...
@@ -53,6 +54,7 @@ type StepParameters struct {
 	Default         interface{}         `json:"default,omitempty"`
 	Aliases         []Alias             `json:"aliases,omitempty"`
 	Conditions      []Condition         `json:"conditions,omitempty"`
+	Secret          bool                `json:"secret,omitempty"`
 }
 
 // ResourceReference defines the parameters of a resource reference
@@ -78,9 +80,10 @@ type StepResources struct {
 
 // StepSecrets defines the secrets to be provided by the step context, e.g. Jenkins pipeline
 type StepSecrets struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type,omitempty"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Type        string  `json:"type,omitempty"`
+	Aliases     []Alias `json:"aliases,omitempty"`
 }
 
 // StepOutputs defines the outputs of a step step, typically one or multiple resources
@@ -100,12 +103,12 @@ type Container struct {
 	Shell           string      `json:"shell"`
 	WorkingDir      string      `json:"workingDir"`
 	Conditions      []Condition `json:"conditions,omitempty"`
-	Options         []Option    `json:"options,omitempt"`
+	Options         []Option    `json:"options,omitempty"`
 	//VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// ToDo: Add the missing Volumes part to enable the volume mount completly
-// VolumeMount defines an mount path
+// ToDo: Add the missing Volumes part to enable the volume mount completely
+// VolumeMount defines a mount path
 // type VolumeMount struct {
 //	MountPath string `json:"mountPath"`
 //	Name      string `json:"name"`

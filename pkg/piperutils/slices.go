@@ -33,3 +33,33 @@ func ContainsStringPart(s []string, part string) bool {
 	}
 	return false
 }
+
+//Prefix adds a prefix to each element of the slice
+func Prefix(in []string, prefix string) []string {
+	return _prefix(in, prefix, true)
+}
+
+//PrefixIfNeeded adds a prefix to each element of the slice if not already prefixed
+func PrefixIfNeeded(in []string, prefix string) []string {
+	return _prefix(in, prefix, false)
+}
+
+func _prefix(in []string, prefix string, always bool) (out []string) {
+	for _, element := range in {
+		if always || !strings.HasPrefix(element, prefix) {
+			element = prefix + element
+		}
+		out = append(out, element)
+	}
+	return
+}
+
+//Trim removes dangling whitespaces from each element of the slice, empty elements are dropped
+func Trim(in []string) (out []string) {
+	for _, element := range in {
+		if trimmed := strings.TrimSpace(element); len(trimmed) > 0 {
+			out = append(out, trimmed)
+		}
+	}
+	return
+}

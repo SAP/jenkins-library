@@ -99,7 +99,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
         assertEquals('testCommitId', environmentRule.env.getGitCommitId())
 
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(shellRule.shell.join(), stringContainsInOrder([
                                             "git add .",
                                             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
@@ -139,7 +139,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
         // GIT related assertions here
 
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
                                             "git add .",
                                             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
@@ -259,7 +259,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         stepRule.step.artifactSetVersion(script: stepRule.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(shellRule.shell, not(hasItem(containsString('commit'))))
     }
 

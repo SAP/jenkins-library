@@ -24,7 +24,7 @@ func runDetect(config detectExecuteScanOptions, command shellRunner) {
 	args = addDetectArgs(args, config)
 	script := strings.Join(args, " ")
 
-	command.Dir(".")
+	command.SetDir(".")
 
 	err := command.RunShell("/bin/bash", script)
 	if err != nil {

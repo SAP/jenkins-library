@@ -41,18 +41,8 @@ For an example, you might want to check out our ["Build and Deploy SAPUI5 or SAP
 
 #### Extensibility
 
-If you consider adding additional capabilities to your `Jenkinsfile`, consult
-the [Jenkins Pipeline Steps Reference][jenkins-doc-steps]. There, you get an
-overview about steps that are natively supported by Jenkins.
-
-The [Jenkins shared libraries][jenkins-doc-libraries] concept helps you to
-extract reusable parts from your pipeline and to keep your pipeline code small
-and easy to maintain.
-
-Custom library steps can be added using a custom library according to the
-[Jenkins shared libraries][jenkins-doc-libraries] concept instead of adding
-groovy coding to the `Jenkinsfile`. Your custom library can coexist next to the
-provided pipeline library.
+For the vast majority of _standard_ projects, the features of the ready-made pipelines should be enough to implement [Continuous Delivery](https://martinfowler.com/bliki/ContinuousDelivery.html) with little effort in a best-practice compliant way.
+If you require more flexibility, our documentation on [Extensibility][piper-doc-extensibility] discusses available options.
 
 #### API
 
@@ -70,6 +60,7 @@ methods/types needs to be announced, discussed and agreed.
 [devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
 [devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
 [piper-library-scenario]: scenarios/ui5-sap-cp/Readme/
+[piper-doc-extensibility]: extensibility
 [piper-library-pages-plugins]: requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE

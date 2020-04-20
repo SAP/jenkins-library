@@ -1,6 +1,9 @@
 package com.sap.piper
 
+
+import hudson.plugins.sidebar_link.LinkAction
 import hudson.AbortException
+
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 import org.junit.Before
 import org.junit.Rule
@@ -15,6 +18,7 @@ import util.Rules
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertEquals
 
 class JenkinsUtilsTest extends BasePiperTest {
     public ExpectedException exception = ExpectedException.none()
@@ -56,24 +60,6 @@ class JenkinsUtilsTest extends BasePiperTest {
 
             def getActiveJenkinsInstance() {
                 return jenkinsInstanceMock
-            }
-
-            void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
-                results.runlinkCalled = true
-                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
-                assertThat(displayName, is('Test link'))
-                assertThat(relativeIconPath, is('images/24x24/graph.png'))
-            }
-
-            void addJobSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
-                results.joblinkCalled = true
-                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
-                assertThat(displayName, is('Test link'))
-                assertThat(relativeIconPath, is('images/24x24/graph.png'))
-            }
-            void removeJobSideBarLinks(String relativeUrl) {
-                results.removejoblinkCalled = true
-                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
             }
         }
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(jenkinsUtils)
@@ -123,8 +109,41 @@ class JenkinsUtilsTest extends BasePiperTest {
         }
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(currentBuildMock)
     }
+
+    def initializeNewUtil() {
+        jenkinsUtils = new JenkinsUtils() {
+            def getCurrentBuildInstance() {
+                return currentBuildMock
+            }
+
+            def getActiveJenkinsInstance() {
+                return jenkinsInstanceMock
+            }
+
+            void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.runlinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+
+            void addJobSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.joblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+            void removeJobSideBarLinks(String relativeUrl) {
+                results.removejoblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+            }
+        }
+        LibraryLoadingTestExecutionListener.prepareObjectInterceptors(jenkinsUtils)
+    }
+
     @Test
     void testHandleStepResultsJobLink() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -143,6 +162,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResults() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -161,6 +181,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResultsEmptyReports() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -175,6 +196,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResultsEmptyLinks() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -189,6 +211,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResultsNoErrorReportsLinks() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -202,6 +225,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResultsReportsNoFile() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return false
         })
@@ -219,6 +243,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     }
     @Test
     void testHandleStepResultsLinksNoFile() {
+        initializeNewUtil()
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return false
         })
@@ -294,4 +319,55 @@ class JenkinsUtilsTest extends BasePiperTest {
         assertThat(libs[0], is([name: 'lib1', version: '1', trusted: true]))
         assertThat(libs[1], is([name: 'lib2', version: '2', trusted: false]))
     }
+
+    @Test
+    void testAddJobSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        currentBuildMock.number = 15
+
+        jenkinsUtils.addJobSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("15/abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
+    @Test
+    void testRemoveJobSideBarLinks() {
+        def actions = new ArrayList()
+        actions.add(new LinkAction("abcd/1234", "Some report link", "images/24x24/report.png"))
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.removeJobSideBarLinks("abcd/1234")
+
+        assertEquals(0, actions.size())
+    }
+
+    @Test
+    void testAddRunSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.addRunSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
 }

@@ -1,3 +1,4 @@
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -118,8 +119,8 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         helper.registerAllowedMethod("sh", [String.class], { s ->
             throw new RuntimeException('Test Error')
         })
-        thrown.expect(RuntimeException)
-        thrown.expectMessage('Test Error')
+        thrown.expect(AbortException)
+        thrown.expectMessage('ERROR: The execution of the gauge tests failed, see the log for details.')
         try {
             stepRule.step.gaugeExecuteTests(
                 script: nullScript,

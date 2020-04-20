@@ -114,6 +114,10 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
+            sh returnStatus: true, script: """
+                node --version
+                npm --version
+            """
             sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
@@ -125,7 +129,11 @@ void call(Map parameters = [:]) {
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                try {
+                    sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                } catch (e) {
+                    error "[${STEP_NAME}] ERROR: The execution of the newman tests failed, see the log for details."
+                }
             }
         }
     }

@@ -21,16 +21,22 @@ Make sure to check the Include support for continuous delivery pipeline of SAP C
 
 This will generate a project which already includes a `Jenkinsfile`, and a `pipeline_config.yml` file.
 
+!!! note "New location of pipeline configuration file"
+    The SAP Cloud SDK Pipeline recently changed the default location for the configuration file from `pipeline_config.yml` to `.config/pipeline` to have a consistent user experience with other piper pipelines.
+    For a limited amount of time starting with version v29 both locations can be used.
+    In the following the configuration file is referenced by its new location.
+
+
 In case you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 
 * [`Jenkinsfile`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/Jenkinsfile)
-* [`pipeline_config.yml`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/cf-pipeline_config.yml)
-    * Note: The file must be named `pipeline_config.yml`, despite the different name of the file template
+* [`.pipeline/config.yml`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/cf-pipeline_config.yml)
+    * Note: The file must be named `.pipeline/config.yml`, despite the different name of the file template
 
 !!! note "Using the right project structure"
     This only applies to projects created based on the _SAP Cloud Platform Business Application_ template after September 6th 2019. They must comply with the structure which is described [here](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/build-tools.md#sap-cloud-application-programming-model--mta).
 
-If your project uses SAP HANA containers (HDI), you'll need to configure `createHdiContainer` and `cloudFoundry` in the `backendIntegrationTests` stage in your `pipeline_config.yml` file as documented [here](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#backendintegrationtests)
+If your project uses SAP HANA containers (HDI), you'll need to configure `createHdiContainer` and `cloudFoundry` in the `backendIntegrationTests` stage in your `.pipeline/config.yml` file as documented [here](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#backendintegrationtests)
 
 Now, you'll need to push the code to a git repository.
 This is required because the pipeline gets your code via git.

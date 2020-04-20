@@ -61,6 +61,6 @@ class GithubPublishReleaseTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease --token thisIsATestToken'))
+        assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease'))
     }
 }

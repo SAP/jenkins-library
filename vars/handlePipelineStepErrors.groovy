@@ -41,7 +41,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
     'stepName',
     /** Defines the documented step, in case the documentation reference should point to a different step. */
     'stepNameDoc',
-    /** Passes the parameters of the step which uses the error handling onto the error handling. The list of parameters is then shown in the console output.*/
+    /** Passes the parameters of the step which uses the error handling onto the error handling. The list of parameters is then shown in the console output. The simplest case looks like this: `[ script: this ]`*/
     'stepParameters'
 ])
 
