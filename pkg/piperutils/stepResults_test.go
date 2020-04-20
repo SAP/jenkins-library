@@ -75,7 +75,6 @@ func TestPersistReportAndLinks(t *testing.T) {
 			assert.FileExists(t, reportFile)
 			reportsFileData, err := ioutil.ReadFile(reportFile)
 			require.NoError(t, err, "No error expected but got one")
-			assert.NotEmpty(t, reportsFileData)
 			assert.Equal(t, "[]", string(reportsFileData))
 		}
 	})
