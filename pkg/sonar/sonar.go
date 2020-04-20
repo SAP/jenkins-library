@@ -1,7 +1,7 @@
 package sonar
 
 import (
-	"path"
+	"path/filepath"
 
 	"github.com/magiconair/properties"
 )
@@ -19,7 +19,7 @@ type TaskReportData struct {
 
 //ReadTaskReport ...
 func ReadTaskReport(workspace string) (result TaskReportData, err error) {
-	reportFile := path.Join(workspace, ".scannerwork", "report-task.txt")
+	reportFile := filepath.Join(workspace, ".scannerwork", "report-task.txt")
 	// read file content
 	reportContent, err := properties.LoadFile(reportFile, properties.UTF8)
 	if err != nil {
