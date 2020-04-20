@@ -62,7 +62,7 @@ import (
 
 type {{ .StepName }}Options struct {
 	{{- $names := list ""}}
-	{{- range $key, $value := uniqueName .Metadata }}
+	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
 	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
 	{{- else -}}
@@ -120,7 +120,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := uniqueName .Metadata }}
+	{{- range $key, $value := uniqueName .StepParameters }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
