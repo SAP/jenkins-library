@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/magiconair/properties"
+	"github.com/pkg/errors"
 )
 
 // TaskReportData ...
@@ -27,5 +28,8 @@ func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	}
 	// read content into struct
 	err = reportContent.Decode(&result)
+	if err != nil {
+		err = errors.Wrapf(err, "decode %s", reportFile)
+	}
 	return
 }

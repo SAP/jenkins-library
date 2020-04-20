@@ -35,6 +35,6 @@ func TestReadTaskReport(t *testing.T) {
 		// assert
 		assert.Empty(t, result.ProjectKey)
 		assert.Error(t, err)
-		assert.Equal(t, "missing required key projectKey", err.Error())
+		assert.Equal(t, "decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey", err.Error())
 	})
 }
