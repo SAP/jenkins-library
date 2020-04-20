@@ -1,15 +1,59 @@
-package groovy.util
+package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import org.apache.tools.ant.taskdefs.Exec
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 class JenkinsMavenExecuteRule implements TestRule {
 
+    static class Execution {
+
+        final String pomPath
+        final List goals
+        final List defines
+        final List flags
+
+        Execution(Map parameters) {
+            this.pomPath = parameters.pomPath ?: 'pom.xml'
+            this.goals = asList(parameters.goals)
+            this.defines = asList(parameters.defines)
+            this.flags = asList(parameters.flags)
+        }
+
+        String toString() {
+            return "--file ${pomPath} : ${goals} : ${defines} : ${flags}"
+        }
+
+        @Override
+        int hashCode() {
+            return pomPath.hashCode() * goals.hashCode() * defines.hashCode() * flags.hashCode()
+        }
+
+        @Override
+        boolean equals(Object obj) {
+            if (obj == null || !obj instanceof Execution) {
+                return false
+            }
+            Execution other = (Execution) obj
+            return goals == other.goals && defines == other.defines && flags == other.flags
+        }
+
+        private List asList(def value) {
+            if (value instanceof List) {
+                return value as List
+            }
+            if (value instanceof CharSequence) {
+                return [ value ]
+            }
+            return []
+        }
+    }
+
     final BasePipelineTest testInstance
 
-    List executions = []
+    List<Execution> executions = []
 
     Map<String, String> returnValues = [:]
 
@@ -17,30 +61,19 @@ class JenkinsMavenExecuteRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    def setReturnValue(String params, String value) {
-        returnValues.put(params, value)
+    def setReturnValue(Map params, String value) {
+        returnValues.put(stringify(params), value)
     }
 
     def handleExecution(Map parameters) {
 
         String params = stringify(parameters)
-        executions.add(params)
+        executions.add(new Execution(parameters))
 
         def result = returnValues.get(params)
-
-        for (def e : returnValues.entrySet()) {
-            if (params == e.key.params) {
-                result = e.value
-                break
-            }
-        }
-        if (result instanceof Closure) {
-            result = result()
-        }
         if (!result && parameters.returnStatus) {
             result = 0
         }
-
         if (!parameters.returnStdout && !parameters.returnStatus) {
             return
         }
