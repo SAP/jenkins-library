@@ -11,8 +11,11 @@ import static groovy.json.JsonOutput.toJson
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-   //todo set env vars for npm parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
+    // No credentials required/supported as of now
     List credentials = []
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+
+    withEnv(["npm_config_registry=http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"]) {
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    }
 }
