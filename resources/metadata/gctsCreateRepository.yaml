@@ -31,7 +31,7 @@ spec:
         mandatory: true
         aliases:
           - name: password
-      - name: repositoryName
+      - name: repository
         type: string
         description: Specifies the name (ID) of the local repository
         scope:
@@ -40,7 +40,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: repositoryName
+          - name: repository
       - name: host
         type: string
         description: Specifies the host address of the ABAP system including the port

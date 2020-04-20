@@ -84,10 +84,10 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	}
 
 	reqBody := createRequestBody{
-		Repository: config.RepositoryName,
+		Repository: config.Repository,
 		Data: repoData{
-			RID:             config.RepositoryName,
-			Name:            config.RepositoryName,
+			RID:             config.Repository,
+			Name:            config.Repository,
 			Role:            config.Role,
 			Type:            config.Type,
 			VSID:            config.VSID,
@@ -129,7 +129,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	if httpErr != nil {
 		if resp.StatusCode == 500 && response.Exception == "Repository already exists" {
 			log.Entry().
-				WithField("repositoryName", config.RepositoryName).
+				WithField("repository", config.Repository).
 				Info("the repository already exists locally")
 			return nil
 		}
@@ -137,7 +137,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	}
 
 	log.Entry().
-		WithField("repositoryName", config.RepositoryName).
+		WithField("repository", config.Repository).
 		Info("successfully created the local repository")
 	return nil
 }
