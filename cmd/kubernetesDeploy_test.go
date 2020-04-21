@@ -58,11 +58,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--force",
 			"--namespace",
 			"deploymentNamespace",
+			"--set",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--wait",
 			"--timeout",
 			"400",
-			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--kube-context",
 			"testCluster",
 			"--testParam",
@@ -98,13 +98,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong init command")
-		assert.Equal(t, []string{"init"}, e.Calls[0].Params, "Wrong init parameters")
+		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong secret creation command")
+		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.Calls[0].Params, "Wrong secret creation parameters")
 
-		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret creation command")
-		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.Calls[1].Params, "Wrong secret creation parameters")
-
-		assert.Equal(t, "helm", e.Calls[2].Exec, "Wrong upgrade command")
+		assert.Equal(t, "helm", e.Calls[1].Exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
@@ -113,16 +110,16 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--force",
 			"--namespace",
 			"deploymentNamespace",
-			"--wait",
-			"--timeout",
-			"400",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"--atomic",
+			"--timeout",
+			"400s",
 			"--kube-context",
 			"testCluster",
 			"--testParam",
 			"testValue",
-		}, e.Calls[2].Params, "Wrong upgrade parameters")
+		}, e.Calls[1].Params, "Wrong upgrade parameters")
 	})
 
 	t.Run("test kubectl - create secret/kubeconfig", func(t *testing.T) {

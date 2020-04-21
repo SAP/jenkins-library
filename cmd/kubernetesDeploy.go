@@ -55,12 +55,11 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
-	initParams := []string{"init"}
 	if config.DeployTool == "helm" {
-		initParams = append(initParams, "--client-only")
-	}
-	if err := command.RunExecutable("helm", initParams...); err != nil {
-		log.Entry().WithError(err).Fatal("Helm init called failed")
+		initParams := []string{"init", "--client-only"}
+		if err := command.RunExecutable("helm", initParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Helm init called failed")
+		}
 	}
 
 	var dockerRegistrySecret bytes.Buffer
@@ -106,13 +105,17 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 		config.ChartPath,
 		"--install",
 		"--force",
-		"--namespace",
-		config.Namespace,
-		"--wait",
-		"--timeout",
-		strconv.Itoa(config.HelmDeployWaitSeconds),
+		"--namespace", config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,secret.dockerconfigjson=%v%v", containerRegistry, containerImageName, containerImageTag, dockerRegistrySecretData.Data.DockerConfJSON, ingressHosts),
+	}
+
+	if config.DeployTool == "helm" {
+		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
+	}
+
+	if config.DeployTool == "helm3" {
+		upgradeParams = append(upgradeParams, "--atomic", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
 	}
 
 	if len(config.KubeContext) > 0 {
