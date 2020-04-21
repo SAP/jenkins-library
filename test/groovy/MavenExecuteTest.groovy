@@ -7,6 +7,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsFileExistsRule
+import util.JenkinsMavenExecuteRule
 import util.JenkinsReadJsonRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
