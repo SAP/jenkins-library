@@ -256,7 +256,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 		ServerURL: config.ServerURL,
 		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
 		Duration:  duration,
-		Username:  config.User,
+		Username:  config.Username,
 		Password:  config.Password,
 	}
 

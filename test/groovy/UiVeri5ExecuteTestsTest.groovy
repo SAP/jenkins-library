@@ -153,7 +153,7 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
     @Test
     void testWithFailOnError() throws Exception {
         thrown.expect(AbortException)
-        thrown.expectMessage('[uiVeri5ExecuteTests] ERROR: The execution of the uiveri5 test failed, see the log for details.')
+        thrown.expectMessage('ERROR: The execution of the uiveri5 tests failed, see the log for details.')
         // execute test
         stepRule.step.uiVeri5ExecuteTests([
             juStabUtils: utils,
