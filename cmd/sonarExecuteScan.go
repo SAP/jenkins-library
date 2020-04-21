@@ -107,7 +107,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
 		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
-	}else{
+	} else {
 		// write links JSON
 		links := []StepResults.Path{
 			StepResults.Path{
