@@ -89,7 +89,7 @@ class JenkinsMavenExecuteRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod("mavenExecute", [Map], {
+                testInstance.helper.registerAllowedMethod("mavenExecute", [Map.class], {
                     map -> handleExecution(map)
                 })
 

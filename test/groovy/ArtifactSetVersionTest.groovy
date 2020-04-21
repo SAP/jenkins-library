@@ -66,13 +66,13 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
-        .around(mvnExecuteRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(writeFileRule)
         .around(dockerExecuteRule)
         .around(stepRule)
         .around(jenkinsCredentialsRule)
         .around(environmentRule)
+        .around(mvnExecuteRule)
 
     @Before
     void init() throws Throwable {
@@ -86,9 +86,6 @@ class ArtifactSetVersionTest extends BasePiperTest {
             sshAgentList = list
             return closure()
         })
-
-//        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
-//        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version", version)
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'pom.xml',
@@ -115,14 +112,19 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
         assertEquals('testCommitId', environmentRule.env.getGitCommitId())
 
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'pom.xml',
+            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
+            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+        ]), mvnExecuteRule.executions[1])
+
         assertThat(shellRule.shell.join(), stringContainsInOrder([
-                                            "git add .",
-                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-                                            'git tag build_1.2.3-20180101010203_testCommitId',
-                                            'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
-                                            ]
-                                        ))
+            "git add .",
+            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+            'git tag build_1.2.3-20180101010203_testCommitId',
+            'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
+            ]
+        ))
     }
 
 
@@ -130,7 +132,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void testVersioningNoPush() {
 
         stepRule.step.artifactSetVersion(
-            script: stepRule.step,
+            script: nullScript,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
             gitPushMode: 'NONE')
@@ -155,14 +157,18 @@ class ArtifactSetVersionTest extends BasePiperTest {
         // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
         // GIT related assertions here
 
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'pom.xml',
+            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
+            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+        ]), mvnExecuteRule.executions[1])
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
-                                            "git add .",
-                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-                                            'git tag build_1.2.3-20180101010203_testCommitId',
-                                            'git push https://me:topSecret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId',
-                                            ]
-                                        ))
+            "git add .",
+            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+            'git tag build_1.2.3-20180101010203_testCommitId',
+            'git push https://me:topSecret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId',
+            ]
+        ))
     }
 
     @Test
@@ -230,12 +236,12 @@ class ArtifactSetVersionTest extends BasePiperTest {
         // GIT related assertions here
 
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
-                                            "git add .",
-                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-                                            'git tag build_1.2.3-20180101010203_testCommitId',
-                                            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
-                                            ]
-                                        ))
+            "git add .",
+            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+            'git tag build_1.2.3-20180101010203_testCommitId',
+            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
+            ]
+        ))
     }
 
 
@@ -262,12 +268,12 @@ class ArtifactSetVersionTest extends BasePiperTest {
         // GIT related assertions here
 
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
-                                            "git add .",
-                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
-                                            'git tag build_1.2.3-20180101010203_testCommitId',
-                                            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
-                                            ]
-                                        ))
+            "git add .",
+            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+            'git tag build_1.2.3-20180101010203_testCommitId',
+            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
+            ]
+        ))
     }
 
     @Test
@@ -275,7 +281,11 @@ class ArtifactSetVersionTest extends BasePiperTest {
         stepRule.step.artifactSetVersion(script: stepRule.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
-        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'pom.xml',
+            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
+            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+        ]), mvnExecuteRule.executions[1])
         assertThat(shellRule.shell, not(hasItem(containsString('commit'))))
     }
 
