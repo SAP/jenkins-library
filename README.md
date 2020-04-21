@@ -36,4 +36,4 @@ otherwise in the [LICENSE file][piper-library-license]
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
 [piper-library-contribution]: .github/CONTRIBUTING.md
-[google-group]: https://groups.google.com/forum/#!forum/project-piper
+[google-group]: https://groups.google.com/forum/#!forum/project-piper 
