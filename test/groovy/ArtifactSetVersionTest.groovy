@@ -127,7 +127,6 @@ class ArtifactSetVersionTest extends BasePiperTest {
         ))
     }
 
-
     @Test
     void testVersioningNoPush() {
 
