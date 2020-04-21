@@ -26,7 +26,7 @@ func TestReadTaskReport(t *testing.T) {
 		// assert
 		assert.Empty(t, result.ProjectKey)
 		assert.Error(t, err)
-		assert.Equal(t, "open testData/missing/.scannerwork/report-task.txt: no such file or directory", err.Error())
+		assert.EqualError(t, err, "open testData/missing/.scannerwork/report-task.txt: no such file or directory")
 	})
 
 	t.Run("invalid file", func(t *testing.T) {
@@ -35,6 +35,6 @@ func TestReadTaskReport(t *testing.T) {
 		// assert
 		assert.Empty(t, result.ProjectKey)
 		assert.Error(t, err)
-		assert.Equal(t, "decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey", err.Error())
+		assert.EqualError(t, err, "decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey")
 	})
 }
