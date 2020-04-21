@@ -72,14 +72,14 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 	}
 	execRunner.SetEnv(environment)
 
-	packageJsonFiles, err := findPackageJSONFiles(utils)
+	packageJSONFiles, err := findPackageJSONFiles(utils)
 	if err != nil {
 		return err
 	}
 
 	oldWorkingDirectory, err := utils.getwd()
 
-	for _, file := range packageJsonFiles {
+	for _, file := range packageJSONFiles {
 		dir := utils.dir(file)
 		_ = utils.chdir(dir)
 		packageLockExists, err := utils.fileExists("package-lock.json")
