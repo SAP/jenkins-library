@@ -123,7 +123,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
 
 	if parsingErr != nil {
-		log.Entry().Warning(parsingErr)
+		fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, parsingErr)
 	}
 
 	if httpErr != nil {
