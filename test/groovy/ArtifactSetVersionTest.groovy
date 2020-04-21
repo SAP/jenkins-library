@@ -137,8 +137,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
             buildTool: 'maven',
             gitPushMode: 'NONE')
 
-            assertThat(loggingRule.log, containsString('Git push to remote has been skipped.'))
-            assertThat(((Iterable)shellRule.shell).join(), not(containsString('push')))
+        assertThat(loggingRule.log, containsString('Git push to remote has been skipped.'))
+        assertThat(((Iterable)shellRule.shell).join(), not(containsString('push')))
     }
 
     @Test
