@@ -142,7 +142,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 		err := createRepository(&config, nil, nil, &httpClient)
 
-		assert.EqualError(t, err, "creating the repository locally failed: a http error occurred")
+		assert.EqualError(t, err, "creating repository on the ABAP system testHost.wdf.sap.corp:50000 failed: a http error occurred")
 	})
 }
 

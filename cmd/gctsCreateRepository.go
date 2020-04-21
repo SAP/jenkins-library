@@ -97,7 +97,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	jsonBody, marshalErr := json.Marshal(reqBody)
 
 	if marshalErr != nil {
-		return fmt.Errorf("creating the repository locally failed: %w", marshalErr)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, marshalErr)
 	}
 
 	header := make(http.Header)
@@ -116,7 +116,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	}()
 
 	if resp == nil {
-		return fmt.Errorf("creating the repository locally failed: %w", httpErr)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
 	var response createResponseBody
@@ -133,12 +133,12 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 				Info("the repository already exists locally")
 			return nil
 		}
-		return fmt.Errorf("creating the repository locally failed: %w", httpErr)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
 	log.Entry().
 		WithField("repository", config.Repository).
-		Info("successfully created the local repository")
+		Infof("successfully created the repository on the ABAP system %v", config.Host)
 	return nil
 }
 
