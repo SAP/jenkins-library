@@ -104,8 +104,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	header.Set("Content-Type", "application/json")
 	header.Add("Accept", "application/json")
 
-	url := "http://" + config.Host +
-		"/sap/bc/cts_abapvcs/repository?sap-client=" + config.Client
+	url := config.Host + "/sap/bc/cts_abapvcs/repository?sap-client=" + config.Client
 
 	resp, httpErr := httpClient.SendRequest("POST", url, bytes.NewBuffer(jsonBody), header, nil)
 

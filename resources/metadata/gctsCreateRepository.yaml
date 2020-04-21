@@ -37,7 +37,7 @@ spec:
         mandatory: true
       - name: host
         type: string
-        description: Specifies the host address of the ABAP system including the port
+        description: Specifies the protocol and host adress, including the port. Please provide in the format '<protocol>://<host>:<port>'.
         scope:
         - PARAMETERS
         - STAGES

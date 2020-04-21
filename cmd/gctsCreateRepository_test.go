@@ -14,7 +14,7 @@ import (
 func TestGctsCreateRepositorySuccess(t *testing.T) {
 
 	config := gctsCreateRepositoryOptions{
-		Host:                "testHost.wdf.sap.corp:50000",
+		Host:                "http://testHost.wdf.sap.corp:50000",
 		Client:              "000",
 		Repository:          "testRepo",
 		Username:            "testUser",
@@ -98,7 +98,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 	config := gctsCreateRepositoryOptions{
-		Host:                "testHost.wdf.sap.corp:50000",
+		Host:                "http://testHost.wdf.sap.corp:50000",
 		Client:              "000",
 		Repository:          "testRepo",
 		Username:            "testUser",
@@ -142,7 +142,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 		err := createRepository(&config, nil, nil, &httpClient)
 
-		assert.EqualError(t, err, "creating repository on the ABAP system testHost.wdf.sap.corp:50000 failed: a http error occurred")
+		assert.EqualError(t, err, "creating repository on the ABAP system http://testHost.wdf.sap.corp:50000 failed: a http error occurred")
 	})
 }
 
