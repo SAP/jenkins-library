@@ -135,15 +135,6 @@ spec:
           - STAGES
           - STEPS
         default: kubectl
-      - name: helmVersion
-        type: int
-        description: Defines which major version of Helm to use.
-        mandatory: false
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 2
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
@@ -226,9 +217,7 @@ spec:
     - conditionRef: strings-equal
       params:
       - name: deployTool
-        value: helm
-      - name: helmVersion
-        value: 3
+        value: helm3
   - image: dtzar/helm-kubectl:2.12.1
     workingDir: /config
     conditions:
@@ -236,8 +225,6 @@ spec:
       params:
       - name: deployTool
         value: helm
-      - name: helmVersion
-        value: 2
   - image: dtzar/helm-kubectl:2.12.1
     workingDir: /config
     conditions:

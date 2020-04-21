@@ -23,7 +23,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
-	if config.DeployTool == "helm" {
+	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		runHelmDeploy(config, command, stdout)
 	} else {
 		runKubectlDeploy(config, command)
@@ -48,7 +48,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
 	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-	if config.HelmVersion == 2 && len(config.TillerNamespace) > 0 {
+	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
 	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
@@ -56,7 +56,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	command.Stdout(stdout)
 
 	initParams := []string{"init"}
-	if config.HelmVersion == 2 {
+	if config.DeployTool == "helm" {
 		initParams = append(initParams, "--client-only")
 	}
 	if err := command.RunExecutable("helm", initParams...); err != nil {
