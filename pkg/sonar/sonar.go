@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TaskReportData ...
+// TaskReportData encapsulates information about an executed Sonar scan task.
 // https://pkg.go.dev/github.com/magiconair/properties@v1.8.0?tab=doc#Properties.Decode
 type TaskReportData struct {
 	ProjectKey    string `properties:"projectKey"`
@@ -18,7 +18,8 @@ type TaskReportData struct {
 	ServerVersion string `properties:"serverVersion"`
 }
 
-//ReadTaskReport ...
+//ReadTaskReport expects a file ".scannerwork/report-task.txt" to exist in the provided workspace directory,
+//and parses its contents into the returned TaskReportData struct.
 func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	reportFile := filepath.Join(workspace, ".scannerwork", "report-task.txt")
 	// read file content
