@@ -133,7 +133,7 @@ func installDependencies(dir string, packageLockExists bool, yarnLockExists bool
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
 		log.Entry().Info("npm ci")
-		err = execRunner.RunExecutable("npm", "ci")
+		err = execRunner.RunExecutable("npm", "ci", "-ddd")
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func installDependencies(dir string, packageLockExists bool, yarnLockExists bool
 			"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
 			" Add this file to your version control. " +
 			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
+		err = execRunner.RunExecutable("npm", "install", "-ddd")
 		if err != nil {
 			return err
 		}
