@@ -1,7 +1,6 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
-import org.apache.tools.ant.taskdefs.Exec
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -90,7 +89,7 @@ class JenkinsMavenExecuteRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod("mavenExecute", [Map.class], {
+                testInstance.helper.registerAllowedMethod("mavenExecute", [Map], {
                     map -> handleExecution(map)
                 })
 
