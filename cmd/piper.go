@@ -18,16 +18,17 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	CustomConfig   string
-	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	ParametersJSON string
-	EnvRootPath    string
-	NoTelemetry    bool
-	StageName      string
-	StepConfigJSON string
-	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName       string
-	Verbose        bool
+	CustomConfig         string
+	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	ParametersJSON       string
+	EnvRootPath          string
+	NoTelemetry          bool
+	StageName            string
+	StepConfigJSON       string
+	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName             string
+	Verbose              bool
+	MessageOnlyLogFormat bool
 }
 
 var rootCmd = &cobra.Command{
@@ -84,6 +85,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.MessageOnlyLogFormat, "messageOnlyLogFormat", false, "Only log messages without additional fields. May improve readability in certain cases, at the cost of losing log level, timestamps and other metadata.")
 
 }
 
@@ -154,6 +156,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			log.SetVerbose(stepConfig.Config["verbose"].(bool))
 		}
 	}
+
+	log.SetFormatter(GeneralConfig.MessageOnlyLogFormat)
 
 	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)

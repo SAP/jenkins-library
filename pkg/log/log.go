@@ -25,6 +25,21 @@ func (formatter *RemoveSecretFormatterDecorator) Format(entry *logrus.Entry) (by
 	return []byte(message), nil
 }
 
+type RemoveSecretFormatterPlainMessageDecorator struct {
+	logrus.TextFormatter
+}
+
+func (formatter *RemoveSecretFormatterPlainMessageDecorator) Format(entry *logrus.Entry) (bytes []byte, err error) {
+	message := entry.Message + "\n"
+
+	for _, secret := range secrets {
+		message = strings.Replace(message, secret, "****", -1)
+	}
+
+	return []byte(message), nil
+}
+
+
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 var logger *logrus.Entry
@@ -36,8 +51,6 @@ func Entry() *logrus.Entry {
 		logger = logrus.WithField("library", LibraryRepository)
 	}
 
-	logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
-
 	return logger
 }
 
@@ -46,6 +59,14 @@ func SetVerbose(verbose bool) {
 	if verbose {
 		//Logger().Debugf("logging set to level: %s", level)
 		logrus.SetLevel(logrus.DebugLevel)
+	}
+}
+
+func SetFormatter(messageOnlyLogFormat bool) {
+	if messageOnlyLogFormat {
+		logger.Logger.SetFormatter(&RemoveSecretFormatterPlainMessageDecorator{})
+	} else {
+		logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
 	}
 }
 
