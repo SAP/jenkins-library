@@ -22,6 +22,7 @@ import (
 )
 
 type sonarSettings struct {
+	workingDir  string
 	binary      string
 	environment []string
 	options     []string
@@ -50,6 +51,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
+		workingDir:  "./",
 		binary:      "sonar-scanner",
 		environment: []string{},
 		options:     []string{},
@@ -102,7 +104,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 	// load task results
-	taskReport, err := SonarUtils.ReadTaskReport("./")
+	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
 		return err
 	}
@@ -113,7 +115,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Name:   "Sonar Web UI",
 		},
 	}
-	StepResults.PersistReportsAndLinks("sonarExecuteScan", "./", nil, links)
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 
 	return nil
 }
