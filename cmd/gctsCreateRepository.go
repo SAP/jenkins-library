@@ -130,7 +130,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 		if resp.StatusCode == 500 && response.Exception == "Repository already exists" {
 			log.Entry().
 				WithField("repository", config.Repository).
-				Info("the repository already exists locally")
+				Infof("the repository already exists on the ABAP system %v", config.Host)
 			return nil
 		}
 		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
