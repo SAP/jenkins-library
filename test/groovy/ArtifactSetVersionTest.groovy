@@ -12,6 +12,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
+import util.JenkinsMavenExecuteRule
 import util.JenkinsReadMavenPomRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -52,6 +53,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsMavenExecuteRule mvnExecuteRule = new JenkinsMavenExecuteRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
@@ -64,6 +66,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
+        .around(mvnExecuteRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(writeFileRule)
         .around(dockerExecuteRule)
@@ -84,8 +87,21 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
-        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
-        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version", version)
+//        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
+//        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version", version)
+
+        mvnExecuteRule.setReturnValue([
+            'pomPath': 'pom.xml',
+            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            'defines': '-Dexpression=project.version -DforceStdout -q',
+        ], version)
+
+        mvnExecuteRule.setReturnValue([
+            'pomPath': 'snapshot/pom.xml',
+            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            'defines': '-Dexpression=project.version -DforceStdout -q',
+        ], version)
+
         shellRule.setReturnValue("date --utc +'%Y%m%d%H%M%S'", '20180101010203')
         shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
