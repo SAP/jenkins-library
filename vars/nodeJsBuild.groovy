@@ -16,7 +16,6 @@ void call(Map parameters = [:]) {
     List credentials = []
 
     parameters['dockerOptions'] = DownloadCacheUtils.getDockerOptions(script)
-    withEnv(["npm_config_registry=http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"]) {
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
-    }
+    parameters['defaultNpmRegistry'] = "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
