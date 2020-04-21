@@ -64,6 +64,8 @@ func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData)
 }
 func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions) error {
 	execRunner := utils.getExecRunner()
+	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
+		options.DefaultNpmRegistry, options.SapNpmRegistry)
 	environment := []string{"npm_config_@sap:registry=" + options.SapNpmRegistry}
 	if options.DefaultNpmRegistry != "" {
 		environment = append(environment, "npm_config_registry="+options.DefaultNpmRegistry)
@@ -130,11 +132,13 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 func installDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
+		log.Entry().Info("npm ci")
 		err = execRunner.RunExecutable("npm", "ci")
 		if err != nil {
 			return err
 		}
 	} else if yarnLockExists {
+		log.Entry().Info("yarn install --frozen-lockfile")
 		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
 		if err != nil {
 			return err
