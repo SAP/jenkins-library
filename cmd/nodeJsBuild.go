@@ -117,16 +117,16 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 		return nil, err
 	}
 
-	var packageJsonFiles []string
+	var packageJSONFiles []string
 
 	for _, file := range unfilteredListOfPackageJSONFiles {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
-		packageJsonFiles = append(packageJsonFiles, file)
+		packageJSONFiles = append(packageJSONFiles, file)
 		log.Entry().Info("Discovered package.json file " + file)
 	}
-	return packageJsonFiles, nil
+	return packageJSONFiles, nil
 }
 
 func installDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
