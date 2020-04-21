@@ -132,7 +132,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void testVersioningNoPush() {
 
         stepRule.step.artifactSetVersion(
-            script: nullScript,
+            script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
             gitPushMode: 'NONE')
