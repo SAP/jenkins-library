@@ -76,8 +76,8 @@ pipeline {
 
         stage('build') {
             steps {
-                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
-                mtaBuild script: this
+                // prepare the application which should be uploaded below
+                // e.g. zip the project content in case of a ui5 application
             }
         }
 
@@ -160,8 +160,8 @@ pipeline {
 
         stage('build') {
             steps {
-                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
-                mtaBuild script: this
+                // prepare the application which should be uploaded below
+                // e.g. zip the project content in case of a ui5 application
             }
         }
 
