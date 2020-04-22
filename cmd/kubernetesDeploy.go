@@ -58,7 +58,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	if config.DeployTool == "helm" {
 		initParams := []string{"init", "--client-only"}
 		if err := command.RunExecutable("helm", initParams...); err != nil {
-			log.Entry().WithError(err).Fatal("Helm init called failed")
+			log.Entry().WithError(err).Fatal("Helm init call failed")
 		}
 	}
 
