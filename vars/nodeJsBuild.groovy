@@ -16,7 +16,7 @@ void call(Map parameters = [:]) {
     List credentials = []
 
     parameters['dockerOptions'] = DownloadCacheUtils.getDockerOptions(script)
-    if (DownloadCacheUtils.isEnabled()) {
+    if (DownloadCacheUtils.isEnabled(script)) {
         parameters['defaultNpmRegistry'] = DownloadCacheUtils.getNpmRegistryUri(script)
     }
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
