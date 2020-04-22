@@ -3,9 +3,11 @@ package command
 import (
 	"bytes"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -59,6 +61,8 @@ func (c *Command) RunShell(shell, script string) error {
 	in.Write([]byte(script))
 	cmd.Stdin = &in
 
+	log.Entry().Infof("running shell script: %v %v", shell, script)
+
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running shell script failed with %v", shell)
 	}
@@ -77,6 +81,8 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 	if len(c.dir) > 0 {
 		cmd.Dir = c.dir
 	}
+
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
 	appendEnvironment(cmd, c.env)
 
