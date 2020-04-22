@@ -10,6 +10,7 @@ WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
 REPOSITORY_UNDER_TEST = System.getenv('REPOSITORY_UNDER_TEST') ?: System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+BRANCH_NAME = System.getenv('TRAVIS_BRANCH') ?: System.getenv('BRANCH_NAME')
 
 EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^documentation\/.*$/,
@@ -17,6 +18,7 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^test\/.*$/
 ]
 
+println "Running tests for repository: ${REPOSITORY_UNDER_TEST}, branch: ${BRANCH_NAME}, commit: ${LIBRARY_VERSION_UNDER_TEST}"
 
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
@@ -192,8 +194,7 @@ def notifyGithub(state, description) {
 }
 
 def changeDoesNotNeedConsumerTesting() {
-    def branchName = System.getenv('TRAVIS_BRANCH') ?: System.getenv('BRANCH_NAME')
-    if (branchName == 'master') {
+    if (BRANCH_NAME == 'master') {
         return false
     }
 
