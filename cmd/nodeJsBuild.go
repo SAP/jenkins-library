@@ -15,7 +15,6 @@ type nodeJsBuildUtilsInterface interface {
 	fileExists(path string) (bool, error)
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
-	dir(path string) string
 	chdir(dir string) error
 	getExecRunner() execRunner
 }
@@ -35,10 +34,6 @@ func (u *nodeJsBuildUtilsBundle) glob(pattern string) (matches []string, err err
 
 func (u *nodeJsBuildUtilsBundle) getwd() (dir string, err error) {
 	return os.Getwd()
-}
-
-func (u *nodeJsBuildUtilsBundle) dir(fileName string) string {
-	return path.Dir(fileName)
 }
 
 func (u *nodeJsBuildUtilsBundle) chdir(dir string) error {
@@ -80,8 +75,11 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 	oldWorkingDirectory, err := utils.getwd()
 
 	for _, file := range packageJSONFiles {
-		dir := utils.dir(file)
-		_ = utils.chdir(dir)
+		dir := path.Dir(file)
+		err = utils.chdir(dir)
+		if err != nil {
+			return err
+		}
 		packageLockExists, err := utils.fileExists("package-lock.json")
 
 		if err != nil {
@@ -105,7 +103,10 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 				return err
 			}
 		}
-		_ = utils.chdir(oldWorkingDirectory)
+		err = utils.chdir(oldWorkingDirectory)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
@@ -132,13 +133,11 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 func installDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
-		log.Entry().Info("npm ci")
 		err = execRunner.RunExecutable("npm", "ci")
 		if err != nil {
 			return err
 		}
 	} else if yarnLockExists {
-		log.Entry().Info("yarn install --frozen-lockfile")
 		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
 		if err != nil {
 			return err

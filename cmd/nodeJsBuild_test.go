@@ -36,10 +36,6 @@ func (u *nodeJsBuildMockUtilsBundle) getwd() (dir string, err error) {
 	return "/project", nil
 }
 
-func (u *nodeJsBuildMockUtilsBundle) dir(fileName string) string {
-	return "/project"
-}
-
 func (u *nodeJsBuildMockUtilsBundle) chdir(dir string) error {
 	return nil
 }
@@ -50,8 +46,7 @@ func (u *nodeJsBuildMockUtilsBundle) getExecRunner() execRunner {
 
 func TestNodeJsBuild(t *testing.T) {
 	t.Run("Call without install and run-scripts", func(t *testing.T) {
-		utils := nodeJsBuildMockUtilsBundle{}
-		utils.files = map[string][]byte{}
+		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
 		options := nodeJsBuildOptions{}
@@ -63,8 +58,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project with package lock", func(t *testing.T) {
-		utils := nodeJsBuildMockUtilsBundle{}
-		utils.files = map[string][]byte{}
+		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
 		utils.files["package-lock.json"] = []byte(`abc`)
@@ -84,8 +78,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project with two package lock files", func(t *testing.T) {
-		utils := nodeJsBuildMockUtilsBundle{}
-		utils.files = map[string][]byte{}
+		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
@@ -106,8 +99,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project with yarn lock", func(t *testing.T) {
-		utils := nodeJsBuildMockUtilsBundle{}
-		utils.files = map[string][]byte{}
+		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["yarn.lock"] = []byte(`abc`)
 		options := nodeJsBuildOptions{}
@@ -123,8 +115,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project without lock file", func(t *testing.T) {
-		utils := nodeJsBuildMockUtilsBundle{}
-		utils.files = map[string][]byte{}
+		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		options := nodeJsBuildOptions{}
 		options.Install = true
@@ -137,4 +128,10 @@ func TestNodeJsBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
 	})
+}
+
+func newNodeJsBuildMockUtilsBundle() nodeJsBuildMockUtilsBundle {
+	utils := nodeJsBuildMockUtilsBundle{}
+	utils.files = map[string][]byte{}
+	return utils
 }
