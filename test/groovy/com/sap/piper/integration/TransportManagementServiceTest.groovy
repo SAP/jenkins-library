@@ -94,12 +94,12 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
 
     @Test
-    void retrieveOAuthToken__failure__status__less__than__400() {
+    void retrieveOAuthToken__failure__status__less__than__300() {
         def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
-        def responseStatusCode = 301
-        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message'
+        def responseStatusCode = 201
+        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message, since it might contain a token, if for some reason authentication service spec changes'
 
         thrown.expect(AbortException)
         thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}').")
@@ -137,12 +137,12 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
 
     @Test
-    void retrieveOAuthToken__failure__status__less__than__400__inVerboseMode() {
+    void retrieveOAuthToken__failure__status__less__than__300__inVerboseMode() {
         def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
         def clientSecret = 'mySecret'
-        def responseStatusCode = 301
-        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message'
+        def responseStatusCode = 201
+        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message, since it might contain a token, if for some reason authentication service spec changes'
 
         thrown.expect(AbortException)
         thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}').")
