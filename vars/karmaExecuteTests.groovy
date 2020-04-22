@@ -112,8 +112,12 @@ void call(Map parameters = [:]) {
             String modulePath = path
             testJobs["Karma - ${modulePath}"] = {
                 seleniumExecuteTests(options){
-                    sh "cd '${modulePath}' && ${config.installCommand}"
-                    sh "cd '${modulePath}' && ${config.runCommand}"
+                    try {
+                        sh "cd '${modulePath}' && ${config.installCommand}"
+                        sh "cd '${modulePath}' && ${config.runCommand}"
+                    } catch (e) {
+                        error "[${STEP_NAME}] ERROR: The execution of the karma tests failed, see the log for details."
+                    }
                 }
             }
         }

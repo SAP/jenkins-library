@@ -115,7 +115,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
                 return null
             }
         })
-        thrown.expectMessage('Shell call failed')
+        thrown.expectMessage('ERROR: The execution of the bats tests failed, see the log for details.')
         stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,

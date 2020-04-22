@@ -6,7 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -33,27 +32,12 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	}
 
 	output, err := maven.Execute(&options, runner)
-	if err == nil && output != "" {
+	if err == nil && config.ReturnStdout {
 		err = ioutil.WriteFile(".pipeline/maven_output.txt", []byte(output), 0644)
 	}
 	return err
 }
 
-// splitAndTrimParams iterates over the strings in params and splits each string on spaces. Each resulting
-// sub-string is then a separate entry in the returned array. Duplicate entries are eliminated.
 func splitAndTrimParams(params []string) []string {
-	if len(params) == 0 {
-		return params
-	}
-	var cleanedParams []string
-	for _, param := range params {
-		splitParams := strings.Split(param, " ")
-		for _, part := range splitParams {
-			part = strings.TrimSpace(part)
-			if part != "" && !piperutils.ContainsString(cleanedParams, part) {
-				cleanedParams = append(cleanedParams, part)
-			}
-		}
-	}
-	return cleanedParams
+	return piperutils.SplitAndTrim(params, " ")
 }

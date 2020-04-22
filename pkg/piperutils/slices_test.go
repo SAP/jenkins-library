@@ -63,3 +63,30 @@ func TestTrim(t *testing.T) {
 	assert.Contains(t, s, "apple")
 	assert.Contains(t, s, "mango")
 }
+
+func TestSplitAndTrim(t *testing.T) {
+	t.Run("Separator is not space", func(t *testing.T) {
+		// init
+		s := []string{" a", "", "-a-b --c ", "d-e", "f", " f", ""}
+		// test
+		s = SplitAndTrim(s, "-")
+		// assert
+		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
+	})
+	t.Run("Separator is space", func(t *testing.T) {
+		// init
+		s := []string{" a", " a b  c ", "d e", "f", "f ", ""}
+		// test
+		s = SplitAndTrim(s, " ")
+		// assert
+		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
+	})
+	t.Run("Separator is multi-char", func(t *testing.T) {
+		// init
+		s := []string{" a", " a** b**c ", "**d **e", "f**", "f ", ""}
+		// test
+		s = SplitAndTrim(s, "**")
+		// assert
+		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
+	})
+}
