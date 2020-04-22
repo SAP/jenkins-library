@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
+	gabs "github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -44,12 +45,12 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	httpClient.SetOptions(clientOptions)
 
 	type repoData struct {
-		RID             string `json:"rid"`
-		Name            string `json:"name"`
-		Role            string `json:"role"`
-		Type            string `json:"type"`
-		VSID            string `json:"vsid"`
-		GithubURLstring string `json:"url"`
+		RID                 string `json:"rid"`
+		Name                string `json:"name"`
+		Role                string `json:"role"`
+		Type                string `json:"type"`
+		VSID                string `json:"vsid"`
+		RemoteRepositoryURL string `json:"url"`
 	}
 
 	type createRequestBody struct {
@@ -57,41 +58,15 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 		Data       repoData `json:"data"`
 	}
 
-	type repoConfig struct {
-		Key      string `json:"key"`
-		Value    string `json:"value"`
-		Category string `json:"category"`
-	}
-
-	type createResultBody struct {
-		RID         string       `json:"rid"`
-		Name        string       `json:"name"`
-		Role        string       `json:"role"`
-		Type        string       `json:"type"`
-		VSID        string       `json:"vsid"`
-		Status      string       `json:"status"`
-		Branch      string       `json:"branch"`
-		URL         string       `json:"url"`
-		CreatedBy   string       `json:"createdBy"`
-		CreatedDate string       `json:"createdDate"`
-		Connection  string       `json:"connection"`
-		Config      []repoConfig `json:"config"`
-	}
-
-	type createResponseBody struct {
-		Repository createResultBody `json:"repository"`
-		Exception  string           `json:"exception"`
-	}
-
 	reqBody := createRequestBody{
 		Repository: config.Repository,
 		Data: repoData{
-			RID:             config.Repository,
-			Name:            config.Repository,
-			Role:            config.Role,
-			Type:            config.Type,
-			VSID:            config.VSID,
-			GithubURLstring: config.RemoteRepositoryURL,
+			RID:                 config.Repository,
+			Name:                config.Repository,
+			Role:                config.Role,
+			Type:                config.Type,
+			VSID:                config.VSID,
+			RemoteRepositoryURL: config.RemoteRepositoryURL,
 		},
 	}
 	jsonBody, marshalErr := json.Marshal(reqBody)
@@ -118,43 +93,33 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
-	var response createResponseBody
-	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+
+	if readErr != nil {
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, readErr)
+	}
+
+	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 	if parsingErr != nil {
 		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, parsingErr)
 	}
 
 	if httpErr != nil {
-		if resp.StatusCode == 500 && response.Exception == "Repository already exists" {
-			log.Entry().
-				WithField("repository", config.Repository).
-				Infof("the repository already exists on the ABAP system %v", config.Host)
-			return nil
+		if resp.StatusCode == 500 {
+			if exception, ok := response.Path("exception").Data().(string); ok && exception == "Repository already exists" {
+				log.Entry().
+					WithField("repository", config.Repository).
+					Infof("the repository already exists on the ABAP system %v", config.Host)
+				return nil
+			}
 		}
+		log.Entry().Errorf("a HTTP error occured! Response body: %v", response)
 		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
 	log.Entry().
 		WithField("repository", config.Repository).
-		Infof("successfully created the repository on the ABAP system %v", config.Host)
-	return nil
-}
-
-func parseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
-	if resp == nil {
-		return fmt.Errorf("cannot parse HTTP response with value <nil>")
-	}
-
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return fmt.Errorf("cannot read HTTP response body: %w", readErr)
-	}
-
-	marshalErr := json.Unmarshal(bodyText, &response)
-	if marshalErr != nil {
-		return fmt.Errorf("cannot parse HTTP response as JSON: %w", marshalErr)
-	}
-
+		Infof("successfully created the repository on ABAP system %v", config.Host)
 	return nil
 }
