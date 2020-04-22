@@ -1,20 +1,32 @@
-name: Integration Tests
+name: Integration Tests (Pull Request)
 
 on:
-  push:
-    branches:
-      - master
-      - it/**
+  issue_comment:
+    types: [created]
 
 jobs:
 
   consumer-tests:
     name: Consumer Tests
+
     runs-on: ubuntu-latest
+    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
       - uses: actions/setup-java@v1
         with:
           java-version: '11'
@@ -22,13 +34,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install groovy -y
       - name: setup git
         run: git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(echo ${GITHUB_REF#refs/heads/})"
       - name: run consumer tests
         run: cd consumer-test && groovy consumerTestController.groovy
         env:
-          REPOSITORY_UNDER_TEST: ${{ github.repository }}
+          REPOSITORY_UNDER_TEST: ${{ steps.repository.outputs.repository }}
           BRANCH_NAME: ${{ steps.branchname.outputs.branchname }}
           BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
           INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
@@ -42,10 +51,23 @@ jobs:
     name: Go Integration Tests
 
     runs-on: ubuntu-latest
+    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
+      - name: get pull request url
+        id: pullrequest
+        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
+      - name: get repository
+        id: repository
+        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          repository: ${{ steps.repository.outputs.repository }}
+          ref: ${{ steps.branchname.outputs.branchname }}
       - name: get commit id
         id: commitId
         run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"

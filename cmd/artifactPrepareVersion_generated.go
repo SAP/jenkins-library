@@ -59,7 +59,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }
 
