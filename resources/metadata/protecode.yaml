@@ -136,7 +136,10 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: user
+    - name: username
+      aliases:
+        - name: user
+          deprecated: true
       type: string
       description: User which is used for the protecode scan
       mandatory: true
@@ -144,6 +147,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      secret: true
     - name: password
       type: string
       description: Password which is used for the user
@@ -152,6 +156,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      secret: true
     - name: artifactVersion
       type: string
       description: The version of the artifact to allow identification in protecode backend

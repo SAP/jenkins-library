@@ -15,11 +15,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
+	workingDir  string
 	binary      string
 	environment []string
 	options     []string
@@ -38,7 +41,7 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) {
+func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
 	// reroute command output to logging framework
 	runner.Stdout(log.Entry().Writer())
@@ -48,85 +51,110 @@ func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) 
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
+		workingDir:  "./",
 		binary:      "sonar-scanner",
 		environment: []string{},
 		options:     []string{},
 	}
 
-	if err := runSonar(options, &client, &runner); err != nil {
+	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 }
 
-func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
-	if len(options.Host) > 0 {
-		sonar.addEnvironment("SONAR_HOST_URL=" + options.Host)
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
+	if len(config.Host) > 0 {
+		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
 	}
-	if len(options.Token) > 0 {
-		sonar.addEnvironment("SONAR_TOKEN=" + options.Token)
+	if len(config.Token) > 0 {
+		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
 	}
-	if len(options.Organization) > 0 {
-		sonar.addOption("sonar.organization=" + options.Organization)
+	if len(config.Organization) > 0 {
+		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(options.ProjectVersion) > 0 {
-		sonar.addOption("sonar.projectVersion=" + options.ProjectVersion)
+	if len(config.ProjectVersion) > 0 {
+		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
+		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
 	}
-	if err := handlePullRequest(options); err != nil {
+	if err := handlePullRequest(config); err != nil {
 		return err
 	}
-	if err := loadSonarScanner(options.SonarScannerDownloadURL, client); err != nil {
+	if err := loadSonarScanner(config.SonarScannerDownloadURL, client); err != nil {
 		return err
 	}
-	if err := loadCertificates(options.CustomTLSCertificateLinks, client, runner); err != nil {
+	if err := loadCertificates(config.CustomTLSCertificateLinks, client, runner); err != nil {
 		return err
 	}
+
+	if len(config.Options) > 0 {
+		sonar.options = append(sonar.options, config.Options...)
+	}
+
+	sonar.options = SliceUtils.PrefixIfNeeded(SliceUtils.Trim(sonar.options), "-D")
 
 	log.Entry().
 		WithField("command", sonar.binary).
 		WithField("options", sonar.options).
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
-
-	sonar.options = SliceUtils.Prefix(SliceUtils.Trim(sonar.options), "-D")
-
-	if len(options.Options) > 0 {
-		sonar.addOption(options.Options)
-	}
+	// execute scan
 	runner.SetEnv(sonar.environment)
-	return runner.RunExecutable(sonar.binary, sonar.options...)
+	err := runner.RunExecutable(sonar.binary, sonar.options...)
+	if err != nil {
+		return err
+	}
+	// load task results
+	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
+	} else {
+		// write links JSON
+		links := []StepResults.Path{
+			StepResults.Path{
+				Target: taskReport.DashboardURL,
+				Name:   "Sonar Web UI",
+			},
+		}
+		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	}
+	return nil
 }
 
-func handlePullRequest(options sonarExecuteScanOptions) error {
-	if len(options.ChangeID) > 0 {
-		if options.LegacyPRHandling {
+func handlePullRequest(config sonarExecuteScanOptions) error {
+	if len(config.ChangeID) > 0 {
+		if config.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
 			sonar.addOption("sonar.analysis.mode=preview")
-			sonar.addOption("sonar.github.pullRequest=" + options.ChangeID)
-			if len(options.GithubAPIURL) > 0 {
-				sonar.addOption("sonar.github.endpoint=" + options.GithubAPIURL)
+			sonar.addOption("sonar.github.pullRequest=" + config.ChangeID)
+			if len(config.GithubAPIURL) > 0 {
+				sonar.addOption("sonar.github.endpoint=" + config.GithubAPIURL)
 			}
-			if len(options.GithubToken) > 0 {
-				sonar.addOption("sonar.github.oauth=" + options.GithubToken)
+			if len(config.GithubToken) > 0 {
+				sonar.addOption("sonar.github.oauth=" + config.GithubToken)
 			}
-			if len(options.Owner) > 0 && len(options.Repository) > 0 {
-				sonar.addOption("sonar.github.repository=" + options.Owner + "/" + options.Repository)
+			if len(config.Owner) > 0 && len(config.Repository) > 0 {
+				sonar.addOption("sonar.github.repository=" + config.Owner + "/" + config.Repository)
 			}
-			if options.DisableInlineComments {
-				sonar.addOption("sonar.github.disableInlineComments=" + strconv.FormatBool(options.DisableInlineComments))
+			if config.DisableInlineComments {
+				sonar.addOption("sonar.github.disableInlineComments=" + strconv.FormatBool(config.DisableInlineComments))
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
-			provider := strings.ToLower(options.PullRequestProvider)
+			provider := strings.ToLower(config.PullRequestProvider)
 			if provider == "github" {
-				sonar.addOption("sonar.pullrequest.github.repository=" + options.Owner + "/" + options.Repository)
+				if len(config.Owner) > 0 && len(config.Repository) > 0 {
+					sonar.addOption("sonar.pullrequest.github.repository=" + config.Owner + "/" + config.Repository)
+				}
 			} else {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
-			sonar.addOption("sonar.pullrequest.key=" + options.ChangeID)
-			sonar.addOption("sonar.pullrequest.base=" + options.ChangeTarget)
-			sonar.addOption("sonar.pullrequest.branch=" + options.ChangeBranch)
+			sonar.addOption("sonar.pullrequest.key=" + config.ChangeID)
+			sonar.addOption("sonar.pullrequest.base=" + config.ChangeTarget)
+			sonar.addOption("sonar.pullrequest.branch=" + config.ChangeBranch)
 			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
+	} else if len(config.BranchName) > 0 {
+		sonar.addOption("sonar.branch.name=" + config.BranchName)
 	}
 	return nil
 }
