@@ -54,10 +54,12 @@ func generateConfig() error {
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
-	customConfig, err := configOptions.openFile(GeneralConfig.CustomConfig)
+	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
+
+	customConfig, err := configOptions.openFile(projectConfigFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return errors.Wrapf(err, "config: open configuration file '%v' failed", GeneralConfig.CustomConfig)
+			return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
 		}
 		customConfig = nil
 	}

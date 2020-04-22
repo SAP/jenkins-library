@@ -50,7 +50,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }
 
@@ -69,7 +69,11 @@ func MtaBuildCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("mtaBuild")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mtaBuild", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "mtaBuild", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

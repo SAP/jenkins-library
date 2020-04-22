@@ -1,32 +1,20 @@
-name: Trigger Integration Tests
+name: Integration Tests
 
 on:
-  issue_comment:
-    types: [created]
+  push:
+    branches:
+      - master
+      - it/**
 
 jobs:
 
   consumer-tests:
     name: Consumer Tests
-
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
       - name: checkout
         uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
       - uses: actions/setup-java@v1
         with:
           java-version: '11'
@@ -37,8 +25,8 @@ jobs:
       - name: run consumer tests
         run: cd consumer-test && groovy consumerTestController.groovy
         env:
-          REPOSITORY_UNDER_TEST: ${{ steps.repository.outputs.repository }}
-          BRANCH_NAME: ${{ steps.branchname.outputs.branchname }}
+          REPOSITORY_UNDER_TEST: ${{ github.repository }}
+          BRANCH_NAME: ${GITHUB_REF#refs/heads/}
           BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
           INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
           CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
@@ -51,23 +39,10 @@ jobs:
     name: Go Integration Tests
 
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
-      - name: get pull request url
-        id: pullrequest
-        run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
-      - name: get branch name
-        id: branchname
-        run: echo "::set-output name=branchname::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.ref' | sed 's/\"//g')"
-      - name: get repository
-        id: repository
-        run: echo "::set-output name=repository::$(curl ${{ steps.pullrequest.outputs.pullrequest }} | jq '.head.repo.full_name' | sed 's/\"//g')"
       - name: checkout
         uses: actions/checkout@v2
-        with:
-          repository: ${{ steps.repository.outputs.repository }}
-          ref: ${{ steps.branchname.outputs.branchname }}
       - name: get commit id
         id: commitId
         run: echo "::set-output name=commitId::$(git log --format=%H -n 1)"
