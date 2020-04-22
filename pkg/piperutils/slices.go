@@ -53,3 +53,21 @@ func Trim(in []string) (out []string) {
 	}
 	return
 }
+
+// SplitAndTrim iterates over the strings in the given slice and splits each on the provided separator.
+// Each resulting sub-string is then a separate entry in the returned array. Duplicate and empty entries are eliminated.
+func SplitAndTrim(in []string, separator string) (out []string) {
+	if len(in) == 0 {
+		return in
+	}
+	for _, entry := range in {
+		entryParts := strings.Split(entry, separator)
+		for _, part := range entryParts {
+			part = strings.TrimSpace(part)
+			if part != "" && !ContainsString(out, part) {
+				out = append(out, part)
+			}
+		}
+	}
+	return
+}
