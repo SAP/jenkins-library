@@ -109,7 +109,7 @@ class MavenExecuteTest extends BasePiperTest {
         })
 
         // test
-        String receivedOutput = stepRule.step.mavenExecute(
+        stepRule.step.mavenExecute(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
             script: nullScript,
