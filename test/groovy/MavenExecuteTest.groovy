@@ -25,6 +25,7 @@ class MavenExecuteTest extends BasePiperTest {
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     private List withEnvArgs = []
 
@@ -38,7 +39,7 @@ class MavenExecuteTest extends BasePiperTest {
         .around(shellCallRule)
         .around(stepRule)
         .around(writeFileRule)
-        .around(new JenkinsFileExistsRule(this, []))
+        .around(fileExistsRule)
 
     @Before
     void init() {
@@ -68,5 +69,54 @@ class MavenExecuteTest extends BasePiperTest {
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
             containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper mavenExecute'))
+    }
+
+    @Test
+    void testOutputIsReturned() {
+        // init
+        String outputFile = '.pipeline/maven_output.txt'
+        String expectedOutput = 'the output'
+        fileExistsRule.registerExistingFile(outputFile)
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            if (file == outputFile) {
+                return expectedOutput
+            }
+            return ''
+        })
+
+        // test
+       String receivedOutput = stepRule.step.mavenExecute(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            script: nullScript,
+            returnStdout: true,
+        )
+
+        // asserts
+        assertThat(receivedOutput, is(expectedOutput))
+    }
+
+    @Test
+    void testOutputIsMissing() {
+        // init
+        fileExistsRule.setExistingFiles([])
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            return ''
+        })
+        String errorMessage = ''
+        helper.registerAllowedMethod('error', [String], {message ->
+            errorMessage = message
+        })
+
+        // test
+        String receivedOutput = stepRule.step.mavenExecute(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            script: nullScript,
+            returnStdout: true,
+        )
+
+        // asserts
+        assertThat(errorMessage, containsString('Internal error. A text file with the contents of the maven output was expected'))
     }
 }

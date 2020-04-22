@@ -17,7 +17,9 @@ def call(Map parameters = [:]) {
     if (parameters.returnStdout) {
         String outputFile = '.pipeline/maven_output.txt'
         if (!fileExists(outputFile)) {
-            error "Text file with contents of maven output does not exist at '$outputFile'"
+            error "[$STEP_NAME] Internal error. A text file with the contents of the maven output was expected " +
+                "but does not exist at '$outputFile'. " +
+                "Please file a ticket at https://github.com/SAP/jenkins-library/issues/new/choose"
         }
         output = readFile(outputFile)
     }
