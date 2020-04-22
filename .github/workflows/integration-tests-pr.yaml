@@ -51,7 +51,7 @@ jobs:
     name: Go Integration Tests
 
     runs-on: ubuntu-latest
-    if: github.event.comment.body == '/it' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
+    if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
       - name: get pull request url
