@@ -33,7 +33,7 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	}
 
 	output, err := maven.Execute(&options, runner)
-	if err == nil && output != "" {
+	if err == nil && config.ReturnStdout {
 		err = ioutil.WriteFile(".pipeline/maven_output.txt", []byte(output), 0644)
 	}
 	return err
