@@ -2,32 +2,14 @@
 
 Build an application based on SAPUI5 or SAP Fiori with Jenkins and attach the build result to a transport request in an SAP ABAP system.
 
-Generally, you can choose between two technical ways to attach a binary to an ABAP transport request: We support uploads through RFC and through OData. Which option to use depends on the version of your ABAP system. For AS ABAP 7.50 SP08, 7.51 SP07, or 7.52 SP03 and newer, use the OData-based upload, for older versions, use the RFC-based upload.
-
 ## Prerequisites
 
 * You have set up your [Docker environment](https://docs.docker.com/get-started/).
 * You have set up project “Piper”. See [guided tour](../../../guidedtour/).
 * You have a transport request. In General it is possible to create a transport request on the fly. But the example here is based on an already existing transport request.
-* Depending on the version of the ABAP system: Docker image for attaching binaries to transport requests via RFC available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/node-rfc)
-
-### Project Prerequisites
-
-This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
-
-On the project level, provide and adjust the following template:
-
-| File Name | Description | Position |
-|-----|-----|-----|
-| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/rfc-upload/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
-
-Depending on the modules in your MTA, additional configuration files are required, e.g. `pom.xml`  or `package.json`.
+* Docker image for attaching binaries to transport requests via RFC available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/node-rfc)
 
 ## Context
-
-This scenario combines various different steps to create a complete pipeline.
-
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multitarget application (MTA) concept and how to attach the build result to a transport request inside an ABAP system. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [transportRequestUploadFile](../../../steps/transportRequestUploadFile/) steps.
 
 In case of an RFC based upload the binary is not streamed to the ABAP endpoint. Instead an URL pointing to the binary needs to be provided. Hence the binary must be published first so that it can be accessed via HTTP. This can happen by uploading the binary to a blob store or by archiving the artifact on Jenkins. The corresponding URL needs to be provided when the artifact is attached to the transport request.
 
@@ -51,9 +33,8 @@ By default, the Git commits between the merge base with the base branch (default
 
 ## Examples
 
-### Upload via RFC
 
-#### Jenkinsfile
+### Jenkinsfile
 
 Following the convention for pipeline definitions, use a `Jenkinsfile`, which resides in the root directory of your development sources.
 
@@ -77,21 +58,22 @@ pipeline {
         stage('build') {
             steps {
                 // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
-                mtaBuild script: this
+                zip archive: <true, false>, dir: '<THE_DIR>', zipFile: '<DEPLOYABLE>'
             }
         }
 
         stage('publish') {
             steps {
                 // This uploads the binary into a blob store so that it can be attached to a transport request later
-                sh "curl --upload-file <deployable> <BLOB_STORE/path/to/application>"
-
-                // OR (in case there is no BLOB_STORE available)
-
-                // This makes the artifact available on Nexus. The URL is the following:
+                // The URL is the following:
                 // <JENKINS_URL>/job/<JOB_NAME>/<BUILD_NUMBER>/artifact/<DEPLOYABLE>. Nota bene: this format is not an Jenkins API.
                 // The build number can be retrieved during the build through ${currentBuild.number}
-                archiveArtifacts artifacts: <deployable>
+                sh "curl --upload-file <DEPLOYABLE> <BLOB_STORE/path/to/application>"
+
+
+                // OR (in case there is no BLOB_STORE available)
+                // (zip statement above already is also capable of archiving artifacts (see property 'archive'))
+                archiveArtifacts artifacts: <DEPLOYABLE>
             }
         }
 
@@ -107,7 +89,7 @@ pipeline {
 }
 ```
 
-#### Configuration (`.pipeline/config.yml`)
+### Configuration (`.pipeline/config.yml`)
 
 This is a basic configuration example, which is also located in the sources of the project.
 
@@ -135,64 +117,6 @@ steps:
         abapPackage: '/abap/package'
 ```
 
-### Upload via ODATA
-
-#### Jenkinsfile
-
-Following the convention for pipeline definitions, use a `Jenkinsfile`, which resides in the root directory of your development sources.
-
-```groovy
-@Library('piper-lib-os') _
-
-
-pipeline {
-
-    agent any
-
-    stages {
-        stage("prepare") {
-            steps {
-                deleteDir()
-                checkout scm
-                setupCommonPipelineEnvironment script: this
-            }
-        }
-
-        stage('build') {
-            steps {
-                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
-                mtaBuild script: this
-            }
-        }
-
-        // This attaches the deployable to a transport request,
-        // if you have a prior call to mtaBuild, this step sets the deployable
-        stage('attach') {
-            steps {
-                transportRequestUploadFile script: this,
-                                           transportRequestId: '<TRANSPORT_REQUEST_ID>' // This can be omitted if present inside a Git commit message
-            }
-        }
-    }
-}
-```
-
-#### Configuration (`.pipeline/config.yml`)
-
-This is a basic configuration example, which is also located in the sources of the project.
-
-```yaml
-general:
-  changeManagement:
-    type: 'CTS'
-    endpoint: 'the ODATA endpoint' # e.g. 'http://example.org/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV/'
-    credentialsId: 'CTS' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
-    clientOpts: '' # additional java options, e.g. '-Djavax.net.ssl.trustStore=/path/to/truststore.jks'
-```
-
-## Parameters
-
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
 * [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/)
