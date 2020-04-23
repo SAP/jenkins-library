@@ -1,5 +1,7 @@
 metadata:
   name: npmExecuteScripts
+  aliases:
+    - name: executeNpm
   description: Execute npm run scripts on all npm packages in a project
   longDescription: |
     Execute npm run scripts in all package json files, if they implement the scripts.

@@ -72,7 +72,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "npmExecuteScripts",
-			Aliases: []config.Alias{},
+			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
