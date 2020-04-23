@@ -1,4 +1,5 @@
 import com.sap.piper.BashUtils
+import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
@@ -29,6 +30,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+            "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
             String defaultConfigArgs = getCustomDefaultConfigsArg()
@@ -38,12 +40,17 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Config: ${config}"
 
-            dockerWrapper(script, config) {
-                credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+            try {
+                dockerWrapper(script, config) {
+                    credentialWrapper(config, credentialInfo) {
+                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    }
+                    jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                 }
-                jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+            } catch (ex) {
+                handleErrorDetails(stepName, ex)
             }
+
         }
     }
 }
@@ -128,4 +135,18 @@ void credentialWrapper(config, List credentialInfo, body) {
     } else {
         body()
     }
+}
+
+void handleErrorDetails(String stepName, Exception ex) {
+    def errorDetailsFileName = "${stepName}_errorDetails.json"
+    if (fileExists(file: errorDetailsFileName)) {
+        def errorDetails = readJSON(file: errorDetailsFileName)
+        def errorCategory = ""
+        if (errorDetails.category) {
+            errorCategory = " (category: ${errorDetails.category})"
+            DebugReport.instance.failedBuild.category = errorDetails.category
+        }
+        error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.message}"
+    }
+    error "[${stepName}] Step execution failed, please see log for details. Error: ${ex}"
 }

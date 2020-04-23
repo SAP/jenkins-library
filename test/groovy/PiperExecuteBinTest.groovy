@@ -1,3 +1,4 @@
+import com.sap.piper.DebugReport
 import com.sap.piper.JenkinsUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
@@ -42,6 +43,9 @@ class PiperExecuteBinTest extends BasePiperTest {
     void init() {
         credentials = []
 
+        // Clear DebugReport to avoid left-overs from another UnitTest
+        DebugReport.instance.failedBuild = [:]
+
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
@@ -57,6 +61,10 @@ class PiperExecuteBinTest extends BasePiperTest {
                 return [[target: "1234.pdf", mandatory: true]]
             if(m.file == 'testStep_links.json')
                 return []
+            if(m.file == 'testStepCategory_errorDetails.json')
+                return [message: 'detailed error', category: 'testCategory']
+            if(m.file == 'testStep_errorDetails.json')
+                return [message: 'detailed error']
             if(m.text != null)
                 return new JsonSlurper().parseText(m.text)
         })
@@ -244,6 +252,52 @@ class PiperExecuteBinTest extends BasePiperTest {
             [],
             true,
             false
+        )
+    }
+
+    @Test
+    void testErrorWithCategory() {
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[testStepCategory] Step execution failed (category: testCategory). Error: detailed error")
+
+        try {
+            stepRule.step.piperExecuteBin(
+                [
+                    juStabUtils: utils,
+                    jenkinsUtilsStub: jenkinsUtils,
+                    testParam: "This is test content",
+                    script: nullScript
+                ],
+                'testStepCategory',
+                'metadata/test.yaml',
+                []
+            )
+        } catch (ex) {
+            assertThat(DebugReport.instance.failedBuild.category, is('testCategory'))
+            throw ex
+        }
+
+    }
+
+    @Test
+    void testErrorWithoutCategory() {
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[testStep] Step execution failed. Error: detailed error")
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            []
         )
     }
 }
