@@ -2,7 +2,7 @@ metadata:
   name: npmExecuteScripts
   description: Execute npm run scripts with optional install before
   longDescription: |
-    todo
+    Execute npm run scripts in all package json files, if they implement the scripts
 spec:
   inputs:
     params:
