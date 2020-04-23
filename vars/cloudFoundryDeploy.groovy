@@ -362,8 +362,10 @@ private prepareBlueGreenCfNativeDeploy(config,script) {
         writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
     }
 
-    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-    sh "chmod +x ${config.smokeTestScript}"
+    if (config.smokeTestScript) {
+        config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+        sh "chmod +x ${config.smokeTestScript}"
+    }
 
     config.deployCommand = 'blue-green-deploy'
     cfManifestSubstituteVariables(
