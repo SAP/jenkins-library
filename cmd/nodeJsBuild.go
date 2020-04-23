@@ -124,6 +124,11 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
+		projectStructure := FileUtils.ProjectStructure{}
+		isMta := projectStructure.UsesMta()
+		if isMta && strings.Contains(file, "gen/") {
+			continue
+		}
 		packageJSONFiles = append(packageJSONFiles, file)
 		log.Entry().Info("Discovered package.json file " + file)
 	}
