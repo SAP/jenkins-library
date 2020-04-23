@@ -3,10 +3,10 @@
 **Table of contents:**
 
 1. [Getting started](#getting-started)
-1. [Build the project](#build-the-project_)
+1. [Build the project](build-the-project)
 1. [Generating step framework](#generating-step-framework)
-1. [Logging](#logging)
-1. [Error handling](#error-handling)
+1. [Best practices for writing piper-go steps](#best-practices-for-writing-piper-go-steps)
+1. [Testing](#testing)
 1. [Debugging](#debugging)
 1. [Release](#release)
 
@@ -122,9 +122,12 @@ There are certain extensions:
 
 ## Best practices for writing piper-go steps
 
-Implementing a new step starts by adding a new yaml file in `resources/metadata/` and running the step generator. This
-creates most of the boiler-plate code for the step's implementation in `cmd/`. There are four files per step based on
-the name given within the yaml:
+1. [Logging](#logging)
+1. [Error handling](#error-handling)
+
+Implementing a new step starts by adding a new yaml file in `resources/metadata/` and running
+the [step generator](#generating-step-framework). This creates most of the boiler-plate code for the
+step's implementation in `cmd/`. There are four files per step based on the name given within the yaml:
 
 1. `cmd/<step>.go` - contains the skeleton of your step implementation.
 1. `cmd/<step>_test.go` - write your unit tests here.
@@ -201,7 +204,11 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 It has proven a good practice to bubble up errors until the runtime entry function  and only
 there exit via the logging framework (see also #Logging).
 
-## Testing & Mocking
+## Testing
+
+1. [Mocking](#mocking)
+1. [Mockable Interface](#mockable-interface)
+1. [Global function pointers](global-function-pointers)
 
 Unit tests are done using basic `golang` means.
 
