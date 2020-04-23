@@ -288,7 +288,8 @@ func runStep(options *stepOptions, utils myStepUtils) error {
 }
 ```
 
-In your tests, you would provide a mocking implementation of this interface provide that to tested functions.
+In your tests, you would provide a mocking implementation of this interface pass instances
+of that to the functions under test.
 
 #### Global Function Pointers
 
