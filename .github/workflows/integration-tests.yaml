@@ -22,11 +22,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install groovy -y
       - name: setup git
         run: git config --global user.email "piper-testing-bot@example.com" && git config --global user.name "piper-testing-bot"
+      - name: get branch name
+        id: branchname
+        run: echo "::set-output name=branchname::$(echo ${GITHUB_REF#refs/heads/})"
       - name: run consumer tests
         run: cd consumer-test && groovy consumerTestController.groovy
         env:
           REPOSITORY_UNDER_TEST: ${{ github.repository }}
-          BRANCH_NAME: ${GITHUB_REF#refs/heads/}
+          BRANCH_NAME: ${{ steps.branchname.outputs.branchname }}
           BUILD_WEB_URL: https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}
           INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
           CX_INFRA_IT_CF_USERNAME: ${{ secrets.CX_INFRA_IT_CF_USERNAME }}
