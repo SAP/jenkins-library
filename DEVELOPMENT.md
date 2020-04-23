@@ -332,7 +332,8 @@ func TestSomeFunction() {
 
 Both approaches have their own benefits. Global function pointers require less preparation
 in the actual implementation and give great flexibility in the tests, while mocking interfaces
-tend to result in more code re-use and slim down the tests.
+tend to result in more code re-use and slim down the tests. The mocking implementation of a
+utils interface can facilitate implementations of related functions to be based on shared data.
 
 ## Debugging
 
