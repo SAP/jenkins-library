@@ -16,10 +16,12 @@ type nodeJsBuildUtilsInterface interface {
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
 	chdir(dir string) error
+	usesMta() bool
 	getExecRunner() execRunner
 }
 
 type nodeJsBuildUtilsBundle struct {
+	projectStructure FileUtils.ProjectStructure
 	fileUtils  FileUtils.Files
 	execRunner *command.Command
 }
@@ -38,6 +40,10 @@ func (u *nodeJsBuildUtilsBundle) getwd() (dir string, err error) {
 
 func (u *nodeJsBuildUtilsBundle) chdir(dir string) error {
 	return os.Chdir(dir)
+}
+
+func (u *nodeJsBuildUtilsBundle) usesMta() bool {
+	return u.projectStructure.UsesMta()
 }
 
 func (u *nodeJsBuildUtilsBundle) getExecRunner() execRunner {
@@ -124,9 +130,8 @@ func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
-		projectStructure := FileUtils.ProjectStructure{}
-		isMta := projectStructure.UsesMta()
-		if isMta && strings.Contains(file, "gen/") {
+		isMta := utils.usesMta()
+		if isMta && (strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/")) {
 			continue
 		}
 		packageJSONFiles = append(packageJSONFiles, file)

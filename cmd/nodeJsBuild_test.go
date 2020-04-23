@@ -11,6 +11,7 @@ import (
 type nodeJsBuildMockUtilsBundle struct {
 	execRunner mock.ExecMockRunner
 	files      map[string][]byte
+	mta          bool
 }
 
 func (u *nodeJsBuildMockUtilsBundle) fileExists(path string) (bool, error) {
@@ -40,6 +41,10 @@ func (u *nodeJsBuildMockUtilsBundle) chdir(dir string) error {
 	return nil
 }
 
+func (m *nodeJsBuildMockUtilsBundle) usesMta() bool {
+	return m.mta
+}
+
 func (u *nodeJsBuildMockUtilsBundle) getExecRunner() execRunner {
 	return &u.execRunner
 }
@@ -59,8 +64,11 @@ func TestNodeJsBuild(t *testing.T) {
 
 	t.Run("Project with package lock", func(t *testing.T) {
 		utils := newNodeJsBuildMockUtilsBundle()
+		utils.mta = true
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
+		utils.files["gen/bar/package.json"] = []byte(`abc`) // is filtered out in mta projects
+		utils.files["foo/gen/package.json"] = []byte(`abc`) // is filtered out in mta projects
 		utils.files["package-lock.json"] = []byte(`abc`)
 		options := nodeJsBuildOptions{}
 		options.Install = true
