@@ -131,8 +131,7 @@ step's implementation in `cmd/`. There are four files per step based on the name
 
 1. `cmd/<step>.go` - contains the skeleton of your step implementation.
 1. `cmd/<step>_test.go` - write your unit tests here.
-1. `cmd/<step>_generated.go` - contains the generated boiler plate code, and a dedicated type definition for
-your step's options.
+1. `cmd/<step>_generated.go` - contains the generated boiler plate code, and a dedicated type definition for your step's options.
 1. `cmd/<step>_generated_test.go` - contains a simple unit test for the generated part.
 
 You never edit in the generated parts. If you need to make changes, you make them in the yaml and re-run the step
@@ -229,6 +228,7 @@ func TestNameOfFunctionUnderTest(t *testing.T) {
     })
 }
 ```
+
 This will also structure the test output for better readability.
 
 ### Mocking
