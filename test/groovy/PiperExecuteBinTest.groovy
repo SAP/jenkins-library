@@ -53,7 +53,10 @@ class PiperExecuteBinTest extends BasePiperTest {
             return closure()
         })
 
-        helper.registerAllowedMethod('fileExists', [Map.class], {
+        helper.registerAllowedMethod('fileExists', [Map.class], {m ->
+            if (m.file == 'noDetailsStep_errorDetails.json') {
+                return false
+            }
             return true
         })
         helper.registerAllowedMethod("readJSON", [Map], { m ->
@@ -257,6 +260,7 @@ class PiperExecuteBinTest extends BasePiperTest {
 
     @Test
     void testErrorWithCategory() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
@@ -283,6 +287,7 @@ class PiperExecuteBinTest extends BasePiperTest {
 
     @Test
     void testErrorWithoutCategory() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
@@ -296,6 +301,27 @@ class PiperExecuteBinTest extends BasePiperTest {
                 script: nullScript
             ],
             'testStep',
+            'metadata/test.yaml',
+            []
+        )
+    }
+
+    @Test
+    void testErrorNoDetails() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[noDetailsStep] Step execution failed, please see log for details. Error: hudson.AbortException: exit code 1")
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'noDetailsStep',
             'metadata/test.yaml',
             []
         )
