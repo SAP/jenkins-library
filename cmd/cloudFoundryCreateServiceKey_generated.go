@@ -26,19 +26,26 @@ type cloudFoundryCreateServiceKeyOptions struct {
 
 // CloudFoundryCreateServiceKeyCommand cloudFoundryCreateServiceKey
 func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
+	const STEP_NAME = "cloudFoundryCreateServiceKey"
+
 	metadata := cloudFoundryCreateServiceKeyMetadata()
 	var stepConfig cloudFoundryCreateServiceKeyOptions
 	var startTime time.Time
 
 	var createCloudFoundryCreateServiceKeyCmd = &cobra.Command{
-		Use:   "cloudFoundryCreateServiceKey",
+		Use:   STEP_NAME,
 		Short: "cloudFoundryCreateServiceKey",
 		Long:  `Create CloudFoundryServiceKey`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("cloudFoundryCreateServiceKey")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "cloudFoundryCreateServiceKey", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -55,7 +62,7 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "cloudFoundryCreateServiceKey")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			cloudFoundryCreateServiceKey(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

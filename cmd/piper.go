@@ -18,6 +18,7 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
+	CorrelationID  string
 	CustomConfig   string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
@@ -69,13 +70,15 @@ func Execute() {
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		// in case we end up here we know that something in the PreRunE function went wrong
+		// and thus this indicates a configuration issue
+		log.Entry().WithError(err).WithField("category", "configuration").Fatal("configuration error")
 	}
 }
 
 func addRootFlags(rootCmd *cobra.Command) {
 
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
