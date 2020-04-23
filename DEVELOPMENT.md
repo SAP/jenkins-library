@@ -201,7 +201,7 @@ In order to better understand the root cause of errors that occur, we wrap error
 We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 
 It has proven a good practice to bubble up errors until the runtime entry function  and only
-there exit via the logging framework (see also #Logging).
+there exit via the logging framework (see also [logging](#logging)).
 
 ## Testing
 
