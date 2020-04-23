@@ -18,7 +18,7 @@ jobs:
         run: |
           go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
             -o piper_master .
       - uses: SAP/project-piper-action@master
         with:
