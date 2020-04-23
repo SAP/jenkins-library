@@ -126,12 +126,12 @@ func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, erro
 
 	var packageJSONFiles []string
 
+	isMtaProject := utils.usesMta()
 	for _, file := range unfilteredListOfPackageJSONFiles {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
-		isMta := utils.usesMta()
-		if isMta && (strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/")) {
+		if isMtaProject && (strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/")) {
 			continue
 		}
 		packageJSONFiles = append(packageJSONFiles, file)
