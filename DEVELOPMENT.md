@@ -309,7 +309,7 @@ func TestSomeFunction() {
         // init
         originalFileExists := fileUtilsExists
         fileUtilsExists = func(filename string) (bool, error) {
-            return false, errors.New("something happened")
+            return true, nil
         }
         defer fileUtilsExists = originalFileExists
         // test
@@ -321,7 +321,7 @@ func TestSomeFunction() {
         // init
         originalFileExists := fileUtilsExists
         fileUtilsExists = func(filename string) (bool, error) {
-            return true, nil
+            return false, errors.New("something happened")
         }
         defer fileUtilsExists = originalFileExists
         // test
