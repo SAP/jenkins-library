@@ -135,6 +135,10 @@ spec:
           - STAGES
           - STEPS
         default: kubectl
+        possibleValues:
+          - kubectl
+          - helm
+          - helm3
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
