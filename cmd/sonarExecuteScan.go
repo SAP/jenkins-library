@@ -15,11 +15,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
+	workingDir  string
 	binary      string
 	environment []string
 	options     []string
@@ -48,6 +51,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
+		workingDir:  "./",
 		binary:      "sonar-scanner",
 		environment: []string{},
 		options:     []string{},
@@ -93,9 +97,27 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		WithField("options", sonar.options).
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
-
+	// execute scan
 	runner.SetEnv(sonar.environment)
-	return runner.RunExecutable(sonar.binary, sonar.options...)
+	err := runner.RunExecutable(sonar.binary, sonar.options...)
+	if err != nil {
+		return err
+	}
+	// load task results
+	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
+	} else {
+		// write links JSON
+		links := []StepResults.Path{
+			StepResults.Path{
+				Target: taskReport.DashboardURL,
+				Name:   "Sonar Web UI",
+			},
+		}
+		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	}
+	return nil
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {

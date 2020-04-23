@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 func TestNexusUpload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus3:3.21.1",
+		Image:        "sonatype/nexus3:3.22.0",
 		ExposedPorts: []string{"8081/tcp"},
 		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
 		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
@@ -48,7 +49,7 @@ func TestNexusUpload(t *testing.T) {
 		"--artifactId=mymta",
 		"--user=admin",
 		"--password=admin123",
-		"--repository=maven-releases",
+		"--mavenRepository=maven-releases",
 		"--url=" + nexusIpAndPort,
 	}
 
@@ -62,9 +63,32 @@ func TestNexusUpload(t *testing.T) {
 		"nexusUpload",
 		"--user=admin",
 		"--password=admin123",
-		"--repository=maven-releases",
+		"--mavenRepository=maven-releases",
 		"--url=" + nexusIpAndPort,
 	}
+
+	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+
+	cmd = command.Command{}
+	cmd.SetDir("testdata/TestNexusIntegration/npm")
+
+	piperOptions = []string{
+		"nexusUpload",
+		"--user=admin",
+		"--password=admin123",
+		"--npmRepository=npm-repo",
+		"--url=" + nexusIpAndPort,
+	}
+
+	// Create npm repo for this test because nexus does not create one by default
+	request, err := http.NewRequest("POST", url+"/service/rest/beta/repositories/npm/hosted", strings.NewReader(`{"name": "npm-repo", "online": true, "storage": {"blobStoreName": "default", "strictContentTypeValidation": true, "writePolicy": "ALLOW_ONCE"}}`))
+	assert.NoError(t, err)
+	request.Header.Set("Content-Type", "application/json")
+	request.SetBasicAuth("admin", "admin123")
+	response, err := http.DefaultClient.Do(request)
+	assert.NoError(t, err)
+	assert.Equal(t, 201, response.StatusCode)
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
@@ -92,6 +116,10 @@ func TestNexusUpload(t *testing.T) {
 	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.mtar: %s", resp.Status)
+
+	resp, err = http.Get(url + "/repository/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get npm-nexus-upload-test-1.0.0.tgz: %s", resp.Status)
 }
 
 func TestNexus2Upload(t *testing.T) {
@@ -123,7 +151,7 @@ func TestNexus2Upload(t *testing.T) {
 		"--artifactId=mymta",
 		"--user=admin",
 		"--password=admin123",
-		"--repository=releases",
+		"--mavenRepository=releases",
 		"--version=nexus2",
 		"--url=" + nexusIpAndPort + "/nexus/",
 	}
@@ -138,10 +166,35 @@ func TestNexus2Upload(t *testing.T) {
 		"nexusUpload",
 		"--user=admin",
 		"--password=admin123",
-		"--repository=releases",
+		"--mavenRepository=releases",
 		"--version=nexus2",
 		"--url=" + nexusIpAndPort + "/nexus/",
 	}
+
+	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
+	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+
+	cmd = command.Command{}
+	cmd.SetDir("testdata/TestNexusIntegration/npm")
+
+	piperOptions = []string{
+		"nexusUpload",
+		"--user=admin",
+		"--password=admin123",
+		"--npmRepository=npm-repo",
+		"--version=nexus2",
+		"--url=" + nexusIpAndPort + "/nexus/",
+	}
+
+	// Create npm repo for this test because nexus does not create one by default
+	payload := strings.NewReader("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<repository><data><name>npm-repo</name><repoPolicy>RELEASE</repoPolicy><repoType>hosted</repoType><id>npm-repo</id><exposed>true</exposed><provider>npm-hosted</provider><providerRole>org.sonatype.nexus.proxy.repository.Repository</providerRole><format>npm</format></data></repository>")
+	request, _ := http.NewRequest("POST", url+"service/local/repositories", payload)
+	request.Header.Add("Content-Type", "application/xml")
+	request.Header.Add("Authorization", "Basic YWRtaW46YWRtaW4xMjM=")
+	response, err := http.DefaultClient.Do(request)
+	assert.NoError(t, err)
+	fmt.Println(response)
+	assert.Equal(t, 201, response.StatusCode)
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
 	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
@@ -165,4 +218,8 @@ func TestNexus2Upload(t *testing.T) {
 	resp, err = http.Get(url + "content/repositories/releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
 	assert.NoError(t, err, "Downloading artifact failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.mtar: %s", resp.Status)
+
+	resp, err = http.Get(url + "content/repositories/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
+	assert.NoError(t, err, "Downloading artifact failed")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get npm-nexus-upload-test-1.0.0.tgz: %s", resp.Status)
 }

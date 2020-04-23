@@ -16,10 +16,23 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Define settings used by the Jenkins Kuberenetes plugin.
-     */
     'jenkinsKubernetes',
+        /**
+         * Jnlp agent Docker images which should be used to create new pods.
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'jnlpAgent',
+        /**
+         * Namespace that should be used to create a new pod
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'namespace',
+        /**
+         * Name of the pod template that should be inherited from.
+         * The pod template can be defined in the Jenkins UI
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'inheritFrom',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
@@ -70,7 +83,7 @@ import hudson.AbortException
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used.
+     * Optional name of the docker image that should be used. If no docker image is provided, the closure will be executed in the jnlp agent container.
      */
     'dockerImage',
     /**
@@ -185,8 +198,7 @@ void call(Map parameters = [:], body) {
             stepParam1   : parameters?.script == null
         ], config)
 
-        if (!config.containerMap) {
-            configHelper.withMandatoryProperty('dockerImage')
+        if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
@@ -210,6 +222,11 @@ def getOptions(config) {
     }
     if (!config.verbose) {
         options.showRawYaml = false
+    }
+
+    if(config.jenkinsKubernetes.inheritFrom){
+        options.inheritFrom = config.jenkinsKubernetes.inheritFrom
+        options.yamlMergeStrategy  = merge()
     }
     return options
 }
