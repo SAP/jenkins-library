@@ -71,6 +71,22 @@ spec:
       - STAGES
       - STEPS
       default: true
+    - name: mustAuditIssueGroups
+      type: string
+      description: Comma separated list of issue groups that must be audited completely
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 'Corporate Security Requirements, Audit All'
+    - name: spotAuditIssueGroups
+      type: string
+      description: 'Comma separated list of issue groups that are spot checked and for which `spotCheckMinimum` audited issues are enforced'
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 'Spot Checks of Each Category'
     - name: pythonRequirementsInstallSuffix
       type: string
       description: 'The suffix for the command used to install the requirements file in `scanType: ''pip''` to populate

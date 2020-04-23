@@ -30,7 +30,7 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 	)
 
 	httpClient := &piperHttp.Client{}
-	httpClientOptions := piperHttp.ClientOptions{Token: "test2456", Timeout: 60 * time.Second}
+	httpClientOptions := piperHttp.ClientOptions{Token: "test2456", TransportTimeout: 60 * time.Second}
 	httpClient.SetOptions(httpClientOptions)
 
 	sys := NewSystemInstanceForClient(client, httpClient, server.URL, "test2456", 60*time.Second)
@@ -75,18 +75,18 @@ func TestGetProjectByName(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetProjectByName("python-test")
+		result, err := sys.GetProjectByName("python-test", false, "")
 		assert.NoError(t, err, "GetProjectByName call not successful")
 		assert.Equal(t, "python-test", strings.ToLower(*result.Name), "Expected to get python-test")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
-		_, err := sys.GetProjectByName("python-empty")
+		_, err := sys.GetProjectByName("python-empty", false, "")
 		assert.Error(t, err, "Expected error but got success")
 	})
 
 	t.Run("test error", func(t *testing.T) {
-		_, err := sys.GetProjectByName("python-error")
+		_, err := sys.GetProjectByName("python-error", false, "")
 		assert.Error(t, err, "Expected error but got success")
 	})
 }
@@ -125,25 +125,73 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 			rw.WriteHeader(500)
 			return
 		}
+		if req.URL.Path == "/projectVersions" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(
+				`{"data":{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+				"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+			return
+		}
+		if req.URL.Path == "/projectVersions/0" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data":{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+				"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+			return
+		}
 	})
 
 	// Close the server when test finishes
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(4711, "0")
+		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(4711, "0", false, "")
 		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
 		assert.Equal(t, "0", *result.Name, "Expected to get project version with different name")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
-		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(777, "python-empty")
+		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(777, "python-empty", false, "")
 		assert.Error(t, err, "Expected error but got success")
 	})
 
 	t.Run("test HTTP error", func(t *testing.T) {
-		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(999, "python-http-error")
+		_, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(999, "python-http-error", false, "")
 		assert.Error(t, err, "Expected error but got success")
+	})
+
+	t.Run("test auto create success", func(t *testing.T) {
+		result, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(815, "0", true, "autocreate")
+		assert.NoError(t, err, "GetProjectVersionDetailsByNameAndProjectID call not successful")
+		assert.Equal(t, "0", *result.Name, "Expected to get project version with different name")
+		assert.Equal(t, "autocreate", *result.Project.Name, "Expected to get project with different name")
 	})
 }
 

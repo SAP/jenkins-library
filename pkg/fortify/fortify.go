@@ -86,7 +86,7 @@ func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Durat
 		BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
 	)
 	httpClientInstance := &piperHttp.Client{}
-	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, Timeout: timeout}
+	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
 	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
@@ -114,8 +114,8 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
 	nameParam := fmt.Sprintf("name=%v", projectName)
-	fullText  := true
-	params    := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
+	fullText := true
+	params := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)
 	if err != nil {
@@ -129,16 +129,16 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 
 	// Project with specified name was NOT found, check if autoCreate flag is set, if so: create it automatically
 	if autoCreate {
-		log.Entry().Debug("No projects found with name: ", projectName, " auto-creating one now...")
+		log.Entry().Debugf("No projects found with name: %v auto-creating one now...", projectName)
 		projectVersion, err := sys.CreateProjectVersionIfNotExist(projectName, projectVersionName, "Created by Go script")
 		if err != nil {
 			return nil, err
 		}
-		log.Entry().Debug("Finished creating project: ", projectVersion)
+		log.Entry().Debugf("Finished creating project: %v", projectVersion)
 		return projectVersion.Project, nil
 
 	}
-	return nil, fmt.Errorf("Project with name %v not found in backend and --autoCreate not set", projectName)
+	return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
 }
 
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
@@ -159,46 +159,46 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if autoCreate {
-		log.Entry().Debug("Could not find project version with name ", versionName, " under project", projectName, " auto-creating one now...")
+		log.Entry().Debugf("Could not find project version with name %v under project %v auto-creating one now...", versionName, projectName)
 		version, err := sys.CreateProjectVersionIfNotExist(projectName, versionName, "Created by Go script")
 		if err != nil {
-			return nil, errors.Wrapf(err, "Could not create project version: ", versionName, " for project ", projectName)
+			return nil, errors.Wrapf(err, "Could not create project version: %v for project %v", versionName, projectName)
 		}
-		log.Entry().Debug("Successfully created project version ", versionName, " for project ", projectName)
+		log.Entry().Debugf("Successfully created project version %v for project %v", versionName, projectName)
 		return version, nil
 	}
-	return nil, errors.Wrapf(err, "Project version with name %v not found in for project with ID %v and --autoCreate not set", versionName, id)
+	return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 }
 
-// Create a new ProjectVersion if it does not already exist.
+// CreateProjectVersionIfNotExist creates a new ProjectVersion if it does not already exist.
 // If the projectName also does not exist, it will create that as well.
 func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error) {
-	var projectId int64 = 0
+	var projectID int64 = 0
 	// check if project with projectName exists
-	projectResp, err := sys.GetProjectByName(projectName, false,  "")
+	projectResp, err := sys.GetProjectByName(projectName, false, "")
 	if err == nil {
 		// project already exists, all we need to do is append a new ProjectVersion to it
 		// save the project id for later
-		projectId = projectResp.ID
+		projectID = projectResp.ID
 	}
 
-	issueTemplateId   := "4c5799c9-1940-4abe-b57a-3bcad88eb041"
-	active            := true
-	committed         := true
+	issueTemplateID := "4c5799c9-1940-4abe-b57a-3bcad88eb041"
+	active := true
+	committed := true
 	projectVersionDto := &models.ProjectVersion{
 		Name:            &projectVersionName,
 		Description:     &description,
-		IssueTemplateID: &issueTemplateId,
+		IssueTemplateID: &issueTemplateID,
 		Active:          &active,
 		Committed:       &committed,
-		Project: &models.Project{ID: projectId},
+		Project:         &models.Project{ID: projectID},
 	}
 
 	if projectVersionDto.Project.ID == 0 { // project does not exist, set one up
-		projectVersionDto.Project = &models.Project {
+		projectVersionDto.Project = &models.Project{
 			Name:            &projectName,
 			Description:     description,
-			IssueTemplateID: &issueTemplateId,
+			IssueTemplateID: &issueTemplateID,
 		}
 	}
 	projectVersion, err := sys.CreateProjectVersion(projectVersionDto)
@@ -211,6 +211,7 @@ func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVe
 	}
 	return projectVersion, nil
 }
+
 // LookupOrCreateProjectVersionDetailsForPullRequest looks up a project version for pull requests or creates it from scratch
 func (sys *SystemInstance) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
 	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName, false, "")

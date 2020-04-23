@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -296,8 +297,13 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
+	fileHandle, err := os.Open(filePath)
+	if err != nil {
+		pc.logger.WithError(err).Fatalf("Unable to locate file %v", filePath)
+	}
+	defer fileHandle.Close()
 
-	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil)
+	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", nil, fileHandle, headers, nil)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
 	} else {
