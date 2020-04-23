@@ -16,7 +16,6 @@ type npmExecuteScriptsUtilsInterface interface {
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
 	chdir(dir string) error
-	usesMta() bool
 	getExecRunner() execRunner
 }
 
@@ -40,10 +39,6 @@ func (u *npmExecuteScriptsUtilsBundle) getwd() (dir string, err error) {
 
 func (u *npmExecuteScriptsUtilsBundle) chdir(dir string) error {
 	return os.Chdir(dir)
-}
-
-func (u *npmExecuteScriptsUtilsBundle) usesMta() bool {
-	return u.projectStructure.UsesMta()
 }
 
 func (u *npmExecuteScriptsUtilsBundle) getExecRunner() execRunner {
@@ -126,12 +121,11 @@ func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, erro
 
 	var packageJSONFiles []string
 
-	isMtaProject := utils.usesMta()
 	for _, file := range unfilteredListOfPackageJSONFiles {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
-		if isMtaProject && (strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/")) {
+		if strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/") {
 			continue
 		}
 		packageJSONFiles = append(packageJSONFiles, file)
