@@ -227,8 +227,8 @@ This will also structure the test output for better readability.
 ### Mocking
 
 Tests should be written only for the code of your step implementation, while any
-external functionality should be mocked, in order to really test all code paths,
-especially error cases.
+external functionality should be mocked, in order to test all code paths including
+the error cases.
 
 There are (at least) two approaches for this:
 
