@@ -29,7 +29,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   "npmExecuteScripts",
 		Short: "Execute npm run scripts with optional install before",
-		Long:  `todo`,
+		Long:  `Execute npm run scripts in all package json files, if they implement the scripts`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("npmExecuteScripts")
