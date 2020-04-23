@@ -30,7 +30,7 @@ spec:
           - STEPS
       - name: sapNpmRegistry
         type: string
-        description: The default npm registry url to be used as the remote mirror for the SAP npm packages.
+        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
         scope:
           - PARAMETERS
           - STAGES
