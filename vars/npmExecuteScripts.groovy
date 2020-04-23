@@ -5,9 +5,9 @@ import static com.sap.piper.Prerequisites.checkScript
 import static groovy.json.JsonOutput.toJson
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/jsBuild.yaml'
+@Field String METADATA_FILE = 'metadata/npmExecuteScripts.yaml'
 
-//Metadata maintained in file project://resources/metadata/jsBuild.yaml
+//Metadata maintained in file project://resources/metadata/npmExecuteScripts.yaml
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this

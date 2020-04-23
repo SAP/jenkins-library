@@ -1,6 +1,6 @@
 metadata:
-  name: nodeJsBuild
-  description: Build a JavaScript backend (node js) project
+  name: npmExecuteScripts
+  description: Execute npm run scripts with optional install before
   longDescription: |
     todo
 spec:

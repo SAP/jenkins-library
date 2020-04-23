@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type nodeJsBuildUtilsInterface interface {
+type npmExecuteScriptsUtilsInterface interface {
 	fileExists(path string) (bool, error)
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
@@ -20,33 +20,33 @@ type nodeJsBuildUtilsInterface interface {
 	getExecRunner() execRunner
 }
 
-type nodeJsBuildUtilsBundle struct {
+type npmExecuteScriptsUtilsBundle struct {
 	projectStructure FileUtils.ProjectStructure
-	fileUtils  FileUtils.Files
-	execRunner *command.Command
+	fileUtils        FileUtils.Files
+	execRunner       *command.Command
 }
 
-func (u *nodeJsBuildUtilsBundle) fileExists(path string) (bool, error) {
+func (u *npmExecuteScriptsUtilsBundle) fileExists(path string) (bool, error) {
 	return u.fileUtils.FileExists(path)
 }
 
-func (u *nodeJsBuildUtilsBundle) glob(pattern string) (matches []string, err error) {
+func (u *npmExecuteScriptsUtilsBundle) glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
 
-func (u *nodeJsBuildUtilsBundle) getwd() (dir string, err error) {
+func (u *npmExecuteScriptsUtilsBundle) getwd() (dir string, err error) {
 	return os.Getwd()
 }
 
-func (u *nodeJsBuildUtilsBundle) chdir(dir string) error {
+func (u *npmExecuteScriptsUtilsBundle) chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
-func (u *nodeJsBuildUtilsBundle) usesMta() bool {
+func (u *npmExecuteScriptsUtilsBundle) usesMta() bool {
 	return u.projectStructure.UsesMta()
 }
 
-func (u *nodeJsBuildUtilsBundle) getExecRunner() execRunner {
+func (u *npmExecuteScriptsUtilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Entry().Writer())
@@ -55,15 +55,15 @@ func (u *nodeJsBuildUtilsBundle) getExecRunner() execRunner {
 	return u.execRunner
 }
 
-func nodeJsBuild(config nodeJsBuildOptions, telemetryData *telemetry.CustomData) {
-	utils := nodeJsBuildUtilsBundle{}
+func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
+	utils := npmExecuteScriptsUtilsBundle{}
 
-	err := runNodeJsBuild(&utils, &config)
+	err := runNpmExecuteScripts(&utils, &config)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions) error {
+func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExecuteScriptsOptions) error {
 	execRunner := utils.getExecRunner()
 	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
 		options.DefaultNpmRegistry, options.SapNpmRegistry)
@@ -118,7 +118,7 @@ func runNodeJsBuild(utils nodeJsBuildUtilsInterface, options *nodeJsBuildOptions
 	return err
 }
 
-func findPackageJSONFiles(utils nodeJsBuildUtilsInterface) ([]string, error) {
+func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, err := utils.glob("**/package.json")
 	if err != nil {
 		return nil, err

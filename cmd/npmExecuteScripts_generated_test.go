@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNodeJsBuildCommand(t *testing.T) {
+func TestNpmExecuteScriptsCommand(t *testing.T) {
 
-	testCmd := NodeJsBuildCommand()
+	testCmd := NpmExecuteScriptsCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "nodeJsBuild", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "npmExecuteScripts", testCmd.Use, "command name incorrect")
 
 }

@@ -13,28 +13,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type nodeJsBuildOptions struct {
+type npmExecuteScriptsOptions struct {
 	Install            bool     `json:"install,omitempty"`
 	RunScripts         []string `json:"runScripts,omitempty"`
 	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
 	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
 }
 
-// NodeJsBuildCommand Build a JavaScript backend (node js) project
-func NodeJsBuildCommand() *cobra.Command {
-	metadata := nodeJsBuildMetadata()
-	var stepConfig nodeJsBuildOptions
+// NpmExecuteScriptsCommand Execute npm run scripts with optional install before
+func NpmExecuteScriptsCommand() *cobra.Command {
+	metadata := npmExecuteScriptsMetadata()
+	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
 
-	var createNodeJsBuildCmd = &cobra.Command{
-		Use:   "nodeJsBuild",
-		Short: "Build a JavaScript backend (node js) project",
+	var createNpmExecuteScriptsCmd = &cobra.Command{
+		Use:   "npmExecuteScripts",
+		Short: "Execute npm run scripts with optional install before",
 		Long:  `todo`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("nodeJsBuild")
+			log.SetStepName("npmExecuteScripts")
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "nodeJsBuild", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "npmExecuteScripts", &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -49,17 +49,17 @@ func NodeJsBuildCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "nodeJsBuild")
-			nodeJsBuild(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "npmExecuteScripts")
+			npmExecuteScripts(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addNodeJsBuildFlags(createNodeJsBuildCmd, &stepConfig)
-	return createNodeJsBuildCmd
+	addNpmExecuteScriptsFlags(createNpmExecuteScriptsCmd, &stepConfig)
+	return createNpmExecuteScriptsCmd
 }
 
-func addNodeJsBuildFlags(cmd *cobra.Command, stepConfig *nodeJsBuildOptions) {
+func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScriptsOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run npm install or similar commands depending on the project structure.")
 	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additinal run scripts to execute from package.json.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
@@ -68,10 +68,10 @@ func addNodeJsBuildFlags(cmd *cobra.Command, stepConfig *nodeJsBuildOptions) {
 }
 
 // retrieve step metadata
-func nodeJsBuildMetadata() config.StepData {
+func npmExecuteScriptsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "nodeJsBuild",
+			Name:    "npmExecuteScripts",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{

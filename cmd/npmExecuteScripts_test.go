@@ -8,19 +8,19 @@ import (
 	"testing"
 )
 
-type nodeJsBuildMockUtilsBundle struct {
+type npmExecuteScriptsMockUtilsBundle struct {
 	execRunner mock.ExecMockRunner
 	files      map[string][]byte
-	mta          bool
+	mta        bool
 }
 
-func (u *nodeJsBuildMockUtilsBundle) fileExists(path string) (bool, error) {
+func (u *npmExecuteScriptsMockUtilsBundle) fileExists(path string) (bool, error) {
 	_, exists := u.files[path]
 	return exists, nil
 }
 
 // duplicated from nexusUpload_test.go for now, refactor later?
-func (u *nodeJsBuildMockUtilsBundle) glob(pattern string) ([]string, error) {
+func (u *npmExecuteScriptsMockUtilsBundle) glob(pattern string) ([]string, error) {
 	var matches []string
 	for path := range u.files {
 		matched, _ := doublestar.Match(pattern, path)
@@ -33,19 +33,19 @@ func (u *nodeJsBuildMockUtilsBundle) glob(pattern string) ([]string, error) {
 	return matches, nil
 }
 
-func (u *nodeJsBuildMockUtilsBundle) getwd() (dir string, err error) {
+func (u *npmExecuteScriptsMockUtilsBundle) getwd() (dir string, err error) {
 	return "/project", nil
 }
 
-func (u *nodeJsBuildMockUtilsBundle) chdir(dir string) error {
+func (u *npmExecuteScriptsMockUtilsBundle) chdir(dir string) error {
 	return nil
 }
 
-func (m *nodeJsBuildMockUtilsBundle) usesMta() bool {
+func (m *npmExecuteScriptsMockUtilsBundle) usesMta() bool {
 	return m.mta
 }
 
-func (u *nodeJsBuildMockUtilsBundle) getExecRunner() execRunner {
+func (u *npmExecuteScriptsMockUtilsBundle) getExecRunner() execRunner {
 	return &u.execRunner
 }
 
@@ -54,9 +54,9 @@ func TestNodeJsBuild(t *testing.T) {
 		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
-		options := nodeJsBuildOptions{}
+		options := npmExecuteScriptsOptions{}
 
-		err := runNodeJsBuild(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(utils.execRunner.Calls))
@@ -67,15 +67,15 @@ func TestNodeJsBuild(t *testing.T) {
 		utils.mta = true
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
-		utils.files["gen/bar/package.json"] = []byte(`abc`) // is filtered out in mta projects
-		utils.files["foo/gen/package.json"] = []byte(`abc`) // is filtered out in mta projects
+		utils.files["gen/bar/package.json"] = []byte(`abc`)              // is filtered out in mta projects
+		utils.files["foo/gen/package.json"] = []byte(`abc`)              // is filtered out in mta projects
 		utils.files["package-lock.json"] = []byte(`abc`)
-		options := nodeJsBuildOptions{}
+		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
 		options.DefaultNpmRegistry = "foo.bar"
 
-		err := runNodeJsBuild(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
@@ -90,11 +90,11 @@ func TestNodeJsBuild(t *testing.T) {
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
-		options := nodeJsBuildOptions{}
+		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
 
-		err := runNodeJsBuild(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
@@ -110,11 +110,11 @@ func TestNodeJsBuild(t *testing.T) {
 		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["yarn.lock"] = []byte(`abc`)
-		options := nodeJsBuildOptions{}
+		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
 
-		err := runNodeJsBuild(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[0])
@@ -125,11 +125,11 @@ func TestNodeJsBuild(t *testing.T) {
 	t.Run("Project without lock file", func(t *testing.T) {
 		utils := newNodeJsBuildMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
-		options := nodeJsBuildOptions{}
+		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
 
-		err := runNodeJsBuild(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utils.execRunner.Calls[0])
@@ -138,8 +138,8 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 }
 
-func newNodeJsBuildMockUtilsBundle() nodeJsBuildMockUtilsBundle {
-	utils := nodeJsBuildMockUtilsBundle{}
+func newNodeJsBuildMockUtilsBundle() npmExecuteScriptsMockUtilsBundle {
+	utils := npmExecuteScriptsMockUtilsBundle{}
 	utils.files = map[string][]byte{}
 	return utils
 }
