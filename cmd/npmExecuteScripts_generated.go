@@ -20,7 +20,7 @@ type npmExecuteScriptsOptions struct {
 	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
 }
 
-// NpmExecuteScriptsCommand Execute npm run scripts with optional install before
+// NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
 	metadata := npmExecuteScriptsMetadata()
 	var stepConfig npmExecuteScriptsOptions
@@ -28,8 +28,8 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   "npmExecuteScripts",
-		Short: "Execute npm run scripts with optional install before",
-		Long:  `Execute npm run scripts in all package json files, if they implement the scripts`,
+		Short: "Execute npm run scripts on all npm packages in a project",
+		Long:  `Execute npm run scripts in all package json files, if they implement the scripts.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("npmExecuteScripts")
@@ -61,9 +61,9 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScriptsOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run npm install or similar commands depending on the project structure.")
-	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additinal run scripts to execute from package.json.")
+	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
-	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", "https://npm.sap.com", "The default npm registry url to be used as the remote mirror for the SAP npm packages.")
+	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", "https://npm.sap.com", "The default npm registry URL to be used as the remote mirror for the SAP npm packages.")
 
 }
 

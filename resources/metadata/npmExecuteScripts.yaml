@@ -1,8 +1,8 @@
 metadata:
   name: npmExecuteScripts
-  description: Execute npm run scripts with optional install before
+  description: Execute npm run scripts on all npm packages in a project
   longDescription: |
-    Execute npm run scripts in all package json files, if they implement the scripts
+    Execute npm run scripts in all package json files, if they implement the scripts.
 spec:
   inputs:
     params:
