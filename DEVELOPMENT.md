@@ -275,11 +275,13 @@ func step(options stepOptions, _ *telemetry.CustomData) {
 }
 
 func runStep(options *stepOptions, utils myStepUtils) error {
+    ...
+    exists, err := utils.fileExists(path)
+    ...
 }
 ```
 
-Your `runStep()` function now takes an interface, and in your tests, you can provide a mocking implementation
-of this interface.
+In your tests, you would provide a mocking implementation of this interface provide that to tested functions.
 
 #### Global Function Pointers
 
