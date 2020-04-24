@@ -1,110 +1,122 @@
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
-import util.JenkinsDockerExecuteRule
+import util.JenkinsCredentialsRule
+import util.JenkinsFileExistsRule
+import util.JenkinsMavenExecuteRule
+import util.JenkinsReadJsonRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.not
-import static org.junit.Assert.assertEquals
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
 
 class MavenExecuteTest extends BasePiperTest {
+    private ExpectedException exception = ExpectedException.none()
 
-    Map dockerParameters
-
-    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
+    private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
+
+    private List withEnvArgs = []
 
     @Rule
-    public RuleChain ruleChain = Rules
+    public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(exception)
         .around(new JenkinsReadYamlRule(this))
-        .around(dockerExecuteRule)
-        .around(shellRule)
+        .around(credentialsRule)
+        .around(new JenkinsReadJsonRule(this))
+        .around(shellCallRule)
         .around(stepRule)
+        .around(writeFileRule)
+        .around(fileExistsRule)
 
-    @Test
-    void testExecuteBasicMavenCommand() throws Exception {
-
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install')
-        assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
-
-        assert shellRule.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
+    @Before
+    void init() {
+        helper.registerAllowedMethod("withEnv", [List, Closure], { arguments, closure ->
+            arguments.each {arg ->
+                withEnvArgs.add(arg.toString())
+            }
+            return closure()
+        })
+        credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
+        shellCallRule.setReturnValue(
+            './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenExecute.yaml\'',
+            '{"credentialsId": "idOfCxCredential", "verbose": false}'
+        )
     }
 
     @Test
-    void testExecuteBasicMavenCommandWithDownloadLogsEnabled() throws Exception {
-
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', logSuccessfulMavenTransfers: true)
-        assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
-
-        assert shellRule.shell[0] == 'mvn --batch-mode clean install'
-    }
-
-    @Test
-    void testExecuteMavenCommandWithParameter() throws Exception {
-
+    void testExecute() {
         stepRule.step.mavenExecute(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            testParam: "This is test content",
             script: nullScript,
-            dockerImage: 'maven:3.5-jdk-8-alpine',
-            goals: 'clean install',
-            globalSettingsFile: 'globalSettingsFile.xml',
-            projectSettingsFile: 'projectSettingsFile.xml',
-            pomPath: 'pom.xml',
-            flags: '-o',
-            m2Path: 'm2Path',
-            defines: '-Dmaven.tests.skip=true')
-        assertEquals('maven:3.5-jdk-8-alpine', dockerExecuteRule.dockerParams.dockerImage)
-        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install -Dmaven.tests.skip=true"
-        assertTrue(shellRule.shell.contains(mvnCommand))
+        )
+        // asserts
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecute.yaml'], containsString('name: mavenExecute'))
+        assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
+            containsString('"testParam":"This is test content"')))
+        assertThat(shellCallRule.shell[1], is('./piper mavenExecute'))
     }
 
     @Test
-    void testMavenCommandForwardsDockerOptions() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install')
-        assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
+    void testOutputIsReturned() {
+        // init
+        String outputFile = '.pipeline/maven_output.txt'
+        String expectedOutput = 'the output'
+        fileExistsRule.registerExistingFile(outputFile)
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            if (file == outputFile) {
+                return expectedOutput
+            }
+            return ''
+        })
 
-        assertEquals('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', shellRule.shell[0])
+        // test
+       String receivedOutput = stepRule.step.mavenExecute(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            script: nullScript,
+            returnStdout: true,
+        )
+
+        // asserts
+        assertThat(receivedOutput, is(expectedOutput))
     }
 
     @Test
-    void testMavenCommandWithShortBatchModeFlag() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-B')
-        assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
+    void testOutputIsMissing() {
+        // init
+        fileExistsRule.setExistingFiles([])
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            return ''
+        })
+        String errorMessage = ''
+        helper.registerAllowedMethod('error', [String], {message ->
+            errorMessage = message
+        })
 
-        assertEquals('mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', shellRule.shell[0])
-    }
+        // test
+        stepRule.step.mavenExecute(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            script: nullScript,
+            returnStdout: true,
+        )
 
-    @Test
-    void testMavenCommandWithFalsePositiveMinusBFlag() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-Blah')
-        assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
-
-        assertThat(shellRule.shell[0],
-            allOf(containsString('-Blah'),
-                  containsString('--batch-mode')))
-    }
-
-    @Test
-    void testMavenCommandWithBatchModeMultiline() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: ('''-B\\
-                                                                                    |--show-version''' as CharSequence).stripMargin())
-        assertThat(shellRule.shell[0], not(containsString('--batch-mode')))
-    }
-
-    @Test
-    void testMavenExecuteReturnsStdout() {
-        shellRule.setReturnValue('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', "[INFO] BUILD SUCCESS")
-        String commandOutput = stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', returnStdout: true)
-        assertEquals(commandOutput, '[INFO] BUILD SUCCESS')
+        // asserts
+        assertThat(errorMessage, containsString('Internal error. A text file with the contents of the maven output was expected'))
     }
 }
