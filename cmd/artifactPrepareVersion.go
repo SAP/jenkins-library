@@ -75,8 +75,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
-		VersionField:        config.CustomversionField,
+		VersionField:        config.CustomVersionField,
 		VersionSection:      config.CustomVersionSection,
+		VersioningScheme:    config.CustomVersioningScheme,
 	}
 
 	var err error
