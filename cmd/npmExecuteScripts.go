@@ -60,16 +60,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExecuteScriptsOptions) error {
 	execRunner := utils.getExecRunner()
-	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
-		options.DefaultNpmRegistry, options.SapNpmRegistry)
-
-	if options.DefaultNpmRegistry != "" {
-		err := execRunner.RunExecutable("npm", "config", "set", "registry", options.DefaultNpmRegistry)
-		if err != nil {
-			return err
-		}
-	}
-	err := execRunner.RunExecutable("npm", "config", "set", "@sap:registry", options.SapNpmRegistry)
+	err := setNpmRegistries(options, execRunner)
 	if err != nil {
 		return err
 	}
@@ -87,12 +78,7 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 		if err != nil {
 			return err
 		}
-		packageLockExists, err := utils.fileExists("package-lock.json")
-
-		if err != nil {
-			return err
-		}
-		yarnLockExists, err := utils.fileExists("yarn.lock")
+		packageLockExists, yarnLockExists, err := checkIfLockFilesExist(utils)
 		if err != nil {
 			return err
 		}
@@ -118,6 +104,22 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 
 	return err
 }
+func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
+	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
+		options.DefaultNpmRegistry, options.SapNpmRegistry)
+
+	if options.DefaultNpmRegistry != "" {
+		err := execRunner.RunExecutable("npm", "config", "set", "registry", options.DefaultNpmRegistry)
+		if err != nil {
+			return err
+		}
+	}
+	err := execRunner.RunExecutable("npm", "config", "set", "@sap:registry", options.SapNpmRegistry)
+	if err != nil {
+		return err
+	}
+	return err
+}
 
 func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, err := utils.glob("**/package.json")
@@ -138,6 +140,18 @@ func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, erro
 		log.Entry().Info("Discovered package.json file " + file)
 	}
 	return packageJSONFiles, nil
+}
+func checkIfLockFilesExist(utils npmExecuteScriptsUtilsInterface) (bool, bool, error) {
+	packageLockExists, err := utils.fileExists("package-lock.json")
+
+	if err != nil {
+		return false, false, err
+	}
+	yarnLockExists, err := utils.fileExists("yarn.lock")
+	if err != nil {
+		return false, false, err
+	}
+	return packageLockExists, yarnLockExists, nil
 }
 
 func installDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
