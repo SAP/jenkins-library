@@ -50,11 +50,13 @@ func TestNodeJsBuild(t *testing.T) {
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
 		options := npmExecuteScriptsOptions{}
+		options.SapNpmRegistry = "https://npm.sap.com"
 
 		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(utils.execRunner.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@sap:registry", "https://npm.sap.com"}}, utils.execRunner.Calls[0])
+		assert.Equal(t, 1, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with package lock", func(t *testing.T) {
@@ -68,15 +70,17 @@ func TestNodeJsBuild(t *testing.T) {
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
 		options.DefaultNpmRegistry = "foo.bar"
+		options.SapNpmRegistry = "https://npm.sap.com"
 
 		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, 3, len(utils.execRunner.Calls))
-		assert.Equal(t, []string{"npm_config_@sap:registry=", "npm_config_registry=foo.bar"}, utils.execRunner.Env)
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", "foo.bar"}}, utils.execRunner.Calls[0])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@sap:registry", "https://npm.sap.com"}}, utils.execRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, 5, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with two package lock files", func(t *testing.T) {
@@ -91,13 +95,13 @@ func TestNodeJsBuild(t *testing.T) {
 		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[4])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[5])
-		assert.Equal(t, 6, len(utils.execRunner.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[5])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[6])
+		assert.Equal(t, 7, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with yarn lock", func(t *testing.T) {
@@ -111,9 +115,9 @@ func TestNodeJsBuild(t *testing.T) {
 		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[3])
 	})
 
 	t.Run("Project without lock file", func(t *testing.T) {
@@ -126,9 +130,9 @@ func TestNodeJsBuild(t *testing.T) {
 		err := runNpmExecuteScripts(&utils, &options)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utils.execRunner.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utils.execRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[3])
 	})
 }
 
