@@ -49,7 +49,6 @@ abapEnvironmentRunATCCheck(
     username: 'myUser',
     password: 'myPassword',
     host: 'https://myABAPendpoint.com',
-    cfCredentialsId: 'cfCredentialsId',
     atcrunConfig: 'atcrunconfig.yml',
     script: this,
 )
