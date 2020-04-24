@@ -59,7 +59,8 @@ public class CommonStepsTest extends BasePiperTest{
             'setupCommonPipelineEnvironment',
             'buildSetResult',
             'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey'
+            'cloudFoundryCreateServiceKey',
+            'gctsCreateRepository'
         ]
 
         List steps = getSteps().stream()
@@ -138,6 +139,7 @@ public class CommonStepsTest extends BasePiperTest{
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
+        'gctsCreateRepository', //implementing new golang pattern without fields
     ]
 
     @Test
