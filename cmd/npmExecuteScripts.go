@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -60,11 +61,6 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExecuteScriptsOptions) error {
 	execRunner := utils.getExecRunner()
-	err := setNpmRegistries(options, execRunner)
-	if err != nil {
-		return err
-	}
-
 	packageJSONFiles, err := findPackageJSONFiles(utils)
 	if err != nil {
 		return err
@@ -78,6 +74,13 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 		if err != nil {
 			return err
 		}
+
+		// set in each directory to respect existing config in rc files
+		err = setNpmRegistries(options, execRunner)
+		if err != nil {
+			return err
+		}
+
 		packageLockExists, yarnLockExists, err := checkIfLockFilesExist(utils)
 		if err != nil {
 			return err
@@ -105,20 +108,32 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	return err
 }
 func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
-	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
-		options.DefaultNpmRegistry, options.SapNpmRegistry)
-
-	if options.DefaultNpmRegistry != "" {
-		err := execRunner.RunExecutable("npm", "config", "set", "registry", options.DefaultNpmRegistry)
+	var environment []string
+	configurableRegistries := []string{"registry", "@sap:registry"}
+	for _, registry := range configurableRegistries {
+		var buffer bytes.Buffer
+		execRunner.Stdout(&buffer)
+		err := execRunner.RunExecutable("npm", "config", "get", registry)
 		if err != nil {
 			return err
 		}
+		preConfiguredRegistry := buffer.String()
+		execRunner.Stdout(log.Entry().Writer())
+
+		if preConfiguredRegistry == "undefined" {
+			if registry == "registry" {
+				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
+				environment = append(environment, "npm_config_" + registry + "=" + options.DefaultNpmRegistry)
+			}
+
+			if registry == "@sap:registry" {
+				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
+				environment = append(environment, "npm_config_" + registry + "=" + options.SapNpmRegistry)
+			}
+		}
 	}
-	err := execRunner.RunExecutable("npm", "config", "set", "@sap:registry", options.SapNpmRegistry)
-	if err != nil {
-		return err
-	}
-	return err
+
+	return nil
 }
 
 func findPackageJSONFiles(utils npmExecuteScriptsUtilsInterface) ([]string, error) {
