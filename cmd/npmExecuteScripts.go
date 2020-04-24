@@ -67,6 +67,9 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	}
 
 	oldWorkingDirectory, err := utils.getwd()
+	if err != nil {
+		return err
+	}
 
 	for _, file := range packageJSONFiles {
 		dir := path.Dir(file)
