@@ -12,12 +12,13 @@ import (
 
 // INIfile defines an artifact using a json file for versioning
 type INIfile struct {
-	path           string
-	content        *ini.File
-	versionSection string
-	versionField   string
-	readFile       func(string) ([]byte, error)
-	writeFile      func(string, []byte, os.FileMode) error
+	path             string
+	content          *ini.File
+	versioningScheme string
+	versionSection   string
+	versionField     string
+	readFile         func(string) ([]byte, error)
+	writeFile        func(string, []byte, os.FileMode) error
 }
 
 func (i *INIfile) init() error {
@@ -45,7 +46,10 @@ func (i *INIfile) init() error {
 
 // VersioningScheme returns the relevant versioning scheme
 func (i *INIfile) VersioningScheme() string {
-	return "semver2"
+	if len(i.versioningScheme) == 0 {
+		return "semver2"
+	}
+	return i.versioningScheme
 }
 
 // GetVersion returns the current version of the artifact with a ini-file-based build descriptor
