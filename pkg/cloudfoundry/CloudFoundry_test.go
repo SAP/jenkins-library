@@ -11,7 +11,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		cfconfig := LoginOptions{}
 		loggedIn, err := LoginCheck(cfconfig)
 		assert.Equal(t, false, loggedIn)
-		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
+		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
 	})
 
 	t.Run("CF Login check: failure case", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 	t.Run("CF Login: missing parameter", func(t *testing.T) {
 		cfconfig := LoginOptions{}
 		err := Login(cfconfig)
-		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password.")
+		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
 	})
 	t.Run("CF Login: failure", func(t *testing.T) {
 		cfconfig := LoginOptions{
