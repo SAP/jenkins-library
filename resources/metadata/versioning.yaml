@@ -107,7 +107,7 @@ spec:
         - STEPS
       - name: customVersioningScheme
         type: string
-        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`."
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
         scope:
         - PARAMETERS
         - STAGES
