@@ -22,6 +22,7 @@ func TestMavenExecute(t *testing.T) {
 			"--errors",
 			"--fail-fast",
 			"-DoutputFile=mvnDependencyTree.txt",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			"dependency:tree",
 		}

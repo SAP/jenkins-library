@@ -47,7 +47,7 @@ func TestExecute(t *testing.T) {
 	t.Run("should return stdOut", func(t *testing.T) {
 		expectedOutput := "mocked output"
 		execMockRunner := mock.ExecMockRunner{}
-		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml --batch-mode": "mocked output"}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode": "mocked output"}
 		opts := ExecuteOptions{PomPath: "pom.xml", ReturnStdout: true}
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
@@ -57,7 +57,7 @@ func TestExecute(t *testing.T) {
 	t.Run("should not return stdOut", func(t *testing.T) {
 		expectedOutput := ""
 		execMockRunner := mock.ExecMockRunner{}
-		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml --batch-mode": "mocked output"}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode": "mocked output"}
 		opts := ExecuteOptions{PomPath: "pom.xml", ReturnStdout: false}
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
@@ -65,12 +65,12 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, expectedOutput, mavenOutput)
 	})
 	t.Run("should log that command failed if executing maven failed", func(t *testing.T) {
-		execMockRunner := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"mvn --file pom.xml --batch-mode": errors.New("error case")}}
+		execMockRunner := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"mvn --file pom.xml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode": errors.New("error case")}}
 		opts := ExecuteOptions{PomPath: "pom.xml", ReturnStdout: false}
 
 		output, err := Execute(&opts, &execMockRunner)
 
-		assert.EqualError(t, err, "failed to run executable, command: '[mvn --file pom.xml --batch-mode]', error: error case")
+		assert.EqualError(t, err, "failed to run executable, command: '[mvn --file pom.xml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode]', error: error case")
 		assert.Equal(t, "", output)
 	})
 	t.Run("should have all configured parameters in the exec call", func(t *testing.T) {
@@ -81,8 +81,7 @@ func TestExecute(t *testing.T) {
 			Flags: []string{"-q"}, LogSuccessfulMavenTransfers: true,
 			ReturnStdout: false}
 		expectedParameters := []string{"--global-settings", "anotherSettings.xml", "--settings", "settings.xml",
-			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode",
-			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "flatten", "install"}
+			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode", "flatten", "install"}
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
 
@@ -95,7 +94,7 @@ func TestExecute(t *testing.T) {
 func TestEvaluate(t *testing.T) {
 	t.Run("should evaluate expression", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
-		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "com.awesome"}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "com.awesome"}
 
 		result, err := Evaluate("pom.xml", "project.groupId", &execMockRunner)
 		if assert.NoError(t, err) {
@@ -104,7 +103,7 @@ func TestEvaluate(t *testing.T) {
 	})
 	t.Run("should not evaluate expression", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
-		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "null object or invalid expression"}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "null object or invalid expression"}
 
 		result, err := Evaluate("pom.xml", "project.groupId", &execMockRunner)
 		if assert.EqualError(t, err, "expression 'project.groupId' in file 'pom.xml' could not be resolved") {
@@ -120,7 +119,9 @@ func TestGetParameters(t *testing.T) {
 		expectedParameters := []string{
 			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
 			"--settings", ".pipeline/mavenProjectSettings.xml",
-			"--file", "pom.xml", "--batch-mode"}
+			"--file", "pom.xml",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+			"--batch-mode"}
 
 		parameters, err := getParametersFromOptions(&opts, &utils)
 		if assert.NoError(t, err) {
@@ -142,7 +143,9 @@ func TestGetParameters(t *testing.T) {
 		expectedParameters := []string{
 			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
 			"--settings", ".pipeline/mavenProjectSettings.xml",
-			"--file", "pom.xml", "--batch-mode"}
+			"--file", "pom.xml",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+			"--batch-mode"}
 
 		parameters, err := getParametersFromOptions(&opts, &utils)
 		if assert.NoError(t, err) {

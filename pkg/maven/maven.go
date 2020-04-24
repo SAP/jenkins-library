@@ -150,11 +150,11 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 		parameters = append(parameters, options.Defines...)
 	}
 
-	parameters = append(parameters, "--batch-mode")
-
-	if options.LogSuccessfulMavenTransfers {
+	if !options.LogSuccessfulMavenTransfers {
 		parameters = append(parameters, "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 	}
+
+	parameters = append(parameters, "--batch-mode")
 
 	parameters = append(parameters, options.Goals...)
 	return parameters, nil
