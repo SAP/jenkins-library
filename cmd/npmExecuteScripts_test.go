@@ -44,9 +44,9 @@ func (u *npmExecuteScriptsMockUtilsBundle) getExecRunner() execRunner {
 	return &u.execRunner
 }
 
-func TestNodeJsBuild(t *testing.T) {
+func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call without install and run-scripts", func(t *testing.T) {
-		utils := newNodeJsBuildMockUtilsBundle()
+		utils := newNpmExecuteScriptsMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
 		options := npmExecuteScriptsOptions{}
@@ -58,7 +58,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project with package lock", func(t *testing.T) {
-		utils := newNodeJsBuildMockUtilsBundle()
+		utils := newNpmExecuteScriptsMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
 		utils.files["gen/bar/package.json"] = []byte(`abc`)              // is filtered out
@@ -76,11 +76,10 @@ func TestNodeJsBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
 		assert.Equal(t, 5, len(utils.execRunner.Calls))
-		//		assert.Equal(t, []string{"npm_config_@sap:registry=", "npm_config_registry=foo.bar"}, utils.execRunner.Env)
 	})
 
-	t.Run("Project with two package lock files", func(t *testing.T) {
-		utils := newNodeJsBuildMockUtilsBundle()
+	t.Run("Project with two package json files", func(t *testing.T) {
+		utils := newNpmExecuteScriptsMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["foo/bar/package.json"] = []byte(`abc`)
 		utils.files["package-lock.json"] = []byte(`abc`)
@@ -101,7 +100,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project with yarn lock", func(t *testing.T) {
-		utils := newNodeJsBuildMockUtilsBundle()
+		utils := newNpmExecuteScriptsMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		utils.files["yarn.lock"] = []byte(`abc`)
 		options := npmExecuteScriptsOptions{}
@@ -117,7 +116,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 
 	t.Run("Project without lock file", func(t *testing.T) {
-		utils := newNodeJsBuildMockUtilsBundle()
+		utils := newNpmExecuteScriptsMockUtilsBundle()
 		utils.files["package.json"] = []byte(`abc`)
 		options := npmExecuteScriptsOptions{}
 		options.Install = true
@@ -132,7 +131,7 @@ func TestNodeJsBuild(t *testing.T) {
 	})
 }
 
-func newNodeJsBuildMockUtilsBundle() npmExecuteScriptsMockUtilsBundle {
+func newNpmExecuteScriptsMockUtilsBundle() npmExecuteScriptsMockUtilsBundle {
 	utils := npmExecuteScriptsMockUtilsBundle{}
 	utils.files = map[string][]byte{}
 	return utils
