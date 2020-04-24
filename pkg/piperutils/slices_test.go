@@ -64,12 +64,12 @@ func TestTrim(t *testing.T) {
 	assert.Contains(t, s, "mango")
 }
 
-func TestSplitAndTrim(t *testing.T) {
+func TestSplitTrimAndDeDup(t *testing.T) {
 	t.Run("Separator is not space", func(t *testing.T) {
 		// init
 		s := []string{" a", "", "-a-b --c ", "d-e", "f", " f", ""}
 		// test
-		s = SplitAndTrim(s, "-")
+		s = SplitTrimAndDeDup(s, "-")
 		// assert
 		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
 	})
@@ -77,7 +77,7 @@ func TestSplitAndTrim(t *testing.T) {
 		// init
 		s := []string{" a", " a b  c ", "d e", "f", "f ", ""}
 		// test
-		s = SplitAndTrim(s, " ")
+		s = SplitTrimAndDeDup(s, " ")
 		// assert
 		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
 	})
@@ -85,8 +85,17 @@ func TestSplitAndTrim(t *testing.T) {
 		// init
 		s := []string{" a", " a** b**c ", "**d **e", "f**", "f ", ""}
 		// test
-		s = SplitAndTrim(s, "**")
+		s = SplitTrimAndDeDup(s, "**")
 		// assert
+		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
+	})
+	t.Run("Separator is empty string", func(t *testing.T) {
+		// init
+		s := []string{" a", " a bc ", "d e", "f", "f ", ""}
+		// test
+		s = SplitTrimAndDeDup(s, "")
+		// assert
+		// If "sep" is empty, underlying strings.Split() splits after each UTF-8 char sequence.
 		assert.Equal(t, []string{"a", "b", "c", "d", "e", "f"}, s)
 	})
 }
