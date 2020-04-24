@@ -23,8 +23,6 @@ type abapEnvironmentRunATCCheckOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
 	Host              string `json:"host,omitempty"`
-	SoftwareComponent string `json:"softwareComponent,omitempty"`
-	Package           string `json:"package,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -72,14 +70,10 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.SoftwareComponent, "softwareComponent", os.Getenv("PIPER_softwareComponent"), "Specifies the Software Component")
-	cmd.Flags().StringVar(&stepConfig.Package, "package", os.Getenv("PIPER_package"), "Specifies the Package")
 
 	cmd.MarkFlagRequired("atcrunConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("softwareComponent")
-	cmd.MarkFlagRequired("package")
 }
 
 // retrieve step metadata
@@ -162,22 +156,6 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "softwareComponent",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "package",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 				},

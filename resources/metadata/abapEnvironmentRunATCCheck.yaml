@@ -96,22 +96,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-      - name: softwareComponent
-        type: string
-        description: Specifies the Software Component
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        mandatory: true
-      - name: package
-        type: string
-        description: Specifies the Package
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        mandatory: true
   containers:
     - name: cf
       image: ppiper/cf-cli
