@@ -24,16 +24,16 @@ The username and password to authenticate to ABAP system will then be read from 
 This can be done accordingly:
 
 ```groovy
-    abapEnvironmentRunATCCheck(
-        cfApiEndpoint : 'https://test.server.com',
-        cfOrg : 'cfOrg',
-        cfSpace: 'cfSpace',
-        cfServiceInstance: 'myServiceInstance',
-        cfSserviceKeyName: 'myServiceKey',
-        cfCredentialsId: 'cfCredentialsId',
-		atcrunConfig: 'atcrunconfig.yml',
-        script: this,
-    ) 
+abapEnvironmentRunATCCheck(
+    cfApiEndpoint : 'https://test.server.com',
+    cfOrg : 'cfOrg',
+    cfSpace: 'cfSpace',
+    cfServiceInstance: 'myServiceInstance',
+    cfSserviceKeyName: 'myServiceKey',
+    cfCredentialsId: 'cfCredentialsId',
+	atcrunConfig: 'atcrunconfig.yml',
+    script: this,
+) 
 ```
 
 This  example triggers an ATC run directly on the ABAP endpoint.
@@ -41,14 +41,14 @@ In order to trigger the ATC run you have to pass the username and password for a
 That must be configured as following:
 
 ```groovy
-    abapEnvironmentRunATCCheck(
-		username: 'myUser',
-		password: 'myPassword',
-		host: 'https://myABAPendpoint.com',
-        cfCredentialsId: 'cfCredentialsId',
-		atcrunConfig: 'atcrunconfig.yml',
-        script: this,
-    ) 
+abapEnvironmentRunATCCheck(
+	username: 'myUser',
+	password: 'myPassword',
+	host: 'https://myABAPendpoint.com',
+    cfCredentialsId: 'cfCredentialsId',
+	atcrunConfig: 'atcrunconfig.yml',
+    script: this,
+) 
 ```
 
 The following section contains an example of an atcrunconfig.yml file.
