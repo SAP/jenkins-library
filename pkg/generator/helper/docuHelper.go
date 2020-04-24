@@ -104,7 +104,7 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 //	Replaces the docGenDescription placeholder with content from the yaml
 func docGenDescription(stepData config.StepData) string {
 
-	desc := "Description \n\n"
+	desc := "Description\n\n"
 
 	desc += stepData.Metadata.LongDescription
 
@@ -129,7 +129,7 @@ func docGenParameters(stepData config.StepData) string {
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
 
-	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\n"
+	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
 	conf += "In following sections of the config.yml the configuration is possible:\n\n"
 
 	// create step configuration table
@@ -147,7 +147,7 @@ func createParametersTable(parameters []config.StepParameters) string {
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf("| %v | %v | %v |  |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
+			table += fmt.Sprintf("| %v | %v | %v | %v |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
 			delete(m, param.Name)
 		}
 	}
@@ -215,7 +215,7 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 func createConfigurationTable(parameters []config.StepParameters) string {
 
 	var table = "| parameter | general | step/stage |\n"
-	table += "|-----------|---------|------------|\n"
+	table += "| --------- | ------- | ---------- |\n"
 
 	for _, param := range parameters {
 		if len(param.Scope) > 0 {
