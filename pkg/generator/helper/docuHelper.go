@@ -34,8 +34,8 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 
 	// binding of functions and placeholder
 	funcMap := template.FuncMap{
-		"docGenDescription":   docGenDescription,
 		"docGenStepName":      docGenStepName,
+		"docGenDescription":   docGenDescription,
 		"docGenParameters":    docGenParameters,
 		"docGenConfiguration": docGenConfiguration,
 	}
@@ -90,19 +90,12 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 
 	//replace old placeholder with new ones
 	contentStr = strings.ReplaceAll(contentStr, "${docGenStepName}", "{{docGenStepName .}}")
-	contentStr = strings.ReplaceAll(contentStr, "${docGenConfiguration}", "{{docGenConfiguration .}}")
-	contentStr = strings.ReplaceAll(contentStr, "${docGenParameters}", "{{docGenParameters .}}")
 	contentStr = strings.ReplaceAll(contentStr, "${docGenDescription}", "{{docGenDescription .}}")
+	contentStr = strings.ReplaceAll(contentStr, "${docGenParameters}", "{{docGenParameters .}}")
+	contentStr = strings.ReplaceAll(contentStr, "${docGenConfiguration}", "{{docGenConfiguration .}}")
 	contentStr = strings.ReplaceAll(contentStr, "## ${docJenkinsPluginDependencies}", "")
 
 	return contentStr
-}
-
-//	Replaces the docGenDescription placeholder with content from the yaml
-func docGenDescription(stepData config.StepData) string {
-	desc := "Description\n\n"
-	desc += stepData.Metadata.LongDescription
-	return desc
 }
 
 // Replaces the docGenStepName placeholder with the content from the yaml
@@ -110,25 +103,29 @@ func docGenStepName(stepData config.StepData) string {
 	return stepData.Metadata.Name
 }
 
+//	Replaces the docGenDescription placeholder with content from the yaml
+func docGenDescription(stepData config.StepData) string {
+	return "Description\n\n" + stepData.Metadata.LongDescription
+}
+
 // Replaces the docGenParameters placeholder with the content from the yaml
 func docGenParameters(stepData config.StepData) string {
+	var parameters = ""
 	//create step parameter table
-	parametersTable := createParametersTable(stepData.Spec.Inputs.Parameters)
+	parameters += createParametersTable(stepData.Spec.Inputs.Parameters) + "\n"
 	//create parameters detail section
-	parametersDetail := createParametersDetail(stepData.Spec.Inputs.Parameters)
-
-	return "Parameters\n\n" + parametersTable + "\n\n" + parametersDetail
+	parameters += createParametersDetail(stepData.Spec.Inputs.Parameters)
+	return "Parameters\n\n" + parameters
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
-	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
-	conf += "In following sections of the config.yml the configuration is possible:\n\n"
-
+	var configuration = ""
+	configuration += "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
+	configuration += "In following sections of the config.yml the configuration is possible:\n\n"
 	// create step configuration table
-	conf += createConfigurationTable(stepData.Spec.Inputs.Parameters)
-
-	return "Step configuration\n\n" + conf
+	configuration += createConfigurationTable(stepData.Spec.Inputs.Parameters)
+	return "Step configuration\n\n" + configuration
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
@@ -147,18 +144,17 @@ func createParametersTable(parameters []config.StepParameters) string {
 }
 
 func createParametersDetail(parameters []config.StepParameters) string {
-	var detail = "## Details\n\n"
-
+	var details = ""
 	var m map[string]bool = make(map[string]bool)
 	for _, param := range parameters {
 		if _, ok := m[param.Name]; !ok {
 			if len(param.Description) > 0 {
-				detail += fmt.Sprintf(" * `%v`: %v\n", param.Name, param.Description)
+				details += fmt.Sprintf(" * `%v`: %v\n", param.Name, param.Description)
 				m[param.Name] = true
 			}
 		}
 	}
-	return detail
+	return details
 }
 
 //combines equal parameters and the values
@@ -214,7 +210,6 @@ func createConfigurationTable(parameters []config.StepParameters) string {
 			table += fmt.Sprintf("| `%v` | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
 		}
 	}
-
 	return table
 }
 
