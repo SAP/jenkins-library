@@ -109,7 +109,9 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 }
 func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
 	environment := []string{}
-	configurableRegistries := []string{"registry", "@sap:registry"}
+	const sapRegistry = "@sap:registry"
+	const npmRegistry = "registry"
+	configurableRegistries := []string{npmRegistry, sapRegistry}
 	for _, registry := range configurableRegistries {
 		var buffer bytes.Buffer
 		execRunner.Stdout(&buffer)
@@ -122,16 +124,14 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 
 		log.Entry().Info("Discovered pre-configured npm registry " + preConfiguredRegistry)
 
-		if preConfiguredRegistry == "undefined" || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org") || strings.HasPrefix(preConfiguredRegistry, "https://npm.sap.com") {
-			if registry == "registry" {
-				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
-				environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
-			}
+		if registry == npmRegistry && (preConfiguredRegistry == "undefined" || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org")) {
+			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
+			environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
+		}
 
-			if registry == "@sap:registry" {
-				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
-				environment = append(environment, "npm_config_"+registry+"="+options.SapNpmRegistry)
-			}
+		if registry == sapRegistry && (preConfiguredRegistry == "undefined" || strings.HasPrefix(preConfiguredRegistry, "https://npm.sap.com")) {
+			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
+			environment = append(environment, "npm_config_"+registry+"="+options.SapNpmRegistry)
 		}
 	}
 
