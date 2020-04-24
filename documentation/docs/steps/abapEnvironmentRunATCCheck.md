@@ -46,13 +46,13 @@ That must be configured as following:
 
 ```groovy
 abapEnvironmentRunATCCheck(
-	username: 'myUser',
-	password: 'myPassword',
-	host: 'https://myABAPendpoint.com',
+    username: 'myUser',
+    password: 'myPassword',
+    host: 'https://myABAPendpoint.com',
     cfCredentialsId: 'cfCredentialsId',
-	atcrunConfig: 'atcrunconfig.yml',
+    atcrunConfig: 'atcrunconfig.yml',
     script: this,
-) 
+)
 ```
 
 ### ATC run config file example
