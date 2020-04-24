@@ -8,25 +8,25 @@ import (
 
 func TestContainsInt(t *testing.T) {
 	var intList []int
-	assert.Equal(t, false, ContainsInt(intList, 4), "False expected but returned true")
+	assert.Equal(t, false, ContainsInt(intList, 4))
 
 	intList = append(intList, 1, 2, 3, 4, 5, 6, 20)
-	assert.Equal(t, true, ContainsInt(intList, 20), "True expected but returned false")
-	assert.Equal(t, true, ContainsInt(intList, 1), "True expected but returned false")
-	assert.Equal(t, true, ContainsInt(intList, 4), "True expected but returned false")
-	assert.Equal(t, false, ContainsInt(intList, 13), "False expected but returned true")
+	assert.Equal(t, true, ContainsInt(intList, 20))
+	assert.Equal(t, true, ContainsInt(intList, 1))
+	assert.Equal(t, true, ContainsInt(intList, 4))
+	assert.Equal(t, false, ContainsInt(intList, 13))
 }
 
 func TestContainsString(t *testing.T) {
 	var stringList []string
-	assert.False(t, ContainsString(stringList, "test"), "False expected but returned true")
-	assert.False(t, ContainsString(stringList, ""), "False expected but returned true")
+	assert.False(t, ContainsString(stringList, "test"))
+	assert.False(t, ContainsString(stringList, ""))
 
 	stringList = append(stringList, "", "foo", "bar", "foo")
-	assert.True(t, ContainsString(stringList, ""), "True expected but returned false")
-	assert.True(t, ContainsString(stringList, "bar"), "True expected but returned false")
-	assert.True(t, ContainsString(stringList, "foo"), "True expected but returned false")
-	assert.False(t, ContainsString(stringList, "baz"), "False expected but returned true")
+	assert.True(t, ContainsString(stringList, ""))
+	assert.True(t, ContainsString(stringList, "bar"))
+	assert.True(t, ContainsString(stringList, "foo"))
+	assert.False(t, ContainsString(stringList, "baz"))
 }
 
 func TestPrefix(t *testing.T) {
