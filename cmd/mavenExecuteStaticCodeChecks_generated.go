@@ -14,17 +14,18 @@ import (
 )
 
 type mavenExecuteStaticCodeChecksOptions struct {
-	SpotBugs                    bool     `json:"spotBugs,omitempty"`
-	Pmd                         bool     `json:"pmd,omitempty"`
-	MavenModulesExcludes        []string `json:"mavenModulesExcludes,omitempty"`
-	SpotBugsExcludeFilterFile   string   `json:"spotBugsExcludeFilterFile,omitempty"`
-	SpotBugsIncludeFilterFile   string   `json:"spotBugsIncludeFilterFile,omitempty"`
-	PmdExcludes                 []string `json:"pmdExcludes,omitempty"`
-	PmdRuleSets                 []string `json:"pmdRuleSets,omitempty"`
-	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
-	M2Path                      string   `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	SpotBugs                     bool     `json:"spotBugs,omitempty"`
+	Pmd                          bool     `json:"pmd,omitempty"`
+	MavenModulesExcludes         []string `json:"mavenModulesExcludes,omitempty"`
+	SpotBugsExcludeFilterFile    string   `json:"spotBugsExcludeFilterFile,omitempty"`
+	SpotBugsIncludeFilterFile    string   `json:"spotBugsIncludeFilterFile,omitempty"`
+	SpotBugsMaxAllowedViolations int      `json:"spotBugsMaxAllowedViolations,omitempty"`
+	PmdFailurePriority           int      `json:"pmdFailurePriority,omitempty"`
+	PmdMaxAllowedViolations      int      `json:"pmdMaxAllowedViolations,omitempty"`
+	ProjectSettingsFile          string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty"`
+	M2Path                       string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers  bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
@@ -40,12 +41,19 @@ func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
 SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
 For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
 PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
-For more information please visit https://pmd.github.io/`,
+For more information please visit https://pmd.github.io/.
+The plugins should be configured in the respective pom.xml.
+For SpotBugs include- and exclude filters as well as maximum allowed violations are conifgurable via .pipeline/config.yml.
+For PMD the failure priority and the max allowed violations are configurable via .pipeline/config.yml.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("mavenExecuteStaticCodeChecks")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -72,8 +80,9 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 	cmd.Flags().StringSliceVar(&stepConfig.MavenModulesExcludes, "mavenModulesExcludes", []string{}, "Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsExcludeFilterFile, "spotBugsExcludeFilterFile", os.Getenv("PIPER_spotBugsExcludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsIncludeFilterFile, "spotBugsIncludeFilterFile", os.Getenv("PIPER_spotBugsIncludeFilterFile"), "Path to a filter file with bug definitions which should be included.")
-	cmd.Flags().StringSliceVar(&stepConfig.PmdExcludes, "pmdExcludes", []string{}, "A comma-separated list of exclusions (.java source files) expressed as an Ant-style pattern relative to the sources root folder, i.e. application/src/main/java for maven projects.")
-	cmd.Flags().StringSliceVar(&stepConfig.PmdRuleSets, "pmdRuleSets", []string{}, "The PMD rulesets to use. See the Stock Java Rulesets for a list of available rules. Defaults to a custom ruleset provided by this maven plugin.")
+	cmd.Flags().IntVar(&stepConfig.SpotBugsMaxAllowedViolations, "spotBugsMaxAllowedViolations", 0, "The maximum number of failures allowed before execution fails.")
+	cmd.Flags().IntVar(&stepConfig.PmdFailurePriority, "pmdFailurePriority", 0, "What priority level to fail the build on. PMD violations are assigned a priority from 1 (most severe) to 5 (least severe) according the the rule's priority. Violations at or less than this priority level are considered failures and will fail the build if failOnViolation=true and the count exceeds maxAllowedViolations. The other violations will be regarded as warnings and will be displayed in the build output if verbose=true. Setting a value of 5 will treat all violations as failures, which may cause the build to fail. Setting a value of 1 will treat all violations as warnings. Only values from 1 to 5 are valid.")
+	cmd.Flags().IntVar(&stepConfig.PmdMaxAllowedViolations, "pmdMaxAllowedViolations", 0, "The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -132,20 +141,28 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "spotBugs/includeFilterFile"}},
 					},
 					{
-						Name:        "pmdExcludes",
+						Name:        "spotBugsMaxAllowedViolations",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "int",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pmd/excludes"}},
+						Aliases:     []config.Alias{{Name: "spotBugs/maxAllowedViolations"}},
 					},
 					{
-						Name:        "pmdRuleSets",
+						Name:        "pmdFailurePriority",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
+						Type:        "int",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pmd/ruleSets"}},
+						Aliases:     []config.Alias{{Name: "pmd/failurePriority"}},
+					},
+					{
+						Name:        "pmdMaxAllowedViolations",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
 					},
 					{
 						Name:        "projectSettingsFile",

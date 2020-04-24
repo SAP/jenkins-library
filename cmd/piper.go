@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -45,6 +46,7 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
+	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
@@ -60,9 +62,11 @@ func Execute() {
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(MalwareExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -115,7 +119,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
 				if customConfig, err = openFile(projectConfigFile); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
 				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
@@ -125,17 +129,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
-			//ToDo: support also https as source
 			fc, err := openFile(f)
-			if err != nil {
-				log.Entry().Infof("Failed to add default config '%s': %v", f, err)
-			} else {
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
 				log.Entry().Infof("Added default config '%s'", f)
 			}
-			defaultConfig = append(defaultConfig, fc)
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -151,12 +156,77 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
+	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
-	json.Unmarshal(confJSON, &options)
+	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+	optionsType := getStepOptionsStructType(options)
+
+	for paramName := range config {
+		optionsField := findStructFieldByJSONTag(paramName, optionsType)
+		if optionsField == nil {
+			continue
+		}
+
+		paramValueType := reflect.ValueOf(config[paramName])
+		if paramValueType.Kind() != reflect.String {
+			// We can only convert from strings at the moment
+			continue
+		}
+
+		paramValue := paramValueType.String()
+		logWarning := true
+
+		switch optionsField.Type.Kind() {
+		case reflect.String:
+			// Types already match, ignore
+			logWarning = false
+		case reflect.Slice, reflect.Array:
+			if optionsField.Type.Elem().Kind() == reflect.String {
+				config[paramName] = []string{paramValue}
+				logWarning = false
+			}
+		case reflect.Bool:
+			paramValue = strings.ToLower(paramValue)
+			if paramValue == "true" {
+				config[paramName] = true
+				logWarning = false
+			} else if paramValue == "false" {
+				config[paramName] = false
+				logWarning = false
+			}
+		}
+
+		if logWarning {
+			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
+		}
+	}
+	return config
+}
+
+func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
+	for i := 0; i < optionsType.NumField(); i++ {
+		field := optionsType.Field(i)
+		tag := field.Tag.Get("json")
+		if tagName == tag || tagName+",omitempty" == tag {
+			return &field
+		}
+	}
+	return nil
+}
+
+func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
+	typedOptions := reflect.ValueOf(stepOptions)
+	if typedOptions.Kind() == reflect.Ptr {
+		typedOptions = typedOptions.Elem()
+	}
+	return typedOptions.Type()
 }
 
 func getProjectConfigFile(name string) string {

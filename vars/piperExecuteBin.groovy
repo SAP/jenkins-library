@@ -1,6 +1,7 @@
 import com.sap.piper.BashUtils
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 
@@ -27,17 +28,24 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
+        // When converting to JSON and back again, entries which had a 'null' value will now have a value
+        // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+        stepParameters = MapUtils.pruneNulls(stepParameters)
+
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
+            String defaultConfigArgs = getCustomDefaultConfigsArg()
+            String customConfigArg = getCustomConfigArg(script)
+
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Config: ${config}"
 
             dockerWrapper(script, config) {
                 credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${getCustomDefaultConfigsArg()}${getCustomConfigArg(script)}"
+                    sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
                 }
                 jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
@@ -65,6 +73,7 @@ static String getCustomDefaultConfigsArg() {
 
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
+        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
         return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
@@ -90,6 +99,7 @@ void dockerWrapper(script, config, body) {
 void credentialWrapper(config, List credentialInfo, body) {
     if (credentialInfo.size() > 0) {
         def creds = []
+        def sshCreds = []
         credentialInfo.each { cred ->
             switch(cred.type) {
                 case "file":
@@ -101,12 +111,24 @@ void credentialWrapper(config, List credentialInfo, body) {
                 case "usernamePassword":
                     if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
                     break
+                case "ssh":
+                    if (config[cred.id]) sshCreds.add(config[cred.id])
+                    break
                 default:
                     error ("invalid credential type: ${cred.type}")
             }
         }
-        withCredentials(creds) {
-            body()
+
+        if (sshCreds.size() > 0) {
+            sshagent (sshCreds) {
+                withCredentials(creds) {
+                    body()
+                }
+            }
+        } else {
+            withCredentials(creds) {
+                body()
+            }
         }
     } else {
         body()

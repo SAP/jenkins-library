@@ -46,7 +46,7 @@ The basic workflow is as follows:
 ### Jenkinsfile
 
 ```groovy
-@Library('piper-library-os') _
+@Library('piper-lib-os') _
 
 node() {
 

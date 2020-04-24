@@ -24,7 +24,7 @@ type FileUtils interface {
 type Files struct {
 }
 
-// FileExists ...
+// FileExists returns true if the file system entry for the given path exists and is not a directory.
 func (f Files) FileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
 
@@ -38,7 +38,7 @@ func (f Files) FileExists(filename string) (bool, error) {
 	return !info.IsDir(), nil
 }
 
-// FileExists ...
+// FileExists returns true if the file system entry for the given path exists and is not a directory.
 func FileExists(filename string) (bool, error) {
 	return Files{}.FileExists(filename)
 }
