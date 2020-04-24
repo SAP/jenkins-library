@@ -84,7 +84,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	var softwareComponentString string
 	if err == nil {
 		if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
-			err = fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked!")
+			err = fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
 		}
 
 		//Build Package XML body
@@ -188,7 +188,7 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	var err error
 
 	if config.Host == "" {
-		cfconfig := cloudfoundry.CloudFoundryReadServiceKeyOptions{
+		cfconfig := cloudfoundry.ServiceKeyOptions{
 			CfAPIEndpoint:     config.CfAPIEndpoint,
 			CfOrg:             config.CfOrg,
 			CfSpace:           config.CfSpace,
@@ -277,46 +277,55 @@ func getResultATCRun(requestType string, details connectionDetailsHTTP, body []b
 }
 
 type ATCconfig struct {
+	//ATC object for parsing yaml config of software components and packages
 	Objects ATCObjects `json:"atcobjects"`
 }
 
 type ATCObjects struct {
+	//Contains packages and software components to be checked
 	Package           []Package           `json:"package"`
 	SoftwareComponent []SoftwareComponent `json:"softwarecomponent"`
 }
 
 type Package struct {
+	//ATC run package to be checked
 	Name               string `json:"name"`
 	IncludeSubpackages bool   `json:"includesubpackage"`
 }
 
 type SoftwareComponent struct {
+	//ATC run software component to be checked
 	Name string `json:"name"`
 }
 
 type Run struct {
+	//Object for parsing XML
 	XMLName xml.Name `xml:"run"`
 	Status  string   `xml:"status,attr"`
 	Link    []Link   `xml:"link"`
 }
 
 type Link struct {
+	//contains link
 	Key   string `xml:"href,attr"`
 	Value string `xml:",chardata"`
 }
 
 type Result struct {
+	//results from ATC check for all files that were checked
 	XMLName xml.Name `xml:"checkstyle"`
 	Files   []File   `xml:"file"`
 }
 
 type File struct {
+	//contains ATC check with error for checked file
 	Key       string     `xml:"name,attr"`
 	Value     string     `xml:",chardata"`
 	ATCErrors []ATCError `xml:"error"`
 }
 
 type ATCError struct {
+	//ATC error with message
 	Key   string `xml:"message,attr"`
 	Value string `xml:",chardata"`
 }

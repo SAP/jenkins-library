@@ -13,12 +13,16 @@ import (
 
 var c = command.Command{}
 
-func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
+func LoginCheck(options LoginOptions) (bool, error) {
+
+	//Checks if user is logged in to Cloud Foundry.
+	//If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
+	//If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
 
 	var err error
 
 	if options.CfAPIEndpoint == "" {
-		return false, errors.New("Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
+		return false, errors.New("Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
 	}
 
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
@@ -49,11 +53,15 @@ func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
 	return false, err
 }
 
-func Login(options CloudFoundryLoginOptions) error {
+func Login(options LoginOptions) error {
+
+	//Logs User in to Cloud Foundry via cf cli.
+	//Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
+
 	var err error
 
 	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
-		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password."))
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
 	}
 
 	var loggedIn bool
@@ -82,6 +90,10 @@ func Login(options CloudFoundryLoginOptions) error {
 }
 
 func Logout() error {
+
+	//Logs User out of Cloud Foundry
+	//Logout can be perforned via 'cf logout' command regardless if user is logged in or not
+
 	var cfLogoutScript = "logout"
 
 	log.Entry().Info("Logging out of Cloud Foundry")
@@ -94,13 +106,16 @@ func Logout() error {
 	return nil
 }
 
-func ReadServiceKey(options CloudFoundryReadServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
+func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
+
+	//Reads ABAP Service Key from Cloud Foundry and returns it.
+	//Depending on user requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout or not.
 
 	var abapServiceKey ServiceKey
 	var err error
 
 	//Logging into Cloud Foundry
-	config := CloudFoundryLoginOptions{
+	config := LoginOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,
 		CfOrg:         options.CfOrg,
 		CfSpace:       options.CfSpace,
@@ -156,7 +171,8 @@ func ReadServiceKey(options CloudFoundryReadServiceKeyOptions, cfLogoutOption bo
 	return abapServiceKey, nil
 }
 
-type CloudFoundryReadServiceKeyOptions struct {
+type ServiceKeyOptions struct {
+	//Options for reading CF Service Key
 	CfAPIEndpoint     string
 	CfOrg             string
 	CfSpace           string
@@ -166,7 +182,8 @@ type CloudFoundryReadServiceKeyOptions struct {
 	Password          string
 }
 
-type CloudFoundryLoginOptions struct {
+type LoginOptions struct {
+	//Options for logging in to CF
 	CfAPIEndpoint string
 	CfOrg         string
 	CfSpace       string
@@ -175,6 +192,7 @@ type CloudFoundryLoginOptions struct {
 }
 
 type ServiceKey struct {
+	//Struct to parse CF Service Key
 	Abap     AbapConenction `json:"abap"`
 	Binding  AbapBinding    `json:"binding"`
 	Systemid string         `json:"systemid"`
@@ -182,6 +200,7 @@ type ServiceKey struct {
 }
 
 type AbapConenction struct {
+	//Contains information about the ABAP connection
 	CommunicationArrangementID string `json:"communication_arrangement_id"`
 	CommunicationScenarioID    string `json:"communication_scenario_id"`
 	CommunicationSystemID      string `json:"communication_system_id"`
@@ -190,20 +209,9 @@ type AbapConenction struct {
 }
 
 type AbapBinding struct {
+	//Contains information about service binding
 	Env     string `json:"env"`
 	ID      string `json:"id"`
 	Type    string `json:"type"`
 	Version string `json:"version"`
-}
-
-type ServiceKeyOptions struct {
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	RepositoryName    string `json:"repositoryName,omitempty"`
-	Host              string `json:"host,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKey      string `json:"cfServiceKey,omitempty"`
 }

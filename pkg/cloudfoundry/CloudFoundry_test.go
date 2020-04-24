@@ -8,14 +8,14 @@ import (
 
 func TestCloudFoundryLoginCheck(t *testing.T) {
 	t.Run("CF Login check: missing parameter", func(t *testing.T) {
-		cfconfig := CloudFoundryLoginOptions{}
+		cfconfig := LoginOptions{}
 		loggedIn, err := LoginCheck(cfconfig)
 		assert.Equal(t, false, loggedIn)
 		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
 	})
 
 	t.Run("CF Login check: failure case", func(t *testing.T) {
-		cfconfig := CloudFoundryLoginOptions{
+		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
 		loggedIn, err := LoginCheck(cfconfig)
@@ -26,12 +26,12 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 
 func TestCloudFoundryLogin(t *testing.T) {
 	t.Run("CF Login: missing parameter", func(t *testing.T) {
-		cfconfig := CloudFoundryLoginOptions{}
+		cfconfig := LoginOptions{}
 		err := Login(cfconfig)
 		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password.")
 	})
 	t.Run("CF Login: failure", func(t *testing.T) {
-		cfconfig := CloudFoundryLoginOptions{
+		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 			CfSpace:       "testSpace",
 			CfOrg:         "testOrg",
@@ -56,7 +56,7 @@ func TestCloudFoundryLogout(t *testing.T) {
 
 func TestCloudFoundryReadServiceKey(t *testing.T) {
 	t.Run("CF ReadServiceKey", func(t *testing.T) {
-		cfconfig := CloudFoundryReadServiceKeyOptions{
+		cfconfig := ServiceKeyOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
 			CfOrg:             "testOrg",
