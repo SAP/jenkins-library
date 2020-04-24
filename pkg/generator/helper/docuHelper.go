@@ -401,10 +401,10 @@ func addStashContent(m *config.StepData, result map[string]string) {
 		for _, key := range keys {
 			//more than one key when there are conditions
 			if len(key) > 0 {
-				result["stashContent"] += fmt.Sprintf("%v:\\[%v\\] <br>", key, strings.Join(resources[key], ", "))
+				result["stashContent"] += fmt.Sprintf("%v: `[%v]` <br>", key, strings.Join(resources[key], ", "))
 			} else {
 				//single entry for stash content (no condition)
-				result["stashContent"] += fmt.Sprintf("\\[%v\\] <br>", strings.Join(resources[key], ", "))
+				result["stashContent"] += fmt.Sprintf("`[%v]` <br>", strings.Join(resources[key], ", "))
 			}
 		}
 	}
