@@ -4,7 +4,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -24,9 +24,9 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 		ProjectSettingsFile:         config.ProjectSettingsFile,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		M2Path:                      config.M2Path,
-		Goals:                       splitAndTrimParams(config.Goals),
-		Defines:                     splitAndTrimParams(config.Defines),
-		Flags:                       splitAndTrimParams(config.Flags),
+		Goals:                       splitTrimAndDeDupParams(config.Goals),
+		Defines:                     splitTrimAndDeDupParams(config.Defines),
+		Flags:                       splitTrimAndDeDupParams(config.Flags),
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		ReturnStdout:                config.ReturnStdout,
 	}
@@ -38,6 +38,6 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	return err
 }
 
-func splitAndTrimParams(params []string) []string {
-	return piperutils.SplitAndTrim(params, " ")
+func splitTrimAndDeDupParams(params []string) []string {
+	return sliceUtils.SplitTrimAndDeDup(params, " ")
 }
