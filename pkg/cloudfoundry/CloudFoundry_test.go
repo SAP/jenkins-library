@@ -2,19 +2,78 @@ package cloudfoundry
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCloudFoundry(t *testing.T) {
-	//execRunner := mock.ExecMockRunner{}
-	t.Run("CF Login: success case", func(t *testing.T) {
-		cfconfig := CloudFoundryLoginOptions{
-			CfAPIEndpoint: "https://api.cf.sap.hana.ondemand.com",
-			CfOrg:         "Steampunk-2-jenkins-test",
-			CfSpace:       "Test",
-			Username:      "P2001217173",
-			Password:      "ABAPsaas1!",
-		}
+func TestCloudFoundryLoginCheck(t *testing.T) {
+	t.Run("CF Login check: missing parameter", func(t *testing.T) {
+		cfconfig := CloudFoundryLoginOptions{}
+		loggedIn, err := LoginCheck(cfconfig)
+		assert.Equal(t, false, loggedIn)
+		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
+	})
 
-		Login(cfconfig)
+	t.Run("CF Login check: success case", func(t *testing.T) {
+		cfconfig := CloudFoundryLoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+		}
+		loggedIn, err := LoginCheck(cfconfig)
+		assert.Equal(t, false, loggedIn)
+		assert.EqualError(t, err, "Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
+	})
+}
+
+func TestCloudFoundryLogin(t *testing.T) {
+	t.Run("CF Login: missing parameter", func(t *testing.T) {
+		cfconfig := CloudFoundryLoginOptions{}
+		err := Login(cfconfig)
+		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password.")
+	})
+	t.Run("CF Login: failure", func(t *testing.T) {
+		cfconfig := CloudFoundryLoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+		}
+		err := Login(cfconfig)
+		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
+	})
+}
+
+func TestCloudFoundryLogout(t *testing.T) {
+	t.Run("CF Logout: missing parameter", func(t *testing.T) {
+		err := Logout()
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestCloudFoundryReadServiceKey(t *testing.T) {
+	t.Run("CF ReadServiceKey", func(t *testing.T) {
+		cfconfig := CloudFoundryReadServiceKeyOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfSpace:           "testSpace",
+			CfOrg:             "testOrg",
+			CfServiceInstance: "testInstance",
+			CfServiceKey:      "testKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+		}
+		var abapKey ServiceKey
+		abapKey, err := ReadServiceKey(cfconfig, true)
+		assert.Equal(t, "", abapKey.Abap.Password)
+		assert.Equal(t, "", abapKey.Abap.Username)
+		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)
+		assert.Equal(t, "", abapKey.Abap.CommunicationScenarioID)
+		assert.Equal(t, "", abapKey.Abap.CommunicationSystemID)
+		assert.Equal(t, "", abapKey.Binding.Env)
+		assert.Equal(t, "", abapKey.Binding.Type)
+		assert.Equal(t, "", abapKey.Binding.ID)
+		assert.Equal(t, "", abapKey.Binding.Version)
+		assert.Equal(t, "", abapKey.Systemid)
+		assert.Equal(t, "", abapKey.URL)
+		assert.EqualError(t, err, "Reading Service Key failed: Failed to login to Cloud Foundry: Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
 	})
 }
