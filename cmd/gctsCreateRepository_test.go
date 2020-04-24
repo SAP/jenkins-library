@@ -26,7 +26,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 
 	t.Run("creating repository on ABAP system successfull", func(t *testing.T) {
 
-		httpClient := httpMock{StatusCode: 200, ResponseBody: `{
+		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `{
 			"repository": {
 				"rid": "my-repository",
 				"name": "Example repository",
@@ -86,7 +86,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 
 	t.Run("repository already exists on ABAP system", func(t *testing.T) {
 
-		httpClient := httpMock{StatusCode: 500, ResponseBody: `{
+		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{
 			"exception": "Repository already exists"
 		}`}
 
@@ -110,7 +110,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 	t.Run("a http error occurred", func(t *testing.T) {
 
-		httpClient := httpMock{StatusCode: 500, ResponseBody: `{
+		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{
 			"log": [
 				{
 					"time": 20180606130524,
@@ -146,7 +146,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 	})
 }
 
-type httpMock struct {
+type httpMockGcts struct {
 	Method       string                  // is set during test execution
 	URL          string                  // is set before test execution
 	Header       map[string][]string     // is set before test execution
@@ -155,11 +155,11 @@ type httpMock struct {
 	StatusCode   int                     // is set during test
 }
 
-func (c *httpMock) SetOptions(options piperhttp.ClientOptions) {
+func (c *httpMockGcts) SetOptions(options piperhttp.ClientOptions) {
 	c.Options = options
 }
 
-func (c *httpMock) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *httpMockGcts) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
 	c.Method = method
 	c.URL = url
