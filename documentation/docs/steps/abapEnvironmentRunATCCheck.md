@@ -35,7 +35,7 @@ abapEnvironmentRunATCCheck(
     cfCredentialsId: 'cfCredentialsId',
     atcrunConfig: 'atcrunconfig.yml',
     script: this,
-) 
+)
 ```
 
 ### ATC run via direct ABAP endpoint configuration in Jenkinsfile
@@ -54,7 +54,7 @@ abapEnvironmentRunATCCheck(
 )
 ```
 
-### ATC run config file example 
+### ATC run config file example
 
 The following section contains an example of an `atcrunconfig.yml` file. This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 You can specify a list of packages and software components to be checked. This must be in the same format as below.
