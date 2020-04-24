@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -30,6 +31,31 @@ type mavenExecRunner interface {
 	RunExecutable(e string, p ...string) error
 }
 
+type mavenUtils interface {
+	FileExists(path string) (bool, error)
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+type utilsBundle struct {
+	httpClient piperhttp.Client
+	fileUtils  piperutils.Files
+}
+
+func newUtils() *utilsBundle {
+	return &utilsBundle{
+		httpClient: piperhttp.Client{},
+		fileUtils:  piperutils.Files{},
+	}
+}
+
+func (u *utilsBundle) FileExists(path string) (bool, error) {
+	return u.fileUtils.FileExists(path)
+}
+
+func (u *utilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return u.httpClient.DownloadFile(url, filename, header, cookies)
+}
+
 const mavenExecutable = "mvn"
 
 // Execute constructs a mvn command line from the given options, and uses the provided
@@ -39,7 +65,7 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	command.Stdout(stdOut)
 	command.Stderr(log.Entry().Writer())
 
-	parameters, err := getParametersFromOptions(options, &http.Client{})
+	parameters, err := getParametersFromOptions(options, newUtils())
 	if err != nil {
 		return "", fmt.Errorf("failed to construct parameters from options: %w", err)
 	}
@@ -89,23 +115,11 @@ func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	return stdOutBuf, stdOut
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, client http.Downloader) (string, error) {
-	result := settingsFileOption
-	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, client)
-		if err != nil {
-			return "", err
-		}
-		result = settingsFile
-	}
-	return result, nil
-}
-
-func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) ([]string, error) {
+func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]string, error) {
 	var parameters []string
 
 	if options.GlobalSettingsFile != "" {
-		globalSettingsFileName, err := downloadSettingsIfURL(options.GlobalSettingsFile, "globalSettings.xml", client)
+		globalSettingsFileName, err := downloadSettingsIfURL(options.GlobalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +127,7 @@ func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) (
 	}
 
 	if options.ProjectSettingsFile != "" {
-		projectSettingsFileName, err := downloadSettingsIfURL(options.ProjectSettingsFile, "projectSettings.xml", client)
+		projectSettingsFileName, err := downloadSettingsIfURL(options.ProjectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils)
 		if err != nil {
 			return nil, err
 		}
@@ -136,19 +150,36 @@ func getParametersFromOptions(options *ExecuteOptions, client http.Downloader) (
 		parameters = append(parameters, options.Defines...)
 	}
 
-	parameters = append(parameters, "--batch-mode")
-
-	if options.LogSuccessfulMavenTransfers {
+	if !options.LogSuccessfulMavenTransfers {
 		parameters = append(parameters, "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 	}
+
+	parameters = append(parameters, "--batch-mode")
 
 	parameters = append(parameters, options.Goals...)
 	return parameters, nil
 }
 
+func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {
+	result := settingsFileOption
+	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
+		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils)
+		if err != nil {
+			return "", err
+		}
+		result = settingsFile
+	}
+	return result, nil
+}
+
 // ToDo replace with pkg/maven/settings GetSettingsFile
-func downloadSettingsFromURL(url, filename string, client http.Downloader) error {
-	err := client.DownloadFile(url, filename, nil, nil)
+func downloadSettingsFromURL(url, filename string, utils mavenUtils) error {
+	exists, _ := utils.FileExists(filename)
+	if exists {
+		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
+		return nil
+	}
+	err := utils.DownloadFile(url, filename, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
 			url, filename, err)
@@ -157,12 +188,16 @@ func downloadSettingsFromURL(url, filename string, client http.Downloader) error
 }
 
 func GetTestModulesExcludes() []string {
+	return getTestModulesExcludes(newUtils())
+}
+
+func getTestModulesExcludes(utils mavenUtils) []string {
 	var excludes []string
-	exists, _ := piperutils.FileExists("unit-tests/pom.xml")
+	exists, _ := utils.FileExists("unit-tests/pom.xml")
 	if exists {
 		excludes = append(excludes, "-pl", "!unit-tests")
 	}
-	exists, _ = piperutils.FileExists("integration-tests/pom.xml")
+	exists, _ = utils.FileExists("integration-tests/pom.xml")
 	if exists {
 		excludes = append(excludes, "-pl", "!integration-tests")
 	}
