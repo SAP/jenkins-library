@@ -29,7 +29,7 @@ spec:
         mandatory: true
       - name: repository
         type: string
-        description: Specifies the name (ID) of the local repository
+        description: Specifies the name (ID) of the local repository on the ABAP system
         scope:
         - PARAMETERS
         - STAGES
