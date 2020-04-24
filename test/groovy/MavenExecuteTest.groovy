@@ -54,6 +54,8 @@ class MavenExecuteTest extends BasePiperTest {
             './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenExecute.yaml\'',
             '{"credentialsId": "idOfCxCredential", "verbose": false}'
         )
+
+        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
     }
 
     @Test
