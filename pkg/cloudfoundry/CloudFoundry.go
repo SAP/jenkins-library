@@ -164,7 +164,7 @@ func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey,
 	return abapServiceKey, nil
 }
 
-//SerciceKeyOptions for reading CF Service Key
+//ServiceKeyOptions for reading CF Service Key
 type ServiceKeyOptions struct {
 	CfAPIEndpoint     string
 	CfOrg             string

@@ -39,7 +39,11 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("abapEnvironmentRunATCCheck")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "abapEnvironmentRunATCCheck", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "abapEnvironmentRunATCCheck", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
