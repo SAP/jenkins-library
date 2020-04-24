@@ -83,7 +83,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	var packageString string
 	var softwareComponentString string
 	if err == nil {
-		err, packageString, softwareComponentString = buildATCCheckBody(ATCRunConfig, packageString, softwareComponentString)
+		packageString, softwareComponentString, err = buildATCCheckBody(ATCRunConfig, packageString, softwareComponentString)
 	}
 
 	//Trigger ATC run
@@ -125,9 +125,9 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
 }
 
-func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareComponentString string) (error, string, string) {
+func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareComponentString string) (string, string, error) {
 	if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
-		return fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them")), "", ""
+		return "", "", fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
 	}
 
 	//Build Package XML body
@@ -143,7 +143,7 @@ func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareCom
 		softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
 	}
 	softwareComponentString += "</obj:softwarecomponents>"
-	return nil, packageString, softwareComponentString
+	return packageString, softwareComponentString, nil
 }
 
 func parseATCResult(body []byte) error {
