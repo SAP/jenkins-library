@@ -289,7 +289,57 @@ func runStep(options *stepOptions, utils myStepUtils) error {
 ```
 
 In your tests, you would provide a mocking implementation of this interface and pass
-instances of that to the functions under test.
+instances of that to the functions under test. To better illustrate this, here is an example
+for the interface above implemented in the `<step>_test.go` file:
+
+```golang
+type mockUtilsBundle struct {
+	files        map[string][]byte
+}
+
+func newMockUtilsBundle() mockUtilsBundle {
+	utils := mockUtilsBundle{}
+	utils.files = map[string][]byte{}
+	return utils
+}
+
+func (m *mockUtilsBundle) fileExists(path string) (bool, error) {
+	content := m.files[path]
+	if content == nil {
+		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
+	}
+	return true, nil
+}
+
+func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
+	content := m.files[path]
+	if content == nil {
+		return nil, fmt.Errorf("could not read '%s'", path)
+	}
+	return content, nil
+}
+
+// This is how it would be used in tests:
+
+func TestSomeFunction() {
+    t.Run("Happy path", func(t *testing.T) {
+        // init
+        utils := newMockUtilsBundle()
+        utils.files["some/path/file.xml"] = []byte(´content of the file´)
+        // test
+        err := someFunction(&utils)
+        // assert
+        assert.NoError(t, err)
+    })
+    t.Run("Error path", func(t *testing.T) {
+        // init
+        utils := newMockUtilsBundle()
+        // test
+        err := someFunction(&utils)
+        // assert
+        assert.EqualError(t, err, "could not read 'some/path/file.xml'")
+    })
+}
 
 #### Global Function Pointers
 
