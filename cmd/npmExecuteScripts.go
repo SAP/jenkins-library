@@ -123,16 +123,19 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 		if preConfiguredRegistry == "undefined" {
 			if registry == "registry" {
 				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
-				environment = append(environment, "npm_config_" + registry + "=" + options.DefaultNpmRegistry)
+				environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
 			}
 
 			if registry == "@sap:registry" {
 				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
-				environment = append(environment, "npm_config_" + registry + "=" + options.SapNpmRegistry)
+				environment = append(environment, "npm_config_"+registry+"="+options.SapNpmRegistry)
 			}
 		}
 	}
 
+	execRunner.SetEnv(environment)
+
+	println("dbgxx" + strings.Join(environment, ", "))
 	return nil
 }
 
