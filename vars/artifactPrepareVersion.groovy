@@ -7,11 +7,13 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/versioning.yaml'
 
 void call(Map parameters = [:]) {
+    final script = checkScript(this, parameters) ?: this
+
     List credentials = [
         [type: 'ssh', id: 'gitSshKeyCredentialsId'],
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
-    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(parameters.script, parameters)
+    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
     withEnv(["SSH_KNOWN_HOSTS=/var/jenkins_home/.ssh/known_hosts"]) {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     }

@@ -203,10 +203,12 @@ spec:
       type: jenkins
       aliases:
         - name: gitCredentialsId
+          deprecated: true
     - name: gitSshKeyCredentialsId
       type: jenkins
       aliases:
         - name: gitCredentialsId
+          deprecated: true
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
