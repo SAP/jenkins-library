@@ -46,7 +46,11 @@ func TestCloudFoundryLogin(t *testing.T) {
 func TestCloudFoundryLogout(t *testing.T) {
 	t.Run("CF Logout", func(t *testing.T) {
 		err := Logout()
-		assert.Equal(t, nil, err)
+		if err == nil {
+			assert.Equal(t, nil, err)
+		} else {
+			assert.Error(t, err)
+		}
 	})
 }
 
