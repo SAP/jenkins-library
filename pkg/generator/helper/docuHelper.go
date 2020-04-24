@@ -14,7 +14,6 @@ import (
 
 // generates the step documentation and replaces the template with the generated documentation
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
-
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
 	//create the file path for the template and open it.
 	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
@@ -63,7 +62,6 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 
 func setDefaultStepParameters(stepData *config.StepData) {
 	for k, param := range stepData.Spec.Inputs.Parameters {
-
 		if param.Default == nil {
 			switch param.Type {
 			case "bool":
@@ -80,7 +78,6 @@ func setDefaultStepParameters(stepData *config.StepData) {
 				param.Default = fmt.Sprintf("%v", param.Default)
 			}
 		}
-
 		stepData.Spec.Inputs.Parameters[k] = param
 	}
 }
@@ -103,11 +100,8 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 
 //	Replaces the docGenDescription placeholder with content from the yaml
 func docGenDescription(stepData config.StepData) string {
-
 	desc := "Description\n\n"
-
 	desc += stepData.Metadata.LongDescription
-
 	return desc
 }
 
@@ -128,7 +122,6 @@ func docGenParameters(stepData config.StepData) string {
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
-
 	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
 	conf += "In following sections of the config.yml the configuration is possible:\n\n"
 
@@ -139,7 +132,6 @@ func docGenConfiguration(stepData config.StepData) string {
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
-
 	var table = "| name | mandatory | default | possible values |\n"
 	table += "| ---- | --------- | ------- | --------------- |\n"
 
@@ -155,7 +147,6 @@ func createParametersTable(parameters []config.StepParameters) string {
 }
 
 func createParametersDetail(parameters []config.StepParameters) string {
-
 	var detail = "## Details\n\n"
 
 	var m map[string]bool = make(map[string]bool)
@@ -167,7 +158,6 @@ func createParametersDetail(parameters []config.StepParameters) string {
 			}
 		}
 	}
-
 	return detail
 }
 
@@ -213,7 +203,6 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 }
 
 func createConfigurationTable(parameters []config.StepParameters) string {
-
 	var table = "| parameter | general | step/stage |\n"
 	table += "| --------- | ------- | ---------- |\n"
 
@@ -222,7 +211,7 @@ func createConfigurationTable(parameters []config.StepParameters) string {
 			general := contains(param.Scope, "GENERAL")
 			step := contains(param.Scope, "STEPS")
 
-			table += fmt.Sprintf("| %v | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
+			table += fmt.Sprintf("| `%v` | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
 		}
 	}
 
@@ -257,7 +246,6 @@ func handleStepParameters(stepData *config.StepData) {
 }
 
 func appendSecretsToParameters(stepData *config.StepData) {
-
 	secrets := stepData.Spec.Inputs.Secrets
 	if secrets != nil {
 		for _, secret := range secrets {
@@ -268,7 +256,6 @@ func appendSecretsToParameters(stepData *config.StepData) {
 }
 
 func getDocuContextDefaults(step *config.StepData) map[string]string {
-
 	var result map[string]string = make(map[string]string)
 
 	//creates the context defaults for containers
@@ -296,7 +283,6 @@ func addDefaultContainerContent(m *config.StepData, result map[string]string) {
 }
 
 func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string, m map[string][]string) {
-
 	//create keys
 	key := ""
 	if len(container.Conditions) > 0 {
@@ -395,11 +381,9 @@ func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
 		result["sidecarOptions"] = strings.Join(optionsAsStringSlice(m.Spec.Sidecars[0].Options), "")
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
-
 }
 
 func addStashContent(m *config.StepData, result map[string]string) {
-
 	//creates the context defaults for resources
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -459,7 +443,6 @@ func optionsAsStringSlice(options []config.Option) []string {
 }
 
 func sortStepParameters(stepData *config.StepData) {
-
 	if stepData.Spec.Inputs.Parameters != nil {
 		parameters := stepData.Spec.Inputs.Parameters
 
