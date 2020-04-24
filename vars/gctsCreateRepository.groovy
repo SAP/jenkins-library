@@ -9,7 +9,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
         List credentials = [
-        [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_username', 'PIPER_password']]
+        [type: 'usernamePassword', id: 'abapCredentialsId', env: ['PIPER_username', 'PIPER_password']]
         ]
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

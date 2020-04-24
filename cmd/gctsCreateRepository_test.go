@@ -14,7 +14,7 @@ import (
 func TestGctsCreateRepositorySuccess(t *testing.T) {
 
 	config := gctsCreateRepositoryOptions{
-		Host:                "http://testHost.wdf.sap.corp:50000",
+		Host:                "http://testHost.com:50000",
 		Client:              "000",
 		Repository:          "testRepo",
 		Username:            "testUser",
@@ -24,11 +24,11 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 		VSID:                "TST",
 	}
 
-	t.Run("creating repository locally successfull", func(t *testing.T) {
+	t.Run("creating repository on ABAP system successfull", func(t *testing.T) {
 
 		httpClient := httpMock{StatusCode: 200, ResponseBody: `{
 			"repository": {
-				"rid": "com.sap.cts.example",
+				"rid": "my-repository",
 				"name": "Example repository",
 				"role": "SOURCE",
 				"type": "GIT",
@@ -43,7 +43,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 				"config": [
 					{
 						"key": "CLIENT_VCS_URI",
-						"value": "git@github.wdf.sap.corp/example.git"
+						"value": "git@github.com/example.git"
 					}
 				]
 			},
@@ -65,7 +65,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "http://testHost.wdf.sap.corp:50000/sap/bc/cts_abapvcs/repository?sap-client=000", httpClient.URL)
+				assert.Equal(t, "http://testHost.com:50000/sap/bc/cts_abapvcs/repository?sap-client=000", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 
 	})
 
-	t.Run("repository already exists locally", func(t *testing.T) {
+	t.Run("repository already exists on ABAP system", func(t *testing.T) {
 
 		httpClient := httpMock{StatusCode: 500, ResponseBody: `{
 			"exception": "Repository already exists"
@@ -98,7 +98,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 	config := gctsCreateRepositoryOptions{
-		Host:                "http://testHost.wdf.sap.corp:50000",
+		Host:                "http://testHost.com:50000",
 		Client:              "000",
 		Repository:          "testRepo",
 		Username:            "testUser",
@@ -142,7 +142,7 @@ func TestGctsCreateRepositoryFailure(t *testing.T) {
 
 		err := createRepository(&config, nil, nil, &httpClient)
 
-		assert.EqualError(t, err, "creating repository on the ABAP system http://testHost.wdf.sap.corp:50000 failed: a http error occurred")
+		assert.EqualError(t, err, "creating repository on the ABAP system http://testHost.com:50000 failed: a http error occurred")
 	})
 }
 
