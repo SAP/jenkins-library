@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -64,13 +65,25 @@ func mockOsRename(t *testing.T, expectOld, expectNew string) func(string, string
 	}
 }
 
+func createTaskReportFile(t *testing.T, workingDir string) {
+	require.NoError(t, os.MkdirAll(filepath.Join(workingDir, ".scannerwork"), 0755))
+	require.NoError(t, ioutil.WriteFile(filepath.Join(workingDir, ".scannerwork", "report-task.txt"), []byte("projectKey=piper-test\nserverUrl=https://sonarcloud.io\nserverVersion=8.0.0.12345\ndashboardUrl=https://sonarcloud.io/dashboard/index/piper-test\nceTaskId=AXERR2JBbm9IiM5TEST\nceTaskUrl=https://sonarcloud.io/api/ce/task?id=AXERR2JBbm9IiMTEST"), 0755))
+	require.FileExists(t, filepath.Join(workingDir, ".scannerwork", "report-task.txt"))
+}
+
 func TestRunSonar(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockClient := mockDownloader{shouldFail: false}
 
 	t.Run("default", func(t *testing.T) {
 		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer os.RemoveAll(tmpFolder)
+		createTaskReportFile(t, tmpFolder)
+
 		sonar = sonarSettings{
+			workingDir:  tmpFolder,
 			binary:      "sonar-scanner",
 			environment: []string{},
 			options:     []string{},
@@ -90,7 +103,7 @@ func TestRunSonar(t *testing.T) {
 			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
 		}()
 		// test
-		err := runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1.2.3")
@@ -98,10 +111,18 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.environment, "SONAR_HOST_URL=https://sonar.sap.com")
 		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts"))
+		assert.FileExists(t, filepath.Join(sonar.workingDir, "sonarExecuteScan_reports.json"))
+		assert.FileExists(t, filepath.Join(sonar.workingDir, "sonarExecuteScan_links.json"))
 	})
 	t.Run("with custom options", func(t *testing.T) {
 		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer os.RemoveAll(tmpFolder)
+		createTaskReportFile(t, tmpFolder)
+
 		sonar = sonarSettings{
+			workingDir:  tmpFolder,
 			binary:      "sonar-scanner",
 			environment: []string{},
 			options:     []string{},
@@ -114,7 +135,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err := runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")

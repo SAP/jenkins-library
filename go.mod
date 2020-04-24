@@ -16,6 +16,7 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20200413145205-82d30a103c0a
 	github.com/google/go-github/v28 v28.1.1
 	github.com/google/uuid v1.1.1
+	github.com/magiconair/properties v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.5.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
