@@ -18,17 +18,19 @@ type ArtifactDescription struct {
 // Upload combines information about an artifact and its sub-artifacts which are supposed to be uploaded together.
 // Call SetRepoURL(), SetArtifactsVersion(), SetArtifactID(), and add at least one artifact via AddArtifact().
 type Upload struct {
-	repoURL    string
-	groupID    string
-	version    string
-	artifactID string
-	artifacts  []ArtifactDescription
+	mavenRepoURL string
+	npmRepoURL   string
+	groupID      string
+	version      string
+	artifactID   string
+	artifacts    []ArtifactDescription
 }
 
 // Uploader provides an interface for configuring the target Nexus Repository and adding artifacts.
 type Uploader interface {
-	SetRepoURL(nexusURL, nexusVersion, repository string) error
-	GetRepoURL() string
+	SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error
+	GetMavenRepoURL() string
+	GetNpmRepoURL() string
 	SetInfo(groupID, artifactsID, version string) error
 	GetGroupID() string
 	GetArtifactsID() string
@@ -38,13 +40,18 @@ type Uploader interface {
 	Clear()
 }
 
-// SetRepoURL constructs the base URL to the Nexus repository. No parameter can be empty.
-func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, repository string) error {
-	repoURL, err := getBaseURL(nexusURL, nexusVersion, repository)
+// SetRepoURL constructs the base URL to the Nexus repository. mavenRepository or npmRepository may be empty.
+func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error {
+	mavenRepoURL, err := getBaseURL(nexusURL, nexusVersion, mavenRepository)
 	if err != nil {
 		return err
 	}
-	nexusUpload.repoURL = repoURL
+	nexusUpload.mavenRepoURL = mavenRepoURL
+	npmRepositoryURL, err := getBaseURL(nexusURL, nexusVersion, npmRepository)
+	if err != nil {
+		return err
+	}
+	nexusUpload.npmRepoURL = npmRepositoryURL
 	return nil
 }
 
@@ -61,7 +68,7 @@ func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
 		}
 	}
 	if repository == "" {
-		return "", errors.New("repository must not be empty")
+		return "", nil
 	}
 	baseURL := nexusURL
 	switch nexusVersion {
@@ -78,9 +85,14 @@ func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
 	return baseURL, nil
 }
 
-// GetRepoURL returns the base URL for the nexus repository.
-func (nexusUpload *Upload) GetRepoURL() string {
-	return nexusUpload.repoURL
+// GetMavenRepoURL returns the base URL for the nexus-maven repository.
+func (nexusUpload *Upload) GetMavenRepoURL() string {
+	return nexusUpload.mavenRepoURL
+}
+
+// GetNpmRepoURL returns the base URL for the nexus-npm repository.
+func (nexusUpload *Upload) GetNpmRepoURL() string {
+	return nexusUpload.npmRepoURL
 }
 
 // ErrEmptyGroupID is returned from SetInfo, if groupID is empty.

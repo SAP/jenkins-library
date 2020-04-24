@@ -70,7 +70,7 @@ In this scenario, we want to show how to implement a basic continuous delivery p
 #### Jenkinsfile
 
 ```groovy
-@Library('piper-library-os') _
+@Library('piper-lib-os') _
 
 node(){
   stage('Prepare')   {

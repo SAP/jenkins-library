@@ -66,7 +66,15 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			startTime = time.Now()
 			log.SetStepName("kubernetesDeploy")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "kubernetesDeploy", &stepConfig, config.OpenPiperFile)
+			err := PrepareConfig(cmd, &metadata, "kubernetesDeploy", &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
+			log.RegisterSecret(stepConfig.ContainerRegistrySecret)
+			log.RegisterSecret(stepConfig.KubeToken)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}

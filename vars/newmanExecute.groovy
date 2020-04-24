@@ -129,7 +129,11 @@ void call(Map parameters = [:]) {
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                try {
+                    sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                } catch (e) {
+                    error "[${STEP_NAME}] ERROR: The execution of the newman tests failed, see the log for details."
+                }
             }
         }
     }

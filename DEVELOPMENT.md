@@ -8,6 +8,7 @@
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
 1. [Debugging](#debugging)
+1. [Release](#release)
 
 ## Getting started
 
@@ -197,3 +198,11 @@ Modify the `launch.json` located in folder `.vscode` of your project root to poi
 ```
 
 Finally set your breakpoints and use the `Launch` button in the VS code UI to start debugging.
+
+## Release
+
+Releases are performed using [Project "Piper" Action](https://github.com/SAP/project-piper-action).
+We release on schedule (once a week) and on demand.
+To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
+It requires a personal access token for GitHub with `repo` scope.
+Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.

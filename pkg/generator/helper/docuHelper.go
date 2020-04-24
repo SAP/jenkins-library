@@ -147,7 +147,7 @@ func createParametersTable(parameters []config.StepParameters) string {
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf(" | %v | %v | %v |  |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), v)
+			table += fmt.Sprintf(" | %v | %v | %v |  |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v))
 			delete(m, param.Name)
 		}
 	}

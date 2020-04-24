@@ -10,9 +10,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
-
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     'cloudFoundry',
         /**
          * Cloud Foundry API endpoint.
@@ -151,10 +149,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
 ]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * Deploys an application to a test or production space within Cloud Foundry.
@@ -347,10 +345,13 @@ private void handleCFNativeDeployment(Map config, script) {
                 CF_HOME           : "${config.dockerWorkspace}",
                 CF_PLUGIN_HOME    : "${config.dockerWorkspace}",
                 // if the Docker registry requires authentication the DOCKER_PASSWORD env variable must be set
-                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ''}",
+                CF_DOCKER_PASSWORD: "${dockerCredentials.isEmpty() ? '' : dockerPassword}",
                 STATUS_CODE       : "${config.smokeTestStatusCode}"
             ]
         ) {
+            if(dockerCredentials.size() > 0) {
+                config.dockerUsername = dockerUsername
+            }
             deployCfNative(config)
         }
     }
@@ -361,8 +362,10 @@ private prepareBlueGreenCfNativeDeploy(config,script) {
         writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
     }
 
-    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-    sh "chmod +x ${config.smokeTestScript}"
+    if (config.smokeTestScript) {
+        config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+        sh "chmod +x ${config.smokeTestScript}"
+    }
 
     config.deployCommand = 'blue-green-deploy'
     cfManifestSubstituteVariables(
@@ -461,8 +464,8 @@ def deployCfNative(config) {
         config.cloudFoundry.appName,
         config.deployOptions,
         config.cloudFoundry.manifest ? "-f '${config.cloudFoundry.manifest}'" : null,
-        config.deployDockerImage ? "--docker-image ${config.deployDockerImage}" : null,
-        binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : null,
+        config.deployDockerImage && config.deployType != 'blue-green' ? "--docker-image ${config.deployDockerImage}" : null,
+        config.dockerUsername && config.deployType != 'blue-green' ? "--docker-username ${dockerUsername}" : null,
         config.smokeTest,
         config.cfNativeDeployParameters
     ].findAll { s -> s != null && s != '' }.join(" ")
