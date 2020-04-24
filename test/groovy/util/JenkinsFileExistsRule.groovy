@@ -26,7 +26,13 @@ class JenkinsFileExistsRule implements TestRule {
 
     JenkinsFileExistsRule registerExistingFile(String file) {
         existingFiles.add(file)
-        return  this
+        return this
+    }
+
+    JenkinsFileExistsRule setExistingFiles(List files) {
+        existingFiles.clear()
+        existingFiles.addAll(files)
+        return this
     }
 
     @Override
