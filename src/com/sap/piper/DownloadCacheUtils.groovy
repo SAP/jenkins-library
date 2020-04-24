@@ -74,4 +74,11 @@ class DownloadCacheUtils {
         script.writeFile file: globalSettingsFilePath, text: mavenSettings
         return globalSettingsFilePath
     }
+
+    static String getNpmRegistryUri(Script script) {
+        script.node('master') {
+            return "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
+        }
+        return ""
+    }
 }
