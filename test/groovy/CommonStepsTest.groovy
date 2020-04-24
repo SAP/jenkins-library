@@ -60,8 +60,7 @@ public class CommonStepsTest extends BasePiperTest{
             'nexusUpload',
             'mavenBuild',
             'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey'
-            'abapEnvironmentRunATCCheck',
+            'cloudFoundryCreateServiceKey',
         ]
 
         List steps = getSteps().stream()
