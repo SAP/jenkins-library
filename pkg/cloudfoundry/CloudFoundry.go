@@ -17,6 +17,10 @@ func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
 
 	var err error
 
+	if options.CfAPIEndpoint == "" {
+		return false, errors.New("Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
+	}
+
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
 	var cfCheckLoginScript = []string{"api", options.CfAPIEndpoint}
 
@@ -48,24 +52,27 @@ func LoginCheck(options CloudFoundryLoginOptions) (bool, error) {
 func Login(options CloudFoundryLoginOptions) error {
 	var err error
 
+	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password."))
+	}
+
 	var loggedIn bool
 
 	loggedIn, err = LoginCheck(options)
-	if err != nil {
-		return fmt.Errorf("Failed to check if logged in: %w", err)
-	}
 
 	if loggedIn == true {
 		return err
 	}
 
-	log.Entry().Info("Logging in to Cloud Foundry")
+	if err == nil {
+		log.Entry().Info("Logging in to Cloud Foundry")
 
-	var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
+		var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
 
-	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
+		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-	err = c.RunExecutable("cf", cfLoginScript...)
+		err = c.RunExecutable("cf", cfLoginScript...)
+	}
 
 	if err != nil {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
@@ -102,35 +109,41 @@ func ReadServiceKey(options CloudFoundryReadServiceKeyOptions, cfLogoutOption bo
 	}
 
 	err = Login(config)
-	if err != nil {
-		return abapServiceKey, fmt.Errorf("Login at Cloud Foundry failed: %w", err)
-	}
-
-	//Reading Service Key
 	var serviceKeyBytes bytes.Buffer
 	c.Stdout(&serviceKeyBytes)
+	if err == nil {
+		//Reading Service Key
+		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKey).Info("Read service key for service instance")
 
-	log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKey).Info("Read service key for service instance")
+		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKey}
 
-	cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKey}
+		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
+	}
+	if err == nil {
+		var serviceKeyJSON string
 
-	err = c.RunExecutable("cf", cfReadServiceKeyScript...)
+		if len(serviceKeyBytes.String()) > 0 {
+			var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
+			serviceKeyJSON = strings.Join(lines[2:], "")
+		}
+
+		json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
+		if abapServiceKey == (ServiceKey{}) {
+			return abapServiceKey, errors.New("Parsing the service key failed")
+		}
+
+		log.Entry().Info("Service Key read successfully")
+	}
 	if err != nil {
+		if cfLogoutOption == true {
+			var logoutErr error
+			logoutErr = Logout()
+			if logoutErr != nil {
+				return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
+			}
+		}
 		return abapServiceKey, fmt.Errorf("Reading Service Key failed: %w", err)
 	}
-	var serviceKeyJSON string
-
-	if len(serviceKeyBytes.String()) > 0 {
-		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-		serviceKeyJSON = strings.Join(lines[2:], "")
-	}
-
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-	if abapServiceKey == (ServiceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
-	}
-
-	log.Entry().Info("Service Key read successfully")
 
 	//Logging out of CF
 	if cfLogoutOption == true {
