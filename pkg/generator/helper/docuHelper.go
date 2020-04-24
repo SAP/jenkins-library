@@ -123,7 +123,7 @@ func docGenParameters(stepData config.StepData) string {
 	//create parameters detail section
 	parametersDetail := createParametersDetail(stepData.Spec.Inputs.Parameters)
 
-	return "Parameters\n\n" + parametersTable + "\n\n" + parametersDetail
+	return "Parameters\n\n" + parametersTable + "\n" + parametersDetail
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
@@ -141,13 +141,13 @@ func docGenConfiguration(stepData config.StepData) string {
 func createParametersTable(parameters []config.StepParameters) string {
 
 	var table = "| name | mandatory | default | possible values |\n"
-	table += "| ------- | --------- | ------- | ------- |\n"
+	table += "| ---- | --------- | ------- | --------------- |\n"
 
 	m := combineEqualParametersTogether(parameters)
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf(" | %v | %v | %v |  |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v))
+			table += fmt.Sprintf("| %v | %v | %v |  |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v))
 			delete(m, param.Name)
 		}
 	}
@@ -162,7 +162,7 @@ func createParametersDetail(parameters []config.StepParameters) string {
 	for _, param := range parameters {
 		if _, ok := m[param.Name]; !ok {
 			if len(param.Description) > 0 {
-				detail += fmt.Sprintf(" * ` %v ` :  %v \n ", param.Name, param.Description)
+				detail += fmt.Sprintf(" * `%v` : %v\n", param.Name, param.Description)
 				m[param.Name] = true
 			}
 		}
@@ -222,7 +222,7 @@ func createConfigurationTable(parameters []config.StepParameters) string {
 			general := contains(param.Scope, "GENERAL")
 			step := contains(param.Scope, "STEPS")
 
-			table += fmt.Sprintf(" | %v | %v | %v | \n ", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
+			table += fmt.Sprintf("| %v | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
 		}
 	}
 
