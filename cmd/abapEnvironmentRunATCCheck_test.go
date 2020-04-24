@@ -7,7 +7,6 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
-
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
 		config := abapEnvironmentRunATCCheckOptions{
 			Username: "testUser",
@@ -23,7 +22,6 @@ func TestHostConfig(t *testing.T) {
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})
-
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
 		//Testing without CfOrg parameter
 		config := abapEnvironmentRunATCCheckOptions{
@@ -45,7 +43,6 @@ func TestHostConfig(t *testing.T) {
 		con, err = checkHost(config, con)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
-
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
 		config := abapEnvironmentRunATCCheckOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -105,9 +102,27 @@ func TestFetchXcsrfToken(t *testing.T) {
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		resp, error := fetchXcsrfToken("GET", con, []byte(client.Body), client)
+		token, error := fetchXcsrfToken("GET", con, []byte(client.Body), client)
 		if error == nil {
-			assert.Equal(t, tokenExpected, resp)
+			assert.Equal(t, tokenExpected, token)
+		}
+	})
+	t.Run("failure case: fetch token", func(t *testing.T) {
+		tokenExpected := ""
+
+		client := &clientMock{
+			Body:  `Xcsrf Token test`,
+			Token: "",
+		}
+
+		con := connectionDetailsHTTP{
+			User:     "Test",
+			Password: "Test",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+		token, error := fetchXcsrfToken("GET", con, []byte(client.Body), client)
+		if error == nil {
+			assert.Equal(t, tokenExpected, token)
 		}
 	})
 }
@@ -174,5 +189,129 @@ func TestGetResultATCRun(t *testing.T) {
 			assert.Equal(t, int64(0), resp.ContentLength)
 			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 		}
+	})
+}
+
+func TestParseATCResult(t *testing.T) {
+	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage">
+				</error>
+				<error message="testMessage2">
+				</error>
+			</file>
+			<file name="testFile2">
+				<error message="testMessage3">
+				</error>
+			</file>
+		</checkstyle>`
+		body := []byte(bodyString)
+
+		err := parseATCResult(body)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("failure case: parsing empty xml", func(t *testing.T) {
+		var bodyString string
+		body := []byte(bodyString)
+
+		err := parseATCResult(body)
+		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
+	})
+}
+
+func TestBuildATCCheckBody(t *testing.T) {
+	t.Run("Test build body with no software component and package", func(t *testing.T) {
+		expectedpackagestring := ""
+		expectedsoftwarecomponentstring := ""
+
+		var err error
+		var config ATCconfig
+		var packageString, softwarecomponentString string
+
+		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+
+		assert.Equal(t, expectedpackagestring, packageString)
+		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
+		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+	})
+	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
+		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
+		expectedsoftwarecomponentstring := "<obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents>"
+
+		var err error
+		var config ATCconfig
+
+		config = ATCconfig{
+			ATCObjects{
+				Package: []Package{
+					Package{Name: "testPackage", IncludeSubpackages: true},
+					Package{Name: "testPackage2", IncludeSubpackages: false},
+				},
+				SoftwareComponent: []SoftwareComponent{
+					SoftwareComponent{Name: "testSoftwareComponent"},
+					SoftwareComponent{Name: "testSoftwareComponent2"},
+				},
+			},
+		}
+
+		var packageString, softwarecomponentString string
+
+		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+
+		assert.Equal(t, expectedpackagestring, packageString)
+		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
+		expectedpackagestring := ""
+		expectedsoftwarecomponentstring := ""
+
+		var err error
+		var config ATCconfig
+
+		config = ATCconfig{
+			ATCObjects{
+				Package: []Package{
+					Package{Name: "testPackage", IncludeSubpackages: true},
+					Package{Name: "testPackage2", IncludeSubpackages: false},
+				},
+			},
+		}
+
+		var packageString, softwarecomponentString string
+
+		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+
+		assert.Equal(t, expectedpackagestring, packageString)
+		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
+		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+
+	})
+	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
+		expectedpackagestring := ""
+		expectedsoftwarecomponentstring := ""
+
+		var err error
+		var config ATCconfig
+
+		config = ATCconfig{
+			ATCObjects{
+				SoftwareComponent: []SoftwareComponent{
+					SoftwareComponent{Name: "testSoftwareComponent"},
+					SoftwareComponent{Name: "testSoftwareComponent2"},
+				},
+			},
+		}
+
+		var packageString, softwarecomponentString string
+
+		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+
+		assert.Equal(t, expectedpackagestring, packageString)
+		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
+		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+
 	})
 }

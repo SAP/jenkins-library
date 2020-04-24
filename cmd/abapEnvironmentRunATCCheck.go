@@ -147,6 +147,9 @@ func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareCom
 }
 
 func parseATCResult(body []byte) error {
+	if len(body) == 0 {
+		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
+	}
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
 	err := ioutil.WriteFile("result.xml", body, 0644)
