@@ -33,7 +33,7 @@ abapEnvironmentRunATCCheck(
     cfServiceInstance: 'myServiceInstance',
     cfSserviceKeyName: 'myServiceKey',
     cfCredentialsId: 'cfCredentialsId',
-	atcrunConfig: 'atcrunconfig.yml',
+    atcrunConfig: 'atcrunconfig.yml',
     script: this,
 ) 
 ```
