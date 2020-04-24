@@ -135,9 +135,10 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 		}
 	}
 
-	execRunner.SetEnv(environment)
-
-	log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
+	if len(environment) > 0 {
+		log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
+		execRunner.SetEnv(environment)
+	}
 	return nil
 }
 
