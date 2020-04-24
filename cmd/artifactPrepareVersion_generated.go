@@ -193,7 +193,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "artifactPrepareVersion",
-			Aliases: []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
+			Aliases: []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "mavenExecute", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
