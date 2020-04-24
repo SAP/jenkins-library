@@ -1,5 +1,4 @@
-import com.sap.piper.PiperGoUtils
-import com.sap.piper.Utils
+import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -12,5 +11,8 @@ void call(Map parameters = [:]) {
         [type: 'ssh', id: 'gitSshKeyCredentialsId'],
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(parameters.script, parameters)
+    withEnv(["SSH_KNOWN_HOSTS=/var/jenkins_home/.ssh/known_hosts"]) {
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    }
 }
