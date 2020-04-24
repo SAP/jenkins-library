@@ -128,7 +128,7 @@ func docGenConfiguration(stepData config.StepData) string {
 	// create step configuration table
 	conf += createConfigurationTable(stepData.Spec.Inputs.Parameters)
 
-	return conf
+	return "Step configuration\n\n" + conf
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
