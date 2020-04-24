@@ -45,17 +45,14 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Config: ${config}"
 
-            try {
-                dockerWrapper(script, config) {
+            dockerWrapper(script, config) {
+                handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
                         sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                 }
-            } catch (ex) {
-                handleErrorDetails(stepName, ex)
             }
-
         }
     }
 }
@@ -142,16 +139,20 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
-void handleErrorDetails(String stepName, Exception ex) {
-    def errorDetailsFileName = "${stepName}_errorDetails.json"
-    if (fileExists(file: errorDetailsFileName)) {
-        def errorDetails = readJSON(file: errorDetailsFileName)
-        def errorCategory = ""
-        if (errorDetails.category) {
-            errorCategory = " (category: ${errorDetails.category})"
-            DebugReport.instance.failedBuild.category = errorDetails.category
+void handleErrorDetails(String stepName, Closure body) {
+    try {
+        body()
+    } catch (ex) {
+        def errorDetailsFileName = "${stepName}_errorDetails.json"
+        if (fileExists(file: errorDetailsFileName)) {
+            def errorDetails = readJSON(file: errorDetailsFileName)
+            def errorCategory = ""
+            if (errorDetails.category) {
+                errorCategory = " (category: ${errorDetails.category})"
+                DebugReport.instance.failedBuild.category = errorDetails.category
+            }
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.message}"
+        error "[${stepName}] Step execution failed. Error: ${ex}"
     }
-    error "[${stepName}] Step execution failed, please see log for details. Error: ${ex}"
 }

@@ -312,7 +312,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
-        exception.expectMessage("[noDetailsStep] Step execution failed, please see log for details. Error: hudson.AbortException: exit code 1")
+        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1")
 
         stepRule.step.piperExecuteBin(
             [
