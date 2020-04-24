@@ -123,7 +123,7 @@ func docGenParameters(stepData config.StepData) string {
 	//create parameters detail section
 	parametersDetail := createParametersDetail(stepData.Spec.Inputs.Parameters)
 
-	return "Parameters\n\n" + parametersTable + "\n" + parametersDetail
+	return "Parameters\n\n" + parametersTable + "\n\n" + parametersDetail
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
