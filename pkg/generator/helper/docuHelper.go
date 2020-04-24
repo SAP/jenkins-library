@@ -103,7 +103,7 @@ func docGenStepName(stepData config.StepData) string {
 	return stepData.Metadata.Name
 }
 
-//	Replaces the docGenDescription placeholder with content from the yaml
+// Replaces the docGenDescription placeholder with content from the yaml
 func docGenDescription(stepData config.StepData) string {
 	return "Description\n\n" + stepData.Metadata.LongDescription
 }
@@ -120,12 +120,11 @@ func docGenParameters(stepData config.StepData) string {
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
-	var configuration = ""
-	configuration += "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
+	var configuration = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
 	configuration += "In following sections of the config.yml the configuration is possible:\n\n"
 	// create step configuration table
 	configuration += createConfigurationTable(stepData.Spec.Inputs.Parameters)
-	return "Step configuration\n\n" + configuration
+	return "Step Configuration\n\n" + configuration
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
@@ -328,10 +327,10 @@ func addValuesToMap(container config.Container, key string, resources map[string
 	//Different when key is set (Param.Name + Param.Value)
 	workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
 	if len(key) > 0 {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(optionsAsStringSlice(container.Options), "")))
-		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v: `%v`", key, container.Image))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v: `%v`", key, workingDir))
 	} else {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
