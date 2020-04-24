@@ -201,9 +201,6 @@ spec:
     secrets:
     - name: gitHttpsCredentialsId
       type: jenkins
-      aliases:
-        - name: gitCredentialsId
-          deprecated: true
     - name: gitSshKeyCredentialsId
       type: jenkins
       aliases:

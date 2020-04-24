@@ -14,7 +14,7 @@ void call(Map parameters = [:]) {
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
-    withEnv(["SSH_KNOWN_HOSTS=/var/jenkins_home/.ssh/known_hosts"]) {
+    withEnv(["SSH_KNOWN_HOSTS=${env.JENKINS_HOME}/.ssh/known_hosts"]) {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     }
 }
