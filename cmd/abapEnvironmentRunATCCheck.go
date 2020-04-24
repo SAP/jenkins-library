@@ -80,26 +80,10 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		json.Unmarshal(result, &ATCRunConfig)
 	}
 
-	var packageString = ""
+	var packageString string
 	var softwareComponentString string
 	if err == nil {
-		if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
-			err = fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
-		}
-
-		//Build Package XML body
-		packageString += "<obj:packages>"
-		for _, s := range ATCRunConfig.Objects.Package {
-			packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
-		}
-		packageString += "</obj:packages>"
-
-		//Build SC XML body
-		softwareComponentString += "<obj:softwarecomponents>"
-		for _, s := range ATCRunConfig.Objects.SoftwareComponent {
-			softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
-		}
-		softwareComponentString += "</obj:softwarecomponents>"
+		err, packageString, softwareComponentString = buildATCCheckBody(ATCRunConfig, packageString, softwareComponentString)
 	}
 
 	//Trigger ATC run
@@ -131,16 +115,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		parsedXML := new(Result)
-		xml.Unmarshal([]byte(body), &parsedXML)
-		err = ioutil.WriteFile("result.xml", body, 0644)
-		if err == nil {
-			for _, s := range parsedXML.Files {
-				for _, t := range s.ATCErrors {
-					log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
-				}
-			}
-		}
+		err = parseATCResult(body)
 	}
 
 	if err != nil {
@@ -148,6 +123,44 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
+}
+
+func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareComponentString string) (error, string, string) {
+	if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
+		return fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them")), "", ""
+	}
+
+	//Build Package XML body
+	packageString += "<obj:packages>"
+	for _, s := range ATCRunConfig.Objects.Package {
+		packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
+	}
+	packageString += "</obj:packages>"
+
+	//Build SC XML body
+	softwareComponentString += "<obj:softwarecomponents>"
+	for _, s := range ATCRunConfig.Objects.SoftwareComponent {
+		softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
+	}
+	softwareComponentString += "</obj:softwarecomponents>"
+	return nil, packageString, softwareComponentString
+}
+
+func parseATCResult(body []byte) error {
+	parsedXML := new(Result)
+	xml.Unmarshal([]byte(body), &parsedXML)
+	err := ioutil.WriteFile("result.xml", body, 0644)
+	if err == nil {
+		for _, s := range parsedXML.Files {
+			for _, t := range s.ATCErrors {
+				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
+			}
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("Writing results to XML file failed: %w", err)
+	}
+	return nil
 }
 
 func runATC(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {

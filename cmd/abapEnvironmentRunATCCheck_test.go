@@ -149,7 +149,6 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 		resp, err := getHTTPResponseATCRun("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if err == nil {
-			assert.Equal(t, 200, resp.StatusCode)
 			assert.Equal(t, int64(0), resp.ContentLength)
 			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 		}
@@ -172,7 +171,6 @@ func TestGetResultATCRun(t *testing.T) {
 		resp, err := getResultATCRun("GET", con, []byte(client.Body), client)
 		defer resp.Body.Close()
 		if err == nil {
-			assert.Equal(t, 200, resp.StatusCode)
 			assert.Equal(t, int64(0), resp.ContentLength)
 			assert.Equal(t, []string([]string(nil)), resp.Header["X-Crsf-Token"])
 		}
