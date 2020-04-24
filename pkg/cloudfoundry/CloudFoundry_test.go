@@ -14,7 +14,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint.")
 	})
 
-	t.Run("CF Login check: success case", func(t *testing.T) {
+	t.Run("CF Login check: failure case", func(t *testing.T) {
 		cfconfig := CloudFoundryLoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
@@ -44,7 +44,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 }
 
 func TestCloudFoundryLogout(t *testing.T) {
-	t.Run("CF Logout: missing parameter", func(t *testing.T) {
+	t.Run("CF Logout", func(t *testing.T) {
 		err := Logout()
 		assert.Equal(t, nil, err)
 	})
