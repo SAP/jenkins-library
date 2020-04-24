@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ------- | --------- | ------- | ------- |\n | param0 | No | val0 |  |\n  | param1 | No |  |  |\n  | param2 | Yes |  |  |\n \n\n## Details\n\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
+var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ------- | --------- | ------- | ------- |\n | `param0` | No | val0 |  |\n  | `param1` | No |  |  |\n  | `param2` | Yes |  |  |\n \n\n## Details\n\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
 
 func configMetaDataMock(name string) (io.ReadCloser, error) {
 	meta1 := `metadata:
@@ -366,8 +366,8 @@ func TestAddNewParameterWithCondition(t *testing.T) {
 			x, want string
 			i       int
 		}{
-			{"param0", "name0a=val0a:default0 name0b=val0b:default0", 0},
-			{"param1", "name1a=val1a:default1", 1},
+			{"param0", "name0a=`val0a`:`default0` name0b=`val0b`:`default0`", 0},
+			{"param1", "name1a=`val1a`:`default1`", 1},
 		}
 		for _, c := range cases {
 
@@ -389,7 +389,7 @@ func TestAddExistingParameterWithCondition(t *testing.T) {
 		cases := []struct {
 			x, want string
 		}{
-			{"param1", "name1a=val1a:default1  <br> name1b=val1b:default1"},
+			{"param1", "name1a=`val1a`:`default1`  <br> name1b=`val1b`:`default1`"},
 		}
 		for _, c := range cases {
 
