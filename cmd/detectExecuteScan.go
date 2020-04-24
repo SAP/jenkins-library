@@ -50,7 +50,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
 
-	if piperutils.ContainsString(config.Scanners, "signature") {
+	if sliceUtils.ContainsString(config.Scanners, "signature") {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
