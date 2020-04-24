@@ -62,11 +62,18 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	execRunner := utils.getExecRunner()
 	log.Entry().Infof("NPM Registry configuration: defaultNpmRegistry %s, sapNpmRegistry %s",
 		options.DefaultNpmRegistry, options.SapNpmRegistry)
-	environment := []string{"npm_config_@sap:registry=" + options.SapNpmRegistry}
+	//environment := []string{"npm_config_@sap:registry=" + options.SapNpmRegistry}
+	//if options.DefaultNpmRegistry != "" {
+	//	environment = append(environment, "npm_config_registry="+options.DefaultNpmRegistry)
+	//}
+	//execRunner.SetEnv(environment)
+
 	if options.DefaultNpmRegistry != "" {
-		environment = append(environment, "npm_config_registry="+options.DefaultNpmRegistry)
+		_ = execRunner.RunExecutable("npm", "config", "set", "registry", options.DefaultNpmRegistry)
 	}
-	execRunner.SetEnv(environment)
+	_ = execRunner.RunExecutable("npm", "config", "set", "@sap:registry", options.SapNpmRegistry)
+
+	_ = execRunner.RunExecutable("npm", "config", "ls", "-l")
 
 	packageJSONFiles, err := findPackageJSONFiles(utils)
 	if err != nil {
