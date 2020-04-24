@@ -104,7 +104,7 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 //	Replaces the docGenDescription placeholder with content from the yaml
 func docGenDescription(stepData config.StepData) string {
 
-	desc := "Description \n\n"
+	desc := "Description\n\n"
 
 	desc += stepData.Metadata.LongDescription
 
@@ -129,7 +129,7 @@ func docGenParameters(stepData config.StepData) string {
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
 
-	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\n"
+	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
 	conf += "In following sections of the config.yml the configuration is possible:\n\n"
 
 	// create step configuration table
@@ -141,13 +141,13 @@ func docGenConfiguration(stepData config.StepData) string {
 func createParametersTable(parameters []config.StepParameters) string {
 
 	var table = "| name | mandatory | default | possible values |\n"
-	table += "| ------- | --------- | ------- | ------- |\n"
+	table += "| ---- | --------- | ------- | --------------- |\n"
 
 	m := combineEqualParametersTogether(parameters)
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf(" | `%v` | %v | %v | %v |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
+			table += fmt.Sprintf("| `%v` | %v | %v | %v |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
 			delete(m, param.Name)
 		}
 	}
@@ -162,7 +162,7 @@ func createParametersDetail(parameters []config.StepParameters) string {
 	for _, param := range parameters {
 		if _, ok := m[param.Name]; !ok {
 			if len(param.Description) > 0 {
-				detail += fmt.Sprintf(" * ` %v ` :  %v \n ", param.Name, param.Description)
+				detail += fmt.Sprintf(" * `%v`: %v\n", param.Name, param.Description)
 				m[param.Name] = true
 			}
 		}
@@ -192,7 +192,7 @@ func addExistingParameterWithCondition(param config.StepParameters, m map[string
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] = fmt.Sprintf("%v <br> %v=`%v`:`%v` ", m[param.Name], p.Name, p.Value, param.Default)
+					m[param.Name] = fmt.Sprintf("%v<br>%v=`%v`: `%v` ", m[param.Name], p.Name, p.Value, param.Default)
 				}
 			}
 		}
@@ -205,7 +205,7 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] += fmt.Sprintf("%v=`%v`:`%v` ", p.Name, p.Value, param.Default)
+					m[param.Name] += fmt.Sprintf("%v=`%v`: `%v` ", p.Name, p.Value, param.Default)
 				}
 			}
 		}
@@ -215,14 +215,14 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 func createConfigurationTable(parameters []config.StepParameters) string {
 
 	var table = "| parameter | general | step/stage |\n"
-	table += "|-----------|---------|------------|\n"
+	table += "| --------- | ------- | ---------- |\n"
 
 	for _, param := range parameters {
 		if len(param.Scope) > 0 {
 			general := contains(param.Scope, "GENERAL")
 			step := contains(param.Scope, "STEPS")
 
-			table += fmt.Sprintf(" | %v | %v | %v | \n ", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
+			table += fmt.Sprintf("| %v | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
 		}
 	}
 
