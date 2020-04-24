@@ -61,6 +61,7 @@ public class CommonStepsTest extends BasePiperTest{
             'mavenBuild',
             'mavenExecuteStaticCodeChecks',
             'cloudFoundryCreateServiceKey',
+            'abapEnvironmentRunATCCheck',
         ]
 
         List steps = getSteps().stream()
