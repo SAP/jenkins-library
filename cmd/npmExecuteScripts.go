@@ -110,15 +110,14 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
 	var environment []string
 	configurableRegistries := []string{"registry", "@sap:registry"}
+	var buffer bytes.Buffer
+	execRunner.Stdout(&buffer)
 	for _, registry := range configurableRegistries {
-		var buffer bytes.Buffer
-		execRunner.Stdout(&buffer)
 		err := execRunner.RunExecutable("npm", "config", "get", registry)
 		if err != nil {
 			return err
 		}
 		preConfiguredRegistry := buffer.String()
-		execRunner.Stdout(log.Entry().Writer())
 
 		if preConfiguredRegistry == "undefined" {
 			if registry == "registry" {
@@ -132,6 +131,7 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 			}
 		}
 	}
+	defer execRunner.Stdout(log.Entry().Writer())
 
 	execRunner.SetEnv(environment)
 
