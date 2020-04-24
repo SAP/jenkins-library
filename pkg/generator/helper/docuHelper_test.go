@@ -400,3 +400,41 @@ func TestAddExistingParameterWithCondition(t *testing.T) {
 		}
 	})
 }
+
+func TestRenderPossibleValues(t *testing.T) {
+	t.Run("none", func(t *testing.T) {
+		// init
+		var in []interface{}
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Empty(t, out)
+	})
+	t.Run("one", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, "fu")
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`fu`", out)
+	})
+	t.Run("many", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, "fu", "fara")
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`fu`, `fara`", out)
+	})
+	t.Run("boolean", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, false, true)
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`false`, `true`", out)
+	})
+}
