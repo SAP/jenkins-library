@@ -13,12 +13,9 @@ class NexusUploadTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
 
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
-    private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
     private JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
-    //private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this, [])
 
     private List withEnvArgs = []
 
@@ -28,23 +25,15 @@ class NexusUploadTest extends BasePiperTest {
         .around(exception)
         .around(new JenkinsReadYamlRule(this))
         .around(credentialsRule)
-        .around(readJsonRule)
+        .around(new JenkinsReadJsonRule(this))
         .around(shellCallRule)
         .around(stepRule)
         .around(writeFileRule)
-        .around(fileExistsRule)
-    //    .around(dockerExecuteRule)
+        .around(new JenkinsFileExistsRule(this, []))
 
     @Before
     void init() {
-        helper.registerAllowedMethod('fileExists', [Map], {
-            return true
-        })
         helper.registerAllowedMethod("readJSON", [Map], { m ->
-            if (m.file == 'nexusUpload_reports.json')
-                return [[target: "1234.pdf", mandatory: true]]
-            if (m.file == 'nexusUpload_links.json')
-                return []
             if (m.text != null)
                 return new JsonSlurper().parseText(m.text)
         })
@@ -54,9 +43,6 @@ class NexusUploadTest extends BasePiperTest {
             }
             return closure()
         })
-//        helper.registerAllowedMethod("dockerExecute", [Map, Closure], { map, closure ->
-//            // ignore
-//        })
         credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
         shellCallRule.setReturnValue(
             './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/nexusUpload.yaml\'',
