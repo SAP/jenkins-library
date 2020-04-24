@@ -114,6 +114,7 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 		var buffer bytes.Buffer
 		execRunner.Stdout(&buffer)
 		err := execRunner.RunExecutable("npm", "config", "get", registry)
+		execRunner.Stdout(log.Entry().Writer())
 		if err != nil {
 			return err
 		}
@@ -133,7 +134,6 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 			}
 		}
 	}
-	defer execRunner.Stdout(log.Entry().Writer())
 
 	execRunner.SetEnv(environment)
 
