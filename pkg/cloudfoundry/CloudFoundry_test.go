@@ -20,7 +20,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		}
 		loggedIn, err := LoginCheck(cfconfig)
 		assert.Equal(t, false, loggedIn)
-		assert.EqualError(t, err, "Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
+		assert.Error(t, err)
 	})
 }
 
@@ -39,7 +39,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 			Password:      "testPassword",
 		}
 		err := Login(cfconfig)
-		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
+		assert.Error(t, err)
 	})
 }
 
@@ -74,6 +74,6 @@ func TestCloudFoundryReadServiceKey(t *testing.T) {
 		assert.Equal(t, "", abapKey.Binding.Version)
 		assert.Equal(t, "", abapKey.Systemid)
 		assert.Equal(t, "", abapKey.URL)
-		assert.EqualError(t, err, "Reading Service Key failed: Failed to login to Cloud Foundry: Failed to check if logged in: running command 'cf' failed: cmd.Run() failed: exit status 1")
+		assert.Error(t, err)
 	})
 }
