@@ -81,6 +81,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        possibleValues:
+        - custom
+        - docker
+        - dub
+        - golang
+        - maven
+        - mta
+        - npm
+        - pip
+        - sbt
       - name: commitUserName
         aliases:
           - name: gitUserName
