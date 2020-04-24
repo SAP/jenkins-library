@@ -18,7 +18,7 @@ Examples will be listed below.
 
 ## Example
 
-### ATC run via Cloud Foundry Service Key example for Jenkinsfile
+### ATC run via Cloud Foundry Service Key example in Jenkinsfile
 
 The following example triggers an ATC run via reading the Service Key of an ABAP instance in Cloud Foundry.
 You can store the credentials in Jenkins and use the cfCredentialsId parameter to authenticate to Cloud Foundry.
@@ -38,7 +38,7 @@ abapEnvironmentRunATCCheck(
 ) 
 ```
 
-### ATC run via direct ABAP endpoint configuration for Jenkinsfile
+### ATC run via direct ABAP endpoint configuration in Jenkinsfile
 
 This  example triggers an ATC run directly on the ABAP endpoint.
 In order to trigger the ATC run you have to pass the username and password for authentication to the ABAP endpoint via parameters.
