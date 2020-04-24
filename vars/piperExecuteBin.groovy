@@ -1,6 +1,7 @@
 import com.sap.piper.BashUtils
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 
@@ -26,6 +27,10 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
+
+        // When converting to JSON and back again, entries which had a 'null' value will now have a value
+        // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+        stepParameters = MapUtils.pruneNulls(stepParameters)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",

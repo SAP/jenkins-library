@@ -52,6 +52,7 @@ type StepParameters struct {
 	Type            string              `json:"type"`
 	Mandatory       bool                `json:"mandatory,omitempty"`
 	Default         interface{}         `json:"default,omitempty"`
+	PossibleValues  []interface{}       `json:"possibleValues,omitempty"`
 	Aliases         []Alias             `json:"aliases,omitempty"`
 	Conditions      []Condition         `json:"conditions,omitempty"`
 	Secret          bool                `json:"secret,omitempty"`
