@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -49,21 +50,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
 
-	if sliceContains(config.Scanners, "signature") {
+	if sliceUtils.ContainsString(config.Scanners, "signature") {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if sliceContains(config.Scanners, "source") {
+	if sliceUtils.ContainsString(config.Scanners, "source") {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 	return args
-}
-
-func sliceContains(slice []string, find string) bool {
-	for _, elem := range slice {
-		if elem == find {
-			return true
-		}
-	}
-	return false
 }
