@@ -108,18 +108,20 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	return err
 }
 func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
-	var environment []string
+	environment := []string{}
 	configurableRegistries := []string{"registry", "@sap:registry"}
-	var buffer bytes.Buffer
-	execRunner.Stdout(&buffer)
 	for _, registry := range configurableRegistries {
+		var buffer bytes.Buffer
+		execRunner.Stdout(&buffer)
 		err := execRunner.RunExecutable("npm", "config", "get", registry)
 		if err != nil {
 			return err
 		}
 		preConfiguredRegistry := buffer.String()
 
-		if preConfiguredRegistry == "undefined" {
+		log.Entry().Info("Discovered pre-configured npm registry " + preConfiguredRegistry)
+
+		if preConfiguredRegistry == "undefined" || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org") || strings.HasPrefix(preConfiguredRegistry, "https://npm.sap.com") {
 			if registry == "registry" {
 				log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
 				environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
@@ -135,7 +137,7 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 
 	execRunner.SetEnv(environment)
 
-	println("dbgxx" + strings.Join(environment, ", "))
+	log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
 	return nil
 }
 
