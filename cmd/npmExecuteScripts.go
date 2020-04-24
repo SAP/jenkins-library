@@ -110,6 +110,7 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 
 	return err
 }
+
 func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) error {
 	environment := []string{}
 	const sapRegistry = "@sap:registry"
@@ -138,10 +139,8 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 		}
 	}
 
-	if len(environment) > 0 {
-		log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
-		execRunner.SetEnv(environment)
-	}
+	log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
+	execRunner.SetEnv(environment)
 	return nil
 }
 
