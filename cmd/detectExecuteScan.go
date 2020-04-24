@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"sliceUtils github.com/SAP/jenkins-library/pkg/piperutils"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
