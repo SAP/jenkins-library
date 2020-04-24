@@ -147,7 +147,7 @@ func createParametersTable(parameters []config.StepParameters) string {
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf("| %v | %v | %v |  |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v))
+			table += fmt.Sprintf("| %v | %v | %v |  |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
 			delete(m, param.Name)
 		}
 	}
@@ -467,4 +467,18 @@ func sortStepParameters(stepData *config.StepData) {
 			return parameters[i].Name < parameters[j].Name
 		})
 	}
+}
+
+func possibleValuesToString(in []interface{}) (out string) {
+	if len(in) == 0 {
+		return
+	}
+	out = fmt.Sprintf("`%v`", in[0])
+	if len(in) == 1 {
+		return
+	}
+	for _, value := range in[1:] {
+		out += fmt.Sprintf(", `%v`", value)
+	}
+	return
 }

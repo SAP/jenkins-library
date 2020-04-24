@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ------- | --------- | ------- | ------- |\n | param0 | No | val0 |  |\n  | param1 | No | <nil> |  |\n  | param2 | Yes | <nil> |  |\n \n\n## Details\n\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
+var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ------- | --------- | ------- | ------- |\n | param0 | No | val0 |  |\n  | param1 | No |  |  |\n  | param2 | Yes |  |  |\n \n\n## Details\n\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
 
 func configMetaDataMock(name string) (io.ReadCloser, error) {
 	meta1 := `metadata:
@@ -398,5 +398,43 @@ func TestAddExistingParameterWithCondition(t *testing.T) {
 			assert.True(t, len(m[c.x]) > 0)
 			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v", m[c.x]))
 		}
+	})
+}
+
+func TestRenderPossibleValues(t *testing.T) {
+	t.Run("none", func(t *testing.T) {
+		// init
+		var in []interface{}
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Empty(t, out)
+	})
+	t.Run("one", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, "fu")
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`fu`", out)
+	})
+	t.Run("many", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, "fu", "fara")
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`fu`, `fara`", out)
+	})
+	t.Run("boolean", func(t *testing.T) {
+		// init
+		var in []interface{}
+		in = append(in, false, true)
+		// test
+		out := possibleValuesToString(in)
+		// assert
+		assert.Equal(t, "`false`, `true`", out)
 	})
 }
