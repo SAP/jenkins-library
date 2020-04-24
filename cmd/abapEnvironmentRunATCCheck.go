@@ -18,6 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
@@ -36,26 +37,12 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 	client.SetOptions(clientOptions)
 
-	//Cloud Foundry Authentication
-	/*cfloginconfig := cloudfoundry.CloudFoundryLoginOptions{
-		CfAPIEndpoint: config.CfAPIEndpoint,
-		CfOrg:         config.CfOrg,
-		CfSpace:       config.CfSpace,
-		Username:      config.Username,
-		Password:      config.Password,
-	}*/
-
 	var details connectionDetailsHTTP
 	var abapEndpoint string
-	//If Host flag is empty read Service Key instead
+	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
 		details, err = checkHost(config, details)
 	}
-
-	/* Check if login is needed before & after reading service key
-	if config.CfAPIEndpoint != "" && err == nil {
-		err = cloudfoundry.Login(cfloginconfig)
-	}*/
 
 	//Fetch Xcrsf-Token
 	if err == nil {
@@ -75,9 +62,12 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 
-	//Parse YAML ATC run configuration as body for ATC run trigger
-	filelocation, err := filepath.Glob(config.AtcrunConfig)
+	var filelocation []string
 	var yamlFile []byte
+	if err == nil {
+		filelocation, err = filepath.Glob(config.AtcrunConfig)
+	}
+	//Parse YAML ATC run configuration as body for ATC run trigger
 
 	if err == nil {
 		filename, _ := filepath.Abs(filelocation[0])
@@ -127,7 +117,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	if err == nil {
 		location = resp.Header.Get("Location")
 		details.URL = abapEndpoint + location
-		location, err = pollATCRun(details, body, &client, config)
+		location, err = pollATCRun(details, body, &client)
 	}
 
 	if err == nil {
@@ -208,6 +198,9 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 			CfServiceInstance: config.CfServiceInstance,
 			CfServiceKey:      config.CfServiceKeyName,
 		}
+		if cfconfig.CfServiceInstance == "" || cfconfig.CfOrg == "" || cfconfig.CfAPIEndpoint == "" || cfconfig.CfSpace == "" || cfconfig.CfServiceKey == "" {
+			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		}
 		var abapServiceKey cloudfoundry.ServiceKey
 		abapServiceKey, err = cloudfoundry.ReadServiceKey(cfconfig, false)
 		if err != nil {
@@ -224,7 +217,7 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	return details, err
 }
 
-func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender, config abapEnvironmentRunATCCheckOptions) (string, error) {
+func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
 
 	log.Entry().WithField("ABAP endpoint", details.URL).Info("Polling ATC run status")
 
@@ -245,8 +238,11 @@ func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sen
 		if x.Status == "Not Created" {
 			return "", err
 		}
-		if x.Status != "Running" && x.Status != "Not Yet Started" {
+		if x.Status != "Running" && x.Status != "Not Yet Started" && x.Status == "Completed" {
 			return x.Link[0].Key, err
+		}
+		if x.Status == "" {
+			return "", fmt.Errorf("Could not get any response from ATC poll: %w", errors.New("Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -254,14 +250,14 @@ func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sen
 
 func getHTTPResponseATCRun(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
-	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting ATC results")
+	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Polling ATC run status")
 
 	header := make(map[string][]string)
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting HTTP response failed: %w", err)
+		return req, fmt.Errorf("Getting ATC run status failed: %w", err)
 	}
 	return req, err
 }
@@ -276,7 +272,7 @@ func getResultATCRun(requestType string, details connectionDetailsHTTP, body []b
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
-		return req, fmt.Errorf("Getting HTTP response failed: %w", err)
+		return req, fmt.Errorf("Getting ATC run results failed: %w", err)
 	}
 	return req, err
 }
