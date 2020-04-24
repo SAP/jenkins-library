@@ -305,16 +305,13 @@ func newMockUtilsBundle() mockUtilsBundle {
 
 func (m *mockUtilsBundle) fileExists(path string) (bool, error) {
     content := m.files[path]
-    if content == nil {
-        return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
-    }
-    return true, nil
+    return content != nil, nil
 }
 
 func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
     content := m.files[path]
     if content == nil {
-        return nil, fmt.Errorf("could not read '%s'", path)
+        return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrNotExist)
     }
     return content, nil
 }
