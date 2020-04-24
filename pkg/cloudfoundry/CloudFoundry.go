@@ -13,7 +13,7 @@ import (
 
 var c = command.Command{}
 
-//Checks if user is logged in to Cloud Foundry.
+//LoginCheck checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
 //If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
 func LoginCheck(options LoginOptions) (bool, error) {
@@ -51,7 +51,7 @@ func LoginCheck(options LoginOptions) (bool, error) {
 	return false, err
 }
 
-//Logs User in to Cloud Foundry via cf cli.
+//Login logs user in to Cloud Foundry via cf cli.
 //Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 func Login(options LoginOptions) error {
 
@@ -86,7 +86,7 @@ func Login(options LoginOptions) error {
 	return nil
 }
 
-//Logs User out of Cloud Foundry
+//Logout logs User out of Cloud Foundry
 //Logout can be perforned via 'cf logout' command regardless if user is logged in or not
 func Logout() error {
 	var cfLogoutScript = "logout"
@@ -101,7 +101,7 @@ func Logout() error {
 	return nil
 }
 
-//Reads ABAP Service Key from Cloud Foundry and returns it.
+//ReadServiceKey ABAP Service Key from Cloud Foundry and returns it.
 //Depending on user requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout or not.
 func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
 	var abapServiceKey ServiceKey
@@ -164,7 +164,7 @@ func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey,
 	return abapServiceKey, nil
 }
 
-//Options for reading CF Service Key
+//SerciceKeyOptions for reading CF Service Key
 type ServiceKeyOptions struct {
 	CfAPIEndpoint     string
 	CfOrg             string
@@ -175,7 +175,7 @@ type ServiceKeyOptions struct {
 	Password          string
 }
 
-//Options for logging in to CF
+//LoginOptions for logging in to CF
 type LoginOptions struct {
 	CfAPIEndpoint string
 	CfOrg         string
@@ -184,16 +184,16 @@ type LoginOptions struct {
 	Password      string
 }
 
-//Struct to parse CF Service Key
+//ServiceKey struct to parse CF Service Key
 type ServiceKey struct {
-	Abap     AbapConenction `json:"abap"`
+	Abap     AbapConnection `json:"abap"`
 	Binding  AbapBinding    `json:"binding"`
 	Systemid string         `json:"systemid"`
 	URL      string         `json:"url"`
 }
 
-//Contains information about the ABAP connection
-type AbapConenction struct {
+//AbapConnection contains information about the ABAP connection for the ABAP endpoint
+type AbapConnection struct {
 	CommunicationArrangementID string `json:"communication_arrangement_id"`
 	CommunicationScenarioID    string `json:"communication_scenario_id"`
 	CommunicationSystemID      string `json:"communication_system_id"`
@@ -201,7 +201,7 @@ type AbapConenction struct {
 	Username                   string `json:"username"`
 }
 
-//Contains information about service binding
+//AbapBinding contains information about service binding in Cloud Foundry
 type AbapBinding struct {
 	Env     string `json:"env"`
 	ID      string `json:"id"`
