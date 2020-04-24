@@ -192,7 +192,7 @@ func addExistingParameterWithCondition(param config.StepParameters, m map[string
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] = fmt.Sprintf("%v <br> %v=%v:%v ", m[param.Name], p.Name, p.Value, param.Default)
+					m[param.Name] = fmt.Sprintf("%v <br> %v=`%v`:`%v` ", m[param.Name], p.Name, p.Value, param.Default)
 				}
 			}
 		}
@@ -205,7 +205,7 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] += fmt.Sprintf("%v=%v:%v ", p.Name, p.Value, param.Default)
+					m[param.Name] += fmt.Sprintf("%v=`%v`:`%v` ", p.Name, p.Value, param.Default)
 				}
 			}
 		}
