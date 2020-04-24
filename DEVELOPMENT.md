@@ -340,6 +340,7 @@ func TestSomeFunction() {
         assert.EqualError(t, err, "could not read 'some/path/file.xml'")
     })
 }
+```
 
 #### Global Function Pointers
 
