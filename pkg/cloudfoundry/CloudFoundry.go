@@ -13,12 +13,10 @@ import (
 
 var c = command.Command{}
 
+//Checks if user is logged in to Cloud Foundry.
+//If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
+//If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
 func LoginCheck(options LoginOptions) (bool, error) {
-
-	//Checks if user is logged in to Cloud Foundry.
-	//If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
-	//If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
-
 	var err error
 
 	if options.CfAPIEndpoint == "" {
@@ -53,10 +51,9 @@ func LoginCheck(options LoginOptions) (bool, error) {
 	return false, err
 }
 
+//Logs User in to Cloud Foundry via cf cli.
+//Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 func Login(options LoginOptions) error {
-
-	//Logs User in to Cloud Foundry via cf cli.
-	//Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 
 	var err error
 
@@ -89,11 +86,9 @@ func Login(options LoginOptions) error {
 	return nil
 }
 
+//Logs User out of Cloud Foundry
+//Logout can be perforned via 'cf logout' command regardless if user is logged in or not
 func Logout() error {
-
-	//Logs User out of Cloud Foundry
-	//Logout can be perforned via 'cf logout' command regardless if user is logged in or not
-
 	var cfLogoutScript = "logout"
 
 	log.Entry().Info("Logging out of Cloud Foundry")
@@ -106,11 +101,9 @@ func Logout() error {
 	return nil
 }
 
+//Reads ABAP Service Key from Cloud Foundry and returns it.
+//Depending on user requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout or not.
 func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
-
-	//Reads ABAP Service Key from Cloud Foundry and returns it.
-	//Depending on user requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout or not.
-
 	var abapServiceKey ServiceKey
 	var err error
 
@@ -171,8 +164,8 @@ func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey,
 	return abapServiceKey, nil
 }
 
+//Options for reading CF Service Key
 type ServiceKeyOptions struct {
-	//Options for reading CF Service Key
 	CfAPIEndpoint     string
 	CfOrg             string
 	CfSpace           string
@@ -182,8 +175,8 @@ type ServiceKeyOptions struct {
 	Password          string
 }
 
+//Options for logging in to CF
 type LoginOptions struct {
-	//Options for logging in to CF
 	CfAPIEndpoint string
 	CfOrg         string
 	CfSpace       string
@@ -191,16 +184,16 @@ type LoginOptions struct {
 	Password      string
 }
 
+//Struct to parse CF Service Key
 type ServiceKey struct {
-	//Struct to parse CF Service Key
 	Abap     AbapConenction `json:"abap"`
 	Binding  AbapBinding    `json:"binding"`
 	Systemid string         `json:"systemid"`
 	URL      string         `json:"url"`
 }
 
+//Contains information about the ABAP connection
 type AbapConenction struct {
-	//Contains information about the ABAP connection
 	CommunicationArrangementID string `json:"communication_arrangement_id"`
 	CommunicationScenarioID    string `json:"communication_scenario_id"`
 	CommunicationSystemID      string `json:"communication_system_id"`
@@ -208,8 +201,8 @@ type AbapConenction struct {
 	Username                   string `json:"username"`
 }
 
+//Contains information about service binding
 type AbapBinding struct {
-	//Contains information about service binding
 	Env     string `json:"env"`
 	ID      string `json:"id"`
 	Type    string `json:"type"`

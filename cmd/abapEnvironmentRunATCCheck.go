@@ -276,56 +276,56 @@ func getResultATCRun(requestType string, details connectionDetailsHTTP, body []b
 	return req, err
 }
 
+//ATC object for parsing yaml config of software components and packages
 type ATCconfig struct {
-	//ATC object for parsing yaml config of software components and packages
 	Objects ATCObjects `json:"atcobjects"`
 }
 
+//Contains packages and software components to be checked
 type ATCObjects struct {
-	//Contains packages and software components to be checked
 	Package           []Package           `json:"package"`
 	SoftwareComponent []SoftwareComponent `json:"softwarecomponent"`
 }
 
+//ATC run package to be checked
 type Package struct {
-	//ATC run package to be checked
 	Name               string `json:"name"`
 	IncludeSubpackages bool   `json:"includesubpackage"`
 }
 
+//ATC run software component to be checked
 type SoftwareComponent struct {
-	//ATC run software component to be checked
 	Name string `json:"name"`
 }
 
+//Object for parsing XML
 type Run struct {
-	//Object for parsing XML
 	XMLName xml.Name `xml:"run"`
 	Status  string   `xml:"status,attr"`
 	Link    []Link   `xml:"link"`
 }
 
+//contains link
 type Link struct {
-	//contains link
 	Key   string `xml:"href,attr"`
 	Value string `xml:",chardata"`
 }
 
+//results from ATC check for all files that were checked
 type Result struct {
-	//results from ATC check for all files that were checked
 	XMLName xml.Name `xml:"checkstyle"`
 	Files   []File   `xml:"file"`
 }
 
+//contains ATC check with error for checked file
 type File struct {
-	//contains ATC check with error for checked file
 	Key       string     `xml:"name,attr"`
 	Value     string     `xml:",chardata"`
 	ATCErrors []ATCError `xml:"error"`
 }
 
+//ATC error with message
 type ATCError struct {
-	//ATC error with message
 	Key   string `xml:"message,attr"`
 	Value string `xml:",chardata"`
 }
