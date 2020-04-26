@@ -55,6 +55,8 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         })
         credentialsRule.withCredentials('idOfCxCredential', "PIPER_username", "PIPER_password")
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/checkmarx.yaml\'', '{"checkmarxCredentialsId": "idOfCxCredential", "verbose": false}')
+
+        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
     }
 
     @Test
