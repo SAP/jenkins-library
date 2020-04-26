@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ---- | --------- | ------- | --------------- |\n| `param0` | No | val0 |  |\n| `param1` | No |  |  |\n| `param2` | Yes |  |  |\n\n * `param0`: param0 description\n * `param1`: param1 description\n * `param2`: param1 description\n\n\t\n\t## Step Configuration\n\nWe recommend to define values of step parameters via [config.yml file](../configuration.md).\n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n| --------- | ------- | ---------- |\n| `param0` | X |  |\n| `param1` |  |  |\n| `param2` |  |  |\n\n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
+var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ---- | --------- | ------- | --------------- |\n| `param0` | No | `val0` |  |\n| `param1` | No |  |  |\n| `param2` | Yes |  |  |\n\n * `param0`: param0 description\n * `param1`: param1 description\n * `param2`: param1 description\n\n\t\n\t## Step Configuration\n\nWe recommend to define values of step parameters via [config.yml file](../configuration.md).\n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n| --------- | ------- | ---------- |\n| `param0` | X |  |\n| `param1` |  |  |\n| `param2` |  |  |\n\n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
 
 func configMetaDataMock(name string) (io.ReadCloser, error) {
 	meta1 := `metadata:
@@ -282,8 +282,8 @@ func TestAddDefaultSidecarContent(t *testing.T) {
 		}{
 			{"sidecarCommand", "command"},
 			{"sidecarEnvVars", "envar.name3=envar.value3"},
-			{"sidecarImage", "image"},
-			{"sidecarName", "sidecar0"},
+			{"sidecarImage", "`image`"},
+			{"sidecarName", "`sidecar0`"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
 			{"sidecarOptions", "option.name3b option.value3b"},
