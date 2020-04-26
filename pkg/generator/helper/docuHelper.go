@@ -72,7 +72,7 @@ func setDefaultStepParameters(stepData *config.StepData) {
 		} else {
 			switch param.Type {
 			case "string":
-				param.Default = fmt.Sprintf("`'%v'`", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "bool":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "int":
@@ -367,8 +367,8 @@ func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
 			result["sidecarCommand"] += m.Spec.Sidecars[0].Command[0]
 		}
 		result["sidecarEnvVars"] = strings.Join(envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars), "")
-		result["sidecarImage"] = m.Spec.Sidecars[0].Image
-		result["sidecarName"] = m.Spec.Sidecars[0].Name
+		result["sidecarImage"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Image)
+		result["sidecarName"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Name)
 		if len(m.Spec.Sidecars[0].ImagePullPolicy) > 0 {
 			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
 		}
