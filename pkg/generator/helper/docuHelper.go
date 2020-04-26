@@ -65,17 +65,18 @@ func setDefaultStepParameters(stepData *config.StepData) {
 		if param.Default == nil {
 			switch param.Type {
 			case "bool":
-				param.Default = "false"
+				param.Default = "`false`"
 			case "int":
-				param.Default = "0"
+				param.Default = "`0`"
 			}
 		} else {
 			switch param.Type {
 			case "string":
+				param.Default = fmt.Sprintf("`'%v'`", param.Default)
 			case "bool":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "int":
-				param.Default = fmt.Sprintf("%v", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			}
 		}
 		stepData.Spec.Inputs.Parameters[k] = param
