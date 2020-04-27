@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/generator/docs"
 )
 
 // generates the step documentation and replaces the template with the generated documentation
@@ -37,7 +38,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 		"docGenStepName":      docGenStepName,
 		"docGenDescription":   docGenDescription,
 		"docGenParameters":    docGenParameters,
-		"docGenConfiguration": docGenConfiguration,
+		"docGenConfiguration": docs.BuildStepConfiguration,
 	}
 	tmpl, err := template.New("doc").Funcs(funcMap).Parse(content)
 	checkError(err)
@@ -123,11 +124,7 @@ func docGenParameters(stepData config.StepData) string {
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
-	var configuration = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
-	configuration += "In following sections of the config.yml the configuration is possible:\n\n"
-	// create step configuration table
-	configuration += createConfigurationTable(stepData.Spec.Inputs.Parameters)
-	return "Step Configuration\n\n" + configuration
+	return docs.BuildStepConfiguration(stepData)
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
@@ -198,21 +195,6 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 			}
 		}
 	}
-}
-
-func createConfigurationTable(parameters []config.StepParameters) string {
-	var table = "| parameter | general | step/stage |\n"
-	table += "| --------- | ------- | ---------- |\n"
-
-	for _, param := range parameters {
-		if len(param.Scope) > 0 {
-			general := contains(param.Scope, "GENERAL")
-			step := contains(param.Scope, "STEPS")
-
-			table += fmt.Sprintf("| `%v` | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
-		}
-	}
-	return table
 }
 
 func handleStepParameters(stepData *config.StepData) {
