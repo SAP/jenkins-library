@@ -48,6 +48,9 @@ class NexusUploadTest extends BasePiperTest {
             './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/nexusUpload.yaml\'',
             '{"credentialsId": "idOfCxCredential", "verbose": false}'
         )
+
+        helper.registerAllowedMethod('fileExists', [String.class], {return true})
+        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
     }
 
     @Test

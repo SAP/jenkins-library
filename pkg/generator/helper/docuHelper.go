@@ -14,7 +14,6 @@ import (
 
 // generates the step documentation and replaces the template with the generated documentation
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
-
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
 	//create the file path for the template and open it.
 	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
@@ -35,8 +34,8 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 
 	// binding of functions and placeholder
 	funcMap := template.FuncMap{
-		"docGenDescription":   docGenDescription,
 		"docGenStepName":      docGenStepName,
+		"docGenDescription":   docGenDescription,
 		"docGenParameters":    docGenParameters,
 		"docGenConfiguration": docGenConfiguration,
 	}
@@ -63,24 +62,25 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 
 func setDefaultStepParameters(stepData *config.StepData) {
 	for k, param := range stepData.Spec.Inputs.Parameters {
-
 		if param.Default == nil {
 			switch param.Type {
 			case "bool":
-				param.Default = "false"
+				param.Default = "`false`"
 			case "int":
-				param.Default = "0"
+				param.Default = "`0`"
 			}
 		} else {
 			switch param.Type {
+			case "[]string":
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "string":
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "bool":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "int":
-				param.Default = fmt.Sprintf("%v", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			}
 		}
-
 		stepData.Spec.Inputs.Parameters[k] = param
 	}
 }
@@ -93,22 +93,12 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 
 	//replace old placeholder with new ones
 	contentStr = strings.ReplaceAll(contentStr, "${docGenStepName}", "{{docGenStepName .}}")
-	contentStr = strings.ReplaceAll(contentStr, "${docGenConfiguration}", "{{docGenConfiguration .}}")
-	contentStr = strings.ReplaceAll(contentStr, "${docGenParameters}", "{{docGenParameters .}}")
 	contentStr = strings.ReplaceAll(contentStr, "${docGenDescription}", "{{docGenDescription .}}")
+	contentStr = strings.ReplaceAll(contentStr, "${docGenParameters}", "{{docGenParameters .}}")
+	contentStr = strings.ReplaceAll(contentStr, "${docGenConfiguration}", "{{docGenConfiguration .}}")
 	contentStr = strings.ReplaceAll(contentStr, "## ${docJenkinsPluginDependencies}", "")
 
 	return contentStr
-}
-
-//	Replaces the docGenDescription placeholder with content from the yaml
-func docGenDescription(stepData config.StepData) string {
-
-	desc := "Description \n\n"
-
-	desc += stepData.Metadata.LongDescription
-
-	return desc
 }
 
 // Replaces the docGenStepName placeholder with the content from the yaml
@@ -116,38 +106,39 @@ func docGenStepName(stepData config.StepData) string {
 	return stepData.Metadata.Name
 }
 
+// Replaces the docGenDescription placeholder with content from the yaml
+func docGenDescription(stepData config.StepData) string {
+	return "Description\n\n" + stepData.Metadata.LongDescription
+}
+
 // Replaces the docGenParameters placeholder with the content from the yaml
 func docGenParameters(stepData config.StepData) string {
+	var parameters = ""
 	//create step parameter table
-	parametersTable := createParametersTable(stepData.Spec.Inputs.Parameters)
+	parameters += createParametersTable(stepData.Spec.Inputs.Parameters) + "\n"
 	//create parameters detail section
-	parametersDetail := createParametersDetail(stepData.Spec.Inputs.Parameters)
-
-	return "Parameters\n\n" + parametersTable + "\n\n" + parametersDetail
+	parameters += createParametersDetail(stepData.Spec.Inputs.Parameters)
+	return "Parameters\n\n" + parameters
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
 func docGenConfiguration(stepData config.StepData) string {
-
-	var conf = "We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\n"
-	conf += "In following sections of the config.yml the configuration is possible:\n\n"
-
+	var configuration = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
+	configuration += "In following sections of the config.yml the configuration is possible:\n\n"
 	// create step configuration table
-	conf += createConfigurationTable(stepData.Spec.Inputs.Parameters)
-
-	return conf
+	configuration += createConfigurationTable(stepData.Spec.Inputs.Parameters)
+	return "Step Configuration\n\n" + configuration
 }
 
 func createParametersTable(parameters []config.StepParameters) string {
-
 	var table = "| name | mandatory | default | possible values |\n"
-	table += "| ------- | --------- | ------- | ------- |\n"
+	table += "| ---- | --------- | ------- | --------------- |\n"
 
 	m := combineEqualParametersTogether(parameters)
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf(" | %v | %v | %v |  |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v))
+			table += fmt.Sprintf("| `%v` | %v | %v | %v |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
 			delete(m, param.Name)
 		}
 	}
@@ -155,20 +146,17 @@ func createParametersTable(parameters []config.StepParameters) string {
 }
 
 func createParametersDetail(parameters []config.StepParameters) string {
-
-	var detail = "## Details\n\n"
-
+	var details = ""
 	var m map[string]bool = make(map[string]bool)
 	for _, param := range parameters {
 		if _, ok := m[param.Name]; !ok {
 			if len(param.Description) > 0 {
-				detail += fmt.Sprintf(" * ` %v ` :  %v \n ", param.Name, param.Description)
+				details += fmt.Sprintf(" * `%v`: %v\n", param.Name, param.Description)
 				m[param.Name] = true
 			}
 		}
 	}
-
-	return detail
+	return details
 }
 
 //combines equal parameters and the values
@@ -192,7 +180,7 @@ func addExistingParameterWithCondition(param config.StepParameters, m map[string
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] = fmt.Sprintf("%v <br> %v=%v:%v ", m[param.Name], p.Name, p.Value, param.Default)
+					m[param.Name] = fmt.Sprintf("%v<br>%v=`%v`: `%v` ", m[param.Name], p.Name, p.Value, param.Default)
 				}
 			}
 		}
@@ -205,7 +193,7 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 		for _, con := range param.Conditions {
 			if con.Params != nil {
 				for _, p := range con.Params {
-					m[param.Name] += fmt.Sprintf("%v=%v:%v ", p.Name, p.Value, param.Default)
+					m[param.Name] += fmt.Sprintf("%v=`%v`: `%v` ", p.Name, p.Value, param.Default)
 				}
 			}
 		}
@@ -213,24 +201,22 @@ func addNewParameterWithCondition(param config.StepParameters, m map[string]stri
 }
 
 func createConfigurationTable(parameters []config.StepParameters) string {
-
 	var table = "| parameter | general | step/stage |\n"
-	table += "|-----------|---------|------------|\n"
+	table += "| --------- | ------- | ---------- |\n"
 
 	for _, param := range parameters {
 		if len(param.Scope) > 0 {
 			general := contains(param.Scope, "GENERAL")
 			step := contains(param.Scope, "STEPS")
 
-			table += fmt.Sprintf(" | %v | %v | %v | \n ", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
+			table += fmt.Sprintf("| `%v` | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
 		}
 	}
-
 	return table
 }
 
 func handleStepParameters(stepData *config.StepData) {
-	//add secrets to pstep arameters
+	//add secrets to step parameters
 	appendSecretsToParameters(stepData)
 
 	//get the context defaults
@@ -257,7 +243,6 @@ func handleStepParameters(stepData *config.StepData) {
 }
 
 func appendSecretsToParameters(stepData *config.StepData) {
-
 	secrets := stepData.Spec.Inputs.Secrets
 	if secrets != nil {
 		for _, secret := range secrets {
@@ -268,7 +253,6 @@ func appendSecretsToParameters(stepData *config.StepData) {
 }
 
 func getDocuContextDefaults(step *config.StepData) map[string]string {
-
 	var result map[string]string = make(map[string]string)
 
 	//creates the context defaults for containers
@@ -296,11 +280,10 @@ func addDefaultContainerContent(m *config.StepData, result map[string]string) {
 }
 
 func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string, m map[string][]string) {
-
 	//create keys
 	key := ""
 	if len(container.Conditions) > 0 {
-		key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
+		key = fmt.Sprintf("%v=`%v`", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
 	}
 
 	//only add the key ones
@@ -328,33 +311,36 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 }
 
 func addValuesToMap(container config.Container, key string, resources map[string][]string) {
-	resources[key+"_containerName"] = append(resources[key+"_containerName"], container.Name)
-
+	if len(container.Name) > 0 {
+		resources[key+"_containerName"] = append(resources[key+"_containerName"], "`"+container.Name+"`")
+	}
 	//ContainerShell > 0
 	if len(container.Shell) > 0 {
-		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
+		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], "`"+container.Shell+"`")
 	}
-	resources[key+"_dockerName"] = append(resources[key+"_dockerName"], container.Name)
+	if len(container.Name) > 0 {
+		resources[key+"_dockerName"] = append(resources[key+"_dockerName"], "`"+container.Name+"`")
+	}
 
 	//ContainerCommand > 0
 	if len(container.Command) > 0 {
-		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], container.Command[0])
+		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], "`"+container.Command[0]+"`")
 	}
 	//ImagePullPolicy > 0
 	if len(container.ImagePullPolicy) > 0 {
-		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("%v", container.ImagePullPolicy != "Never")}
+		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("`%v`", container.ImagePullPolicy != "Never")}
 	}
 	//Different when key is set (Param.Name + Param.Value)
-	workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
+	workingDir := ifThenElse(len(container.WorkingDir) > 0, "`"+container.WorkingDir+"`", "\\<empty\\>")
 	if len(key) > 0 {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(optionsAsStringSlice(container.Options), "")))
-		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v: `%v`", key, container.Image))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v: %v", key, workingDir))
 	} else {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("`[%v]`", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], "`"+container.Image+"`")
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("`[%v]`", strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 	}
 }
@@ -365,13 +351,21 @@ func createDefaultContainerEntries(keys map[string][]string, resources map[strin
 		if p != nil {
 			//loop over key array to get the values from the resources
 			for _, key := range p {
+				doLineBreak := !strings.HasPrefix(key, "_")
+
 				if len(strings.Join(resources[key], ", ")) > 1 {
-					result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+					result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+					if doLineBreak {
+						result[k] += "<br>"
+					}
 				} else if len(strings.Join(resources[key], ", ")) == 1 {
 					if _, ok := result[k]; !ok {
 						result[k] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
 					} else {
-						result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+						result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+						if doLineBreak {
+							result[k] += "<br>"
+						}
 					}
 				}
 			}
@@ -386,8 +380,8 @@ func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
 			result["sidecarCommand"] += m.Spec.Sidecars[0].Command[0]
 		}
 		result["sidecarEnvVars"] = strings.Join(envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars), "")
-		result["sidecarImage"] = m.Spec.Sidecars[0].Image
-		result["sidecarName"] = m.Spec.Sidecars[0].Name
+		result["sidecarImage"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Image)
+		result["sidecarName"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Name)
 		if len(m.Spec.Sidecars[0].ImagePullPolicy) > 0 {
 			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
 		}
@@ -395,11 +389,9 @@ func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
 		result["sidecarOptions"] = strings.Join(optionsAsStringSlice(m.Spec.Sidecars[0].Options), "")
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
-
 }
 
 func addStashContent(m *config.StepData, result map[string]string) {
-
 	//creates the context defaults for resources
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -423,10 +415,10 @@ func addStashContent(m *config.StepData, result map[string]string) {
 		for _, key := range keys {
 			//more than one key when there are conditions
 			if len(key) > 0 {
-				result["stashContent"] += fmt.Sprintf("%v:\\[%v\\] <br>", key, strings.Join(resources[key], ", "))
+				result["stashContent"] += fmt.Sprintf("%v: `[%v]` <br>", key, strings.Join(resources[key], ", "))
 			} else {
 				//single entry for stash content (no condition)
-				result["stashContent"] += fmt.Sprintf("\\[%v\\] <br>", strings.Join(resources[key], ", "))
+				result["stashContent"] += fmt.Sprintf("`[%v]`", strings.Join(resources[key], ", "))
 			}
 		}
 	}
@@ -437,7 +429,7 @@ func envVarsAsStringSlice(envVars []config.EnvVar) []string {
 	c := len(envVars) - 1
 	for k, v := range envVars {
 		if k < c {
-			e = append(e, fmt.Sprintf("%v=%v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v=%v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
 			e = append(e, fmt.Sprintf("%v=%v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		}
@@ -450,7 +442,7 @@ func optionsAsStringSlice(options []config.Option) []string {
 	c := len(options) - 1
 	for k, v := range options {
 		if k < c {
-			e = append(e, fmt.Sprintf("%v %v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v %v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
 			e = append(e, fmt.Sprintf("%v %v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		}
@@ -459,7 +451,6 @@ func optionsAsStringSlice(options []config.Option) []string {
 }
 
 func sortStepParameters(stepData *config.StepData) {
-
 	if stepData.Spec.Inputs.Parameters != nil {
 		parameters := stepData.Spec.Inputs.Parameters
 
@@ -467,4 +458,18 @@ func sortStepParameters(stepData *config.StepData) {
 			return parameters[i].Name < parameters[j].Name
 		})
 	}
+}
+
+func possibleValuesToString(in []interface{}) (out string) {
+	if len(in) == 0 {
+		return
+	}
+	out = fmt.Sprintf("`%v`", in[0])
+	if len(in) == 1 {
+		return
+	}
+	for _, value := range in[1:] {
+		out += fmt.Sprintf(", `%v`", value)
+	}
+	return
 }
