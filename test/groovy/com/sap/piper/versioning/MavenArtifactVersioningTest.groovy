@@ -6,9 +6,8 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
-import util.JenkinsReadMavenPomRule
+import util.JenkinsMavenExecuteRule
 import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
@@ -21,14 +20,13 @@ class MavenArtifactVersioningTest extends BasePiperTest{
     MavenArtifactVersioning av
     String version = '1.2.3'
 
-    JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    JenkinsMavenExecuteRule mvnExecuteRule = new JenkinsMavenExecuteRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(shellRule)
-        .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
+        .around(mvnExecuteRule)
 
     @Before
     void init() {
@@ -40,8 +38,17 @@ class MavenArtifactVersioningTest extends BasePiperTest{
                 closure()
             })
 
-        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
-        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
+        mvnExecuteRule.setReturnValue([
+            'pomPath': 'pom.xml',
+            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            'defines': '-Dexpression=project.version -DforceStdout -q',
+        ], version)
+
+        mvnExecuteRule.setReturnValue([
+            'pomPath': 'snapshot/pom.xml',
+            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            'defines': '-Dexpression=project.version -DforceStdout -q',
+        ], version)
     }
 
     @Test
@@ -49,7 +56,18 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'pom.xml'])
         assertEquals(version, av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
+
+        assertEquals(2, mvnExecuteRule.executions.size())
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'pom.xml',
+            goals: 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            defines: '-Dexpression=project.version -DforceStdout -q'
+        ]), mvnExecuteRule.executions[0])
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'pom.xml',
+            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
+            defines: '-DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false'
+        ]), mvnExecuteRule.executions[1])
     }
 
     @Test
@@ -57,6 +75,17 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.codehaus.mojo:versions-maven-plugin:2.7:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
+
+        assertEquals(2, mvnExecuteRule.executions.size())
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'snapshot/pom.xml',
+            goals  : 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+            defines: '-Dexpression=project.version -DforceStdout -q'
+        ]), mvnExecuteRule.executions[0])
+        assertEquals(new JenkinsMavenExecuteRule.Execution([
+            pomPath: 'snapshot/pom.xml',
+            goals  : 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
+            defines: '-DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false'
+        ]), mvnExecuteRule.executions[1])
     }
 }

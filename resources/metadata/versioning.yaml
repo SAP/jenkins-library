@@ -91,7 +91,7 @@ spec:
         - STAGES
         - STEPS
         default: Project Piper
-      - name: customversionField
+      - name: customVersionField
         type: string
         description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
         scope:
@@ -101,6 +101,13 @@ spec:
       - name: customVersionSection
         type: string
         description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: customVersioningScheme
+        type: string
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
         scope:
         - PARAMETERS
         - STAGES
@@ -154,6 +161,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        secret: true
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -179,6 +187,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        secret: true
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -33,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Use:   "piper",
 	Short: "Executes CI/CD steps from project 'Piper' ",
 	Long: `
-This project 'Piper' binary provides a CI/CD step libary.
+This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
 	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
@@ -65,6 +66,9 @@ func Execute() {
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(MalwareExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -154,12 +158,77 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
+	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+	optionsType := getStepOptionsStructType(options)
+
+	for paramName := range config {
+		optionsField := findStructFieldByJSONTag(paramName, optionsType)
+		if optionsField == nil {
+			continue
+		}
+
+		paramValueType := reflect.ValueOf(config[paramName])
+		if paramValueType.Kind() != reflect.String {
+			// We can only convert from strings at the moment
+			continue
+		}
+
+		paramValue := paramValueType.String()
+		logWarning := true
+
+		switch optionsField.Type.Kind() {
+		case reflect.String:
+			// Types already match, ignore
+			logWarning = false
+		case reflect.Slice, reflect.Array:
+			if optionsField.Type.Elem().Kind() == reflect.String {
+				config[paramName] = []string{paramValue}
+				logWarning = false
+			}
+		case reflect.Bool:
+			paramValue = strings.ToLower(paramValue)
+			if paramValue == "true" {
+				config[paramName] = true
+				logWarning = false
+			} else if paramValue == "false" {
+				config[paramName] = false
+				logWarning = false
+			}
+		}
+
+		if logWarning {
+			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
+		}
+	}
+	return config
+}
+
+func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
+	for i := 0; i < optionsType.NumField(); i++ {
+		field := optionsType.Field(i)
+		tag := field.Tag.Get("json")
+		if tagName == tag || tagName+",omitempty" == tag {
+			return &field
+		}
+	}
+	return nil
+}
+
+func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
+	typedOptions := reflect.ValueOf(stepOptions)
+	if typedOptions.Kind() == reflect.Ptr {
+		typedOptions = typedOptions.Elem()
+	}
+	return typedOptions.Type()
 }
 
 func getProjectConfigFile(name string) string {
