@@ -33,7 +33,6 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 	return []byte(message), nil
 }
 
-
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 var logger *logrus.Entry
@@ -59,7 +58,7 @@ func SetVerbose(verbose bool) {
 
 // SetFormatter specifies whether to log only hte message
 func SetFormatter(messageOnlyLogFormat bool) {
-	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat:messageOnlyLogFormat})
+	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat: messageOnlyLogFormat})
 }
 
 // SetStepName sets the stepName field.
