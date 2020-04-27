@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-//Piper custom formatter
+//PiperLogFormatter is the custom formatter of piper
 type PiperLogFormatter struct {
 	logrus.TextFormatter
 	messageOnlyLogFormat bool
@@ -57,7 +57,7 @@ func SetVerbose(verbose bool) {
 	}
 }
 
-// Specify whether to log only hte message
+// SetFormatter specifies whether to log only hte message
 func SetFormatter(messageOnlyLogFormat bool) {
 	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat:messageOnlyLogFormat})
 }
