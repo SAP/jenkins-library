@@ -77,18 +77,6 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String createTransportRequestCTS(Map docker, String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
-        try {
-            def transportRequest = executeWithCredentials(BackendType.CTS, docker, endpoint, credentialsId, 'create-transport',
-                    ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
-                    true,
-                    clientOpts)
-            return (transportRequest as String)?.trim()
-        }catch(AbortException e) {
-            throw new ChangeManagementException("Cannot create a transport request. $e.message.")
-        }
-    }
-
     String createTransportRequestSOLMAN(Map docker, String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
 
         try {
@@ -166,35 +154,6 @@ public class ChangeManagement implements Serializable {
         if(rc != 0) {
             throw new ChangeManagementException(
                 "Cannot upload file into transport request. Return code from cm client: $rc.")
-        }
-    }
-
-    void uploadFileToTransportRequestCTS(
-        Map docker,
-        String transportRequestId,
-        String filePath,
-        String endpoint,
-        String credentialsId,
-        String cmclientOpts = '') {
-
-        def args = [
-                '-tID', transportRequestId,
-                "\"$filePath\""
-            ]
-
-        int rc = executeWithCredentials(
-            BackendType.CTS,
-            docker,
-            endpoint,
-            credentialsId,
-            'upload-file-to-transport',
-            args,
-            false,
-            cmclientOpts) as int
-
-        if(rc != 0) {
-            throw new ChangeManagementException(
-                "Cannot upload file into transport request. Return code from  cm client: $rc.")
         }
     }
 
@@ -293,10 +252,9 @@ public class ChangeManagement implements Serializable {
                     break
 
                 case BackendType.SOLMAN:
-                case BackendType.CTS:
 
                     if(! (args in Collection))
-                        throw new IllegalArgumentException("args expected as Collection for backend types ${[BackendType.SOLMAN, BackendType.CTS]}")
+                        throw new IllegalArgumentException("args expected as Collection for backend type ${BackendType.SOLMAN}")
 
                     shArgs.script = getCMCommandLine(type, endpoint, script.username, script.password,
                         command, args,
@@ -348,33 +306,6 @@ public class ChangeManagement implements Serializable {
             args,
             false,
             clientOpts) as int
-
-        if(rc != 0) {
-            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
-        }
-    }
-
-    void releaseTransportRequestCTS(
-        Map docker,
-        String transportRequestId,
-        String endpoint,
-        String credentialsId,
-        String clientOpts = '') {
-
-        def cmd = 'export-transport'
-        def args = [
-            '-tID',
-            transportRequestId,
-        ]
-
-        int rc = executeWithCredentials(
-            BackendType.CTS,
-            docker,
-            endpoint,
-            credentialsId,
-            cmd,
-            args,
-            false) as int
 
         if(rc != 0) {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")

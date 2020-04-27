@@ -154,16 +154,6 @@ void call(parameters = [:]) {
                             configuration.changeManagement.clientOpts)
                         break
 
-                    case BackendType.CTS:
-
-                        cm.releaseTransportRequestCTS(
-                            configuration.changeManagement.cts.docker,
-                            configuration.transportRequestId,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
-                        break
-
                     case BackendType.RFC:
 
                         cm.releaseTransportRequestRFC(

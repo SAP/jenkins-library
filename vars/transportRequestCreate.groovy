@@ -28,7 +28,7 @@ import hudson.AbortException
         /**
         * Defines where the transport request is created, e.g. SAP Solution Manager, ABAP System.
         * @parentConfigKey changeManagement
-        * @possibleValues `SOLMAN`, `CTS`, `RFC`
+        * @possibleValues `SOLMAN`, `RFC`
         */
         'type',
         /**
@@ -81,17 +81,9 @@ import hudson.AbortException
     */
     'developmentSystemId',
     /**
-    * The description of the transport request. Only for `CTS`.
+    * The description of the transport request.
     */
     'description',
-    /**
-    * The system receiving the transport request. Only for `CTS`.
-    */
-    'targetSystem',
-    /**
-    * Typically `W` (workbench) or `C` customizing. Only for `CTS`.
-    */
-    'transportType',
     /**
     * Provides additional details. Only for `RFC`.
     */
@@ -110,7 +102,7 @@ import hudson.AbortException
 * Creates
 *
 * * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
-* * a Transport Request inside an ABAP system (type`CTS`)
+* * a Transport Request inside an ABAP system (type`RFC`)
 *
 * The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
 */
@@ -146,9 +138,6 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
-            .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
-            .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
@@ -187,16 +176,6 @@ void call(parameters = [:]) {
                         configuration.changeManagement.solman.docker,
                         configuration.changeDocumentId,
                         configuration.developmentSystemId,
-                        configuration.changeManagement.endpoint,
-                        configuration.changeManagement.credentialsId,
-                        configuration.changeManagement.clientOpts
-                    )
-                } else if(backendType == BackendType.CTS) {
-                    transportRequestId = cm.createTransportRequestCTS(
-                        configuration.changeManagement.cts.docker,
-                        configuration.transportType,
-                        configuration.targetSystem,
-                        configuration.description,
                         configuration.changeManagement.endpoint,
                         configuration.changeManagement.credentialsId,
                         configuration.changeManagement.clientOpts

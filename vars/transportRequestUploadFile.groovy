@@ -27,7 +27,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         /**
         * Defines where the transport request is created, e.g. SAP Solution Manager, ABAP System.
         * @parentConfigKey changeManagement
-        * @possibleValues `SOLMAN`, `CTS`, `RFC`
+        * @possibleValues `SOLMAN`, `RFC`
         */
         'type',
         /**
@@ -83,7 +83,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'applicationId', // SOLMAN
         'applicationDescription',
         /** The path of the file to upload.*/
-        'filePath', // SOLMAN, CTS
+        'filePath', // SOLMAN
         /** The URL where to find the UI5 package to upload to the transport request.  Only for `RFC`. */
         'applicationUrl', // RFC
         /** The ABAP package name of your application. */
@@ -134,7 +134,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
+            .withMandatoryProperty('filePath', null, { backendType == BackendType.SOLMAN })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
@@ -200,15 +200,6 @@ void call(parameters = [:]) {
                             configuration.changeDocumentId,
                             configuration.transportRequestId,
                             configuration.applicationId,
-                            configuration.filePath,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
-                        break
-                    case BackendType.CTS:
-                        cm.uploadFileToTransportRequestCTS(
-                            configuration.changeManagement.cts?.docker ?: [:],
-                            configuration.transportRequestId,
                             configuration.filePath,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
