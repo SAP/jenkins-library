@@ -18,8 +18,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: atcrunConfig
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint

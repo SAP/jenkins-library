@@ -96,7 +96,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "atcrunConfig"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "cfApiEndpoint",
