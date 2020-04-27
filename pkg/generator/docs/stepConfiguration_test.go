@@ -31,7 +31,7 @@ func TestGenerateStepDocumentationSuccess(t *testing.T) {
 		assert.Contains(t, result, expectedDescription)
 		expectedTable := "| parameter | general | step/stage |\n" +
 			"| --------- | ------- | ---------- |\n" +
-			"| `param0` | X | |\n" +
+			"| `param0` | X |  |\n" +
 			"| `param1` | X | X |\n" +
 			"| `param2` |  | X |\n"
 		assert.Contains(t, result, expectedTable)
