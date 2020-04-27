@@ -32,6 +32,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dspotbugs.excludeFilterFile=excludeFilter.xml",
 				"-Dpmd.maxAllowedViolations=10",
 				"-Dpmd.failurePriority=2",
+				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check",
 				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",

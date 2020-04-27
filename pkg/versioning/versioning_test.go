@@ -148,21 +148,24 @@ func TestCustomArtifact(t *testing.T) {
 		file        string
 		field       string
 		section     string
+		scheme      string
 		expected    Artifact
 		expectedErr string
 	}{
 		{file: "not.supported", expectedErr: "file type not supported: 'not.supported'"},
 		{file: "test.cfg", field: "testField", section: "testSection", expected: &INIfile{path: "test.cfg", versionField: "testField", versionSection: "testSection"}},
 		{file: "test.ini", field: "testField", section: "testSection", expected: &INIfile{path: "test.ini", versionField: "testField", versionSection: "testSection"}},
+		{file: "test.ini", field: "testField", section: "testSection", scheme: "maven", expected: &INIfile{path: "test.ini", versionField: "testField", versionSection: "testSection", versioningScheme: "maven"}},
 		{file: "test.json", field: "testField", expected: &JSONfile{path: "test.json", versionField: "testField"}},
 		{file: "test.yaml", field: "testField", expected: &YAMLfile{path: "test.yaml", versionField: "testField"}},
 		{file: "test.yml", field: "testField", expected: &YAMLfile{path: "test.yml", versionField: "testField"}},
 		{file: "test.txt", expected: &Versionfile{path: "test.txt"}},
 		{file: "test", expected: &Versionfile{path: "test"}},
+		{file: "test", scheme: "maven", expected: &Versionfile{path: "test", versioningScheme: "maven"}},
 	}
 
 	for _, test := range tt {
-		res, err := customArtifact(test.file, test.field, test.section)
+		res, err := customArtifact(test.file, test.field, test.section, test.scheme)
 
 		if len(test.expectedErr) == 0 {
 			assert.NoError(t, err)
