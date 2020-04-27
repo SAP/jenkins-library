@@ -141,7 +141,7 @@ func TestGctsCloneRepositoryFailure(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("cloning repository failed", func(t *testing.T) {
+	t.Run("a http error occurred", func(t *testing.T) {
 		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{
 			"errorLog": [
 				{
