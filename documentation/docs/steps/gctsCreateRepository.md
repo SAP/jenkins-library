@@ -15,7 +15,7 @@ Learn more about the SAP git-enabled Central Transport Sytem (gCTS) [here](https
 
 ## Example
 
-Example configuration for the use in a Jenkinsfile.
+Example configuration for the use in a `Jenkinsfile`.
 
 ```groovy
 gctsCreateRepository(
