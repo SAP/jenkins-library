@@ -64,6 +64,7 @@ spec:
         - signature
         possibleValues:
         - signature
+        - source
         scope:
         - PARAMETERS
         - STAGES
