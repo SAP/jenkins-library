@@ -2,6 +2,7 @@ metadata:
   name: artifactPrepareVersion
   aliases:
     - name: artifactSetVersion
+    - name: mavenExecute
     - name: setVersion
       deprecated: true
   description: Prepares and potentially updates the artifact's version before building the artifact.
@@ -219,6 +220,13 @@ spec:
       type: jenkins
     - name: gitSshKeyCredentialsId
       type: jenkins
+      aliases:
+        - name: gitCredentialsId
+          deprecated: true
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never
   outputs:
     resources:
       - name: commonPipelineEnvironment
