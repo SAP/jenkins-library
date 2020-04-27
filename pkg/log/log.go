@@ -5,11 +5,13 @@ import (
 	"strings"
 )
 
+//Piper custom formatter
 type PiperLogFormatter struct {
 	logrus.TextFormatter
 	messageOnlyLogFormat bool
 }
 
+//Format the log message
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 
 	message := entry.Message + "\n"
@@ -55,6 +57,7 @@ func SetVerbose(verbose bool) {
 	}
 }
 
+// Specify whether to log only hte message
 func SetFormatter(messageOnlyLogFormat bool) {
 	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat:messageOnlyLogFormat})
 }
