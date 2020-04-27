@@ -71,6 +71,8 @@ func setDefaultStepParameters(stepData *config.StepData) {
 			}
 		} else {
 			switch param.Type {
+			case "[]string":
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "string":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "bool":
@@ -214,7 +216,7 @@ func createConfigurationTable(parameters []config.StepParameters) string {
 }
 
 func handleStepParameters(stepData *config.StepData) {
-	//add secrets to pstep arameters
+	//add secrets to step parameters
 	appendSecretsToParameters(stepData)
 
 	//get the context defaults
@@ -281,7 +283,7 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 	//create keys
 	key := ""
 	if len(container.Conditions) > 0 {
-		key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
+		key = fmt.Sprintf("%v=`%v`", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
 	}
 
 	//only add the key ones
@@ -309,33 +311,36 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 }
 
 func addValuesToMap(container config.Container, key string, resources map[string][]string) {
-	resources[key+"_containerName"] = append(resources[key+"_containerName"], container.Name)
-
+	if len(container.Name) > 0 {
+		resources[key+"_containerName"] = append(resources[key+"_containerName"], "`"+container.Name+"`")
+	}
 	//ContainerShell > 0
 	if len(container.Shell) > 0 {
-		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
+		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], "`"+container.Shell+"`")
 	}
-	resources[key+"_dockerName"] = append(resources[key+"_dockerName"], container.Name)
+	if len(container.Name) > 0 {
+		resources[key+"_dockerName"] = append(resources[key+"_dockerName"], "`"+container.Name+"`")
+	}
 
 	//ContainerCommand > 0
 	if len(container.Command) > 0 {
-		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], container.Command[0])
+		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], "`"+container.Command[0]+"`")
 	}
 	//ImagePullPolicy > 0
 	if len(container.ImagePullPolicy) > 0 {
-		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("%v", container.ImagePullPolicy != "Never")}
+		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("`%v`", container.ImagePullPolicy != "Never")}
 	}
 	//Different when key is set (Param.Name + Param.Value)
-	workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
+	workingDir := ifThenElse(len(container.WorkingDir) > 0, "`"+container.WorkingDir+"`", "\\<empty\\>")
 	if len(key) > 0 {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v: `%v`", key, container.Image))
 		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(optionsAsStringSlice(container.Options), "")))
-		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v: `%v`", key, workingDir))
+		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v: %v", key, workingDir))
 	} else {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("`[%v]`", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], "`"+container.Image+"`")
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("`[%v]`", strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 	}
 }
@@ -346,13 +351,21 @@ func createDefaultContainerEntries(keys map[string][]string, resources map[strin
 		if p != nil {
 			//loop over key array to get the values from the resources
 			for _, key := range p {
+				doLineBreak := !strings.HasPrefix(key, "_")
+
 				if len(strings.Join(resources[key], ", ")) > 1 {
-					result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+					result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+					if doLineBreak {
+						result[k] += "<br>"
+					}
 				} else if len(strings.Join(resources[key], ", ")) == 1 {
 					if _, ok := result[k]; !ok {
 						result[k] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
 					} else {
-						result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+						result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+						if doLineBreak {
+							result[k] += "<br>"
+						}
 					}
 				}
 			}
@@ -405,7 +418,7 @@ func addStashContent(m *config.StepData, result map[string]string) {
 				result["stashContent"] += fmt.Sprintf("%v: `[%v]` <br>", key, strings.Join(resources[key], ", "))
 			} else {
 				//single entry for stash content (no condition)
-				result["stashContent"] += fmt.Sprintf("`[%v]` <br>", strings.Join(resources[key], ", "))
+				result["stashContent"] += fmt.Sprintf("`[%v]`", strings.Join(resources[key], ", "))
 			}
 		}
 	}
@@ -416,7 +429,7 @@ func envVarsAsStringSlice(envVars []config.EnvVar) []string {
 	c := len(envVars) - 1
 	for k, v := range envVars {
 		if k < c {
-			e = append(e, fmt.Sprintf("%v=%v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v=%v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
 			e = append(e, fmt.Sprintf("%v=%v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		}
@@ -429,7 +442,7 @@ func optionsAsStringSlice(options []config.Option) []string {
 	c := len(options) - 1
 	for k, v := range options {
 		if k < c {
-			e = append(e, fmt.Sprintf("%v %v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v %v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
 			e = append(e, fmt.Sprintf("%v %v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		}

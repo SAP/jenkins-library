@@ -252,11 +252,11 @@ func TestAddDefaultContainerContent(t *testing.T) {
 		cases := []struct {
 			x, want string
 		}{
-			{"containerCommand", "command"},
+			{"containerCommand", "`command`"},
 			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
-			{"containerShell", "shell"},
-			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param_name2a=param_value2a: `[envar.name2a=envar.value2a]` <br>param.name2b=param.value2b: `[envar.name2b=envar.value2b]`"},
-			{"dockerImage", "image, image <br>param_name2a=param_value2a: `image` <br>param.name2b=param.value2b: `image`"},
+			{"containerShell", "`shell`"},
+			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param_name2a=`param_value2a`: `[envar.name2a=envar.value2a]` <br>param.name2b=param.value2b: `[envar.name2b=envar.value2b]`"},
+			{"dockerImage", "image, image <br>param_name2a=`param_value2a`: `image` <br>param.name2b=`param.value2b`: `image`"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
 			{"dockerOptions", "option.name2b option.value2b"},
@@ -266,7 +266,7 @@ func TestAddDefaultContainerContent(t *testing.T) {
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v: %v != %v", c.x, m[c.x], c.want))
 		}
 	})
 }
@@ -345,13 +345,13 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
 			{"dockerOptions", "option.name2b option.value2b"},
-			{"dockerWorkspace", "workingdir, workingdir <br>param_name2a=param_value2a: `workingdir` <br>param.name2b=param.value2b: `workingdir`"},
+			{"dockerWorkspace", "workingdir, workingdir <br>param_name2a=`param_value2a`: `workingdir`<br>param.name2b=`param.value2b`: `workingdir`<br>"},
 		}
 		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v: %v != %v", c.x, m[c.x], c.want))
 		}
 	})
 }
