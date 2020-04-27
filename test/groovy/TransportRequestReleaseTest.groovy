@@ -112,38 +112,6 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestFailsCTSTest() {
-
-        thrown.expect(AbortException)
-        thrown.expectMessage("Something went wrong")
-
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
-                    .general
-                        .changeManagement
-                            .type = 'CTS'
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-
-            void releaseTransportRequestCTS(
-                                         Map docker,
-                                         String transportRequestId,
-                                         String endpoint,
-                                         String credentialsId,
-                                         String clientOpts) {
-
-                throw new ChangeManagementException('Something went wrong')
-            }
-        }
-
-        stepRule.step.transportRequestRelease(
-            script: nullScript,
-            transportRequestId: '001',
-            cmUtils: cm)
-    }
-
-    @Test
     public void releaseTransportRequestSuccessRFCTest() {
 
         def receivedParameters
@@ -214,59 +182,6 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestSuccessCTSTest() {
-
-        def receivedParameters
-
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
-                    .general
-                        .changeManagement =
-                            [
-                                credentialsId: 'CM',
-                                type: 'CTS',
-                                endpoint: 'https://example.org/cts'
-                            ]
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void releaseTransportRequestCTS(
-                Map docker,
-                String transportRequestId,
-                String endpoint,
-                String credentialsId,
-                String clientOpts = '') {
-
-                receivedParameters = [
-                    docker: docker,
-                    transportRequestId: transportRequestId,
-                    endpoint: endpoint,
-                    credentialsId: credentialsId,
-                    clientOpts: clientOpts
-                ]
-            }
-        }
-
-        stepRule.step.transportRequestRelease(
-            script: nullScript,
-            transportRequestId: '002',
-            cmUtils: cm)
-
-        assert receivedParameters == [
-                    docker: [
-                        image:'ppiper/cm-client',
-                        options:[],
-                        envVars:[:],
-                        pullImage:true,
-                    ],
-                    transportRequestId: '002',
-                    endpoint: 'https://example.org/cts',
-                    credentialsId: 'CM',
-                    clientOpts: ''
-                ]
-    }
-
-    @Test
     public void releaseTransportRequestFailsRFCTest() {
 
         thrown.expect(AbortException)
@@ -330,24 +245,6 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(
             script: nullScript,
             changeManagement: [type: 'SOLMAN']
-        )
-    }
-
-    @Test
-    public void releaseTransportRequestSanityChecksCTSTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage(allOf(
-            containsString('ERROR - NO VALUE AVAILABLE FOR'),
-            containsString('changeManagement/endpoint')))
-
-        nullScript
-            .commonPipelineEnvironment
-                .configuration = null
-
-        stepRule.step.transportRequestRelease(
-            script: nullScript,
-            changeManagement: [type: 'CTS']
         )
     }
 

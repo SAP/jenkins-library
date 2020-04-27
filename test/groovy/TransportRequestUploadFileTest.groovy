@@ -62,10 +62,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedSOLMANTest() {
 
-        // we expect the failure only for SOLMAN (which is the default).
-        // Use case for CTS without change document id is checked by the
-        // straight forward test case for CTS
-
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
@@ -105,10 +101,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
     @Test
     public void applicationIdNotProvidedSOLMANTest() {
-
-        // we expect the failure only for SOLMAN (which is the default).
-        // Use case for CTS without applicationId is checked by the
-        // straight forward test case for CTS
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
@@ -151,53 +143,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                       applicationId: 'app',
                       filePath: '/path',
                       cmUtils: cm)
-    }
-
-    @Test
-    public void uploadFileToTransportRequestCTSSuccessTest() {
-
-        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002'.")
-        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestCTS(
-                                              Map docker,
-                                              String transportRequestId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.filePath = filePath
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.credentialsId = credentialsId
-                cmUtilReceivedParams.cmclientOpts = cmclientOpts
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeManagement: [type: 'CTS'],
-                      transportRequestId: '002',
-                      filePath: '/path',
-                      cmUtils: cm)
-
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'ppiper/cm-client',
-                    options:[],
-                    envVars:[:],
-                    pullImage:true
-                ],
-                transportRequestId: '002',
-                filePath: '/path',
-                endpoint: 'https://example.org/cm',
-                credentialsId: 'CM',
-                cmclientOpts: ''
-            ]
-
     }
 
     @Test
@@ -541,7 +486,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void invalidBackendTypeTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, CTS, RFC, NONE]. ' +
+        thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, RFC, NONE]. ' +
                              'Configuration: \'changeManagement/type\'.')
 
         stepRule.step.transportRequestUploadFile(script: nullScript,

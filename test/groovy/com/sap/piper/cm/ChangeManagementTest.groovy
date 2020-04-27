@@ -240,31 +240,6 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testCreateTransportRequestCTSSucceeds() {
-
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
-        def transportRequestId = new ChangeManagement(nullScript)
-            .createTransportRequestCTS(
-                [
-                    image: 'ppiper/cmclient',
-                    pullImage: true
-                ],
-                'W', // transport type
-                'XYZ', // target system
-                'desc 123', // description
-                'https://example.org/cm',
-                'me')
-
-        // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
-        // returned only in case the shell call matches.
-        assert transportRequestId == '004'
-
-        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
-        dockerExecuteRule.getDockerParams().dockerPullImage = true
-
-    }
-
-    @Test
     public void testUploadFileToTransportSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
@@ -288,29 +263,6 @@ public void testGetCommandLineWithCMClientOpts() {
         dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
         dockerExecuteRule.getDockerParams().dockerPullImage = true
 
-    }
-
-    @Test
-    public void testUploadFileToTransportSucceedsCTS() {
-
-        // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
-
-        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
-            [
-                image: 'ppiper/cmclient',
-                pullImage: true
-             ],
-            '002',
-            '/path',
-            'https://example.org/cm',
-            'me')
-
-        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
-        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
-
-        // no assert for the shell command required here, since the regex registered
-        // above to the script rule is an implicit check for the command line.
     }
 
     @Test
@@ -424,29 +376,6 @@ public void testGetCommandLineWithCMClientOpts() {
 
         dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
         dockerExecuteRule.getDockerParams().pullImage == true
-    }
-
-    @Test
-    public void testReleaseTransportRequestSucceedsCTS() {
-
-        // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
-
-        new ChangeManagement(nullScript).releaseTransportRequestCTS(
-            [
-                image: 'ppiper/cm-client',
-                pullImage: true,
-            ],
-            '002',
-            'https://example.org',
-            'me',
-            'openSesame')
-
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
-
-        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
-        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test

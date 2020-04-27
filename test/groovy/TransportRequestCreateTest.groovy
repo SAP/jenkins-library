@@ -159,59 +159,6 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void createTransportRequestSuccessCTSTest() {
-
-        def result = [:]
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-
-            String createTransportRequestCTS(
-                Map docker,
-                String transportType,
-                String targetSystemId,
-                String description,
-                String endpoint,
-                String credentialsId,
-                String clientOpts) {
-                result.docker = docker
-                result.transportType = transportType
-                result.targetSystemId = targetSystemId
-                result.description = description
-                result.endpoint = endpoint
-                result.credentialsId = credentialsId
-                result.clientOpts = clientOpts
-                return '001'
-            }
-        }
-
-        stepRule.step.call(script: nullScript,
-                        transportType: 'W',
-                        targetSystem: 'XYZ',
-                        description: 'desc',
-                        changeManagement: [type: 'CTS'],
-                        cmUtils: cm)
-
-        assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'
-        assert result == [
-                         docker: [
-                             image: 'ppiper/cm-client',
-                             pullImage: true,
-                             envVars: [:],
-                             options: [],
-                         ],
-                         transportType: 'W',
-                         targetSystemId: 'XYZ',
-                         description: 'desc',
-                         endpoint: 'https://example.org/cm',
-                         credentialsId: 'CM',
-                         clientOpts: '-DmyProp=myVal'
-                         ]
-
-        assert loggingRule.log.contains("[INFO] Creating transport request.")
-        assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
-    }
-
-    @Test
     public void createTransportRequestSuccessRFCTest() {
 
         def result = [:]
