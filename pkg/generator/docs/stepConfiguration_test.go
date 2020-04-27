@@ -20,26 +20,26 @@ func TestGenerateStepDocumentationSuccess(t *testing.T) {
 			},
 		},
 	}
-	expected := "Step Configuration\n\n" +
-		"We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n" +
-		"In following sections of the config.yml the configuration is possible:\n\n" +
-		"| parameter | general | step/stage |\n" +
-		"| --------- | ------- | ---------- |\n" +
-		"| `param0` | X |  |\n" +
-		"| `param1` | X | X |\n" +
-		"| `param2` |  | X |\n"
-
 	// test
 	result := BuildStepConfiguration(testData)
 
 	t.Run("default", func(t *testing.T) {
 		// assert
-		assert.Equal(t, expected, result)
+		expectedDescription := "Step Configuration\n\n" +
+			"We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n" +
+			"In following sections of the config.yml the configuration is possible:\n\n"
+		assert.Contains(t, result, expectedDescription)
+		expectedTable := "| parameter | general | step/stage |\n" +
+			"| --------- | ------- | ---------- |\n" +
+			"| `param0` | X | |\n" +
+			"| `param1` | X | X |\n" +
+			"| `param2` |  | X |\n"
+		assert.Contains(t, result, expectedTable)
 	})
 	t.Run("display global parameters", func(t *testing.T) {
 		t.Skip("Not yet implemented.")
 		// assert
-		assert.Contains(t, result, "| `noTelemetry` | X | X |\n")
+		assert.Contains(t, result, "| `collectTelemetryData` | X | X |\n") // represented by noTelemetry in GO
 		assert.Contains(t, result, "| `script` | X | X |\n")
 		assert.Contains(t, result, "| `verbose` | X | X |\n")
 	})
