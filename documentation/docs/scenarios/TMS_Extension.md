@@ -74,4 +74,4 @@ steps:
 
 ### Parameters
 
-For a detailed description of the relevant parameters, see [tmsUpload](../../../steps/tmsUpload/).
+For a detailed description of the relevant parameters, see [tmsUpload](../../steps/tmsUpload/).
