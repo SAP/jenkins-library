@@ -5,32 +5,24 @@ import (
 	"strings"
 )
 
-type RemoveSecretFormatterDecorator struct {
+type PiperLogFormatter struct {
 	logrus.TextFormatter
+	messageOnlyLogFormat bool
 }
 
-func (formatter *RemoveSecretFormatterDecorator) Format(entry *logrus.Entry) (bytes []byte, err error) {
-	formattedMessage, err := formatter.TextFormatter.Format(entry)
+func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 
-	if err != nil {
-		return nil, err
-	}
-
-	message := string(formattedMessage)
-
-	for _, secret := range secrets {
-		message = strings.Replace(message, secret, "****", -1)
-	}
-
-	return []byte(message), nil
-}
-
-type RemoveSecretFormatterPlainMessageDecorator struct {
-	logrus.TextFormatter
-}
-
-func (formatter *RemoveSecretFormatterPlainMessageDecorator) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := entry.Message + "\n"
+
+	if !formatter.messageOnlyLogFormat {
+		formattedMessage, err := formatter.TextFormatter.Format(entry)
+
+		if err != nil {
+			return nil, err
+		}
+
+		message = string(formattedMessage)
+	}
 
 	for _, secret := range secrets {
 		message = strings.Replace(message, secret, "****", -1)
@@ -49,6 +41,7 @@ var secrets []string
 func Entry() *logrus.Entry {
 	if logger == nil {
 		logger = logrus.WithField("library", LibraryRepository)
+		logger.Logger.SetFormatter(&PiperLogFormatter{})
 	}
 
 	return logger
@@ -63,11 +56,7 @@ func SetVerbose(verbose bool) {
 }
 
 func SetFormatter(messageOnlyLogFormat bool) {
-	if messageOnlyLogFormat {
-		logger.Logger.SetFormatter(&RemoveSecretFormatterPlainMessageDecorator{})
-	} else {
-		logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
-	}
+	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat:messageOnlyLogFormat})
 }
 
 // SetStepName sets the stepName field.
