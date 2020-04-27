@@ -202,6 +202,8 @@ spec:
       - STAGES
       - STEPS
       default: FAILURE
+      possibleValues:
+        - FAILURE
     - name: vulnerabilityThresholdUnit
       type: string
       description: The unit for the threshold to apply.
