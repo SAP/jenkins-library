@@ -58,6 +58,7 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
+            'malwareExecuteScan', // go pattern, script not needed
             'mavenExecuteStaticCodeChecks',
             'cloudFoundryCreateServiceKey',
             'gctsCreateRepository'
@@ -133,6 +134,7 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'npmExecuteScripts', //implementing new golang pattern without fields
+        'malwareExecuteScan', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
