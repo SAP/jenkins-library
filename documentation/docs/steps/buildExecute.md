@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-## Prerequsites
+## Prerequisites
 
 When performing a Docker build you need to maintain the respective credentials in your Jenkins credentials store.<br />
 Further details

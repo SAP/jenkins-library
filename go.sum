@@ -25,6 +25,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20190822182118-27a4ced34534/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
 github.com/GoogleContainerTools/container-diff v0.15.0 h1:fyYoSoJuefWUhVLNAfnSacs/4WWCUR4+2JkiU9xzqOY=
 github.com/GoogleContainerTools/container-diff v0.15.0/go.mod h1:tJLKT7P37rapR5AYos9z/zkajzfShGULJtUr2rGHGKY=
+github.com/Jeffail/gabs/v2 v2.5.0 h1:ERXffrksCEPjKVDWbZDBcOwrpXctXfeFGXxOQh1umOE=
+github.com/Jeffail/gabs/v2 v2.5.0/go.mod h1:xCn81vdHKxFUuWWAaD5jCTQDNPBMh5pPs9IJ+NcziBI=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 h1:ygIc8M6trr62pF5DucadTWGdEB4mEyvzi0e2nbcmcyA=
