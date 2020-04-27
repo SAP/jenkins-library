@@ -113,6 +113,8 @@ class PiperExecuteBinTest extends BasePiperTest {
             artifacts.add(m)
             return null
         })
+
+        helper.registerAllowedMethod('findFiles', [Map.class], {m -> return null})
     }
 
     @Test

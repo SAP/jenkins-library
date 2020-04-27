@@ -2,6 +2,7 @@ metadata:
   name: artifactPrepareVersion
   aliases:
     - name: artifactSetVersion
+    - name: mavenExecute
     - name: setVersion
       deprecated: true
   description: Prepares and potentially updates the artifact's version before building the artifact.
@@ -81,6 +82,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        possibleValues:
+        - custom
+        - docker
+        - dub
+        - golang
+        - maven
+        - mta
+        - npm
+        - pip
+        - sbt
       - name: commitUserName
         aliases:
           - name: gitUserName
@@ -91,7 +102,7 @@ spec:
         - STAGES
         - STEPS
         default: Project Piper
-      - name: customversionField
+      - name: customVersionField
         type: string
         description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
         scope:
@@ -101,6 +112,13 @@ spec:
       - name: customVersionSection
         type: string
         description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: customVersioningScheme
+        type: string
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
         scope:
         - PARAMETERS
         - STAGES
@@ -202,6 +220,13 @@ spec:
       type: jenkins
     - name: gitSshKeyCredentialsId
       type: jenkins
+      aliases:
+        - name: gitCredentialsId
+          deprecated: true
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never
   outputs:
     resources:
       - name: commonPipelineEnvironment

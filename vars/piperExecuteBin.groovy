@@ -51,6 +51,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                         sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                    script.commonPipelineEnvironment.readFromDisk(script)
                 }
             }
         }
