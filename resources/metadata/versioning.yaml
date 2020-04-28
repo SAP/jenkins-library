@@ -223,10 +223,6 @@ spec:
       aliases:
         - name: gitCredentialsId
           deprecated: true
-  containers:
-    - name: mvn
-      image: maven:3.6-jdk-8
-      imagePullPolicy: Never
   outputs:
     resources:
       - name: commonPipelineEnvironment
