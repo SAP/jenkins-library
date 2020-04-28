@@ -58,8 +58,10 @@ func SetVerbose(verbose bool) {
 }
 
 // SetFormatter specifies whether to log only hte message
-func SetFormatter(messageOnlyLogFormat bool) {
-	Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat: messageOnlyLogFormat})
+func SetFormatter(logFormat string) {
+	if logFormat == "plain" {
+		Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat: true})
+	}
 }
 
 // SetStepName sets the stepName field.

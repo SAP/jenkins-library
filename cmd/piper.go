@@ -29,7 +29,7 @@ type GeneralConfigOptions struct {
 	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	StepName       string
 	Verbose        bool
-  MessageOnlyLogFormat bool
+	LogFormat      string
 }
 
 var rootCmd = &cobra.Command{
@@ -91,7 +91,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.MessageOnlyLogFormat, "messageOnlyLogFormat", false, "Only log messages without additional fields. May improve readability in certain cases, at the cost of losing log level, timestamps and other metadata.")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default (with metadata) or plain (without metadata)")
 
 }
 
@@ -111,6 +111,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -162,8 +164,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			log.SetVerbose(stepConfig.Config["verbose"].(bool))
 		}
 	}
-
-	log.SetFormatter(GeneralConfig.MessageOnlyLogFormat)
 
 	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
