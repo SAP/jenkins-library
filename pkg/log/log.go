@@ -1,8 +1,9 @@
 package log
 
 import (
-	"github.com/sirupsen/logrus"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 //PiperLogFormatter is the custom formatter of piper
@@ -69,6 +70,11 @@ func SetStepName(stepName string) {
 // DeferExitHandler registers a logrus exit handler to allow cleanup activities.
 func DeferExitHandler(handler func()) {
 	logrus.DeferExitHandler(handler)
+}
+
+// RegisterHook registers a logrus hook
+func RegisterHook(hook logrus.Hook) {
+	logrus.AddHook(hook)
 }
 
 func RegisterSecret(secret string) {

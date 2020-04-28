@@ -28,12 +28,14 @@ type nexusUploadOptions struct {
 
 // NexusUploadCommand Upload artifacts to Nexus Repository Manager
 func NexusUploadCommand() *cobra.Command {
+	const STEP_NAME = "nexusUpload"
+
 	metadata := nexusUploadMetadata()
 	var stepConfig nexusUploadOptions
 	var startTime time.Time
 
 	var createNexusUploadCmd = &cobra.Command{
-		Use:   "nexusUpload",
+		Use:   STEP_NAME,
 		Short: "Upload artifacts to Nexus Repository Manager",
 		Long: `Upload build artifacts to a Nexus Repository Manager.
 
@@ -55,9 +57,14 @@ Note: npm's gitignore parser might yield different results from your git client,
 If an image for mavenExecute is configured, and npm packages are to be published, the image must have npm installed.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("nexusUpload")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "nexusUpload", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -74,7 +81,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "nexusUpload")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

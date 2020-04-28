@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -17,19 +18,26 @@ type versionOptions struct {
 
 // VersionCommand Returns the version of the piper binary
 func VersionCommand() *cobra.Command {
+	const STEP_NAME = "version"
+
 	metadata := versionMetadata()
 	var stepConfig versionOptions
 	var startTime time.Time
 
 	var createVersionCmd = &cobra.Command{
-		Use:   "version",
+		Use:   STEP_NAME,
 		Short: "Returns the version of the piper binary",
 		Long:  `Writes the commit hash and the tag (if any) to stdout and exits with 0.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("version")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "version", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -44,7 +52,7 @@ func VersionCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "version")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			version(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
