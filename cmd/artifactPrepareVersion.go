@@ -58,7 +58,6 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("artifactPrepareVersion failed")
 	}
-	log.Entry().Info("SUCCESS")
 }
 
 var sshAgentAuth = ssh.NewSSHAgentAuth

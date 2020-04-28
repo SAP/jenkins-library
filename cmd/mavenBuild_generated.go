@@ -64,6 +64,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
