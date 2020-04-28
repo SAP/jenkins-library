@@ -38,17 +38,16 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
-            String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${customConfigArg}"))
             echo "Config: ${config}"
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "./piper ${stepName}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -56,33 +55,6 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             }
         }
     }
-}
-
-static String getCustomDefaultConfigs() {
-    // The default config files were extracted from merged library
-    // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
-    List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
-    for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
-    }
-    return customDefaults.join(',')
-}
-
-static String getCustomDefaultConfigsArg() {
-    String customDefaults = getCustomDefaultConfigs()
-    if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
-    }
-    return ''
-}
-
-static String getCustomConfigArg(def script) {
-    if (script?.commonPipelineEnvironment?.configurationFile
-        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
-        && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yaml') {
-        return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
-    }
-    return ''
 }
 
 void dockerWrapper(script, config, body) {

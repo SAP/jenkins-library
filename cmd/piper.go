@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -145,7 +146,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases, GeneralConfig.EnvRootPath)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -235,6 +236,11 @@ func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
 }
 
 func getProjectConfigFile(name string) string {
+
+	configFileFromEnv := piperenv.GetResourceParameter(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "configurationFile")
+	if len(configFileFromEnv) > 0 {
+		name = configFileFromEnv
+	}
 
 	var altName string
 	if ext := filepath.Ext(name); ext == ".yml" {

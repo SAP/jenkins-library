@@ -10,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
@@ -120,9 +121,13 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias, envRootPath string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
+
+	if c.CustomDefaults == nil {
+		c.CustomDefaults = []string{}
+	}
 
 	if configuration != nil {
 		if err := c.ReadConfig(configuration); err != nil {
@@ -132,18 +137,23 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
-	// consider custom defaults defined in config.yml
-	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
-		if c.openFile == nil {
-			c.openFile = OpenPiperFile
+	// consider defaults from commonPipelineEnvironment
+	customDefaultsJSON := piperenv.GetResourceParameter(envRootPath, "commonPipelineEnvironment", "customDefaults")
+	var customDefaultsFromEnv []string
+	json.Unmarshal([]byte(customDefaultsJSON), &customDefaultsFromEnv)
+
+	// extend custom defaults defined in config.yml
+	c.CustomDefaults = append(customDefaultsFromEnv, c.CustomDefaults...)
+
+	if c.openFile == nil {
+		c.openFile = OpenPiperFile
+	}
+	for _, f := range c.CustomDefaults {
+		fc, err := c.openFile(f)
+		if err != nil {
+			return StepConfig{}, errors.Wrapf(err, "getting default '%v' failed", f)
 		}
-		for _, f := range c.CustomDefaults {
-			fc, err := c.openFile(f)
-			if err != nil {
-				return StepConfig{}, errors.Wrapf(err, "getting default '%v' failed", f)
-			}
-			defaults = append(defaults, fc)
-		}
+		defaults = append(defaults, fc)
 	}
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {

@@ -167,9 +167,22 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
+        [filename: '.pipeline/commonPipelineEnvironment/configurationFile', property: 'configurationFile'],
+
     ]
 
     void writeToDisk(script) {
+
+        // The default config files were extracted from merged library
+        // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
+        List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
+        List customDefaultFiles = []
+        customDefaults.each { customDefault ->
+            def filepath =  ".pipeline/tmp/${customDefault}"
+            script.writeFile(file: filepath, text: libraryResource(customDefault))
+            customDefaultFiles.add(filepath)
+        }
+        script.writeFile file: '.pipeline/commonPipelineEnvironment/customDefaults', text: groovy.json.JsonOutput.toJson(customDefaultFiles)
 
         files.each({f  ->
             if (this[f.property] && !script.fileExists(f.filename)) {
