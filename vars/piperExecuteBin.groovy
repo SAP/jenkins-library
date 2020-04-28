@@ -41,13 +41,13 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             String customConfigArg = getCustomConfigArg(script)
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'"))
             echo "Config: ${config}"
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${customConfigArg}"
+                        sh "./piper ${stepName}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
