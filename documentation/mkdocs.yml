@@ -97,6 +97,7 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+    - 'Command line tool': cli/index.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md
 

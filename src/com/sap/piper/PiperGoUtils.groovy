@@ -28,7 +28,7 @@ class PiperGoUtils implements Serializable {
                 steps.sh 'wget https://github.com/$REPOSITORY_UNDER_TEST/archive/$LIBRARY_VERSION_UNDER_TEST.tar.gz'
                 steps.sh 'tar xzf $LIBRARY_VERSION_UNDER_TEST.tar.gz'
                 steps.dir("jenkins-library-${steps.env.LIBRARY_VERSION_UNDER_TEST}") {
-                    steps.sh 'CGO_ENABLED=0 go build -tags release -o ../piper . && chmod +x ../piper && chown 1000:999 ../piper'
+                    steps.sh "CGO_ENABLED=0 go build -tags release -ldflags \"-X github.com/SAP/jenkins-library/cmd.GitCommit=${steps.env.LIBRARY_VERSION_UNDER_TEST}\" -o ../piper . && chmod +x ../piper && chown 1000:999 ../piper"
                 }
                 steps.sh 'rm -rf $LIBRARY_VERSION_UNDER_TEST.tar.gz jenkins-library-$LIBRARY_VERSION_UNDER_TEST'
             }

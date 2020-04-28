@@ -82,6 +82,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        possibleValues:
+        - custom
+        - docker
+        - dub
+        - golang
+        - maven
+        - mta
+        - npm
+        - pip
+        - sbt
       - name: commitUserName
         aliases:
           - name: gitUserName
@@ -213,10 +223,6 @@ spec:
       aliases:
         - name: gitCredentialsId
           deprecated: true
-  containers:
-    - name: mvn
-      image: maven:3.6-jdk-8
-      imagePullPolicy: Never
   outputs:
     resources:
       - name: commonPipelineEnvironment
