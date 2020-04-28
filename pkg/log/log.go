@@ -12,6 +12,8 @@ type PiperLogFormatter struct {
 	messageOnlyLogFormat bool
 }
 
+const logFormatPlain = "plain"
+
 //Format the log message
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 
@@ -59,7 +61,7 @@ func SetVerbose(verbose bool) {
 
 // SetFormatter specifies whether to log only hte message
 func SetFormatter(logFormat string) {
-	if logFormat == "plain" {
+	if logFormat == logFormatPlain {
 		Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat: true})
 	}
 }

@@ -24,7 +24,7 @@ func TestSecrets(t *testing.T) {
 
 	t.Run("should log message only", func(t *testing.T) {
 
-		SetFormatter(true)
+		SetFormatter(logFormatPlain)
 
 		message := "This is a log message"
 
