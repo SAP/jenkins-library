@@ -1,0 +1,84 @@
+metadata:
+  name: gctsCreateRepository
+  description: Creates a Git repository on an ABAP system
+  longDescription: |
+    Creates a local Git repository on an ABAP system if it does not already exist.
+
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to create the repository
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: Username to authenticate to the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: Password to authenticate to the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: repository
+        type: string
+        description: Specifies the name (ID) of the local repository on the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the protocol and host adress, including the port. Please provide in the format '<protocol>://<host>:<port>'
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: client
+        type: string
+        description: Specifies the client of the ABAP system to be adressed
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: remoteRepositoryURL
+        type: string
+        description: URL of the corresponding remote repository
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: role
+        type: string
+        description: Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: vSID
+        type: string
+        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: type
+        type: string
+        description: Type of the used source code management tool
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: GIT
+        possibleValues:
+        - GIT

@@ -63,6 +63,7 @@ nav:
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
+        - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md

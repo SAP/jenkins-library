@@ -37,9 +37,7 @@ package cmd
 
 import (
 	"fmt"
-	{{ if .OSImport -}}
 	"os"
-	{{ end -}}
 	{{ if .OutputResources -}}
 	"path/filepath"
 	{{ end -}}
@@ -68,6 +66,8 @@ type {{ .StepName }}Options struct {
 
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
+	const STEP_NAME = "{{ .StepName }}"
+
 	metadata := {{ .StepName }}Metadata()
 	var stepConfig {{.StepName}}Options
 	var startTime time.Time
@@ -75,14 +75,19 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
-		Use:   "{{.StepName}}",
+		Use:   STEP_NAME,
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("{{ .StepName }}")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -101,7 +106,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, "{{ .StepName }}")
+			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
 		},
@@ -160,7 +165,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 	testCmd := {{.CobraCmdFuncName}}()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "{{.StepName}}", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "{{ .StepName }}", testCmd.Use, "command name incorrect")
 
 }
 `
