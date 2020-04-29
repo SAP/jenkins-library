@@ -1,18 +1,16 @@
 void call(parameters) {
-    node() {
-        // agent none
-        // //triggers {
-        // //    issueCommentTrigger('.*/piper ([a-z]*).*')
-        // //}
-        // options {
-        //     checkoutSCM()
-        //     timestamps()
-        // }
-        // stages {
+    pipeline {
+        agent none
+        //triggers {
+        //    issueCommentTrigger('.*/piper ([a-z]*).*')
+        //}
+        options {
+            timestamps()
+        }
+        stages {
 
             stage('Init') {
                 steps {
-                    checkout scm
             //     library 'piper-lib-os-dev'
             //     //setupCommonPipelineEnvironment script: parameters.script
             //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
@@ -42,5 +40,5 @@ void call(parameters) {
         //         piperPipelineStagePost script: parameters.script
         //     }
         // }
-    // }
+    }
 }
