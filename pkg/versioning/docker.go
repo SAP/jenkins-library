@@ -33,7 +33,9 @@ func (d *Docker) init() {
 }
 
 func (d *Docker) initDockerfile() {
-	if len(d.path) == 0 {
+	if len(d.path) == 0 && len(d.versionSource) == 0 {
+		d.path = "VERSION"
+	} else if len(d.path) == 0 {
 		d.path = "Dockerfile"
 	}
 }
@@ -61,6 +63,11 @@ func (d *Docker) GetVersion() (string, error) {
 			return "", fmt.Errorf("no version information available in FROM statement")
 		}
 		return version, nil
+	case "":
+		if len(d.versionSource) == 0 {
+			d.versionSource = "custom"
+		}
+		fallthrough
 	case "custom", "dub", "golang", "maven", "mta", "npm", "pip", "sbt":
 		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.execRunner)
 		if err != nil {
