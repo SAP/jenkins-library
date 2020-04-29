@@ -98,6 +98,8 @@ spec:
         type: string
         description: "Pull-Request only: The scm provider."
         default: GitHub
+        possibleValues:
+        - GitHub
         scope:
           - PARAMETERS
           - STAGES
