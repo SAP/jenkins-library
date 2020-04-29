@@ -95,7 +95,7 @@ func TestDockerGetVersion(t *testing.T) {
 			versionSource: "",
 		}
 		_, err := docker.GetVersion()
-		assert.EqualError(t, err, "failed to read file 'VERSION': open VERSION: The system cannot find the file specified.")
+		assert.Contains(t, fmt.Sprint(err), "failed to read file 'VERSION': open VERSION")
 	})
 }
 
