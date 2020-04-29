@@ -56,20 +56,27 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 
 // MtaBuildCommand Performs an mta build
 func MtaBuildCommand() *cobra.Command {
+	const STEP_NAME = "mtaBuild"
+
 	metadata := mtaBuildMetadata()
 	var stepConfig mtaBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment mtaBuildCommonPipelineEnvironment
 
 	var createMtaBuildCmd = &cobra.Command{
-		Use:   "mtaBuild",
+		Use:   STEP_NAME,
 		Short: "Performs an mta build",
 		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mtaBuild")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "mtaBuild", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -85,7 +92,7 @@ func MtaBuildCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mtaBuild")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mtaBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 		},
