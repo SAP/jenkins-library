@@ -80,3 +80,5 @@ spec:
         - STAGES
         - STEPS
         default: GIT
+        possibleValues:
+        - GIT
