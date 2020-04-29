@@ -20,7 +20,7 @@ var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test
 	"| `param1` | No |  |  |\n" +
 	"| `param2` | Yes |  |  |\n" +
 	"| `script` | Yes |  |  |\n" +
-	"| `verbose` | No | `false` |  |\n\n" +
+	"| `verbose` | No | `false` | `true`, `false` |\n\n" +
 	" * `param0`: param0 description\n" +
 	" * `param1`: param1 description\n" +
 	" * `param2`: param1 description\n" +

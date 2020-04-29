@@ -69,6 +69,7 @@ func setDefaultStepParameters(stepData *config.StepData) {
 			switch param.Type {
 			case "bool":
 				param.Default = "`false`"
+				param.PossibleValues = append(param.PossibleValues, true, false)
 			case "int":
 				param.Default = "`0`"
 			}
@@ -80,6 +81,7 @@ func setDefaultStepParameters(stepData *config.StepData) {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "bool":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
+				param.PossibleValues = append(param.PossibleValues, true, false)
 			case "int":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			}
