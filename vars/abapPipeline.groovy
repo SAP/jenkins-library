@@ -9,12 +9,12 @@ void call(parameters) {
             timestamps()
         }
         stages {
-            // stage('Init') {
-            //     steps {
-            //         library 'piper-lib-os'
+            stage('Init') {
+                steps {
+                    library 'piper-lib-os-dev'
             //         piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
-            //     }
-            // }
+                }
+            }
             stage('Create Service') {
                 steps {
                     cloudFoundryCreateService script: parameters.script
