@@ -42,6 +42,9 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	tmpl, err := template.New("doc").Funcs(funcMap).Parse(content)
 	checkError(err)
 
+	//add general options like script, verbose, etc.
+	appendGeneralOptionsToParameters(&stepData)
+
 	setDefaultStepParameters(&stepData)
 	// add secrets, context defaults to the step parameters
 	handleStepParameters(&stepData)
@@ -240,6 +243,18 @@ func handleStepParameters(stepData *config.StepData) {
 	}
 	//Sort Parameters
 	sortStepParameters(stepData)
+}
+
+func appendGeneralOptionsToParameters(stepData *config.StepData) {
+	script := config.StepParameters{
+		Name: "script", Type: "Jenkins Script", Mandatory: true,
+		Description: "The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` for retrieving, e.g. configuration parameters.",
+	}
+	verbose := config.StepParameters{
+		Name: "verbose", Type: "bool", Mandatory: false, Default: false, Scope: []string{"GENERAL"},
+		Description: "verbose output",
+	}
+	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
 }
 
 func appendSecretsToParameters(stepData *config.StepData) {

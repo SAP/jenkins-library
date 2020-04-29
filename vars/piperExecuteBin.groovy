@@ -152,7 +152,7 @@ void handleErrorDetails(String stepName, Closure body) {
                 errorCategory = " (category: ${errorDetails.category})"
                 DebugReport.instance.failedBuild.category = errorDetails.category
             }
-            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.message}"
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
         error "[${stepName}] Step execution failed. Error: ${ex}"
     }
