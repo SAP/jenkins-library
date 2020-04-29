@@ -15,6 +15,7 @@ void call(parameters) {
                 //     //setupCommonPipelineEnvironment script: parameters.script
                 //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
                     node {
+                        label 'labelName'
                         setupCommonPipelineEnvironment script: parameters.script
                     }
                 }
