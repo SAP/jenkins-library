@@ -22,19 +22,26 @@ type npmExecuteScriptsOptions struct {
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
+	const STEP_NAME = "npmExecuteScripts"
+
 	metadata := npmExecuteScriptsMetadata()
 	var stepConfig npmExecuteScriptsOptions
 	var startTime time.Time
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
-		Use:   "npmExecuteScripts",
+		Use:   STEP_NAME,
 		Short: "Execute npm run scripts on all npm packages in a project",
 		Long:  `Execute npm run scripts in all package json files, if they implement the scripts.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("npmExecuteScripts")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "npmExecuteScripts", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -49,7 +56,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "npmExecuteScripts")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			npmExecuteScripts(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
