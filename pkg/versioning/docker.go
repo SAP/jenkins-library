@@ -61,7 +61,16 @@ func (d *Docker) GetVersion() (string, error) {
 			return "", fmt.Errorf("no version information available in FROM statement")
 		}
 		return version, nil
+	case "":
+		if len(d.path) == 0 {
+			d.path = "VERSION"
+		}
+		d.versionSource = "custom"
+		fallthrough
 	case "custom", "dub", "golang", "maven", "mta", "npm", "pip", "sbt":
+		if d.options == nil {
+			d.options = &Options{}
+		}
 		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.execRunner)
 		if err != nil {
 			return "", err
