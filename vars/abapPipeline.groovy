@@ -5,17 +5,17 @@ void call(parameters) {
         //    issueCommentTrigger('.*/piper ([a-z]*).*')
         //}
         options {
-        //    skipDefaultCheckout()
+            skipDefaultCheckout()
             timestamps()
         }
         stages {
-            stage('Init') {
-                steps {
-                    library 'piper-lib-os-dev'
-                    setupCommonPipelineEnvironment script: parameters.script
+            // stage('Init') {
+            //     steps {
+            //         library 'piper-lib-os-dev'
+            //         setupCommonPipelineEnvironment script: parameters.script
             //         piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
-                }
-            }
+            //     }
+            // }
             stage('Create Service') {
                 steps {
                     cloudFoundryCreateService script: parameters.script
