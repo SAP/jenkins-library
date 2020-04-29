@@ -36,11 +36,4 @@ func TestGenerateStepDocumentationSuccess(t *testing.T) {
 			"| `param2` |  | X |\n"
 		assert.Contains(t, result, expectedTable)
 	})
-	t.Run("display global parameters", func(t *testing.T) {
-		t.Skip("Not yet implemented.")
-		// assert
-		assert.Contains(t, result, "| `collectTelemetryData` | X | X |\n") // represented by noTelemetry in GO
-		assert.Contains(t, result, "| `script` | X | X |\n")
-		assert.Contains(t, result, "| `verbose` | X | X |\n")
-	})
 }

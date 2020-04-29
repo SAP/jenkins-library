@@ -232,15 +232,11 @@ func appendGeneralOptionsToParameters(stepData *config.StepData) {
 		Name: "script", Type: "Jenkins Script", Mandatory: true,
 		Description: "The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` for retrieving, e.g. configuration parameters.",
 	}
-	telemetry := config.StepParameters{
-		Name: "collectTelemetryData", Type: "bool", Mandatory: false, Default: true, Scope: []string{"GENERAL"},
-		Description: "toggle telemetry reporting",
-	}
 	verbose := config.StepParameters{
 		Name: "verbose", Type: "bool", Mandatory: false, Default: false, Scope: []string{"GENERAL"},
 		Description: "verbose output",
 	}
-	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, telemetry, verbose)
+	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
 }
 
 func appendSecretsToParameters(stepData *config.StepData) {

@@ -16,13 +16,11 @@ var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test
 	"## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t" +
 	"## Parameters\n\n| name | mandatory | default | possible values |\n" +
 	"| ---- | --------- | ------- | --------------- |\n" +
-	"| `collectTelemetryData` | No | `true` |  |\n" +
 	"| `param0` | No | `val0` |  |\n" +
 	"| `param1` | No |  |  |\n" +
 	"| `param2` | Yes |  |  |\n" +
 	"| `script` | Yes |  |  |\n" +
 	"| `verbose` | No | `false` |  |\n\n" +
-	" * `collectTelemetryData`: toggle telemetry reporting\n" +
 	" * `param0`: param0 description\n" +
 	" * `param1`: param1 description\n" +
 	" * `param2`: param1 description\n" +
@@ -32,7 +30,6 @@ var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test
 	"In following sections of the config.yml the configuration is possible:\n\n" +
 	"| parameter | general | step/stage |\n" +
 	"| --------- | ------- | ---------- |\n" +
-	"| `collectTelemetryData` | X |  |\n" +
 	"| `param0` | X |  |\n" +
 	"| `param1` |  |  |\n" +
 	"| `param2` |  |  |\n" +
