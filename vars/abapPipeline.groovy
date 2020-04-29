@@ -1,25 +1,26 @@
 void call(parameters) {
-    pipeline {
-        agent none
-        //triggers {
-        //    issueCommentTrigger('.*/piper ([a-z]*).*')
-        //}
-        options {
-            skipDefaultCheckout()
-            timestamps()
-        }
-        stages {
-            node {
-                stage('Init') {
-                    steps {
-                //     library 'piper-lib-os-dev'
-                //     //setupCommonPipelineEnvironment script: parameters.script
-                //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
+    node() {
+        // agent none
+        // //triggers {
+        // //    issueCommentTrigger('.*/piper ([a-z]*).*')
+        // //}
+        // options {
+        //     checkoutSCM()
+        //     timestamps()
+        // }
+        // stages {
 
-                        setupCommonPipelineEnvironment script: parameters.script
-                    }
+            stage('Init') {
+                steps {
+                    checkout scm
+            //     library 'piper-lib-os-dev'
+            //     //setupCommonPipelineEnvironment script: parameters.script
+            //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
+
+                    setupCommonPipelineEnvironment script: parameters.script
                 }
             }
+
             stage('Create Service') {
                 steps {
                     cloudFoundryCreateService script: parameters.script
@@ -41,5 +42,5 @@ void call(parameters) {
         //         piperPipelineStagePost script: parameters.script
         //     }
         // }
-    }
+    // }
 }
