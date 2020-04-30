@@ -155,9 +155,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.NoTelemetry = true
 	}
 
-	if !GeneralConfig.Verbose {
-		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
-			log.SetVerbose(stepConfig.Config["verbose"].(bool))
+	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
+		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
+			log.SetVerbose(verboseValue)
+		} else {
+			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 	}
 
