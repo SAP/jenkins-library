@@ -18,7 +18,7 @@ Examples will be listed below.
 
 ## Examples
 
-### ATC run via Cloud Foundry Service Key example in Jenkinsfile
+* ### ATC run via Cloud Foundry Service Key example in Jenkinsfile
 
 The following example triggers an ATC run via reading the Service Key of an ABAP instance in Cloud Foundry.
 
@@ -42,7 +42,7 @@ abapEnvironmentRunATCCheck(
 
 To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check section 'ATC config file example' for more information.
 
-### ATC run via direct ABAP endpoint configuration in Jenkinsfile
+* ### ATC run via direct ABAP endpoint configuration in Jenkinsfile
 
 This  example triggers an ATC run directly on the ABAP endpoint.
 
@@ -62,7 +62,7 @@ abapEnvironmentRunATCCheck(
 
 To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check section 'ATC config file example' for more information.
 
-### ATC config file example
+* ### ATC config file example
 
 The following section contains an example of an `atcconfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This folder must be taken as a SCM in the Jenkins pipeline to run the pipeline.
