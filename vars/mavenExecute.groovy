@@ -13,7 +13,12 @@ def call(Map parameters = [:]) {
     if (!parameters.defines in List) {
         error "Expected parameters.defines ${parameters.defines} to be of type List, but it is ${parameters.defines.class}."
     }
-
+    if (!parameters.flags in List) {
+        error "Expected parameters.flags ${parameters.flags} to be of type List, but it is ${parameters.flags.class}."
+    }
+    if (!parameters.goals in List) {
+        error "Expected parameters.goals ${parameters.goals} to be of type List, but it is ${parameters.goals.class}."
+    }
     List credentials = [ ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 
