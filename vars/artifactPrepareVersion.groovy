@@ -14,5 +14,5 @@ void call(Map parameters = [:]) {
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
 }
