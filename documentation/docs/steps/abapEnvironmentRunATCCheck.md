@@ -86,7 +86,7 @@ atcobjects:
     - name: "TestComponent2"
 ```
 
-The following example of an `atcconfig.yml` file only contains packages to be checked:
+The following example of an `atcconfig.yml` file that only contains packages to be checked:
 
 ```yaml
 atcobjects:
@@ -97,7 +97,7 @@ atcobjects:
       includesubpackage: true
 ```
 
-The following example of an `atcconfig.yml` file only contains software components to be checked:
+The following example of an `atcconfig.yml` file that only contains software components to be checked:
 
 ```yaml
 atcobjects:
