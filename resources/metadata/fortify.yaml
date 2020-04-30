@@ -364,10 +364,9 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: '{{(split "." (split "-" .Version)._0)._0}}'
-    - name: projectVersioningModel
+    - name: defaultVersioningModel
       type: string
-      description: The project versioning model used for creating the version to report results in SSC, can be one of `'major'`, `'semantic'`, `'full'`, `'text'`
+      description: The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`
       scope:
       - PARAMETERS
       - STAGES

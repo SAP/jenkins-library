@@ -55,7 +55,7 @@ type fortifyExecuteScanOptions struct {
 	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
 	ProjectVersion                  string `json:"projectVersion,omitempty"`
-	ProjectVersioningModel          string `json:"projectVersioningModel,omitempty"`
+	DefaultVersioningModel          string `json:"defaultVersioningModel,omitempty"`
 	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
@@ -203,8 +203,8 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint  for FPR downloads")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", `{{(split "." (split "-" .Version)._0)._0}}`, "The project version used for reporting results in SSC")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersioningModel, "projectVersioningModel", `major`, "The project versioning model used for creating the version to report results in SSC, can be one of `'major'`, `'semantic'`, `'full'`, `'text'`")
+	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version used for reporting results in SSC")
+	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
@@ -539,7 +539,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "fortifyProjectVersion"}},
 					},
 					{
-						Name:        "projectVersioningModel",
+						Name:        "defaultVersioningModel",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
