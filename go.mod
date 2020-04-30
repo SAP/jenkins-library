@@ -9,6 +9,7 @@ require (
 	github.com/bmatcuk/doublestar v1.2.4
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
+	github.com/getsentry/sentry-go v0.6.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/gogo/protobuf v1.3.1 // indirect
