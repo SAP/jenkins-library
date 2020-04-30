@@ -255,8 +255,8 @@ class PiperExecuteBinTest extends BasePiperTest {
             'testStep',
             'metadata/test.yaml',
             [],
-            false,
             true,
+            false,
             false
         )
     }
