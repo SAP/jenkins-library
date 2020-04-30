@@ -185,8 +185,12 @@ void call(Map parameters = [:], Closure body = null) {
 
             def gitConfig = []
 
-            if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
-            if(config.gitUserName)  gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            if(config.gitUserEMail) {
+                gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
+            }
+            if(config.gitUserName) {
+                gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            }
             gitConfig = gitConfig.join(' ')
 
             try {
