@@ -10,7 +10,9 @@ def call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
-    //todo assert is list
+    if (!parameters.defines in List) {
+        error "Expected parameters.defines ${parameters.defines} to be of type List, but it is ${parameters.defines.class}."
+    }
 
     List credentials = [ ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
