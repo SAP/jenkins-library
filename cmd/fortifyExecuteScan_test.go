@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +21,7 @@ type execRunnerMock struct {
 	parameters []string
 }
 
-func (er *execRunnerMock) Dir(d string) {
+func (er *execRunnerMock) SetDir(d string) {
 	er.dirValue = d
 }
 
@@ -37,6 +39,13 @@ func (er *execRunnerMock) Stderr(err io.Writer) {
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	er.executable = e
 	er.parameters = p
+	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
+	classpathMaven := "some.jar\nsomeother.jar"
+	if e == "python2" {
+		er.outWriter.Write([]byte(classpathPip))
+	} else {
+		ioutil.WriteFile(strings.ReplaceAll(p[2], "-Dmdep.outputFile=", ""), []byte(classpathMaven), 755)
+	}
 	return nil
 }
 
@@ -106,27 +115,29 @@ func TestScanProject(t *testing.T) {
 }
 
 func TestAutoresolveClasspath(t *testing.T) {
-	config := fortifyExecuteScanOptions{AutodetectClasspath: false, PythonVersion: "python2"}
 	execRunner := execRunnerMock{}
 
-	t.Run("turned off", func(t *testing.T) {
-		result := autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "cp.txt", &execRunner)
-		assert.Equal(t, "", result, "Expected different executable")
-	})
-
-	t.Run("turned on w/ existing file", func(t *testing.T) {
+	t.Run("success pip", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
-		classpath := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
-		ioutil.WriteFile(file, []byte(classpath), 0700)
 
-		config.AutodetectClasspath = true
-		config.ScanType = "pip"
-		result := autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))", file}, file, &execRunner)
+		result := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &execRunner)
 		assert.Equal(t, "python2", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))", file}, execRunner.parameters, "Expected different parameters")
-		assert.Equal(t, classpath, result, "Expected different result")
+		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, execRunner.parameters, "Expected different parameters")
+		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
+	})
+
+	t.Run("success maven", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "classpath")
+		assert.NoError(t, err, "Unexpected error detected")
+		defer os.RemoveAll(dir)
+		file := filepath.Join(dir, "cp.txt")
+
+		result := autoresolveMavenClasspath("pom.xml", file, &execRunner)
+		assert.Equal(t, "mvn", execRunner.executable, "Expected different executable")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "--batch-mode", "dependency:build-classpath"}, execRunner.parameters, "Expected different parameters")
+		assert.Equal(t, "some.jar\nsomeother.jar", result, "Expected different result")
 	})
 }

@@ -48,6 +48,8 @@ func TestNewSystemInstance(t *testing.T) {
 
 func TestGetProjectByName(t *testing.T) {
 	// Start a local HTTP server
+	autocreateCalled := false
+	commitCalled := false
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-test" {
 			header := rw.Header()
@@ -70,6 +72,39 @@ func TestGetProjectByName(t *testing.T) {
 			rw.WriteHeader(400)
 			return
 		}
+		if req.URL.Path == "/projectVersions" && req.Method == "POST" {
+			autocreateCalled = true
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.WriteHeader(201)
+			rw.Write([]byte(
+				`{"data":{"latestScanId":null,"serverVersion":17.2,"tracesOutOfDate":false,"attachmentsOutOfDate":false,"description":"",
+				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
+				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
+				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
+				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
+				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
+				"currentState":{"id":10172,"committed":true,"attentionRequired":false,"analysisResultsExist":true,"auditEnabled":true,
+				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
+				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
+				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+			return
+		}
+		if req.URL.Path == "/projects/815" {
+			commitCalled = true
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data": {"_href": "https://fortify/ssc/api/v1/projects/815", "committed": true,"createdBy": "someUser","name": "autocreate",
+				"description": "","id": 815,"creationDate": "2018-12-03T06:29:38.197+0000","issueTemplateId": "dasdasdasdsadasdasdasdasdas"},
+				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"},
+				"first": {"href": ""}}}`))
+			return
+		}
 	})
 	// Close the server when test finishes
 	defer server.Close()
@@ -88,6 +123,14 @@ func TestGetProjectByName(t *testing.T) {
 	t.Run("test error", func(t *testing.T) {
 		_, err := sys.GetProjectByName("python-error", false, "")
 		assert.Error(t, err, "Expected error but got success")
+	})
+
+	t.Run("test auto create success", func(t *testing.T) {
+		result, err := sys.GetProjectByName("autocreate", true, "123456")
+		assert.NoError(t, err, "GetProjectByName call not successful")
+		assert.Equal(t, true, autocreateCalled, "Expected autocreation function to be called but wasn't")
+		assert.Equal(t, true, commitCalled, "Expected commit function to be called but wasn't")
+		assert.Equal(t, "autocreate", strings.ToLower(*result.Name), "Expected to get autocreate project")
 	})
 }
 

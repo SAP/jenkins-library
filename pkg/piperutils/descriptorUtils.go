@@ -19,6 +19,8 @@ import (
 const (
 	// SchemeMajorVersion is the versioning scheme based on the major version only
 	SchemeMajorVersion = `{{(split "." (split "-" .Version)._0)._0}}`
+	// SchemeMajorMinorVersion is the versioning scheme based on the major version only
+	SchemeMajorMinorVersion = `{{(split "." (split "-" .Version)._0)._0}}.{{(split "." (split "-" .Version)._0)._1}}`
 	// SchemeSemanticVersion is the versioning scheme based on the major.minor.micro version
 	SchemeSemanticVersion = `{{(split "-" .Version)._0}}`
 	// SchemeFullVersion is the versioning scheme based on the full version
@@ -190,16 +192,22 @@ func DetermineProjectCoordinates(nameTemplate, version, versionScheme string, ga
 	if err != nil {
 		log.Entry().Warnf("Unable to resolve fortify project name %v", err)
 	}
+	if len(version) > 0 {
+		return projectName, version
+	}
 
 	versionTemplate := gav.GetVersion()
 	if versionScheme == "full" {
 		versionTemplate = SchemeFullVersion
 	}
-	if versionScheme == "semantic" {
-		versionTemplate = SchemeSemanticVersion
-	}
 	if versionScheme == "major" {
 		versionTemplate = SchemeMajorVersion
+	}
+	if versionScheme == "major-minor" {
+		versionTemplate = SchemeMajorMinorVersion
+	}
+	if versionScheme == "semantic" {
+		versionTemplate = SchemeSemanticVersion
 	}
 
 	projectVersion, err := ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)

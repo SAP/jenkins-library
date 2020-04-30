@@ -22,6 +22,8 @@ type fortifyExecuteScanOptions struct {
 	ModulePath                      string `json:"modulePath,omitempty"`
 	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
 	AutodetectClasspath             bool   `json:"autodetectClasspath,omitempty"`
+	MustAuditIssueGroups            string `json:"mustAuditIssueGroups,omitempty"`
+	SpotAuditIssueGroups            string `json:"spotAuditIssueGroups,omitempty"`
 	PythonRequirementsInstallSuffix string `json:"pythonRequirementsInstallSuffix,omitempty"`
 	PythonVersion                   string `json:"pythonVersion,omitempty"`
 	UploadResults                   bool   `json:"uploadResults,omitempty"`
@@ -169,6 +171,8 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all")
+	cmd.Flags().StringVar(&stepConfig.MustAuditIssueGroups, "mustAuditIssueGroups", `Corporate Security Requirements, Audit All`, "Comma separated list of issue groups that must be audited completely")
+	cmd.Flags().StringVar(&stepConfig.SpotAuditIssueGroups, "spotAuditIssueGroups", `Spot Checks of Each Category`, "Comma separated list of issue groups that are spot checked and for which `spotCheckMinimum` audited issues are enforced")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `scanType: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
@@ -267,6 +271,22 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "mustAuditIssueGroups",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "spotAuditIssueGroups",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

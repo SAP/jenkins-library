@@ -18,6 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -34,7 +35,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	c.Env(os.Environ())
+	c.SetEnv(os.Environ())
 	return runFortifyScan(config, sys, &c, telemetryData, influx)
 }
 
@@ -51,7 +52,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
-	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, config.ProjectVersioningScheme, gav)
+	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, config.ProjectVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
@@ -85,7 +86,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	// Create sourceanalyzer command based on configuration
 	buildID := uuid.New().String()
-	command.Dir(config.ModulePath)
+	command.SetDir(config.ModulePath)
 	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
 
 	if config.UpdateRulePack {
@@ -187,42 +188,33 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 		total = int(*issueGroup.TotalCount)
 		audited = int(*issueGroup.AuditedCount)
 	}
-	if group != "Optional" {
-		groupTotalMinusAuditedDelta := total - audited
-		if groupTotalMinusAuditedDelta > 0 {
-			switch group {
-			case "Corporate Security Requirements":
-				auditStatus[group] = fmt.Sprintf("%v total : %v audited", total, audited)
+	groupTotalMinusAuditedDelta := total - audited
+	if groupTotalMinusAuditedDelta > 0 {
+		reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder", "Analysis"}, []string{group})
+		auditStatus[group] = fmt.Sprintf("%v total : %v audited", total, audited)
+
+		if strings.Contains(config.MustAuditIssueGroups, group) {
+			totalMinusAuditedDelta += groupTotalMinusAuditedDelta
+			if group == "Corporate Security Requirements" {
 				influx.fortify_data.fields.corporateTotal = fmt.Sprintf("%v", total)
 				influx.fortify_data.fields.corporateAudited = fmt.Sprintf("%v", audited)
-				totalMinusAuditedDelta += groupTotalMinusAuditedDelta
-
-				reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder", "Analysis"}, []string{"Corporate Security Requirements"})
-				log.Entry().Errorf("[projectVersionId %v]: Unaudited corporate issues detected, count %v", projectVersionID, totalMinusAuditedDelta)
-				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].GUID, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID, reducedFilterSelectorSet.FilterBySet[1].EntityType, reducedFilterSelectorSet.FilterBySet[1].GUID)
-				break
-			case "Audit All":
-				auditStatus[group] = fmt.Sprintf("%v total : %v audited", total, audited)
+			}
+			if group == "Audit All" {
 				influx.fortify_data.fields.auditAllTotal = fmt.Sprintf("%v", total)
 				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
-				totalMinusAuditedDelta += groupTotalMinusAuditedDelta
-
-				reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder", "Analysis"}, []string{"Audit All"})
-				log.Entry().Errorf("[projectVersionId %v]: Unaudited audit all issues detected, count %v", projectVersionID, totalMinusAuditedDelta)
-				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].GUID, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID, reducedFilterSelectorSet.FilterBySet[1].EntityType, reducedFilterSelectorSet.FilterBySet[1].GUID)
-				break
-
-			case "Spot Checks of Each Category":
-				log.Entry().Info("Analyzing spot check issues")
-				reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder", "Analysis"}, []string{"Spot Checks of Each Category"})
-				filter := fmt.Sprintf("%v:%v", reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
-				fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersionID, filter, filterSet.GUID, sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Category"}, nil))
-				if err != nil {
-					log.Entry().WithError(err).Fatalf("Failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v", filter, filterSet, issueFilterSelectorSet, projectVersionID)
-				}
-				totalMinusAuditedDelta += getSpotIssueCount(config, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx)
-				break
 			}
+			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
+			log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].GUID, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID, reducedFilterSelectorSet.FilterBySet[1].EntityType, reducedFilterSelectorSet.FilterBySet[1].GUID)
+		}
+
+		if strings.Contains(config.SpotAuditIssueGroups, group) {
+			log.Entry().Infof("Analyzing %v", config.SpotAuditIssueGroups)
+			filter := fmt.Sprintf("%v:%v", reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
+			fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersionID, filter, filterSet.GUID, sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Category"}, nil))
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v", filter, filterSet, issueFilterSelectorSet, projectVersionID)
+			}
+			totalMinusAuditedDelta += getSpotIssueCount(config, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx)
 		}
 	}
 	return totalMinusAuditedDelta
@@ -421,27 +413,37 @@ func executeTemplatedCommand(command execRunner, cmdTemplate []string, context m
 	}
 }
 
-func autoresolveClasspath(config fortifyExecuteScanOptions, autodetectClasspathCommand []string, file string, command execRunner) string {
-	if config.AutodetectClasspath && len(autodetectClasspathCommand) > 0 {
-		redirectStdout := false
-		if !piperutils.ContainsStringPart(autodetectClasspathCommand, file) {
-			// redirect stdout and create cp file from command output
-			redirectStdout = true
-			outfile, err := os.Create(file)
-			if err != nil {
-				log.Entry().WithError(err).Fatal("Failed to create classpath file")
-			}
-			defer outfile.Close()
-			command.Stdout(outfile)
-		}
-		err := command.RunExecutable(autodetectClasspathCommand[0], autodetectClasspathCommand[1:]...)
-		if err != nil {
-			log.Entry().WithError(err).WithField("command", autodetectClasspathCommand).Fatal("Failed to run classpath autodetection command")
-		}
-		if redirectStdout {
-			command.Stdout(log.Entry().Writer())
-		}
+func autoresolvePipClasspath(executable string, parameters []string, file string, command execRunner) string {
+	// redirect stdout and create cp file from command output
+	outfile, err := os.Create(file)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to create classpath file")
 	}
+	defer outfile.Close()
+	command.Stdout(outfile)
+	err = command.RunExecutable(executable, parameters...)
+	if err != nil {
+		log.Entry().WithError(err).WithField("command", fmt.Sprintf("%v with parameters %v", executable, parameters)).Fatal("Failed to run classpath autodetection command")
+	}
+	command.Stdout(log.Entry().Writer())
+	return readClasspathFile(file)
+}
+
+func autoresolveMavenClasspath(pomFilePath, file string, command execRunner) string {
+	executeOptions := maven.ExecuteOptions{
+		PomPath:      pomFilePath,
+		Goals:        []string{"dependency:build-classpath"},
+		Defines:      []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		ReturnStdout: false,
+	}
+	_, err := maven.Execute(&executeOptions, command)
+	if err != nil {
+		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
+	}
+	return readClasspathFile(file)
+}
+
+func readClasspathFile(file string) string {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
@@ -456,9 +458,11 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		pipVersion = "pip2"
 	}
 
-	var classpath string
+	var classpath string = ""
 	if config.ScanType == "maven" {
-		classpath = autoresolveClasspath(config, []string{"mvn", "dependency:build-classpath", fmt.Sprintf("-Dmdep.outputFile=%v", classpathFileName), "-DincludeScope=compile"}, classpathFileName, command)
+		if config.AutodetectClasspath {
+			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
+		}
 		if len(config.Translate) == 0 {
 			config.Translate = `[{"classpath":"`
 			config.Translate += classpath
@@ -466,7 +470,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		}
 	}
 	if config.ScanType == "pip" {
-		classpath = autoresolveClasspath(config, []string{config.PythonVersion, "-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, classpathFileName, command)
+		if config.AutodetectClasspath {
+			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, classpathFileName, command)
+		}
 		// install the dev dependencies
 		if len(config.PythonRequirementsFile) > 0 {
 			context := map[string]string{}
