@@ -84,13 +84,15 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	return nil
 }
 
+// reused by cmd/sonarExecuteScan.go
+// TODO: extract to version utils
 func handleArtifactVersion(artifactVersion string) string {
 	matches, _ := regexp.MatchString("([\\d\\.]){1,}-[\\d]{14}([\\Wa-z\\d]{41})?", artifactVersion)
 	if matches {
 		split := strings.SplitN(artifactVersion, ".", 2)
+		log.Entry().WithField("old", artifactVersion).WithField("new", split[0]).Debug("Trimming version to major version digit.")
 		return split[0]
 	}
-
 	return artifactVersion
 }
 
@@ -254,7 +256,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 		ServerURL: config.ServerURL,
 		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
 		Duration:  duration,
-		Username:  config.User,
+		Username:  config.Username,
 		Password:  config.Password,
 	}
 

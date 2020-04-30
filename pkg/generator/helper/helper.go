@@ -20,12 +20,14 @@ type stepInfo struct {
 	ExportPrefix     string
 	FlagsFunc        string
 	Long             string
-	Metadata         []config.StepParameters
+	StepParameters   []config.StepParameters
+	StepAliases      []config.Alias
 	OSImport         bool
 	OutputResources  []map[string]string
 	Short            string
 	StepFunc         string
 	StepName         string
+	StepSecrets      []string
 }
 
 //StepGoTemplate ...
@@ -35,9 +37,7 @@ package cmd
 
 import (
 	"fmt"
-	{{ if .OSImport -}}
 	"os"
-	{{ end -}}
 	{{ if .OutputResources -}}
 	"path/filepath"
 	{{ end -}}
@@ -56,7 +56,7 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{- range $key, $value := .Metadata }}
+	{{- range $key, $value := .StepParameters }}
 	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
 }
 
@@ -66,6 +66,8 @@ type {{ .StepName }}Options struct {
 
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
+	const STEP_NAME = "{{ .StepName }}"
+
 	metadata := {{ .StepName }}Metadata()
 	var stepConfig {{.StepName}}Options
 	var startTime time.Time
@@ -73,14 +75,25 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
-		Use:   "{{.StepName}}",
+		Use:   STEP_NAME,
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("{{ .StepName }}")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			{{- range $key, $value := .StepSecrets }}
+			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -93,7 +106,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, "{{ .StepName }}")
+			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
 		},
@@ -104,20 +117,24 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := .Metadata }}
+	{{- range $key, $value := .StepParameters }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
-	{{- range $key, $value := .Metadata }}{{ if $value.Mandatory }}
+	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
 }
 
 // retrieve step metadata
 func {{ .StepName }}Metadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "{{ .StepName }}",
+			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: "{{ $alias.Name }}", Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					{{- range $key, $value := .Metadata }}
+					{{- range $key, $value := .StepParameters }}
 					{
 						Name:      "{{ $value.Name }}",
 						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ "{" }}Name: "{{ $ref.Name }}", Param: "{{ $ref.Param }}"{{ "}" }},{{ end }}{{ "}" }},
@@ -148,7 +165,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 	testCmd := {{.CobraCmdFuncName}}()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "{{.StepName}}", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "{{ .StepName }}", testCmd.Use, "command name incorrect")
 
 }
 `
@@ -298,13 +315,26 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
 			Short:            stepData.Metadata.Description,
 			Long:             stepData.Metadata.LongDescription,
-			Metadata:         stepData.Spec.Inputs.Parameters,
+			StepParameters:   stepData.Spec.Inputs.Parameters,
+			StepAliases:      stepData.Metadata.Aliases,
 			FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 			OSImport:         osImport,
 			OutputResources:  oRes,
 			ExportPrefix:     exportPrefix,
+			StepSecrets:      getSecretFields(stepData),
 		},
 		err
+}
+
+func getSecretFields(stepData *config.StepData) []string {
+	var secretFields []string
+
+	for _, parameter := range stepData.Spec.Inputs.Parameters {
+		if parameter.Secret {
+			secretFields = append(secretFields, parameter.Name)
+		}
+	}
+	return secretFields
 }
 
 func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, error) {
@@ -459,6 +489,7 @@ func golangName(name string) string {
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
 	properName = strings.Replace(properName, "json", "JSON", -1)
+	properName = strings.Replace(properName, "Tls", "TLS", -1)
 	return properName
 }
 

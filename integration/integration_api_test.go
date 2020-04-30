@@ -40,7 +40,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	piperenv.SetResourceParameter(filepath.Join(dir, ".pipeline"), "commonPipelineEnvironment", "artifactVersion", now.Format("20060102150405"))
 
 	cmd := command.Command{}
-	cmd.Dir(dir)
+	cmd.SetDir(dir)
 
 	piperOptions := []string{
 		"githubPublishRelease",

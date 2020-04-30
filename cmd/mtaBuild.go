@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"text/template"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,10 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"gopkg.in/yaml.v2"
-	"os"
-	"strings"
-	"text/template"
-	"time"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -89,7 +91,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e envExecRunner,
+	e execRunner,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
@@ -191,13 +193,14 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e envExecRunner) error {
-	path := "./node_modules/.bin"
+func addNpmBinToPath(e execRunner) error {
+	dir, _ := os.Getwd()
+	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")
 	if len(oldPath) > 0 {
-		path = path + ":" + oldPath
+		newPath = newPath + ":" + oldPath
 	}
-	e.Env(append(os.Environ(), "PATH="+path))
+	e.SetEnv([]string{"PATH=" + newPath})
 	return nil
 }
 
@@ -244,7 +247,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 		}
 		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
 	} else {
-		log.Entry().Infof("No timestap contained in \"%s\". File has not been modified.", mtaYamlFile)
+		log.Entry().Infof("No timestamp contained in \"%s\". File has not been modified.", mtaYamlFile)
 	}
 
 	return nil
@@ -296,7 +299,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
-func handleDefaultNpmRegistry(config mtaBuildOptions, e envExecRunner) error {
+func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
 
 	if len(config.DefaultNpmRegistry) > 0 {
 

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -17,6 +18,7 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
+	CorrelationID  string
 	CustomConfig   string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
@@ -33,7 +35,7 @@ var rootCmd = &cobra.Command{
 	Use:   "piper",
 	Short: "Executes CI/CD steps from project 'Piper' ",
 	Long: `
-This project 'Piper' binary provides a CI/CD step libary.
+This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
 	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
@@ -48,27 +50,39 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
+	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(XsDeployCommand())
+	rootCmd.AddCommand(MavenExecuteCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
+	rootCmd.AddCommand(MavenBuildCommand())
+	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
+	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(MalwareExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		// in case we end up here we know that something in the PreRunE function went wrong
+		// and thus this indicates a configuration issue
+		log.Entry().WithError(err).WithField("category", "configuration").Fatal("configuration error")
 	}
 }
 
 func addRootFlags(rootCmd *cobra.Command) {
 
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -111,7 +125,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
 				if customConfig, err = openFile(projectConfigFile); err != nil {
-					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
 				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
@@ -121,12 +135,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
-			//ToDo: support also https as source
-			fc, _ := openFile(f)
-			defaultConfig = append(defaultConfig, fc)
+			fc, err := openFile(f)
+			// only create error for non-default values
+			if err != nil && f != ".pipeline/defaults.yaml" {
+				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			}
+			if err == nil {
+				defaultConfig = append(defaultConfig, fc)
+				log.Entry().Infof("Added default config '%s'", f)
+			}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -136,18 +156,85 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.NoTelemetry = true
 	}
 
-	if !GeneralConfig.Verbose {
-		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
-			log.SetVerbose(stepConfig.Config["verbose"].(bool))
+	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
+		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
+			log.SetVerbose(verboseValue)
+		} else {
+			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 	}
 
+	stepConfig.Config = convertTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
-	json.Unmarshal(confJSON, &options)
+	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+	optionsType := getStepOptionsStructType(options)
+
+	for paramName := range config {
+		optionsField := findStructFieldByJSONTag(paramName, optionsType)
+		if optionsField == nil {
+			continue
+		}
+
+		paramValueType := reflect.ValueOf(config[paramName])
+		if paramValueType.Kind() != reflect.String {
+			// We can only convert from strings at the moment
+			continue
+		}
+
+		paramValue := paramValueType.String()
+		logWarning := true
+
+		switch optionsField.Type.Kind() {
+		case reflect.String:
+			// Types already match, ignore
+			logWarning = false
+		case reflect.Slice, reflect.Array:
+			if optionsField.Type.Elem().Kind() == reflect.String {
+				config[paramName] = []string{paramValue}
+				logWarning = false
+			}
+		case reflect.Bool:
+			paramValue = strings.ToLower(paramValue)
+			if paramValue == "true" {
+				config[paramName] = true
+				logWarning = false
+			} else if paramValue == "false" {
+				config[paramName] = false
+				logWarning = false
+			}
+		}
+
+		if logWarning {
+			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
+		}
+	}
+	return config
+}
+
+func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
+	for i := 0; i < optionsType.NumField(); i++ {
+		field := optionsType.Field(i)
+		tag := field.Tag.Get("json")
+		if tagName == tag || tagName+",omitempty" == tag {
+			return &field
+		}
+	}
+	return nil
+}
+
+func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
+	typedOptions := reflect.ValueOf(stepOptions)
+	if typedOptions.Kind() == reflect.Ptr {
+		typedOptions = typedOptions.Elem()
+	}
+	return typedOptions.Type()
 }
 
 func getProjectConfigFile(name string) string {

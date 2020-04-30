@@ -5,8 +5,9 @@
 ## Prerequisites
 
 This step is for deleting an existing service on Cloud Foundry.
-You need to provide the Cloud Foundry API Endpoint, the Organisation as well as the Space and the respective Service Instance Name you want to delete. 
+You need to provide the Cloud Foundry API Endpoint, the Organisation as well as the Space and the respective Service Instance Name you want to delete.
 Furthermore you will need to provide the Cloud Foundry Login Credentials, which must be stored in the Jenkins Configuration.
+Additionally you can set the cfDeleteServiceKeys flag for deleting all Service Keys that belong to the respective Service.
 
 ## ${docGenParameters}
 
@@ -25,5 +26,6 @@ cloudFoundryDeleteService(
     cfspace: 'cfspace',
     cfserviceInstance: 'cfserviceInstance',
     cfCredentialsId: 'cfcredentialsId',
-) 
+    cfDeleteServiceKeys: true,
+)
 ```

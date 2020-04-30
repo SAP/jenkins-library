@@ -22,15 +22,15 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	runKubernetesDeploy(config, &c, log.Entry().Writer())
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
-	if config.DeployTool == "helm" {
+func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
+	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		runHelmDeploy(config, command, stdout)
 	} else {
 		runKubectlDeploy(config, command)
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -48,16 +48,18 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
 	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-	if len(config.TillerNamespace) > 0 {
+	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
-	log.Entry().Debugf("Helm Env: %v", helmEnv)
-	command.Env(helmEnv)
+	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
+	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
-	initParams := []string{"init", "--client-only"}
-	if err := command.RunExecutable("helm", initParams...); err != nil {
-		log.Entry().WithError(err).Fatal("Helm init called failed")
+	if config.DeployTool == "helm" {
+		initParams := []string{"init", "--client-only"}
+		if err := command.RunExecutable("helm", initParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Helm init call failed")
+		}
 	}
 
 	var dockerRegistrySecret bytes.Buffer
@@ -103,13 +105,17 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 		config.ChartPath,
 		"--install",
 		"--force",
-		"--namespace",
-		config.Namespace,
-		"--wait",
-		"--timeout",
-		strconv.Itoa(config.HelmDeployWaitSeconds),
+		"--namespace", config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,secret.dockerconfigjson=%v%v", containerRegistry, containerImageName, containerImageTag, dockerRegistrySecretData.Data.DockerConfJSON, ingressHosts),
+	}
+
+	if config.DeployTool == "helm" {
+		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
+	}
+
+	if config.DeployTool == "helm3" {
+		upgradeParams = append(upgradeParams, "--atomic", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
 	}
 
 	if len(config.KubeContext) > 0 {
@@ -130,7 +136,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command execRunner) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -144,7 +150,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
 		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
-		command.Env(kubeEnv)
+		command.SetEnv(kubeEnv)
 		if len(config.KubeContext) > 0 {
 			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}

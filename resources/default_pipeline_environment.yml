@@ -6,6 +6,8 @@
 #Project Setup
 general:
   collectTelemetryData: true
+  jenkinsKubernetes:
+    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
@@ -228,6 +230,7 @@ steps:
     stashContent: []
   dockerExecuteOnKubernetes:
     dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -345,7 +348,7 @@ steps:
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
     cloudMbt:
-      dockerImage: 'devxci/mbtci:1.0.4'
+      dockerImage: 'devxci/mbtci:1.0.10'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
@@ -523,12 +526,6 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
-  sonarExecuteScan:
-    dockerImage: 'node:lts-stretch'
-    instance: 'SonarCloud'
-    options: []
-    pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
     keyFileCredentialsId: 'spinnaker-client-key'

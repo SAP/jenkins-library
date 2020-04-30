@@ -107,7 +107,9 @@ void call(Map parameters = [:], Closure body) {
         config.dockerEnvVars = config.dockerEnvVars ?: [:]
         config.dockerEnvVars.PIPER_SELENIUM_HOSTNAME = config.dockerName
         config.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_HOSTNAME = config.sidecarName
-        config.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT = '' + (config.containerPortMappings[config.sidecarImage][0]?.containerPort ?: '')
+        if(config.containerPortMappings[config.sidecarImage]){
+            config.dockerEnvVars.PIPER_SELENIUM_WEBDRIVER_PORT = '' + (config.containerPortMappings[config.sidecarImage][0]?.containerPort ?: '')
+        }
 
         dockerExecute(
                 script: script,

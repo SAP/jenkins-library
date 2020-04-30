@@ -28,6 +28,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: password
         type: string
         description: User Password for CF User
@@ -36,6 +37,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: cfOrg
         type: string
         description: CF org
@@ -66,6 +68,16 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceInstance
+      - name: cfDeleteServiceKeys
+        type: bool
+        description: Parameter to force deletion of Cloud Foundry Service Keys
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/cfDeleteServiceKeys
   containers:
     - name: cf
       image: ppiper/cf-cli

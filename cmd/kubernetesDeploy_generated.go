@@ -37,12 +37,14 @@ type kubernetesDeployOptions struct {
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
 func KubernetesDeployCommand() *cobra.Command {
+	const STEP_NAME = "kubernetesDeploy"
+
 	metadata := kubernetesDeployMetadata()
 	var stepConfig kubernetesDeployOptions
 	var startTime time.Time
 
 	var createKubernetesDeployCmd = &cobra.Command{
-		Use:   "kubernetesDeploy",
+		Use:   STEP_NAME,
 		Short: "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
 		Long: `Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
 
@@ -64,9 +66,22 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 * ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("kubernetesDeploy")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "kubernetesDeploy", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
+			log.RegisterSecret(stepConfig.ContainerRegistrySecret)
+			log.RegisterSecret(stepConfig.KubeToken)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -77,7 +92,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			kubernetesDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
@@ -118,6 +133,10 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 // retrieve step metadata
 func kubernetesDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "kubernetesDeploy",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{

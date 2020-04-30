@@ -3,6 +3,7 @@ package cmd
 import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
@@ -17,7 +18,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Application name not set", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{}
 
@@ -32,7 +33,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Provide default npm registry", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
 
@@ -44,15 +45,15 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.calls, 2) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", e.calls[0].exec)
-			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.calls[0].params)
+		if assert.Len(t, e.Calls, 2) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[0].Exec)
+			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[0].Params)
 		}
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp"}
 
@@ -68,7 +69,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Write yaml file", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
 
@@ -107,7 +108,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Dont write mta yaml file when already present no timestamp placeholder", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
 
@@ -123,7 +124,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Write mta yaml file when already present with timestamp placeholder", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
 
@@ -139,7 +140,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Test mta build classic toolset", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
 
@@ -153,9 +154,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.calls, 1) {
-			assert.Equal(t, "java", e.calls[0].exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.calls[0].params)
+		if assert.Len(t, e.Calls, 1) {
+			assert.Equal(t, "java", e.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
@@ -163,7 +164,7 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Test mta build classic toolset, mtarName from already existing mta.yaml", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
 
@@ -178,15 +179,15 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.calls, 1) {
-			assert.Equal(t, "java", e.calls[0].exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.calls[0].params)
+		if assert.Len(t, e.Calls, 1) {
+			assert.Equal(t, "java", e.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
 		}
 	})
 
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName"}
 
@@ -198,15 +199,15 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.calls, 1) {
-			assert.Equal(t, "java", e.calls[0].exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.calls[0].params)
+		if assert.Len(t, e.Calls, 1) {
+			assert.Equal(t, "java", e.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
 		}
 	})
 
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
 
-		e := execMockRunner{}
+		e := mock.ExecMockRunner{}
 
 		cpe.mtarFilePath = ""
 
@@ -220,9 +221,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.calls, 1) {
-			assert.Equal(t, "mbt", e.calls[0].exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.calls[0].params)
+		if assert.Len(t, e.Calls, 1) {
+			assert.Equal(t, "mbt", e.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -257,7 +258,7 @@ func TestMarBuild(t *testing.T) {
 				settingsFileType = -1
 			}()
 
-			e := execMockRunner{}
+			e := mock.ExecMockRunner{}
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
@@ -276,7 +277,7 @@ func TestMarBuild(t *testing.T) {
 				settingsFileType = -1
 			}()
 
-			e := execMockRunner{}
+			e := mock.ExecMockRunner{}
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 

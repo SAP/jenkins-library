@@ -16,10 +16,23 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Define settings used by the Jenkins Kuberenetes plugin.
-     */
     'jenkinsKubernetes',
+        /**
+         * Jnlp agent Docker images which should be used to create new pods.
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'jnlpAgent',
+        /**
+         * Namespace that should be used to create a new pod
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'namespace',
+        /**
+         * Name of the pod template that should be inherited from.
+         * The pod template can be defined in the Jenkins UI
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'inheritFrom',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
@@ -70,7 +83,7 @@ import hudson.AbortException
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used.
+     * Optional name of the docker image that should be used. If no docker image is provided, the closure will be executed in the jnlp agent container.
      */
     'dockerImage',
     /**
@@ -108,14 +121,7 @@ import hudson.AbortException
      * as `dockerWorkspace` for the sidecar container
      */
     'sidecarWorkspace',
-    /**
-     * as `dockerVolumeBind` for the sidecar container
-     */
-    'sidecarVolumeBind',
-    /**
-     * as `dockerOptions` for the sidecar container
-     */
-    'sidecarOptions',
+
     /** Defines the Kubernetes nodeSelector as per [https://github.com/jenkinsci/kubernetes-plugin](https://github.com/jenkinsci/kubernetes-plugin).*/
     'nodeSelector',
     /**
@@ -192,8 +198,7 @@ void call(Map parameters = [:], body) {
             stepParam1   : parameters?.script == null
         ], config)
 
-        if (!config.containerMap) {
-            configHelper.withMandatoryProperty('dockerImage')
+        if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
@@ -217,6 +222,11 @@ def getOptions(config) {
     }
     if (!config.verbose) {
         options.showRawYaml = false
+    }
+
+    if(config.jenkinsKubernetes.inheritFrom){
+        options.inheritFrom = config.jenkinsKubernetes.inheritFrom
+        options.yamlMergeStrategy  = merge()
     }
     return options
 }
@@ -319,6 +329,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
     return null
 }
@@ -334,6 +347,9 @@ private void unstashWorkspace(config, prefix) {
         stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+    } catch (Throwable e) {
+        echo "Unstash workspace failed with throwable ${e.getMessage()}"
+        throw e
     }
 }
 
@@ -355,7 +371,7 @@ private List getContainerList(config) {
             name           : containerName.toLowerCase(),
             image          : imageName,
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
-            env            : getContainerEnvs(config, imageName)
+            env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
 
         def configuredCommand = config.containerCommands?.get(imageName)
@@ -397,7 +413,7 @@ private List getContainerList(config) {
             name           : config.sidecarName.toLowerCase(),
             image          : config.sidecarImage,
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
-            env            : getContainerEnvs(config, config.sidecarImage),
+            env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
 
@@ -413,18 +429,19 @@ private List getContainerList(config) {
  * @param config Map with configurations
  */
 
-private List getContainerEnvs(config, imageName) {
+private List getContainerEnvs(config, imageName, defaultEnvVars, defaultConfig) {
     def containerEnv = []
-    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
-    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
+    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: defaultEnvVars ?: [:]
+    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : defaultConfig ?: ''
 
     def envVar = { e ->
         [name: e.key, value: e.value]
     }
 
     if (dockerEnvVars) {
-        for (String k : dockerEnvVars.keySet()) {
-            containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
+        dockerEnvVars.each {
+            k, v ->
+            containerEnv << envVar(key: k, value: v.toString())
         }
     }
 
@@ -434,8 +451,9 @@ private List getContainerEnvs(config, imageName) {
 
     // Inherit the proxy information from the master to the container
     SystemEnv systemEnv = new SystemEnv()
-    for (String env : systemEnv.getEnv().keySet()) {
-        containerEnv << envVar(key: env, value: systemEnv.get(env))
+    systemEnv.getEnv().each {
+        k, v ->
+            containerEnv << envVar(key: k, value: v)
     }
 
     return containerEnv

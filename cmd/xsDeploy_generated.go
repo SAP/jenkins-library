@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -29,33 +31,74 @@ type xsDeployOptions struct {
 	XsSessionFile         string `json:"xsSessionFile,omitempty"`
 }
 
+type xsDeployCommonPipelineEnvironment struct {
+	operationID string
+}
+
+func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    string
+	}{
+		{category: "", name: "operationId", value: p.operationID},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
+	const STEP_NAME = "xsDeploy"
+
 	metadata := xsDeployMetadata()
 	var stepConfig xsDeployOptions
 	var startTime time.Time
+	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
 
 	var createXsDeployCmd = &cobra.Command{
-		Use:   "xsDeploy",
+		Use:   STEP_NAME,
 		Short: "Performs xs deployment",
 		Long:  `Performs xs deployment`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("xsDeploy")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "xsDeploy", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
-			xsDeploy(stepConfig, &telemetryData)
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			xsDeploy(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 		},
 	}
@@ -92,6 +135,10 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 // retrieve step metadata
 func xsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
+		Metadata: config.StepMetadata{
+			Name:    "xsDeploy",
+			Aliases: []config.Alias{},
+		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
@@ -113,7 +160,7 @@ func xsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -137,7 +184,7 @@ func xsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "operationId",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,

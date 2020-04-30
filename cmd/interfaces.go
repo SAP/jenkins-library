@@ -5,7 +5,8 @@ import (
 )
 
 type runner interface {
-	Dir(d string)
+	SetDir(d string)
+	SetEnv(e []string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 }
@@ -13,11 +14,6 @@ type runner interface {
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error
-}
-
-type envExecRunner interface {
-	execRunner
-	Env(e []string)
 }
 
 type shellRunner interface {

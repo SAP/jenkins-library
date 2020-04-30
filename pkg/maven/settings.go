@@ -55,7 +55,7 @@ func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils pi
 		}
 	} else {
 
-		// for sake os symetry it would be better to use a file protocol prefix here (file:)
+		// for sake os symmetry it would be better to use a file protocol prefix here (file:)
 
 		parent := filepath.Dir(dest)
 
