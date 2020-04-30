@@ -14,7 +14,7 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcrunConfig      string `json:"atcrunConfig,omitempty"`
+	AtcConfig         string `json:"atcConfig,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
@@ -27,19 +27,26 @@ type abapEnvironmentRunATCCheckOptions struct {
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
 func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
+	const STEP_NAME = "abapEnvironmentRunATCCheck"
+
 	metadata := abapEnvironmentRunATCCheckMetadata()
 	var stepConfig abapEnvironmentRunATCCheckOptions
 	var startTime time.Time
 
 	var createAbapEnvironmentRunATCCheckCmd = &cobra.Command{
-		Use:   "abapEnvironmentRunATCCheck",
+		Use:   STEP_NAME,
 		Short: "Runs an ATC Check",
 		Long:  `Run ATC Check`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("abapEnvironmentRunATCCheck")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "abapEnvironmentRunATCCheck", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -54,7 +61,7 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "abapEnvironmentRunATCCheck")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
@@ -65,7 +72,7 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunATCCheckOptions) {
-	cmd.Flags().StringVar(&stepConfig.AtcrunConfig, "atcrunConfig", os.Getenv("PIPER_atcrunConfig"), "YAML configuration for Packages and Software Components to be checked during ATC run")
+	cmd.Flags().StringVar(&stepConfig.AtcConfig, "atcConfig", os.Getenv("PIPER_atcConfig"), "YAML configuration for Packages and Software Components to be checked during ATC run")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
@@ -75,7 +82,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 
-	cmd.MarkFlagRequired("atcrunConfig")
+	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -91,7 +98,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "atcrunConfig",
+						Name:        "atcConfig",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

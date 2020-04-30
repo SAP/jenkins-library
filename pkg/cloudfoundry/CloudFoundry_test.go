@@ -54,8 +54,8 @@ func TestCloudFoundryLogout(t *testing.T) {
 	})
 }
 
-func TestCloudFoundryReadServiceKey(t *testing.T) {
-	t.Run("CF ReadServiceKey", func(t *testing.T) {
+func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
+	t.Run("CF ReadServiceKeyAbapEnvironment", func(t *testing.T) {
 		cfconfig := ServiceKeyOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
@@ -66,7 +66,7 @@ func TestCloudFoundryReadServiceKey(t *testing.T) {
 			Password:          "testPassword",
 		}
 		var abapKey ServiceKey
-		abapKey, err := ReadServiceKey(cfconfig, true)
+		abapKey, err := ReadServiceKeyAbapEnvironment(cfconfig, true)
 		assert.Equal(t, "", abapKey.Abap.Password)
 		assert.Equal(t, "", abapKey.Abap.Username)
 		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)

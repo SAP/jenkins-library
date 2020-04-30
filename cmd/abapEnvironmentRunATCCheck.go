@@ -65,7 +65,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	var filelocation []string
 	var yamlFile []byte
 	if err == nil {
-		filelocation, err = filepath.Glob(config.AtcrunConfig)
+		filelocation, err = filepath.Glob(config.AtcConfig)
 	}
 	//Parse YAML ATC run configuration as body for ATC run trigger
 
@@ -73,17 +73,17 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		filename, _ := filepath.Abs(filelocation[0])
 		yamlFile, err = ioutil.ReadFile(filename)
 	}
-	var ATCRunConfig ATCconfig
+	var ATCConfig ATCconfig
 	if err == nil {
 		var result []byte
 		result, err = yaml.YAMLToJSON(yamlFile)
-		json.Unmarshal(result, &ATCRunConfig)
+		json.Unmarshal(result, &ATCConfig)
 	}
 
 	var packageString string
 	var softwareComponentString string
 	if err == nil {
-		packageString, softwareComponentString, err = buildATCCheckBody(ATCRunConfig, packageString, softwareComponentString)
+		packageString, softwareComponentString, err = buildATCCheckBody(ATCConfig)
 	}
 
 	//Trigger ATC run
@@ -125,24 +125,31 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
 }
 
-func buildATCCheckBody(ATCRunConfig ATCconfig, packageString string, softwareComponentString string) (string, string, error) {
-	if len(ATCRunConfig.Objects.Package) == 0 || len(ATCRunConfig.Objects.SoftwareComponent) == 0 {
-		return "", "", fmt.Errorf("Error while parsing ATC run config. Please provide both the packages and the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
+func buildATCCheckBody(ATCConfig ATCconfig) (string, string, error) {
+	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
+		return "", "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
 	}
+
+	var packageString string
+	var softwareComponentString string
 
 	//Build Package XML body
-	packageString += "<obj:packages>"
-	for _, s := range ATCRunConfig.Objects.Package {
-		packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
+	if len(ATCConfig.Objects.Package) != 0 {
+		packageString += "<obj:packages>"
+		for _, s := range ATCConfig.Objects.Package {
+			packageString += `<obj:package value="` + s.Name + `" includeSubpackages="` + strconv.FormatBool(s.IncludeSubpackages) + `"/>`
+		}
+		packageString += "</obj:packages>"
 	}
-	packageString += "</obj:packages>"
 
 	//Build SC XML body
-	softwareComponentString += "<obj:softwarecomponents>"
-	for _, s := range ATCRunConfig.Objects.SoftwareComponent {
-		softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
+	if len(ATCConfig.Objects.SoftwareComponent) != 0 {
+		softwareComponentString += "<obj:softwarecomponents>"
+		for _, s := range ATCConfig.Objects.SoftwareComponent {
+			softwareComponentString += `<obj:softwarecomponent value="` + s.Name + `"/>`
+		}
+		softwareComponentString += "</obj:softwarecomponents>"
 	}
-	softwareComponentString += "</obj:softwarecomponents>"
 	return packageString, softwareComponentString, nil
 }
 
@@ -217,7 +224,7 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		}
 		var abapServiceKey cloudfoundry.ServiceKey
-		abapServiceKey, err = cloudfoundry.ReadServiceKey(cfconfig, true)
+		abapServiceKey, err = cloudfoundry.ReadServiceKeyAbapEnvironment(cfconfig, true)
 		if err != nil {
 			return details, fmt.Errorf("Reading Service Key failed: %w", err)
 		}

@@ -230,11 +230,11 @@ func TestBuildATCCheckBody(t *testing.T) {
 		var config ATCconfig
 		var packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+		packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
-		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
 		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
@@ -258,14 +258,14 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 		var packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+		packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
-		expectedpackagestring := ""
+		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := ""
 
 		var err error
@@ -282,16 +282,16 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 		var packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+		packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
-		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
+		assert.Equal(t, nil, err)
 
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
 		expectedpackagestring := ""
-		expectedsoftwarecomponentstring := ""
+		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 
 		var err error
 		var config ATCconfig
@@ -307,11 +307,10 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 		var packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config, packageString, softwarecomponentString)
+		packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
-		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide both the packages and the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
-
+		assert.Equal(t, nil, err)
 	})
 }

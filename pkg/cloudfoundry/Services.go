@@ -10,10 +10,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-//ReadServiceKey ABAP Service Key from Cloud Foundry and returns it.
-//Depending on user requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout or not.
-//Currently only supports the return of an ABAP service key.
-func ReadServiceKey(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
+//ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
+//Depending on user/developer requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
+func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
 	var abapServiceKey ServiceKey
 	var err error
 
