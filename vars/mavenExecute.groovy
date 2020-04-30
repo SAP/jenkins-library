@@ -10,6 +10,7 @@ def call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
+    //todo null check
     if (!parameters.defines in List) {
         error "Expected parameters.defines ${parameters.defines} to be of type List, but it is ${parameters.defines.class}."
     }
