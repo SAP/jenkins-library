@@ -10,6 +10,8 @@ def call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
+    //todo assert is list
+
     List credentials = [ ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 
