@@ -4,7 +4,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -24,9 +23,9 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 		ProjectSettingsFile:         config.ProjectSettingsFile,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		M2Path:                      config.M2Path,
-		Goals:                       splitAndTrimParams(config.Goals),
-		Defines:                     splitAndTrimParams(config.Defines),
-		Flags:                       splitAndTrimParams(config.Flags),
+		Goals:                       config.Goals,
+		Defines:                     config.Defines,
+		Flags:                       config.Flags,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		ReturnStdout:                config.ReturnStdout,
 	}
@@ -36,10 +35,4 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 		err = ioutil.WriteFile(".pipeline/maven_output.txt", []byte(output), 0644)
 	}
 	return err
-}
-
-// We *must not* deduplicate the parameters here as this will break commands such as `mvn -pl a -pl b`,
-// which would become `mvn -pl a b` which is invalid
-func splitAndTrimParams(params []string) []string {
-	return sliceUtils.SplitAndTrim(params, " ")
 }

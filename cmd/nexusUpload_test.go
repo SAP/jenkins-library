@@ -378,7 +378,7 @@ func TestUploadArtifacts(t *testing.T) {
 		})
 
 		err := uploadArtifacts(&utils, &uploader, &options, false)
-		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode "+deployGoal+"]', error: failed")
+		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn \"-Durl=http://\" \"-DgroupId=my.group.id\" \"-Dversion=3.0\" \"-DartifactId=some.id\" \"-Dfile=mta.yaml\" \"-Dpackaging=yaml\" \"-DgeneratePom=false\" \"-Dfiles=artifact.mtar\" \"-Dclassifiers=\" \"-Dtypes=yaml\" -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode "+deployGoal+"]', error: failed")
 	})
 	t.Run("Uploading bundle generates correct maven parameters", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true, false)
@@ -401,16 +401,16 @@ func TestUploadArtifacts(t *testing.T) {
 		assert.Equal(t, 1, len(utils.execRunner.Calls))
 
 		expectedParameters1 := []string{
-			"-Durl=http://localhost:8081/repository/maven-releases/",
-			"-DgroupId=my.group.id",
-			"-Dversion=4.0",
-			"-DartifactId=my.artifact",
-			"-Dfile=mta.yaml",
-			"-Dpackaging=yaml",
-			"-DgeneratePom=false",
-			"-Dfiles=pom.yml",
-			"-Dclassifiers=",
-			"-Dtypes=pom",
+			"\"-Durl=http://localhost:8081/repository/maven-releases/\"",
+			"\"-DgroupId=my.group.id\"",
+			"\"-Dversion=4.0\"",
+			"\"-DartifactId=my.artifact\"",
+			"\"-Dfile=mta.yaml\"",
+			"\"-Dpackaging=yaml\"",
+			"\"-DgeneratePom=false\"",
+			"\"-Dfiles=pom.yml\"",
+			"\"-Dclassifiers=\"",
+			"\"-Dtypes=pom\"",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}
@@ -650,12 +650,12 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 		if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
 			expectedParameters1 := []string{
-				"-Durl=http://localhost:8081/repository/maven-releases/",
-				"-DgroupId=com.mycompany.app",
-				"-Dversion=1.0",
-				"-DartifactId=my-app",
-				"-Dfile=pom.xml",
-				"-Dpackaging=pom",
+				"\"-Durl=http://localhost:8081/repository/maven-releases/\"",
+				"\"-DgroupId=com.mycompany.app\"",
+				"\"-Dversion=1.0\"",
+				"\"-DartifactId=my-app\"",
+				"\"-Dfile=pom.xml\"",
+				"\"-Dpackaging=pom\"",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
@@ -663,15 +663,15 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
 
 			expectedParameters2 := []string{
-				"-Durl=http://localhost:8081/repository/maven-releases/",
-				"-DgroupId=com.mycompany.app",
-				"-Dversion=1.0",
-				"-DartifactId=my-app-app",
-				"-Dfile=application/pom.xml",
-				"-Dpackaging=pom",
-				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
-				"-Dclassifiers=,classes",
-				"-Dtypes=war,jar",
+				"\"-Durl=http://localhost:8081/repository/maven-releases/\"",
+				"\"-DgroupId=com.mycompany.app\"",
+				"\"-Dversion=1.0\"",
+				"\"-DartifactId=my-app-app\"",
+				"\"-Dfile=application/pom.xml\"",
+				"\"-Dpackaging=pom\"",
+				"\"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar\"",
+				"\"-Dclassifiers=,classes\"",
+				"\"-Dtypes=war,jar\"",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
@@ -699,13 +699,13 @@ func TestUploadMavenProjects(t *testing.T) {
 		expectedParameters1 := []string{
 			"--settings",
 			settingsPath,
-			"-Durl=http://localhost:8081/repository/maven-releases/",
-			"-DgroupId=com.mycompany.app",
-			"-Dversion=1.0",
-			"-DartifactId=my-app",
-			"-DrepositoryId=" + settingsServerID,
-			"-Dfile=pom.xml",
-			"-Dpackaging=pom",
+			"\"-Durl=http://localhost:8081/repository/maven-releases/\"",
+			"\"-DgroupId=com.mycompany.app\"",
+			"\"-Dversion=1.0\"",
+			"\"-DartifactId=my-app\"",
+			"\"-DrepositoryId=" + settingsServerID + "\"",
+			"\"-Dfile=pom.xml\"",
+			"\"-Dpackaging=pom\"",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}

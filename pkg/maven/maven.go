@@ -143,11 +143,11 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	}
 
 	if options.Flags != nil {
-		parameters = append(parameters, options.Flags...)
+		parameters = append(parameters, wrapInQuotes(options.Flags)...)
 	}
 
 	if options.Defines != nil {
-		parameters = append(parameters, options.Defines...)
+		parameters = append(parameters, wrapInQuotes(options.Defines)...)
 	}
 
 	if !options.LogSuccessfulMavenTransfers {
@@ -158,6 +158,14 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 
 	parameters = append(parameters, options.Goals...)
 	return parameters, nil
+}
+
+func wrapInQuotes(input []string) []string {
+	var quoted []string
+	for _, element := range input {
+		quoted = append(quoted, `"`+element+`"`)
+	}
+	return quoted
 }
 
 func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {

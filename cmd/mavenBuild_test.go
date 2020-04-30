@@ -33,7 +33,7 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, execMockRunner.Calls[0].Exec, "mvn")
-		assert.Contains(t, execMockRunner.Calls[0].Params, "-pl", "!integration-tests")
+		assert.Contains(t, execMockRunner.Calls[0].Params, `"-pl"`, "!integration-tests")
 	})
 
 	t.Run("mavenBuild should flatten", func(t *testing.T) {
@@ -47,8 +47,8 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Contains(t, execMockRunner.Calls[0].Params, "flatten:flatten")
-		assert.Contains(t, execMockRunner.Calls[0].Params, "-Dflatten.mode=resolveCiFriendliesOnly")
-		assert.Contains(t, execMockRunner.Calls[0].Params, "-DupdatePomFile=true")
+		assert.Contains(t, execMockRunner.Calls[0].Params, `"-Dflatten.mode=resolveCiFriendliesOnly"`)
+		assert.Contains(t, execMockRunner.Calls[0].Params, `"-DupdatePomFile=true"`)
 	})
 
 	t.Run("mavenBuild should run only verify", func(t *testing.T) {

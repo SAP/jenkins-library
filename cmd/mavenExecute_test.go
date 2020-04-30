@@ -19,12 +19,10 @@ func TestMavenExecute(t *testing.T) {
 		err := runMavenExecute(config, &mockRunner)
 
 		expectedParams := []string{
-			"--errors",
-			"--fail-fast",
-			"-DoutputFile=mvnDependencyTree.txt",
+			"\"--errors --fail-fast \"",
+			"\"  -DoutputFile=mvnDependencyTree.txt\"",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-			"--batch-mode",
-			"dependency:tree",
+			"--batch-mode", " dependency:tree",
 		}
 
 		assert.NoError(t, err)
