@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHadolintExecuteCommand(t *testing.T) {
+func TestHadolintExecuteScanCommand(t *testing.T) {
 
-	testCmd := HadolintExecuteCommand()
+	testCmd := HadolintExecuteScanCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "hadolintExecute", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "hadolintExecuteScan", testCmd.Use, "command name incorrect")
 
 }
