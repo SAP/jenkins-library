@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -10,22 +11,41 @@ import (
 type PiperLogFormatter struct {
 	logrus.TextFormatter
 	messageOnlyLogFormat bool
+	withTimeStamp        bool
+	defaultFormat        bool
 }
 
-const logFormatPlain = "plain"
+const (
+	logFormatPlain         = "plain"
+	logFormatDefault       = "default"
+	logFormatWithTimestamp = "timestamp"
+)
 
 //Format the log message
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
+	message := ""
 
-	message := entry.Message + "\n"
+	// experimental: align level with underlying tool (like maven or npm)
+	if strings.Contains(entry.Message, "ERROR") || strings.Contains(entry.Message, "ERR!") {
+		entry.Level = logrus.ErrorLevel
+	}
+	if strings.Contains(entry.Message, "WARN") {
+		entry.Level = logrus.WarnLevel
+	}
 
-	if !formatter.messageOnlyLogFormat {
+	if formatter.messageOnlyLogFormat {
+		message = entry.Message + "\n"
+	} else if formatter.withTimeStamp {
+		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
+
+	} else if formatter.defaultFormat {
+		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
+
+	} else {
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
-
 		if err != nil {
 			return nil, err
 		}
-
 		message = string(formattedMessage)
 	}
 
@@ -61,9 +81,10 @@ func SetVerbose(verbose bool) {
 
 // SetFormatter specifies whether to log only hte message
 func SetFormatter(logFormat string) {
-	if logFormat == logFormatPlain {
-		Entry().Logger.SetFormatter(&PiperLogFormatter{messageOnlyLogFormat: true})
-	}
+	Entry().Logger.SetFormatter(&PiperLogFormatter{
+		messageOnlyLogFormat: logFormat == logFormatPlain,
+		withTimeStamp:        logFormat == logFormatWithTimestamp,
+		defaultFormat:        logFormat == logFormatDefault})
 }
 
 // SetStepName sets the stepName field.
