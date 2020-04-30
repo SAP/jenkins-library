@@ -20,7 +20,8 @@ def call(Map parameters = [:]) {
     if (!parameters.goals in List) {
         error "Expected parameters.goals ${parameters.goals} to be of type List, but it is ${parameters.goals.class}."
     }
-    List credentials = [ ]
+
+    List credentials = []
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 
     String output = ''
