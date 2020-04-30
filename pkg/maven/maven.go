@@ -143,7 +143,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	}
 
 	if options.Flags != nil {
-		parameters = append(parameters, options.Flags...)
+		parameters = append(parameters, piperutils.SplitAndTrim(options.Flags, " ")...)
 	}
 
 	if options.Defines != nil {
