@@ -16,13 +16,15 @@ Examples will be listed below.
 
 ## ${docJenkinsPluginDependencies}
 
-## Example
+## Examples
 
 ### ATC run via Cloud Foundry Service Key example in Jenkinsfile
 
 The following example triggers an ATC run via reading the Service Key of an ABAP instance in Cloud Foundry.
+
 You can store the credentials in Jenkins and use the cfCredentialsId parameter to authenticate to Cloud Foundry.
-The username and password to authenticate to ABAP system will then be read from the Cloud Foundry Service Key that is bound to the ABAP instance.
+The username and password to authenticate to ABAP system will then be read from the Cloud Foundry Service Key that is bound to the ABAP instance. 
+
 This can be done accordingly:
 
 ```groovy
@@ -38,11 +40,15 @@ abapEnvironmentRunATCCheck(
 )
 ```
 
+To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check section 'ATC config file example' for more information.
+
 ### ATC run via direct ABAP endpoint configuration in Jenkinsfile
 
 This  example triggers an ATC run directly on the ABAP endpoint.
-In order to trigger the ATC run you have to pass the username and password for authentication to the ABAP endpoint via parameters.
-That must be configured as following:
+
+In order to trigger the ATC run you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host.
+
+This must be configured as following:
 
 ```groovy
 abapEnvironmentRunATCCheck(
@@ -54,6 +60,8 @@ abapEnvironmentRunATCCheck(
 )
 ```
 
+To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check section 'ATC config file example' for more information.
+
 ### ATC config file example
 
 The following section contains an example of an `atcconfig.yml` file.
@@ -62,8 +70,9 @@ This file must be stored in the same Git folder where the `Jenkinsfile` is store
 You can specify a list of packages and/or software components to be checked. This must be in the same format as below example for a `atcconfig.yml` file.
 For each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
 Please note that if you chose to provide both packages and software components to be checked with the `atcconfig.yml` file, the set of packages and the set of software components will be combinend by the API using a logical AND operation.
+Therefore, we advise to specify either the Software Components or Packages.
 
-See below example for an `atcconfig.yml` file with packages and software components to be checked:
+See below example for an `atcconfig.yml` file with both packages and software components to be checked:
 
 ```yaml
 atcobjects:
@@ -72,6 +81,26 @@ atcobjects:
       includesubpackage: false
     - name: "TestPackage2"
       includesubpackage: true
+  softwarecomponent:
+    - name: "TestComponent"
+    - name: "TestComponent2"
+```
+
+The following example of an `atcconfig.yml` file only contains packages to be checked:
+
+```yaml
+atcobjects:
+  package:
+    - name: "TestPackage"
+      includesubpackage: false
+    - name: "TestPackage2"
+      includesubpackage: true
+```
+
+The following example of an `atcconfig.yml` file only contains software components to be checked:
+
+```yaml
+atcobjects:
   softwarecomponent:
     - name: "TestComponent"
     - name: "TestComponent2"
