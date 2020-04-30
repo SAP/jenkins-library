@@ -11,3 +11,17 @@ steps:
     owner: 'SAP'
     repository: 'jenkins-library'
     releaseBodyHeader: ''
+  githubCreatePullRequest:
+    base: master
+    owner: 'SAP'
+    repository: 'jenkins-library'
+    labels:
+      - 'REVIEW'
+      - 'go-piper'
+    assignees:
+      - 'marcusholl'
+      - 'daniel-kurzynski'
+      - 'fwilhe'
+      - 'CCFenner'
+      - 'OliverNocon'
+      - 'nevskrem'

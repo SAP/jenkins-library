@@ -51,7 +51,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }
 
@@ -86,13 +86,15 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }
 
 
 // TestStepCommand Test description
 func TestStepCommand() *cobra.Command {
+	const STEP_NAME = "testStep"
+
 	metadata := testStepMetadata()
 	var stepConfig testStepOptions
 	var startTime time.Time
@@ -100,14 +102,23 @@ func TestStepCommand() *cobra.Command {
 	var influxTest testStepInfluxTest
 
 	var createTestStepCmd = &cobra.Command{
-		Use:   "testStep",
+		Use:   STEP_NAME,
 		Short: "Test description",
 		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("testStep")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
-			return piperOsCmd.PrepareConfig(cmd, &metadata, "testStep", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -120,7 +131,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, "testStep")
+			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME)
 			testStep(stepConfig, &telemetryData, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
 		},

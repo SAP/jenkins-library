@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-## Prerequsites
+## Prerequisites
 
 When pushing to a container registry, you need to maintain the respective credentials in your Jenkins credentials store:
 

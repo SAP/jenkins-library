@@ -37,19 +37,32 @@ type sonarExecuteScanOptions struct {
 
 // SonarExecuteScanCommand Executes the Sonar scanner
 func SonarExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "sonarExecuteScan"
+
 	metadata := sonarExecuteScanMetadata()
 	var stepConfig sonarExecuteScanOptions
 	var startTime time.Time
 
 	var createSonarExecuteScanCmd = &cobra.Command{
-		Use:   "sonarExecuteScan",
+		Use:   STEP_NAME,
 		Short: "Executes the Sonar scanner",
 		Long:  `The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("sonarExecuteScan")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "sonarExecuteScan", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+			log.RegisterSecret(stepConfig.GithubToken)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -60,7 +73,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "sonarExecuteScan")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			sonarExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

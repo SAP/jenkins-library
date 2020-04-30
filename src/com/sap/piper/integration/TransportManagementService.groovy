@@ -259,7 +259,7 @@ class TransportManagementService implements Serializable {
     }
 
     private prepareAndThrowException(response, errorMessage) {
-        if (response.status >= 400) {
+        if (response.status >= 300) {
             errorMessage += " Response content '${response.content}'."
         }
         script.error "[${getClass().getSimpleName()}] ${errorMessage}"

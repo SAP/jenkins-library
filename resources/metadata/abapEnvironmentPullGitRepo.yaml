@@ -24,6 +24,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: password
         type: string
         description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
@@ -32,6 +33,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: repositoryName
         type: string
         description: Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system

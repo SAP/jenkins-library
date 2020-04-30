@@ -53,26 +53,39 @@ func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }
 
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
+	const STEP_NAME = "xsDeploy"
+
 	metadata := xsDeployMetadata()
 	var stepConfig xsDeployOptions
 	var startTime time.Time
 	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
 
 	var createXsDeployCmd = &cobra.Command{
-		Use:   "xsDeploy",
+		Use:   STEP_NAME,
 		Short: "Performs xs deployment",
 		Long:  `Performs xs deployment`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("xsDeploy")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "xsDeploy", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -84,7 +97,7 @@ func XsDeployCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			xsDeploy(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 		},

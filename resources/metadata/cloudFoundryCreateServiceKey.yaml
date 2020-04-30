@@ -28,6 +28,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        secret: true
         mandatory: true
       - name: password
         type: string
@@ -37,6 +38,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: cfOrg
         type: string
         description: CF org
@@ -60,7 +62,7 @@ spec:
           - name: cloudFoundry/space
       - name: cfServiceInstance
         type: string
-        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        description: Parameter for CloudFoundry Service Instance Name
         scope:
         - PARAMETERS
         - STAGES
@@ -70,7 +72,7 @@ spec:
           - name: cloudFoundry/serviceInstance
       - name: cfServiceKeyName
         type: string
-        description: Parameter of CloudFoundry Service Key to be created
+        description: Parameter for Service Key name for CloudFoundry Service Key to be created
         scope:
         - PARAMETERS
         - STAGES
@@ -80,7 +82,7 @@ spec:
           - name: cloudFoundry/serviceKeyName
       - name: cfServiceKeyConfig
         type: string
-        description: Configuration for Service Key Creation
+        description: Path to JSON config file path or JSON in-line string for Cloud Foundry Service Key creation
         scope:
         - PARAMETERS
         - STAGES

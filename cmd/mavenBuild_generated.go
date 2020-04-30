@@ -25,21 +25,32 @@ type mavenBuildOptions struct {
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
 func MavenBuildCommand() *cobra.Command {
+	const STEP_NAME = "mavenBuild"
+
 	metadata := mavenBuildMetadata()
 	var stepConfig mavenBuildOptions
 	var startTime time.Time
 
 	var createMavenBuildCmd = &cobra.Command{
-		Use:   "mavenBuild",
+		Use:   STEP_NAME,
 		Short: "This step will install the maven project into the local maven repository.",
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenBuild")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenBuild", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -50,7 +61,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenBuild")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

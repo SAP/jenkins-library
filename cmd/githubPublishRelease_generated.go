@@ -32,12 +32,14 @@ type githubPublishReleaseOptions struct {
 
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
+	const STEP_NAME = "githubPublishRelease"
+
 	metadata := githubPublishReleaseMetadata()
 	var stepConfig githubPublishReleaseOptions
 	var startTime time.Time
 
 	var createGithubPublishReleaseCmd = &cobra.Command{
-		Use:   "githubPublishRelease",
+		Use:   STEP_NAME,
 		Short: "Publish a release in GitHub",
 		Long: `This step creates a tag in your GitHub repository together with a release.
 The release can be filled with text plus additional information like:
@@ -51,9 +53,19 @@ The result looks like
 ![Example release](../images/githubRelease.png)`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("githubPublishRelease")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -64,7 +76,7 @@ The result looks like
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubPublishRelease(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

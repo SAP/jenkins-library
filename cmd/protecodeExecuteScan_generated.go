@@ -30,7 +30,7 @@ type protecodeExecuteScanOptions struct {
 	FetchURL                    string `json:"fetchUrl,omitempty"`
 	Group                       string `json:"group,omitempty"`
 	ReuseExisting               bool   `json:"reuseExisting,omitempty"`
-	User                        string `json:"user,omitempty"`
+	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
 	ArtifactVersion             string `json:"artifactVersion,omitempty"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
@@ -75,19 +75,21 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }
 
 // ProtecodeExecuteScanCommand Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.
 func ProtecodeExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "protecodeExecuteScan"
+
 	metadata := protecodeExecuteScanMetadata()
 	var stepConfig protecodeExecuteScanOptions
 	var startTime time.Time
 	var influx protecodeExecuteScanInflux
 
 	var createProtecodeExecuteScanCmd = &cobra.Command{
-		Use:   "protecodeExecuteScan",
+		Use:   STEP_NAME,
 		Short: "Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.",
 		Long: `Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.
 
@@ -95,9 +97,20 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
     Triaging is now supported by the Protecode backend and also Piper does consider this information during the analysis of the scan results though product versions are not supported by Protecode. Therefore please make sure that the ` + "`" + `fileName` + "`" + ` you are providing does either contain a stable version or that it does not contain one at all. By ensuring that you are able to triage CVEs globally on the upload file's name without affecting any other artifacts scanned in the same Protecode group and as such triaged vulnerabilities will be considered during the next scan and will not fail the build anymore.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("protecodeExecuteScan")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "protecodeExecuteScan", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -109,7 +122,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "protecodeExecuteScan")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			protecodeExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 		},
@@ -134,14 +147,14 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User which is used for the protecode scan")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
-	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
 
@@ -268,12 +281,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "user",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "user"}},
 					},
 					{
 						Name:        "password",
