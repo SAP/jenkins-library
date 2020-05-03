@@ -1,6 +1,6 @@
 import groovy.transform.Field
 
-@Field def STEP_NAME = getClass().getName()
+@Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/abapEnvironmentPullGitRepo.yaml'
 
 void call(Map parameters = [:]) {

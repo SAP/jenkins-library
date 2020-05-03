@@ -48,7 +48,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('githubTokenId', 'thisIsATestToken')
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/githubrelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/githubrelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
     }
 
     @Test
@@ -59,7 +59,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             script: nullScript
         )
         // asserts
-        assertThat(writeFileRule.files['metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper githubPublishRelease'))
     }

@@ -61,11 +61,11 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('credentialsId', 'testUser', 'testPassword')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.\/piper getConfig --contextConfig --stepMetadata 'metadata\/abapEnvironmentPullGitRepo.yaml'/, /{"credentialsId":"credentialsId"}/ )
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.\/piper getConfig --contextConfig --stepMetadata '.pipeline\/tmp\/metadata\/abapEnvironmentPullGitRepo.yaml'/, /{"credentialsId":"credentialsId"}/ )
 
         stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, juStabUtils: utils, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
-        assertThat(shellRule.shell[0], containsString(/.\/piper getConfig --contextConfig --stepMetadata 'metadata\/abapEnvironmentPullGitRepo.yaml'/))
+        assertThat(shellRule.shell[0], containsString(/.\/piper getConfig --contextConfig --stepMetadata '.pipeline\/tmp\/metadata\/abapEnvironmentPullGitRepo.yaml'/))
         assertThat(shellRule.shell[1], containsString(/.\/piper abapEnvironmentPullGitRepo/))
     }
 }
