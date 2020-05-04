@@ -26,14 +26,17 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		}
 		expected := mock.ExecCall{
 			Exec: "mvn",
-			Params: []string{"\"-pl\"", "\"!unit-tests\"", "\"-pl\"", "\"!integration-tests\"",
-				"\"-pl\"", "\"!testing-lib\"", "\"-pl\"", "\"!test-helpers\"",
-				"\"-Dspotbugs.includeFilterFile=includeFilter.xml\"",
-				"\"-Dspotbugs.excludeFilterFile=excludeFilter.xml\"",
-				"\"-Dpmd.maxAllowedViolations=10\"", "\"-Dpmd.failurePriority=2\"",
+			Params: []string{"-pl", "!unit-tests", "-pl", "!integration-tests",
+				"-pl", "!testing-lib", "-pl", "!test-helpers",
+				"-Dspotbugs.includeFilterFile=includeFilter.xml",
+				"-Dspotbugs.excludeFilterFile=excludeFilter.xml",
+				"-Dpmd.maxAllowedViolations=10",
+				"-Dpmd.failurePriority=2",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-				"--batch-mode", "com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check",
-				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+				"--batch-mode",
+				"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check",
+				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",
+			},
 		}
 
 		currentDir, err := os.Getwd()

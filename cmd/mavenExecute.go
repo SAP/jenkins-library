@@ -9,6 +9,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+var writeFile = ioutil.WriteFile
+
 func mavenExecute(config mavenExecuteOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
 	err := runMavenExecute(config, &runner)
@@ -32,7 +34,7 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 
 	output, err := maven.Execute(&options, runner)
 	if err == nil && config.ReturnStdout {
-		err = ioutil.WriteFile(".pipeline/maven_output.txt", []byte(output), 0644)
+		err = writeFile(".pipeline/maven_output.txt", []byte(output), 0644)
 	}
 	return err
 }
