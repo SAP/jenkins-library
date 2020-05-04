@@ -10,15 +10,17 @@ import (
 //PiperLogFormatter is the custom formatter of piper
 type PiperLogFormatter struct {
 	logrus.TextFormatter
-	messageOnlyLogFormat bool
-	withTimeStamp        bool
-	defaultFormat        bool
+	plainFormat         bool
+	defaultFormat       bool
+	withTimeStampFormat bool
+	fullFormat          bool
 }
 
 const (
 	logFormatPlain         = "plain"
 	logFormatDefault       = "default"
 	logFormatWithTimestamp = "timestamp"
+	logFormatFull          = "full"
 )
 
 //Format the log message
@@ -33,15 +35,16 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		entry.Level = logrus.WarnLevel
 	}
 
-	if formatter.messageOnlyLogFormat {
+	if formatter.plainFormat {
 		message = entry.Message + "\n"
-	} else if formatter.withTimeStamp {
+	} else if formatter.withTimeStampFormat {
 		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
 
 	} else if formatter.defaultFormat {
 		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
 
-	} else {
+	} else /*if formatter.fullFormat*/ {
+		// use "full" formatter as fallback
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
 		if err != nil {
 			return nil, err
@@ -79,12 +82,13 @@ func SetVerbose(verbose bool) {
 	}
 }
 
-// SetFormatter specifies whether to log only hte message
+// SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
 	Entry().Logger.SetFormatter(&PiperLogFormatter{
-		messageOnlyLogFormat: logFormat == logFormatPlain,
-		withTimeStamp:        logFormat == logFormatWithTimestamp,
-		defaultFormat:        logFormat == logFormatDefault})
+		plainFormat:         logFormat == logFormatPlain,
+		withTimeStampFormat: logFormat == logFormatWithTimestamp,
+		defaultFormat:       logFormat == logFormatDefault,
+		fullFormat:          logFormat == logFormatFull})
 }
 
 // SetStepName sets the stepName field.
