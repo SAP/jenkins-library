@@ -24,9 +24,9 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 		ProjectSettingsFile:         config.ProjectSettingsFile,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		M2Path:                      config.M2Path,
-		Goals:                       splitTrimAndDeDupParams(config.Goals),
-		Defines:                     splitTrimAndDeDupParams(config.Defines),
-		Flags:                       splitTrimAndDeDupParams(config.Flags),
+		Goals:                       splitAndTrimParams(config.Goals),
+		Defines:                     splitAndTrimParams(config.Defines),
+		Flags:                       splitAndTrimParams(config.Flags),
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		ReturnStdout:                config.ReturnStdout,
 	}
@@ -38,6 +38,8 @@ func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	return err
 }
 
-func splitTrimAndDeDupParams(params []string) []string {
-	return sliceUtils.SplitTrimAndDeDup(params, " ")
+// We *must not* deduplicate the parameters here as this will break commands such as `mvn -pl a -pl b`,
+// which would become `mvn -pl a b` which is invalid
+func splitAndTrimParams(params []string) []string {
+	return sliceUtils.SplitAndTrim(params, " ")
 }
