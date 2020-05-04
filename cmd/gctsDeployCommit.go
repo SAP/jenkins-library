@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http/cookiejar"
 
@@ -59,20 +60,22 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 		}
 	}()
 
-	if resp == nil || httpErr != nil {
-		return errors.Errorf("deploy commit failed: %v", httpErr)
+	if resp == nil {
+		return errors.New("did not retrieve a HTTP response")
+	} else if httpErr != nil {
+		return httpErr
 	}
 
 	bodyText, readErr := ioutil.ReadAll(resp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "deploying commit failed")
+		return errors.Wrapf(readErr, "HTTP response body could not be read")
 	}
 
 	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 	if parsingErr != nil {
-		return errors.Wrap(parsingErr, "deploying commit failed")
+		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
 
 	log.Entry().
