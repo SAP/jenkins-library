@@ -11,8 +11,20 @@ def call(Map parameters = [:]) {
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
 
     //todo null check
+
+    // todos
+    // input as string (convert to list?)
+    // input is shell escaped which was required before but not now
+    // -Dfoo.bar='a b c '
+    // [ '-f', "'my path/pom.xml'"]
+
+
+    // legacy handling
+    // the old step allowed passing defines, flags and goals as string or list
+    // the new step only allows lists
+
     if (!parameters.defines in List) {
-        error "Expected parameters.defines ${parameters.defines} to be of type List, but it is ${parameters.defines.class}."
+        error "Expected parameters.defines ${parameters.defines} to be of type List, but it is ${parameters.defines.class}." //hint about bash escaping
     }
     if (!parameters.flags in List) {
         error "Expected parameters.flags ${parameters.flags} to be of type List, but it is ${parameters.flags.class}."
@@ -20,6 +32,8 @@ def call(Map parameters = [:]) {
     if (!parameters.goals in List) {
         error "Expected parameters.goals ${parameters.goals} to be of type List, but it is ${parameters.goals.class}."
     }
+
+
 
     List credentials = []
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
