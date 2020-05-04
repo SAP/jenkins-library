@@ -22,15 +22,19 @@ var (
 	}
 )
 
+// SentryHook provides a logrus hook which enables error logging to sentry platform.
+// This is helpful in order to provide better monitoring and alerting on errors
+// as well as the given error details can help to find the root cause of bugs.
 type SentryHook struct {
 	levels        []logrus.Level
 	Hub           *sentry.Hub
 	tags          map[string]string
 	Event         *sentry.Event
-	correlationId string
+	correlationID string
 }
 
-func NewSentryHook(sentryDsn, correlationId string) SentryHook {
+// Initialize sentry sdk with dsn and create new hook
+func NewSentryHook(sentryDsn, correlationID string) SentryHook {
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:              sentryDsn,
 		AttachStacktrace: true,
@@ -42,20 +46,22 @@ func NewSentryHook(sentryDsn, correlationId string) SentryHook {
 		Hub:           sentry.CurrentHub(),
 		tags:          make(map[string]string),
 		Event:         sentry.NewEvent(),
-		correlationId: correlationId,
+		correlationID: correlationID,
 	}
 	return h
 }
 
+// Levels returns the supported log level of the hook.
 func (sentryHook *SentryHook) Levels() []logrus.Level {
 	return sentryHook.levels
 }
 
+// Fire creates a new event from the error and sends it to sentry
 func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
 	event := sentry.NewEvent()
 	event.Level = levelMap[entry.Level]
 
-	sentryHook.tags["correlationId"] = sentryHook.correlationId
+	sentryHook.tags["correlationId"] = sentryHook.correlationID
 	for k, v := range entry.Data {
 		if k == "stepName" || k == "category" {
 			sentryHook.tags[k] = fmt.Sprint(v)
