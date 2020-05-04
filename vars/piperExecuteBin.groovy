@@ -8,9 +8,14 @@ import com.sap.piper.Utils
 
 import static com.sap.piper.Prerequisites.checkScript
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false) {
+void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
 
-    handlePipelineStepErrors(stepName: stepName, stepParameters: parameters) {
+    handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
+    if (failOnError) {
+        handlePipelineStepErrorsParameters.failOnError = true
+    }
+
+    handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
 
         def stepParameters = [:].plus(parameters)
 
@@ -152,7 +157,7 @@ void handleErrorDetails(String stepName, Closure body) {
                 errorCategory = " (category: ${errorDetails.category})"
                 DebugReport.instance.failedBuild.category = errorDetails.category
             }
-            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.message}"
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
         error "[${stepName}] Step execution failed. Error: ${ex}"
     }

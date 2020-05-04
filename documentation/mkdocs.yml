@@ -65,6 +65,7 @@ nav:
         - karmaExecuteTests: steps/karmaExecuteTests.md
         - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
+        - malwareExecuteScan: steps/malwareExecuteScan.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md

@@ -54,9 +54,9 @@ func Trim(in []string) (out []string) {
 	return
 }
 
-// SplitTrimAndDeDup iterates over the strings in the given slice and splits each on the provided separator.
-// Each resulting sub-string is then a separate entry in the returned array. Duplicate and empty entries are eliminated.
-func SplitTrimAndDeDup(in []string, separator string) (out []string) {
+// SplitAndTrim iterates over the strings in the given slice and splits each on the provided separator.
+// Each resulting sub-string is then a separate entry in the returned array.
+func SplitAndTrim(in []string, separator string) (out []string) {
 	if len(in) == 0 {
 		return in
 	}
@@ -64,7 +64,7 @@ func SplitTrimAndDeDup(in []string, separator string) (out []string) {
 		entryParts := strings.Split(entry, separator)
 		for _, part := range entryParts {
 			part = strings.TrimSpace(part)
-			if part != "" && !ContainsString(out, part) {
+			if part != "" {
 				out = append(out, part)
 			}
 		}
