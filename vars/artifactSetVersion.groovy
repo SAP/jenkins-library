@@ -189,17 +189,19 @@ void call(Map parameters = [:], Closure body = null) {
                 gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
             } else {
                 // in case there is no user.email configured on project level we might still
-                // be able to work in case there is a configuration available on plain os level.
-                def userMail = sh returnStdout: true, script: 'git config user.email'
-                if (! userMail) error 'No git user.email configured'
+                // be able to work in case there is a configuration available on plain git level.
+                if(sh(returnStatus: true, script: 'git config user.email')) {
+                    error 'No git user.email configured. Neither via project config nor on plain git level.'
+                }
             }
             if(config.gitUserName) {
                 gitConfig.add("-c user.name=\"${config.gitUserName}\"")
             } else {
                 // in case there is no user.name configured on project level we might still
-                // be able to work in case there is a configuration available on plain os level.
-                def userName = sh returnStdout: true, script: 'git config user.name'
-                if (!userName) error 'No git user.name configured'
+                // be able to work in case there is a configuration available on plain git level.
+                if (sh(returnStatus: true, script: 'git config user.name') != 0) {
+                    error 'No git user.name configured. Neither via project config nor on plain git level.'
+                }
             }
             gitConfig = gitConfig.join(' ')
 
