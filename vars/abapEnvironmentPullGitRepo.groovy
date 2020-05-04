@@ -5,8 +5,8 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [[
-        type: 'usernamePassword', 
-        id: 'credentialsId', 
+        type: 'usernamePassword',
+        id: 'credentialsId',
         env: ['PIPER_username', 'PIPER_password']
     ]], false, false, true)
 }
