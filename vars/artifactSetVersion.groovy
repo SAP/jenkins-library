@@ -190,7 +190,7 @@ void call(Map parameters = [:], Closure body = null) {
             } else {
                 // in case there is no user.email configured on project level we might still
                 // be able to work in case there is a configuration available on plain git level.
-                if(sh(returnStatus: true, script: 'git config user.email')) {
+                if(sh(returnStatus: true, script: 'git config user.email') != 0) {
                     error 'No git user.email configured. Neither via project config nor on plain git level.'
                 }
             }
