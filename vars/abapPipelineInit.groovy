@@ -28,7 +28,6 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
@@ -39,11 +38,5 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        if (config.verbose) {
-            echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
-        }
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
     }
 }
