@@ -336,7 +336,7 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 func correctDockerConfigEnvVar() {
 	path := os.Getenv("DOCKER_CONFIG")
 	if len(path) > 0 {
-		path = filepath.Abs(path)
+		path, _ := filepath.Abs(path)
 		path = filepath.Dir(path)
 		fmt.Println("DOCKER_CONFIG: use parent directory")
 		os.Setenv("DOCKER_CONFIG", path)
