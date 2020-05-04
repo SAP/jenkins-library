@@ -10,5 +10,7 @@ void call(Map parameters = [:]) {
     List credentials = [ ]
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
+
+    echo "mavenBuild parameters: ${parameters}"
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
