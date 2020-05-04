@@ -39,9 +39,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
-        initStashConfiguration(script, config)
-
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
         }
