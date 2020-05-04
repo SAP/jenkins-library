@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
-        echo "${parameters.script.commonPipelineEnvironment.configuration}"
-        echo "${parameters.script.commonPipelineEnvironment.configurationFile}"
+        echo "${script.commonPipelineEnvironment.configuration}"
+        echo "${script.commonPipelineEnvironment.configurationFile}"
     }
 }
