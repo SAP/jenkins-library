@@ -54,7 +54,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** Url to the npm registry that should be used for installing npm dependencies.*/
     'defaultNpmRegistry',
 
-    /** Url to the npm registry that should be used for installing npm dependencies.*/
+    /** Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.*/
     'sapNpmRegistry'
 ]
 
