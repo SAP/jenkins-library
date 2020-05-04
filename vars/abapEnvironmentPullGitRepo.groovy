@@ -4,9 +4,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = 'metadata/abapEnvironmentPullGitRepo.yaml'
 
 void call(Map parameters = [:]) {
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [[
-        type: 'usernamePassword',
-        id: 'credentialsId',
-        env: ['PIPER_username', 'PIPER_password']
-    ]], false, false, true)
+    List credentials = [
+        [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_username', 'PIPER_password']]
+    ]
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
 }

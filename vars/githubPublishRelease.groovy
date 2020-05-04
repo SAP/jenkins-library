@@ -4,9 +4,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = 'metadata/githubrelease.yaml'
 
 void call(Map parameters = [:]) {
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [[
-        type: 'token',
-        id: 'githubTokenCredentialsId',
-        env: ['PIPER_token']
-    ]])
+    List credentials = [
+        [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_token']]
+    ]
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
