@@ -5,8 +5,11 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+
+@Field String STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
 
