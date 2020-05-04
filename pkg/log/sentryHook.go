@@ -2,7 +2,6 @@ package log
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/getsentry/sentry-go"
@@ -39,7 +38,7 @@ func NewSentryHook(sentryDsn, correlationID string) SentryHook {
 		Dsn:              sentryDsn,
 		AttachStacktrace: true,
 	}); err != nil {
-		log.Printf("cannot initialize sentry: %v", err)
+		Entry().Infof("cannot initialize sentry: %v", err)
 	}
 	h := SentryHook{
 		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel},
