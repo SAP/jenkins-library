@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
-        System.out.println(parameters.script.commonPipelineEnvironment.configuration)
-        System.out.println(parameters.script.commonPipelineEnvironment.configurationFile)
+        echo "${parameters.script.commonPipelineEnvironment.configuration}"
+        echo "${parameters.script.commonPipelineEnvironment.configurationFile}"
     }
 }
