@@ -25,13 +25,9 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
+    echo "Config: ${script.commonPipelineEnvironment.configuration}"
+    echo "Config File: ${script.commonPipelineEnvironment.configurationFile}"
 
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
-
-        echo "${script.commonPipelineEnvironment.configuration}"
-        echo "${script.commonPipelineEnvironment.configurationFile}"
-    }
 }
