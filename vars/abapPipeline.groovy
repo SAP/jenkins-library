@@ -21,6 +21,8 @@ void call(parameters) {
 
             stage('Create Service') {
                 steps {
+                    echo parameters.script.commonPipelineEnvironment.configuration
+                    echo parameters.script.commonPipelineEnvironment.configurationFile
                     cloudFoundryCreateService script: parameters.script
                 }
             }
