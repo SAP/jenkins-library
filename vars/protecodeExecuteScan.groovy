@@ -35,25 +35,11 @@ void call(Map parameters = [:]) {
 
             def creds = []
             if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_username'))
-            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'FILE_PATH'))
+            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG'))
 
             // execute step
             withCredentials(creds) {
-
-                if(config.dockerCredentialsId) {
-                    if (FILE_PATH) {
-                        File file = new File(FILE_PATH);
-                        def configDirPath = file.getAbsoluteFile().getParent();
-                        withEnv([
-                            "DOCKER_CONFIG=${configDirPath}",
-                        ]) {
-                            sh "./piper protecodeExecuteScan"
-                        }
-                    }
-                }
-                else {
-                        sh "./piper protecodeExecuteScan"
-                }
+                sh "./piper protecodeExecuteScan"
             }
 
             def json = readJSON (file: "protecodescan_vulns.json")

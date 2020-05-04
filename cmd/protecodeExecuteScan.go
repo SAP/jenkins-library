@@ -51,6 +51,8 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
+	correctDockerConfigEnvVar()
+
 	var fileName, filePath string
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
@@ -329,4 +331,22 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	}
 
 	return err
+}
+
+func correctDockerConfigEnvVar() {
+	path := os.Getenv("DOCKER_CONFIG")
+	path := filepath.Abs(path)
+	if len(path) > 0 && !isDirectory(path) {
+		path := filepath.Dir(path)
+		fmt.Println("DOCKER_CONFIG: use parent directory")
+		os.Setenv("DOCKER_CONFIG", path)
+	}
+}
+
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return fileInfo.IsDir(), err
 }
