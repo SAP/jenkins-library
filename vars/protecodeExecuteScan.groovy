@@ -34,7 +34,7 @@ void call(Map parameters = [:]) {
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             def creds = []
-            if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user'))
+            if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_username'))
             if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'FILE_PATH'))
 
             // execute step
