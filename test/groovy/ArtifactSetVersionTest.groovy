@@ -89,14 +89,14 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'pom.xml',
-            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-            'defines': '-Dexpression=project.version -DforceStdout -q',
+            'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout -q'],
         ], version)
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'snapshot/pom.xml',
-            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-            'defines': '-Dexpression=project.version -DforceStdout -q',
+            'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout -q'],
         ], version)
 
         shellRule.setReturnValue("date --utc +'%Y%m%d%H%M%S'", '20180101010203')
