@@ -144,12 +144,19 @@ void call(Map parameters = [:]) {
                 // so that user can get them in one pipeline run
                 // put the validation here, because we need uri and token to call tms get nodes api
                 List nodes = tms.getNodes(uri, token).getAt("nodes");
-                Map nodeIdExtDesMap = validateNodeExtDescriptorMapping(nodeExtDescriptorMapping, nodes, mtaVersion)
+                Map mtaYaml = getMtaYaml();
+                Map nodeIdExtDesMap = validateNodeExtDescriptorMapping(nodeExtDescriptorMapping, nodes, mtaYaml, mtaVersion)
                 
                 if(nodeIdExtDesMap) {
                     nodeIdExtDesMap.each{ key, value ->
-                        def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
-                        echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (fileId: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
+                        List mtaExtDescriptor = tms.getAMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
+                        if(mtaExtDescriptor) {
+                            def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.get(0).getAt("id"), "${workspace}/${value}", mtaVersion, description, namedUser)
+                            echo "[TransportManagementService] MTA Extention Descriptor '${updateMtaExtDescriptorResponse.fileName}' (fileId: '${updateMtaExtDescriptorResponse.fileId}') successfully updated for Node with id '${key}'."
+                        } else {
+                            def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
+                            echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (fileId: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
+                        }
                     }
                 }
             }
@@ -172,23 +179,31 @@ def String getMtaId(String extDescriptorFilePath){
     return mtaId
 }
 
-def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List nodes, String mtaVersion) {
+def Map getMtaYaml() {
+    if(fileExists("mta.yaml")) {
+        def mtaYaml = readYaml file: "mta.yaml"
+        if (!mtaYaml.ID || !mtaYaml.version) {
+            def errorMsg
+            if (!mtaYaml.ID) {
+                errorMsg = "Property 'ID' is not found in mta.yaml."
+            }
+            if (!mtaYaml.version) {
+                errorMsg += "Property 'version' is not found in mta.yaml."
+            }
+            error errorMsg
+        }
+        return mtaYaml
+    } else {
+        error "mta.yaml is not found in the root folder of the project."
+    }
+}
+
+def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List nodes, Map mtaYaml, String mtaVersion) {
     def errorPathList = []
     def errorMtaId = []
     def errorNodeNameList = []
     def errorMsg = ""
-    def mtaYaml
     Map nodeIdExtDesMap = [:]
-    
-    // get mta.yml to validate mta version and mta id
-    if(fileExists("mta.yaml")) {
-        mtaYaml = readYaml file: "mta.yaml"
-        if (!mtaYaml.ID) {
-            error "Property 'ID' is not found in mta.yaml."
-        }
-    } else {
-        error "mta.yaml is not found in the root folder of the project."
-    }
     
     if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
         errorMsg = "Parameter 'mtaVersion' does not match the MTA version in mta.yaml. "

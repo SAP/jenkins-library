@@ -193,9 +193,34 @@ public class TmsUploadTest extends BasePiperTest {
         )
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (fileId: '1') successfully uploaded to Node with id '1'."))
-        assertThat(calledTmsMethodsWithArgs[2], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+        assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (fileId: '2') successfully uploaded to Node with id '2'."))
-        assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+        assertThat(calledTmsMethodsWithArgs[5], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
+    }
+    
+    @Test
+    public void updateMtaExtensionDescriptor__isSuccessful() {
+        Map nodeExtDescriptorMap = ["testNode1": "dummy2.mtaext"]
+        
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+        binding.workspace = "."
+        envRule.env.gitCommitId = "testCommitId"
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+            nodeExtDescriptorMapping: nodeExtDescriptorMap,
+            mtaVersion: '1.2.2',
+        )
+
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (fileId: '1') successfully updated for Node with id '1'."))
+        assertThat(calledTmsMethodsWithArgs[2], is("getAMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '1.2.2')"))
+        assertThat(calledTmsMethodsWithArgs[3], is("updateMtaExtDescriptor('${uri}', 'myToken', 1, 2, './dummy2.mtaext', '1.2.2', 'Git CommitId: testCommitId', 'Test User')"))
     }
 
     @Test
@@ -243,13 +268,14 @@ public class TmsUploadTest extends BasePiperTest {
     }
     
     @Test
-    public void failOnMissingMtaIdInMtaYaml() {
+    public void failOnMissingIdAndVersionInMtaYaml() {
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' is not found in mta.yaml.")
+        thrown.expectMessage("Property 'version' is not found in mta.yaml.")
         
         Map nodeExtDescriptorMap = ["testNode1": "dummy.mtaext"]
         
-        readYamlRule.registerYaml("mta.yaml", "version: 0.0.1")
+        readYamlRule.registerYaml("mta.yaml", "_schema-version: '3.1'")
         jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
                 
         stepRule.step.tmsUpload(
@@ -315,6 +341,21 @@ public class TmsUploadTest extends BasePiperTest {
             def getNodes(String url, String token) {
                 calledTmsMethodsWithArgs << "getNodes('${url}', '${token}')"
                 return [nodes: [[id: 1, name: "testNode1"], [id: 2, name: "testNode2"]]]
+            }
+            
+            def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaDescriptor, String file, String mtaVersion, String description, String namedUser) {
+                calledTmsMethodsWithArgs << "updateMtaExtDescriptor('${url}', '${token}', ${nodeId}, ${idOfMtaDescriptor}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
+                return [fileId: nodeId, fileName: file]
+            }
+            
+            def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
+                if(mtaVersion=="0.0.1") {
+                    calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
+                    return []
+                } else {
+                    calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
+                    return [["id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"]]
+                }
             }
         }
     }

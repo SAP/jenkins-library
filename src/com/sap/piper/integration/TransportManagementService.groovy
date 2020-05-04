@@ -208,15 +208,104 @@ class TransportManagementService implements Serializable {
         return jsonUtils.jsonStringToGroovyObject(responseBody)
     }
     
-
     def getNodes(String url, String token) {
-
+        
         if (config.verbose) {
             echo("Get nodes started. URL: '${url}'")
         }
-
+        
         def parameters = [
             url          : "${url}/v2/nodes",
+            httpMode     : "GET",
+            contentType  : 'APPLICATION_JSON',
+            customHeaders: [
+                [
+                    maskValue: true,
+                    name     : 'authorization',
+                    value    : "Bearer ${token}"
+                ]
+            ]
+        ]
+        
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+        
+        if (proxy){
+            parameters["httpProxy"] = proxy
+        }
+        
+        def response = sendApiRequest(parameters)
+        if (response.status != 200) {
+            prepareAndThrowException(response, "Get nodes failed (HTTP status code '${response.status}').")
+        }
+        
+        if (config.verbose) {
+            echo("Get nodes successful. Response content '${response.content}'.")
+        }
+        
+        return jsonUtils.jsonStringToGroovyObject(response.content)
+    }
+    
+    def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaDescriptor, String file, String mtaVersion, String description, String namedUser) {
+        
+        echo("Extension descriptor update started.")
+        
+        if (config.verbose) {
+        echo("URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
+        }
+        
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+        
+        def responseExtDescriptorUpdate = 'responseExtDescriptorUpdate.txt'
+        
+        def responseCode = script.sh returnStdout: true,
+                                     script: """|#!/bin/sh -e
+                                                | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
+                                                |      --write-out '%{response_code}' \\
+                                                |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -F 'file=@${file}' \\
+                                                |      -F 'mtaVersion=${mtaVersion}' \\
+                                                |      -F 'description=${description}' \\
+                                                |      -F 'namedUser=${namedUser}' \\
+                                                |      --output ${responseExtDescriptorUpdate} \\
+                                                |      -X PUT \\
+                                                |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaDescriptor}'""".stripMargin()
+        
+        def responseBody = 'n/a'
+        
+        boolean gotResponse = script.fileExists(responseExtDescriptorUpdate)
+        
+        if(gotResponse) {
+            responseBody = script.readFile(responseExtDescriptorUpdate)
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }
+        }
+        
+        def HTTP_OK = '200'
+        
+        if (responseCode != HTTP_OK) {
+            def message = "Unexpected response code received from MTA extension descriptor update (${responseCode}). ${HTTP_OK} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
+        }
+        
+        echo("Extension descriptor update successful.")
+        
+        if (! gotResponse) {
+            script.error "Cannot provide update MTA extension descriptor response."
+        }
+        return jsonUtils.jsonStringToGroovyObject(responseBody)
+    }
+    
+    def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
+        echo("Get Extension descriptor started.")
+        
+        if (config.verbose) {
+            echo("URL: '${url}', NodeId: '${nodeId}', MtaId: '${mtaId}', MtaVersion: '${mtaVersion}'")
+        }
+
+        def parameters = [
+            url          : "${url}/v2/nodes/${nodeId}/mtaExtDescriptors?mtaId=${mtaId}&mtaVersion=${mtaVersion}",
             httpMode     : "GET",
             contentType  : 'APPLICATION_JSON',
             customHeaders: [
@@ -236,13 +325,14 @@ class TransportManagementService implements Serializable {
 
         def response = sendApiRequest(parameters)
         if (response.status != 200) {
-            prepareAndThrowException(response, "Get nodes failed (HTTP status code '${response.status}').")
+            prepareAndThrowException(response, "Get Extension descriptor failed (HTTP status code '${response.status}').")
         }
 
         if (config.verbose) {
-            echo("Get nodes successful. Response content '${response.content}'.")
+            echo("Response content '${response.content}'.")
         }
         
+        echo("Get Extension descriptor successful.")
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
     
