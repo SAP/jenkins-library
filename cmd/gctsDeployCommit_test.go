@@ -103,7 +103,7 @@ func TestGctsDeployCommitFailure(t *testing.T) {
 
 		err := deployCommit(&config, nil, nil, &httpClient)
 
-		assert.EqualError(t, err, "deploy commit failed: a http error occurred")
+		assert.EqualError(t, err, "a http error occurred")
 
 	})
 
