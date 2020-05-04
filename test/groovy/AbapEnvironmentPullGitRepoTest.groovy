@@ -53,12 +53,9 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
 
     @Test
     public void test() {
-        helper.registerAllowedMethod("fileExists", [String.class], { file -> 
-            return true 
-        })
-        helper.registerAllowedMethod("fileExists", [Map.class], { file -> 
-            return true
-        })
+        helper.registerAllowedMethod("fileExists", [String.class], { file -> return false })
+        helper.registerAllowedMethod("fileExists", [Map.class], { file -> return false})
+        helper.registerAllowedMethod('findFiles', [Map.class], {m -> return null})
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
