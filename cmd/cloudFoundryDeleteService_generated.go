@@ -25,19 +25,26 @@ type cloudFoundryDeleteServiceOptions struct {
 
 // CloudFoundryDeleteServiceCommand DeleteCloudFoundryService
 func CloudFoundryDeleteServiceCommand() *cobra.Command {
+	const STEP_NAME = "cloudFoundryDeleteService"
+
 	metadata := cloudFoundryDeleteServiceMetadata()
 	var stepConfig cloudFoundryDeleteServiceOptions
 	var startTime time.Time
 
 	var createCloudFoundryDeleteServiceCmd = &cobra.Command{
-		Use:   "cloudFoundryDeleteService",
+		Use:   STEP_NAME,
 		Short: "DeleteCloudFoundryService",
 		Long:  `Delete CloudFoundryService`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("cloudFoundryDeleteService")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "cloudFoundryDeleteService", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -54,7 +61,7 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "cloudFoundryDeleteService")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			cloudFoundryDeleteService(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

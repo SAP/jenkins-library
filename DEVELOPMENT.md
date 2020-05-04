@@ -3,10 +3,10 @@
 **Table of contents:**
 
 1. [Getting started](#getting-started)
-1. [Build the project](#build-the-project_)
+1. [Build the project](build-the-project)
 1. [Generating step framework](#generating-step-framework)
-1. [Logging](#logging)
-1. [Error handling](#error-handling)
+1. [Best practices for writing piper-go steps](#best-practices-for-writing-piper-go-steps)
+1. [Testing](#testing)
 1. [Debugging](#debugging)
 1. [Release](#release)
 
@@ -24,15 +24,14 @@
 
 First you need to set up an appropriate development environment:
 
-Install Go, see [GO Getting Started](https://golang.org/doc/install)
-
-Install an IDE with Go plugins, see for example [Go in Visual Studio Code](https://code.visualstudio.com/docs/languages/go)
+1. Install Go, see [GO Getting Started](https://golang.org/doc/install)
+1. Install an IDE with Go plugins, see for example [Go in Visual Studio Code](https://code.visualstudio.com/docs/languages/go)
 
 ### Go basics
 
 In order to get yourself started, there is a lot of useful information out there.
 
-As a first step to take we highly recommend the [Golang documentation](https://golang.org/doc/) especially, [A Tour of Go](https://tour.golang.org/welcome/1)
+As a first step to take we highly recommend the [Golang documentation](https://golang.org/doc/), especially [A Tour of Go](https://tour.golang.org/welcome/1).
 
 We have a strong focus on high quality software and contributions without adequate tests will not be accepted.
 There is an excellent resource which teaches Go using a test-driven approach: [Learn Go with Tests](https://github.com/quii/learn-go-with-tests)
@@ -121,9 +120,44 @@ There are certain extensions:
 
 * **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 
-## Logging
+## Best practices for writing piper-go steps
 
-Logging is done through [sirupsen/logrus](https://github.com/sirupsen/logrus) framework.
+1. [Logging](#logging)
+1. [Error handling](#error-handling)
+
+Implementing a new step starts by adding a new yaml file in `resources/metadata/` and running
+the [step generator](#generating-step-framework). This creates most of the boiler-plate code for the
+step's implementation in `cmd/`. There are four files per step based on the name given within the yaml:
+
+1. `cmd/<step>.go` - contains the skeleton of your step implementation.
+1. `cmd/<step>_test.go` - write your unit tests here.
+1. `cmd/<step>_generated.go` - contains the generated boiler plate code, and a dedicated type definition for your step's options.
+1. `cmd/<step>_generated_test.go` - contains a simple unit test for the generated part.
+
+You never edit in the generated parts. If you need to make changes, you make them in the yaml and re-run the step
+generator (which will of course not overwrite your implementation).
+
+The file `cmd/<step>.go` initially contains two functions:
+
+```golang
+func step(options stepOptions, telemetryData *telemetry.CustomData) {
+    err := runStep(&options, telemetryData)
+    if err != nil {
+        log.Entry().WithError(err).Fatal("step execution failed")
+    }
+}
+
+func runStep(options *stepOptions, telemetryData *telemetry.CustomData) error {
+}
+```
+
+The separation into these two functions facilitates unit tests and mocking. From your tests, you could call
+`runStep()` with mocking instances of needed objects, while inside `step()`, you create runtime instances of these
+objects.
+
+### Logging
+
+Logging is done via the [sirupsen/logrus](https://github.com/sirupsen/logrus) framework.
 It can conveniently be accessed through:
 
 ```golang
@@ -149,11 +183,12 @@ If a fatal error occurs your code should act similar to:
     }
 ```
 
-Calling `Fatal` results in an `os.Exit(0)` and before exiting some cleanup actions (e.g. writing output data, writing telemetry data if not deactivated by the user, ...) are performed.
+Calling `Fatal` results in an `os.Exit(0)` and before exiting some cleanup actions (e.g. writing output data,
+writing telemetry data if not deactivated by the user, ...) are performed.
 
-## Error handling
+### Error handling
 
-In order to better understand the root cause of errors that occur we wrap errors like
+In order to better understand the root cause of errors that occur, we wrap errors like
 
 ```golang
     f, err := os.Open(path)
@@ -165,17 +200,204 @@ In order to better understand the root cause of errors that occur we wrap errors
 
 We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 
+It has proven a good practice to bubble up errors until the runtime entry function  and only
+there exit via the logging framework (see also [logging](#logging)).
+
 ## Testing
+
+1. [Mocking](#mocking)
+1. [Mockable Interface](#mockable-interface)
+1. [Global function pointers](global-function-pointers)
 
 Unit tests are done using basic `golang` means.
 
-Additionally we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert) in order to have slimmer assertions if you like.
+Additionally, we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert)
+in order to have slimmer assertions if you like. A good pattern to follow is this:
+
+```golang
+func TestNameOfFunctionUnderTest(t *testing.T) {
+    t.Run("A description of the test case", func(t *testing.T) {
+        // init
+        // test
+        // assert
+    })
+    t.Run("Another test case", func(t *testing.T) {
+        // init
+        // test
+        // assert
+    })
+}
+```
+
+This will also structure the test output for better readability.
+
+### Mocking
+
+Tests should be written only for the code of your step implementation, while any
+external functionality should be mocked, in order to test all code paths including
+the error cases.
+
+There are (at least) two approaches for this:
+
+#### Mockable Interface
+
+In this approach you declare an interface that contains every external function
+used within your step that you need to be able to mock. In addition, you declare a struct
+which holds the data you need during runtime, and implement the interface with the "real"
+functions. Here is an example to illustrate:
+
+```golang
+import (
+    "github.com/SAP/jenkins-library/pkg/piperutils"
+)
+
+type myStepUtils interface {
+    fileExists(path string) (bool, error)
+    fileRead(path string) ([]byte, error)
+}
+
+type myUtilsData struct {
+    fileUtils piperutils.Files
+}
+
+func (u *myUtilsData) fileExists(path string) (bool, error) {
+    return u.fileUtils.FileExists(path)
+}
+
+func (u *myUtilsData) fileRead(path string) ([]byte, error) {
+    return u.fileUtils.FileRead(path)
+}
+```
+
+Then you create the runtime version of the utils data in your top-level entry function and
+pass it to your `run*()` function:
+
+```golang
+func step(options stepOptions, _ *telemetry.CustomData) {
+    utils := myUtilsData{
+        fileUtils: piperutils.Files{},
+    }
+    err := runStep(&options, &utils)
+    ...
+}
+
+func runStep(options *stepOptions, utils myStepUtils) error {
+    ...
+    exists, err := utils.fileExists(path)
+    ...
+}
+```
+
+In your tests, you would provide a mocking implementation of this interface and pass
+instances of that to the functions under test. To better illustrate this, here is an example
+for the interface above implemented in the `<step>_test.go` file:
+
+```golang
+type mockUtilsBundle struct {
+    files map[string][]byte
+}
+
+func newMockUtilsBundle() mockUtilsBundle {
+    utils := mockUtilsBundle{}
+    utils.files = map[string][]byte{}
+    return utils
+}
+
+func (m *mockUtilsBundle) fileExists(path string) (bool, error) {
+    content := m.files[path]
+    return content != nil, nil
+}
+
+func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
+    content := m.files[path]
+    if content == nil {
+        return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrNotExist)
+    }
+    return content, nil
+}
+
+// This is how it would be used in tests:
+
+func TestSomeFunction() {
+    t.Run("Happy path", func(t *testing.T) {
+        // init
+        utils := newMockUtilsBundle()
+        utils.files["some/path/file.xml"] = []byte(´content of the file´)
+        // test
+        err := someFunction(&utils)
+        // assert
+        assert.NoError(t, err)
+    })
+    t.Run("Error path", func(t *testing.T) {
+        // init
+        utils := newMockUtilsBundle()
+        // test
+        err := someFunction(&utils)
+        // assert
+        assert.EqualError(t, err, "could not read 'some/path/file.xml'")
+    })
+}
+```
+
+#### Global Function Pointers
+
+An alternative approach are global function pointers:
+
+```golang
+import (
+    FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+)
+
+var fileUtilsExists = FileUtils.FileExists
+
+func someFunction(options *stepOptions) error {
+    ...
+    exists, err := fileUtilsExists(path)
+    ...
+}
+```
+
+In your tests, you can then simply set the function pointer to a mocking implementation:
+
+```golang
+func TestSomeFunction() {
+    t.Run("Happy path", func(t *testing.T) {
+        // init
+        originalFileExists := fileUtilsExists
+        fileUtilsExists = func(filename string) (bool, error) {
+            return true, nil
+        }
+        defer fileUtilsExists = originalFileExists
+        // test
+        err := someFunction(...)
+        // assert
+        assert.NoError(t, err)
+    })
+    t.Run("Error path", func(t *testing.T) {
+        // init
+        originalFileExists := fileUtilsExists
+        fileUtilsExists = func(filename string) (bool, error) {
+            return false, errors.New("something happened")
+        }
+        defer fileUtilsExists = originalFileExists
+        // test
+        err := someFunction(...)
+        // assert
+        assert.EqualError(t, err, "something happened")
+    })
+}
+```
+
+Both approaches have their own benefits. Global function pointers require less preparation
+in the actual implementation and give great flexibility in the tests, while mocking interfaces
+tend to result in more code re-use and slim down the tests. The mocking implementation of a
+utils interface can facilitate implementations of related functions to be based on shared data.
 
 ## Debugging
 
-Debugging can be initiated with VS code fairly easily. Compile the binary with spcific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
+Debugging can be initiated with VS code fairly easily. Compile the binary with specific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
 
-Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exatly to the binary that you just built with above command - must be an absolute path. In addition add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
+Modify the `launch.json` located in folder `.vscode` of your project root to point with `program` exactly to the binary that you just built with above command - must be an absolute path. Add any arguments required for the execution of the Piper step to `args`. What is separated with a blank on the command line must go into a separate string.
 
 ```javascript
 {
@@ -197,7 +419,7 @@ Modify the `launch.json` located in folder `.vscode` of your project root to poi
 }
 ```
 
-Finally set your breakpoints and use the `Launch` button in the VS code UI to start debugging.
+Finally, set your breakpoints and use the `Launch` button in the VS code UI to start debugging.
 
 ## Release
 

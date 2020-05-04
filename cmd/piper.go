@@ -18,6 +18,7 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
+	CorrelationID  string
 	CustomConfig   string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
@@ -34,7 +35,7 @@ var rootCmd = &cobra.Command{
 	Use:   "piper",
 	Short: "Executes CI/CD steps from project 'Piper' ",
 	Long: `
-This project 'Piper' binary provides a CI/CD step libary.
+This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
 	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
@@ -66,16 +67,21 @@ func Execute() {
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(MalwareExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		// in case we end up here we know that something in the PreRunE function went wrong
+		// and thus this indicates a configuration issue
+		log.Entry().WithError(err).WithField("category", "configuration").Fatal("configuration error")
 	}
 }
 
 func addRootFlags(rootCmd *cobra.Command) {
 
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -149,9 +155,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.NoTelemetry = true
 	}
 
-	if !GeneralConfig.Verbose {
-		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
-			log.SetVerbose(stepConfig.Config["verbose"].(bool))
+	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
+		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
+			log.SetVerbose(verboseValue)
+		} else {
+			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 	}
 

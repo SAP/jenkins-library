@@ -26,19 +26,26 @@ type detectExecuteScanOptions struct {
 
 // DetectExecuteScanCommand Executes Synopsis Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "detectExecuteScan"
+
 	metadata := detectExecuteScanMetadata()
 	var stepConfig detectExecuteScanOptions
 	var startTime time.Time
 
 	var createDetectExecuteScanCmd = &cobra.Command{
-		Use:   "detectExecuteScan",
+		Use:   STEP_NAME,
 		Short: "Executes Synopsis Detect scan",
 		Long:  `This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("detectExecuteScan")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "detectExecuteScan", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
@@ -54,7 +61,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "detectExecuteScan")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			detectExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
