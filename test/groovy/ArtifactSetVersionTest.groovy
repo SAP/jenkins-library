@@ -158,8 +158,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
-            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
-            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            defines: ['-DnewVersion=1.2.3-20180101010203_testCommitId', '-DgenerateBackupPoms=false']
         ]), mvnExecuteRule.executions[1])
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
             "git add .",
@@ -282,8 +282,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
-            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
-            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            defines: ['-DnewVersion=1.2.3-20180101010203_testCommitId', '-DgenerateBackupPoms=false']
         ]), mvnExecuteRule.executions[1])
         assertThat(shellRule.shell, not(hasItem(containsString('commit'))))
     }
