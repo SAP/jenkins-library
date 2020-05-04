@@ -41,6 +41,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Before
     void init() {
+        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
@@ -53,10 +54,12 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testGithubPublishReleaseDefault() {
+        // test
         stepRule.step.githubPublishRelease(
+            script: nullScript,
             juStabUtils: utils,
-            testParam: "This is test content",
-            script: nullScript
+            jenkinsUtilsStub: jenkinsUtils,
+            testParam: "This is test content"
         )
         // asserts
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
