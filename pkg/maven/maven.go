@@ -143,11 +143,11 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	}
 
 	if options.Flags != nil {
-		parameters = append(parameters, piperutils.SplitAndTrim(options.Flags, " ")...)
+		parameters = append(parameters, options.Flags...)
 	}
 
 	if options.Defines != nil {
-		parameters = append(parameters, wrapInQuotes(options.Defines)...)
+		parameters = append(parameters, options.Defines...)
 	}
 
 	if !options.LogSuccessfulMavenTransfers {
@@ -156,16 +156,9 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 
 	parameters = append(parameters, "--batch-mode")
 
-	parameters = append(parameters, piperutils.SplitAndTrim(options.Goals, " ")...)
-	return parameters, nil
-}
+	parameters = append(parameters, options.Goals...)
 
-func wrapInQuotes(input []string) []string {
-	var quoted []string
-	for _, element := range input {
-		quoted = append(quoted, `"`+element+`"`)
-	}
-	return quoted
+	return parameters, nil
 }
 
 func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {

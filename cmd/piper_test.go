@@ -146,7 +146,7 @@ func TestConvertTypes(t *testing.T) {
 	stepConfig["bla"] = "42"
 
 	// Test
-	stepConfig = convertTypes(stepConfig, options)
+	stepConfig = checkTypes(stepConfig, options)
 
 	confJSON, _ := json.Marshal(stepConfig)
 	_ = json.Unmarshal(confJSON, &options)
