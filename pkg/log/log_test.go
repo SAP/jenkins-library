@@ -10,8 +10,11 @@ func TestSecrets(t *testing.T) {
 	t.Run("should log", func(t *testing.T) {
 		secret := "password"
 
+		outWriter := Entry().Logger.Out
 		var buffer bytes.Buffer
 		Entry().Logger.SetOutput(&buffer)
+		defer func() { Entry().Logger.SetOutput(outWriter) }()
+
 		Entry().Infof("My secret is %s.", secret)
 		assert.Contains(t, buffer.String(), secret)
 
