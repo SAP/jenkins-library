@@ -1,6 +1,7 @@
 package log
 
 import (
+	"io"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -35,11 +36,14 @@ var secrets []string
 func Entry() *logrus.Entry {
 	if logger == nil {
 		logger = logrus.WithField("library", LibraryRepository)
+		logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
 	}
-
-	logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
-
 	return logger
+}
+
+// Writer returns an io.Writer into which a tool's output can be redirected.
+func Writer() io.Writer {
+	return &logrusWriter{entry: Entry()}
 }
 
 // SetVerbose sets the log level with respect to verbose flag.
