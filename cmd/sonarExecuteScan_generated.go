@@ -62,6 +62,12 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
