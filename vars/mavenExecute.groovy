@@ -13,6 +13,10 @@ def call(Map parameters = [:]) {
     validateParameter(parameters.defines, 'defines')
     validateParameter(parameters.flags, 'flags')
     validateParameter(parameters.goals, 'goals')
+    validateStringParameter(parameters.pomPath)
+    validateStringParameter(parameters.projectSettingsFile)
+    validateStringParameter(parameters.globalSettingsFile)
+    validateStringParameter(parameters.m2Path)
 
     List credentials = []
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
@@ -55,13 +59,20 @@ private void validateParameter(parameter, name) {
 
     for (int i = 0; i < parameter.size(); i++) {
         String element = parameter[i]
+        validateStringParameter(element)
+    }
+}
 
-        if (element =~ /-D.*='.*'/) {
-            echo "[$STEP_NAME WARNING] It looks like you passed a define in the form -Dmy.key='this is my value' in $element. Please note that the quotes might cause issues. Correct form: -Dmy.key=this is my value"
-        }
+private void validateStringParameter(String element) {
+    if (!element) {
+        return
+    }
 
-        if (element.startsWith("'") && element.endsWith("'") && element.contains(' ')) {
-            echo "[$STEP_NAME WARNING] It looks like $element is quoted but it should not be quoted."
-        }
+    if (element =~ /-D.*='.*'/) {
+        echo "[$STEP_NAME WARNING] It looks like you passed a define in the form -Dmy.key='this is my value' in $element. Please note that the quotes might cause issues. Correct form: -Dmy.key=this is my value"
+    }
+
+    if (element.startsWith("'") && element.endsWith("'") && element.contains(' ')) {
+        echo "[$STEP_NAME WARNING] It looks like $element is quoted but it should not be quoted."
     }
 }
