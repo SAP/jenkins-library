@@ -44,24 +44,16 @@ public class CommonStepsTest extends BasePiperTest{
      */
     @Test
     public void scriptReferenceNotHandedOverTest() {
-
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
-            'artifactPrepareVersion',
             'commonPipelineEnvironment',
-            'checkmarxExecuteScan',
-            'kubernetesDeploy',
             'handlePipelineStepErrors',
             'pipelineExecute',
             'piperPipeline',
             'piperExecuteBin',
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
-            'buildSetResult',
-            'malwareExecuteScan', // go pattern, script not needed
-            'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey',
-            'gctsCreateRepository'
+            'buildSetResult'
         ]
 
         List steps = getSteps().stream()
