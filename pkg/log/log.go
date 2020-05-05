@@ -10,24 +10,21 @@ import (
 //PiperLogFormatter is the custom formatter of piper
 type PiperLogFormatter struct {
 	logrus.TextFormatter
-	plainFormat         bool
-	defaultFormat       bool
-	withTimeStampFormat bool
-	fullFormat          bool
+	logFormat string
 }
 
 const (
 	logFormatPlain         = "plain"
 	logFormatDefault       = "default"
 	logFormatWithTimestamp = "timestamp"
-	logFormatFull          = "full"
 )
 
 //Format the log message
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := ""
 
-	// experimental: align level with underlying tool (like maven or npm)
+	// Align level with underlying tool (like maven or npm)
+	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
 	if strings.Contains(entry.Message, "ERROR") || strings.Contains(entry.Message, "ERR!") {
 		entry.Level = logrus.ErrorLevel
 	}
@@ -35,16 +32,14 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		entry.Level = logrus.WarnLevel
 	}
 
-	if formatter.plainFormat {
-		message = entry.Message + "\n"
-	} else if formatter.withTimeStampFormat {
-		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
-
-	} else if formatter.defaultFormat {
+	switch formatter.logFormat {
+	case logFormatDefault:
 		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
-
-	} else /*if formatter.fullFormat*/ {
-		// use "full" formatter as fallback
+	case logFormatWithTimestamp:
+		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
+	case logFormatPlain:
+		message = entry.Message + "\n"
+	default:
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
 		if err != nil {
 			return nil, err
@@ -84,11 +79,7 @@ func SetVerbose(verbose bool) {
 
 // SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
-	Entry().Logger.SetFormatter(&PiperLogFormatter{
-		plainFormat:         logFormat == logFormatPlain,
-		withTimeStampFormat: logFormat == logFormatWithTimestamp,
-		defaultFormat:       logFormat == logFormatDefault,
-		fullFormat:          logFormat == logFormatFull})
+	Entry().Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
 }
 
 // SetStepName sets the stepName field.
