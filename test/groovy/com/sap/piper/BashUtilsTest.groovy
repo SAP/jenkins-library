@@ -53,6 +53,13 @@ class BashUtilsTest {
     }
 
     @Test
+    void unEscapeSingleQuote() {
+        def input = "'"
+        def result = BashUtils.unQuoteAndEscape(input)
+        Assert.assertEquals(input, result)
+    }
+
+    @Test
     void unEscapeUnquoted() {
         def input = "some '\"'\"' test"
         def result = BashUtils.unQuoteAndEscape(input)
