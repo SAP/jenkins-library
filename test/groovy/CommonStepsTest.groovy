@@ -56,10 +56,6 @@ public class CommonStepsTest extends BasePiperTest{
             'buildSetResult',
             'malwareExecuteScan', // go pattern, script not needed
             'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey',
-            'gctsCreateRepository',
-            'abapEnvironmentPullGitRepo',
-            'cloudFoundryDeleteService',
         ]
 
         List steps = getSteps().stream()
