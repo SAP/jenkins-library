@@ -173,7 +173,7 @@ func (pc *Protecode) sendAPIRequest(method string, url string, headers map[strin
 		return nil, err
 	}
 
-	return &r.Body, err
+	return &r.Body, nil
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format
