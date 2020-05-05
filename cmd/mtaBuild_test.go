@@ -1,14 +1,15 @@
 package cmd
 
 import (
+	"os"
+	"testing"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
-	"os"
-	"testing"
 )
 
 func TestMarBuild(t *testing.T) {
