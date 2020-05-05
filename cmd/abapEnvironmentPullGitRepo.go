@@ -178,7 +178,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 
 	var abapServiceKey serviceKey
 
-	c.Stderr(log.Entry().Writer())
+	c.Stderr(log.Writer())
 
 	// Logging into the Cloud Foundry via CF CLI
 	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
