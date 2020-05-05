@@ -72,7 +72,7 @@ private void validateStringParameter(String element) {
         echo "[$STEP_NAME WARNING] It looks like you passed a define in the form -Dmy.key='this is my value' in $element. Please note that the quotes might cause issues. Correct form: -Dmy.key=this is my value"
     }
 
-    if (element.startsWith("'") && element.endsWith("'") && element.contains(' ')) {
+    if (element.length() >= 2 && element.startsWith("'") && element.endsWith("'")) {
         echo "[$STEP_NAME WARNING] It looks like $element is quoted but it should not be quoted."
     }
 }
