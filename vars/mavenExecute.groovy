@@ -1,6 +1,6 @@
 import com.sap.piper.DownloadCacheUtils
-import groovy.transform.Field
 import com.sap.piper.BashUtils
+import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field def STEP_NAME = getClass().getName()
