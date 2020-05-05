@@ -160,7 +160,7 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
         script: script,
         pomPath: pomFileName,
         goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
-        defines: ["-Dexpression=$pomPathExpression", "-DforceStdout -q"],
+        defines: ["-Dexpression=$pomPathExpression", "-DforceStdout", "-q"],
         returnStdout: true
     )
     if (resolvedExpression.startsWith('null object or invalid expression')) {

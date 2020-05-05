@@ -41,13 +41,13 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         mvnExecuteRule.setReturnValue([
             'pomPath': 'pom.xml',
             'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
-            'defines': ['-Dexpression=project.version', '-DforceStdout -q'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout', '-q'],
         ], version)
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'snapshot/pom.xml',
             'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
-            'defines': ['-Dexpression=project.version', '-DforceStdout -q'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout', '-q'],
         ], version)
     }
 
@@ -61,7 +61,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
             goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
-            defines: ['-Dexpression=project.version', '-DforceStdout -q']
+            defines: ['-Dexpression=project.version', '-DforceStdout', '-q']
         ]), mvnExecuteRule.executions[0])
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
@@ -80,7 +80,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'snapshot/pom.xml',
             goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
-            defines: ['-Dexpression=project.version', '-DforceStdout -q']
+            defines: ['-Dexpression=project.version', '-DforceStdout', '-q']
         ]), mvnExecuteRule.executions[0])
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'snapshot/pom.xml',
