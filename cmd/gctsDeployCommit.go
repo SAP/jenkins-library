@@ -3,6 +3,7 @@ package cmd
 import (
 	"io/ioutil"
 	"net/http/cookiejar"
+	"net/url"
 
 	gabs "github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -44,14 +45,18 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 	}
 	httpClient.SetOptions(clientOptions)
 
-	url := config.Host +
+	URL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/pullByCommit?sap-client=" + config.Client
+
 	if config.Commit != "" {
-		url = url + "&request=" + config.Commit
+		log.Entry().Infof("preparing to deploy specified commit %v", config.Commit)
+		params := url.Values{}
+		params.Add("request", config.Commit)
+		URL = URL + "&" + params.Encode()
 	}
 
-	resp, httpErr := httpClient.SendRequest("GET", url, nil, nil, nil)
+	resp, httpErr := httpClient.SendRequest("GET", URL, nil, nil, nil)
 
 	defer func() {
 		if resp != nil && resp.Body != nil {
