@@ -36,7 +36,7 @@ func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetr
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "cloning the repository failed")
+		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
@@ -62,19 +62,19 @@ func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetr
 	}()
 
 	if resp == nil {
-		return errors.Errorf("cloning the repository failed: %v", httpErr)
+		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	bodyText, readErr := ioutil.ReadAll(resp.Body)
 
 	if readErr != nil {
-		return errors.Wrap(readErr, "cloning the repository failed")
+		return errors.Wrap(readErr, "HTTP response body could not be read")
 	}
 
 	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 	if parsingErr != nil {
-		return errors.Wrap(parsingErr, "cloning the repository failed")
+		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
 
 	if httpErr != nil {
