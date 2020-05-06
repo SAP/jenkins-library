@@ -3,7 +3,6 @@ package log
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 )
 
@@ -20,17 +19,5 @@ func TestSecrets(t *testing.T) {
 		RegisterSecret(secret)
 		Entry().Infof("My secret is %s.", secret)
 		assert.NotContains(t, buffer.String(), secret)
-	})
-
-	t.Run("should log message only", func(t *testing.T) {
-
-		SetFormatter(logFormatPlain)
-
-		message := "This is a log message"
-
-		var buffer bytes.Buffer
-		Entry().Logger.SetOutput(&buffer)
-		Entry().Infof(message)
-		assert.Equal(t, message, strings.TrimSpace(buffer.String()))
 	})
 }
