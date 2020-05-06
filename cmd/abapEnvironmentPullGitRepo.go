@@ -43,6 +43,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	client.SetOptions(clientOptions)
 	pollIntervall := 10 * time.Second
 
+	log.Entry().Info("Start pulling " + string(len(config.RepositoryNames)) + " repositories")
 	for _, repositoryName := range config.RepositoryNames {
 
 		log.Entry().Info("-------------------------")
