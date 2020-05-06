@@ -23,15 +23,6 @@ const (
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := ""
 
-	// Align level with underlying tool (like maven or npm)
-	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
-	if strings.Contains(entry.Message, "ERROR") || strings.Contains(entry.Message, "ERR!") {
-		entry.Level = logrus.ErrorLevel
-	}
-	if strings.Contains(entry.Message, "WARN") {
-		entry.Level = logrus.WarnLevel
-	}
-
 	switch formatter.logFormat {
 	case logFormatDefault:
 		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
