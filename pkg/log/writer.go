@@ -27,15 +27,15 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 		if len(buffer) == 0 {
 			return origLen, nil
 		}
-		i := bytes.IndexByte(buffer, '\n')
-		if i < 0 {
+		linebreakIndex := bytes.IndexByte(buffer, '\n')
+		if linebreakIndex < 0 {
 			w.buffer.Write(buffer)
 			return origLen, nil
 		}
 
-		w.buffer.Write(buffer[:i])
+		w.buffer.Write(buffer[:linebreakIndex])
 		w.alwaysFlush()
-		buffer = buffer[i+1:]
+		buffer = buffer[linebreakIndex+1:]
 	}
 }
 
