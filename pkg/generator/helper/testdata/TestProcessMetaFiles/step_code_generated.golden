@@ -92,6 +92,8 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 
 // TestStepCommand Test description
 func TestStepCommand() *cobra.Command {
+	const STEP_NAME = "testStep"
+
 	metadata := testStepMetadata()
 	var stepConfig testStepOptions
 	var startTime time.Time
@@ -99,17 +101,28 @@ func TestStepCommand() *cobra.Command {
 	var influxTest testStepInfluxTest
 
 	var createTestStepCmd = &cobra.Command{
-		Use:   "testStep",
+		Use:   STEP_NAME,
 		Short: "Test description",
 		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("testStep")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "testStep", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -123,7 +136,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "testStep")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			testStep(stepConfig, &telemetryData, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
 		},

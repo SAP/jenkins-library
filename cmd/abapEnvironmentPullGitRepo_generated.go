@@ -27,12 +27,14 @@ type abapEnvironmentPullGitRepoOptions struct {
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
+	const STEP_NAME = "abapEnvironmentPullGitRepo"
+
 	metadata := abapEnvironmentPullGitRepoMetadata()
 	var stepConfig abapEnvironmentPullGitRepoOptions
 	var startTime time.Time
 
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
-		Use:   "abapEnvironmentPullGitRepo",
+		Use:   STEP_NAME,
 		Short: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
 		Long: `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
@@ -42,14 +44,25 @@ Please provide either of the following options:
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("abapEnvironmentPullGitRepo")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -61,7 +74,7 @@ Please provide either of the following options:
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "abapEnvironmentPullGitRepo")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentPullGitRepo(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

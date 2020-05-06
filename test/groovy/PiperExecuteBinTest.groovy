@@ -1,3 +1,4 @@
+import com.sap.piper.DebugReport
 import com.sap.piper.JenkinsUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
@@ -42,6 +43,9 @@ class PiperExecuteBinTest extends BasePiperTest {
     void init() {
         credentials = []
 
+        // Clear DebugReport to avoid left-overs from another UnitTest
+        DebugReport.instance.failedBuild = [:]
+
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
@@ -49,7 +53,10 @@ class PiperExecuteBinTest extends BasePiperTest {
             return closure()
         })
 
-        helper.registerAllowedMethod('fileExists', [Map.class], {
+        helper.registerAllowedMethod('fileExists', [Map.class], {m ->
+            if (m.file == 'noDetailsStep_errorDetails.json') {
+                return false
+            }
             return true
         })
         helper.registerAllowedMethod("readJSON", [Map], { m ->
@@ -57,6 +64,10 @@ class PiperExecuteBinTest extends BasePiperTest {
                 return [[target: "1234.pdf", mandatory: true]]
             if(m.file == 'testStep_links.json')
                 return []
+            if(m.file == 'testStepCategory_errorDetails.json')
+                return [message: 'detailed error', category: 'testCategory']
+            if(m.file == 'testStep_errorDetails.json')
+                return [message: 'detailed error']
             if(m.text != null)
                 return new JsonSlurper().parseText(m.text)
         })
@@ -245,7 +256,107 @@ class PiperExecuteBinTest extends BasePiperTest {
             'metadata/test.yaml',
             [],
             true,
+            false,
             false
         )
+    }
+
+    @Test
+    void testErrorWithCategory() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[testStepCategory] Step execution failed (category: testCategory). Error: detailed error")
+
+        try {
+            stepRule.step.piperExecuteBin(
+                [
+                    juStabUtils: utils,
+                    jenkinsUtilsStub: jenkinsUtils,
+                    testParam: "This is test content",
+                    script: nullScript
+                ],
+                'testStepCategory',
+                'metadata/test.yaml',
+                []
+            )
+        } catch (ex) {
+            assertThat(DebugReport.instance.failedBuild.category, is('testCategory'))
+            throw ex
+        }
+
+    }
+
+    @Test
+    void testErrorWithoutCategory() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[testStep] Step execution failed. Error: detailed error")
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            []
+        )
+    }
+
+    @Test
+    void testErrorNoDetails() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        exception.expect(AbortException)
+        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1")
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'noDetailsStep',
+            'metadata/test.yaml',
+            []
+        )
+    }
+
+    @Test
+    void testRespectPipelineResilienceSetting() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        def unstableCalled
+        helper.registerAllowedMethod('unstable', [String.class], {s -> unstableCalled = true})
+
+        try {
+            nullScript.commonPipelineEnvironment.configuration.steps = [handlePipelineStepErrors: [failOnError: false]]
+
+            stepRule.step.piperExecuteBin(
+                [
+                    juStabUtils: utils,
+                    jenkinsUtilsStub: jenkinsUtils,
+                    testParam: "This is test content",
+                    script: nullScript
+                ],
+                'noDetailsStep',
+                'metadata/test.yaml',
+                []
+            )
+        } finally {
+            //clean up
+            nullScript.commonPipelineEnvironment.configuration.steps = [handlePipelineStepErrors: [failOnError: true]]
+        }
+        assertThat(unstableCalled, is(true))
+
     }
 }

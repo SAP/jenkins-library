@@ -66,13 +66,15 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 
 // ArtifactPrepareVersionCommand Prepares and potentially updates the artifact's version before building the artifact.
 func ArtifactPrepareVersionCommand() *cobra.Command {
+	const STEP_NAME = "artifactPrepareVersion"
+
 	metadata := artifactPrepareVersionMetadata()
 	var stepConfig artifactPrepareVersionOptions
 	var startTime time.Time
 	var commonPipelineEnvironment artifactPrepareVersionCommonPipelineEnvironment
 
 	var createArtifactPrepareVersionCmd = &cobra.Command{
-		Use:   "artifactPrepareVersion",
+		Use:   STEP_NAME,
 		Short: "Prepares and potentially updates the artifact's version before building the artifact.",
 		Long: `Prepares and potentially updates the artifact's version before building the artifact.
 
@@ -139,14 +141,25 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("artifactPrepareVersion")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "artifactPrepareVersion", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -159,7 +172,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "artifactPrepareVersion")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			artifactPrepareVersion(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 		},

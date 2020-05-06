@@ -149,20 +149,12 @@ func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
-	responseHeaderTimeout := 10 * time.Second
-	if c.transportTimeout < responseHeaderTimeout {
-		responseHeaderTimeout = c.transportTimeout
-	}
-	expectContinueTimeout := 1 * time.Second
-	if c.transportTimeout < expectContinueTimeout {
-		expectContinueTimeout = c.transportTimeout
-	}
 	var transport = &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout: c.transportTimeout,
 		}).DialContext,
-		ResponseHeaderTimeout: responseHeaderTimeout,
-		ExpectContinueTimeout: expectContinueTimeout,
+		ResponseHeaderTimeout: c.transportTimeout,
+		ExpectContinueTimeout: c.transportTimeout,
 		TLSHandshakeTimeout:   c.transportTimeout,
 	}
 

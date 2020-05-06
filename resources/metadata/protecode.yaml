@@ -61,6 +61,10 @@ spec:
       - STAGES
       - STEPS
       default: binary
+      possibleValues:
+        - none
+        - binary
+        - complete
     - name: filePath
       type: string
       description: The path to the file from local workspace to scan with Protecode
