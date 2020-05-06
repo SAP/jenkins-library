@@ -45,8 +45,8 @@ func (u *npmExecuteScriptsUtilsBundle) chdir(dir string) error {
 func (u *npmExecuteScriptsUtilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
-		u.execRunner.Stdout(log.Entry().Writer())
-		u.execRunner.Stderr(log.Entry().Writer())
+		u.execRunner.Stdout(log.Writer())
+		u.execRunner.Stderr(log.Writer())
 	}
 	return u.execRunner
 }
@@ -120,7 +120,7 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 		var buffer bytes.Buffer
 		execRunner.Stdout(&buffer)
 		err := execRunner.RunExecutable("npm", "config", "get", registry)
-		execRunner.Stdout(log.Entry().Writer())
+		execRunner.Stdout(log.Writer())
 		if err != nil {
 			return err
 		}

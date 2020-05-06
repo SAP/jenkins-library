@@ -44,8 +44,8 @@ var osRename = os.Rename
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
 	// reroute command output to logging framework
-	runner.Stdout(log.Entry().Writer())
-	runner.Stderr(log.Entry().Writer())
+	runner.Stdout(log.Writer())
+	runner.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
