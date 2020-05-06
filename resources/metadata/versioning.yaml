@@ -183,6 +183,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: shortCommitId
+        type: bool
+        description: Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: tagPrefix
         type: string
         description: "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`)."
@@ -191,6 +198,13 @@ spec:
         - STAGES
         - STEPS
         default: build_
+      - name: unixTimestamp
+        type: bool
+        description: Defines if the Unix timestamp number should be used as build number instead of the standard date format.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: username
         type: string
         description: User name for git authentication
