@@ -71,7 +71,6 @@ func TestWriter(t *testing.T) {
 
 		assert.Equal(t, 0, writer.buffer.Len())
 	})
-
 	t.Run("should split at line breaks", func(t *testing.T) {
 		mockLogger := newMockLogger()
 		writer := logrusWriter{logger: mockLogger}
@@ -108,6 +107,43 @@ func TestWriter(t *testing.T) {
 		}
 		assert.Equal(t, 0, len(mockLogger.warnLines))
 		assert.Equal(t, 0, len(mockLogger.errorLines))
+
+		assert.Equal(t, 0, writer.buffer.Len())
+	})
+	t.Run("should ignore empty input", func(t *testing.T) {
+		mockLogger := newMockLogger()
+		writer := logrusWriter{logger: mockLogger}
+
+		written, err := writer.Write([]byte(""))
+		assert.Equal(t, 0, written)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 0, len(mockLogger.infoLines))
+		assert.Equal(t, 0, len(mockLogger.warnLines))
+		assert.Equal(t, 0, len(mockLogger.errorLines))
+
+		assert.Equal(t, 0, writer.buffer.Len())
+	})
+	t.Run("should align log level", func(t *testing.T) {
+		mockLogger := newMockLogger()
+		writer := logrusWriter{logger: mockLogger}
+
+		input := "I will count to three.\n1\nWARNING: 2\nERROR: 3\n"
+
+		written, err := writer.Write([]byte(input))
+		assert.Equal(t, len(input), written)
+		assert.NoError(t, err)
+
+		if assert.Equal(t, 2, len(mockLogger.infoLines)) {
+			assert.Equal(t, "I will count to three.", mockLogger.infoLines[0])
+			assert.Equal(t, "1", mockLogger.infoLines[1])
+		}
+		if assert.Equal(t, 1, len(mockLogger.warnLines)) {
+			assert.Equal(t, "WARNING: 2", mockLogger.warnLines[0])
+		}
+		if assert.Equal(t, 1, len(mockLogger.errorLines)) {
+			assert.Equal(t, "ERROR: 3", mockLogger.errorLines[0])
+		}
 
 		assert.Equal(t, 0, writer.buffer.Len())
 	})

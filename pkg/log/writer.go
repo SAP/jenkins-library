@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"strings"
 	"sync"
 )
 
@@ -44,8 +45,17 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 }
 
 func (w *logrusWriter) alwaysFlush() {
-	w.logger.Info(w.buffer.String())
+	message := w.buffer.String()
 	w.buffer.Reset()
+	// Align level with underlying tool (like maven or npm)
+	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
+	if strings.Contains(message, "ERROR") || strings.Contains(message, "ERR!") {
+		w.logger.Error(message)
+	} else if strings.Contains(message, "WARN") {
+		w.logger.Warn(message)
+	} else {
+		w.logger.Info(message)
+	}
 }
 
 func (w *logrusWriter) Flush() {
