@@ -18,8 +18,8 @@ import (
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
-	c.Stderr(log.Entry().Writer())
-	runKubernetesDeploy(config, &c, log.Entry().Writer())
+	c.Stderr(log.Writer())
+	runKubernetesDeploy(config, &c, log.Writer())
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
