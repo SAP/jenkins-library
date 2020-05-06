@@ -78,10 +78,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		VersionField:        config.CustomVersionField,
 		VersionSection:      config.CustomVersionSection,
 		VersioningScheme:    config.CustomVersioningScheme,
-	}
-
-	if config.BuildTool == "docker" {
-		artifactOpts.VersionSource = config.DockerVersionSource
+		VersionSource:       config.DockerVersionSource,
 	}
 
 	var err error
@@ -121,7 +118,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		now := time.Now()
 
-		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, now)
+		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, config.ShortCommitID, config.UnixTimestamp, now)
 		if err != nil {
 			return errors.Wrap(err, "failed to calculate new version")
 		}
@@ -195,10 +192,15 @@ func versioningTemplate(scheme string) (string, error) {
 	return "", fmt.Errorf("versioning scheme '%v' not supported", scheme)
 }
 
-func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID bool, t time.Time) (string, error) {
+func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID, shortCommitID, unixTimestamp bool, t time.Time) (string, error) {
 	tmpl, err := template.New("version").Parse(versioningTemplate)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create version template: %v", versioningTemplate)
+	}
+
+	timestamp := t.Format("20060102150405")
+	if unixTimestamp {
+		timestamp = fmt.Sprint(t.Unix())
 	}
 
 	buf := new(bytes.Buffer)
@@ -208,11 +210,14 @@ func calculateNewVersion(versioningTemplate, currentVersion, commitID string, in
 		CommitID  string
 	}{
 		Version:   currentVersion,
-		Timestamp: t.Format("20060102150405"),
+		Timestamp: timestamp,
 	}
 
 	if includeCommitID {
 		versionParts.CommitID = commitID
+		if shortCommitID {
+			versionParts.CommitID = commitID[0:7]
+		}
 	}
 
 	err = tmpl.Execute(buf, versionParts)

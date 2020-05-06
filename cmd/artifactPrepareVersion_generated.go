@@ -28,7 +28,9 @@ type artifactPrepareVersionOptions struct {
 	M2Path                 string `json:"m2Path,omitempty"`
 	Password               string `json:"password,omitempty"`
 	ProjectSettingsFile    string `json:"projectSettingsFile,omitempty"`
+	ShortCommitID          bool   `json:"shortCommitId,omitempty"`
 	TagPrefix              string `json:"tagPrefix,omitempty"`
+	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
 	Username               string `json:"username,omitempty"`
 	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
 	VersioningType         string `json:"versioningType,omitempty"`
@@ -195,7 +197,9 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Maven only - Path to the location of the local repository that should be used.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().BoolVar(&stepConfig.ShortCommitID, "shortCommitId", false, "Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
+	cmd.Flags().BoolVar(&stepConfig.UnixTimestamp, "unixTimestamp", false, "Defines if the Unix timestamp number should be used as build number instead of the standard date format.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)")
@@ -310,10 +314,26 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
+						Name:        "shortCommitId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "tagPrefix",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "unixTimestamp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
