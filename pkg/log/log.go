@@ -1,23 +1,42 @@
 package log
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
-type RemoveSecretFormatterDecorator struct {
+//PiperLogFormatter is the custom formatter of piper
+type PiperLogFormatter struct {
 	logrus.TextFormatter
+	logFormat string
 }
 
-func (formatter *RemoveSecretFormatterDecorator) Format(entry *logrus.Entry) (bytes []byte, err error) {
-	formattedMessage, err := formatter.TextFormatter.Format(entry)
+const (
+	logFormatPlain         = "plain"
+	logFormatDefault       = "default"
+	logFormatWithTimestamp = "timestamp"
+)
 
-	if err != nil {
-		return nil, err
+//Format the log message
+func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
+	message := ""
+
+	switch formatter.logFormat {
+	case logFormatDefault:
+		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
+	case logFormatWithTimestamp:
+		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
+	case logFormatPlain:
+		message = entry.Message + "\n"
+	default:
+		formattedMessage, err := formatter.TextFormatter.Format(entry)
+		if err != nil {
+			return nil, err
+		}
+		message = string(formattedMessage)
 	}
-
-	message := string(formattedMessage)
 
 	for _, secret := range secrets {
 		message = strings.Replace(message, secret, "****", -1)
@@ -35,9 +54,8 @@ var secrets []string
 func Entry() *logrus.Entry {
 	if logger == nil {
 		logger = logrus.WithField("library", LibraryRepository)
+		logger.Logger.SetFormatter(&PiperLogFormatter{})
 	}
-
-	logger.Logger.SetFormatter(&RemoveSecretFormatterDecorator{})
 
 	return logger
 }
@@ -48,6 +66,11 @@ func SetVerbose(verbose bool) {
 		//Logger().Debugf("logging set to level: %s", level)
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+}
+
+// SetFormatter specifies the log format to use for piper's output
+func SetFormatter(logFormat string) {
+	Entry().Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
 }
 
 // SetStepName sets the stepName field.
