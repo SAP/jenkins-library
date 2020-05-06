@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -58,6 +59,11 @@ func Entry() *logrus.Entry {
 	}
 
 	return logger
+}
+
+// Writer returns an io.Writer into which a tool's output can be redirected.
+func Writer() io.Writer {
+	return &logrusWriter{logger: Entry()}
 }
 
 // SetVerbose sets the log level with respect to verbose flag.

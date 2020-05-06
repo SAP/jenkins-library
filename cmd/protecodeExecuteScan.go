@@ -42,8 +42,8 @@ var cacheProtecodePath = "/protecode"
 func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) error {
 	c := command.Command{}
 	// reroute command output to loging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
 	return runProtecodeScan(&config, influx, dClient)

@@ -187,8 +187,8 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
