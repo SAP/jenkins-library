@@ -52,9 +52,9 @@ void call(Map parameters = [:]) {
     ){
         if (currentBuild.result == 'UNSTABLE') {
             def minReasonLength = 10
+            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
             def reasonDescription = "Please provide a reason for overruling the failed steps ${unstableStepNames}, with ${minReasonLength} characters or more:"
             def acknowledgementDescription = "${acknowledgementText}:"
-            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
             while(!approval) {
                 userInput = input(
                     message: 'Approve continuation of pipeline, although some steps failed.',
