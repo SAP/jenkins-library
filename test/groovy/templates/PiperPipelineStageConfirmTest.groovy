@@ -58,7 +58,7 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
 
         helper.registerAllowedMethod('text', [Map.class], {m ->
             assertThat(m.defaultValue, is(''))
-            assertThat(m.description, is('Please provide a reason for overruling the failed steps [\'step1\', \'step3\'], with 10 characters or more:'))
+            assertThat(m.description, is('Please provide a reason for overruling the failed steps step1, step3, with 10 characters or more:'))
             assertThat(m.name, is('reason'))
         })
 
