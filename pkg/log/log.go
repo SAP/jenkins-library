@@ -24,11 +24,16 @@ const (
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := ""
 
+	stepName := entry.Data["stepName"]
+	if stepName == nil {
+		stepName = "(noStepName)"
+	}
+
 	switch formatter.logFormat {
 	case logFormatDefault:
-		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
+		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, stepName, entry.Message)
 	case logFormatWithTimestamp:
-		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
+		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, stepName, entry.Message)
 	case logFormatPlain:
 		message = entry.Message + "\n"
 	default:
