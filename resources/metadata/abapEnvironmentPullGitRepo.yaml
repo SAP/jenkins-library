@@ -94,6 +94,8 @@ spec:
         - STEPS
         aliases:
           - name: cloudFoundry/serviceKey
+          - name: cfServiceKeyName
+          - name: cloudFoundry/serviceKeyName
   containers:
     - name: cf
       image: ppiper/cf-cli

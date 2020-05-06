@@ -180,7 +180,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cfServiceKeyName"}, {Name: "cloudFoundry/serviceKeyName"}},
 					},
 				},
 			},
