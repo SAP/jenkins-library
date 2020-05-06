@@ -62,7 +62,7 @@ class TransportManagementService implements Serializable {
 
     def uploadFile(String url, String token, String file, String namedUser) {
 
-        echo("File upload started.")
+        echo("File Upload started.")
 
         if (config.verbose) {
             echo("URL: '${url}', File: '${file}'")
@@ -84,32 +84,7 @@ class TransportManagementService implements Serializable {
                                                 |      --output ${responseFileUpload} \\
                                                 |      '${url}/v2/files/upload'""".stripMargin()
 
-
-        def responseBody = 'n/a'
-
-        boolean gotResponse = script.fileExists(responseFileUpload)
-
-        if(gotResponse) {
-            responseBody = script.readFile(responseFileUpload)
-            if(config.verbose) {
-                echo("Response body: ${responseBody}")
-            }
-        }
-
-        def HTTP_CREATED = '201'
-
-        if (responseCode != HTTP_CREATED) {
-            def message = "Unexpected response code received from file upload (${responseCode}). ${HTTP_CREATED} expected."
-            echo "${message} Response body: ${responseBody}"
-            script.error message
-        }
-
-        echo("File upload successful.")
-
-        if (! gotResponse) {
-            script.error "Cannot provide upload file response."
-        }
-        return jsonUtils.jsonStringToGroovyObject(responseBody)
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseFileUpload, responseCode, '201', 'File Upload'))
     }
 
 
@@ -158,7 +133,7 @@ class TransportManagementService implements Serializable {
     
     def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
 
-        echo("Extension descriptor upload started.")
+        echo("MTA Extension Descriptor Upload started.")
 
         if (config.verbose) {
             echo("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'")
@@ -179,33 +154,8 @@ class TransportManagementService implements Serializable {
                                                 |      -F 'namedUser=${namedUser}' \\
                                                 |      --output ${responseExtDescriptorUpload} \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
-
-
-        def responseBody = 'n/a'
-
-        boolean gotResponse = script.fileExists(responseExtDescriptorUpload)
-
-        if(gotResponse) {
-            responseBody = script.readFile(responseExtDescriptorUpload)
-            if(config.verbose) {
-                echo("Response body: ${responseBody}")
-            }
-        }
-
-        def HTTP_OK = '200'
-
-        if (responseCode != HTTP_OK) {
-            def message = "Unexpected response code received from MTA extension descriptor upload (${responseCode}). ${HTTP_OK} expected."
-            echo "${message} Response body: ${responseBody}"
-            script.error message
-        }
-
-        echo("Extension descriptor upload successful.")
         
-        if (! gotResponse) {
-            script.error "Cannot provide upload MTA extension descriptor response."
-        }
-        return jsonUtils.jsonStringToGroovyObject(responseBody)
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '200', 'MTA Extension Descriptor Upload'))
     }
     
     def getNodes(String url, String token) {
@@ -245,12 +195,12 @@ class TransportManagementService implements Serializable {
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
     
-    def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaDescriptor, String file, String mtaVersion, String description, String namedUser) {
+    def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaExtDescriptor, String file, String mtaVersion, String description, String namedUser) {
         
-        echo("Extension descriptor update started.")
+        echo("MTA Extension Descriptor Update started.")
         
         if (config.verbose) {
-        echo("URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
+        echo("URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaExtDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
         }
         
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
@@ -268,33 +218,9 @@ class TransportManagementService implements Serializable {
                                                 |      -F 'namedUser=${namedUser}' \\
                                                 |      --output ${responseExtDescriptorUpdate} \\
                                                 |      -X PUT \\
-                                                |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaDescriptor}'""".stripMargin()
+                                                |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaExtDescriptor}'""".stripMargin()
         
-        def responseBody = 'n/a'
-        
-        boolean gotResponse = script.fileExists(responseExtDescriptorUpdate)
-        
-        if(gotResponse) {
-            responseBody = script.readFile(responseExtDescriptorUpdate)
-            if(config.verbose) {
-                echo("Response body: ${responseBody}")
-            }
-        }
-        
-        def HTTP_OK = '200'
-        
-        if (responseCode != HTTP_OK) {
-            def message = "Unexpected response code received from MTA extension descriptor update (${responseCode}). ${HTTP_OK} expected."
-            echo "${message} Response body: ${responseBody}"
-            script.error message
-        }
-        
-        echo("Extension descriptor update successful.")
-        
-        if (! gotResponse) {
-            script.error "Cannot provide update MTA extension descriptor response."
-        }
-        return jsonUtils.jsonStringToGroovyObject(responseBody)
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpdate, responseCode, '200', 'MTA Extension Descriptor Update'))
     }
     
     def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
@@ -363,4 +289,25 @@ class TransportManagementService implements Serializable {
         return URLEncoder.encode(data, "UTF-8").replace('%20', '+')
     }
 
+    
+    private String getResponseBody(String responseFileName, String actualStatus, String expectStatus, String action) {
+        if (! script.fileExists(responseFileName)) {
+            script.error "Cannot provide response for ${action}."
+        }
+        
+        def responseBody = 'n/a'
+        responseBody = script.readFile(responseFileName)
+        if(config.verbose) {
+            echo("Response body: ${responseBody}")
+        }
+        
+        if (actualStatus != expectStatus) {
+            def message = "Unexpected response code received from ${action} (${actualStatus}). ${expectStatus} expected."
+            echo "${message} Response body: ${responseBody}"
+            script.error message
+        }
+        
+        echo("${action} successful.")
+        return responseBody
+    }
 }

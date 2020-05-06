@@ -176,8 +176,8 @@ class TransportManagementServiceTest extends BasePiperTest {
         // replace needed since the curl command is spread over several lines.
         def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] File Upload started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] File Upload successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
         assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' --output responseFileUpload.txt '${url}/v2/files/upload'"))
         assertThat(responseDetails, hasEntry("fileId", 1234))
@@ -193,17 +193,17 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload (WE ARE IN VERBOSE MODE)']
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during File Upload (WE ARE IN VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from file upload (400). 201 expected')
+        thrown.expectMessage('Unexpected response code received from File Upload (400). 201 expected')
 
         loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', File: \'myFile.mtar\'')
-        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during file upload (WE ARE IN VERBOSE MODE)')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during File Upload (WE ARE IN VERBOSE MODE)')
 
         // The log entries which are present in non verbose mode must be present in verbose mode also, of course
-        loggingRule.expect('[TransportManagementService] File upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (400). 201 expected. Response body: Something went wrong during file upload')
+        loggingRule.expect('[TransportManagementService] File Upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from File Upload (400). 201 expected. Response body: Something went wrong during File Upload')
 
         new TransportManagementService(nullScript, [verbose:true])
             .uploadFile(url, token, file, namedUser)
@@ -222,13 +222,13 @@ class TransportManagementServiceTest extends BasePiperTest {
         // reflects that 418 instead of 400.
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
-        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during file upload. WE ARE IN NON VERBOSE MODE.']
+        readFileRule.files << [ 'responseFileUpload.txt': 'Something went wrong during File Upload. WE ARE IN NON VERBOSE MODE.']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from file upload (418). 201 expected')
+        thrown.expectMessage('Unexpected response code received from File Upload (418). 201 expected')
 
-        loggingRule.expect('[TransportManagementService] File upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from file upload (418). 201 expected. Response body: Something went wrong during file upload. WE ARE IN NON VERBOSE MODE.')
+        loggingRule.expect('[TransportManagementService] File Upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from File Upload (418). 201 expected. Response body: Something went wrong during File Upload. WE ARE IN NON VERBOSE MODE.')
 
         new TransportManagementService(nullScript, [verbose:false])
             .uploadFile(url, token, file, namedUser)
@@ -249,10 +249,10 @@ class TransportManagementServiceTest extends BasePiperTest {
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadFile(url, token, file, namedUser)
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] File Upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', File: '${file}'"))
         assertThat(loggingRule.log, containsString("\"fileId\": 1234"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] File Upload successful."))
     }
 
     @Test
@@ -369,11 +369,11 @@ class TransportManagementServiceTest extends BasePiperTest {
         def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
         def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload started."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
         assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescriptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
         assertThat(responseDetails, hasEntry("fileId", 5678))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload successful."))
     }
     
     @Test
@@ -391,10 +391,10 @@ class TransportManagementServiceTest extends BasePiperTest {
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload started."))
         assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
         assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor upload successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload successful."))
     }
     
     @Test
@@ -410,16 +410,16 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)']
+        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA Extension Descriptor Upload (WE ARE IN VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (400). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (400). 200 expected')
 
         loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', NodeId: \'1\', File: \'myFile.mtaext\', MtaVersion: \'0.0.1\'')
-        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA extension descriptor upload (WE ARE IN VERBOSE MODE)')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA Extension Descriptor Upload (WE ARE IN VERBOSE MODE)')
 
-        loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (400). 200 expected. Response body: Something went wrong during MTA extension descriptor upload')
+        loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (400). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Upload')
 
         new TransportManagementService(nullScript, [verbose:true])
             .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -438,13 +438,13 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
-        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.']
+        readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA Extension Descriptor Upload. WE ARE IN NON VERBOSE MODE.']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA extension descriptor upload (418). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (418). 200 expected')
 
-        loggingRule.expect('[TransportManagementService] Extension descriptor upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor upload (418). 200 expected. Response body: Something went wrong during MTA extension descriptor upload. WE ARE IN NON VERBOSE MODE.')
+        loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Upload started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (418). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Upload. WE ARE IN NON VERBOSE MODE.')
 
         new TransportManagementService(nullScript, [verbose:false])
             .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -469,8 +469,8 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         def oAuthShellCall = shellRule.shell[0].replaceAll('\\\\ ', '')
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor update started."))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor update successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
         assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescriptorUpdate.txt -X PUT '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaDescriptor}'"))
         assertThat(responseDetails, hasEntry("fileId", 9999))
@@ -493,10 +493,10 @@ class TransportManagementServiceTest extends BasePiperTest {
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.updateMtaExtDescriptor(url, token, nodeId, idOfMtaDescriptor, file, mtaVersion, description, namedUser)
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor update started."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'"))
         assertThat(loggingRule.log, containsString("\"fileId\": 9999"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Extension descriptor update successful."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update successful."))
     }
 
     @Test
@@ -513,17 +513,17 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
-        readFileRule.files << [ 'responseExtDescriptorUpdate.txt': 'Something went wrong during MTA extension descriptor update (WE ARE IN VERBOSE MODE).']
+        readFileRule.files << [ 'responseExtDescriptorUpdate.txt': 'Something went wrong during MTA Extension Descriptor Update (WE ARE IN VERBOSE MODE).']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA extension descriptor update (400). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Update (400). 200 expected')
 
         loggingRule.expect("[TransportManagementService] URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
-        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA extension descriptor update (WE ARE IN VERBOSE MODE).')
+        loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA Extension Descriptor Update (WE ARE IN VERBOSE MODE).')
 
         // The log entries which are present in non verbose mode must be present in verbose mode also, of course
-        loggingRule.expect('[TransportManagementService] Extension descriptor update started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor update (400). 200 expected. Response body: Something went wrong during MTA extension descriptor update (WE ARE IN VERBOSE MODE).')
+        loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Update started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Update (400). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Update (WE ARE IN VERBOSE MODE).')
 
         new TransportManagementService(nullScript, [verbose:true])
             .updateMtaExtDescriptor(url, token, nodeId, idOfMtaDescriptor, file, mtaVersion, description, namedUser)
@@ -543,13 +543,13 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '418')
 
-        readFileRule.files << [ 'responseExtDescriptorUpdate.txt': 'Something went wrong during MTA extension descriptor update (WE ARE IN NON VERBOSE MODE).']
+        readFileRule.files << [ 'responseExtDescriptorUpdate.txt': 'Something went wrong during MTA Extension Descriptor Update (WE ARE IN NON VERBOSE MODE).']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA extension descriptor update (418). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Update (418). 200 expected')
 
-        loggingRule.expect('[TransportManagementService] Extension descriptor update started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA extension descriptor update (418). 200 expected. Response body: Something went wrong during MTA extension descriptor update (WE ARE IN NON VERBOSE MODE).')
+        loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Update started.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Update (418). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Update (WE ARE IN NON VERBOSE MODE).')
 
         new TransportManagementService(nullScript, [verbose:false])
             .updateMtaExtDescriptor(url, token, nodeId, idOfMtaDescriptor, file, mtaVersion, description, namedUser)
