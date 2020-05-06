@@ -44,7 +44,9 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 
 	for _, repositoryName := range config.RepositoryNames {
 
+		log.Entry().Info("-------------------------")
 		log.Entry().Info("Start pulling " + repositoryName)
+		log.Entry().Info("-------------------------")
 
 		// Triggering the Pull of the repository into the ABAP Environment system
 		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, connectionDetails, &client)
@@ -64,6 +66,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 
 		log.Entry().Info(repositoryName + " was pulled successfully")
 	}
+	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were pulled successfully")
 	return nil
 }
