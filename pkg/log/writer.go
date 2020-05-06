@@ -7,8 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// logrusWriter can be plugged in between a tool's output and the
-// logrus.Entry's writer in order to support writing chunks larger than 64K without linebreaks.
+// logrusWriter can be used as the destination for a tool's std output and forwards
+// chunks between linebreaks to the logrus framework. This works around a problem
+// with using Entry().Writer() directly, since that doesn't support chunks
+// larger than 64K without linebreaks.
 // Implementation copied from https://github.com/sirupsen/logrus/issues/564
 type logrusWriter struct {
 	entry  *logrus.Entry
@@ -16,24 +18,24 @@ type logrusWriter struct {
 	mutex  sync.Mutex
 }
 
-func (w *logrusWriter) Write(b []byte) (int, error) {
+func (w *logrusWriter) Write(buffer []byte) (int, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	origLen := len(b)
+	origLen := len(buffer)
 	for {
-		if len(b) == 0 {
+		if len(buffer) == 0 {
 			return origLen, nil
 		}
-		i := bytes.IndexByte(b, '\n')
+		i := bytes.IndexByte(buffer, '\n')
 		if i < 0 {
-			w.buffer.Write(b)
+			w.buffer.Write(buffer)
 			return origLen, nil
 		}
 
-		w.buffer.Write(b[:i])
+		w.buffer.Write(buffer[:i])
 		w.alwaysFlush()
-		b = b[i+1:]
+		buffer = buffer[i+1:]
 	}
 }
 
