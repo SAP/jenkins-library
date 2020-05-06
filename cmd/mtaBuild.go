@@ -16,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -95,8 +95,8 @@ func runMtaBuild(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
+	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
