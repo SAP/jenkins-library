@@ -149,9 +149,9 @@ void call(Map parameters = [:]) {
                 
                 if(nodeIdExtDesMap) {
                     nodeIdExtDesMap.each{ key, value ->
-                        List mtaExtDescriptor = tms.getAMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
+                        Map mtaExtDescriptor = tms.getAMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
                         if(mtaExtDescriptor) {
-                            def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.get(0).getAt("id"), "${workspace}/${value}", mtaVersion, description, namedUser)
+                            def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value}", mtaVersion, description, namedUser)
                             echo "[TransportManagementService] MTA Extention Descriptor '${updateMtaExtDescriptorResponse.fileName}' (fileId: '${updateMtaExtDescriptorResponse.fileId}') successfully updated for Node with id '${key}'."
                         } else {
                             def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)

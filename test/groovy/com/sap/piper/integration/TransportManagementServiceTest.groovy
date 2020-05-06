@@ -631,11 +631,11 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
     
     @Test
-    void getExtDescriptor__successfully() {
+    void getAExtDescriptor__successfully() {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '[{ "id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]', status: 200]
+            return [content: '[{"id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]', status: 200]
         })
 
         def url = 'http://dummy.sap.com'
@@ -651,18 +651,18 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] Get Extension descriptor successful."))
         assertThat(requestParams, hasEntry('url', "${url}/v2/nodes/${nodeId}/mtaExtDescriptors?mtaId=${mtaId}&mtaVersion=${mtaVersion}"))
         assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
-        assertThat(responseDetails.get(0), hasEntry("id", 2))
-        assertThat(responseDetails.get(0), hasEntry("mtaExtId", "alm.pi.test.scv_x_ext"))
+        assertThat(responseDetails, hasEntry("id", 2))
+        assertThat(responseDetails, hasEntry("mtaExtId", "alm.pi.test.scv_x_ext"))
     }
     
     @Test
-    void getExtDescriptor__inVerboseMode__yieldsMoreEchos() {
+    void getAExtDescriptor__inVerboseMode__yieldsMoreEchos() {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
         def mtaId = "alm.pi.test.scv_x"
         def mtaVersion = '1.2.3'
-        def responseContent = '[{ "id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]'
+        def responseContent = '[{"id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]'
         
         helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: 200]
@@ -676,7 +676,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
 
     @Test
-    void getExtDescriptor__failure() {
+    void getAExtDescriptor__failure() {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
@@ -697,7 +697,7 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
 
     @Test
-    void getExtDescriptor__failure__status__500__inVerboseMode() {
+    void getAExtDescriptor__failure__status__500__inVerboseMode() {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1

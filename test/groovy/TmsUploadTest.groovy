@@ -351,10 +351,10 @@ public class TmsUploadTest extends BasePiperTest {
             def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
                 if(mtaVersion=="0.0.1") {
                     calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
-                    return []
+                    return [:]
                 } else {
                     calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
-                    return [["id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"]]
+                    return ["id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"]
                 }
             }
         }
