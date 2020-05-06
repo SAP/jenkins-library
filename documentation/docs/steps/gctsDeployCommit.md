@@ -18,7 +18,7 @@ Learn more about the SAP git-enabled Central Transport Sytem (gCTS) [here](https
 Example configuration for the use in a `Jenkinsfile`.
 
 ```groovy
-gctsDeployCommit(
+gctsDeploy(
   script: this,
   host: "https://abap.server.com:port",
   client: "000",
@@ -32,7 +32,7 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 ```yaml
 steps:
   <...>
-  gctsDeployCommit:
+  gctsDeploy:
     host: "https://abap.server.com:port"
     client: "000"
     username: "ABAPUsername"

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type gctsDeployCommitOptions struct {
+type gctsDeployOptions struct {
 	Username   string `json:"username,omitempty"`
 	Password   string `json:"password,omitempty"`
 	Repository string `json:"repository,omitempty"`
@@ -22,15 +22,15 @@ type gctsDeployCommitOptions struct {
 	Commit     string `json:"commit,omitempty"`
 }
 
-// GctsDeployCommitCommand Pulls a commit from the remote Git repository to a local repository
-func GctsDeployCommitCommand() *cobra.Command {
-	const STEP_NAME = "gctsDeployCommit"
+// GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
+func GctsDeployCommand() *cobra.Command {
+	const STEP_NAME = "gctsDeploy"
 
-	metadata := gctsDeployCommitMetadata()
-	var stepConfig gctsDeployCommitOptions
+	metadata := gctsDeployMetadata()
+	var stepConfig gctsDeployOptions
 	var startTime time.Time
 
-	var createGctsDeployCommitCmd = &cobra.Command{
+	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Pulls a commit from the remote Git repository to a local repository",
 		Long:  `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
@@ -67,16 +67,16 @@ func GctsDeployCommitCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			gctsDeployCommit(stepConfig, &telemetryData)
+			gctsDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addGctsDeployCommitFlags(createGctsDeployCommitCmd, &stepConfig)
-	return createGctsDeployCommitCmd
+	addGctsDeployFlags(createGctsDeployCmd, &stepConfig)
+	return createGctsDeployCmd
 }
 
-func addGctsDeployCommitFlags(cmd *cobra.Command, stepConfig *gctsDeployCommitOptions) {
+func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
@@ -92,10 +92,10 @@ func addGctsDeployCommitFlags(cmd *cobra.Command, stepConfig *gctsDeployCommitOp
 }
 
 // retrieve step metadata
-func gctsDeployCommitMetadata() config.StepData {
+func gctsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsDeployCommit",
+			Name:    "gctsDeploy",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{

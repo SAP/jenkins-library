@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestGctsDeployCommitSuccess(t *testing.T) {
+func TestGctsDeploySuccess(t *testing.T) {
 
-	config := gctsDeployCommitOptions{
+	config := gctsDeployOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -59,9 +59,9 @@ func TestGctsDeployCommitSuccess(t *testing.T) {
 	})
 }
 
-func TestGctsDeployCommitFailure(t *testing.T) {
+func TestGctsDeployFailure(t *testing.T) {
 
-	config := gctsDeployCommitOptions{
+	config := gctsDeployOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",

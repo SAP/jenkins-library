@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func gctsDeployCommit(config gctsDeployCommitOptions, telemetryData *telemetry.CustomData) {
+func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -32,7 +32,7 @@ func gctsDeployCommit(config gctsDeployCommitOptions, telemetryData *telemetry.C
 	}
 }
 
-func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func deployCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {

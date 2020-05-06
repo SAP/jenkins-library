@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGctsDeployCommitCommand(t *testing.T) {
+func TestGctsDeployCommand(t *testing.T) {
 
-	testCmd := GctsDeployCommitCommand()
+	testCmd := GctsDeployCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "gctsDeployCommit", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "gctsDeploy", testCmd.Use, "command name incorrect")
 
 }
