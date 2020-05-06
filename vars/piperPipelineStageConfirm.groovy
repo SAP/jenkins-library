@@ -52,7 +52,7 @@ void call(Map parameters = [:]) {
     ){
         if (currentBuild.result == 'UNSTABLE') {
             def minReasonLength = 10
-            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id:'
+            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
             while(!approval) {
                 userInput = input(
                     message: 'Approve continuation of pipeline, although some steps failed.',
@@ -65,7 +65,7 @@ void call(Map parameters = [:]) {
                         ),
                         booleanParam(
                             defaultValue: false,
-                            description: acknowledgementText,
+                            description: '${acknowledgementText}:',
                             name: 'acknowledgement'
                         )
                     ]
