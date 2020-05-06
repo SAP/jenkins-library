@@ -18,7 +18,7 @@ void call(parameters) {
                     dockerExecute(
                         script: this,
                         dockerImage: 'golang',
-                        dockerEnvVars: [GOPATH: '/jenkinsdata/cloudFoundryDeleteService Test Pipeline/workspace']
+                        dockerEnvVars: [GOPATH: '/jenkinsdata/abapPipeline Test/workspace']
                     ) {
                         sh '''
                             cd jenkins-library
