@@ -53,7 +53,9 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
 
     @Test
     public void test() {
-
+        helper.registerAllowedMethod("fileExists", [String.class], { file -> return false })
+        helper.registerAllowedMethod("fileExists", [Map.class], { file -> return false})
+        helper.registerAllowedMethod('findFiles', [Map.class], {m -> return null})
         helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
             arguments.each {arg ->
                 withEnvArgs.add(arg.toString())
@@ -61,11 +63,18 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('credentialsId', 'testUser', 'testPassword')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.\/piper getConfig --contextConfig --stepMetadata 'metadata\/abapEnvironmentPullGitRepo.yaml'/, /{"credentialsId":"credentialsId"}/ )
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.\/piper getConfig --contextConfig --stepMetadata '.pipeline\/tmp\/metadata\/abapEnvironmentPullGitRepo.yaml'/, /{"credentialsId":"credentialsId"}/ )
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, juStabUtils: utils, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
+        stepRule.step.abapEnvironmentPullGitRepo(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            host: 'example.com', 
+            repositoryName: 'Z_DEMO_DM', 
+            credentialsId: 'test_credentialsId'
+        )
 
-        assertThat(shellRule.shell[0], containsString(/.\/piper getConfig --contextConfig --stepMetadata 'metadata\/abapEnvironmentPullGitRepo.yaml'/))
+        assertThat(shellRule.shell[0], containsString(/.\/piper getConfig --contextConfig --stepMetadata '.pipeline\/tmp\/metadata\/abapEnvironmentPullGitRepo.yaml'/))
         assertThat(shellRule.shell[1], containsString(/.\/piper abapEnvironmentPullGitRepo/))
     }
 }
