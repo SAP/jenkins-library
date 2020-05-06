@@ -51,31 +51,48 @@ void call(Map parameters = [:]) {
         time: config.manualConfirmationTimeout
     ){
         if (currentBuild.result == 'UNSTABLE') {
+            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id:'
             while(!approval) {
                 userInput = input(
                     message: 'Approve continuation of pipeline, although some steps failed.',
                     ok: 'Approve',
                     parameters: [
                         text(
-                            defaultValue: unstableStepNames,
-                            description: 'Please provide a reason for overruling following failed steps:',
+                            defaultValue: '',
+                            description: 'Please provide a reason for overruling the failed steps ${unstableStepNames}, with ${minReasonLength} characters or more:',
                             name: 'reason'
                         ),
                         booleanParam(
                             defaultValue: false,
-                            description: 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id:',
+                            description: acknowledgementText,
                             name: 'acknowledgement'
                         )
                     ]
                 )
-                approval = userInput.acknowledgement && userInput.reason?.length() > (unstableStepNames.length() + 10)
+                approval = validateApproval(userInput.reason, 10, userInput.acknowledgement, acknowledgementText, unstableStepNames)
             }
-            echo "Reason:\n-------------\n${userInput.reason}"
-            echo "Acknowledged:\n-------------\n${userInput.acknowledgement}"
         } else {
             input message: config.manualConfirmationMessage
         }
 
     }
 
+}
+
+private boolean validateApproval(reason, minReasonLength, acknowledgement, acknowledgementText, unstableStepNames) {
+    def reasonIsLongEnough = reason?.length() >= minReasonLength
+    approved = acknowledgement && reasonIsLongEnough
+    if (approved) {
+        echo "Failed steps\n------------\n${unstableStepNames}"
+        echo "Reason\n------\n${reason}"
+        echo "Acknowledgement\n---------------\n☑ ${acknowledgementText}"
+    } else {
+        if (!acknowledgement) {
+            echo "Rejected the approval because the user didn't acknowledge that his user name or id is logged"
+        }
+        if (!reasonIsLongEnough) {
+            echo "Rejected the approval because the provided reason has less than ${minReasonLength} characters"
+        }
+    }
+    return approved
 }
