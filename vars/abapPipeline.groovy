@@ -41,9 +41,8 @@ void call(parameters) {
                 }
             }
 
-            stage('Create Service') {
+            stage('Prepare') {
                 steps {
-
                     cloudFoundryCreateService script: parameters.script
                 }
             }
