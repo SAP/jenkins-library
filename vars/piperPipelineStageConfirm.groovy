@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .use()
 
-    String unstableStepNames = script.commonPipelineEnvironment.getValue('unstableSteps') ? "${script.commonPipelineEnvironment.getValue('unstableSteps').join(':\n------\n')}:" : ''
+    String unstableStepNames = script.commonPipelineEnvironment.getValue('unstableSteps') ? "${script.commonPipelineEnvironment.getValue('unstableSteps').join(', ')}:" : ''
 
     boolean approval = false
     def userInput
