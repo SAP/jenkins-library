@@ -169,8 +169,11 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return &r.Body, err
+	return &r.Body, nil
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format

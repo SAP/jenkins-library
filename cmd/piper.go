@@ -29,6 +29,17 @@ type GeneralConfigOptions struct {
 	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	StepName       string
 	Verbose        bool
+	HookConfig     HookConfiguration
+}
+
+// HookConfiguration contains the configuration for supported hooks, so far only Sentry is supported.
+type HookConfiguration struct {
+	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
+}
+
+// SentryConfiguration defines the configuration options for the Sentry logging system
+type SentryConfiguration struct {
+	Dsn string `json:"dsn,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -155,9 +166,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.NoTelemetry = true
 	}
 
-	if !GeneralConfig.Verbose {
-		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
-			log.SetVerbose(stepConfig.Config["verbose"].(bool))
+	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
+		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
+			log.SetVerbose(verboseValue)
+		} else {
+			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 	}
 
@@ -166,6 +179,13 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
+
+	for name, v := range stepConfig.HookConfig {
+		if name == "sentry" {
+			hookConfig, _ := v.MarshalJSON()
+			_ = json.Unmarshal(hookConfig, &GeneralConfig.HookConfig.SentryConfig)
+		}
+	}
 
 	return nil
 }

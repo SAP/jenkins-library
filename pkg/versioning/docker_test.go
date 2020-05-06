@@ -88,6 +88,15 @@ func TestDockerGetVersion(t *testing.T) {
 		_, err := docker.GetVersion()
 		assert.EqualError(t, err, "failed to read file 'Dockerfile': read error")
 	})
+
+	t.Run("error case - fallback", func(t *testing.T) {
+		docker := Docker{
+			readFile:      func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
+			versionSource: "",
+		}
+		_, err := docker.GetVersion()
+		assert.Contains(t, fmt.Sprint(err), "failed to read file 'VERSION': open VERSION")
+	})
 }
 
 func TestDockerSetVersion(t *testing.T) {

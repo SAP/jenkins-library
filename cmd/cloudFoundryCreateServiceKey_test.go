@@ -41,11 +41,45 @@ func TestCloudFoundryCreateServiceKey(t *testing.T) {
 			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey"}, execRunner.Calls[1].Params)
 		}
 	})
+	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
+		config := cloudFoundryCreateServiceKeyOptions{
+			CfAPIEndpoint:      "https://api.endpoint.com",
+			CfOrg:              "testOrg",
+			CfSpace:            "testSpace",
+			Username:           "testUser",
+			Password:           "testPassword",
+			CfServiceInstance:  "testInstance",
+			CfServiceKeyName:   "testKey",
+			CfServiceKeyConfig: "testconfig.yml",
+		}
+		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner)
+		if error == nil {
+			assert.Equal(t, "cf", execRunner.Calls[2].Exec)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "testconfig.yml"}, execRunner.Calls[2].Params)
+		}
+	})
+	t.Run("CF Create Service Key with service Key config: Success case", func(t *testing.T) {
+		config := cloudFoundryCreateServiceKeyOptions{
+			CfAPIEndpoint:      "https://api.endpoint.com",
+			CfOrg:              "testOrg",
+			CfSpace:            "testSpace",
+			Username:           "testUser",
+			Password:           "testPassword",
+			CfServiceInstance:  "testInstance",
+			CfServiceKeyName:   "testKey",
+			CfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}",
+		}
+		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner)
+		if error == nil {
+			assert.Equal(t, "cf", execRunner.Calls[3].Exec)
+			assert.Equal(t, []string{"create-service-key", "testInstance", "testKey", "-c", "{\"scenario_id\":\"SAP_COM_0510\",\"type\":\"basic\"}"}, execRunner.Calls[3].Params)
+		}
+	})
 	t.Run("CF Logout: Success case", func(t *testing.T) {
 		error := cloudFoundryLogout(&execRunner)
 		if error == nil {
-			assert.Equal(t, "cf", execRunner.Calls[2].Exec)
-			assert.Equal(t, "logout", execRunner.Calls[2].Params[0])
+			assert.Equal(t, "cf", execRunner.Calls[4].Exec)
+			assert.Equal(t, "logout", execRunner.Calls[4].Params[0])
 		}
 	})
 }
