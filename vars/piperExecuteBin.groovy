@@ -49,7 +49,6 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
-            echo "stepParameters: ${stepParameters}"
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
