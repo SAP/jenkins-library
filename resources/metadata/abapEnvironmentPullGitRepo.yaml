@@ -34,8 +34,8 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: repositoryNames
-        type: '[]string'
+      - name: repositoryName
+        type: string
         description: Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
         scope:
         - PARAMETERS

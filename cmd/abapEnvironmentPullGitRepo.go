@@ -42,8 +42,6 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	}
 	client.SetOptions(clientOptions)
 
-	for
-
 	// Triggering the Pull of the repository into the ABAP Environment system
 	uriConnectionDetails, errorTriggerPull := triggerPull(config, connectionDetails, &client)
 	if errorTriggerPull != nil {
