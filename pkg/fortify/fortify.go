@@ -406,8 +406,10 @@ func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Art
 
 // MergeProjectVersionStateOfPRIntoMaster merges the PR project version's fpr result file into the master project version
 func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
+	log.Entry().Debugf("Looking up project version with name '%v' to merge audit status into master version", pullRequestName)
 	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName, false, "")
 	if nil != prProjectVersion {
+		log.Entry().Debugf("Found project version with ID '%v', starting transfer", prProjectVersion.ID)
 		data, err := sys.DownloadResultFile(downloadEndpoint, prProjectVersion.ID)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to download current state FPR of PR project version %v", prProjectVersion.ID)
@@ -420,6 +422,8 @@ func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoi
 		if err != nil {
 			log.Entry().Warnf("Failed to inactivate merged PR project version %v", prProjectVersion.ID)
 		}
+	} else {
+		log.Entry().Debug("No related project version found in SSC")
 	}
 	return nil
 }

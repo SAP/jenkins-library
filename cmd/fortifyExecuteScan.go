@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/go-github/v31/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -21,6 +23,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
 var auditStatus map[string]string
@@ -72,7 +76,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	} else {
 		prID := determinePullRequestMerge(config)
 		if len(prID) > 0 {
-			log.Entry().Debugf("Determined PR identifier %v for merge check", prID)
+			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, fmt.Sprintf("PR-%v", prID))
 			if err != nil {
 				log.Entry().Fatalf("Failed to merge project version state for pull request %v: %v", fortifyProjectVersion, err)
@@ -81,8 +85,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	}
 
 	log.Entry().Debugf("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	repoURL := strings.ReplaceAll(config.RepoURL, ".git", "")
-	buildLabel := fmt.Sprintf("%v/commit/%v", repoURL, config.CommitID)
+	buildLabel := fmt.Sprintf("%v/repos/%v/%v/commits/%v", config.GithubAPIURL, config.Owner, config.Repository, config.CommitID)
 
 	// Create sourceanalyzer command based on configuration
 	buildID := uuid.New().String()
@@ -558,13 +561,32 @@ func scanProject(config fortifyExecuteScanOptions, command execRunner, buildID, 
 }
 
 func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
-	log.Entry().Debugf("Retrieved commit message %v", config.CommitMessage)
+	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
+	if err == nil {
+		result, err := determinePullRequestMergeGithub(ctx, config, client)
+		if err != nil {
+			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
+		} else {
+			return result
+		}
+	}
+
+	log.Entry().Infof("Trying to determine PR ID in commit message: %v", config.CommitMessage)
 	r, _ := regexp.Compile(config.PullRequestMessageRegex)
 	matches := r.FindSubmatch([]byte(config.CommitMessage))
 	if matches != nil && len(matches) > 1 {
 		return string(matches[config.PullRequestMessageRegexGroup])
 	}
 	return ""
+}
+
+func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, client *github.Client) (string, error) {
+	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
+	prList, _, err := client.PullRequests.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
+	if err == nil && len(prList) > 0 {
+		return fmt.Sprintf("%v", prList[0].GetNumber()), nil
+	}
+	return "", err
 }
 
 func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[string]string) []string {

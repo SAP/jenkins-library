@@ -16,7 +16,7 @@ require (
 	github.com/go-openapi/strfmt v0.19.4
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
-	github.com/google/go-github/v28 v28.1.1
+	github.com/google/go-github/v31 v31.0.0
 	github.com/google/uuid v1.1.1
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect

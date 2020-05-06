@@ -17,6 +17,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AuthToken                       string `json:"authToken,omitempty"`
+	GithubToken                     string `json:"githubToken,omitempty"`
 	AutoCreate                      bool   `json:"autoCreate,omitempty"`
 	MvnCustomArgs                   string `json:"mvnCustomArgs,omitempty"`
 	ModulePath                      string `json:"modulePath,omitempty"`
@@ -30,7 +31,8 @@ type fortifyExecuteScanOptions struct {
 	BuildDescriptorFile             string `json:"buildDescriptorFile,omitempty"`
 	CommitID                        string `json:"commitId,omitempty"`
 	CommitMessage                   string `json:"commitMessage,omitempty"`
-	RepoURL                         string `json:"repoUrl,omitempty"`
+	GithubAPIURL                    string `json:"githubApiUrl,omitempty"`
+	Owner                           string `json:"owner,omitempty"`
 	Repository                      string `json:"repository,omitempty"`
 	Memory                          string `json:"memory,omitempty"`
 	UpdateRulePack                  bool   `json:"updateRulePack,omitempty"`
@@ -142,6 +144,8 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 			if err != nil {
 				return err
 			}
+			log.RegisterSecret(stepConfig.AuthToken)
+			log.RegisterSecret(stepConfig.GithubToken)
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -166,6 +170,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
+	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
@@ -179,8 +184,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`: `./setup.py`, scanType=`mta`: determined automatically")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifing artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifing pull request merges throughout the scan.")
-	cmd.Flags().StringVar(&stepConfig.RepoURL, "repoUrl", os.Getenv("PIPER_repoUrl"), "Set the source code repository URL for identifing sources of the scan.")
-	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository for identifing artifacts throughout the scan.")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Memory, "memory", `-Xmx4G -Xms512M`, "The amount of memory granted to the translate/scan executions")
 	cmd.Flags().BoolVar(&stepConfig.UpdateRulePack, "updateRulePack", true, "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not")
 	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/tests/**/*;./**/setup.py`, "The excludes pattern used in `scanType: 'pip'` for excluding specific .py files i.e. tests")
@@ -232,6 +238,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "githubToken",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -339,12 +353,20 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repoUrl",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "gitHttpsUrl"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Name:        "githubApiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "owner",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "githubOrg"}},
 					},
 					{
 						Name:        "repository",
@@ -352,7 +374,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "githubRepo"}},
 					},
 					{
 						Name:        "memory",

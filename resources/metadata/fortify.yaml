@@ -10,6 +10,10 @@ spec:
   inputs:
     secrets:
       - name: fortifyCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.
+        type: jenkins
+      - name: githubTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     resources:
       - name: commonPipelineEnvironment
@@ -32,6 +36,17 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
+      mandatory: true
+      secret: true
+    - name: githubToken
+      description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+      secret: true
     - name: autoCreate
       type: bool
       description: Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend 
@@ -141,18 +156,31 @@ spec:
       - STAGES
       - STEPS
       type: string
-    - name: repoUrl
-      description: 'Set the source code repository URL for identifing sources of the scan.'
+    - name: githubApiUrl
+      description: Set the GitHub API url.
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+      default: https://api.github.com
+    - name: owner
+      aliases:
+        - name: githubOrg
+      description: 'Set the GitHub organization.'
       resourceRef:
         - name: commonPipelineEnvironment
-          param: gitHttpsUrl
+          param: github/owner
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
       type: string
     - name: repository
-      description: 'Set the GitHub repository for identifing artifacts throughout the scan.'
+      aliases:
+        - name: githubRepo
+      description: 'Set the GitHub repository.'
       resourceRef:
         - name: commonPipelineEnvironment
           param: github/repository
