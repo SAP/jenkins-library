@@ -43,7 +43,7 @@ void call(parameters) {
 
             stage('Prepare System') {
                 steps {
-                    cloudFoundryCreateService script: script
+                    cloudFoundryCreateService script: parameters.script
                     input message: "Steampunk system ready?"
                 }
             }
@@ -51,13 +51,13 @@ void call(parameters) {
 
             stage('Prepare Scenario SAP_COM_0510') {
                 steps {
-                    cloudFoundryCreateServiceKey script: script
+                    cloudFoundryCreateServiceKey script: parameters.script
                 }
             }
 
             stage('Clone Repositories') {
                 steps {
-                    abapEnvironmentPullGitRepo script: script
+                    abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
 
