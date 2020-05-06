@@ -179,6 +179,11 @@ func getGitCommitID(repository gitRepository) (plumbing.Hash, error) {
 func versioningTemplate(scheme string) (string, error) {
 	// generally: timestamp acts as build number providing a proper order
 	switch scheme {
+	case "docker":
+		// from Docker documentation:
+		// A tag name must be valid ASCII and may contain lowercase and uppercase letters, digits, underscores, periods and dashes.
+		// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
+		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}-{{.CommitID}}{{end}}{{end}}", nil
 	case "maven":
 		// according to https://www.mojohaus.org/versions-maven-plugin/version-rules.html
 		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}_{{.CommitID}}{{end}}{{end}}", nil
