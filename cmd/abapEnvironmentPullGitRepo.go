@@ -41,6 +41,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
+	pollIntervall := 10 * time.Second
 
 	for _, repositoryName := range config.RepositoryNames {
 
@@ -55,7 +56,6 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		pollIntervall := 10 * time.Second
 		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
 		if errorPollEntity != nil {
 			log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")

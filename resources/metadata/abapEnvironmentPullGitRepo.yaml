@@ -36,7 +36,7 @@ spec:
         secret: true
       - name: repositoryNames
         type: '[]string'
-        description: Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
+        description: Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
         scope:
         - PARAMETERS
         - STAGES
