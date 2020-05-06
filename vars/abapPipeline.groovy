@@ -43,7 +43,7 @@ void call(parameters) {
 
             stage('Prepare') {
                 steps {
-                    cloudFoundryCreateService script: parameters.script
+                    abapPipelinePrepare script: parameters.script
                 }
             }
             // stage('Delete Service') {
