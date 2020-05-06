@@ -6,6 +6,7 @@
 #Project Setup
 general:
   collectTelemetryData: true
+  logFormat: 'plain'
   jenkinsKubernetes:
     jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
   changeManagement:
