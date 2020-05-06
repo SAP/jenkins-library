@@ -80,6 +80,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		VersioningScheme:    config.CustomVersioningScheme,
 	}
 
+	if config.BuildTool == "docker" {
+		artifactOpts.VersionSource = config.DockerVersionSource
+	}
+
 	var err error
 	if artifact == nil {
 		artifact, err = versioning.GetArtifact(config.BuildTool, config.FilePath, &artifactOpts, runner)
