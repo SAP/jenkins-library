@@ -12,8 +12,8 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	config := cloudFoundryDeleteServiceOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,
