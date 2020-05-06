@@ -81,6 +81,12 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.ContainerRegistrySecret)
 			log.RegisterSecret(stepConfig.KubeToken)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
