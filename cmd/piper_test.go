@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -131,36 +132,52 @@ func TestGetProjectConfigFile(t *testing.T) {
 }
 
 func TestConvertTypes(t *testing.T) {
-	// Init
-	options := struct {
-		Foo []string `json:"foo,omitempty"`
-		Bar bool     `json:"bar,omitempty"`
-		Baz string   `json:"baz,omitempty"`
-		Bla int      `json:"bla,omitempty"`
-	}{}
+	t.Run("Converts strings to booleans", func(t *testing.T) {
+		// Init
+		options := struct {
+			Foo bool `json:"foo,omitempty"`
+			Bar bool `json:"bar,omitempty"`
+		}{}
+		options.Foo = true
+		options.Bar = false
 
-	stepConfig := map[string]interface{}{}
-	stepConfig["baz"] = "ignore"
-	stepConfig["foo"] = "element"
-	stepConfig["bar"] = "True"
-	stepConfig["bla"] = "42"
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = "False"
+		stepConfig["bar"] = "True"
 
-	// Test
-	stepConfig = convertTypes(stepConfig, options)
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
 
-	confJSON, _ := json.Marshal(stepConfig)
-	_ = json.Unmarshal(confJSON, &options)
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
 
-	// Assert
-	assert.Equal(t, []string{"element"}, stepConfig["foo"])
-	assert.Equal(t, true, stepConfig["bar"])
+		// Assert
+		assert.Equal(t, false, stepConfig["foo"])
+		assert.Equal(t, true, stepConfig["bar"])
+		assert.Equal(t, false, options.Foo)
+		assert.Equal(t, true, options.Bar)
+	})
+	t.Run("Exits on unsupported type mismatch", func(t *testing.T) {
+		// Init
+		hasFailed := false
 
-	assert.Equal(t, []string{"element"}, options.Foo)
-	assert.Equal(t, true, options.Bar)
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
 
-	assert.Equal(t, "ignore", stepConfig["baz"])
-	assert.Equal(t, "42", stepConfig["bla"])
+		options := struct {
+			Foo []string `json:"foo,omitempty"`
+		}{}
 
-	assert.Equal(t, "ignore", options.Baz)
-	assert.Equal(t, 0, options.Bla)
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = "entry"
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
+		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
 }
