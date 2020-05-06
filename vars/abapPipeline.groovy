@@ -46,11 +46,11 @@ void call(parameters) {
                     cloudFoundryCreateService script: parameters.script
                 }
             }
-            stage('Delete Service') {
-                steps {
-                    cloudFoundryDeleteService script: parameters.script
-                }
-            }
+            // stage('Delete Service') {
+            //     steps {
+            //         cloudFoundryDeleteService script: parameters.script
+            //     }
+            // }
         }
         // post {
         //     /* https://jenkins.io/doc/book/pipeline/syntax/#post */
