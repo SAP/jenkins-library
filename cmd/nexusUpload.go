@@ -108,8 +108,8 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 func (u *utilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
-		u.execRunner.Stdout(log.Entry().Writer())
-		u.execRunner.Stderr(log.Entry().Writer())
+		u.execRunner.Stdout(log.Writer())
+		u.execRunner.Stderr(log.Writer())
 	}
 	return u.execRunner
 }
