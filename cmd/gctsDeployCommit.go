@@ -5,7 +5,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	gabs "github.com/Jeffail/gabs/v2"
+	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -36,7 +36,7 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "deploy commit failed")
+		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
@@ -45,7 +45,7 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 	}
 	httpClient.SetOptions(clientOptions)
 
-	URL := config.Host +
+	requestURL := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
 		"/pullByCommit?sap-client=" + config.Client
 
@@ -53,10 +53,10 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 		log.Entry().Infof("preparing to deploy specified commit %v", config.Commit)
 		params := url.Values{}
 		params.Add("request", config.Commit)
-		URL = URL + "&" + params.Encode()
+		requestURL = requestURL + "&" + params.Encode()
 	}
 
-	resp, httpErr := httpClient.SendRequest("GET", URL, nil, nil, nil)
+	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 
 	defer func() {
 		if resp != nil && resp.Body != nil {
@@ -64,10 +64,10 @@ func deployCommit(config *gctsDeployCommitOptions, telemetryData *telemetry.Cust
 		}
 	}()
 
-	if resp == nil {
-		return errors.New("did not retrieve a HTTP response")
-	} else if httpErr != nil {
+	if httpErr != nil {
 		return httpErr
+	} else if resp == nil {
+		return errors.New("did not retrieve a HTTP response")
 	}
 
 	bodyText, readErr := ioutil.ReadAll(resp.Body)
