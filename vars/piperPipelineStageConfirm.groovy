@@ -51,6 +51,7 @@ void call(Map parameters = [:]) {
         time: config.manualConfirmationTimeout
     ){
         if (currentBuild.result == 'UNSTABLE') {
+            def minReasonLength = 10
             def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id:'
             while(!approval) {
                 userInput = input(
@@ -69,7 +70,7 @@ void call(Map parameters = [:]) {
                         )
                     ]
                 )
-                approval = validateApproval(userInput.reason, 10, userInput.acknowledgement, acknowledgementText, unstableStepNames)
+                approval = validateApproval(userInput.reason, minReasonLength, userInput.acknowledgement, acknowledgementText, unstableStepNames)
             }
         } else {
             input message: config.manualConfirmationMessage
