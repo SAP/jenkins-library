@@ -41,12 +41,34 @@ void call(parameters) {
                 }
             }
 
-            stage('Prepare') {
+            stage('Prepare System') {
                 steps {
-                    abapPipelinePrepare script: parameters.script
+                    cloudFoundryCreateService script: script
+                    input message: "Steampunk system ready?"
                 }
             }
-            // stage('Delete Service') {
+
+
+            stage('Prepare Scenario SAP_COM_0510') {
+                steps {
+                    cloudFoundryCreateServiceKey script: script
+                }
+            }
+
+            stage('Clone Repositories') {
+                steps {
+                    abapEnvironmentPullGitRepo script: script
+                }
+            }
+
+
+            // stage('Test') {
+            //     steps {
+            //         abapPipelinePrepare script: parameters.script
+            //     }
+            // }
+
+            // stage('Delete System') {
             //     steps {
             //         cloudFoundryDeleteService script: parameters.script
             //     }
