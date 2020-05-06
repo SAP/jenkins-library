@@ -49,12 +49,16 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      */
     'platform',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
-    'projectSettingsFile'
-]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'projectSettingsFile',
+
     /** Url to the npm registry that should be used for installing npm dependencies.*/
-    'defaultNpmRegistry'
-])
+    'defaultNpmRegistry',
+
+    /** Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.*/
+    'sapNpmRegistry'
+]
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
@@ -108,7 +112,12 @@ void call(Map parameters = [:]) {
 
             String defaultNpmRegistry = configuration.defaultNpmRegistry?.trim()
             if (defaultNpmRegistry) {
-                sh "npm config set registry $defaultNpmRegistry"
+                sh "npm config set registry ${defaultNpmRegistry}"
+            }
+
+            String sapNpmRegistry = configuration.sapNpmRegistry?.trim()
+            if (sapNpmRegistry) {
+                sh "npm config set @sap:registry ${sapNpmRegistry}"
             }
 
             def mtaYamlName = "mta.yaml"
