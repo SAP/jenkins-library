@@ -23,24 +23,37 @@ type gctsCloneRepositoryOptions struct {
 
 // GctsCloneRepositoryCommand Clones a Git repository
 func GctsCloneRepositoryCommand() *cobra.Command {
+	const STEP_NAME = "gctsCloneRepository"
+
 	metadata := gctsCloneRepositoryMetadata()
 	var stepConfig gctsCloneRepositoryOptions
 	var startTime time.Time
 
 	var createGctsCloneRepositoryCmd = &cobra.Command{
-		Use:   "gctsCloneRepository",
+		Use:   STEP_NAME,
 		Short: "Clones a Git repository",
 		Long:  `Clones a Git repository from a remote repository to a local repository on an ABAP system. To be able to execute this step, the corresponding local repository has to exist on the local ABAP system.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("gctsCloneRepository")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "gctsCloneRepository", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -52,7 +65,7 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "gctsCloneRepository")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			gctsCloneRepository(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
