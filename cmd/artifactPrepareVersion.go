@@ -23,6 +23,7 @@ import (
 )
 
 type gitRepository interface {
+	CommitObject(plumbing.Hash) (*object.Commit, error)
 	CreateTag(string, plumbing.Hash, *git.CreateTagOptions) (*plumbing.Reference, error)
 	CreateRemote(*gitConfig.RemoteConfig) (*git.Remote, error)
 	DeleteRemote(string) error
@@ -105,7 +106,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
-	gitCommit, err := getGitCommitID(repository)
+	gitCommit, gitCommitMessage, err := getGitCommitID(repository)
 	if err != nil {
 		return err
 	}
@@ -162,6 +163,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	return nil
 }
@@ -171,12 +173,16 @@ func openGit() (gitRepository, error) {
 	return git.PlainOpen(workdir)
 }
 
-func getGitCommitID(repository gitRepository) (plumbing.Hash, error) {
+func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {
 	commitID, err := repository.ResolveRevision(plumbing.Revision("HEAD"))
 	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to retrieve git commit ID")
+		return plumbing.Hash{}, "", errors.Wrap(err, "failed to retrieve git commit ID")
 	}
-	return *commitID, nil
+	commitObject, err := repository.CommitObject(*commitID)
+	if err != nil {
+		return *commitID, "", errors.Wrap(err, "failed to retrieve git commit message")
+	}
+	return *commitID, commitObject.Message, nil
 }
 
 func versioningTemplate(scheme string) (string, error) {
