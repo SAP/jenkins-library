@@ -3,9 +3,13 @@ package log
 import (
 	"bytes"
 	"sync"
-
-	"github.com/sirupsen/logrus"
 )
+
+type logTarget interface {
+	Info(args ...interface{})
+	Warn(args ...interface{})
+	Error(args ...interface{})
+}
 
 // logrusWriter can be used as the destination for a tool's std output and forwards
 // chunks between linebreaks to the logrus framework. This works around a problem
@@ -13,7 +17,7 @@ import (
 // larger than 64K without linebreaks.
 // Implementation copied from https://github.com/sirupsen/logrus/issues/564
 type logrusWriter struct {
-	entry  *logrus.Entry
+	logger logTarget
 	buffer bytes.Buffer
 	mutex  sync.Mutex
 }
@@ -40,7 +44,7 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 }
 
 func (w *logrusWriter) alwaysFlush() {
-	w.entry.Info(w.buffer.String())
+	w.logger.Info(w.buffer.String())
 	w.buffer.Reset()
 }
 

@@ -43,7 +43,7 @@ func Entry() *logrus.Entry {
 
 // Writer returns an io.Writer into which a tool's output can be redirected.
 func Writer() io.Writer {
-	return &logrusWriter{entry: Entry()}
+	return &logrusWriter{logger: Entry()}
 }
 
 // SetVerbose sets the log level with respect to verbose flag.
