@@ -441,16 +441,20 @@ func TestCalculateNewVersion(t *testing.T) {
 	tt := []struct {
 		versioningTemplate string
 		includeCommitID    bool
+		shortCommitID      bool
+		unixTimestamp      bool
 		expected           string
 		expectedErr        string
 	}{
 		{versioningTemplate: "", expectedErr: "failed calculate version, new version is ''"},
 		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", expected: "1.2.3-20200101000000"},
 		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, expected: "1.2.3-20200101000000+428ecf70bc22df0ba3dcf194b5ce53e769abab07"},
+		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, shortCommitID: true, expected: "1.2.3-20200101000000+428ecf7"},
+		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, unixTimestamp: true, expected: "1.2.3-1577836800+428ecf70bc22df0ba3dcf194b5ce53e769abab07"},
 	}
 
 	for _, test := range tt {
-		version, err := calculateNewVersion(test.versioningTemplate, currentVersion, commitID, test.includeCommitID, testTime)
+		version, err := calculateNewVersion(test.versioningTemplate, currentVersion, commitID, test.includeCommitID, test.shortCommitID, test.unixTimestamp, testTime)
 		assert.Equal(t, test.expected, version)
 		if len(test.expectedErr) == 0 {
 			assert.NoError(t, err)
