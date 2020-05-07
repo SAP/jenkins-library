@@ -63,6 +63,7 @@ void call(Map parameters = [:]) {
                 String prefixHttp = 'http://'
                 String prefixHttps = 'https://'
 
+                // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
                 if (customDefaults[i].startsWith(prefixHttp) || customDefaults[i].startsWith(prefixHttps)) {
                     String fileName = "customDefaultFromUrl_${urlCount}.yml"
                     String configFilePath = ".pipeline/${fileName}"
@@ -70,14 +71,7 @@ void call(Map parameters = [:]) {
                     urlCount += 1
                     customDefaults[i] = fileName
                 } else if (fileExists(customDefaults[i])) {
-                    // copy files to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
-                    if (customDefaults[i].startsWith("./")){
-                        writeFile file: ".pipeline/${customDefaults[i].substring(2)}", text: readFile(file: customDefaults[i])
-                        customDefaults[i] = customDefaults[i].substring(2)
-                    }
-                    else {
-                        writeFile file: ".pipeline/${customDefaults[i]}", text: readFile(file: customDefaults[i])
-                    }
+                    writeFile file: ".pipeline/${customDefaults[i]}", text: readFile(file: customDefaults[i])
                 } else {
                     writeFile file: ".pipeline/${customDefaults[i]}", text: libraryResource(customDefaults[i])
                 }
