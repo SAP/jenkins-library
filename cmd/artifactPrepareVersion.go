@@ -178,6 +178,8 @@ func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {
 	if err != nil {
 		return plumbing.Hash{}, "", errors.Wrap(err, "failed to retrieve git commit ID")
 	}
+	// ToDo not too elegant to retrieve the commit message here, must be refactored sooner than later
+	// but to quickly address https://github.com/SAP/jenkins-library/pull/1515 let's revive this
 	commitObject, err := repository.CommitObject(*commitID)
 	if err != nil {
 		return *commitID, "", errors.Wrap(err, "failed to retrieve git commit message")
