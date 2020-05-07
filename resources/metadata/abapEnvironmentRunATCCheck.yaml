@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: cfCredentialsId
+      - name: credentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
     params:

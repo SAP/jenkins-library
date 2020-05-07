@@ -5,8 +5,8 @@
 ## Prerequisites
 
 * This step is for triggering an ATC run on an ABAP system.
-* You can either provide the ABAP endpoint config to directly trigger ann ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of an ABAP instance in Cloud Foundry that contains all the details to trigger an ATC run.
-* Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile where you run the pipeline from.
+* You can either provide the ABAP endpoint config to directly trigger ann ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of a SAP Cloud Platform ABAP Environment instance in Cloud Foundry that contains all the details to trigger an ATC run.
+* Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile defining the pipeline.
 
 Examples will be listed below.
 

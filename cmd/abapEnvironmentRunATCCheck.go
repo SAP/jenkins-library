@@ -260,7 +260,7 @@ func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sen
 		if x.Status == "Not Created" {
 			return "", err
 		}
-		if x.Status != "Running" && x.Status != "Not Yet Started" && x.Status == "Completed" {
+		if x.Status == "Completed" {
 			return x.Link[0].Key, err
 		}
 		if x.Status == "" {
