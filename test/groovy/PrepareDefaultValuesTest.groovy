@@ -91,17 +91,6 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         assert DefaultValueCache.getInstance().getDefaultValues().key == 'value'
     }
 
-    // TODO: move to setupCommonPipelineEnvTest
-    @Test
-    public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsString() {
-
-        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
-
-        assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
-        assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
-        assert DefaultValueCache.getInstance().getDefaultValues().custom == 'myConfig'
-    }
-
     @Test
     public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsList() {
 
