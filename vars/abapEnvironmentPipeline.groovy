@@ -37,7 +37,7 @@ void call(parameters) {
             //     //setupCommonPipelineEnvironment script: parameters.script
             //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
 
-                    abapPipelineInit script: parameters.script
+                    abapEnvironmentPipelineInit script: parameters.script
                 }
             }
 
