@@ -275,7 +275,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ./lib
+      default: ./lib;.
     - name: artifactUrl
       type: string
       description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build' 

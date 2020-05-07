@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -12,19 +13,22 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration time.Duration
-	transportTimeout   time.Duration
-	username           string
-	password           string
-	token              string
-	logger             *logrus.Entry
-	cookieJar          http.CookieJar
+	maxRequestDuration       time.Duration
+	transportTimeout         time.Duration
+	username                 string
+	password                 string
+	token                    string
+	logger                   *logrus.Entry
+	cookieJar                http.CookieJar
+	doLogRequestBodyOnDebug  bool
+	doLogResponseBodyOnDebug bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -36,12 +40,21 @@ type ClientOptions struct {
 	MaxRequestDuration time.Duration
 	// TransportTimeout defaults to 10 seconds, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout time.Duration
-	Username         string
-	Password         string
-	Token            string
-	Logger           *logrus.Entry
-	CookieJar        http.CookieJar
+	TransportTimeout         time.Duration
+	Username                 string
+	Password                 string
+	Token                    string
+	Logger                   *logrus.Entry
+	CookieJar                http.CookieJar
+	DoLogRequestBodyOnDebug  bool
+	DoLogResponseBodyOnDebug bool
+}
+
+// TransportWrapper is a wrapper for central logging capabilities
+type TransportWrapper struct {
+	Transport                http.RoundTripper
+	doLogRequestBodyOnDebug  bool
+	doLogResponseBodyOnDebug bool
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -124,13 +137,12 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
-		c.logger.Debugf("New %v request to %v", method, url)
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return response, errors.Wrapf(err, "error opening %v", url)
+		return response, errors.Wrapf(err, "error calling %v", url)
 	}
 
 	return c.handleResponse(response)
@@ -138,6 +150,8 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 // SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
+	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
+	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
 	c.transportTimeout = options.TransportTimeout
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
@@ -164,15 +178,18 @@ func (c *Client) initialize() *http.Client {
 	if c.transportTimeout < expectContinueTimeout {
 		expectContinueTimeout = c.transportTimeout
 	}
-	var transport = &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout: c.transportTimeout,
-		}).DialContext,
-		ResponseHeaderTimeout: responseHeaderTimeout,
-		ExpectContinueTimeout: expectContinueTimeout,
-		TLSHandshakeTimeout:   c.transportTimeout,
+	var transport = &TransportWrapper{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: c.transportTimeout,
+			}).DialContext,
+			ResponseHeaderTimeout: responseHeaderTimeout,
+			ExpectContinueTimeout: expectContinueTimeout,
+			TLSHandshakeTimeout:   c.transportTimeout,
+		},
+		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
-
 	var httpClient = &http.Client{
 		Timeout:   c.maxRequestDuration,
 		Transport: transport,
@@ -183,8 +200,71 @@ func (c *Client) initialize() *http.Client {
 	return httpClient
 }
 
+type contextKey struct {
+	name string
+}
+
+var contextKeyRequestStart = &contextKey{"RequestStart"}
+
+// RoundTrip is the core part of this module and implements http.RoundTripper.
+// Executes HTTP request with request/response logging.
+func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx := context.WithValue(req.Context(), contextKeyRequestStart, time.Now())
+	req = req.WithContext(ctx)
+
+	t.logRequest(req)
+	resp, err := t.Transport.RoundTrip(req)
+	t.logResponse(resp)
+
+	return resp, err
+}
+
+func (t *TransportWrapper) logRequest(req *http.Request) {
+	log.Entry().Debug("--------------------------------")
+	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
+	log.Entry().Debugf("headers: %v", req.Header)
+	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
+	if t.doLogRequestBodyOnDebug {
+		log.Entry().Debugf("body: %v", transformBody(req.Body))
+	}
+	log.Entry().Debug("--------------------------------")
+}
+
+func (t *TransportWrapper) logResponse(resp *http.Response) {
+	if resp != nil {
+		ctx := resp.Request.Context()
+		if start, ok := ctx.Value(contextKeyRequestStart).(time.Time); ok {
+			log.Entry().Debugf("<-- response %v %v (%v)", resp.StatusCode, resp.Request.URL, roundtime.Duration(time.Now().Sub(start), 2))
+		} else {
+			log.Entry().Debugf("<-- response %v %v", resp.StatusCode, resp.Request.URL)
+		}
+		if t.doLogResponseBodyOnDebug {
+			log.Entry().Debugf("body: %v", transformBody(resp.Body))
+		}
+	} else {
+		log.Entry().Debug("response <nil>")
+	}
+	log.Entry().Debug("--------------------------------")
+}
+
+func transformCookies(cookies []*http.Cookie) string {
+	result := ""
+	for _, c := range cookies {
+		result = fmt.Sprintf("%v %v", result, c.String())
+	}
+	return result
+}
+
+func transformBody(body io.ReadCloser) string {
+	if body == nil {
+		return ""
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(body)
+	return buf.String()
+}
+
 func (c *Client) createRequest(method, url string, body io.Reader, header *http.Header, cookies []*http.Cookie) (*http.Request, error) {
-	c.logger.Debugf("New %v request to %v", method, url)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return &http.Request{}, err

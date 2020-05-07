@@ -414,9 +414,9 @@ func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoi
 		if err != nil {
 			return errors.Wrapf(err, "Failed to download current state FPR of PR project version %v", prProjectVersion.ID)
 		}
-		err = sys.uploadResultFileContent(uploadEndpoint, "prMergeTransfer.fpr", bytes.NewReader(data), masterProjectID)
+		err = sys.uploadResultFileContent(uploadEndpoint, "prMergeTransfer.fpr", bytes.NewReader(data), masterProjectVersionID)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to upload PR project version state to master project version %v", masterProjectID)
+			return errors.Wrapf(err, "Failed to upload PR project version state to master project version %v", masterProjectVersionID)
 		}
 		_, err = sys.inactivateProjectVersion(prProjectVersion.ID)
 		if err != nil {
@@ -565,6 +565,7 @@ func (sys *SystemInstance) GetReportDetails(id int64) (*models.SavedReport, erro
 }
 
 func (sys *SystemInstance) invalidateFileTokens() error {
+	log.Entry().Debug("invalidating file tokens")
 	params := &file_token_controller.MultiDeleteFileTokenParams{}
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.FileTokenController.MultiDeleteFileToken(params, sys)
@@ -583,14 +584,17 @@ func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, er
 }
 
 func (sys *SystemInstance) getFileUploadToken() (*models.FileToken, error) {
+	log.Entry().Debug("fetching upload token")
 	return sys.getFileToken("UPLOAD")
 }
 
 func (sys *SystemInstance) getFileDownloadToken() (*models.FileToken, error) {
+	log.Entry().Debug("fetching download token")
 	return sys.getFileToken("DOWNLOAD")
 }
 
 func (sys *SystemInstance) getReportFileToken() (*models.FileToken, error) {
+	log.Entry().Debug("fetching report download token")
 	return sys.getFileToken("REPORT_FILE")
 }
 
@@ -631,8 +635,8 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 	header.Add("Accept", acceptType)
 	header.Add("Content-Type", "application/form-data")
 	body := url.Values{
-		"mat": {downloadToken},
 		"id":  {fmt.Sprintf("%v", projectVersionID)},
+		"mat": {downloadToken},
 	}
 	var response *http.Response
 	var err error
@@ -673,7 +677,7 @@ func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID 
 		return nil, errors.Wrap(err, "Error fetching result file download token")
 	}
 	defer sys.invalidateFileTokens()
-	data, err := sys.downloadFile(endpoint, http.MethodPost, "application/zip", token.Token, projectVersionID)
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/zip", token.Token, projectVersionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error downloading result file")
 	}

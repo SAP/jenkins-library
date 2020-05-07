@@ -390,11 +390,11 @@ func TestIsExcluded(t *testing.T) {
 	}{
 		{issue: nil, excludeLabels: nil, expected: false},
 		{issue: &github.Issue{}, excludeLabels: nil, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: nil, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: []string{"label0"}, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: []string{"label1"}, expected: true},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{}, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{"label1"}, expected: true},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: nil, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: []string{"label0"}, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: []string{"label1"}, expected: true},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{}, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{"label1"}, expected: true},
 	}
 
 	for k, v := range tt {

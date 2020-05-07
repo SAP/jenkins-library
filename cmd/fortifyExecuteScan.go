@@ -54,32 +54,33 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		gav, err = piperutils.GetPipCoordinates(config.BuildDescriptorFile)
 	}
 	if err != nil {
-		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
+		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
 	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
-		log.Entry().Fatalf("Failed to load project %v: %v", fortifyProjectName, err)
+		log.Entry().Fatalf("Failed to load project %v: %w", fortifyProjectName, err)
 	}
 	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
-		log.Entry().Fatalf("Failed to load project version %v: %v", fortifyProjectVersion, err)
+		log.Entry().Fatalf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
 
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
 		if err != nil {
-			log.Entry().Fatalf("Failed to lookup / create project version for pull request %v: %v", fortifyProjectVersion, err)
+			log.Entry().Fatalf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
 		prID := determinePullRequestMerge(config)
 		if len(prID) > 0 {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
-			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, fmt.Sprintf("PR-%v", prID))
+			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
+			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
 			if err != nil {
-				log.Entry().Fatalf("Failed to merge project version state for pull request %v: %v", fortifyProjectVersion, err)
+				log.Entry().Fatalf("Failed to merge project version state for pull request %v into project version %v of project %v: %w", pullRequestProjectName, fortifyProjectVersion, project.ID, err)
 			}
 		}
 	}
@@ -633,6 +634,9 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 			options = append(options, "-python-path", t["autoClasspath"])
 		} else if len(t["pythonPath"]) > 0 {
 			options = append(options, "-python-path", t["pythonPath"])
+		}
+		if len(t["djangoTemplatDirs"]) > 0 {
+			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
 		if len(t["pythonExcludes"]) > 0 {
 			options = append(options, "-exclude", t["pythonExcludes"])

@@ -94,7 +94,7 @@ func TestGetProjectByName(t *testing.T) {
 				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
-		if req.URL.Path == "/projects/815" {
+		if req.URL.Path == "/projectVersions/10172" {
 			commitCalled = true
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
@@ -1021,8 +1021,7 @@ func TestDownloadResultFile(t *testing.T) {
 		if req.URL.Path == "/download/currentStateFprDownload.html" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
-			bodyContent = string(bodyBytes)
+			bodyContent = req.URL.RawQuery
 			rw.WriteHeader(200)
 			rw.Write([]byte("OK"))
 			return
