@@ -55,20 +55,3 @@ jobs:
       run: go mod tidy
     - name: verify
       run: git diff --name-only --exit-code
-  integration:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.13.x'
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: build
-      env:
-        CGO_ENABLED: 0
-      # with `-tags release` we ensure that shared test utilities won't end up in the binary
-      run: go build -o piper -tags release
-    - name: test
-      env:
-        PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-      run: go test -tags=integration ./integration/...
