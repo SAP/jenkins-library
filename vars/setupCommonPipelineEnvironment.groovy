@@ -84,7 +84,7 @@ void call(Map parameters = [:]) {
             }
         }
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+        prepareDefaultValues script: script, customDefaults: customDefaults, numCustomDefaultsInConfig: numCustomDefaultsInConfig
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
