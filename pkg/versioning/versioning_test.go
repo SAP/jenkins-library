@@ -30,7 +30,7 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "test.ini", theType.path)
 		assert.Equal(t, "theversion", theType.options.VersionField)
 		assert.Equal(t, "test", theType.options.VersionSection)
-		assert.Equal(t, "maven", docker.VersioningScheme())
+		assert.Equal(t, "docker", docker.VersioningScheme())
 	})
 
 	t.Run("dub", func(t *testing.T) {
