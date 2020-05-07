@@ -155,6 +155,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	parameters = append(parameters, "--batch-mode")
 
 	parameters = append(parameters, options.Goals...)
+
 	return parameters, nil
 }
 
