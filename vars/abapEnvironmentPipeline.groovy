@@ -1,12 +1,6 @@
 void call(parameters) {
     pipeline {
         agent any
-        //triggers {
-        //    issueCommentTrigger('.*/piper ([a-z]*).*')
-        //}
-        options {
-            timestamps()
-        }
         stages {
             stage("go binary"){
                 steps {
@@ -41,26 +35,19 @@ void call(parameters) {
                 }
             }
 
-            stage('Prepare System') {
+            stage('Prepare') {
                 steps {
                     cloudFoundryCreateService script: parameters.script
                     input message: "Steampunk system ready?"
-                }
-            }
-
-
-            stage('Prepare Communication') {
-                steps {
                     cloudFoundryCreateServiceKey script: parameters.script
                 }
             }
 
-            stage('Clone Repositories') {
+            stage('Clone') {
                 steps {
                     abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
-
 
             // stage('Test') {
             //     steps {
@@ -68,11 +55,11 @@ void call(parameters) {
             //     }
             // }
 
-            // stage('Delete System') {
-            //     steps {
-            //         cloudFoundryDeleteService script: parameters.script
-            //     }
-            // }
+            stage('Cleanup') {
+                steps {
+                    cloudFoundryDeleteService script: parameters.script
+                }
+            }
         }
         // post {
         //     /* https://jenkins.io/doc/book/pipeline/syntax/#post */
