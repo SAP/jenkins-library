@@ -127,18 +127,18 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 		}
 	}
 
-	// Project with specified name was NOT found, check if autoCreate flag is set, if so: create it automatically
-	if autoCreate {
-		log.Entry().Debugf("No projects found with name: %v auto-creating one now...", projectName)
-		projectVersion, err := sys.CreateProjectVersionIfNotExist(projectName, projectVersionName, "Created by Go script")
-		if err != nil {
-			return nil, err
-		}
-		log.Entry().Debugf("Finished creating project: %v", projectVersion)
-		return projectVersion.Project, nil
-
+	// Project with specified name was NOT found, check if autoCreate flag is set, if not stop otherwise create it automatically
+	if !autoCreate {
+		return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
 	}
-	return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
+
+	log.Entry().Debugf("No projects found with name: %v auto-creating one now...", projectName)
+	projectVersion, err := sys.CreateProjectVersionIfNotExist(projectName, projectVersionName, "Created by Go script")
+	if err != nil {
+		return nil, fmt.Errorf("failed to auto-create new project: %w", err)
+	}
+	log.Entry().Debugf("Finished creating project: %v", projectVersion)
+	return projectVersion.Project, nil
 }
 
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
@@ -158,16 +158,17 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 		}
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
-	if autoCreate {
-		log.Entry().Debugf("Could not find project version with name %v under project %v auto-creating one now...", versionName, projectName)
-		version, err := sys.CreateProjectVersionIfNotExist(projectName, versionName, "Created by Go script")
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not create project version: %v for project %v", versionName, projectName)
-		}
-		log.Entry().Debugf("Successfully created project version %v for project %v", versionName, projectName)
-		return version, nil
+	if !autoCreate {
+		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 	}
-	return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
+
+	log.Entry().Debugf("Could not find project version with name %v under project %v auto-creating one now...", versionName, projectName)
+	version, err := sys.CreateProjectVersionIfNotExist(projectName, versionName, "Created by Go script")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to auto-create project version: %v for project %v", versionName, projectName)
+	}
+	log.Entry().Debugf("Successfully created project version %v for project %v", versionName, projectName)
+	return version, nil
 }
 
 // CreateProjectVersionIfNotExist creates a new ProjectVersion if it does not already exist.

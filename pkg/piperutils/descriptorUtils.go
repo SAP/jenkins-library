@@ -152,11 +152,11 @@ func GetPipCoordinates(filename string) (*PipDescriptor, error) {
 	} else {
 		descriptor.Version = ""
 	}
-	if len(descriptor.Version) <= 0 || evaluateResult(descriptor.Version, MethodRegex) {
+	if evaluateResult(descriptor.Version, MethodRegex) {
 		filename = strings.Replace(filename, "setup.py", "version.txt", 1)
 		descriptor.Version, err = getVersionFromFile(filename)
 		if err != nil {
-			return descriptor, err
+			return nil, err
 		}
 	}
 
@@ -165,11 +165,8 @@ func GetPipCoordinates(filename string) (*PipDescriptor, error) {
 
 func evaluateResult(value, regex string) bool {
 	if len(value) > 0 {
-		match, err := regexp.MatchString(regex, value)
-		if err != nil || match {
-			return true
-		}
-		return false
+		match, _ := regexp.MatchString(regex, value)
+		return match
 	}
 	return true
 }
