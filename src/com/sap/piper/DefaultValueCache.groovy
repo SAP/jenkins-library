@@ -43,19 +43,33 @@ class DefaultValueCache implements Serializable {
         if(parameters == null) parameters = [:]
         if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
             def defaultValues = [:]
-            def configFileList = ['default_pipeline_environment.yml']
-            def customDefaults = parameters.customDefaults
+            List paramCustomDefaults
+            int numCustomDefaultsInConfig = 0
 
-            if(customDefaults in String)
-                customDefaults = [customDefaults]
-            if(customDefaults in List)
-                configFileList += customDefaults
-            for (def configFileName : configFileList){
-                if(configFileList.size() > 1) steps.echo "Loading configuration file '${configFileName}'"
-                def configuration = steps.readYaml text: steps.libraryResource(configFileName)
+            if (parameters.customDefaults){
+                paramCustomDefaults = parameters.customDefaults
+                if (parameters.numCustomDefaultsInConfig){
+                    numCustomDefaultsInConfig = parameters.numCustomDefaultsInConfig
+                }
+            } else {
+                paramCustomDefaults = ['default_pipeline_environment.yml']
+                steps.writeFile file: ".pipeline/${paramCustomDefaults[0]}", text: steps.libraryResource(paramCustomDefaults[0])
+            }
+
+            List customDefaults = []
+
+            for (int i = 0; i < paramCustomDefaults.size(); i++) {
+                if(paramCustomDefaults.size() > 1) steps.echo "Loading configuration file '${paramCustomDefaults[i]}'"
+                def configuration = steps.readYaml file: ".pipeline/${paramCustomDefaults[i]}"
+
+                // Only customDefaults not coming from project config are saved in customDefaults list to not have duplicated customDefaults when getConfig Go step is executed.
+                // Since, the go step considers the customDefaults defined in project config in addition to the via CLI provided list of customDefaults.
+                if (i <= paramCustomDefaults.size()-1-numCustomDefaultsInConfig){
+                    customDefaults.add(paramCustomDefaults[i])
+                }
                 defaultValues = MapUtils.merge(
-                        MapUtils.pruneNulls(defaultValues),
-                        MapUtils.pruneNulls(configuration))
+                    MapUtils.pruneNulls(defaultValues),
+                    MapUtils.pruneNulls(configuration))
             }
             DefaultValueCache.createInstance(defaultValues, customDefaults)
         }

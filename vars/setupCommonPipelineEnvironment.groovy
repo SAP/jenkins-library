@@ -35,19 +35,58 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
-
-        List customDefaults = ['default_pipeline_environment.yml'].plus(parameters.customDefaults?:[])
-        customDefaults.each {
-            cd ->
-                writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
-        }
-
-        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
-
         String configFile = parameters.get('configFile')
 
         loadConfigurationFromFile(script, configFile)
+
+        List customDefaults = ['default_pipeline_environment.yml']
+
+        if(parameters.customDefaults in String) {
+            customDefaults += [parameters.customDefaults]
+        } else if(parameters.customDefaults in List){
+            customDefaults += parameters.customDefaults
+        }
+
+        int numCustomDefaultsInConfig = 0
+        if (script.commonPipelineEnvironment.configuration.customDefaults){
+            numCustomDefaultsInConfig = script.commonPipelineEnvironment.configuration.customDefaults.size()
+            script.commonPipelineEnvironment.configuration.customDefaults.each{
+                cd ->
+                    customDefaults.add(cd)
+            }
+        }
+
+        if (customDefaults.size() > 1) {
+            int urlCount = 0
+
+            for (int i = 0; i < customDefaults.size(); i++) {
+                String prefixHttp = 'http://'
+                String prefixHttps = 'https://'
+
+                if (customDefaults[i].startsWith(prefixHttp) || customDefaults[i].startsWith(prefixHttps)) {
+                    String fileName = "customDefaultFromUrl_${urlCount}.yml"
+                    String configFilePath = ".pipeline/${fileName}"
+                    sh(script: "curl --fail --location --output ${configFilePath} ${customDefaults[i]}")
+                    urlCount += 1
+                    customDefaults[i] = fileName
+                } else if (fileExists(customDefaults[i])) {
+                    // copy files to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
+                    if (customDefaults[i].startsWith("./")){
+                        writeFile file: ".pipeline/${customDefaults[i].substring(2)}", text: readFile(file: customDefaults[i])
+                        customDefaults[i] = customDefaults[i].substring(2)
+                    }
+                    else {
+                        writeFile file: ".pipeline/${customDefaults[i]}", text: readFile(file: customDefaults[i])
+                    }
+                } else {
+                    writeFile file: ".pipeline/${customDefaults[i]}", text: libraryResource(customDefaults[i])
+                }
+            }
+        }
+
+        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+
+        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
