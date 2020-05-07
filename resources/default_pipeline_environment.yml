@@ -6,8 +6,7 @@
 #Project Setup
 general:
   collectTelemetryData: true
-  jenkinsKubernetes:
-    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
+  logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
@@ -40,6 +39,7 @@ general:
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
+    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
