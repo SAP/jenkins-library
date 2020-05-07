@@ -81,7 +81,8 @@ func TestExecute(t *testing.T) {
 			Flags: []string{"-q"}, LogSuccessfulMavenTransfers: true,
 			ReturnStdout: false}
 		expectedParameters := []string{"--global-settings", "anotherSettings.xml", "--settings", "settings.xml",
-			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode", "flatten", "install"}
+			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode",
+			"flatten", "install"}
 
 		mavenOutput, _ := Execute(&opts, &execMockRunner)
 
