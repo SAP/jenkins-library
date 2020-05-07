@@ -49,7 +49,7 @@ void call(parameters) {
             }
 
 
-            stage('Prepare Scenario SAP_COM_0510') {
+            stage('Prepare Communication') {
                 steps {
                     cloudFoundryCreateServiceKey script: parameters.script
                 }
