@@ -8,9 +8,7 @@ import com.sap.piper.DefaultValueCache
 import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
 import util.JenkinsStepRule
-import util.JenkinsWriteFileRule
 import util.Rules
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
