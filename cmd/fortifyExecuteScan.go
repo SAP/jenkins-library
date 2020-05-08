@@ -32,15 +32,17 @@ var auditStatus map[string]string
 const checkString = "<---CHECK FORTIFY---"
 const classpathFileName = "cp.txt"
 
-func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
+func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus = map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	c.SetEnv(os.Environ())
-	return runFortifyScan(config, sys, &c, telemetryData, influx)
+	err := runFortifyScan(config, sys, &c, telemetryData, influx)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
+	}
 }
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command execRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
@@ -56,21 +58,21 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.ProjectVersion, config.DefaultVersioningModel, gav)
+	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
-		log.Entry().Fatalf("Failed to load project %v: %w", fortifyProjectName, err)
+		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
 	}
 	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
-		log.Entry().Fatalf("Failed to load project version %v: %w", fortifyProjectVersion, err)
+		return fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
 
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
 		if err != nil {
-			log.Entry().Fatalf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
+			return fmt.Errorf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
@@ -80,7 +82,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
 			if err != nil {
-				log.Entry().Fatalf("Failed to merge project version state for pull request %v into project version %v of project %v: %w", pullRequestProjectName, fortifyProjectVersion, project.ID, err)
+				return fmt.Errorf("Failed to merge project version state for pull request %v into project version %v of project %v: %w", pullRequestProjectName, fortifyProjectVersion, project.ID, err)
 			}
 		}
 	}
@@ -127,24 +129,27 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	}
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
-		log.Entry().WithError(err).Fatal(message)
+		return fmt.Errorf(message+": %w", err)
 	}
 
 	log.Entry().Debugf("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	filterSet, err := sys.GetFilterSetOfProjectVersionByTitle(projectVersion.ID, config.FilterSetTitle)
 	if filterSet == nil || err != nil {
-		log.Entry().Fatalf("Failed to load filter set with title %v", config.FilterSetTitle)
+		return fmt.Errorf("Failed to load filter set with title %v", config.FilterSetTitle)
 	}
 
 	// Ensure latest FPR is processed
-	verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet, 0)
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet, 0)
+	if err != nil {
+		return err
+	}
 
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
 		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0x700)
 
-		//generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		generateAndDownloadQGateReport(config, sys, project, projectVersion)
 	}
 
 	// Perform audit compliance checks
@@ -322,28 +327,27 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0x700)
 }
 
-func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, artifact *models.Artifact, numInvokes int) bool {
+func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, artifact *models.Artifact, numInvokes int) error {
 	numInvokes++
 	if "PROCESSING" == artifact.Status || "SCHED_PROCESSING" == artifact.Status {
 		if numInvokes >= (config.PollingMinutes * 6) {
-			log.Entry().Fatalf("Terminating after %v minutes since artifact for Project Version %v is still in status %v", config.PollingMinutes, projectVersionID, artifact.Status)
+			return fmt.Errorf("Terminating after %v minutes since artifact for Project Version %v is still in status %v", config.PollingMinutes, projectVersionID, artifact.Status)
 		}
 		log.Entry().Infof("Most recent artifact uploaded on %v of Project Version %v is still in status %v...", artifact.UploadDate, projectVersionID, artifact.Status)
 		time.Sleep(10 * time.Second)
-		verifyScanResultsFinishedUploading(config, sys, projectVersionID, buildLabel, filterSet, numInvokes)
-		return false
+		return verifyScanResultsFinishedUploading(config, sys, projectVersionID, buildLabel, filterSet, numInvokes)
 	}
 	if "REQUIRE_AUTH" == artifact.Status {
 		// verify no manual issue approval needed
-		log.Entry().Warnf("There are artifacts that require manual approval for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
+		return fmt.Errorf("There are artifacts that require manual approval for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
 	}
 	if "ERROR_PROCESSING" == artifact.Status {
-		log.Entry().Warnf("There are artifacts that failed processing for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
+		return fmt.Errorf("There are artifacts that failed processing for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
 	}
-	return true
+	return nil
 }
 
-func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, numInvokes int) {
+func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, numInvokes int) error {
 	log.Entry().Debug("Verifying scan results have finished uploading and processing")
 	var artifacts []*models.Artifact
 	var relatedUpload *models.Artifact
@@ -355,8 +359,8 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 		}
 		if len(artifacts) > 0 {
 			latest := artifacts[0]
-			if checkArtifactStatus(config, sys, projectVersionID, buildLabel, filterSet, latest, numInvokes) {
-				return
+			if err := checkArtifactStatus(config, sys, projectVersionID, buildLabel, filterSet, latest, numInvokes); err != nil {
+				return err
 			}
 			notFound := true
 			for _, artifact := range artifacts {
@@ -369,7 +373,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 				}
 			}
 		} else {
-			log.Entry().Fatalf("No uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)
+			return fmt.Errorf("No uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)
 		}
 		if relatedUpload == nil {
 			log.Entry().Warn("Unable to identify artifact based on the build label, will consider most recent artifact as related to the scan")
@@ -380,7 +384,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	differenceInSeconds := calculateTimeDifferenceToLastUpload(config, relatedUpload.UploadDate, projectVersionID)
 	// Use the absolute value for checking the time difference
 	if differenceInSeconds > float64(60*config.DeltaMinutes) {
-		log.Entry().Fatal("No recent upload detected on Project Version")
+		return fmt.Errorf("No recent upload detected on Project Version")
 	}
 	warn := false
 	for _, upload := range artifacts {
@@ -391,6 +395,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	if warn {
 		log.Entry().Warn("Previous uploads detected that failed processing, please ensure that your scans are properly configured")
 	}
+	return nil
 }
 
 func calculateTimeDifferenceToLastUpload(config fortifyExecuteScanOptions, uploadDate models.Iso8601MilliDateTime, projectVersionID int64) float64 {

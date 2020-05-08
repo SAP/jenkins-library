@@ -56,7 +56,6 @@ type fortifyExecuteScanOptions struct {
 	DeltaMinutes                    int    `json:"deltaMinutes,omitempty"`
 	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
-	ProjectVersion                  string `json:"projectVersion,omitempty"`
 	DefaultVersioningModel          string `json:"defaultVersioningModel,omitempty"`
 	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
@@ -209,7 +208,6 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint  for FPR downloads")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version used for reporting results in SSC")
 	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
@@ -551,14 +549,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyFprDownloadEndpoint"}},
-					},
-					{
-						Name:        "projectVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "fortifyProjectVersion"}},
 					},
 					{
 						Name:        "defaultVersioningModel",

@@ -119,7 +119,7 @@ func calculateCoordinate(filename, coordinate, filterRegex string) (string, erro
 	err := cmd.RunExecutable("mvn", "-f", filename, fmt.Sprintf(`-Dexpression=project.%v`, coordinate), "help:evaluate")
 	stdout := output.String()
 	if err != nil {
-		return "", fmt.Errorf("Failed to calculate coordinate version on descriptor %v: %v (error %v)", filename, stdout, err)
+		return "", fmt.Errorf("Failed to calculate coordinate version on descriptor %v: %v (error %w)", filename, stdout, err)
 	}
 	log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/piperutils").Debugf("Maven output was: %v", stdout)
 	return filter(stdout, filterRegex), nil
@@ -184,13 +184,10 @@ func getVersionFromFile(file string) (string, error) {
 }
 
 // DetermineProjectCoordinates resolve the coordinates of the project for use in 3rd party scan tools
-func DetermineProjectCoordinates(nameTemplate, version, versionScheme string, gav BuildDescriptor) (string, string) {
+func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav BuildDescriptor) (string, string) {
 	projectName, err := ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project name %v", err)
-	}
-	if len(version) > 0 {
-		return projectName, version
+		log.Entry().Warnf("Unable to resolve fortify project name: %w", err)
 	}
 
 	versionTemplate := gav.GetVersion()
@@ -209,7 +206,7 @@ func DetermineProjectCoordinates(nameTemplate, version, versionScheme string, ga
 
 	projectVersion, err := ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project version %v", err)
+		log.Entry().Warnf("Unable to resolve fortify project version: %w", err)
 	}
 	return projectName, projectVersion
 }

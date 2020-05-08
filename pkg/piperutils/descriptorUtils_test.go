@@ -134,7 +134,7 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("maven", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "1.2.3"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "major", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "major", gav)
 		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different project name")
 		assert.Equal(t, "1", version, "Expected different project version")
 	})
@@ -142,7 +142,7 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("maven major-minor", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "1.2.3"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "major-minor", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "major-minor", gav)
 		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different project name")
 		assert.Equal(t, "1.2", version, "Expected different project version")
 	})
@@ -150,7 +150,7 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("maven full", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "1.2.3-7864387648746"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "full", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "full", gav)
 		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different project name")
 		assert.Equal(t, "1.2.3-7864387648746", version, "Expected different project version")
 	})
@@ -158,7 +158,7 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("maven semantic", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "1.2.3-7864387648746"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "semantic", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "semantic", gav)
 		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different project name")
 		assert.Equal(t, "1.2.3", version, "Expected different project version")
 	})
@@ -166,7 +166,7 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("maven original", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &MavenDescriptor{GroupID: "com.test.pkg", ArtifactID: "analyzer", Version: "0-SNAPSHOT"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "snapshot", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "snapshot", gav)
 		assert.Equal(t, "com.test.pkg-analyzer", name, "Expected different project name")
 		assert.Equal(t, "0-SNAPSHOT", version, "Expected different project version")
 	})
@@ -174,16 +174,8 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 	t.Run("python", func(t *testing.T) {
 		var gav BuildDescriptor
 		gav = &PipDescriptor{GroupID: "", ArtifactID: "python-test", Version: "2.2.3"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "", "major", gav)
+		name, version := DetermineProjectCoordinates(nameTemplate, "major", gav)
 		assert.Equal(t, "python-test", name, "Expected different project name")
 		assert.Equal(t, "2", version, "Expected different project version")
-	})
-
-	t.Run("python version text", func(t *testing.T) {
-		var gav BuildDescriptor
-		gav = &PipDescriptor{GroupID: "", ArtifactID: "python-test", Version: "2.2.3"}
-		name, version := DetermineProjectCoordinates(nameTemplate, "1234", "major", gav)
-		assert.Equal(t, "python-test", name, "Expected different project name")
-		assert.Equal(t, "1234", version, "Expected different project version")
 	})
 }

@@ -214,6 +214,7 @@ spec:
       - STAGES
       - STEPS
       default: -exclude ./**/tests/**/*;./**/setup.py
+      deprecated: true
     - name: reportDownloadEndpoint
       aliases:
       - name: fortifyReportDownloadEndpoint
@@ -276,6 +277,7 @@ spec:
       - STAGES
       - STEPS
       default: ./lib;.
+      deprecated: true
     - name: artifactUrl
       type: string
       description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build' 
@@ -321,6 +323,7 @@ spec:
       - STAGES
       - STEPS
       default: ./**/*
+      deprecated: true
     - name: reporting
       type: bool
       description: Influences whether a report is generated or not
@@ -383,15 +386,6 @@ spec:
       - STAGES
       - STEPS
       default: /download/currentStateFprDownload.html
-    - name: projectVersion
-      aliases:
-      - name: fortifyProjectVersion
-      type: string
-      description: The project version used for reporting results in SSC
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
     - name: defaultVersioningModel
       type: string
       description: The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`
