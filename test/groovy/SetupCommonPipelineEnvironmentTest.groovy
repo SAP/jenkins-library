@@ -178,27 +178,5 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem("curl --fail --location --output .pipeline/custom_default_from_url_0.yml " + customDefaultUrl))
     }
-
-    @Test
-    void testAttemptToLoadFileFromWorkspace() {
-        String customDefaultPath = "./my-config.yml"
-        helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
-            assertTrue(parameters.customDefaults instanceof List)
-            assertTrue(parameters.customDefaults.contains(customDefaultPath))
-        })
-
-        helper.registerAllowedMethod("fileExists", [String], {String path ->
-            switch (path) {
-                case 'default_pipeline_environment.yml': return false
-                case customDefaultPath: return true
-                default: return true
-            }
-        })
-
-        stepRule.step.setupCommonPipelineEnvironment(
-            script: nullScript,
-            customDefaults: customDefaultPath
-        )
-    }
 }
 
