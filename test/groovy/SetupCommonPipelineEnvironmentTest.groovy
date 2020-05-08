@@ -182,7 +182,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     @Test
     void testAttemptToLoadFileFromWorkspace() {
         String customDefaultPath = "./my-config.yml"
-        new File(customDefaultPath).write('custom: \'myConfig\'')
         helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
             assertTrue(parameters.customDefaults instanceof List)
             assertTrue(parameters.customDefaults.contains(customDefaultPath))
