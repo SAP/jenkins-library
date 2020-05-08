@@ -72,7 +72,7 @@ spec:
       default: './'
     - name: pythonRequirementsFile
       type: string
-      description: 'The requirements file used in `scanType: ''pip''` to populate
+      description: 'The requirements file used in `buildTool: ''pip''` to populate
         the build environment with the necessary dependencies'
       scope:
       - PARAMETERS
@@ -104,7 +104,7 @@ spec:
       default: 'Spot Checks of Each Category'
     - name: pythonRequirementsInstallSuffix
       type: string
-      description: 'The suffix for the command used to install the requirements file in `scanType: ''pip''` to populate
+      description: 'The suffix for the command used to install the requirements file in `buildTool: ''pip''` to populate
         the build environment with the necessary dependencies'
       scope:
       - PARAMETERS
@@ -112,7 +112,7 @@ spec:
       - STEPS
     - name: pythonVersion
       type: string
-      description: 'Python version to be used in `scanType: ''pip''`'
+      description: 'Python version to be used in `buildTool: ''pip''`'
       scope:
       - GENERAL
       - PARAMETERS
@@ -130,8 +130,8 @@ spec:
     - name: buildDescriptorFile
       type: string
       description: 'Path to the build descriptor file addressing the module/folder
-        to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`:
-        `./setup.py`, scanType=`mta`: determined automatically'
+        to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`:
+        `./setup.py`.'
       scope:
       - PARAMETERS
       - STAGES
@@ -207,7 +207,7 @@ spec:
       default: true
     - name: pythonExcludes
       type: string
-      description: 'The excludes pattern used in `scanType: ''pip''` for excluding
+      description: 'The excludes pattern used in `buildTool: ''pip''` for excluding
         specific .py files i.e. tests'
       scope:
       - PARAMETERS
@@ -270,7 +270,7 @@ spec:
       default: PDF
     - name: pythonAdditionalPath
       type: string
-      description: 'The addional path which can be used in `scanType: ''pip''` for
+      description: 'The addional path which can be used in `buildTool: ''pip''` for
         customization purposes'
       scope:
       - PARAMETERS
@@ -316,7 +316,7 @@ spec:
       default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
     - name: pythonIncludes
       type: string
-      description: 'The includes pattern used in `scanType: ''pip''` for including
+      description: 'The includes pattern used in `buildTool: ''pip''` for including
         .py files'
       scope:
       - PARAMETERS
@@ -396,7 +396,7 @@ spec:
       default: 'major'
     - name: pythonInstallCommand
       type: string
-      description: 'Additional install command that can be run when `scanType: ''pip''`
+      description: 'Additional install command that can be run when `buildTool: ''pip''`
         is used which allows further customizing the execution environment of the
         scan'
       scope:
@@ -427,17 +427,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: nameVersionMapping
-      type: string
-      description: 'Allows modifying associated project name and version in `scanType:
-        ''mta''` with a map of lists where the map''s key is the path to the build
-        descriptor file and the list value contains project name as first, and project
-        version as second parameter, those may be `null` to force only overwriting
-        one parameter'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
     - name: pullRequestMessageRegex
       type: string
       description: Regex used to identify the PR-XXX reference within the merge commit message
@@ -446,7 +435,7 @@ spec:
       - STAGES
       - STEPS
       default: '.*Merge pull request #(\\d+) from.*'
-    - name: scanType
+    - name: buildTool
       type: string
       description: Scan type used for the step which can be `'maven'`, `'pip'`
       scope:

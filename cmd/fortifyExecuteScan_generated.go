@@ -61,9 +61,8 @@ type fortifyExecuteScanOptions struct {
 	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
 	PullRequestName                 string `json:"pullRequestName,omitempty"`
-	NameVersionMapping              string `json:"nameVersionMapping,omitempty"`
 	PullRequestMessageRegex         string `json:"pullRequestMessageRegex,omitempty"`
-	ScanType                        string `json:"scanType,omitempty"`
+	BuildTool                       string `json:"buildTool,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -173,14 +172,14 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
 	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
-	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
+	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all")
 	cmd.Flags().StringVar(&stepConfig.MustAuditIssueGroups, "mustAuditIssueGroups", `Corporate Security Requirements, Audit All`, "Comma separated list of issue groups that must be audited completely")
 	cmd.Flags().StringVar(&stepConfig.SpotAuditIssueGroups, "spotAuditIssueGroups", `Spot Checks of Each Category`, "Comma separated list of issue groups that are spot checked and for which `spotCheckMinimum` audited issues are enforced")
-	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `scanType: 'pip'` to populate the build environment with the necessary dependencies")
-	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `scanType: 'pip'`")
+	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
+	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `buildTool: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for scanType=`maven`: `./pom.xml`, scanType=`pip`: `./setup.py`, scanType=`mta`: determined automatically")
+	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`: `./setup.py`.")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifing artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifing pull request merges throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API url.")
@@ -188,19 +187,19 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Memory, "memory", `-Xmx4G -Xms512M`, "The amount of memory granted to the translate/scan executions")
 	cmd.Flags().BoolVar(&stepConfig.UpdateRulePack, "updateRulePack", true, "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not")
-	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/tests/**/*;./**/setup.py`, "The excludes pattern used in `scanType: 'pip'` for excluding specific .py files i.e. tests")
+	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/tests/**/*;./**/setup.py`, "The excludes pattern used in `buildTool: 'pip'` for excluding specific .py files i.e. tests")
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", `/transfer/reportDownload.html`, "Fortify SSC endpoint for Report downloads")
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
-	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", `./lib;.`, "The addional path which can be used in `scanType: 'pip'` for customization purposes")
+	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", `./lib;.`, "The addional path which can be used in `buildTool: 'pip'` for customization purposes")
 	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
-	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `scanType: 'pip'` for including .py files")
+	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `buildTool: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", `[]`, "Build descriptor files to exclude modules from being scanned")
@@ -209,13 +208,12 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint  for FPR downloads")
 	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
-	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `scanType: 'pip'` is used which allows further customizing the execution environment of the scan")
+	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `buildTool: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
-	cmd.Flags().StringVar(&stepConfig.NameVersionMapping, "nameVersionMapping", os.Getenv("PIPER_nameVersionMapping"), "Allows modifying associated project name and version in `scanType: 'mta'` with a map of lists where the map's key is the path to the build descriptor file and the list value contains project name as first, and project version as second parameter, those may be `null` to force only overwriting one parameter")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", `.*Merge pull request #(\\d+) from.*`, "Regex used to identify the PR-XXX reference within the merge commit message")
-	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
+	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
 
 	cmd.MarkFlagRequired("authToken")
 }
@@ -591,14 +589,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "nameVersionMapping",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "pullRequestMessageRegex",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -607,7 +597,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "scanType",
+						Name:        "buildTool",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
