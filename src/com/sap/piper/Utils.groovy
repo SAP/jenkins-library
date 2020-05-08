@@ -178,7 +178,7 @@ static List appendParameterToStringList(List list, Map parameters, String paramN
     def value = parameters[paramName]
     List result = []
     result.addAll(list)
-    if (value in String) {
+    if (value in CharSequence) {
         result.add(value)
     } else if (value in List) {
         result.addAll(value)
