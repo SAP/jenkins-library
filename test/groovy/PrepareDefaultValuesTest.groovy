@@ -17,7 +17,6 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
-
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
