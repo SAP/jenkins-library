@@ -1,7 +1,5 @@
 package com.sap.piper
 
-import com.sap.piper.MapUtils
-
 @API
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
@@ -40,38 +38,51 @@ class DefaultValueCache implements Serializable {
     }
 
     static void prepare(Script steps, Map parameters = [:]) {
-        if(parameters == null) parameters = [:]
-        if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
-            def defaultValues = [:]
-            List paramCustomDefaults
-            int numCustomDefaultsInConfig = 0
+        if (parameters == null) parameters = [:]
+        if (!getInstance() || parameters.customDefaults) {
+            List defaultsFromResources = ['default_pipeline_environment.yml']
+            List customDefaults = Utils.appendParameterToStringList(
+                [], parameters, 'customDefaults')
+            defaultsFromResources.addAll(customDefaults)
+            List defaultsFromFiles = Utils.appendParameterToStringList(
+                [], parameters, 'customDefaultsFromConfig')
 
-            if (parameters.customDefaults){
-                paramCustomDefaults = parameters.customDefaults
-                if (parameters.numCustomDefaultsInConfig){
-                    numCustomDefaultsInConfig = parameters.numCustomDefaultsInConfig
-                }
-            } else {
-                paramCustomDefaults = ['default_pipeline_environment.yml']
-                steps.writeFile file: ".pipeline/${paramCustomDefaults[0]}", text: steps.libraryResource(paramCustomDefaults[0])
-            }
+            Map defaultValues = [:]
+            defaultValues = addDefaultsFromLibraryResources(steps, defaultValues, defaultsFromResources)
+            defaultValues = addDefaultsFromFiles(steps, defaultValues, defaultsFromFiles)
 
-            List customDefaults = []
-
-            for (int i = 0; i < paramCustomDefaults.size(); i++) {
-                if(paramCustomDefaults.size() > 1) steps.echo "Loading configuration file '${paramCustomDefaults[i]}'"
-                def configuration = steps.readYaml file: ".pipeline/${paramCustomDefaults[i]}"
-
-                // Only customDefaults not coming from project config are saved in customDefaults list to not have duplicated customDefaults when getConfig Go step is executed.
-                // Since, the go step considers the customDefaults defined in project config in addition to the via CLI provided list of customDefaults.
-                if (i <= paramCustomDefaults.size()-1-numCustomDefaultsInConfig){
-                    customDefaults.add(paramCustomDefaults[i])
-                }
-                defaultValues = MapUtils.merge(
-                    MapUtils.pruneNulls(defaultValues),
-                    MapUtils.pruneNulls(configuration))
-            }
-            DefaultValueCache.createInstance(defaultValues, customDefaults)
+            // The "customDefault" parameter is used for storing which extra defaults need to be
+            // passed to piper-go. The library resource 'default_pipeline_environment.yml' shall
+            // be excluded, since the go steps have their own in-built defaults in their yaml files.
+            // And 'customDefaultsFromConfig' shall also be excluded, since piper-go handles this
+            // config parameter itself.
+            createInstance(defaultValues, customDefaults)
         }
+    }
+
+    private static Map addDefaultsFromLibraryResources(Script steps, Map defaultValues, List resourceFiles) {
+        for (String configFileName : resourceFiles) {
+            if (resourceFiles.size() > 1) {
+                steps.echo "Loading configuration file '${configFileName}'"
+            }
+            Map configuration = steps.readYaml text: steps.libraryResource(configFileName)
+            defaultValues = mergeIntoDefaults(defaultValues, configuration)
+        }
+        return defaultValues
+    }
+
+    private static Map addDefaultsFromFiles(Script steps, Map defaultValues, List configFiles) {
+        for (String configFileName : configFiles) {
+            steps.echo "Loading configuration file '${configFileName}'"
+            Map configuration = steps.readYaml file: configFileName
+            defaultValues = mergeIntoDefaults(defaultValues, configuration)
+        }
+        return defaultValues
+    }
+
+    private static Map mergeIntoDefaults(Map defaultValues, Map configuration) {
+        return MapUtils.merge(
+            MapUtils.pruneNulls(defaultValues),
+            MapUtils.pruneNulls(configuration))
     }
 }

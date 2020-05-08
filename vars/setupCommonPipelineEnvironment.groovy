@@ -36,49 +36,28 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters)
 
         String configFile = parameters.get('configFile')
-
         loadConfigurationFromFile(script, configFile)
 
-        List customDefaults = ['default_pipeline_environment.yml']
-
-        if(parameters.customDefaults in String) {
-            customDefaults += [parameters.customDefaults]
-        } else if(parameters.customDefaults in List){
-            customDefaults += parameters.customDefaults
+        // Copy custom defaults from library resources to include them in the 'pipelineConfigAndTests' stash
+        List customDefaults = Utils.appendParameterToStringList(
+            ['default_pipeline_environment.yml'], parameters, 'customDefaults')
+        customDefaults.each {
+            cd ->
+                writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
-        int numCustomDefaultsInConfig = 0
-        if (script.commonPipelineEnvironment.configuration.customDefaults){
-            numCustomDefaultsInConfig = script.commonPipelineEnvironment.configuration.customDefaults.size()
-            script.commonPipelineEnvironment.configuration.customDefaults.each{
-                cd ->
-                    customDefaults.add(cd)
-            }
+        Map prepareDefaultValuesParams = [
+            script: script,
+            customDefaults: customDefaults
+        ]
+
+        if (script.commonPipelineEnvironment.configuration.customDefaults) {
+            List customDefaultFiles = putCustomDefaultsIntoPipelineEnv(
+                script, script.commonPipelineEnvironment.configuration.customDefaults)
+            prepareDefaultValuesParams['customDefaultsFromConfig'] = customDefaultFiles
         }
 
-        if (customDefaults.size() > 1) {
-            int urlCount = 0
-
-            for (int i = 0; i < customDefaults.size(); i++) {
-                String prefixHttp = 'http://'
-                String prefixHttps = 'https://'
-
-                // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
-                if (customDefaults[i].startsWith(prefixHttp) || customDefaults[i].startsWith(prefixHttps)) {
-                    String fileName = "customDefaultFromUrl_${urlCount}.yml"
-                    String configFilePath = ".pipeline/${fileName}"
-                    sh(script: "curl --fail --location --output ${configFilePath} ${customDefaults[i]}")
-                    urlCount += 1
-                    customDefaults[i] = fileName
-                } else if (fileExists(customDefaults[i])) {
-                    writeFile file: ".pipeline/${customDefaults[i]}", text: readFile(file: customDefaults[i])
-                } else {
-                    writeFile file: ".pipeline/${customDefaults[i]}", text: libraryResource(customDefaults[i])
-                }
-            }
-        }
-
-        prepareDefaultValues script: script, customDefaults: customDefaults, numCustomDefaultsInConfig: numCustomDefaultsInConfig
+        prepareDefaultValues prepareDefaultValuesParams
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
@@ -98,20 +77,50 @@ void call(Map parameters = [:]) {
     }
 }
 
-private loadConfigurationFromFile(script, String configFile) {
+private static loadConfigurationFromFile(script, String configFile) {
     if (!configFile) {
         String defaultYmlConfigFile = '.pipeline/config.yml'
         String defaultYamlConfigFile = '.pipeline/config.yaml'
-        if (fileExists(defaultYmlConfigFile)) {
+        if (script.fileExists(defaultYmlConfigFile)) {
             configFile = defaultYmlConfigFile
-        } else if (fileExists(defaultYamlConfigFile)) {
+        } else if (script.fileExists(defaultYamlConfigFile)) {
             configFile = defaultYamlConfigFile
         }
     }
 
     // A file passed to the function is not checked for existence in order to fail the pipeline.
     if (configFile) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
+        script.commonPipelineEnvironment.configuration = script.readYaml(file: configFile)
         script.commonPipelineEnvironment.configurationFile = configFile
     }
+}
+
+private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
+    List fileList = []
+    String prefixHttp = 'http://'
+    String prefixHttps = 'https://'
+    int urlCount = 0
+    for (int i = 0; i < customDefaults.size(); i++) {
+        // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
+        String fileName
+        if (customDefaults[i].startsWith(prefixHttp) || customDefaults[i].startsWith(prefixHttps)) {
+            fileName = ".pipeline/custom_default_from_url_${urlCount}.yml"
+            try {
+                script.sh script: "curl --fail --location --output ${fileName} ${customDefaults[i]}"
+            } catch (Exception e) {
+                script.error "ERROR: Failed to retrieve custom config from '${customDefaults[i]}' via curl. " +
+                    "Please make sure curl is available and that the remote location is valid. " +
+                    "Failed with ${e.getMessage()}"
+            }
+            urlCount++
+        } else if (script.fileExists(customDefaults[i])) {
+            fileName = ".pipeline/${customDefaults[i]}"
+            script.writeFile file: fileName, text: script.readFile(file: customDefaults[i])
+        } else {
+            script.echo "WARNING: Custom default entry not found: '${customDefaults[i]}', it will be ignored"
+            continue
+        }
+        fileList.add(fileName)
+    }
+    return fileList
 }

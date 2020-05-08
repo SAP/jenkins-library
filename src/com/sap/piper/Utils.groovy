@@ -173,3 +173,15 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
     }
     return resolvedExpression
 }
+
+static List appendParameterToStringList(List list, Map parameters, String paramName) {
+    def value = parameters[paramName]
+    List result = []
+    result.addAll(list)
+    if (value in String) {
+        result.add(value)
+    } else if (value in List) {
+        result.addAll(value)
+    }
+    return result
+}
