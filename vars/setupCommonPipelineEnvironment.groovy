@@ -48,7 +48,7 @@ void call(Map parameters = [:]) {
 
         Map prepareDefaultValuesParams = [
             script: script,
-            customDefaults: customDefaults
+            customDefaults: parameters.customDefaults
         ]
 
         if (script.commonPipelineEnvironment.configuration.customDefaults) {

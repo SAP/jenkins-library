@@ -124,26 +124,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsString() {
-        helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
-            assertTrue(parameters.customDefaults instanceof List)
-        })
-
-        helper.registerAllowedMethod("fileExists", [String], {String path ->
-            switch (path) {
-                case 'default_pipeline_environment.yml': return false
-                case 'custom.yml': return false
-                default: return true
-            }
-        })
-
-        stepRule.step.setupCommonPipelineEnvironment(
-            script: nullScript,
-            customDefaults: 'custom.yml'
-        )
-    }
-
-    @Test
     void testAttemptToLoadFileFromURL() {
         helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
             assertTrue(parameters.customDefaultsFromConfig instanceof List)
