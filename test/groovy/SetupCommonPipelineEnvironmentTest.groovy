@@ -57,8 +57,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             if (parameters.text) {
                 return yamlParser.load(parameters.text)
             } else if(parameters.file) {
-                if(parameters.file == ".pipeline/default_pipeline_environment.yml") return [default: 'config']
-                else if (parameters.file == ".pipeline/custom.yml") return [custom: 'myConfig']
+                if(parameters.file == '.pipeline/default_pipeline_environment.yml') return [default: 'config']
+                else if (parameters.file == '.pipeline/custom.yml') return [custom: 'myConfig']
             } else {
                 throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
             }
@@ -146,8 +146,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     @Test
     void testAttemptToLoadFileFromURL() {
         helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
-            assertTrue(parameters.customDefaults instanceof List)
-            assertTrue(parameters.customDefaults.contains('customDefaultFromUrl_0.yml'))
+            assertTrue(parameters.customDefaultsFromConfig instanceof List)
+            assertTrue(parameters.customDefaultsFromConfig.contains('.pipeline/custom_default_from_url_0.yml'))
         })
 
         helper.registerAllowedMethod("fileExists", [String], {String path ->
@@ -158,12 +158,28 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         })
 
         String customDefaultUrl = "https://url-to-my-config.com/my-config.yml"
+
+        helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
+            Yaml yamlParser = new Yaml()
+            if (parameters.text) {
+                return yamlParser.load(parameters.text)
+            } else if (parameters.file) {
+                if (parameters.file == '.pipeline/config-with-custom-defaults.yml') {
+                    return [customDefaults: "${customDefaultUrl}"]
+                }
+            } else {
+                throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
+            }
+            usedConfigFile = parameters.file
+            return yamlParser.load(examplePipelineConfig)
+        })
+
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
-            customDefaults: customDefaultUrl
+            configFile: '.pipeline/config-with-custom-defaults.yml',
         )
 
-        assertThat(shellRule.shell, hasItem("curl --fail --location --output .pipeline/customDefaultFromUrl_0.yml " + customDefaultUrl))
+        assertThat(shellRule.shell, hasItem("curl --fail --location --output .pipeline/custom_default_from_url_0.yml " + customDefaultUrl))
     }
 
     @Test
