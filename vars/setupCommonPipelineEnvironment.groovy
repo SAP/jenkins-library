@@ -52,8 +52,9 @@ void call(Map parameters = [:]) {
         ]
 
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
-            List customDefaultFiles = putCustomDefaultsIntoPipelineEnv(
-                script, script.commonPipelineEnvironment.configuration.customDefaults)
+            List customDefaultFiles = Utils.appendParameterToStringList(
+                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+            customDefaultFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultFiles)
             prepareDefaultValuesParams['customDefaultsFromConfig'] = customDefaultFiles
         }
 
@@ -97,13 +98,11 @@ private static loadConfigurationFromFile(script, String configFile) {
 
 private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
     List fileList = []
-    String prefixHttp = 'http://'
-    String prefixHttps = 'https://'
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
         // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
         String fileName
-        if (customDefaults[i].startsWith(prefixHttp) || customDefaults[i].startsWith(prefixHttps)) {
+        if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = ".pipeline/custom_default_from_url_${urlCount}.yml"
             try {
                 script.sh script: "curl --fail --location --output ${fileName} ${customDefaults[i]}"
