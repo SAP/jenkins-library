@@ -74,8 +74,20 @@ class DefaultValueCache implements Serializable {
     private static Map addDefaultsFromFiles(Script steps, Map defaultValues, List configFiles) {
         for (String configFileName : configFiles) {
             steps.echo "Loading configuration file '${configFileName}'"
-            Map configuration = steps.readYaml file: configFileName
-            defaultValues = mergeIntoDefaults(defaultValues, configuration)
+            try {
+                Map configuration = steps.readYaml file: configFileName
+                defaultValues = mergeIntoDefaults(defaultValues, configuration)
+            } catch (Exception e) {
+                steps.error "Failed to parse custom defaults as YAML file. " +
+                    "Please make sure it is valid YAML, and if loading from a remote location, " +
+                    "that the response body only contains valid YAML. " +
+                    "If you use a file from a GitHub repository, make sure you've used the 'raw' link, " +
+                    "for example https://my.github.local/raw/someorg/shared-config/master/backend-service.yml\n" +
+                    "File path: ${configFileName}\n" +
+                    "Content: ${steps.readFile file: configFileName}\n" +
+                    "Exeption message: ${e.getMessage()}\n" +
+                    "Exception stacktrace: ${Arrays.toString(e.getStackTrace())}"
+            }
         }
         return defaultValues
     }

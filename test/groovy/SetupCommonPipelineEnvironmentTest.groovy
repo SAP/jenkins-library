@@ -125,11 +125,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void testAttemptToLoadFileFromURL() {
-        helper.registerAllowedMethod("prepareDefaultValues", [Map], {Map parameters ->
-            assertTrue(parameters.customDefaultsFromConfig instanceof List)
-            assertTrue(parameters.customDefaultsFromConfig.contains('.pipeline/custom_default_from_url_0.yml'))
-        })
-
         helper.registerAllowedMethod("fileExists", [String], {String path ->
             switch (path) {
                 case 'default_pipeline_environment.yml': return false
@@ -138,6 +133,17 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         })
 
         String customDefaultUrl = "https://url-to-my-config.com/my-config.yml"
+        boolean urlRequested = false
+
+        helper.registerAllowedMethod("httpRequest", [Map], {Map parameters ->
+            switch (parameters.url) {
+                case customDefaultUrl:
+                    urlRequested = true
+                    return [status: 200, content: "custom: 'myRemoteConfig'"]
+                default:
+                    throw new IllegalArgumentException('wrong URL requested')
+            }
+        })
 
         helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
             Yaml yamlParser = new Yaml()
@@ -147,16 +153,20 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
                 if (parameters.file == '.pipeline/config-with-custom-defaults.yml') {
                     return [customDefaults: "${customDefaultUrl}"]
                 }
+                if (parameters.file == '.pipeline/custom_default_from_url_0.yml') {
+                    return [custom: 'myRemoteConfig']
+                }
             }
             throw new IllegalArgumentException("Unexpected invocation of readYaml step")
         })
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
+            customDefaults: 'custom.yml',
             configFile: '.pipeline/config-with-custom-defaults.yml',
         )
-
-        assertThat(shellRule.shell, hasItem("curl --fail --location --output .pipeline/custom_default_from_url_0.yml " + customDefaultUrl))
+        assertEquals("custom: 'myRemoteConfig'", writeFileRule.files['.pipeline/custom_default_from_url_0.yml'])
+        assertEquals('myRemoteConfig', DefaultValueCache.instance.defaultValues['custom'])
     }
 }
 

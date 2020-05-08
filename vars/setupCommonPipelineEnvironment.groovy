@@ -104,13 +104,18 @@ private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults
         String fileName
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = ".pipeline/custom_default_from_url_${urlCount}.yml"
-            try {
-                script.sh script: "curl --fail --location --output ${fileName} ${customDefaults[i]}"
-            } catch (Exception e) {
-                script.error "ERROR: Failed to retrieve custom config from '${customDefaults[i]}' via curl. " +
-                    "Please make sure curl is available and that the remote location is valid. " +
-                    "Failed with ${e.getMessage()}"
+
+            def response = script.httpRequest(
+                url: customDefaults[i],
+                validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
+            )
+            if (response.status == 404) {
+                error "URL for remote custom defaults (${customDefaults[i]}) appears to be incorrect. " +
+                    "Server returned HTTP status code 404. " +
+                    "Please make sure that the path is correct and no authentication is required to retrieve the file."
             }
+
+            script.writeFile file: fileName, text: response.content
             urlCount++
         } else if (script.fileExists(customDefaults[i])) {
             fileName = ".pipeline/${customDefaults[i]}"
