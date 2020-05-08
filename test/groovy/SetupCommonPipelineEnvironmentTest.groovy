@@ -167,11 +167,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
                 if (parameters.file == '.pipeline/config-with-custom-defaults.yml') {
                     return [customDefaults: "${customDefaultUrl}"]
                 }
-            } else {
-                throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
             }
-            usedConfigFile = parameters.file
-            return yamlParser.load(examplePipelineConfig)
+            throw new IllegalArgumentException("Unexpected invocation of readYaml step")
         })
 
         stepRule.step.setupCommonPipelineEnvironment(
