@@ -12,7 +12,7 @@ spec:
     params:
       - name: atcConfig
         type: string
-        description: YAML configuration for Packages and Software Components to be checked during ATC run
+        description: Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run
         scope:
         - PARAMETERS
         - STAGES
@@ -47,6 +47,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -57,6 +58,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceKeyName
@@ -67,6 +69,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/space

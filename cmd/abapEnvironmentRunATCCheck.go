@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -159,7 +160,7 @@ func parseATCResult(body []byte) error {
 	}
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	err := ioutil.WriteFile("result.xml", body, 0644)
+	err := piperenv.SetParameter("", "ATCresults.xml", string(body))
 	if err == nil {
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
