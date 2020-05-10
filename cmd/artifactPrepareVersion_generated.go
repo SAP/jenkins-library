@@ -39,7 +39,8 @@ type artifactPrepareVersionOptions struct {
 type artifactPrepareVersionCommonPipelineEnvironment struct {
 	artifactVersion string
 	git             struct {
-		commitID string
+		commitID      string
+		commitMessage string
 	}
 }
 
@@ -51,6 +52,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "commitMessage", value: p.git.commitMessage},
 	}
 
 	errCount := 0
