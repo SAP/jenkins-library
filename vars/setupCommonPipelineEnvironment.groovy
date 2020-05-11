@@ -39,15 +39,18 @@ void call(Map parameters = [:]) {
         loadConfigurationFromFile(script, configFile)
 
         // Copy custom defaults from library resources to include them in the 'pipelineConfigAndTests' stash
-        List customDefaults = Utils.appendParameterToStringList(
+        List customDefaultsResources = Utils.appendParameterToStringList(
             ['default_pipeline_environment.yml'], parameters, 'customDefaults')
-        customDefaults.each {
+        customDefaultsResources.each {
             cd ->
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
-        List customDefaultFiles = Utils.appendParameterToStringList(
+        List customDefaultsFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
+        customDefaultsFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
+
+        List customDefaultsConfig = []
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
             if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
                 // Align with Go side on supported parameter type.
@@ -56,12 +59,16 @@ void call(Map parameters = [:]) {
                     "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
                     "more details."
             }
-            customDefaultFiles = Utils.appendParameterToStringList(
-                customDefaultFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+            customDefaultsConfig = Utils.appendParameterToStringList(
+                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultFiles)
+        customDefaultsConfig = putCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultFiles
+        prepareDefaultValues([
+            script: script,
+            customDefaults: parameters.customDefaults,
+            customDefaultsFromFiles: customDefaultsFiles,
+            customDefaultsFromConfig: customDefaultsConfig ])
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
@@ -106,7 +113,7 @@ private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults
         // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
         String fileName
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
-            fileName = ".pipeline/custom_default_from_url_${urlCount}.yml"
+            fileName = "custom_default_from_url_${urlCount}.yml"
 
             def response = script.httpRequest(
                 url: customDefaults[i],
@@ -118,11 +125,11 @@ private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults
                     "Please make sure that the path is correct and no authentication is required to retrieve the file."
             }
 
-            script.writeFile file: fileName, text: response.content
+            script.writeFile file: ".pipeline/$fileName", text: response.content
             urlCount++
         } else if (script.fileExists(customDefaults[i])) {
-            fileName = ".pipeline/${customDefaults[i]}"
-            script.writeFile file: fileName, text: script.readFile(file: customDefaults[i])
+            fileName = customDefaults[i]
+            script.writeFile file: ".pipeline/$fileName", text: script.readFile(file: fileName)
         } else {
             script.echo "WARNING: Custom default entry not found: '${customDefaults[i]}', it will be ignored"
             continue
