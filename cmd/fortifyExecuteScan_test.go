@@ -10,9 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/piper-validation/fortify-client-go/models"
 )
 
 type pullRequestServiceMock struct{}
@@ -58,10 +61,26 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	classpathMaven := "some.jar\nsomeother.jar"
 	if e == "python2" {
 		er.outWriter.Write([]byte(classpathPip))
-	} else {
+	} else if e == "mvn" {
 		ioutil.WriteFile(strings.ReplaceAll(p[2], "-Dmdep.outputFile=", ""), []byte(classpathMaven), 755)
 	}
 	return nil
+}
+
+func TestCalculateTimeDifferenceToLastUpload(t *testing.T) {
+	diffSeconds := calculateTimeDifferenceToLastUpload(models.Iso8601MilliDateTime(time.Now().UTC()), 1234)
+
+	assert.Equal(t, true, diffSeconds < 1)
+}
+
+func TestExecuteTemplatedCommand(t *testing.T) {
+	runner := execRunnerMock{}
+	template := []string{"{{.Executable}}", "-c", "{{.Param}}"}
+	context := map[string]string{"Executable": "test.cmd", "Param": "abcd"}
+	executeTemplatedCommand(&runner, template, context)
+
+	assert.Equal(t, "test.cmd", runner.executable)
+	assert.Equal(t, []string{"-c", "abcd"}, runner.parameters)
 }
 
 func TestDeterminePullRequestMerge(t *testing.T) {

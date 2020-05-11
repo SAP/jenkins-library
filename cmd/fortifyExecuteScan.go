@@ -385,7 +385,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 		}
 	}
 
-	differenceInSeconds := calculateTimeDifferenceToLastUpload(config, relatedUpload.UploadDate, projectVersionID)
+	differenceInSeconds := calculateTimeDifferenceToLastUpload(relatedUpload.UploadDate, projectVersionID)
 	// Use the absolute value for checking the time difference
 	if differenceInSeconds > float64(60*config.DeltaMinutes) {
 		return fmt.Errorf("No recent upload detected on Project Version")
@@ -402,7 +402,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	return nil
 }
 
-func calculateTimeDifferenceToLastUpload(config fortifyExecuteScanOptions, uploadDate models.Iso8601MilliDateTime, projectVersionID int64) float64 {
+func calculateTimeDifferenceToLastUpload(uploadDate models.Iso8601MilliDateTime, projectVersionID int64) float64 {
 	log.Entry().Infof("Last upload on project version %v happened on %v", projectVersionID, uploadDate)
 	uploadDateAsTime := time.Time(uploadDate)
 	duration := time.Since(uploadDateAsTime)
