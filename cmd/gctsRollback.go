@@ -28,13 +28,13 @@ func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomDat
 	httpClient := &piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := rollbackCommit(&config, telemetryData, &c, httpClient)
+	err := rollback(&config, telemetryData, &c, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func rollbackCommit(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
