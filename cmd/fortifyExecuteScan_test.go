@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,8 +11,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-github/v31/github"
 	"github.com/stretchr/testify/assert"
 )
+
+type pullRequestServiceMock struct{}
+
+func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+	if owner == "A" {
+		result := 17
+		return []*github.PullRequest{&github.PullRequest{Number: &result}}, &github.Response{}, nil
+	} else if owner == "C" {
+		return []*github.PullRequest{}, &github.Response{}, errors.New("Test error")
+	}
+	return []*github.PullRequest{}, &github.Response{}, nil
+}
 
 type execRunnerMock struct {
 	dirValue   string
@@ -64,32 +79,54 @@ func TestDeterminePullRequestMerge(t *testing.T) {
 	})
 }
 
+func TestDeterminePullRequestMergeGithub(t *testing.T) {
+	prServiceMock := pullRequestServiceMock{}
+
+	t.Run("success", func(t *testing.T) {
+		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "A"}, prServiceMock)
+		assert.NoError(t, err)
+		assert.Equal(t, "17", match, "Expected different result")
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "B"}, prServiceMock)
+		assert.NoError(t, err)
+		assert.Equal(t, "", match, "Expected different result")
+	})
+
+	t.Run("error", func(t *testing.T) {
+		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
+		assert.Error(t, err)
+		assert.Equal(t, "", match, "Expected different result")
+	})
+}
+
 func TestTranslateProject(t *testing.T) {
 	execRunner := execRunnerMock{}
 
 	t.Run("python", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","pythonIncludes":"./**/*","pythonExcludes":"./tests/**/*"}]`}
+		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","pythonIncludes":"./**/*","pythonExcludes":"./tests/**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, execRunner.parameters, "Expected different parameters")
 	})
 
 	t.Run("asp", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
+		config := fortifyExecuteScanOptions{BuildTool: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "-libdirs", "tmp/", "./**/*"}, execRunner.parameters, "Expected different parameters")
 	})
 
 	t.Run("java", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.parameters, "Expected different parameters")
 	})
 
 	t.Run("auto classpath", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{ScanType: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		translateProject(config, &execRunner, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
 		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.parameters, "Expected different parameters")

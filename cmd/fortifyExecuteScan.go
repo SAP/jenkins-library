@@ -27,6 +27,10 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
+type pullRequestService interface {
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+}
+
 var auditStatus map[string]string
 
 const checkString = "<---CHECK FORTIFY---"
@@ -49,10 +53,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	var gav piperutils.BuildDescriptor
 	var err error
-	if config.ScanType == "maven" {
+	if config.BuildTool == "maven" {
 		gav, err = piperutils.GetMavenCoordinates(config.BuildDescriptorFile)
 	}
-	if config.ScanType == "pip" {
+	if config.BuildTool == "pip" {
 		gav, err = piperutils.GetPipCoordinates(config.BuildDescriptorFile)
 	}
 	if err != nil {
@@ -468,7 +472,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	}
 
 	var classpath string = ""
-	if config.ScanType == "maven" {
+	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
 		}
@@ -478,7 +482,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 			config.Translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
 		}
 	}
-	if config.ScanType == "pip" {
+	if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
 			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, classpathFileName, command)
 		}
@@ -569,7 +573,7 @@ func scanProject(config fortifyExecuteScanOptions, command execRunner, buildID, 
 func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
 	ctx, client, err := piperGithub.NewClient(config.GithubToken, config.GithubAPIURL, "")
 	if err == nil {
-		result, err := determinePullRequestMergeGithub(ctx, config, client)
+		result, err := determinePullRequestMergeGithub(ctx, config, client.PullRequests)
 		if err != nil {
 			log.Entry().WithError(err).Warn("Failed to get PR metadata via GitHub client")
 		} else {
@@ -586,9 +590,9 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) string {
 	return ""
 }
 
-func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, client *github.Client) (string, error) {
+func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, error) {
 	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
-	prList, _, err := client.PullRequests.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
+	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
 	if err == nil && len(prList) > 0 {
 		return fmt.Sprintf("%v", prList[0].GetNumber()), nil
 	}
@@ -596,7 +600,7 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 }
 
 func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[string]string) []string {
-	if config.ScanType == "windows" {
+	if config.BuildTool == "windows" {
 		if len(t["aspnetcore"]) > 0 {
 			options = append(options, "-aspnetcore")
 		}
@@ -611,7 +615,7 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		}
 		return append(options, tokenize(t["src"])...)
 	}
-	if config.ScanType == "maven" {
+	if config.BuildTool == "maven" {
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
@@ -634,7 +638,7 @@ func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[s
 		}
 		return append(options, tokenize(t["src"])...)
 	}
-	if config.ScanType == "pip" {
+	if config.BuildTool == "pip" {
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-python-path", t["autoClasspath"])
 		} else if len(t["pythonPath"]) > 0 {
