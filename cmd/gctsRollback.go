@@ -138,10 +138,10 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 			}
 		}()
 
-		if resp == nil {
-			return "", errors.New("did not retrieve a HTTP response")
-		} else if httpErr != nil {
+		if httpErr != nil {
 			return "", httpErr
+		} else if resp == nil {
+			return "", errors.New("did not retrieve a HTTP response")
 		}
 
 		bodyText, readErr := ioutil.ReadAll(resp.Body)
@@ -192,10 +192,10 @@ func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData
 		}
 	}()
 
-	if resp == nil {
-		return []string{}, errors.New("did not retrieve a HTTP response")
-	} else if httpErr != nil {
+	if httpErr != nil {
 		return []string{}, httpErr
+	} else if resp == nil {
+		return []string{}, errors.New("did not retrieve a HTTP response")
 	}
 
 	var response commitsResponseBody
@@ -228,10 +228,10 @@ func getRepoInfo(config *gctsRollbackOptions, telemetryData *telemetry.CustomDat
 		}
 	}()
 
-	if resp == nil {
-		return &response, errors.New("did not retrieve a HTTP response")
-	} else if httpErr != nil {
+	if httpErr != nil {
 		return &response, httpErr
+	} else if resp == nil {
+		return &response, errors.New("did not retrieve a HTTP response")
 	}
 
 	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
@@ -279,10 +279,10 @@ func getRepoHistory(config *gctsRollbackOptions, telemetryData *telemetry.Custom
 		}
 	}()
 
-	if resp == nil {
-		return &response, errors.New("did not retrieve a HTTP response")
-	} else if httpErr != nil {
+	if httpErr != nil {
 		return &response, httpErr
+	} else if resp == nil {
+		return &response, errors.New("did not retrieve a HTTP response")
 	}
 
 	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
