@@ -18,6 +18,89 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
+type fortifyMock struct{}
+
+func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
+	return &models.Project{Name: &name}, nil
+}
+func (f *fortifyMock) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
+	return &models.ProjectVersion{ID: id, Name: &name, Project: &models.Project{Name: &projectName}}, nil
+}
+func (f *fortifyMock) GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error) {
+	return []*models.Attribute{}, nil
+}
+func (f *fortifyMock) SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error) {
+	return attributes, nil
+}
+func (f *fortifyMock) CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error) {
+	return &models.ProjectVersion{ID: 4711, Name: &projectVersionName, Project: &models.Project{Name: &projectName}}, nil
+}
+func (f *fortifyMock) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
+	return &models.ProjectVersion{ID: 4712, Name: &pullRequestName, Project: masterProjectVersion.Project}, nil
+}
+func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error) {
+	return version, nil
+}
+
+func (f *fortifyMock) ProjectVersionCopyFromPartial(sourceID, targetID int64) error {
+	return nil
+}
+func (f *fortifyMock) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
+	return nil
+}
+func (f *fortifyMock) ProjectVersionCopyPermissions(sourceID, targetID int64) error {
+	return nil
+}
+func (f *fortifyMock) CommitProjectVersion(id int64) (*models.ProjectVersion, error) {
+	name := "Committed"
+	return &models.ProjectVersion{ID: id, Name: &name}, nil
+}
+func (f *fortifyMock) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
+	return nil
+}
+func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
+	if id == 4711 {
+		return []*models.Artifact{&models.Artifact{Status: "PROCESSED", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	}
+	if id == 4712 {
+		return []*models.Artifact{&models.Artifact{Status: "ERROR_PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	}
+	if id == 4713 {
+		return []*models.Artifact{&models.Artifact{Status: "REQUIRE_AUTH", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	}
+	return []*models.Artifact{&models.Artifact{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+}
+func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
+	return &models.FilterSet{}, nil
+}
+func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error) {
+	return &models.IssueFilterSelectorSet{}, nil
+}
+func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
+	return []*models.ProjectVersionIssueGroup{}, nil
+}
+func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
+	return &models.IssueFilterSelectorSet{}
+}
+func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
+	return []*models.IssueStatistics{}, nil
+}
+func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
+	return &models.SavedReport{}, nil
+}
+func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
+	return &models.SavedReport{}, nil
+}
+func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
+	return nil
+}
+func (f *fortifyMock) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
+	return []byte{}, nil
+}
+func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
+	return []byte{}, nil
+}
+
 type pullRequestServiceMock struct{}
 
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
@@ -65,6 +148,41 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		ioutil.WriteFile(strings.ReplaceAll(p[2], "-Dmdep.outputFile=", ""), []byte(classpathMaven), 755)
 	}
 	return nil
+}
+
+func TestVerifyScanResultsFinishedUploading(t *testing.T) {
+	ffMock := fortifyMock{}
+	config := fortifyExecuteScanOptions{DeltaMinutes: 0}
+
+	t.Run("no recent upload detected", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
+		assert.Error(t, err)
+		assert.Equal(t, "No recent upload detected on Project Version", err.Error())
+	})
+
+	config.DeltaMinutes = 20
+	t.Run("success", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error processing", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4712, "", &models.FilterSet{}, 0)
+		assert.Error(t, err)
+		assert.Equal(t, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=", err.Error())
+	})
+
+	t.Run("required auth", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{}, 0)
+		assert.Error(t, err)
+		assert.Equal(t, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=", err.Error())
+	})
+
+	t.Run("polling timeout", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
+		assert.Error(t, err)
+		assert.Equal(t, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING", err.Error())
+	})
 }
 
 func TestCalculateTimeDifferenceToLastUpload(t *testing.T) {
