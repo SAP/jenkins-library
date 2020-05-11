@@ -39,15 +39,18 @@ void call(Map parameters = [:]) {
         loadConfigurationFromFile(script, configFile)
 
         // Copy custom defaults from library resources to include them in the 'pipelineConfigAndTests' stash
-        List customDefaults = Utils.appendParameterToStringList(
+        List customDefaultsResources = Utils.appendParameterToStringList(
             ['default_pipeline_environment.yml'], parameters, 'customDefaults')
-        customDefaults.each {
+        customDefaultsResources.each {
             cd ->
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
-        List customDefaultFiles = Utils.appendParameterToStringList(
+        List customDefaultsFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
+        customDefaultsFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
+
+        List customDefaultsConfig = []
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
             if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
                 // Align with Go side on supported parameter type.
@@ -56,12 +59,16 @@ void call(Map parameters = [:]) {
                     "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
                     "more details."
             }
-            customDefaultFiles = Utils.appendParameterToStringList(
-                customDefaultFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+            customDefaultsConfig = Utils.appendParameterToStringList(
+                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultFiles)
+        customDefaultsConfig = putCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultFiles
+        prepareDefaultValues([
+            script: script,
+            customDefaults: parameters.customDefaults,
+            customDefaultsFromFiles: customDefaultsFiles,
+            customDefaultsFromConfig: customDefaultsConfig ])
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
