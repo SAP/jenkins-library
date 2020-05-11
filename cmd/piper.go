@@ -29,6 +29,7 @@ type GeneralConfigOptions struct {
 	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	StepName       string
 	Verbose        bool
+	LogFormat      string
 	HookConfig     HookConfiguration
 }
 
@@ -101,6 +102,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default, timestamp, plain, full.")
 
 }
 
@@ -120,6 +122,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -174,7 +178,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
-	stepConfig.Config = convertTypes(stepConfig.Config, options)
+	stepConfig.Config = checkTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	_ = json.Unmarshal(confJSON, &options)
 
@@ -190,7 +194,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
 
 	for paramName := range config {
@@ -201,7 +205,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 
 		paramValueType := reflect.ValueOf(config[paramName])
 		if paramValueType.Kind() != reflect.String {
-			// We can only convert from strings at the moment
+			// Type check is limited to strings at the moment
 			continue
 		}
 
@@ -210,14 +214,15 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 
 		switch optionsField.Type.Kind() {
 		case reflect.String:
-			// Types already match, ignore
+			// Types match, ignore
 			logWarning = false
 		case reflect.Slice, reflect.Array:
-			if optionsField.Type.Elem().Kind() == reflect.String {
-				config[paramName] = []string{paramValue}
-				logWarning = false
-			}
+			// Could do automatic conversion for those types in theory,
+			// but that might obscure what really happens in error cases.
+			log.Entry().Fatalf("Type mismatch in configuration for option '%s'. Expected type to be a list (or slice, or array) but got %s.", paramName, paramValueType.Kind())
 		case reflect.Bool:
+			// Sensible to convert strings "true"/"false" to respective boolean values as it is
+			// common practice to write booleans as string in yaml files.
 			paramValue = strings.ToLower(paramValue)
 			if paramValue == "true" {
 				config[paramName] = true
