@@ -66,7 +66,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 	if config.Commit != "" {
 		log.Entry().Infof("rolling back to specified commit %v", config.Commit)
 
-		deployParams = []string{"gctsDeployCommit", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", config.Commit}
+		deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", config.Commit}
 
 	} else if parsedURL.Host == "github.com" {
 		log.Entry().Info("Remote repository domain is 'github.com'. Trying to rollback to last commit with status 'success'.")
@@ -81,7 +81,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 			return errors.Wrap(err, "could not determine successfull commit")
 		}
 
-		deployParams = []string{"gctsDeployCommit", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", successCommit}
+		deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", successCommit}
 
 	} else {
 		repoHistory, err := getRepoHistory(config, telemetryData, httpClient)
@@ -90,7 +90,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		}
 		if repoHistory.Result[0].FromCommit != "" {
 			log.Entry().WithField("repository", config.Repository).Infof("Rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
-			deployParams = []string{"gctsDeployCommit", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", repoHistory.Result[0].FromCommit}
+			deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", repoHistory.Result[0].FromCommit}
 		} else {
 			return errors.Errorf("no commit to rollback to (fromCommit) could be identified from the repository commit history")
 		}
