@@ -89,7 +89,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 			return errors.Wrap(err, "could not retrieve repository commit history")
 		}
 		if repoHistory.Result[0].FromCommit != "" {
-			log.Entry().WithField("repository", config.Repository).Infof("Rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
+			log.Entry().WithField("repository", config.Repository).Infof("rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
 			deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", repoHistory.Result[0].FromCommit}
 		} else {
 			return errors.Errorf("no commit to rollback to (fromCommit) could be identified from the repository commit history")
