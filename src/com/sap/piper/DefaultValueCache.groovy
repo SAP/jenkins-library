@@ -45,7 +45,7 @@ class DefaultValueCache implements Serializable {
                 [], parameters, 'customDefaults')
             defaultsFromResources.addAll(customDefaults)
             List defaultsFromFiles = Utils.appendParameterToStringList(
-                [], parameters, 'customDefaultsFromConfig')
+                [], parameters, 'customDefaultsFromFiles')
 
             Map defaultValues = [:]
             defaultValues = addDefaultsFromLibraryResources(steps, defaultValues, defaultsFromResources)

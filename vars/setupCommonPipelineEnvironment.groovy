@@ -46,19 +46,15 @@ void call(Map parameters = [:]) {
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
-        Map prepareDefaultValuesParams = [
-            script: script,
-            customDefaults: parameters.customDefaults
-        ]
-
+        List customDefaultFiles = Utils.appendParameterToStringList(
+            [], parameters, 'customDefaultsFromFiles')
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
-            List customDefaultFiles = Utils.appendParameterToStringList(
-                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
-            customDefaultFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultFiles)
-            prepareDefaultValuesParams['customDefaultsFromConfig'] = customDefaultFiles
+            customDefaultFiles = Utils.appendParameterToStringList(
+                customDefaultFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
+        customDefaultFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultFiles)
 
-        prepareDefaultValues prepareDefaultValuesParams
+        prepareDefaultValues script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultFiles
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
