@@ -35,7 +35,7 @@ func TestTriggerPull(t *testing.T) {
 			CfServiceKey:      "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo",
+			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
 		con := connectionDetailsHTTP{
@@ -43,7 +43,7 @@ func TestTriggerPull(t *testing.T) {
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		entityConnection, err := triggerPull(config, con, client)
+		entityConnection, err := triggerPull(config.RepositoryNames[0], con, client)
 		assert.Nil(t, err)
 		assert.Equal(t, uriExpected, entityConnection.URL)
 		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
@@ -70,6 +70,7 @@ func TestTriggerPull(t *testing.T) {
 			CfServiceKey:      "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
 		con := connectionDetailsHTTP{
@@ -77,7 +78,7 @@ func TestTriggerPull(t *testing.T) {
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		_, err := triggerPull(config, con, client)
+		_, err := triggerPull(config.RepositoryNames[0], con, client)
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
 
@@ -103,6 +104,7 @@ func TestPollEntity(t *testing.T) {
 			CfServiceKey:      "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
 		con := connectionDetailsHTTP{
@@ -111,7 +113,7 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config, con, client, 0)
+		status, _ := pollEntity(config.RepositoryNames[0], con, client, 0)
 		assert.Equal(t, "S", status)
 	})
 
@@ -133,6 +135,7 @@ func TestPollEntity(t *testing.T) {
 			CfServiceKey:      "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
+			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
 		con := connectionDetailsHTTP{
@@ -141,7 +144,7 @@ func TestPollEntity(t *testing.T) {
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config, con, client, 0)
+		status, _ := pollEntity(config.RepositoryNames[0], con, client, 0)
 		assert.Equal(t, "E", status)
 	})
 
