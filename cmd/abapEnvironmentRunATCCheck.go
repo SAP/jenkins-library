@@ -16,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -64,7 +64,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 
 	var filelocation []string
-	var yamlFile []byte
+	var atcConfigyamlFile []byte
 	if err == nil {
 		filelocation, err = filepath.Glob(config.AtcConfig)
 	}
@@ -72,12 +72,12 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 
 	if err == nil {
 		filename, _ := filepath.Abs(filelocation[0])
-		yamlFile, err = ioutil.ReadFile(filename)
+		atcConfigyamlFile, err = ioutil.ReadFile(filename)
 	}
 	var ATCConfig ATCconfig
 	if err == nil {
 		var result []byte
-		result, err = yaml.YAMLToJSON(yamlFile)
+		result, err = yaml.YAMLToJSON(atcConfigyamlFile)
 		json.Unmarshal(result, &ATCConfig)
 	}
 
@@ -160,8 +160,11 @@ func parseATCResult(body []byte) error {
 	}
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	err := piperenv.SetParameter("", "ATCresults.xml", string(body))
+	err := ioutil.WriteFile("ATCresults.xml", body, 0644)
 	if err == nil {
+		var reports []piperutils.Path
+		reports = append(reports, piperutils.Path{Target: "ATCresults.xml", Name: "ATC Results", Mandatory: true})
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
 				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
