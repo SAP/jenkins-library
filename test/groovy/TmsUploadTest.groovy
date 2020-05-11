@@ -219,7 +219,7 @@ public class TmsUploadTest extends BasePiperTest {
         )
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully updated for Node 'testNode1'."))
-        assertThat(calledTmsMethodsWithArgs[2], is("getAMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '1.2.2')"))
+        assertThat(calledTmsMethodsWithArgs[2], is("getMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '1.2.2')"))
         assertThat(calledTmsMethodsWithArgs[3], is("updateMtaExtDescriptor('${uri}', 'myToken', 1, 2, './dummy2.mtaext', '1.2.2', 'Git CommitId: testCommitId', 'Test User')"))
     }
 
@@ -354,13 +354,13 @@ public class TmsUploadTest extends BasePiperTest {
                 return [id: 456, mtaExtId: "com.sap.piper.tms.test.another.extension"]
             }
             
-            def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
+            def getMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
                 if(mtaVersion=="0.0.1") {
-                    calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
+                    calledTmsMethodsWithArgs << "getMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
                     return [:]
                 } else {
-                    calledTmsMethodsWithArgs << "getAMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
-                    return ["id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"]
+                    calledTmsMethodsWithArgs << "getMtaExtDescriptor('${url}', '${token}', ${nodeId}, '${mtaId}', '${mtaVersion}')"
+                    return ["id": 2, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"]
                 }
             }
         }

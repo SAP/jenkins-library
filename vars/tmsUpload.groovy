@@ -149,7 +149,7 @@ void call(Map parameters = [:]) {
                 
                 if(nodeIdExtDesMap) {
                     nodeIdExtDesMap.each{ key, value ->
-                        Map mtaExtDescriptor = tms.getAMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
+                        Map mtaExtDescriptor = tms.getMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
                         if(mtaExtDescriptor) {
                             def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
                             echo "[TransportManagementService] MTA Extention Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."

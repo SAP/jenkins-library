@@ -631,11 +631,11 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
     
     @Test
-    void getAExtDescriptor__successfully() {
+    void getExtDescriptor__successfully() {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '{ "mtaExtDescriptors": [{"id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}', status: 200]
+            return [content: '{ "mtaExtDescriptors": [{"id": 2, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}', status: 200]
         })
 
         def url = 'http://dummy.sap.com'
@@ -645,7 +645,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         def mtaVersion = '1.2.3'
 
         def tms = new TransportManagementService(nullScript, [:])
-        def responseDetails = tms.getAMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
+        def responseDetails = tms.getMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] Get Extension descriptor started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Get Extension descriptor successful."))
@@ -656,27 +656,27 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
     
     @Test
-    void getAExtDescriptor__inVerboseMode__yieldsMoreEchos() {
+    void getExtDescriptor__inVerboseMode__yieldsMoreEchos() {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
         def mtaId = "com.sap.piper.tms.test"
         def mtaVersion = '1.2.3'
-        def responseContent = '{ "mtaExtDescriptors": [{"id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}'
+        def responseContent = '{ "mtaExtDescriptors": [{"id": 2, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}'
         
         helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: 200]
         })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
-        def responseDetails = tms.getAMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
+        def responseDetails = tms.getMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeId: '${nodeId}', MtaId: '${mtaId}', MtaVersion: '${mtaVersion}'"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Response content '${responseContent}'."))
     }
 
     @Test
-    void getAExtDescriptor__failure() {
+    void getExtDescriptor__failure() {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
@@ -693,7 +693,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         })
 
         def tms = new TransportManagementService(nullScript, [verbose: false])
-        tms.getAMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
+        tms.getMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
     }
 
     @Test
@@ -716,6 +716,6 @@ class TransportManagementServiceTest extends BasePiperTest {
         })
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
-        tms.getAMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
+        tms.getMtaExtDescriptor(url, token, nodeId, mtaId, mtaVersion)
     }
 }

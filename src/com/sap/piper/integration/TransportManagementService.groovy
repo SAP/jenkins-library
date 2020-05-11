@@ -223,7 +223,7 @@ class TransportManagementService implements Serializable {
         return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpdate, responseCode, '200', 'MTA Extension Descriptor Update'))
     }
     
-    def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
+    def getMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
         echo("Get Extension descriptor started.")
         
         if (config.verbose) {
@@ -260,9 +260,9 @@ class TransportManagementService implements Serializable {
         
         // because the API is called with params, the return is always a map with either a empty list or a list containing one element
         Map mtaExtDescriptor = [:]
-        Map reponseContent = jsonUtils.jsonStringToGroovyObject(response.content)
-        if(reponseContent.get("mtaExtDescriptors")) {
-            mtaExtDescriptor = reponseContent.get("mtaExtDescriptors").get(0);
+        Map responseContent = jsonUtils.jsonStringToGroovyObject(response.content)
+        if(responseContent.get("mtaExtDescriptors")) {
+            mtaExtDescriptor = responseContent.get("mtaExtDescriptors").get(0);
         }
         
         echo("Get Extension descriptor successful.")
