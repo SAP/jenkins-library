@@ -34,3 +34,16 @@ None
 ```groovy
 mavenExecute script: this, goals: ['clean', 'install']
 ```
+
+Example for the correct usage of `goals`, `defines` and `flags` in version `v1.24.0` and newer:
+
+```groovy
+mavenExecute(
+    script: script,
+    goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+    defines: ["-Dexpression=$pomPathExpression", "-DforceStdout", "-q"],
+    returnStdout: true
+)
+```
+
+Note that it does not work to put multiple arguments into one element of a list, so `defines: ["-Dexpression=$pomPathExpression -DforceStdout -q"]` does **not** work.
