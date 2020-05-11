@@ -1,7 +1,7 @@
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
-
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -14,50 +14,33 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters,  failOnError: true) {
-
         def script = checkScript(this, parameters) ?: this
-
-        Map config
         def utils = parameters.juStabUtils ?: new Utils()
+        parameters.juStabUtils = null
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        parameters.jenkinsUtilsStub = null
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
 
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
+        writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
         withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+            "PIPER_parametersJSON=${getParametersJSON(parameters)}",
         ]) {
-
             // get context configuration
-            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
 
             def creds = []
             if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_username'))
-            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'FILE_PATH'))
+            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG'))
 
             // execute step
             withCredentials(creds) {
-
-                if(config.dockerCredentialsId) {
-                    if (FILE_PATH) {
-                        File file = new File(FILE_PATH);
-                        def configDirPath = file.getAbsoluteFile().getParent();
-                        withEnv([
-                            "DOCKER_CONFIG=${configDirPath}",
-                        ]) {
-                            sh "./piper protecodeExecuteScan"
-                        }
-                    }
-                }
-                else {
-                        sh "./piper protecodeExecuteScan"
-                }
+                sh "./piper protecodeExecuteScan"
             }
 
             def json = readJSON (file: "protecodescan_vulns.json")
-
             def report = readJSON (file: 'protecodeExecuteScan.json')
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
@@ -72,3 +55,14 @@ void call(Map parameters = [:]) {
     }
 }
 
+String getParametersJSON(Map parameters = [:]){
+    Map stepParameters = [:].plus(parameters)
+    // Remove script parameter etc.
+    stepParameters.remove('script')
+    stepParameters.remove('juStabUtils')
+    stepParameters.remove('jenkinsUtilsStub')
+    // When converting to JSON and back again, entries which had a 'null' value will now have a value
+    // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+    stepParameters = MapUtils.pruneNulls(stepParameters)
+    return groovy.json.JsonOutput.toJson(stepParameters)
+}
