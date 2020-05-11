@@ -49,6 +49,13 @@ void call(Map parameters = [:]) {
         List customDefaultFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
+            if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
+                // Align with Go side on supported parameter type.
+                error "You have defined the parameter 'customDefaults' in your project configuration " +
+                    "but it is of an unexpected type. Please make sure that it is a list of strings, i.e. " +
+                    "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
+                    "more details."
+            }
             customDefaultFiles = Utils.appendParameterToStringList(
                 customDefaultFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
