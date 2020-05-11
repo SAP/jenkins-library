@@ -44,32 +44,59 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	if err == nil {
 		details, err = checkHost(config, details)
 	}
-
+	var resp *http.Response
 	//Fetch Xcrsf-Token
 	if err == nil {
-		//HTTP config for fetching Xcsrf-Token
 		abapEndpoint = details.URL
-		details.URL += "/sap/bc/adt/api/atc/runs/00000000000000000000000000000000"
-		details.XCsrfToken = "fetch"
-
 		credentialsOptions := piperhttp.ClientOptions{
 			Username:  details.User,
 			Password:  details.Password,
 			CookieJar: cookieJar,
 		}
-
 		client.SetOptions(credentialsOptions)
-
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
-
-	var filelocation []string
-	var atcConfigyamlFile []byte
 	if err == nil {
-		filelocation, err = filepath.Glob(config.AtcConfig)
+		resp, err = triggerATCrun(config, details, &client, abapEndpoint)
 	}
-	//Parse YAML ATC run configuration as body for ATC run trigger
+	if err == nil {
+		err = handleATCresults(resp, details, &client, abapEndpoint)
+	}
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
 
+	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
+}
+
+func handleATCresults(resp *http.Response, details connectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) error {
+	var err error
+	location := resp.Header.Get("Location")
+	details.URL = abapEndpoint + location
+	location, err = pollATCRun(details, nil, client)
+	if err == nil {
+		details.URL = abapEndpoint + location
+		resp, err = getResultATCRun("GET", details, nil, client)
+	}
+	//Parse response
+	var body []byte
+	if err == nil {
+		body, err = ioutil.ReadAll(resp.Body)
+	}
+	if err == nil {
+		defer resp.Body.Close()
+		err = parseATCResult(body)
+	}
+	if err != nil {
+		return fmt.Errorf("Handling ATC result failed: %w", err)
+	}
+	return nil
+}
+
+func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details connectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
+	var atcConfigyamlFile []byte
+	filelocation, err := filepath.Glob(config.AtcConfig)
+	//Parse YAML ATC run configuration as body for ATC run trigger
 	if err == nil {
 		filename, _ := filepath.Abs(filelocation[0])
 		atcConfigyamlFile, err = ioutil.ReadFile(filename)
@@ -80,7 +107,6 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		result, err = yaml.YAMLToJSON(atcConfigyamlFile)
 		json.Unmarshal(result, &ATCConfig)
 	}
-
 	var packageString string
 	var softwareComponentString string
 	if err == nil {
@@ -91,39 +117,14 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	var resp *http.Response
 	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
 	var body = []byte(bodyString)
-
 	if err == nil {
 		details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
-		resp, err = runATC("POST", details, body, &client)
+		resp, err = runATC("POST", details, body, client)
 	}
-
-	var location string
-	//Poll ATC run
-	if err == nil {
-		location = resp.Header.Get("Location")
-		details.URL = abapEndpoint + location
-		location, err = pollATCRun(details, body, &client)
-	}
-
-	if err == nil {
-		details.URL = abapEndpoint + location
-		resp, err = getResultATCRun("GET", details, nil, &client)
-	}
-
-	//Parse response
-	if err == nil {
-		body, err = ioutil.ReadAll(resp.Body)
-	}
-	if err == nil {
-		defer resp.Body.Close()
-		err = parseATCResult(body)
-	}
-
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		return resp, fmt.Errorf("Triggering ATC result failed: %w", err)
 	}
-
-	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
+	return resp, nil
 }
 
 func buildATCCheckBody(ATCConfig ATCconfig) (string, string, error) {
@@ -197,10 +198,11 @@ func fetchXcsrfToken(requestType string, details connectionDetailsHTTP, body []b
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Fetching Xcrsf-Token")
 
+	details.URL += "/sap/bc/adt/api/atc/runs/00000000000000000000000000000000"
+	details.XCsrfToken = "fetch"
 	header := make(map[string][]string)
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
-
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
