@@ -113,7 +113,7 @@ private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults
         // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
         String fileName
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
-            fileName = ".pipeline/custom_default_from_url_${urlCount}.yml"
+            fileName = "custom_default_from_url_${urlCount}.yml"
 
             def response = script.httpRequest(
                 url: customDefaults[i],
@@ -125,11 +125,11 @@ private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults
                     "Please make sure that the path is correct and no authentication is required to retrieve the file."
             }
 
-            script.writeFile file: fileName, text: response.content
+            script.writeFile file: ".pipeline/$fileName", text: response.content
             urlCount++
         } else if (script.fileExists(customDefaults[i])) {
-            fileName = ".pipeline/${customDefaults[i]}"
-            script.writeFile file: fileName, text: script.readFile(file: customDefaults[i])
+            fileName = customDefaults[i]
+            script.writeFile file: ".pipeline/$fileName", text: script.readFile(file: fileName)
         } else {
             script.echo "WARNING: Custom default entry not found: '${customDefaults[i]}', it will be ignored"
             continue
