@@ -9,7 +9,7 @@ import (
 
 func TestGetLastSuccessfullCommitSuccess(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:                      "http://testHost.com:50000",
 		Client:                    "000",
 		Repository:                "testRepo",
@@ -137,7 +137,7 @@ func TestGetLastSuccessfullCommitSuccess(t *testing.T) {
 
 func TestGetLastSuccessfullCommitFailure(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -159,7 +159,7 @@ func TestGetLastSuccessfullCommitFailure(t *testing.T) {
 }
 func TestGetCommitsSuccess(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -230,7 +230,7 @@ func TestGetCommitsSuccess(t *testing.T) {
 }
 func TestGetCommitsFailure(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -279,7 +279,7 @@ func TestGetCommitsFailure(t *testing.T) {
 }
 func TestGetRepoInfoSuccess(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -383,7 +383,7 @@ func TestGetRepoInfoSuccess(t *testing.T) {
 
 func TestGetRepoInfoFailure(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -432,7 +432,7 @@ func TestGetRepoInfoFailure(t *testing.T) {
 }
 func TestGetRepoHistorySuccess(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",
@@ -501,7 +501,7 @@ func TestGetRepoHistorySuccess(t *testing.T) {
 
 func TestGetRepoHistoryFailure(t *testing.T) {
 
-	config := gctsRollbackCommitOptions{
+	config := gctsRollbackOptions{
 		Host:       "http://testHost.com:50000",
 		Client:     "000",
 		Repository: "testRepo",

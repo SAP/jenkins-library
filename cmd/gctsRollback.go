@@ -7,7 +7,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	gabs "github.com/Jeffail/gabs/v2"
+	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func gctsRollbackCommit(config gctsRollbackCommitOptions, telemetryData *telemetry.CustomData) {
+func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -34,7 +34,7 @@ func gctsRollbackCommit(config gctsRollbackCommitOptions, telemetryData *telemet
 	}
 }
 
-func rollbackCommit(config *gctsRollbackCommitOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func rollbackCommit(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -108,7 +108,7 @@ func rollbackCommit(config *gctsRollbackCommitOptions, telemetryData *telemetry.
 	return nil
 }
 
-func getLastSuccessfullCommit(config *gctsRollbackCommitOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, githubURL *url.URL, commitList []string) (string, error) {
+func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, githubURL *url.URL, commitList []string) (string, error) {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -167,7 +167,7 @@ func getLastSuccessfullCommit(config *gctsRollbackCommitOptions, telemetryData *
 	return "", errors.Errorf("no commit with status 'success' could be found")
 }
 
-func getCommits(config *gctsRollbackCommitOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) ([]string, error) {
+func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) ([]string, error) {
 
 	url := config.Host +
 		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
@@ -212,7 +212,7 @@ func getCommits(config *gctsRollbackCommitOptions, telemetryData *telemetry.Cust
 	return commitList, nil
 }
 
-func getRepoInfo(config *gctsRollbackCommitOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) (*getRepoInfoResponseBody, error) {
+func getRepoInfo(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) (*getRepoInfoResponseBody, error) {
 
 	var response getRepoInfoResponseBody
 
@@ -263,7 +263,7 @@ type getRepoInfoResponseBody struct {
 	} `json:"result"`
 }
 
-func getRepoHistory(config *gctsRollbackCommitOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) (*getRepoHistoryResponseBody, error) {
+func getRepoHistory(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) (*getRepoHistoryResponseBody, error) {
 
 	var response getRepoHistoryResponseBody
 

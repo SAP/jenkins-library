@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type gctsRollbackCommitOptions struct {
+type gctsRollbackOptions struct {
 	Username                  string `json:"username,omitempty"`
 	Password                  string `json:"password,omitempty"`
 	Repository                string `json:"repository,omitempty"`
@@ -23,20 +23,20 @@ type gctsRollbackCommitOptions struct {
 	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
 }
 
-// GctsRollbackCommitCommand Perfoms roll back of one (default) or several commit(s)
-func GctsRollbackCommitCommand() *cobra.Command {
-	const STEP_NAME = "gctsRollbackCommit"
+// GctsRollbackCommand Perfoms roll back of one (default) or several commit(s)
+func GctsRollbackCommand() *cobra.Command {
+	const STEP_NAME = "gctsRollback"
 
-	metadata := gctsRollbackCommitMetadata()
-	var stepConfig gctsRollbackCommitOptions
+	metadata := gctsRollbackMetadata()
+	var stepConfig gctsRollbackOptions
 	var startTime time.Time
 
-	var createGctsRollbackCommitCmd = &cobra.Command{
+	var createGctsRollbackCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Perfoms roll back of one (default) or several commit(s)",
 		Long: `This step performs a rollback of commit(s) in a local ABAP system repository. If a <commit> parameter is specified, it will be used as the target commit for the rollback.
 If no <commit> parameter is specified and the remote repository domain is 'github.com', the last commit with status 'success' will be used for the rollback. Otherwise,
-gctsRollbackCommit will rollback to the previously active commit in the local repository.`,
+gctsRollback will rollback to the previously active commit in the local repository.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -71,16 +71,16 @@ gctsRollbackCommit will rollback to the previously active commit in the local re
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			gctsRollbackCommit(stepConfig, &telemetryData)
+			gctsRollback(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addGctsRollbackCommitFlags(createGctsRollbackCommitCmd, &stepConfig)
-	return createGctsRollbackCommitCmd
+	addGctsRollbackFlags(createGctsRollbackCmd, &stepConfig)
+	return createGctsRollbackCmd
 }
 
-func addGctsRollbackCommitFlags(cmd *cobra.Command, stepConfig *gctsRollbackCommitOptions) {
+func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
@@ -97,10 +97,10 @@ func addGctsRollbackCommitFlags(cmd *cobra.Command, stepConfig *gctsRollbackComm
 }
 
 // retrieve step metadata
-func gctsRollbackCommitMetadata() config.StepData {
+func gctsRollbackMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsRollbackCommit",
+			Name:    "gctsRollback",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{

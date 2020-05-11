@@ -81,7 +81,7 @@ func Execute() {
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
-	rootCmd.AddCommand(GctsRollbackCommitCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
