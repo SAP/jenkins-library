@@ -48,7 +48,7 @@ void call(Map parameters = [:]) {
 
         List customDefaultsFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
-        customDefaultsFiles = putCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
 
         List customDefaultsConfig = []
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
             customDefaultsConfig = Utils.appendParameterToStringList(
                 [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultsConfig = putCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
+        customDefaultsConfig = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
 
         prepareDefaultValues([
             script: script,
@@ -106,7 +106,7 @@ private static loadConfigurationFromFile(script, String configFile) {
     }
 }
 
-private static List putCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
+private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
     List fileList = []
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
