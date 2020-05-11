@@ -148,14 +148,14 @@ class TransportManagementService implements Serializable {
                                                 | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
                                                 |      --write-out '%{response_code}' \\
                                                 |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -H 'tms-named-user: ${namedUser}' \\
                                                 |      -F 'file=@${file}' \\
                                                 |      -F 'mtaVersion=${mtaVersion}' \\
                                                 |      -F 'description=${description}' \\
-                                                |      -F 'namedUser=${namedUser}' \\
                                                 |      --output ${responseExtDescriptorUpload} \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
         
-        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '200', 'MTA Extension Descriptor Upload'))
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '201', 'MTA Extension Descriptor Upload'))
     }
     
     def getNodes(String url, String token) {
@@ -212,10 +212,10 @@ class TransportManagementService implements Serializable {
                                                 | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
                                                 |      --write-out '%{response_code}' \\
                                                 |      -H 'Authorization: Bearer ${token}' \\
+                                                |      -H 'tms-named-user: ${namedUser}' \\
                                                 |      -F 'file=@${file}' \\
                                                 |      -F 'mtaVersion=${mtaVersion}' \\
                                                 |      -F 'description=${description}' \\
-                                                |      -F 'namedUser=${namedUser}' \\
                                                 |      --output ${responseExtDescriptorUpdate} \\
                                                 |      -X PUT \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaExtDescriptor}'""".stripMargin()
@@ -258,11 +258,11 @@ class TransportManagementService implements Serializable {
             echo("Response content '${response.content}'.")
         }
         
-        // because the API is called with params, the return is either a empty list or a list containing one element
+        // because the API is called with params, the return is always a map with either a empty list or a list containing one element
         Map mtaExtDescriptor = [:]
-        List reponseContent = jsonUtils.jsonStringToGroovyObject(response.content)
-        if(reponseContent) {
-            mtaExtDescriptor = reponseContent.get(0);
+        Map reponseContent = jsonUtils.jsonStringToGroovyObject(response.content)
+        if(reponseContent.get("mtaExtDescriptors")) {
+            mtaExtDescriptor = reponseContent.get("mtaExtDescriptors").get(0);
         }
         
         echo("Get Extension descriptor successful.")

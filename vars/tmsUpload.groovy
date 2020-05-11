@@ -151,11 +151,11 @@ void call(Map parameters = [:]) {
                     nodeIdExtDesMap.each{ key, value ->
                         Map mtaExtDescriptor = tms.getAMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
                         if(mtaExtDescriptor) {
-                            def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor '${updateMtaExtDescriptorResponse.fileName}' (fileId: '${updateMtaExtDescriptorResponse.fileId}') successfully updated for Node with id '${key}'."
+                            def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
+                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."
                         } else {
-                            def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor '${uploadMtaExtDescriptorToNodeResponse.fileName}' (fileId: '${uploadMtaExtDescriptorToNodeResponse.fileId}') successfully uploaded to Node with id '${key}'."
+                            def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
+                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${uploadMtaExtDescriptorToNodeResponse.mtaExtId}' successfully uploaded to Node '${value.get(0)}'."
                         }
                     }
                 }
@@ -211,7 +211,7 @@ def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List node
     
     nodeExtDescriptorMapping.each{ key, value ->
         if(nodes.any {it.name == key}) {
-            nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), value)
+            nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), [key, value])
         } else {
             errorNodeNameList.add(key)
         }

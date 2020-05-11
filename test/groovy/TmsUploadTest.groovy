@@ -192,9 +192,9 @@ public class TmsUploadTest extends BasePiperTest {
             mtaVersion: '0.0.1',
         )
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy.mtaext' (fileId: '1') successfully uploaded to Node with id '1'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.extension' successfully uploaded to Node 'testNode1'."))
         assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (fileId: '2') successfully uploaded to Node with id '2'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully uploaded to Node 'testNode2'."))
         assertThat(calledTmsMethodsWithArgs[5], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
     }
     
@@ -218,7 +218,7 @@ public class TmsUploadTest extends BasePiperTest {
             mtaVersion: '1.2.2',
         )
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor './dummy2.mtaext' (fileId: '1') successfully updated for Node with id '1'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully updated for Node 'testNode1'."))
         assertThat(calledTmsMethodsWithArgs[2], is("getAMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '1.2.2')"))
         assertThat(calledTmsMethodsWithArgs[3], is("updateMtaExtDescriptor('${uri}', 'myToken', 1, 2, './dummy2.mtaext', '1.2.2', 'Git CommitId: testCommitId', 'Test User')"))
     }
@@ -334,8 +334,14 @@ public class TmsUploadTest extends BasePiperTest {
             }
             
             def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
-                calledTmsMethodsWithArgs << "uploadMtaExtDescriptorToNode('${url}', '${token}', ${nodeId}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
-                return [fileId: nodeId, fileName: file]
+                if(nodeId==1) {
+                    calledTmsMethodsWithArgs << "uploadMtaExtDescriptorToNode('${url}', '${token}', ${nodeId}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
+                    return [id: 123, mtaExtId: "com.sap.piper.tms.test.extension"]
+                }
+                if(nodeId==2) {
+                    calledTmsMethodsWithArgs << "uploadMtaExtDescriptorToNode('${url}', '${token}', ${nodeId}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
+                    return [id: 456, mtaExtId: "com.sap.piper.tms.test.another.extension"]
+                }
             }
             
             def getNodes(String url, String token) {
@@ -345,7 +351,7 @@ public class TmsUploadTest extends BasePiperTest {
             
             def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaDescriptor, String file, String mtaVersion, String description, String namedUser) {
                 calledTmsMethodsWithArgs << "updateMtaExtDescriptor('${url}', '${token}', ${nodeId}, ${idOfMtaDescriptor}, '${file}', '${mtaVersion}', '${description}', '${namedUser}')"
-                return [fileId: nodeId, fileName: file]
+                return [id: 456, mtaExtId: "com.sap.piper.tms.test.another.extension"]
             }
             
             def getAMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {

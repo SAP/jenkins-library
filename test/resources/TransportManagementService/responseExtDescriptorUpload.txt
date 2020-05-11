@@ -1,3 +1,7 @@
 {
-    "fileId": 5678
+    "id": 123,
+    "description": "tms mtaext upload",
+    "mtaId": "com.sap.piper.tms.test",
+    "mtaExtId": "com.sap.piper.tms.test.extension",
+    "mtaVersion": "1.0.0"
 }

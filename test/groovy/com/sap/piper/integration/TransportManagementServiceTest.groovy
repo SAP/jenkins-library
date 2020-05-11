@@ -363,7 +363,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         def description = "My description."
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '200')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,'.*curl.*', '201')
         
         def tms = new TransportManagementService(nullScript, [:])
         def responseDetails = tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -371,8 +371,8 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload started."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescriptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
-        assertThat(responseDetails, hasEntry("fileId", 5678))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -H 'tms-named-user: ${namedUser}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' --output responseExtDescriptorUpload.txt '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'"))
+        assertThat(responseDetails, hasEntry("id", 123))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload successful."))
     }
     
@@ -386,14 +386,14 @@ class TransportManagementServiceTest extends BasePiperTest {
         def description = "My description."
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '201')
 
         def tms = new TransportManagementService(nullScript, [verbose: true])
         tms.uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload started."))
         assertThat(loggingRule.log, containsString("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'"))
-        assertThat(loggingRule.log, containsString("\"fileId\": 5678"))
+        assertThat(loggingRule.log, containsString("\"id\": 123"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Upload successful."))
     }
     
@@ -413,13 +413,13 @@ class TransportManagementServiceTest extends BasePiperTest {
         readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA Extension Descriptor Upload (WE ARE IN VERBOSE MODE)']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (400). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (400). 201 expected')
 
         loggingRule.expect('[TransportManagementService] URL: \'http://dummy.sap.com\', NodeId: \'1\', File: \'myFile.mtaext\', MtaVersion: \'0.0.1\'')
         loggingRule.expect('[TransportManagementService] Response body: Something went wrong during MTA Extension Descriptor Upload (WE ARE IN VERBOSE MODE)')
 
         loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (400). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Upload')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (400). 201 expected. Response body: Something went wrong during MTA Extension Descriptor Upload')
 
         new TransportManagementService(nullScript, [verbose:true])
             .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -441,10 +441,10 @@ class TransportManagementServiceTest extends BasePiperTest {
         readFileRule.files << [ 'responseExtDescriptorUpload.txt': 'Something went wrong during MTA Extension Descriptor Upload. WE ARE IN NON VERBOSE MODE.']
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (418). 200 expected')
+        thrown.expectMessage('Unexpected response code received from MTA Extension Descriptor Upload (418). 201 expected')
 
         loggingRule.expect('[TransportManagementService] MTA Extension Descriptor Upload started.')
-        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (418). 200 expected. Response body: Something went wrong during MTA Extension Descriptor Upload. WE ARE IN NON VERBOSE MODE.')
+        loggingRule.expect('[TransportManagementService] Unexpected response code received from MTA Extension Descriptor Upload (418). 201 expected. Response body: Something went wrong during MTA Extension Descriptor Upload. WE ARE IN NON VERBOSE MODE.')
 
         new TransportManagementService(nullScript, [verbose:false])
             .uploadMtaExtDescriptorToNode(url, token, nodeId, file, mtaVersion, description, namedUser)
@@ -472,8 +472,8 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
-        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' -F 'namedUser=${namedUser}' --output responseExtDescriptorUpdate.txt -X PUT '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaDescriptor}'"))
-        assertThat(responseDetails, hasEntry("fileId", 9999))
+        assertThat(oAuthShellCall, endsWith("curl --write-out '%{response_code}' -H 'Authorization: Bearer ${token}' -H 'tms-named-user: ${namedUser}' -F 'file=@${file}' -F 'mtaVersion=${mtaVersion}' -F 'description=${description}' --output responseExtDescriptorUpdate.txt -X PUT '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaDescriptor}'"))
+        assertThat(responseDetails, hasEntry("id", 456))
     }
     
     @Test
@@ -495,7 +495,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'"))
-        assertThat(loggingRule.log, containsString("\"fileId\": 9999"))
+        assertThat(loggingRule.log, containsString("\"id\": 456"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor Update successful."))
     }
 
@@ -635,13 +635,13 @@ class TransportManagementServiceTest extends BasePiperTest {
         Map requestParams
         helper.registerAllowedMethod('httpRequest', [Map.class], { m ->
             requestParams = m
-            return [content: '[{"id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]', status: 200]
+            return [content: '{ "mtaExtDescriptors": [{"id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}', status: 200]
         })
 
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
-        def mtaId = "alm.pi.test.scv_x"
+        def mtaId = "com.sap.piper.tms.test"
         def mtaVersion = '1.2.3'
 
         def tms = new TransportManagementService(nullScript, [:])
@@ -652,7 +652,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(requestParams, hasEntry('url', "${url}/v2/nodes/${nodeId}/mtaExtDescriptors?mtaId=${mtaId}&mtaVersion=${mtaVersion}"))
         assertThat(requestParams.customHeaders[0].value, is("Bearer ${token}"))
         assertThat(responseDetails, hasEntry("id", 2))
-        assertThat(responseDetails, hasEntry("mtaExtId", "alm.pi.test.scv_x_ext"))
+        assertThat(responseDetails, hasEntry("mtaExtId", "com.sap.piper.tms.test.extension"))
     }
     
     @Test
@@ -660,9 +660,9 @@ class TransportManagementServiceTest extends BasePiperTest {
         def url = 'http://dummy.sap.com'
         def token = 'myToken'
         def nodeId = 1
-        def mtaId = "alm.pi.test.scv_x"
+        def mtaId = "com.sap.piper.tms.test"
         def mtaVersion = '1.2.3'
-        def responseContent = '[{"id": 2, "nodeId": 1, "mtaId": "alm.pi.test.scv_x", "mtaExtId": "alm.pi.test.scv_x_ext", "mtaVersion": "1.2.3"}]'
+        def responseContent = '{ "mtaExtDescriptors": [{"id": 2, "nodeId": 1, "mtaId": "com.sap.piper.tms.test", "mtaExtId": "com.sap.piper.tms.test.extension", "mtaVersion": "1.2.3"}]}'
         
         helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: 200]
