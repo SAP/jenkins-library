@@ -341,14 +341,8 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
   mtaBuild:
-    buildTarget: 'NEO'
-    mtaBuildTool: cloudMbt
     platform: 'cf'
-    mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-    classic:
-      dockerImage: 'ppiper/mta-archive-builder'
-    cloudMbt:
-      dockerImage: 'devxci/mbtci:1.0.10'
+    dockerImage: 'devxci/mbtci:1.0.10'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
