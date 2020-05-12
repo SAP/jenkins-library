@@ -27,10 +27,6 @@ void call(parameters) {
             }
             stage('Init') {
                 steps {
-            //     library 'piper-lib-os-dev'
-            //     //setupCommonPipelineEnvironment script: parameters.script
-            //     piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
-
                     abapEnvironmentPipelineInit script: parameters.script
                 }
             }
@@ -48,28 +44,16 @@ void call(parameters) {
                     abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
-
-            // stage('Test') {
-            //     steps {
-            //         abapPipelinePrepare script: parameters.script
-            //     }
-            // }
-
-            stage('Cleanup') {
-                steps {
-                    cloudFoundryDeleteService script: parameters.script
-                }
+        }
+        post {
+            /* https://jenkins.io/doc/book/pipeline/syntax/#post */
+            success {buildSetResult(currentBuild)}
+            aborted {buildSetResult(currentBuild, 'ABORTED')}
+            failure {buildSetResult(currentBuild, 'FAILURE')}
+            unstable {buildSetResult(currentBuild, 'UNSTABLE')}
+            cleanup {
+                cloudFoundryDeleteService script: parameters.script
             }
         }
-        // post {
-        //     /* https://jenkins.io/doc/book/pipeline/syntax/#post */
-        //     success {buildSetResult(currentBuild)}
-        //     aborted {buildSetResult(currentBuild, 'ABORTED')}
-        //     failure {buildSetResult(currentBuild, 'FAILURE')}
-        //     unstable {buildSetResult(currentBuild, 'UNSTABLE')}
-        //     cleanup {
-        //         piperPipelineStagePost script: parameters.script
-        //     }
-        // }
     }
 }
