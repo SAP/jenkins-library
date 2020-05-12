@@ -134,6 +134,7 @@ public class CommonStepsTest extends BasePiperTest{
         'piperPipelineStageArtifactDeployment', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
+        'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
     ]
 
     @Test
