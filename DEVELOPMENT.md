@@ -459,5 +459,4 @@ The `DefaultValueCache` caches the resolved (custom) default pipeline configurat
 On initialization, it merges the provided custom default configurations with the default configuration from Piper library, as per the hierarchical order.
 
 Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations of each Go step.
-It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration.
-Since, the Go layer already resolves configurations provided via `customDefaults` parameter independently.
+It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration, since the Go layer already resolves configurations provided via `customDefaults` parameter independently.
