@@ -19,7 +19,7 @@ import (
 )
 
 type fortifyMock struct {
-	successive bool
+	Successive bool
 }
 
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
@@ -94,11 +94,11 @@ func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.Is
 	return []*models.IssueStatistics{}, nil
 }
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
-	if !f.successive {
-		f.successive = true
+	if !f.Successive {
+		f.Successive = true
 		return &models.SavedReport{Status: "Processing"}, nil
 	}
-	f.successive = false
+	f.Successive = false
 	return &models.SavedReport{Status: "Complete"}, nil
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
@@ -164,7 +164,7 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 }
 
 func TestGenerateAndDownloadQGateReport(t *testing.T) {
-	ffMock := fortifyMock{}
+	ffMock := fortifyMock{Successive: false}
 	config := fortifyExecuteScanOptions{ReportTemplateID: 18, ReportType: "PDF"}
 	name := "test"
 	projectVersion := models.ProjectVersion{ID: 4711, Name: &name}
@@ -179,16 +179,16 @@ func TestGenerateAndDownloadQGateReport(t *testing.T) {
 }
 
 func TestVerifyScanResultsFinishedUploading(t *testing.T) {
-	ffMock := fortifyMock{}
-	config := fortifyExecuteScanOptions{DeltaMinutes: 0}
+	ffMock := fortifyMock{Successive: false}
 
-	t.Run("no recent upload detected", func(t *testing.T) {
+	t.Run("error no recent upload detected", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{DeltaMinutes: -1}
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
 		assert.Error(t, err)
 		assert.Equal(t, "No recent upload detected on Project Version", err.Error())
 	})
 
-	config.DeltaMinutes = 20
+	config := fortifyExecuteScanOptions{DeltaMinutes: 20}
 	t.Run("success", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
 		assert.NoError(t, err)
@@ -200,24 +200,24 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 		assert.Equal(t, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=", err.Error())
 	})
 
-	t.Run("required auth", func(t *testing.T) {
+	t.Run("error required auth", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{}, 0)
 		assert.Error(t, err)
 		assert.Equal(t, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=", err.Error())
 	})
 
-	t.Run("polling timeout", func(t *testing.T) {
+	t.Run("error polling timeout", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
 		assert.Error(t, err)
 		assert.Equal(t, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING", err.Error())
 	})
 
-	t.Run("build label success", func(t *testing.T) {
+	t.Run("success build label", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{}, 0)
 		assert.NoError(t, err)
 	})
 
-	t.Run("no artifacts", func(t *testing.T) {
+	t.Run("error no artifacts", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, 0)
 		assert.Error(t, err)
 		assert.Equal(t, "No uploaded artifacts for assessment detected for project version with ID 4716", err.Error())
