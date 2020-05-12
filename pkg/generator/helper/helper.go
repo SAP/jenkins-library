@@ -197,7 +197,7 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := run{{.StepName | title}}(&config, telemetryData, &c{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatalf("step execution failed: %s", err.Error())
 	}
 }
 
