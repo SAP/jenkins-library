@@ -17,8 +17,17 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = []
 
 @Field Set PARAMETER_KEYS = [
-    /** Property file defining project specific settings.*/
-    'configFile'
+    /** Path to the pipeline configuration file defining project specific settings.*/
+    'configFile',
+    /** A list of file names which will be extracted from library resources and which serve as source for
+     * default values for the pipeline configuration. These are merged with and override built-in defaults, with
+     * a parameter supplied by the last resource file taking precedence over the same parameter supplied in an
+     * earlier resource file or built-in default.*/
+    'customDefaults',
+    /** A list of file paths or URLs which must point to YAML content. These work exactly like
+     * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
+     * take precedence over customDefaults.*/
+    'customDefaultsFromFiles'
 ]
 
 /**
