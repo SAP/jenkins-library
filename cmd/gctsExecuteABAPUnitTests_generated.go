@@ -21,26 +21,39 @@ type gctsExecuteABAPUnitTestsOptions struct {
 	Client     string `json:"client,omitempty"`
 }
 
-// GctsExecuteABAPUnitTestsCommand Runs all existing unit tests for the repository packages
+// GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests for all packages of the specified repository
 func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
+	const STEP_NAME = "gctsExecuteABAPUnitTests"
+
 	metadata := gctsExecuteABAPUnitTestsMetadata()
 	var stepConfig gctsExecuteABAPUnitTestsOptions
 	var startTime time.Time
 
 	var createGctsExecuteABAPUnitTestsCmd = &cobra.Command{
-		Use:   "gctsExecuteABAPUnitTests",
-		Short: "Runs all existing unit tests for the repository packages",
+		Use:   STEP_NAME,
+		Short: "Runs ABAP unit tests for all packages of the specified repository",
 		Long:  `This step will execute every unit test associated with a package belonging to the specified local repository on an ABAP system.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("gctsExecuteABAPUnitTests")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "gctsExecuteABAPUnitTests", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -52,7 +65,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "gctsExecuteABAPUnitTests")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			gctsExecuteABAPUnitTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
