@@ -161,10 +161,10 @@ func parseATCResult(body []byte) error {
 	}
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	err := ioutil.WriteFile("ATCresults.xml", body, 0644)
+	err := ioutil.WriteFile("ATCResults.xml", body, 0644)
 	if err == nil {
 		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: "ATCresults.xml", Name: "ATC Results", Mandatory: true})
+		reports = append(reports, piperutils.Path{Target: "ATCResults.xml", Name: "ATC Results", Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
