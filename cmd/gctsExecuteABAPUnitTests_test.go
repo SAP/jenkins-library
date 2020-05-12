@@ -111,7 +111,7 @@ func TestDiscoveryFailure(t *testing.T) {
 		header, err := discoverServer(&config, nil, &httpClient)
 
 		t.Run("check error", func(t *testing.T) {
-			assert.EqualError(t, err, "discovery of the ABAP server failed: http response or header are <nil>")
+			assert.EqualError(t, err, "discovery of the ABAP server failed: did not retrieve a HTTP response")
 		})
 
 		t.Run("check header", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestDiscoveryFailure(t *testing.T) {
 		header, err := discoverServer(&config, nil, &httpClient)
 
 		t.Run("check error", func(t *testing.T) {
-			assert.EqualError(t, err, "discovery of the ABAP server failed: http response or header are <nil>")
+			assert.EqualError(t, err, "discovery of the ABAP server failed: did not retrieve a HTTP response")
 		})
 
 		t.Run("check header", func(t *testing.T) {
@@ -244,7 +244,7 @@ func TestGetPackageListFailure(t *testing.T) {
 
 		_, err := getPackageList(&config, nil, &httpClient)
 
-		assert.EqualError(t, err, "failed to get repository objects: a http error occurred")
+		assert.EqualError(t, err, "getting repository object/package list failed: a http error occurred")
 	})
 }
 

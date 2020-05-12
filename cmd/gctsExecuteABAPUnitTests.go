@@ -218,9 +218,9 @@ func getPackageList(config *gctsExecuteABAPUnitTestsOptions, telemetryData *tele
 	}()
 
 	if httpErr != nil {
-		return []string{}, errors.Wrap(httpErr, "getting software package list failed")
+		return []string{}, errors.Wrap(httpErr, "getting repository object/package list failed")
 	} else if resp == nil {
-		return []string{}, errors.New("getting software package list failed: did not retrieve a HTTP response")
+		return []string{}, errors.New("getting repository object/package list failed: did not retrieve a HTTP response")
 	}
 
 	var response objectsResponseBody
