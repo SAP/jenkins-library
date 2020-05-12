@@ -38,7 +38,7 @@ func NewSentryHook(sentryDsn, correlationID string) SentryHook {
 		Dsn:              sentryDsn,
 		AttachStacktrace: true,
 	}); err != nil {
-		Entry().Infof("cannot initialize sentry: %v", err)
+		Entry().Warnf("cannot initialize sentry: %v", err)
 	}
 	h := SentryHook{
 		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel},
@@ -57,36 +57,38 @@ func (sentryHook *SentryHook) Levels() []logrus.Level {
 
 // Fire creates a new event from the error and sends it to sentry
 func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
-	event := sentry.NewEvent()
-	event.Level = levelMap[entry.Level]
-
+	sentryHook.Event.Level = levelMap[entry.Level]
+	sentryHook.Event.Message = entry.Message
+	errValue := ""
 	sentryHook.tags["correlationId"] = sentryHook.correlationID
 	for k, v := range entry.Data {
 		if k == "stepName" || k == "category" {
 			sentryHook.tags[k] = fmt.Sprint(v)
 		}
-		event.Extra[k] = v
+		if k == "error" {
+			errValue = fmt.Sprint(v)
+		}
+		sentryHook.Event.Extra[k] = v
 	}
 	sentryHook.Hub.Scope().SetTags(sentryHook.tags)
 
+	exception := sentry.Exception{
+		Type:  entry.Message,
+		Value: errValue,
+	}
+
+	// if error type found overwrite exception value and add stacktrace
 	err, ok := entry.Data[logrus.ErrorKey].(error)
 	if ok {
-		exception := sentry.Exception{
-			Type:  entry.Message,
-			Value: err.Error(),
-		}
-		event.Message = reflect.TypeOf(err).String()
-
+		exception.Value = err.Error()
+		sentryHook.Event.Message = reflect.TypeOf(err).String()
 		if sentryHook.Hub.Client().Options().AttachStacktrace {
 			exception.Stacktrace = sentry.ExtractStacktrace(err)
 		}
 
-		event.Exception = []sentry.Exception{exception}
 	}
+	sentryHook.Event.Exception = []sentry.Exception{exception}
 
-	sentryHook.Event.Level = event.Level
-	sentryHook.Event.Exception = event.Exception
-	sentryHook.Hub.CaptureEvent(event)
-
+	sentryHook.Hub.CaptureEvent(sentryHook.Event)
 	return nil
 }
