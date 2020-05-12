@@ -433,6 +433,7 @@ Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.
 
 The pipeline configuration is organized in a hierarchical manner and configuration parameters are incorporated from multiple sources.
 In general, there are four sources for configurations:
+
 1. Directly passed step parameters
 1. Project specific configuration placed in `.pipeline/config.yml`
 1. Custom default configuration provided in `customDefaults` parameter of the project config or passed as parameter to the step `setupCommonPipelineEnvironment`
