@@ -41,7 +41,7 @@ func NewSentryHook(sentryDsn, correlationID string) SentryHook {
 		Entry().Warnf("cannot initialize sentry: %v", err)
 	}
 	h := SentryHook{
-		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel},
+		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel},
 		Hub:           sentry.CurrentHub(),
 		tags:          make(map[string]string),
 		Event:         sentry.NewEvent(),
