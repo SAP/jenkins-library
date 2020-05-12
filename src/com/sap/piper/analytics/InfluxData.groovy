@@ -38,4 +38,29 @@ class InfluxData implements Serializable{
     public static void reset(){
         instance = null
     }
+
+    public static void readFromDisk(script) {
+
+        def influxValues = script.findFiles(glob: '.pipeline/influx/*')
+
+        influxValues.each({f ->
+            def fileName = f.getName()
+            def parts = fileName.split('.pipeline/influx/')[1].split('/')
+
+            if(parts.size() == 3){
+                Map dataMap
+                def measurement = parts[0]
+                def type = parts[1]
+                def name = parts[2]
+
+                if(type == 'field'){
+                    dataMap = getInstance().getFields()
+                }else if(type == 'tag'){
+                    dataMap = getInstance().getTags()
+                }
+                if(dataMap)
+                    add(dataMap, measurement, name, script.readFile(f.getPath()))
+            }
+        })
+    }
 }

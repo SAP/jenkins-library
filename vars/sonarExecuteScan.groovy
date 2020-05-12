@@ -72,6 +72,8 @@ void call(Map parameters = [:]) {
                             withCredentials(credentials) {
                                 withEnv(environment){
                                     sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+
+                                    InfluxData.readFromDisk(script)
                                 }
                             }
                         }
