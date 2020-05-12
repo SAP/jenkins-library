@@ -244,3 +244,4 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/commitMessage

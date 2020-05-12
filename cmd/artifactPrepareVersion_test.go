@@ -64,6 +64,12 @@ type gitRepositoryMock struct {
 	tagError            string
 	worktree            *git.Worktree
 	worktreeError       string
+	commitObjectHash    string
+}
+
+func (r *gitRepositoryMock) CommitObject(hash plumbing.Hash) (*object.Commit, error) {
+	r.commitObjectHash = hash.String()
+	return &object.Commit{Hash: hash, Message: "Test commit message"}, nil
 }
 
 func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git.CreateTagOptions) (*plumbing.Reference, error) {
@@ -204,6 +210,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
+		assert.Equal(t, "Test commit message", cpe.git.commitMessage)
 
 		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven", Custom2Label: "filePath", Custom2: ""}, telemetryData)
 	})
