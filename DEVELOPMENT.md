@@ -9,6 +9,7 @@
 1. [Testing](#testing)
 1. [Debugging](#debugging)
 1. [Release](#release)
+1. [Pipeline Configuration](#pipeline-configuration)
 
 ## Getting started
 
@@ -457,11 +458,6 @@ Custom default configurations can be provided as parameters to `setupCommonPipel
 The `DefaultValueCache` caches the resolved (custom) default pipeline configuration and the list of configurations that contributed to the result.
 On initialization, it merges the provided custom default configurations with the default configuration from Piper library, as per the hierarchical order.
 
-Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations to the `getConfig` Go step.
+Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations of each Go step.
 It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration.
-Since, the `getConfig` Go step already resolves configurations provided via `customDefaults` parameter independently.
-
-#### getConfig (Go)
-
-The `getConfig` Go step is responsible for resolving the pipeline configuration of piper-go steps.
-In the future, it is planned to fully replace the Groovy implementation for resolving the pipeline configuration in favor of the `getConfig` Go step.
+Since, the Go layer already resolves configurations provided via `customDefaults` parameter independently.
