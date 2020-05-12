@@ -428,3 +428,39 @@ We release on schedule (once a week) and on demand.
 To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
 It requires a personal access token for GitHub with `repo` scope.
 Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.
+
+## Pipeline Configuration
+
+The pipeline configuration is organized in a hierarchical manner and configuration parameters are incorporated from multiple sources.
+In general, there are four sources for configurations:
+1. Directly passed step parameters
+1. Project specific configuration placed in `.pipeline/config.yml`
+1. Custom default configuration provided in `customDefaults` parameter of the project config or passed as parameter to the step `setupCommonPipelineEnvironment`
+1. Default configuration from Piper library
+
+For more information and examples on how to configure a project, please refer to the [configuration documentation](https://sap.github.io/jenkins-library/configuration/).
+
+### Groovy vs. Go step configuration
+
+The configuration of a project is, as of now, resolved separately for Groovy and Go steps.
+There are, however, dependencies between the steps responsible for resolving the configuration.
+The following provides an overview of the central components and their dependencies.
+
+#### setupCommonPipelineEnvironment (Groovy)
+
+The step `setupCommonPipelineEnvironment` initializes the `commonPipelineEnvironment` and `DefaultValueCache`.
+Custom default configurations can be provided as parameters to `setupCommonPipelineEnvironment` or via the `customDefaults` parameter in project configuration.
+
+#### DefaultValueCache (Groovy)
+
+The `DefaultValueCache` caches the resolved (custom) default pipeline configuration and the list of configurations that contributed to the result.
+On initialization, it merges the provided custom default configurations with the default configuration from Piper library, as per the hierarchical order.
+
+Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations to the `getConfig` Go step.
+It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration.
+Since, the `getConfig` Go step already resolves configurations provided via `customDefaults` parameter independently.
+
+#### getConfig (Go)
+
+The `getConfig` Go step is responsible for resolving the pipeline configuration of piper-go steps.
+In the future, it is planned to fully replace the Groovy implementation for resolving the pipeline configuration in favor of the `getConfig` Go step.
