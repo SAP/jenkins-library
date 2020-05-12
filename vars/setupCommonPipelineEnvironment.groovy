@@ -26,7 +26,7 @@ import groovy.transform.Field
     'customDefaults',
     /** A list of file paths or URLs which must point to YAML content. These work exactly like
      * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
-     * take precedence over customDefaults.*/
+     * take precedence over `customDefaults`.*/
     'customDefaultsFromFiles'
 ]
 
