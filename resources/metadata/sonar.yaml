@@ -167,6 +167,14 @@ spec:
       - name: githubTokenCredentialsId
         type: jenkins
         description: Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Github Server.
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: sonar
   containers:
     - name: sonar
       image: node:lts-stretch
