@@ -18,7 +18,7 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 
 	err := runMavenBuild(&config, telemetryData, &c, &utils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatalf("step execution failed: '%s'", err.Error())
 	}
 }
 

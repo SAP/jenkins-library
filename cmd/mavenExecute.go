@@ -15,7 +15,7 @@ func mavenExecute(config mavenExecuteOptions, _ *telemetry.CustomData) {
 	runner := command.Command{}
 	err := runMavenExecute(config, &runner)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatalf("step execution failed: '%s'", err.Error())
 	}
 }
 

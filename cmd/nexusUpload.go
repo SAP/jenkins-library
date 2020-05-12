@@ -128,7 +128,7 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 
 	err := runNexusUpload(utils, &uploader, &options)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatalf("step execution failed: '%s'", err.Error())
 	}
 }
 

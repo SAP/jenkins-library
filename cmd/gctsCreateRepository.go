@@ -30,7 +30,7 @@ func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *tel
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := createRepository(&config, telemetryData, &c, httpClient)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+		log.Entry().WithError(err).Fatalf("step execution failed: '%s'", err.Error())
 	}
 }
 
