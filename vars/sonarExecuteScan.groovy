@@ -71,9 +71,11 @@ void call(Map parameters = [:]) {
                         withSonarQubeEnv(stepConfig.instance) {
                             withCredentials(credentials) {
                                 withEnv(environment){
-                                    sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-
-                                    InfluxData.readFromDisk(script)
+                                    try {
+                                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                    } finally {
+                                        InfluxData.readFromDisk(script)
+                                    }
                                 }
                             }
                         }
