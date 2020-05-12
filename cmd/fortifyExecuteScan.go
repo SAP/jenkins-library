@@ -153,7 +153,11 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
 		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0x700)
 
-		generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		if err != nil {
+			return err
+		}
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0x700)
 	}
 
 	// Perform audit compliance checks
@@ -308,7 +312,7 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	return result
 }
 
-func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion) {
+func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion) ([]byte, error) {
 	log.Entry().Infof("Generating report with template ID %v", config.ReportTemplateID)
 	report, err := sys.GenerateQGateReport(project.ID, projectVersion.ID, int64(config.ReportTemplateID), *project.Name, *projectVersion.Name, config.ReportType)
 	if err != nil {
@@ -320,15 +324,15 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 		time.Sleep(10 * time.Second)
 		report, err = sys.GetReportDetails(report.ID)
 		if err != nil {
-			log.Entry().WithError(err).Fatal("Failed to fetch Q-Gate report generation status")
+			return []byte{}, fmt.Errorf("Failed to fetch Q-Gate report generation status: %w", err)
 		}
 		status = report.Status
 	}
 	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, projectVersion.ID)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to download Q-Gate Report")
+		return []byte{}, fmt.Errorf("Failed to download Q-Gate Report: %w", err)
 	}
-	ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0x700)
+	return data, nil
 }
 
 func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, artifact *models.Artifact, numInvokes int) error {
@@ -388,7 +392,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	differenceInSeconds := calculateTimeDifferenceToLastUpload(relatedUpload.UploadDate, projectVersionID)
 	// Use the absolute value for checking the time difference
 	if differenceInSeconds > float64(60*config.DeltaMinutes) {
-		return fmt.Errorf("No recent upload detected on Project Version")
+		return errors.New("No recent upload detected on Project Version")
 	}
 	warn := false
 	for _, upload := range artifacts {

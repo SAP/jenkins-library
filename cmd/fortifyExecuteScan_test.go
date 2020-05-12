@@ -18,7 +18,9 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
-type fortifyMock struct{}
+type fortifyMock struct {
+	successive bool
+}
 
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
 	return &models.Project{Name: &name}, nil
@@ -68,7 +70,13 @@ func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact
 	if id == 4713 {
 		return []*models.Artifact{&models.Artifact{Status: "REQUIRE_AUTH", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
-	return []*models.Artifact{&models.Artifact{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	if id == 4714 {
+		return []*models.Artifact{&models.Artifact{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	}
+	if id == 4715 {
+		return []*models.Artifact{&models.Artifact{Status: "PROCESSED", Embed: &models.EmbeddedScans{[]*models.Scan{&models.Scan{BuildLabel: "/commit/test"}}}, UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	}
+	return []*models.Artifact{}, nil
 }
 func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
 	return &models.FilterSet{}, nil
@@ -86,19 +94,24 @@ func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.Is
 	return []*models.IssueStatistics{}, nil
 }
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
-	return &models.SavedReport{}, nil
+	if !f.successive {
+		f.successive = true
+		return &models.SavedReport{Status: "Processing"}, nil
+	}
+	f.successive = false
+	return &models.SavedReport{Status: "Complete"}, nil
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
-	return &models.SavedReport{}, nil
+	return &models.SavedReport{Status: "Complete"}, nil
 }
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
 func (f *fortifyMock) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	return []byte{}, nil
+	return []byte("abcd"), nil
 }
 func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	return []byte{}, nil
+	return []byte("defg"), nil
 }
 
 type pullRequestServiceMock struct{}
@@ -150,6 +163,21 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
+func TestGenerateAndDownloadQGateReport(t *testing.T) {
+	ffMock := fortifyMock{}
+	config := fortifyExecuteScanOptions{ReportTemplateID: 18, ReportType: "PDF"}
+	name := "test"
+	projectVersion := models.ProjectVersion{ID: 4711, Name: &name}
+	project := models.Project{ID: 815, Name: &name}
+	projectVersion.Project = &project
+
+	t.Run("success", func(t *testing.T) {
+		data, err := generateAndDownloadQGateReport(config, &ffMock, &project, &projectVersion)
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("abcd"), data)
+	})
+}
+
 func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	ffMock := fortifyMock{}
 	config := fortifyExecuteScanOptions{DeltaMinutes: 0}
@@ -182,6 +210,17 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
 		assert.Error(t, err)
 		assert.Equal(t, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING", err.Error())
+	})
+
+	t.Run("build label success", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{}, 0)
+		assert.NoError(t, err)
+	})
+
+	t.Run("no artifacts", func(t *testing.T) {
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, 0)
+		assert.Error(t, err)
+		assert.Equal(t, "No uploaded artifacts for assessment detected for project version with ID 4716", err.Error())
 	})
 }
 
