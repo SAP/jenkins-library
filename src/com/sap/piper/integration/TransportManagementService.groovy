@@ -298,20 +298,24 @@ class TransportManagementService implements Serializable {
 
     
     private String getResponseBody(String responseFileName, String actualStatus, String expectStatus, String action) {
-        if (! script.fileExists(responseFileName)) {
-            script.error "Cannot provide response for ${action}."
-        }
-        
         def responseBody = 'n/a'
-        responseBody = script.readFile(responseFileName)
-        if(config.verbose) {
-            echo("Response body: ${responseBody}")
+        
+        boolean gotResponse = script.fileExists(responseFileName)
+        if(gotResponse) {
+            responseBody = script.readFile(responseFileName)
+            if(config.verbose) {
+                echo("Response body: ${responseBody}")
+            }            
         }
         
         if (actualStatus != expectStatus) {
             def message = "Unexpected response code received from ${action} (${actualStatus}). ${expectStatus} expected."
             echo "${message} Response body: ${responseBody}"
             script.error message
+        }
+        
+        if (! gotResponse) {
+            script.error "Cannot provide response for ${action}."
         }
         
         echo("${action} successful.")
