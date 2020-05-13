@@ -74,9 +74,15 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Duration) *SystemInstance {
+func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Duration) (*SystemInstance, error) {
 	schemeHost := strings.Split(serverURL, "://")
+	if len(schemeHost) != 2 {
+		return nil, fmt.Errorf("malformed server URL '%v'", serverURL)
+	}
 	hostEndpoint := strings.Split(schemeHost[1], "/")
+	if len(hostEndpoint) < 2 {
+		return nil, fmt.Errorf("malformed server URL '%v'", serverURL)
+	}
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
@@ -89,7 +95,7 @@ func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Durat
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout), nil
 }
 
 // NewSystemInstanceForClient - creates a new SystemInstance
@@ -671,7 +677,7 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID 
 	return data, nil
 }
 
-// DownloadResultFile downloads a report file from Fortify backend
+// DownloadResultFile downloads a result file from Fortify backend
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	token, err := sys.getFileDownloadToken()
 	if err != nil {
