@@ -125,6 +125,6 @@ class InfluxDataTest extends BasePiperTest {
         // tests
         InfluxData.readFromDisk(nullScript)
         // asserts
-        assertThat(InfluxData.instance.fields.step_data, is([sonar: 'true', protecode: 'false']))
+        assertThat(InfluxData.instance.fields.step_data, is([sonar: true, protecode: false]))
     }
 }
