@@ -46,14 +46,13 @@ To trigger the ATC run an ATC config file `atcconfig.yml` will be needed. Check 
 
 This  example triggers an ATC run directly on the ABAP endpoint.
 
-In order to trigger the ATC run you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host.
+In order to trigger the ATC run you have to pass the username and password for authentication to the ABAP endpoint via parameters as well as the ABAP endpoint/host. You can store the credentials in Jenkins and use the abapCredentialsId parameter to authenticate to the ABAP endpoint/host.
 
 This must be configured as following:
 
 ```groovy
 abapEnvironmentRunATCCheck(
-    username: 'myUser',
-    password: 'myPassword',
+    abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
     atcConfig: 'atcconfig.yml',
     script: this,
