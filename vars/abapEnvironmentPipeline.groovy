@@ -46,7 +46,7 @@ void call(parameters) {
             }
 
             stage('Test') {
-                sptes {
+                steps {
                     abapEnvironmentRunATCCheck script: parameters.script
                 }
             }
