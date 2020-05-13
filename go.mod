@@ -27,7 +27,6 @@ require (
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/magiconair/properties v1.8.0
 	github.com/mitchellh/copystructure v1.0.0 // indirect
-	github.com/motemen/go-loghttp v0.0.0-20170804080138-974ac5ceac27
 	github.com/motemen/go-nuts v0.0.0-20190725124253-1d2432db96b0
 	github.com/piper-validation/fortify-client-go v0.0.0-20200206215926-532b5b150d22
 	github.com/pkg/errors v0.9.1
