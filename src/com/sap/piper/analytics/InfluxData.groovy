@@ -52,18 +52,21 @@ class InfluxData implements Serializable{
                 def type = parts?.get(1)
 
                 if(type in ['fields', 'tags']){
-                    def value = script.readFile(f.getPath())
-
-                    // TODO: investigate why writing values as boolean results in influx ignoring the custom data map
-                    // handle boolean values
-                    if(value == 'true'){
-                        value = true
-                    }else if(value == 'false'){
-                        value = false
-                    }
-
+                    def fileContent = script.readFile(f.getPath())
                     def measurement = parts?.get(0)
                     def name = parts?.get(2)
+                    def value
+
+                    // handle boolean values
+                    // TODO: investigate why writing values as boolean results in influx ignoring the custom data map
+                    if(fileContent == 'true'){
+                        value = true
+                    }else if(fileContent == 'false'){
+                        value = false
+                    }else{
+                        value = fileContent
+                    }
+
                     if(type == 'fields'){
                         addField(measurement, name, value)
                     }else{
