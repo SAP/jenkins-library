@@ -85,10 +85,19 @@ func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, nam
 	return &models.IssueFilterSelectorSet{}, nil
 }
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
-	return []*models.ProjectVersionIssueGroup{}, nil
+	group := "Audit All"
+	total := int32(15)
+	audited := int32(12)
+	group2 := "Corporate Security Requirements"
+	total2 := int32(20)
+	audited2 := int32(11)
+	return []*models.ProjectVersionIssueGroup{
+		&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
+		&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+	}, nil
 }
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
-	return &models.IssueFilterSelectorSet{}
+	return issueFilterSelectorSet
 }
 func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
 	return []*models.IssueStatistics{}, nil
@@ -127,6 +136,12 @@ func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.C
 }
 
 type execRunnerMock struct {
+	numExecutions int
+	current       *execution
+	executions    []*execution
+}
+
+type execution struct {
 	dirValue   string
 	envValue   []string
 	outWriter  io.Writer
@@ -135,32 +150,120 @@ type execRunnerMock struct {
 	parameters []string
 }
 
+func (er *execRunnerMock) newExecution() *execution {
+	newExecution := &execution{}
+	er.executions = append(er.executions, newExecution)
+	return newExecution
+}
+
+func (er *execRunnerMock) currentExecution() *execution {
+	if nil == er.current {
+		er.numExecutions = 0
+		er.current = er.newExecution()
+	}
+	return er.current
+}
+
 func (er *execRunnerMock) SetDir(d string) {
-	er.dirValue = d
+	er.currentExecution().dirValue = d
 }
 
 func (er *execRunnerMock) SetEnv(e []string) {
-	er.envValue = e
+	er.currentExecution().envValue = e
 }
 
 func (er *execRunnerMock) Stdout(out io.Writer) {
-	er.outWriter = out
+	er.currentExecution().outWriter = out
 }
 
 func (er *execRunnerMock) Stderr(err io.Writer) {
-	er.errWriter = err
+	er.currentExecution().errWriter = err
 }
 func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
-	er.executable = e
-	er.parameters = p
+	er.numExecutions++
+	er.currentExecution().executable = e
+	er.currentExecution().parameters = p
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
-	classpathMaven := "some.jar\nsomeother.jar"
+	classpathMaven := "some.jar;someother.jar"
 	if e == "python2" {
-		er.outWriter.Write([]byte(classpathPip))
+		er.currentExecution().outWriter.Write([]byte(classpathPip))
 	} else if e == "mvn" {
 		ioutil.WriteFile(strings.ReplaceAll(p[2], "-Dmdep.outputFile=", ""), []byte(classpathMaven), 755)
 	}
+	er.current = er.newExecution()
 	return nil
+}
+
+func TestAnalyseUnauditedIssues(t *testing.T) {
+	config := fortifyExecuteScanOptions{MustAuditIssueGroups: "Audit All, Corporate Security Requirements"}
+	ff := fortifyMock{}
+	influx := fortifyExecuteScanInflux{}
+	name := "test"
+	projectVersion := models.ProjectVersion{ID: 4711, Name: &name}
+	auditStatus := map[string]string{}
+	selectorSet := models.IssueFilterSelectorSet{
+		FilterBySet: []*models.IssueFilterSelector{
+			&models.IssueFilterSelector{
+				GUID:        "1",
+				DisplayName: "Folder",
+				EntityType:  "ET1",
+				SelectorOptions: []*models.SelectorOption{
+					&models.SelectorOption{
+						GUID: "abcd",
+					},
+				},
+			},
+			&models.IssueFilterSelector{
+				GUID:        "2",
+				DisplayName: "Analysis",
+				EntityType:  "ET2",
+			},
+		},
+	}
+	issues := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	assert.Equal(t, 12, issues)
+}
+
+func TestTriggerFortifyScan(t *testing.T) {
+	t.Run("maven", func(t *testing.T) {
+		runner := execRunnerMock{}
+		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
+		triggerFortifyScan(config, &runner, "test", "testLabel")
+
+		assert.Equal(t, 3, runner.numExecutions)
+
+		assert.Equal(t, "mvn", runner.executions[0].executable)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
+
+		assert.Equal(t, "sourceanalyzer", runner.executions[1].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
+
+		assert.Equal(t, "sourceanalyzer", runner.executions[2].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
+	})
+
+	t.Run("pip", func(t *testing.T) {
+		runner := execRunnerMock{}
+		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
+		triggerFortifyScan(config, &runner, "test", "testLabel")
+
+		assert.Equal(t, 5, runner.numExecutions)
+
+		assert.Equal(t, "python2", runner.executions[0].executable)
+		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, runner.executions[0].parameters)
+
+		assert.Equal(t, "pip2", runner.executions[1].executable)
+		assert.Equal(t, []string{"install", "--user", "-r", "./requirements.txt", ""}, runner.executions[1].parameters)
+
+		assert.Equal(t, "pip2", runner.executions[2].executable)
+		assert.Equal(t, []string{"install", "--user"}, runner.executions[2].parameters)
+
+		assert.Equal(t, "sourceanalyzer", runner.executions[3].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", ""}, runner.executions[3].parameters)
+
+		assert.Equal(t, "sourceanalyzer", runner.executions[4].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[4].parameters)
+	})
 }
 
 func TestGenerateAndDownloadQGateReport(t *testing.T) {
@@ -236,8 +339,8 @@ func TestExecuteTemplatedCommand(t *testing.T) {
 	context := map[string]string{"Executable": "test.cmd", "Param": "abcd"}
 	executeTemplatedCommand(&runner, template, context)
 
-	assert.Equal(t, "test.cmd", runner.executable)
-	assert.Equal(t, []string{"-c", "abcd"}, runner.parameters)
+	assert.Equal(t, "test.cmd", runner.executions[0].executable)
+	assert.Equal(t, []string{"-c", "abcd"}, runner.executions[0].parameters)
 }
 
 func TestDeterminePullRequestMerge(t *testing.T) {
@@ -278,79 +381,82 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 }
 
 func TestTranslateProject(t *testing.T) {
-	execRunner := execRunnerMock{}
-
 	t.Run("python", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","pythonIncludes":"./**/*","pythonExcludes":"./tests/**/*"}]`}
-		translateProject(config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, execRunner.parameters, "Expected different parameters")
+		translateProject(&config, &execRunner, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("asp", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
-		translateProject(config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "-libdirs", "tmp/", "./**/*"}, execRunner.parameters, "Expected different parameters")
+		translateProject(&config, &execRunner, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "-libdirs", "tmp/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("java", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
-		translateProject(config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.parameters, "Expected different parameters")
+		translateProject(&config, &execRunner, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("auto classpath", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
-		translateProject(config, &execRunner, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.parameters, "Expected different parameters")
+		translateProject(&config, &execRunner, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 }
 
 func TestScanProject(t *testing.T) {
 	config := fortifyExecuteScanOptions{Memory: "-Xmx4G"}
-	execRunner := execRunnerMock{}
 
 	t.Run("normal", func(t *testing.T) {
-		scanProject(config, &execRunner, "/commit/7267658798797", "label")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.parameters, "Expected different parameters")
+		execRunner := execRunnerMock{}
+		scanProject(&config, &execRunner, "/commit/7267658798797", "label")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("quick", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		config.QuickScan = true
-		scanProject(config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.parameters, "Expected different parameters")
+		scanProject(&config, &execRunner, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 }
 
 func TestAutoresolveClasspath(t *testing.T) {
-	execRunner := execRunnerMock{}
-
 	t.Run("success pip", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
 		result := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &execRunner)
-		assert.Equal(t, "python2", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, execRunner.parameters, "Expected different parameters")
+		assert.Equal(t, "python2", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
 	})
 
 	t.Run("success maven", func(t *testing.T) {
+		execRunner := execRunnerMock{}
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
 		result := autoresolveMavenClasspath("pom.xml", file, &execRunner)
-		assert.Equal(t, "mvn", execRunner.executable, "Expected different executable")
-		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "--batch-mode", "dependency:build-classpath"}, execRunner.parameters, "Expected different parameters")
-		assert.Equal(t, "some.jar\nsomeother.jar", result, "Expected different result")
+		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
 }

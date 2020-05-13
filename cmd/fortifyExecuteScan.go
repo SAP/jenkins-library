@@ -31,25 +31,23 @@ type pullRequestService interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 }
 
-var auditStatus map[string]string
-
 const checkString = "<---CHECK FORTIFY---"
 const classpathFileName = "cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
-	auditStatus = map[string]string{}
+	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	err := runFortifyScan(config, sys, &c, telemetryData, influx)
+	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command execRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) error {
+func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command execRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	var gav piperutils.BuildDescriptor
 	var err error
@@ -165,11 +163,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID)
 	}
-	numberOfViolations := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx)
-	numberOfViolations += analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx)
+	numberOfViolations := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
+	numberOfViolations += analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 
-	auditStatusOutput := auditStatus
-	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatusOutput)
+	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
 	influx.fortify_data.fields.projectName = fortifyProjectName
 	influx.fortify_data.fields.projectVersion = fortifyProjectVersion
@@ -177,11 +174,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if numberOfViolations > 0 {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
-
 	return nil
 }
 
-func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux) int {
+func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
 	log.Entry().Info("Analyzing unaudited issues")
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder"}, nil)
 	fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
@@ -190,18 +186,18 @@ func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System
 	}
 	overallViolations := 0
 	for _, issueGroup := range fetchedIssueGroups {
-		overallViolations += getIssueDeltaFor(config, sys, issueGroup, projectVersion.ID, filterSet, issueFilterSelectorSet, influx)
+		overallViolations += getIssueDeltaFor(config, sys, issueGroup, projectVersion.ID, filterSet, issueFilterSelectorSet, influx, auditStatus)
 	}
 	return overallViolations
 }
 
-func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issueGroup *models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux) int {
+func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issueGroup *models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
 	totalMinusAuditedDelta := 0
 	group := ""
 	total := 0
 	audited := 0
 	if issueGroup != nil {
-		group = fmt.Sprintf("%v", issueGroup.ID)
+		group = *issueGroup.ID
 		total = int(*issueGroup.TotalCount)
 		audited = int(*issueGroup.AuditedCount)
 	}
@@ -231,13 +227,13 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 			if err != nil {
 				log.Entry().WithError(err).Fatalf("Failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v", filter, filterSet, issueFilterSelectorSet, projectVersionID)
 			}
-			totalMinusAuditedDelta += getSpotIssueCount(config, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx)
+			totalMinusAuditedDelta += getSpotIssueCount(config, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx, auditStatus)
 		}
 	}
 	return totalMinusAuditedDelta
 }
 
-func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux) int {
+func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
 	overallDelta := 0
 	overallIssues := 0
 	overallIssuesAudited := 0
@@ -246,7 +242,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*
 		total := 0
 		audited := 0
 		if issueGroup != nil {
-			group = fmt.Sprintf("%v", issueGroup.ID)
+			group = *issueGroup.ID
 			total = int(*issueGroup.TotalCount)
 			audited = int(*issueGroup.AuditedCount)
 		}
@@ -274,7 +270,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*
 	return overallDelta
 }
 
-func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux) int {
+func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
 	log.Entry().Info("Analyzing suspicious and exploitable issues")
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Analysis"}, []string{})
 	fetchedGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
@@ -481,9 +477,10 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
 		}
 		if len(config.Translate) == 0 {
-			config.Translate = `[{"classpath":"`
-			config.Translate += classpath
-			config.Translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
+			translate := `[{"classpath":"`
+			translate += classpath
+			translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
+			config.Translate = translate
 		}
 	}
 	if config.BuildTool == "pip" {
@@ -501,24 +498,25 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
 		if len(config.Translate) == 0 {
-			config.Translate = `[{"pythonPath":"`
-			config.Translate += classpath
-			config.Translate += ";"
-			config.Translate += config.PythonAdditionalPath
-			config.Translate += `","pythonIncludes":"`
-			config.Translate += config.PythonIncludes
-			config.Translate += `","pythonExcludes":"`
-			config.Translate += strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
-			config.Translate += `"}]`
+			translate := `[{"pythonPath":"`
+			translate += classpath
+			translate += ";"
+			translate += config.PythonAdditionalPath
+			translate += `","pythonIncludes":"`
+			translate += config.PythonIncludes
+			translate += `","pythonExcludes":"`
+			translate += strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
+			translate += `"}]`
+			config.Translate = translate
 		}
 	}
 
-	translateProject(config, command, buildID, classpath)
+	translateProject(&config, command, buildID, classpath)
 
-	scanProject(config, command, buildID, buildLabel)
+	scanProject(&config, command, buildID, buildLabel)
 }
 
-func translateProject(config fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
+func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
@@ -530,7 +528,7 @@ func translateProject(config fortifyExecuteScanOptions, command execRunner, buil
 	}
 }
 
-func handleSingleTranslate(config fortifyExecuteScanOptions, command execRunner, buildID string, t map[string]string) {
+func handleSingleTranslate(config *fortifyExecuteScanOptions, command execRunner, buildID string, t map[string]string) {
 	if t != nil {
 		log.Entry().Debugf("Handling translate config %v", t)
 		translateOptions := []string{
@@ -551,7 +549,7 @@ func handleSingleTranslate(config fortifyExecuteScanOptions, command execRunner,
 	}
 }
 
-func scanProject(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
 	var scanOptions = []string{
 		"-verbose",
 		"-64",
@@ -603,7 +601,7 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 	return "", err
 }
 
-func appendToOptions(config fortifyExecuteScanOptions, options []string, t map[string]string) []string {
+func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {
 	if config.BuildTool == "windows" {
 		if len(t["aspnetcore"]) > 0 {
 			options = append(options, "-aspnetcore")
