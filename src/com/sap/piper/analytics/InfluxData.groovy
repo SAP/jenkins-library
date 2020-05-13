@@ -40,15 +40,11 @@ class InfluxData implements Serializable{
     }
 
     public static void readFromDisk(script) {
-        def PATH_PREFIX = '.pipeline/influx/'
-
-        List influxDataFiles = script.findFiles(glob: "${PATH_PREFIX}**")?.toList()
-        script.echo "Files ${influxDataFiles}"
+        def pathPrefix = '.pipeline/influx/'
+        List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
 
         influxDataFiles.each({f ->
-            script.echo "Reading ${f}"
-
-            def filePath = f.toString().replace(PATH_PREFIX, '')
+            def filePath = f.toString().replace(pathPrefix, '')
             script.echo "File name ${filePath}"
 
             def parts = filePath.split('/')
@@ -60,9 +56,9 @@ class InfluxData implements Serializable{
                 def type = parts[1]
                 def name = parts[2]
 
-                if(type == 'field'){
+                if(type == 'fields'){
                     dataMap = getInstance().getFields()
-                }else if(type == 'tag'){
+                }else if(type == 'tags'){
                     dataMap = getInstance().getTags()
                 }
                 if(dataMap)
