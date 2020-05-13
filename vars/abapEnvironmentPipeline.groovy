@@ -44,6 +44,12 @@ void call(parameters) {
                     abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
+
+            stage('Cleanup') {
+                steps {
+                    cloudFoundryDeleteService script: parameters.script
+                }
+            }
         }
         post {
             /* https://jenkins.io/doc/book/pipeline/syntax/#post */
@@ -51,9 +57,6 @@ void call(parameters) {
             aborted {buildSetResult(currentBuild, 'ABORTED')}
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
-            cleanup {
-                cloudFoundryDeleteService script: parameters.script
-            }
         }
     }
 }
