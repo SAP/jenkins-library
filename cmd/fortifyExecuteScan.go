@@ -261,6 +261,9 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*
 			}
 		}
 
+		overallIssues += total
+		overallIssuesAudited += audited
+
 		auditStatus[group] = fmt.Sprintf("%v total : %v audited %v", total, audited, flagOutput)
 	}
 
