@@ -42,6 +42,7 @@ class InfluxData implements Serializable{
     public static void readFromDisk(script) {
 
         def influxValues = script.findFiles(glob: '.pipeline/influx/**')
+        script.echo "Files ${influxValues}"
 
         script.echo "Influx Data: ${getInstance().getFields()} ${getInstance().getTags()}"
 
