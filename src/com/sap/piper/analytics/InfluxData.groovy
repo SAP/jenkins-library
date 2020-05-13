@@ -48,7 +48,7 @@ class InfluxData implements Serializable{
         influxDataFiles.each({f ->
             script.echo "Reading ${f}"
 
-            def filePath = f.replace(PATH_PREFIX, '')
+            def filePath = f.toString().replace(PATH_PREFIX, '')
             script.echo "File name ${filePath}"
 
             def parts = filePath.split('/')
