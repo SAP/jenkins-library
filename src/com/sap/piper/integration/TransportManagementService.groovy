@@ -314,11 +314,11 @@ class TransportManagementService implements Serializable {
             script.error message
         }
         
+        echo("${action} successful.")
+        
         if (! gotResponse) {
             script.error "Cannot provide response for ${action}."
         }
-        
-        echo("${action} successful.")
         return responseBody
     }
 }
