@@ -53,7 +53,7 @@ class KanikoExecuteTest extends BasePiperTest {
         stepRule.step.kanikoExecute(
             script: nullScript
         )
-        assertThat(shellRule.shell, hasItem('#!/busybox/sh rm /kaniko/.docker/config.json'))
+        assertThat(shellRule.shell, hasItem('#!/busybox/sh rm -f /kaniko/.docker/config.json'))
         assertThat(shellRule.shell, hasItem(allOf(
             startsWith('#!/busybox/sh'),
             containsString('mv 1-config.json /kaniko/.docker/config.json'),
@@ -134,7 +134,7 @@ class KanikoExecuteTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(allOf(
             startsWith('#!/busybox/sh'),
-            containsString('rm /kaniko/.docker/config.json'),
+            containsString('rm -f /kaniko/.docker/config.json'),
             containsString('wget http://link.one -O - >> /kaniko/ssl/certs/ca-certificates.crt'),
             containsString('wget http://link.two -O - >> /kaniko/ssl/certs/ca-certificates.crt'),
         )))
