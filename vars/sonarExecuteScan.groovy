@@ -75,7 +75,6 @@ void call(Map parameters = [:]) {
                                     try {
                                         sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     } finally {
-                                        echo "Reading Influx data"
                                         InfluxData.readFromDisk(script)
                                     }
                                 }

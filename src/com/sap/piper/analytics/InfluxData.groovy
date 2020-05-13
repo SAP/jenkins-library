@@ -40,14 +40,15 @@ class InfluxData implements Serializable{
     }
 
     public static void readFromDisk(script) {
+        script.echo "Transfer Influx data"
         def pathPrefix = '.pipeline/influx/'
         List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
 
         influxDataFiles.each({f ->
             script.echo "Reading file form disk: ${f}"
-            def parts = f.toString().replace(pathPrefix, '')?.split('/')
+            List parts = f.toString().replace(pathPrefix, '')?.split('/')?.toList()
 
-            if(parts.size() == 3){
+            if(parts?.size() == 3){
                 def type = parts?.get(1)
 
                 if(type in ['fields', 'tags']){
@@ -71,7 +72,5 @@ class InfluxData implements Serializable{
                 script.echo "skipped, illegal path"
             }
         })
-
-        script.echo "Influx Data: ${getInstance().getFields()} ${getInstance().getTags()}"
     }
 }
