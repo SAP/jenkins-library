@@ -45,6 +45,12 @@ void call(parameters) {
                 }
             }
 
+            stage('Test') {
+                sptes {
+                    abapEnvironmentRunATCCheck script: parameters.script
+                }
+            }
+
             stage('Cleanup') {
                 steps {
                     cloudFoundryDeleteService script: parameters.script
