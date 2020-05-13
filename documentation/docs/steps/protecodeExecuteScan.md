@@ -24,7 +24,7 @@ executeProtecodeScan script: this, fetchUrl: 'https://nexusrel.wdf.sap.corp:8443
 
 Docker image:
 ```groovy
-executeProtecodeScan script: this, dockerImage: 'docker.wdf.sap.corp:50000/piper/yeoman:1.0-20180321110554'
+executeProtecodeScan script: this, dockerRegistryUrl: 'https://docker.wdf.sap.corp:50000', dockerImage: 'piper/yeoman:1.0-20180321110554'
 ```
 
 ## ${docGenParameters}

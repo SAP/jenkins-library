@@ -2,6 +2,7 @@ metadata:
   name: artifactPrepareVersion
   aliases:
     - name: artifactSetVersion
+    - name: mavenExecute
     - name: setVersion
       deprecated: true
   description: Prepares and potentially updates the artifact's version before building the artifact.
@@ -81,6 +82,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        possibleValues:
+        - custom
+        - docker
+        - dub
+        - golang
+        - maven
+        - mta
+        - npm
+        - pip
+        - sbt
       - name: commitUserName
         aliases:
           - name: gitUserName
@@ -91,7 +102,7 @@ spec:
         - STAGES
         - STEPS
         default: Project Piper
-      - name: customversionField
+      - name: customVersionField
         type: string
         description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
         scope:
@@ -101,6 +112,13 @@ spec:
       - name: customVersionSection
         type: string
         description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: customVersioningScheme
+        type: string
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
         scope:
         - PARAMETERS
         - STAGES
@@ -165,6 +183,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: shortCommitId
+        type: bool
+        description: Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: tagPrefix
         type: string
         description: "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`)."
@@ -173,6 +198,13 @@ spec:
         - STAGES
         - STEPS
         default: build_
+      - name: unixTimestamp
+        type: bool
+        description: Defines if the Unix timestamp number should be used as build number instead of the standard date format.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: username
         type: string
         description: User name for git authentication
@@ -202,6 +234,9 @@ spec:
       type: jenkins
     - name: gitSshKeyCredentialsId
       type: jenkins
+      aliases:
+        - name: gitCredentialsId
+          deprecated: true
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -209,3 +244,4 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/commitMessage

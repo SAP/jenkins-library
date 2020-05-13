@@ -1,5 +1,5 @@
 .idea/
-/bin
+bin
 .settings
 logs
 reports
@@ -27,3 +27,5 @@ consumer-test/**/workspace
 
 debug.test
 /cache/protecode
+
+*errorDetails.json
