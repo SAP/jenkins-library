@@ -43,9 +43,15 @@ class InfluxData implements Serializable{
 
         def influxValues = script.findFiles(glob: '.pipeline/influx/*')
 
+        script.echo "Influx Data: ${getInstance().getFields()} ${getInstance().getTags()}"
+
         influxValues.each({f ->
+            script.echo "Reading ${f}"
             def fileName = f.getName()
+            script.echo "File name ${fileName}"
             def parts = fileName.split('.pipeline/influx/')[1].split('/')
+
+            script.echo "File name parts ${parts}"
 
             if(parts.size() == 3){
                 Map dataMap
@@ -62,5 +68,7 @@ class InfluxData implements Serializable{
                     add(dataMap, measurement, name, script.readFile(f.getPath()))
             }
         })
+
+        script.echo "Influx Data: ${getInstance().getFields()} ${getInstance().getTags()}"
     }
 }
