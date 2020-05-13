@@ -9,7 +9,7 @@ spec:
       - name: abapCredentialsId
         aliases:
           - name: cfCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API or ABAP system 
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
     params:
       - name: atcConfig
