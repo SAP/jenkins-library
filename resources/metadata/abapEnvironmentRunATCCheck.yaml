@@ -6,11 +6,10 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: credentialsId
+      - name: abapCredentialsId
         aliases:
-          - name: abapCredentialsId
           - name: cfCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API or ABAP system 
         type: jenkins
     params:
       - name: atcConfig
