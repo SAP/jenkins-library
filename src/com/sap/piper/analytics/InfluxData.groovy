@@ -45,7 +45,6 @@ class InfluxData implements Serializable{
 
         influxDataFiles.each({f ->
             script.echo "Reading file form disk: ${f}"
-            
             def parts = f.toString().replace(pathPrefix, '')?.split('/')
 
             if(parts.size() == 3){
