@@ -25,6 +25,8 @@ nav:
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
             - 'Shared Configuration': pipelines/cloud-sdk/shared-config-between-projects.md
+        - 'ABAP Environment pipeline'
+            - 'Introduction': pipelines/abapEnvironment/introduction.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
