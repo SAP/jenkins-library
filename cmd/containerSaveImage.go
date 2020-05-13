@@ -35,7 +35,7 @@ func tarContainerImage(cachePath string, dClient piperDocker.Download, config *c
 		return errors.Wrap(err, "failed to prepare cache")
 	}
 
-	err = os.Mkdir(cachePath, 600)
+	err = os.Mkdir(cachePath, 0755)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cache")
 	}
