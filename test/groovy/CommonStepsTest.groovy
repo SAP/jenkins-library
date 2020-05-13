@@ -44,23 +44,16 @@ public class CommonStepsTest extends BasePiperTest{
      */
     @Test
     public void scriptReferenceNotHandedOverTest() {
-
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
-            'artifactPrepareVersion',
             'commonPipelineEnvironment',
-            'checkmarxExecuteScan',
-            'kubernetesDeploy',
             'handlePipelineStepErrors',
             'pipelineExecute',
             'piperPipeline',
             'piperExecuteBin',
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
-            'buildSetResult',
-            'mavenBuild',
-            'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey'
+            'buildSetResult'
         ]
 
         List steps = getSteps().stream()
@@ -132,12 +125,15 @@ public class CommonStepsTest extends BasePiperTest{
         'xsDeploy', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
+        'npmExecuteScripts', //implementing new golang pattern without fields
+        'malwareExecuteScan', //implementing new golang pattern without fields
+        'mavenBuild', //implementing new golang pattern without fields
+        'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
-        'mavenBuild', //implementing new golang pattern without fields
-        'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
+        'gctsCreateRepository', //implementing new golang pattern without fields
     ]
 
     @Test

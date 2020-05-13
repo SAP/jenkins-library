@@ -29,25 +29,38 @@ type githubCreatePullRequestOptions struct {
 
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
+	const STEP_NAME = "githubCreatePullRequest"
+
 	metadata := githubCreatePullRequestMetadata()
 	var stepConfig githubCreatePullRequestOptions
 	var startTime time.Time
 
 	var createGithubCreatePullRequestCmd = &cobra.Command{
-		Use:   "githubCreatePullRequest",
+		Use:   STEP_NAME,
 		Short: "Create a pull request on GitHub",
 		Long: `This step allows you to create a pull request on Github.
 
 It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("githubCreatePullRequest")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.Token)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -59,7 +72,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubCreatePullRequest(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

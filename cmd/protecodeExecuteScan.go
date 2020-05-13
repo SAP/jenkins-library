@@ -42,14 +42,16 @@ var cacheProtecodePath = "/protecode"
 func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) error {
 	c := command.Command{}
 	// reroute command output to loging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
 	return runProtecodeScan(&config, influx, dClient)
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
+
+	correctDockerConfigEnvVar()
 
 	var fileName, filePath string
 	//create client for sending api request
@@ -256,7 +258,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 		ServerURL: config.ServerURL,
 		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
 		Duration:  duration,
-		Username:  config.User,
+		Username:  config.Username,
 		Password:  config.Password,
 	}
 
@@ -329,4 +331,14 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	}
 
 	return err
+}
+
+func correctDockerConfigEnvVar() {
+	path := os.Getenv("DOCKER_CONFIG")
+	if len(path) > 0 {
+		path, _ := filepath.Abs(path)
+		path = filepath.Dir(path)
+		fmt.Println("DOCKER_CONFIG: use parent directory")
+		os.Setenv("DOCKER_CONFIG", path)
+	}
 }

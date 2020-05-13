@@ -378,7 +378,7 @@ func TestUploadArtifacts(t *testing.T) {
 		})
 
 		err := uploadArtifacts(&utils, &uploader, &options, false)
-		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml --batch-mode "+deployGoal+"]', error: failed")
+		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode "+deployGoal+"]', error: failed")
 	})
 	t.Run("Uploading bundle generates correct maven parameters", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true, false)
@@ -411,6 +411,7 @@ func TestUploadArtifacts(t *testing.T) {
 			"-Dfiles=pom.yml",
 			"-Dclassifiers=",
 			"-Dtypes=pom",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}
 		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
@@ -655,6 +656,7 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DartifactId=my-app",
 				"-Dfile=pom.xml",
 				"-Dpackaging=pom",
+				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
 			assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
@@ -670,6 +672,7 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
 				"-Dclassifiers=,classes",
 				"-Dtypes=war,jar",
+				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
 			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
@@ -703,6 +706,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			"-DrepositoryId=" + settingsServerID,
 			"-Dfile=pom.xml",
 			"-Dpackaging=pom",
+			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}
 		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))

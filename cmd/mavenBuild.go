@@ -11,8 +11,8 @@ import (
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	utils := piperutils.Files{}
 
