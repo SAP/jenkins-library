@@ -44,25 +44,32 @@ class InfluxData implements Serializable{
         List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
 
         influxDataFiles.each({f ->
-            def filePath = f.toString().replace(pathPrefix, '')
-            script.echo "File name ${filePath}"
-
-            def parts = filePath.split('/')
-            script.echo "File name parts ${parts}"
+            script.echo "Reading file form disk: ${f}"
+            
+            def parts = f.toString().replace(pathPrefix, '')?.split('/')
 
             if(parts.size() == 3){
-                Map dataMap
-                def measurement = parts[0]
-                def type = parts[1]
-                def name = parts[2]
+                def type = parts?.get(1)
 
-                if(type == 'fields'){
-                    dataMap = getInstance().getFields()
-                }else if(type == 'tags'){
-                    dataMap = getInstance().getTags()
+                if(type in ['fields', 'tags']){
+                    def value = script.readFile(f.getPath())
+                    // handle boolean values
+                    if(value == 'true'){
+                        value = true
+                    }else if(values == 'false'){
+                        value = false
+                    }
+
+                    def measurement = parts?.get(0)
+                    def name = parts?.get(2)
+                    if(type == 'fields'){
+                        addField(measurement, name, value)
+                    }else{
+                        addTag(measurement, name, value)
+                    }
                 }
-                if(dataMap)
-                    add(dataMap, measurement, name, script.readFile(f.getPath()))
+            } else {
+                script.echo "skipped, illegal path"
             }
         })
 
