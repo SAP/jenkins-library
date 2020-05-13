@@ -53,12 +53,14 @@ class InfluxData implements Serializable{
 
                 if(type in ['fields', 'tags']){
                     def value = script.readFile(f.getPath())
+                    /*
                     // handle boolean values
                     if(value == 'true'){
                         value = true
                     }else if(value == 'false'){
                         value = false
                     }
+                    */
 
                     def measurement = parts?.get(0)
                     def name = parts?.get(2)
