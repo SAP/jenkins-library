@@ -58,7 +58,6 @@ class InfluxData implements Serializable{
                     def value
 
                     // handle boolean values
-                    // TODO: investigate why writing values as boolean results in influx ignoring the custom data map
                     if(fileContent == 'true'){
                         value = true
                     }else if(fileContent == 'false'){
