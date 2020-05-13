@@ -35,14 +35,17 @@ func tarContainerImage(cachePath string, dClient piperDocker.Download, config *c
 		return errors.Wrap(err, "failed to prepare cache")
 	}
 
-	os.Mkdir(cachePath, 600)
+	err = os.Mkdir(cachePath, 600)
+	if err != nil {
+		return errors.Wrap(err, "failed to create cache")
+	}
 
 	// ensure that download cache is cleaned up at the end
 	defer os.RemoveAll(cachePath)
 
 	imageSource, err := dClient.GetImageSource()
 	if err != nil {
-		return errors.Wrap(err, "faile to get docker image source")
+		return errors.Wrap(err, "failed to get docker image source")
 	}
 	image, err := dClient.DownloadImageToPath(imageSource, cachePath)
 	if err != nil {
