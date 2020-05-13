@@ -1,6 +1,7 @@
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import java.nio.charset.StandardCharsets
@@ -74,6 +75,7 @@ void call(Map parameters = [:]) {
                                     try {
                                         sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     } finally {
+                                        echo "Reading Influx data"
                                         InfluxData.readFromDisk(script)
                                     }
                                 }
