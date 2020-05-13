@@ -56,7 +56,7 @@ class InfluxData implements Serializable{
                     // handle boolean values
                     if(value == 'true'){
                         value = true
-                    }else if(values == 'false'){
+                    }else if(value == 'false'){
                         value = false
                     }
 
