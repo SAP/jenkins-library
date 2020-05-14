@@ -25,17 +25,12 @@ func containerSaveImage(config containerSaveImageOptions, telemetryData *telemet
 }
 
 func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *telemetry.CustomData, cachePath string, dClient piperDocker.Download) error {
-	return tarContainerImage(cachePath, dClient, config)
-}
-
-func tarContainerImage(cachePath string, dClient piperDocker.Download, config *containerSaveImageOptions) error {
-
 	err := os.RemoveAll(cachePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare cache")
 	}
 
-	err = os.Mkdir(cachePath, 0755)
+	err = os.Mkdir(cachePath, 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cache")
 	}
