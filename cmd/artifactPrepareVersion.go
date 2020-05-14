@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -342,10 +343,18 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion, buildDescrip
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion, addPattern string, t time.Time) (plumbing.Hash, error) {
-	//_, err := worktree.Add(".")
-	err := worktree.AddGlob(addPattern)
+
+	files, err := doublestar.Glob(addPattern)
 	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
+		return plumbing.Hash{}, errors.Wrap(err, "failed to identify files for git add'")
+	}
+
+	for _, file := range files {
+		log.Entry().Infof("Add file %v to git changelist", file)
+		_, err := worktree.Add(file)
+		if err != nil {
+			return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
+		}
 	}
 
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
