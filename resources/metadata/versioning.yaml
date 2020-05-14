@@ -111,7 +111,7 @@ spec:
         - STEPS
       - name: customVersionSection
         type: string
-        description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
+        description: "For `buildTool: custom`: Defines the section for version retrieval in case a *.ini/*.cfg file is used."
         scope:
         - PARAMETERS
         - STAGES

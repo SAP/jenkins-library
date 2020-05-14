@@ -247,7 +247,7 @@ func calculateNewVersion(versioningTemplate, currentVersion, commitID string, in
 
 func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	// checkout current revision in order to work on that
-	err := worktree.Checkout(&git.CheckoutOptions{Hash: gitCommit, Keep: true})
+	err := worktree.Checkout(&git.CheckoutOptions{Hash: gitCommit, Force: true, Keep: false})
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize worktree")
 	}
