@@ -49,6 +49,8 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
+            echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
+
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Context Config: ${config}"
@@ -79,7 +81,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }

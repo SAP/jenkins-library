@@ -41,27 +41,38 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-
-	// Triggering the Pull of the repository into the ABAP Environment system
-	uriConnectionDetails, errorTriggerPull := triggerPull(config, connectionDetails, &client)
-	if errorTriggerPull != nil {
-		log.Entry().WithError(errorTriggerPull).Fatal("Pull failed on the ABAP System")
-	}
-
-	// Polling the status of the repository import on the ABAP Environment system
 	pollIntervall := 10 * time.Second
-	status, errorPollEntity := pollEntity(config, uriConnectionDetails, &client, pollIntervall)
-	if errorPollEntity != nil {
-		log.Entry().WithError(errorPollEntity).Fatal("Pull failed on the ABAP System")
-	}
-	if status == "E" {
-		log.Entry().Fatal("Pull failed on the ABAP System")
-	}
 
+	log.Entry().Infof("Start pulling %v repositories", len(config.RepositoryNames))
+	for _, repositoryName := range config.RepositoryNames {
+
+		log.Entry().Info("-------------------------")
+		log.Entry().Info("Start pulling " + repositoryName)
+		log.Entry().Info("-------------------------")
+
+		// Triggering the Pull of the repository into the ABAP Environment system
+		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, connectionDetails, &client)
+		if errorTriggerPull != nil {
+			log.Entry().WithError(errorTriggerPull).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+		}
+
+		// Polling the status of the repository import on the ABAP Environment system
+		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
+		if errorPollEntity != nil {
+			log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+		}
+		if status == "E" {
+			log.Entry().Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+		}
+
+		log.Entry().Info(repositoryName + " was pulled successfully")
+	}
+	log.Entry().Info("-------------------------")
+	log.Entry().Info("All repositories were pulled successfully")
 	return nil
 }
 
-func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
+func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -79,17 +90,17 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Pull of a Repository
-	if config.RepositoryName == "" {
+	if repositoryName == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
+	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, uriConnectionDetails)
+		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Info("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
 	var body abapEntity
@@ -101,7 +112,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abapEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
@@ -111,7 +122,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	return uriConnectionDetails, nil
 }
 
-func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
@@ -119,7 +130,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	for {
 		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
-			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+config.RepositoryName, connectionDetails)
+			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
 			return "", err
 		}
 		defer resp.Body.Close()
@@ -131,7 +142,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["d"], &body)
 		if reflect.DeepEqual(abapEntity{}, body) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}

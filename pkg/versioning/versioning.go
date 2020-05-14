@@ -53,10 +53,11 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "docker":
 		artifact = &Docker{
-			execRunner:    execRunner,
-			options:       opts,
-			path:          buildDescriptorFilePath,
-			versionSource: opts.VersionSource,
+			execRunner:       execRunner,
+			options:          opts,
+			path:             buildDescriptorFilePath,
+			versionSource:    opts.VersionSource,
+			versioningScheme: opts.VersioningScheme,
 		}
 	case "dub":
 		if len(buildDescriptorFilePath) == 0 {
