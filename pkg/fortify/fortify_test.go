@@ -38,12 +38,26 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 }
 
 func TestNewSystemInstance(t *testing.T) {
-	sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
-	assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
-	assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
-	assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
-	assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
-	assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
+	t.Run("Valid parameters end up in system instance", func(t *testing.T) {
+		sys, err := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
+		if assert.NoError(t, err) {
+			assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
+			assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
+			assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
+			assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
+			assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
+		}
+	})
+	t.Run("URL missing scheme results in error", func(t *testing.T) {
+		sys, err := NewSystemInstance("some.fortify.host.com/ssc", "api/v1", "token", 10*time.Second)
+		assert.EqualError(t, err, "fortify server URL is missing scheme 'some.fortify.host.com/ssc'")
+		assert.Nil(t, sys)
+	})
+	t.Run("URL with more than one slash is accepted", func(t *testing.T) {
+		sys, err := NewSystemInstance("https://some.fortify.host.com/some/path/ssc", "api/v1", "token", 10*time.Second)
+		assert.NoError(t, err)
+		assert.NotNil(t, sys)
+	})
 }
 
 func TestGetProjectByName(t *testing.T) {

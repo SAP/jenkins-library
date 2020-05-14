@@ -74,28 +74,37 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Duration) (*SystemInstance, error) {
+func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) (*SystemInstance, error) {
 	schemeHost := strings.Split(serverURL, "://")
 	if len(schemeHost) != 2 {
-		return nil, fmt.Errorf("malformed server URL '%v'", serverURL)
+		return nil, fmt.Errorf("fortify server URL is missing scheme '%v'", serverURL)
 	}
-	hostEndpoint := strings.Split(schemeHost[1], "/")
-	if len(hostEndpoint) < 2 {
-		return nil, fmt.Errorf("malformed server URL '%v'", serverURL)
-	}
+	host, hostEndpoint := splitHostAndEndpoint(schemeHost[1])
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
 	clientInstance := ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
-		Host:     hostEndpoint[0],
+		Host:     host,
 		Schemes:  []string{schemeHost[0]},
-		BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
+		BasePath: fmt.Sprintf("%v/%v", hostEndpoint, apiEndpoint)},
 	)
 	httpClientInstance := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
 	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout), nil
+}
+
+func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
+	hostEnd := strings.Index(urlWithoutScheme, "/")
+	if hostEnd >= 0 {
+		host = urlWithoutScheme[0:hostEnd]
+		endpoint = urlWithoutScheme[hostEnd+1:]
+	} else {
+		host = urlWithoutScheme
+		endpoint = ""
+	}
+	return
 }
 
 // NewSystemInstanceForClient - creates a new SystemInstance
