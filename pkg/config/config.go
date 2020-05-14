@@ -122,7 +122,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -134,8 +134,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
-	// consider custom defaults defined in config.yml
-	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
+	// consider custom defaults defined in config.yml unless told otherwise
+	if ignoreCustomDefaults {
+		log.Entry().Info("Ignoring custom defaults from pipeline config")
+	} else if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
 		if c.openFile == nil {
 			c.openFile = OpenPiperFile
 		}
