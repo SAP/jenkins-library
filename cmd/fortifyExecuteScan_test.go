@@ -221,7 +221,11 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	if e == "python2" {
 		er.currentExecution().outWriter.Write([]byte(classpathPip))
 	} else if e == "mvn" {
-		ioutil.WriteFile(strings.ReplaceAll(p[2], "-Dmdep.outputFile=", ""), []byte(classpathMaven), 755)
+		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
+		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
+		if err != nil {
+			return err
+		}
 	}
 	er.current = er.newExecution()
 	return nil
@@ -362,8 +366,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	t.Run("error no recent upload detected", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{DeltaMinutes: -1}
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
-		assert.Error(t, err)
-		assert.Equal(t, "No recent upload detected on Project Version", err.Error())
+		assert.EqualError(t, err, "No recent upload detected on Project Version")
 	})
 
 	config := fortifyExecuteScanOptions{DeltaMinutes: 20}
@@ -374,20 +377,17 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 
 	t.Run("error processing", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4712, "", &models.FilterSet{}, 0)
-		assert.Error(t, err)
-		assert.Equal(t, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=", err.Error())
+		assert.EqualError(t, err, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=")
 	})
 
 	t.Run("error required auth", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{}, 0)
-		assert.Error(t, err)
-		assert.Equal(t, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=", err.Error())
+		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
-		assert.Error(t, err)
-		assert.Equal(t, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING", err.Error())
+		assert.EqualError(t, err, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING")
 	})
 
 	t.Run("success build label", func(t *testing.T) {
@@ -397,8 +397,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 
 	t.Run("error no artifacts", func(t *testing.T) {
 		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, 0)
-		assert.Error(t, err)
-		assert.Equal(t, "No uploaded artifacts for assessment detected for project version with ID 4716", err.Error())
+		assert.EqualError(t, err, "No uploaded artifacts for assessment detected for project version with ID 4716")
 	})
 }
 
@@ -450,7 +449,7 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		match, err := determinePullRequestMergeGithub(nil, fortifyExecuteScanOptions{Owner: "C"}, prServiceMock)
-		assert.Error(t, err)
+		assert.EqualError(t, err, "Test error")
 		assert.Equal(t, "", match, "Expected different result")
 	})
 }
