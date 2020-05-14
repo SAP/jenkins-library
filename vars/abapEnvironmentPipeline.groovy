@@ -52,6 +52,7 @@ void call(parameters) {
             }
 
             stage('Cleanup') {
+                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     cloudFoundryDeleteService script: parameters.script
                 }
