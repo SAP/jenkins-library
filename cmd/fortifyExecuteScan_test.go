@@ -86,11 +86,31 @@ func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, nam
 }
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
 	if filter == "ET1:abcd" {
-		group := "Http Verb tampering"
+		group := "HTTP Verb tampering"
 		total := int32(4)
 		audited := int32(3)
+		group2 := "Password in code"
+		total2 := int32(4)
+		audited2 := int32(4)
+		group3 := "Memory leak"
+		total3 := int32(5)
+		audited3 := int32(4)
 		return []*models.ProjectVersionIssueGroup{
 			&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
+			&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			&models.ProjectVersionIssueGroup{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+		}, nil
+	}
+	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
+		group := "3"
+		total := int32(4)
+		audited := int32(0)
+		group2 := "4"
+		total2 := int32(5)
+		audited2 := int32(0)
+		return []*models.ProjectVersionIssueGroup{
+			&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
+			&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
 		}, nil
 	}
 	group := "Audit All"
@@ -112,7 +132,8 @@ func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *model
 	return issueFilterSelectorSet
 }
 func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
-	return []*models.IssueStatistics{}, nil
+	suppressed := int32(6)
+	return []*models.IssueStatistics{&models.IssueStatistics{SuppressedCount: &suppressed}}, nil
 }
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
@@ -206,6 +227,40 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
+func TestAnalyseSuspiciousExploitable(t *testing.T) {
+	config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
+	ff := fortifyMock{}
+	influx := fortifyExecuteScanInflux{}
+	name := "test"
+	selectorGUID := "3"
+	selectorName := "Analysis"
+	selectorEntityType := "CUSTOMTAG"
+	projectVersion := models.ProjectVersion{ID: 4711, Name: &name}
+	auditStatus := map[string]string{}
+	selectorSet := models.IssueFilterSelectorSet{
+		FilterBySet: []*models.IssueFilterSelector{
+			&models.IssueFilterSelector{
+				GUID:        selectorGUID,
+				DisplayName: selectorName,
+				EntityType:  selectorEntityType,
+			},
+		},
+		GroupBySet: []*models.IssueSelector{
+			&models.IssueSelector{
+				GUID:        &selectorGUID,
+				DisplayName: &selectorName,
+				EntityType:  &selectorEntityType,
+			},
+		},
+	}
+	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	assert.Equal(t, 9, issues)
+
+	assert.Equal(t, "4", influx.fortify_data.fields.suspicious)
+	assert.Equal(t, "5", influx.fortify_data.fields.exploitable)
+	assert.Equal(t, "6", influx.fortify_data.fields.suppressed)
+}
+
 func TestAnalyseUnauditedIssues(t *testing.T) {
 	config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 	ff := fortifyMock{}
@@ -227,7 +282,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 			&models.IssueFilterSelector{
 				GUID:        "2",
-				DisplayName: "Analysis",
+				DisplayName: "Category",
 				EntityType:  "ET2",
 			},
 		},
@@ -239,8 +294,9 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	assert.Equal(t, "12", influx.fortify_data.fields.auditAllAudited)
 	assert.Equal(t, "20", influx.fortify_data.fields.corporateTotal)
 	assert.Equal(t, "11", influx.fortify_data.fields.corporateAudited)
-	assert.Equal(t, "4", influx.fortify_data.fields.spotChecksTotal)
-	assert.Equal(t, "3", influx.fortify_data.fields.spotChecksAudited)
+	assert.Equal(t, "13", influx.fortify_data.fields.spotChecksTotal)
+	assert.Equal(t, "11", influx.fortify_data.fields.spotChecksAudited)
+	assert.Equal(t, "1", influx.fortify_data.fields.spotChecksGap)
 }
 
 func TestTriggerFortifyScan(t *testing.T) {

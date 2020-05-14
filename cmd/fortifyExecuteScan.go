@@ -269,6 +269,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*
 
 	influx.fortify_data.fields.spotChecksTotal = fmt.Sprintf("%v", overallIssues)
 	influx.fortify_data.fields.spotChecksAudited = fmt.Sprintf("%v", overallIssuesAudited)
+	influx.fortify_data.fields.spotChecksGap = fmt.Sprintf("%v", overallDelta)
 
 	return overallDelta
 }
