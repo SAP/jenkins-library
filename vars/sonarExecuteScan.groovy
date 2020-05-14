@@ -1,6 +1,7 @@
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import java.nio.charset.StandardCharsets
@@ -71,7 +72,11 @@ void call(Map parameters = [:]) {
                         withSonarQubeEnv(stepConfig.instance) {
                             withCredentials(credentials) {
                                 withEnv(environment){
-                                    sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                    try {
+                                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                    } finally {
+                                        InfluxData.readFromDisk(script)
+                                    }
                                 }
                             }
                         }
