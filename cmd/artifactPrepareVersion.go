@@ -36,7 +36,6 @@ type gitRepository interface {
 
 type gitWorktree interface {
 	Add(string) (plumbing.Hash, error)
-	AddGlob(pattern string) error
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 }
