@@ -4,8 +4,5 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-
-        piperExecuteBin parameters, STEP_NAME, "metadata/${STEP_NAME}.yaml", []
-    }
+    piperExecuteBin parameters, STEP_NAME, "metadata/${STEP_NAME}.yaml", []
 }
