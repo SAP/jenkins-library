@@ -12,6 +12,9 @@ spec:
       - name: abapCredentialsId
         description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the rollback
         type: jenkins
+      - name: githubPersonalAccessTokenId
+        description: GitHub personal access token with at least read permissions for the remote repository
+        type: jenkins
     params:
       - name: username
         type: string
