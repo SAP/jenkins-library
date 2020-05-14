@@ -187,7 +187,7 @@ func getVersionFromFile(file string) (string, error) {
 func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav BuildDescriptor) (string, string) {
 	projectName, err := ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project name: %w", err)
+		log.Entry().Warnf("Unable to resolve fortify project name: %v", err)
 	}
 
 	versionTemplate := gav.GetVersion()
@@ -206,7 +206,7 @@ func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav BuildDe
 
 	projectVersion, err := ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project version: %w", err)
+		log.Entry().Warnf("Unable to resolve fortify project version: %v", err)
 	}
 	return projectName, projectVersion
 }
