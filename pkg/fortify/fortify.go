@@ -74,25 +74,37 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) (*SystemInstance, error) {
-	schemeHost := strings.Split(serverURL, "://")
-	if len(schemeHost) != 2 {
-		return nil, fmt.Errorf("fortify server URL is missing scheme '%v'", serverURL)
-	}
-	host, hostEndpoint := splitHostAndEndpoint(schemeHost[1])
+func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
-	clientInstance := ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
-		Host:     host,
-		Schemes:  []string{schemeHost[0]},
-		BasePath: fmt.Sprintf("%v/%v", hostEndpoint, apiEndpoint)},
-	)
+	clientInstance := ff.NewHTTPClientWithConfig(format, createTransportConfig(serverURL, apiEndpoint))
 	httpClientInstance := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout), nil
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+}
+
+func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
+	scheme, host := splitSchemeAndHost(serverURL)
+	host, hostEndpoint := splitHostAndEndpoint(host)
+	return &ff.TransportConfig{
+		Host:     host,
+		Schemes:  []string{scheme},
+		BasePath: fmt.Sprintf("%v/%v", hostEndpoint, apiEndpoint)}
+}
+
+func splitSchemeAndHost(url string) (scheme, host string) {
+	schemeEnd := strings.Index(url, "://")
+	if schemeEnd >= 0 {
+		scheme = url[0:schemeEnd]
+		host = url[schemeEnd+3:]
+	} else {
+		scheme = "https"
+		host = url
+	}
+	return
 }
 
 func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
