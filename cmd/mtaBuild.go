@@ -103,6 +103,7 @@ func runMtaBuild(config mtaBuildOptions,
 	handleSettingsFiles(config, p, httpClient)
 
 	handleDefaultNpmRegistry(config, e)
+	handleSAPNpmRegistry(config, e)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -309,6 +310,21 @@ func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
 		}
 	} else {
 		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
+	}
+
+	return nil
+}
+
+func handleSAPNpmRegistry(config mtaBuildOptions, e execRunner) error {
+
+	if len(config.SapNpmRegistry) > 0 {
+
+		log.Entry().Debugf("Setting SAP npm registry to \"%s\"", config.SapNpmRegistry)
+		if err := e.RunExecutable("npm", "config", "set", "@sap:registry", config.SapNpmRegistry); err != nil {
+			return err
+		}
+	} else {
+		log.Entry().Debugf("No SAP npm registry provided via configuration. Leaving npm config untouched.")
 	}
 
 	return nil
