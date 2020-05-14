@@ -35,6 +35,7 @@ type gitRepository interface {
 
 type gitWorktree interface {
 	Add(string) (plumbing.Hash, error)
+	AddGlob(pattern string) error
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 }
@@ -148,8 +149,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		//ToDo: what about closure in current Groovy step. Discard the possibility or provide extension mechanism?
 
 		if versioningType == "cloud" {
+			buildDescriptorPattern := artifact.BuildDescriptorPattern()
 			// commit changes and push to repository (including new version tag)
-			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
+			gitCommitID, err = pushChanges(config, newVersion, buildDescriptorPattern, repository, worktree, now)
 			if err != nil {
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 			}
@@ -247,7 +249,7 @@ func calculateNewVersion(versioningTemplate, currentVersion, commitID string, in
 
 func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	// checkout current revision in order to work on that
-	err := worktree.Checkout(&git.CheckoutOptions{Hash: gitCommit, Force: true, Keep: false})
+	err := worktree.Checkout(&git.CheckoutOptions{Hash: gitCommit, Keep: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize worktree")
 	}
@@ -255,11 +257,11 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	return nil
 }
 
-func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time) (string, error) {
+func pushChanges(config *artifactPrepareVersionOptions, newVersion, buildDescriptorPattern string, repository gitRepository, worktree gitWorktree, t time.Time) (string, error) {
 
 	var commitID string
 
-	commit, err := addAndCommit(config, worktree, newVersion, t)
+	commit, err := addAndCommit(config, worktree, newVersion, buildDescriptorPattern, t)
 	if err != nil {
 		return commit.String(), err
 	}
@@ -339,8 +341,9 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	return commitID, nil
 }
 
-func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
-	_, err := worktree.Add(".")
+func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion, addPattern string, t time.Time) (plumbing.Hash, error) {
+	//_, err := worktree.Add(".")
+	err := worktree.AddGlob(addPattern)
 	if err != nil {
 		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
 	}

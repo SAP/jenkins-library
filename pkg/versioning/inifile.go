@@ -44,6 +44,11 @@ func (i *INIfile) init() error {
 	return nil
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (i *INIfile) BuildDescriptorPattern() string {
+	return i.path
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (i *INIfile) VersioningScheme() string {
 	if len(i.versioningScheme) == 0 {

@@ -41,6 +41,11 @@ func (m *Maven) init() {
 	}
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (m *Maven) BuildDescriptorPattern() string {
+	return "*pom.xml"
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (m *Maven) VersioningScheme() string {
 	return "maven"

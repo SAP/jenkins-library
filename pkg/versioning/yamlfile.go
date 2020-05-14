@@ -32,6 +32,11 @@ func (y *YAMLfile) init() {
 	}
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (y *YAMLfile) BuildDescriptorPattern() string {
+	return y.path
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (y *YAMLfile) VersioningScheme() string {
 	return "semver2"

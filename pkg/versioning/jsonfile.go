@@ -31,6 +31,11 @@ func (j *JSONfile) init() {
 	}
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (j *JSONfile) BuildDescriptorPattern() string {
+	return j.path
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (j *JSONfile) VersioningScheme() string {
 	return "semver2"

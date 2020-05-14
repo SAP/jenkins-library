@@ -29,6 +29,11 @@ func (v *Versionfile) init() {
 	}
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (v *Versionfile) BuildDescriptorPattern() string {
+	return v.path
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (v *Versionfile) VersioningScheme() string {
 	if len(v.versioningScheme) == 0 {

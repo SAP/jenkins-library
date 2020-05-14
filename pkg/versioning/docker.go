@@ -39,6 +39,11 @@ func (d *Docker) initDockerfile() {
 	}
 }
 
+// BuildDescriptorPattern returns the pattern for the relevant build descriptor files
+func (d *Docker) BuildDescriptorPattern() string {
+	return d.path
+}
+
 // VersioningScheme returns the relevant versioning scheme
 func (d *Docker) VersioningScheme() string {
 	if len(d.versioningScheme) == 0 {

@@ -14,6 +14,7 @@ type Artifact interface {
 	VersioningScheme() string
 	GetVersion() (string, error)
 	SetVersion(string) error
+	BuildDescriptorPattern() string
 }
 
 // Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
