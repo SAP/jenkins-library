@@ -64,8 +64,9 @@ void call(parameters) {
                 input "Unsuccessful build: delete system?"
             }
             cleanup {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")}}
-                cloudFoundryDeleteService script: parameters.script
+                if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System") == true) {
+                    cloudFoundryDeleteService script: parameters.script
+                }
             }
         }
     }
