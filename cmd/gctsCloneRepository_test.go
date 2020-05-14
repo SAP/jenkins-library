@@ -40,7 +40,7 @@ func TestGctsCloneRepositorySuccess(t *testing.T) {
 			]
 		}`}
 
-		err := cloneRepository(&config, nil, nil, &httpClient)
+		err := cloneRepository(&config, nil, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -124,7 +124,7 @@ func TestGctsCloneRepositorySuccess(t *testing.T) {
 			]
 		}`}
 
-		err := cloneRepository(&config, nil, nil, &httpClient)
+		err := cloneRepository(&config, nil, &httpClient)
 		assert.NoError(t, err)
 
 	})
@@ -200,7 +200,7 @@ func TestGctsCloneRepositoryFailure(t *testing.T) {
 			]
 		}`}
 
-		err := cloneRepository(&config, nil, nil, &httpClient)
+		err := cloneRepository(&config, nil, &httpClient)
 		assert.EqualError(t, err, "cloning the repository failed: a http error occurred")
 
 	})

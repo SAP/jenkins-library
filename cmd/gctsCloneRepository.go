@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	gabs "github.com/Jeffail/gabs/v2"
-	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -14,11 +13,6 @@ import (
 )
 
 func gctsCloneRepository(config gctsCloneRepositoryOptions, telemetryData *telemetry.CustomData) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -26,13 +20,13 @@ func gctsCloneRepository(config gctsCloneRepositoryOptions, telemetryData *telem
 	httpClient := &piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := cloneRepository(&config, telemetryData, &c, httpClient)
+	err := cloneRepository(&config, telemetryData, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
