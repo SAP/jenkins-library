@@ -58,7 +58,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		gav, err = piperutils.GetPipCoordinates(config.BuildDescriptorFile)
 	}
 	if err != nil {
-		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
+		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
 	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
