@@ -31,7 +31,8 @@ void call(parameters) {
                 }
             }
 
-            stage('Prepare') {
+            stage('Prepare System') {
+                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     cloudFoundryCreateService script: parameters.script
                     input message: "Steampunk system ready?"
@@ -39,22 +40,17 @@ void call(parameters) {
                 }
             }
 
-            stage('Clone') {
+            stage('Clone Repositories') {
+                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
 
-            stage('Test') {
-                steps {
-                    abapEnvironmentRunATCCheck script: parameters.script
-                }
-            }
-
-            stage('Cleanup') {
+            stage('ATC') {
                 when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
-                    cloudFoundryDeleteService script: parameters.script
+                    abapEnvironmentRunATCCheck script: parameters.script
                 }
             }
         }
@@ -64,6 +60,10 @@ void call(parameters) {
             aborted {buildSetResult(currentBuild, 'ABORTED')}
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
+            cleanup {
+                // Condition possible?
+                cloudFoundryDeleteService script: parameters.script
+            }
         }
     }
 }
