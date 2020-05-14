@@ -131,8 +131,6 @@ func (r *gitRepositoryMock) Worktree() (*git.Worktree, error) {
 }
 
 type gitWorktreeMock struct {
-	addPath       string
-	addError      string
 	checkoutError string
 	checkoutOpts  *git.CheckoutOptions
 	commitHash    plumbing.Hash
@@ -141,13 +139,6 @@ type gitWorktreeMock struct {
 	commitError   string
 }
 
-func (w *gitWorktreeMock) Add(path string) (plumbing.Hash, error) {
-	if len(w.addError) > 0 {
-		return plumbing.Hash{}, fmt.Errorf(w.addError)
-	}
-	w.addPath = path
-	return plumbing.Hash{}, nil
-}
 func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	if len(w.checkoutError) > 0 {
 		return fmt.Errorf(w.checkoutError)
@@ -407,7 +398,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
-		worktree := gitWorktreeMock{addError: "add error"}
+		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
