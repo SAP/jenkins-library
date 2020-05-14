@@ -77,6 +77,7 @@ type fortifyExecuteScanInflux struct {
 			auditAllAudited   string
 			spotChecksTotal   string
 			spotChecksAudited string
+			spotChecksGap     string
 			suspicious        string
 			exploitable       string
 			suppressed        string
@@ -102,6 +103,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "fortify_data", name: "auditAllAudited", value: i.fortify_data.fields.auditAllAudited},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "spotChecksTotal", value: i.fortify_data.fields.spotChecksTotal},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "spotChecksAudited", value: i.fortify_data.fields.spotChecksAudited},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "spotChecksGap", value: i.fortify_data.fields.spotChecksGap},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "suspicious", value: i.fortify_data.fields.suspicious},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "exploitable", value: i.fortify_data.fields.exploitable},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "suppressed", value: i.fortify_data.fields.suppressed},
@@ -116,19 +118,21 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }
 
 // FortifyExecuteScanCommand This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 func FortifyExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "fortifyExecuteScan"
+
 	metadata := fortifyExecuteScanMetadata()
 	var stepConfig fortifyExecuteScanOptions
 	var startTime time.Time
 	var influx fortifyExecuteScanInflux
 
 	var createFortifyExecuteScanCmd = &cobra.Command{
-		Use:   "fortifyExecuteScan",
+		Use:   STEP_NAME,
 		Short: "This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.",
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
@@ -136,14 +140,25 @@ The Fortify step triggers a scan locally on your Jenkins within a docker contain
 and Java plus Maven or alternatively Python installed into it for being able to perform any scans.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("fortifyExecuteScan")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "fortifyExecuteScan", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
 			log.RegisterSecret(stepConfig.AuthToken)
 			log.RegisterSecret(stepConfig.GithubToken)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -156,7 +171,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "fortifyExecuteScan")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			fortifyExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 		},
