@@ -1,6 +1,6 @@
 # ABAP Environment Pipeline
 
-The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP Cloud Platform ABAP Environment, als known as Steampunk.
+The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP Cloud Platform ABAP Environment, also known as Steampunk.
 In the current state, the pipeline enables you to pull your Software Components to specifc systems and perform ATC checks. The following steps are performed:
  * Create an instance of the SAP Cloud Platform ABAP Environment
  * Configure the Communication Arrangement SAP_COM_0510
@@ -30,6 +30,7 @@ create-services:
   plan:   "16_abap_64_db"
   parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
 ```
+Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
 
 4. The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
 ```json
@@ -39,7 +40,33 @@ create-services:
 }
 ```
 
-5. Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
+4. Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
+```yml
+atcobjects:
+  softwarecomponent:
+    - name: "Z_DEMO_DM"
 ```
 
+6. Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
+```
+general:
+  cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
+  cfOrg: 'Steampunk-2-jenkins-test'
+  cfSpace: 'Test'
+  cfCredentialsId: 'cfAuthentification'
+  cfServiceInstance: 'abapPipeline'
+stages:
+  Prepare:
+    cfServiceManifest: 'manifest.yml'
+    stashContent: ''
+    cfServiceKeyName: 'JENKINS_SAP_COM_0510'
+    cfServiceKeyConfig: '0510.json'
+  Clone:
+    cfServiceKey: 'JENKINS_SAP_COM_0510'
+    repositoryNames: ['Z_DEMO_DM']
+  Test:
+    cfServiceKeyName: 'JENKINS_SAP_COM_0510'
+    atcConfig: 'atcConfig.yml'
+  Cleanup:
+    cfDeleteServiceKeys: true
 ```
