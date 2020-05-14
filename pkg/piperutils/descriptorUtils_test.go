@@ -28,7 +28,7 @@ func TestGetMavenGAV(t *testing.T) {
 	<version>${revision}</version>
 </project>
 `)
-	ioutil.WriteFile(file.Name(), data, 777)
+	ioutil.WriteFile(file.Name(), data, 0644)
 
 	result, err := GetMavenCoordinates(file.Name())
 	assert.NoError(t, err, "Didn't expert error but got one")
@@ -73,6 +73,7 @@ func TestGetMavenGAVFromFile(t *testing.T) {
 func TestGetMavenGAVFromFile2(t *testing.T) {
 
 	t.Run("test success", func(t *testing.T) {
+		// TODO: Investigate why this is a flaky test! (Got "Downloading from..." for GroupID on first run)
 		descriptor, err := GetMavenCoordinates("./testdata/test2_pom.xml")
 
 		assert.Nil(t, err)
