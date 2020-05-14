@@ -488,7 +488,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &http.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
@@ -507,7 +507,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
@@ -529,16 +529,6 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
-	})
-
-	t.Run("error - git add", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{}
-		repo := gitRepositoryMock{}
-		worktree := gitWorktreeMock{addError: "add error", commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
-
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
-		assert.Equal(t, "0000000000000000000000000000000000000000", commitID)
-		assert.EqualError(t, err, "failed to execute 'git add .': add error")
 	})
 
 	t.Run("error - commit", func(t *testing.T) {
