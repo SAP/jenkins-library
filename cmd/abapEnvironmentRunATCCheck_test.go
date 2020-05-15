@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -312,5 +314,34 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
+	})
+}
+
+func TestCleanUpFiles(t *testing.T) {
+	t.Run("Test build body with no software component and package", func(t *testing.T) {
+		path := "abapEnvironmentRunATCCheck_links.json"
+		err := os.Remove(path)
+		if err != nil {
+			filelocation, err := filepath.Glob(path)
+			if err != nil {
+				assert.Equal(t, "", filelocation[0])
+			}
+		}
+		path = "abapEnvironmentRunATCCheck_reports.json"
+		err = os.Remove(path)
+		if err != nil {
+			filelocation, err := filepath.Glob(path)
+			if err != nil {
+				assert.Equal(t, "", filelocation[0])
+			}
+		}
+		path = "ATCResults.xml"
+		err = os.Remove(path)
+		if err != nil {
+			filelocation, err := filepath.Glob(path)
+			if err != nil {
+				assert.Equal(t, "", filelocation[0])
+			}
+		}
 	})
 }
