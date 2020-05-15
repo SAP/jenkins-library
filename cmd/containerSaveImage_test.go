@@ -14,14 +14,14 @@ import (
 )
 
 type containerMock struct {
-	filePath string
-	imageSource     string
-	registryURL   string
-	localPath     string
-	includeLayers bool
+	filePath         string
+	imageSource      string
+	registryURL      string
+	localPath        string
+	includeLayers    bool
 	downloadImageErr string
-	imageSourceErr string
-	tarImageErr string
+	imageSourceErr   string
+	tarImageErr      string
 }
 
 func (c *containerMock) DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error) {
@@ -62,10 +62,10 @@ func TestRunContainerSaveImage(t *testing.T) {
 		cacheFolder := filepath.Join(tmpFolder, "cache")
 
 		config.FilePath = filepath.Join(tmpFolder, "testfile")
-	
+
 		dClient := containerMock{}
-	
-		err = runContainerSaveImage(&config, &telemetryData, cacheFolder, &dClient)
+
+		err = runContainerSaveImage(&config, &telemetryData, cacheFolder, tmpFolder, &dClient)
 		assert.NoError(t, err)
 
 		assert.Equal(t, cacheFolder, dClient.filePath)
@@ -79,7 +79,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 	t.Run("failure - cache creation", func(t *testing.T) {
 		config := containerSaveImageOptions{}
 		dClient := containerMock{}
-		err := runContainerSaveImage(&config, &telemetryData, "", &dClient)
+		err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient)
 		assert.EqualError(t, err, "failed to create cache: mkdir : The system cannot find the path specified.")
 	})
 
@@ -92,7 +92,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{imageSourceErr: "image source error"}
-		err = runContainerSaveImage(&config, &telemetryData, tmpFolder, &dClient)
+		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to get docker image source: image source error")
 	})
 
@@ -105,10 +105,9 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{downloadImageErr: "download error"}
-		err = runContainerSaveImage(&config, &telemetryData, tmpFolder, &dClient)
+		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to get docker image: download error")
 	})
-
 
 	t.Run("failure - tar image", func(t *testing.T) {
 		config := containerSaveImageOptions{}
@@ -119,9 +118,26 @@ func TestRunContainerSaveImage(t *testing.T) {
 		defer os.RemoveAll(tmpFolder)
 
 		dClient := containerMock{tarImageErr: "tar error"}
-		err = runContainerSaveImage(&config, &telemetryData, tmpFolder, &dClient)
+		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
 		assert.EqualError(t, err, "failed to tar container image: tar error")
 	})
+}
 
+func TestFilenameFromContainer(t *testing.T) {
+
+	tt := []struct {
+		rootPath       string
+		containerImage string
+		expected       string
+	}{
+		{rootPath: "", containerImage: "image:tag", expected: "image_tag.tar"},
+		{rootPath: "root/path", containerImage: "image:tag", expected: filepath.Join("root/path", "image_tag.tar")},
+		{rootPath: "", containerImage: "my.registry.com:55555/path/to/my/image:tag", expected: "my_registry_com_55555_path_to_my_image_tag.tar"},
+		{rootPath: "root/path", containerImage: "my.registry.com:55555/path/to/my/image:tag", expected: filepath.Join("root/path", "my_registry_com_55555_path_to_my_image_tag.tar")},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expected, filenameFromContainer(test.rootPath, test.containerImage))
+	}
 
 }
