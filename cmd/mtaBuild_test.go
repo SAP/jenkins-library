@@ -52,6 +52,26 @@ func TestMarBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("Provide SAP npm registry", func(t *testing.T) {
+
+		e := mock.ExecMockRunner{}
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
+
+		existingFiles := make(map[string]string)
+		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+
+		assert.Nil(t, err)
+
+		if assert.Len(t, e.Calls, 2) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[0].Exec)
+			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, e.Calls[0].Params)
+		}
+	})
+
 	t.Run("Package json does not exist", func(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
