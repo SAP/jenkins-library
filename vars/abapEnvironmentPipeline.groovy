@@ -32,7 +32,7 @@ void call(parameters) {
             }
 
             stage('Prepare System') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                // when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     cloudFoundryCreateService script: parameters.script
                     input message: "Steampunk system ready?"
@@ -41,14 +41,14 @@ void call(parameters) {
             }
 
             stage('Clone Repositories') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                // when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     abapEnvironmentPullGitRepo script: parameters.script
                 }
             }
 
             stage('ATC') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                // when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
                     abapEnvironmentPipelineStageATC script: parameters.script
                 }
