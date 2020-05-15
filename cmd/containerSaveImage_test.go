@@ -80,7 +80,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 		config := containerSaveImageOptions{}
 		dClient := containerMock{}
 		err := runContainerSaveImage(&config, &telemetryData, "", "", &dClient)
-		assert.EqualError(t, err, "failed to create cache: mkdir : The system cannot find the path specified.")
+		assert.Contains(t, fmt.Sprint(err), "failed to create cache: mkdir :")
 	})
 
 	t.Run("failure - get image source", func(t *testing.T) {
