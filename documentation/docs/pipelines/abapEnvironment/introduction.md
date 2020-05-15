@@ -29,6 +29,7 @@ The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configur
 ### 3. Manifest for Service Creation
 
 Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP Environment System in the beginning (and delete it in the end). This file describes the ABAP instance, which will be created:
+
 ```yml
 ---
 create-services:
@@ -37,10 +38,13 @@ create-services:
   plan:   "16_abap_64_db"
   parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
 ```
+
 Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
 
 ### 4. Configuration for the Communication
+
 The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
+
 ```json
 {
   "scenario_id": "SAP_COM_0510",
@@ -51,6 +55,7 @@ The communication to the ABAP system is done using a Communication Arrangement. 
 ### 5. Configuration for ATC
 
 Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
+
 ```yml
 atcobjects:
   softwarecomponent:
@@ -60,6 +65,7 @@ atcobjects:
 ### 6. Technical Pipeline Configuration
 
 Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
+
 ```yml
 general:
   cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
@@ -81,6 +87,7 @@ steps:
   cloudFoundryDeleteService:
     deleteServiceKeys: true
 ```
+
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the steps `cloudFoundryDeleteService` as above.
 
 ### Extension
