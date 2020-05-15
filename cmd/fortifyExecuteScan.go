@@ -23,6 +23,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
@@ -49,18 +50,11 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command execRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	var gav piperutils.BuildDescriptor
-	var err error
-	if config.BuildTool == "maven" {
-		gav, err = piperutils.GetMavenCoordinates(config.BuildDescriptorFile)
-	}
-	if config.BuildTool == "pip" {
-		gav, err = piperutils.GetPipCoordinates(config.BuildDescriptorFile)
-	}
+	gav, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, nil, nil)
 	if err != nil {
 		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	fortifyProjectName, fortifyProjectVersion := piperutils.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
+	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
