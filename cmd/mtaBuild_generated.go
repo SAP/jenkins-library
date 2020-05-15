@@ -110,7 +110,7 @@ func MtaBuildCommand() *cobra.Command {
 
 func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", os.Getenv("PIPER_buildTarget"), "mtaBuildTool 'classic' only: The target platform to which the mtar can be deployed. Valid values: 'CF', 'NEO', 'XSA'.")
-	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", "cloudMbt", "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'.")
+	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", `cloudMbt`, "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'.")
 	cmd.Flags().StringVar(&stepConfig.MtarName, "mtarName", os.Getenv("PIPER_mtarName"), "The name of the generated mtar file including its extension.")
 	cmd.Flags().StringVar(&stepConfig.MtaJarLocation, "mtaJarLocation", os.Getenv("PIPER_mtaJarLocation"), "mtaBuildTool 'classic' only: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If you run on Docker, this must match the location of the jar file in the container as well.")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
