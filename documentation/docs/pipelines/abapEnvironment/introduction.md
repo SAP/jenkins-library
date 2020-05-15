@@ -65,6 +65,9 @@ stages:
     repositoryNames: ['/DMO/REPO']
   ATC:
     atcConfig: 'atcConfig.yml'
+steps:
+  cloudFoundryDeleteService:
+    deleteServiceKeys: true
 ```
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run.
 
