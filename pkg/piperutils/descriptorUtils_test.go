@@ -31,10 +31,11 @@ func TestGetMavenGAV(t *testing.T) {
 	ioutil.WriteFile(file.Name(), data, 0644)
 
 	result, err := GetMavenCoordinates(file.Name())
-	assert.NoError(t, err, "Didn't expert error but got one")
-	assert.Equal(t, "com.sap.cp.jenkins", result.GroupID, "Expected different groupId value")
-	assert.Equal(t, "jenkins-library", result.ArtifactID, "Expected different artifactId value")
-	assert.Equal(t, "1.2.3", result.Version, "Expected different version value")
+	if assert.NoError(t, err, "Didn't expert error but got one") {
+		assert.Equal(t, "com.sap.cp.jenkins", result.GroupID, "Expected different groupId value")
+		assert.Equal(t, "jenkins-library", result.ArtifactID, "Expected different artifactId value")
+		assert.Equal(t, "1.2.3", result.Version, "Expected different version value")
+	}
 }
 
 func TestFilter(t *testing.T) {
@@ -63,10 +64,11 @@ func TestGetMavenGAVFromFile(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		descriptor, err := GetMavenCoordinates("./testdata/test_pom.xml")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "test.groupID", descriptor.GroupID)
-		assert.Equal(t, "test-articatID", descriptor.ArtifactID)
-		assert.Equal(t, "1.0.0", descriptor.Version)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "test.groupID", descriptor.GroupID)
+			assert.Equal(t, "test-articatID", descriptor.ArtifactID)
+			assert.Equal(t, "1.0.0", descriptor.Version)
+		}
 	})
 }
 
@@ -76,11 +78,12 @@ func TestGetMavenGAVFromFile2(t *testing.T) {
 		// TODO: Investigate why this is a flaky test! (Got "Downloading from..." for GroupID on first run)
 		descriptor, err := GetMavenCoordinates("./testdata/test2_pom.xml")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "com.sap.ldi", descriptor.GroupID)
-		assert.Equal(t, "parent-inherit-test", descriptor.ArtifactID)
-		assert.Equal(t, "1.0.0", descriptor.Version)
-		assert.Equal(t, "jar", descriptor.Packaging)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "com.sap.ldi", descriptor.GroupID)
+			assert.Equal(t, "parent-inherit-test", descriptor.ArtifactID)
+			assert.Equal(t, "1.0.0", descriptor.Version)
+			assert.Equal(t, "jar", descriptor.Packaging)
+		}
 	})
 }
 
@@ -90,8 +93,9 @@ func TestGetMavenGAVVersionViaInterface(t *testing.T) {
 		var descriptor BuildDescriptor
 		descriptor, err := GetMavenCoordinates("./testdata/test2_pom.xml")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "1.0.0", descriptor.GetVersion())
+		if assert.NoError(t, err) {
+			assert.Equal(t, "1.0.0", descriptor.GetVersion())
+		}
 	})
 }
 
@@ -101,9 +105,10 @@ func TestGetPipGAV(t *testing.T) {
 
 		descriptor, err := GetPipCoordinates("./testdata/setup.py")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "some-test", descriptor.ArtifactID)
-		assert.Equal(t, "1.0.0-SNAPSHOT", descriptor.Version)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "some-test", descriptor.ArtifactID)
+			assert.Equal(t, "1.0.0-SNAPSHOT", descriptor.Version)
+		}
 	})
 }
 
@@ -113,8 +118,9 @@ func TestGetPipGAVWithVersionString(t *testing.T) {
 		var descriptor BuildDescriptor
 		descriptor, err := GetPipCoordinates("./testdata/2_setup.py")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "1.0.0", descriptor.GetVersion())
+		if assert.NoError(t, err) {
+			assert.Equal(t, "1.0.0", descriptor.GetVersion())
+		}
 	})
 }
 
@@ -123,9 +129,10 @@ func TestGetPipGAVVersionViaInterface(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		descriptor, err := GetPipCoordinates("./testdata/2_setup.py")
 
-		assert.Nil(t, err)
-		assert.Equal(t, "some-test", descriptor.ArtifactID)
-		assert.Equal(t, "1.0.0", descriptor.Version)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "some-test", descriptor.ArtifactID)
+			assert.Equal(t, "1.0.0", descriptor.Version)
+		}
 	})
 }
 
