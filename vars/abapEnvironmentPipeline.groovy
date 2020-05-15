@@ -2,29 +2,29 @@ void call(parameters) {
     pipeline {
         agent any
         stages {
-            stage("go binary"){
-                steps {
-                    sh '''
-                        rm -rf jenkins-library
-                        git clone https://github.com/DanielMieg/jenkins-library.git
-                    '''
+            // stage("go binary"){
+            //     steps {
+            //         sh '''
+            //             rm -rf jenkins-library
+            //             git clone https://github.com/DanielMieg/jenkins-library.git
+            //         '''
 
-                    dockerExecute(
-                        script: this,
-                        dockerImage: 'golang',
-                        dockerEnvVars: [GOPATH: '/jenkinsdata/abapPipeline Test/workspace']
-                    ) {
-                        sh '''
-                            cd jenkins-library
-                            go build -o piper .
-                            chmod +x piper
-                            cp piper ..
-                            cd ..
-                        '''
-                        stash name: 'piper-bin', includes: 'piper'
-                    }
-                }
-            }
+            //         dockerExecute(
+            //             script: this,
+            //             dockerImage: 'golang',
+            //             dockerEnvVars: [GOPATH: '/jenkinsdata/abapPipeline Test/workspace']
+            //         ) {
+            //             sh '''
+            //                 cd jenkins-library
+            //                 go build -o piper .
+            //                 chmod +x piper
+            //                 cp piper ..
+            //                 cd ..
+            //             '''
+            //             stash name: 'piper-bin', includes: 'piper'
+            //         }
+            //     }
+            // }
             stage('Init') {
                 steps {
                     abapEnvironmentPipelineInit script: parameters.script
@@ -60,12 +60,12 @@ void call(parameters) {
             aborted {buildSetResult(currentBuild, 'ABORTED')}
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
-            unsuccessful {
-                input "Unsuccessful build: delete system?"
-            }
-            cleanup {
-                abapEnvironmentPipelineCleanup script: parameters.script
-            }
+            // unsuccessful {
+            //     input "Unsuccessful build: delete system?"
+            // }
+            // cleanup {
+            //     abapEnvironmentPipelineCleanup script: parameters.script
+            // }
         }
     }
 }
