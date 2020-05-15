@@ -27,7 +27,7 @@ func TestDiscoverySuccess(t *testing.T) {
 				<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
 			`}
 
-		header, err := discoverServer(&config, nil, &httpClient)
+		header, err := discoverServer(&config, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -92,7 +92,7 @@ func TestDiscoveryFailure(t *testing.T) {
 		</html>
 		`}
 
-		header, err := discoverServer(&config, nil, &httpClient)
+		header, err := discoverServer(&config, &httpClient)
 
 		t.Run("check error", func(t *testing.T) {
 			assert.EqualError(t, err, "discovery of the ABAP server failed: a http error occurred")
@@ -108,7 +108,7 @@ func TestDiscoveryFailure(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: ``}
 
-		header, err := discoverServer(&config, nil, &httpClient)
+		header, err := discoverServer(&config, &httpClient)
 
 		t.Run("check error", func(t *testing.T) {
 			assert.EqualError(t, err, "discovery of the ABAP server failed: did not retrieve a HTTP response")
@@ -130,7 +130,7 @@ func TestDiscoveryFailure(t *testing.T) {
 				<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
 			`}
 
-		header, err := discoverServer(&config, nil, &httpClient)
+		header, err := discoverServer(&config, &httpClient)
 
 		t.Run("check error", func(t *testing.T) {
 			assert.EqualError(t, err, "discovery of the ABAP server failed: did not retrieve a HTTP response")
@@ -180,7 +180,7 @@ func TestGetPackageListSuccess(t *testing.T) {
 		}
 		`}
 
-		objects, err := getPackageList(&config, nil, &httpClient)
+		objects, err := getPackageList(&config, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -204,7 +204,7 @@ func TestGetPackageListSuccess(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `{}`}
 
-		objects, err := getPackageList(&config, nil, &httpClient)
+		objects, err := getPackageList(&config, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -242,7 +242,7 @@ func TestGetPackageListFailure(t *testing.T) {
 		}
 		`}
 
-		_, err := getPackageList(&config, nil, &httpClient)
+		_, err := getPackageList(&config, &httpClient)
 
 		assert.EqualError(t, err, "getting repository object/package list failed: a http error occurred")
 	})
@@ -280,7 +280,7 @@ func TestExecuteTestsForPackageSuccess(t *testing.T) {
 		</aunit:runResult>
 		`}
 
-		err := executeTestsForPackage(&config, nil, &httpClient, header, "ZP_PIPER")
+		err := executeTestsForPackage(&config, &httpClient, header, "ZP_PIPER")
 
 		if assert.NoError(t, err) {
 
@@ -307,7 +307,7 @@ func TestExecuteTestsForPackageSuccess(t *testing.T) {
 		</aunit:runResult>
 		`}
 
-		err := executeTestsForPackage(&config, nil, &httpClient, header, "ZP_NON_EXISTANT")
+		err := executeTestsForPackage(&config, &httpClient, header, "ZP_NON_EXISTANT")
 
 		if assert.NoError(t, err) {
 
@@ -371,7 +371,7 @@ func TestExecuteTestsForPackageFailure(t *testing.T) {
 		header.Add("x-csrf-token", "ZegUEgfa50R7ZfGGxOtx2A==")
 		header.Add("saml2", "disabled")
 
-		err := executeTestsForPackage(&config, nil, &httpClient, header, "ZP_PIPER")
+		err := executeTestsForPackage(&config, &httpClient, header, "ZP_PIPER")
 
 		assert.EqualError(t, err, "some unit tests failed")
 	})
@@ -387,7 +387,7 @@ func TestExecuteTestsForPackageFailure(t *testing.T) {
 		header.Add("x-csrf-token", "ZegUEgfa50R7ZfGGxOtx2A==")
 		header.Add("saml2", "disabled")
 
-		err := executeTestsForPackage(&config, nil, &httpClient, header, "ZP_PIPER")
+		err := executeTestsForPackage(&config, &httpClient, header, "ZP_PIPER")
 
 		assert.EqualError(t, err, "execution of unit tests failed: a http error occurred")
 	})

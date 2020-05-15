@@ -28,13 +28,13 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 	httpClient := &piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runUnitTestsForAllRepoPackages(&config, telemetryData, &c, httpClient)
+	err := runUnitTestsForAllRepoPackages(&config, &c, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, command execRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -47,13 +47,13 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, tel
 	}
 	httpClient.SetOptions(clientOptions)
 
-	repoObjects, getPackageErr := getPackageList(config, telemetryData, httpClient)
+	repoObjects, getPackageErr := getPackageList(config, httpClient)
 
 	if getPackageErr != nil {
 		return errors.Wrap(getPackageErr, "execution of unit tests failed")
 	}
 
-	discHeader, discError := discoverServer(config, telemetryData, httpClient)
+	discHeader, discError := discoverServer(config, httpClient)
 
 	if discError != nil {
 		return errors.Wrap(discError, "execution of unit tests failed")
@@ -69,7 +69,7 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, tel
 	header.Add("Content-Type", "application/vnd.sap.adt.abapunit.testruns.result.v1+xml")
 
 	for _, object := range repoObjects {
-		executeTestsErr := executeTestsForPackage(config, telemetryData, httpClient, header, object)
+		executeTestsErr := executeTestsForPackage(config, httpClient, header, object)
 
 		if executeTestsErr != nil {
 			return errors.Wrap(executeTestsErr, "execution of unit tests failed")
@@ -82,7 +82,7 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, tel
 	return nil
 }
 
-func discoverServer(config *gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender) (*http.Header, error) {
+func discoverServer(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (*http.Header, error) {
 
 	url := config.Host +
 		"/sap/bc/adt/core/discovery?sap-client=" + config.Client
@@ -109,7 +109,7 @@ func discoverServer(config *gctsExecuteABAPUnitTestsOptions, telemetryData *tele
 	return &disc.Header, nil
 }
 
-func executeTestsForPackage(config *gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, header http.Header, packageName string) error {
+func executeTestsForPackage(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, header http.Header, packageName string) error {
 
 	var xmlBody = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 	<aunit:runConfiguration
@@ -189,7 +189,7 @@ func parseAUnitResponse(response *runResult) error {
 	return nil
 }
 
-func getPackageList(config *gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender) ([]string, error) {
+func getPackageList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) ([]string, error) {
 
 	type object struct {
 		Pgmid       string `json:"pgmid"`
