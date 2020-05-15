@@ -13,6 +13,12 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     abapEnvironmentRunATCCheck script: parameters.script
+    try {
+        recordIssues(tools: [checkStyle(pattern: 'ATCResults.xml')])
+    } catch {
+        // if plugin not available - do nothing
+    }
+
     def atcResult = readFile file: "ATCResults.xml"
     if (atcResult != "") {
         unstable('ATC Issues')
