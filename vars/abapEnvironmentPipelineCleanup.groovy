@@ -11,8 +11,15 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-    if (script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System") == true) {
-    echo "--------------------------------DELETE SYSTEM--------------------------------------"
-        cloudFoundryDeleteService script: parameters.script
+    def stageName = parameters.stageName?:env.STAGE_NAME
+
+    stageName = stageName.replace('Declarative: ', '')
+
+    piperStageWrapper (script: script, stageName: stageName) {
+        echo "---------------------pre condition-------------------------"
+        if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+            echo "---------------------post condition-------------------------"
+            cloudFoundryDeleteService script: parameters.script
+        }
     }
 }
