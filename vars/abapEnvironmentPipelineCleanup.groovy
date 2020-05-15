@@ -16,9 +16,7 @@ void call(Map parameters = [:]) {
     stageName = stageName.replace('Declarative: ', '')
 
     piperStageWrapper (script: script, stageName: stageName) {
-        echo "---------------------pre condition-------------------------"
         if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
-            echo "---------------------post condition-------------------------"
             cloudFoundryDeleteService script: parameters.script
         }
     }
