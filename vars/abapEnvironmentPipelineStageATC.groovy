@@ -16,7 +16,7 @@ void call(Map parameters = [:]) {
     try {
         recordIssues(tools: [checkStyle(pattern: 'ATCResults.xml')])
     } catch (ex) {
-        // if plugin not available - do nothing
+        echo "Checkstyle Plugin not available"
     }
 
     def atcResult = readFile file: "ATCResults.xml"
