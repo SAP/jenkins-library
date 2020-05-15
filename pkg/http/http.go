@@ -63,13 +63,16 @@ type UploadRequestData struct {
 	Method string
 	// URL for the request
 	URL string
-	// Path to the file to upload
-	File          string
+	// File path to be stored in the created form field.
+	File string
+	// Form field name under which the file name will be stored.
 	FileFieldName string
-	FormFields    map[string]string
-	FileContent   io.Reader
-	Header        http.Header
-	Cookies       []*http.Cookie
+	// Additional form fields which will be added to the request if not nil.
+	FormFields map[string]string
+	// Reader from which the file contents will be read.
+	FileContent io.Reader
+	Header      http.Header
+	Cookies     []*http.Cookie
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -88,28 +91,22 @@ type Uploader interface {
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fileFieldName, header, cookies)
+}
+
+// UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
+func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	fileHandle, err := os.Open(file)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
 	}
 	defer fileHandle.Close()
 	return c.Upload(UploadRequestData{
-		Method:        http.MethodPost,
-		URL:           url,
-		File:          file,
-		FileFieldName: fileFieldName,
-		Header:        header,
-		Cookies:       cookies,
-	})
-}
-
-// UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
-func (c *Client) UploadRequest(method, url, file, fileFieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	return c.Upload(UploadRequestData{
 		Method:        method,
 		URL:           url,
 		File:          file,
 		FileFieldName: fileFieldName,
+		FileContent:   fileHandle,
 		Header:        header,
 		Cookies:       cookies,
 	})
@@ -337,7 +334,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 	case http.StatusNotFound:
 		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
 	case http.StatusInternalServerError:
-		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occured.")
+		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}
 
 	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
