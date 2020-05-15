@@ -19,7 +19,7 @@ void call(parameters) {
             stage('Clone Repositories') {
                 when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
-                    abapEnvironmentPipelineCloneRepositories script: parameters.script
+                    abapEnvironmentPipelineStageCloneRepositories script: parameters.script
                 }
             }
 
