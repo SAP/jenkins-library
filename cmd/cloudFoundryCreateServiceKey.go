@@ -64,7 +64,6 @@ func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions
 	} else {
 		cfCreateServiceKeyScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName, "-c", config.CfServiceKeyConfig}
 	}
-
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
 		return fmt.Errorf("Failed to Create Service Key: %w", err)

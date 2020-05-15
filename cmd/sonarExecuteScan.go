@@ -41,7 +41,7 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
+func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{}
 	// reroute command output to logging framework
 	runner.Stdout(log.Writer())
@@ -57,9 +57,11 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 		options:     []string{},
 	}
 
+	influx.step_data.fields.sonar = "false"
 	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
+	influx.step_data.fields.sonar = "true"
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
