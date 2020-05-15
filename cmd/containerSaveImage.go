@@ -45,7 +45,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 	}
 	image, err := dClient.DownloadImageToPath(imageSource, cachePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to get docker image")
+		return errors.Wrap(err, "failed to download docker image")
 	}
 
 	tarfilePath := config.FilePath
