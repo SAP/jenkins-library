@@ -67,3 +67,7 @@ stages:
     atcConfig: 'atcConfig.yml'
 ```
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run.
+
+### Extension
+
+A documentation on how to extend stages can be found [here](https://sap.github.io/jenkins-library/extensibility/). This can be used to display ATC results with the Checksytle Plugin.

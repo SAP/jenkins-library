@@ -7,12 +7,16 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 /**
- * This stage cleans up the ABAP Environment Pipeline run
+ * This stage runs the ATC Checks
  */
-@GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-    if (script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System") == true) {
-        cloudFoundryDeleteService script: parameters.script
+
+    def stageName = parameters.stageName?:env.STAGE_NAME
+
+    piperStageWrapper (script: script, stageName: stageName) {
+
+        abapEnvironmentPullGitRepo script: parameters.script
+
     }
 }
