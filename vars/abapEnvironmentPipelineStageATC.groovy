@@ -15,6 +15,6 @@ void call(Map parameters = [:]) {
     abapEnvironmentRunATCCheck script: parameters.script
     def atcResult = readFile file: "ATCResults.xml"
     if (atcResult != "") {
-        currentBuild.result = 'UNSTABLE'
+        unstable('ATC Issues')
     }
 }
