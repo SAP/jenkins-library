@@ -95,13 +95,14 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    public void testAttemptToLoadNonExistingConfigFile() {
+    void testAttemptToLoadNonExistingConfigFile() {
 
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             switch(path) {
                 case 'default_pipeline_environment.yml': return false
                 case 'custom.yml': return false
                 case 'notFound.yml': return false
+                case '': throw new RuntimeException('cannot call fileExists with empty path')
                 default: return true
             }
         })
@@ -125,6 +126,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         helper.registerAllowedMethod("fileExists", [String], {String path ->
             switch (path) {
                 case 'default_pipeline_environment.yml': return false
+                case '': throw new RuntimeException('cannot call fileExists with empty path')
                 default: return true
             }
         })
