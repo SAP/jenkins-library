@@ -117,7 +117,7 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
         // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
-        if (!(customDefaults[i] in String) || customDefaults[i] == '') {
+        if (!(customDefaults[i] in CharSequence) || customDefaults[i] == '') {
             script.echo "WARNING: Ignoring invalid entry in custom defaults from files: '${customDefaults[i]}'"
             continue
         }
