@@ -7,7 +7,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 /**
- * This stage runs the ATC Checks
+ * This stage clones Git repositories / software components to the ABAP Environment instance
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
