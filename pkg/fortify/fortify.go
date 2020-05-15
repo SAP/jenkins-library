@@ -651,7 +651,15 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 	formFields := map[string]string{}
 	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
 
-	_, err = sys.httpClient.UploadRequest(http.MethodPost, fmt.Sprintf("%v%v?mat=%v", sys.serverURL, endpoint, token.Token), file, "file", formFields, fileContent, header, nil)
+	_, err = sys.httpClient.Upload(piperHttp.UploadRequestData{
+		Method:        http.MethodPost,
+		URL:           fmt.Sprintf("%v%v?mat=%v", sys.serverURL, endpoint, token.Token),
+		File:          file,
+		FileFieldName: "file",
+		FormFields:    formFields,
+		FileContent:   fileContent,
+		Header:        header,
+	})
 	return err
 }
 
