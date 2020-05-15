@@ -9,7 +9,6 @@ import static com.sap.piper.Prerequisites.checkScript
 /**
  * This stage cleans up the ABAP Environment Pipeline run
  */
-@GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     echo "--------------------------------DELETE SYSTEM--------------------------------------"
