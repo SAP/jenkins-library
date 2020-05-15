@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -16,11 +15,6 @@ import (
 )
 
 func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -28,13 +22,13 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 	httpClient := &piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runUnitTestsForAllRepoPackages(&config, &c, httpClient)
+	err := runUnitTestsForAllRepoPackages(&config, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, command execRunner, httpClient piperhttp.Sender) error {
+func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
