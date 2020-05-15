@@ -39,7 +39,7 @@ spec:
       - STEPS
     - name: filePath
       type: string
-      description: The path to the file to which the image should be saved. Defaults to `imageName.tar`
+      description: The path to the file to which the image should be saved. Defaults to `containerImage.tar`
       scope:
       - PARAMETERS
       - STAGES
