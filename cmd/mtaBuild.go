@@ -317,7 +317,6 @@ func configureNpmRegistry(registryUri string, registryName string, scope string,
 
 	log.Entry().Debugf("Setting %s npm registry to \"%s\"", registryName, registryUri)
 
-
 	key := "registry"
 	if len(scope) > 0 {
 		key = fmt.Sprintf("%s:registry", scope)
