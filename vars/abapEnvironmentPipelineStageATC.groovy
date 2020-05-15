@@ -15,7 +15,7 @@ void call(Map parameters = [:]) {
     abapEnvironmentRunATCCheck script: parameters.script
     try {
         recordIssues(tools: [checkStyle(pattern: 'ATCResults.xml')])
-    } catch {
+    } catch (ex) {
         // if plugin not available - do nothing
     }
 
