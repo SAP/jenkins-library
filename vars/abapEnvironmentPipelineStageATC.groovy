@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     abapEnvironmentRunATCCheck script: parameters.script
-    def atcResult = readFile file: "ATCResult.xml"
+    def atcResult = readFile file: "ATCResults.xml"
     if (atcResult != "") {
         currentBuild.result = 'UNSTABLE'
     }
