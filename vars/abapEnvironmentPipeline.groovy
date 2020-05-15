@@ -50,7 +50,7 @@ void call(parameters) {
             stage('ATC') {
                 when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
-                    abapEnvironmentRunATCCheck script: parameters.script
+                    abapEnvironmentPipelineStageATC script: parameters.script
                 }
             }
         }
@@ -64,9 +64,7 @@ void call(parameters) {
                 input "Unsuccessful build: delete system?"
             }
             cleanup {
-                if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System") == true) {
-                    cloudFoundryDeleteService script: parameters.script
-                }
+                abapEnvironmentPipelineCleanup script: parameters.script
             }
         }
     }
