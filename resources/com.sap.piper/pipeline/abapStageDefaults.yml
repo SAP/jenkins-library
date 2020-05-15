@@ -1,0 +1,5 @@
+stages:
+  Init: {}
+  Prepare System: {}
+  Clone Repositories: {}
+  ATC: {}
