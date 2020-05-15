@@ -31,7 +31,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		return errors.Wrap(err, "failed to prepare cache")
 	}
 
-	err = os.Mkdir(cachePath, 0644)
+	err = os.Mkdir(cachePath, 0755)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cache")
 	}
