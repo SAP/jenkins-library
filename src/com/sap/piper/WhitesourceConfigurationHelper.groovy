@@ -82,6 +82,12 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
+            case 'docker':
+                mapping += [
+                    [name: 'docker.scanImages', value: true, force: true],
+                    [name: 'docker.scanTarFiles', value: true, force: true],
+                    [name: 'docker.includes', value: '*.tar', force: true],
+                ]
             case 'dub':
                 mapping += [
                     [name: 'includes', value: '**/*.d **/*.di']
