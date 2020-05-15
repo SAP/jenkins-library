@@ -39,7 +39,7 @@ void call(parameters) {
             unsuccessful {
                 input "Unsuccessful build: delete system?"
             }
-            always {
+            cleanup {
                 abapEnvironmentPipelineCleanup script: parameters.script
             }
         }
