@@ -106,7 +106,7 @@ func TestRunContainerSaveImage(t *testing.T) {
 
 		dClient := containerMock{downloadImageErr: "download error"}
 		err = runContainerSaveImage(&config, &telemetryData, filepath.Join(tmpFolder, "cache"), tmpFolder, &dClient)
-		assert.EqualError(t, err, "failed to get docker image: download error")
+		assert.EqualError(t, err, "failed to download docker image: download error")
 	})
 
 	t.Run("failure - tar image", func(t *testing.T) {
