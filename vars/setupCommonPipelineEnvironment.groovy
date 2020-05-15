@@ -57,9 +57,7 @@ void call(Map parameters = [:]) {
 
         List customDefaultsFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
-        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
 
-        List customDefaultsConfig = []
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
             if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
                 // Align with Go side on supported parameter type.
@@ -68,16 +66,15 @@ void call(Map parameters = [:]) {
                     "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
                     "more details."
             }
-            customDefaultsConfig = Utils.appendParameterToStringList(
-                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+            customDefaultsFiles = Utils.appendParameterToStringList(
+                customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultsConfig = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
 
         prepareDefaultValues([
             script: script,
             customDefaults: parameters.customDefaults,
-            customDefaultsFromFiles: customDefaultsFiles,
-            customDefaultsFromConfig: customDefaultsConfig ])
+            customDefaultsFromFiles: customDefaultsFiles ])
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
