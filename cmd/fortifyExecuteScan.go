@@ -52,7 +52,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	gav, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, nil, nil)
 	if err != nil {
-		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
+		log.Entry().Warnf("Unable to load project coordinates from descriptor %v: %v", config.BuildDescriptorFile, err)
 	}
 	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
@@ -143,13 +143,13 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0x700)
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
 		if err != nil {
 			return err
 		}
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0x700)
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
 	}
 
 	// Perform audit compliance checks

@@ -202,7 +202,7 @@ func TestUploadRequest(t *testing.T) {
 		})
 		t.Run(fmt.Sprintf("UploadRequest Row %v", key+1), func(t *testing.T) {
 			client.SetOptions(test.clientOptions)
-			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", nil, test.header, test.cookies)
+			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
 			assert.NoError(t, err, "Error occurred but none expected")
@@ -234,7 +234,7 @@ func TestUploadRequest(t *testing.T) {
 
 func TestUploadRequestWrongMethod(t *testing.T) {
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
-	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil, nil)
+	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
 	assert.Error(t, err, "No error occured but was expected")
 }
 

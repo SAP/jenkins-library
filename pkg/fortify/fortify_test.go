@@ -37,6 +37,27 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 	return sys, server
 }
 
+func TestCreateTransportConfig(t *testing.T) {
+	t.Run("Valid URL", func(t *testing.T) {
+		config := createTransportConfig("http://some.fortify.host.com/ssc", "api/v2")
+		assert.Equal(t, []string{"http"}, config.Schemes)
+		assert.Equal(t, "some.fortify.host.com", config.Host)
+		assert.Equal(t, "ssc/api/v2", config.BasePath)
+	})
+	t.Run("URL missing scheme results in no error", func(t *testing.T) {
+		config := createTransportConfig("some.fortify.host.com/ssc", "api/v1")
+		assert.Equal(t, []string{"https"}, config.Schemes)
+		assert.Equal(t, "some.fortify.host.com", config.Host)
+		assert.Equal(t, "ssc/api/v1", config.BasePath)
+	})
+	t.Run("URL with more than one slash is accepted", func(t *testing.T) {
+		config := createTransportConfig("https://some.fortify.host.com/some/path/ssc", "api/v1")
+		assert.Equal(t, []string{"https"}, config.Schemes)
+		assert.Equal(t, "some.fortify.host.com", config.Host)
+		assert.Equal(t, "some/path/ssc/api/v1", config.BasePath)
+	})
+}
+
 func TestNewSystemInstance(t *testing.T) {
 	sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
 	assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")

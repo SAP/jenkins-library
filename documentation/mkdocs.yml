@@ -34,6 +34,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
+        - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md

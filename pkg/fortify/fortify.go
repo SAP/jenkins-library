@@ -74,22 +74,49 @@ type SystemInstance struct {
 }
 
 // NewSystemInstance - creates an returns a new SystemInstance
-func NewSystemInstance(serverURL, endpoint, authToken string, timeout time.Duration) *SystemInstance {
-	schemeHost := strings.Split(serverURL, "://")
-	hostEndpoint := strings.Split(schemeHost[1], "/")
+func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
-	clientInstance := ff.NewHTTPClientWithConfig(format, &ff.TransportConfig{
-		Host:     hostEndpoint[0],
-		Schemes:  []string{schemeHost[0]},
-		BasePath: fmt.Sprintf("%v/%v", hostEndpoint[1], endpoint)},
-	)
+	clientInstance := ff.NewHTTPClientWithConfig(format, createTransportConfig(serverURL, apiEndpoint))
 	httpClientInstance := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
 	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+}
+
+func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
+	scheme, host := splitSchemeAndHost(serverURL)
+	host, hostEndpoint := splitHostAndEndpoint(host)
+	return &ff.TransportConfig{
+		Host:     host,
+		Schemes:  []string{scheme},
+		BasePath: fmt.Sprintf("%v/%v", hostEndpoint, apiEndpoint)}
+}
+
+func splitSchemeAndHost(url string) (scheme, host string) {
+	schemeEnd := strings.Index(url, "://")
+	if schemeEnd >= 0 {
+		scheme = url[0:schemeEnd]
+		host = url[schemeEnd+3:]
+	} else {
+		scheme = "https"
+		host = url
+	}
+	return
+}
+
+func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
+	hostEnd := strings.Index(urlWithoutScheme, "/")
+	if hostEnd >= 0 {
+		host = urlWithoutScheme[0:hostEnd]
+		endpoint = urlWithoutScheme[hostEnd+1:]
+	} else {
+		host = urlWithoutScheme
+		endpoint = ""
+	}
+	return
 }
 
 // NewSystemInstanceForClient - creates a new SystemInstance
@@ -624,7 +651,15 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 	formFields := map[string]string{}
 	formFields["entityId"] = fmt.Sprintf("%v", projectVersionID)
 
-	_, err = sys.httpClient.UploadRequest(http.MethodPost, fmt.Sprintf("%v%v?mat=%v", sys.serverURL, endpoint, token.Token), file, "file", formFields, fileContent, header, nil)
+	_, err = sys.httpClient.Upload(piperHttp.UploadRequestData{
+		Method:        http.MethodPost,
+		URL:           fmt.Sprintf("%v%v?mat=%v", sys.serverURL, endpoint, token.Token),
+		File:          file,
+		FileFieldName: "file",
+		FormFields:    formFields,
+		FileContent:   fileContent,
+		Header:        header,
+	})
 	return err
 }
 
@@ -671,7 +706,7 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID 
 	return data, nil
 }
 
-// DownloadResultFile downloads a report file from Fortify backend
+// DownloadResultFile downloads a result file from Fortify backend
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	token, err := sys.getFileDownloadToken()
 	if err != nil {

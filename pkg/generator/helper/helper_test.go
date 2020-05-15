@@ -145,11 +145,11 @@ func TestSetDefaultParameters(t *testing.T) {
 		}
 
 		expected := []string{
-			"\"val0\"",
+			"`val0`",
 			"os.Getenv(\"PIPER_param1\")",
 			"true",
 			"false",
-			"[]string{\"val4_1\", \"val4_2\"}",
+			"[]string{`val4_1`, `val4_2`}",
 			"[]string{}",
 			"0",
 			"1",
