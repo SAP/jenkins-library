@@ -7,7 +7,10 @@ import com.sap.piper.ConfigurationLoader
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field STAGE_STEP_KEYS = []
+@Field Set STEP_CONFIG_KEYS = []
+@Field Set PARAMETER_KEYS = []
 /**
  * This stage initializes the ABAP Environment Pipeline run
  */
