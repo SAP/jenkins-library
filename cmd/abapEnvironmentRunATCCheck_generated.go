@@ -43,7 +43,7 @@ Please provide either of the following options:
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-Regardless of the option you chose, make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.`,
+Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
