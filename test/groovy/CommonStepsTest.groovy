@@ -46,14 +46,15 @@ public class CommonStepsTest extends BasePiperTest{
     public void scriptReferenceNotHandedOverTest() {
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
+            'abapEnvironmentPipeline',
+            'buildSetResult',
             'commonPipelineEnvironment',
             'handlePipelineStepErrors',
             'pipelineExecute',
-            'piperPipeline',
             'piperExecuteBin',
+            'piperPipeline',
             'prepareDefaultValues',
-            'setupCommonPipelineEnvironment',
-            'buildSetResult'
+            'setupCommonPipelineEnvironment'
         ]
 
         List steps = getSteps().stream()
