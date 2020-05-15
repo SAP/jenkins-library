@@ -309,20 +309,20 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
-func configureNpmRegistry(registryUri string, registryName string, scope string, e execRunner) error {
-	if len(registryUri) == 0 {
+func configureNpmRegistry(registryURI string, registryName string, scope string, e execRunner) error {
+	if len(registryURI) == 0 {
 		log.Entry().Debugf("No %s npm registry provided via configuration. Leaving npm config untouched.", registryName)
 		return nil
 	}
 
-	log.Entry().Debugf("Setting %s npm registry to \"%s\"", registryName, registryUri)
+	log.Entry().Debugf("Setting %s npm registry to \"%s\"", registryName, registryURI)
 
 	key := "registry"
 	if len(scope) > 0 {
 		key = fmt.Sprintf("%s:registry", scope)
 	}
 
-	if err := e.RunExecutable("npm", "config", "set", key, registryUri); err != nil {
+	if err := e.RunExecutable("npm", "config", "set", key, registryURI); err != nil {
 		return err
 	}
 
