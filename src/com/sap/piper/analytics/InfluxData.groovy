@@ -38,4 +38,43 @@ class InfluxData implements Serializable{
     public static void reset(){
         instance = null
     }
+
+    public static void readFromDisk(script) {
+        script.echo "Transfer Influx data"
+        def pathPrefix = '.pipeline/influx/'
+        List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
+
+        influxDataFiles.each({f ->
+            script.echo "Reading file form disk: ${f}"
+            List parts = f.toString().replace(pathPrefix, '')?.split('/')?.toList()
+
+            if(parts?.size() == 3){
+                def type = parts?.get(1)
+
+                if(type in ['fields', 'tags']){
+                    def fileContent = script.readFile(f.getPath())
+                    def measurement = parts?.get(0)
+                    def name = parts?.get(2)
+                    def value
+
+                    // handle boolean values
+                    if(fileContent == 'true'){
+                        value = true
+                    }else if(fileContent == 'false'){
+                        value = false
+                    }else{
+                        value = fileContent
+                    }
+
+                    if(type == 'fields'){
+                        addField(measurement, name, value)
+                    }else{
+                        addTag(measurement, name, value)
+                    }
+                }
+            } else {
+                script.echo "skipped, illegal path"
+            }
+        })
+    }
 }
