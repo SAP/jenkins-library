@@ -309,7 +309,7 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "string":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
-				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
+				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
