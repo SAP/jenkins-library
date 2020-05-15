@@ -12,6 +12,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
+    echo "--------------------------------DELETE SYSTEM--------------------------------------"
     if (script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System") == true) {
         cloudFoundryDeleteService script: parameters.script
     }
