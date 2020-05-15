@@ -24,7 +24,7 @@ Create a file named `Jenkinsfile` in your repository with the following content:
 abapEnvironmentPipeline script: this
 ```
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see https://sap.github.io/jenkins-library/customjenkins/#shared-library)
+The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see [documentation](https://sap.github.io/jenkins-library/customjenkins/#shared-library))
 
 ### 3. Manifest for Service Creation
 
