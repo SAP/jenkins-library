@@ -105,6 +105,7 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'abapEnvironmentPipeline', // special step (infrasturcture)
         'artifactPrepareVersion',
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
