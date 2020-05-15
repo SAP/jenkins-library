@@ -116,6 +116,16 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - name: mta
-      image: devxci/mbtci
+    - image: ppiper/mta-archive-builder
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: classic
+    - image: devxci/mbtci
       imagePullPolicy: Always
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: cloudMbt
