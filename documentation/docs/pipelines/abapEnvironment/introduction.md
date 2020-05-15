@@ -25,7 +25,7 @@ The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configur
 ```yml
 ---
 create-services:
-- name:   "abapPipeline"
+- name:   "abapEnvironmentPipeline"
   broker: "abap"
   plan:   "16_abap_64_db"
   parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
@@ -44,29 +44,26 @@ Please be aware that creating a SAP Cloud ABAP Environment instance may incur co
 ```yml
 atcobjects:
   softwarecomponent:
-    - name: "Z_DEMO_DM"
+    - name: "/DMO/REPO"
 ```
 
 6. Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
-```
+```yml
 general:
   cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
-  cfOrg: 'Steampunk-2-jenkins-test'
-  cfSpace: 'Test'
+  cfOrg: 'your-cf-org'
+  cfSpace: 'yourSpace'
   cfCredentialsId: 'cfAuthentification'
-  cfServiceInstance: 'abapPipeline'
+  cfServiceInstance: 'abapEnvironmentPipeline'
+  cfServiceKeyName: 'jenkins_sap_com_0510'
 stages:
-  Prepare:
+  Prepare System:
     cfServiceManifest: 'manifest.yml'
     stashContent: ''
-    cfServiceKeyName: 'JENKINS_SAP_COM_0510'
-    cfServiceKeyConfig: '0510.json'
-  Clone:
-    cfServiceKey: 'JENKINS_SAP_COM_0510'
-    repositoryNames: ['Z_DEMO_DM']
-  Test:
-    cfServiceKeyName: 'JENKINS_SAP_COM_0510'
+    cfServiceKeyConfig: 'sap_com_0510.json'
+  Clone Repositories:
+    repositoryNames: ['/DMO/REPO']
+  ATC:
     atcConfig: 'atcConfig.yml'
-  Cleanup:
-    cfDeleteServiceKeys: true
 ```
+If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run.
