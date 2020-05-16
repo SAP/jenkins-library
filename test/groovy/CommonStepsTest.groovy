@@ -194,6 +194,7 @@ public class CommonStepsTest extends BasePiperTest{
     public void stepsWithWrongFieldNameTest() {
 
         def whitelist = [
+            'abapEnvironmentPipeline',
             'commonPipelineEnvironment',
             'piperPipeline',
             'piperExecuteBin',
