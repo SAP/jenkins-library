@@ -62,19 +62,19 @@ func (f *fortifyMock) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, u
 }
 func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
 	if id == 4711 {
-		return []*models.Artifact{&models.Artifact{Status: "PROCESSED", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+		return []*models.Artifact{{Status: "PROCESSED", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
 	if id == 4712 {
-		return []*models.Artifact{&models.Artifact{Status: "ERROR_PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+		return []*models.Artifact{{Status: "ERROR_PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
 	if id == 4713 {
-		return []*models.Artifact{&models.Artifact{Status: "REQUIRE_AUTH", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+		return []*models.Artifact{{Status: "REQUIRE_AUTH", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
 	if id == 4714 {
-		return []*models.Artifact{&models.Artifact{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+		return []*models.Artifact{{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
 	if id == 4715 {
-		return []*models.Artifact{&models.Artifact{Status: "PROCESSED", Embed: &models.EmbeddedScans{[]*models.Scan{&models.Scan{BuildLabel: "/commit/test"}}}, UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+		return []*models.Artifact{{Status: "PROCESSED", Embed: &models.EmbeddedScans{[]*models.Scan{{BuildLabel: "/commit/test"}}}, UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
 	}
 	return []*models.Artifact{}, nil
 }
@@ -96,9 +96,9 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		total3 := int32(5)
 		audited3 := int32(4)
 		return []*models.ProjectVersionIssueGroup{
-			&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
-			&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
-			&models.ProjectVersionIssueGroup{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+			{ID: &group, TotalCount: &total, AuditedCount: &audited},
+			{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
 		}, nil
 	}
 	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
@@ -109,8 +109,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		total2 := int32(5)
 		audited2 := int32(0)
 		return []*models.ProjectVersionIssueGroup{
-			&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
-			&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			{ID: &group, TotalCount: &total, AuditedCount: &audited},
+			{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
 		}, nil
 	}
 	group := "Audit All"
@@ -123,9 +123,9 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 	total3 := int32(5)
 	audited3 := int32(4)
 	return []*models.ProjectVersionIssueGroup{
-		&models.ProjectVersionIssueGroup{ID: &group, TotalCount: &total, AuditedCount: &audited},
-		&models.ProjectVersionIssueGroup{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
-		&models.ProjectVersionIssueGroup{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+		{ID: &group, TotalCount: &total, AuditedCount: &audited},
+		{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+		{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
@@ -133,7 +133,7 @@ func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *model
 }
 func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error) {
 	suppressed := int32(6)
-	return []*models.IssueStatistics{&models.IssueStatistics{SuppressedCount: &suppressed}}, nil
+	return []*models.IssueStatistics{{SuppressedCount: &suppressed}}, nil
 }
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
@@ -161,7 +161,7 @@ type pullRequestServiceMock struct{}
 func (prService pullRequestServiceMock) ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
 	if owner == "A" {
 		result := 17
-		return []*github.PullRequest{&github.PullRequest{Number: &result}}, &github.Response{}, nil
+		return []*github.PullRequest{{Number: &result}}, &github.Response{}, nil
 	} else if owner == "C" {
 		return []*github.PullRequest{}, &github.Response{}, errors.New("Test error")
 	}
@@ -222,8 +222,6 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		er.currentExecution().outWriter.Write([]byte(classpathPip))
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
-		dir, _ := os.Getwd()
-		fmt.Printf("current dir: %s, writing file %s", dir, path)
 		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
 		if err != nil {
 			return err
