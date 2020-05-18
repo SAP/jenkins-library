@@ -170,6 +170,29 @@ func TestApplyContextConditions(t *testing.T) {
 				"dockerImage": "myTestImage:latest",
 			},
 		},
+		{
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myDefaultImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "",
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "",
+			},
+		},
 		//ToDo: Sidecar behavior not properly working, expects sidecarImage, ... parameters and not dockerImage
 		{
 			metadata: config.StepData{Spec: config.StepSpec{Sidecars: []config.Container{
