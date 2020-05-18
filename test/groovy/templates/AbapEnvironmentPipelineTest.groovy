@@ -138,8 +138,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
 
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
-        helper.registerAllowedMethod('abapEnvironmentPipelineInit', [Map.class], {m ->
-            stepsCalled.add('abapEnvironmentPipelineInit')
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageInit', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageInit')
         })
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStagePrepareSystem', [Map.class], {m ->
@@ -154,8 +154,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             stepsCalled.add('abapEnvironmentPipelineStageATC')
         })
 
-        helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m ->
-            stepsCalled.add('cloudFoundryDeleteService')
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageCleanup', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageCleanup')
         })
 
         nullScript.prepareDefaultValues(script: nullScript)
@@ -172,12 +172,12 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
-            'abapEnvironmentPipelineInit',
+            'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStageCloneRepositories',
-            'abapEnvironmentPipelineStageATC'
+            'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageCleanup'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStagePrepareSystem')))
-        assertThat(stepsCalled, not(hasItem('cloudFoundryDeleteService')))
     }
 
     @Test
@@ -189,9 +189,9 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
-            'abapEnvironmentPipelineInit',
+            'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStagePrepareSystem',
-            'cloudFoundryDeleteService'
+            'abapEnvironmentPipelineStageCleanup'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageCloneRepositories')))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageATC')))
@@ -208,11 +208,11 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
-            'abapEnvironmentPipelineInit',
+            'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
-            'cloudFoundryDeleteService'
+            'abapEnvironmentPipelineStageCleanup'
         ))
     }
 }

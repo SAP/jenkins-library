@@ -5,7 +5,7 @@ void call(parameters) {
 
             stage('Init') {
                 steps {
-                    abapEnvironmentPipelineInit script: parameters.script
+                    abapEnvironmentPipelineStageInit script: parameters.script
                 }
             }
 
@@ -40,7 +40,7 @@ void call(parameters) {
                 input "Unsuccessful build: delete system?"
             }
             cleanup {
-                abapEnvironmentPipelineCleanup script: parameters.script
+                abapEnvironmentPipelineStageCleanup script: parameters.script
             }
         }
     }
