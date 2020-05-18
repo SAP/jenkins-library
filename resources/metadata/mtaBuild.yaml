@@ -84,9 +84,18 @@ spec:
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default:
+      - name: sapNpmRegistry
+        type: string
+        description: "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
       - name: projectSettingsFile
