@@ -1,9 +1,9 @@
 # ABAP Environment Pipeline
 
 The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP Cloud Platform ABAP Environment, also known as Steampunk.
-In the current state, the pipeline enables you to pull your Software Components to specifc systems and perform ATC checks. The following steps are performed:
+In the current state, the pipeline enables you to pull Software Components to specifc systems and perform ATC checks. The following steps are performed:
 
-* Create an instance of the SAP Cloud Platform ABAP Environment
+* Create an instance of the SAP Cloud Platform ABAP Environment service
 * Configure the Communication Arrangement SAP_COM_0510
 * Pull Git repositories / Software Components to the instance
 * Run ATC Checks
@@ -31,7 +31,7 @@ The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configur
 
 Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP Environment System in the beginning (and delete it in the end). This file describes the ABAP instance, which will be created:
 
-```yml
+```yaml
 ---
 create-services:
 - name:   "abapEnvironmentPipeline"
@@ -40,7 +40,7 @@ create-services:
   parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
 ```
 
-Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
+The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
 
 ### 4. Configuration for the Communication
 
@@ -62,6 +62,8 @@ atcobjects:
   softwarecomponent:
     - name: "/DMO/REPO"
 ```
+
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details
 
 ### 6. Technical Pipeline Configuration
 
