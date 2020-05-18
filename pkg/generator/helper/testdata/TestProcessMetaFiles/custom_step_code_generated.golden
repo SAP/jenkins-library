@@ -111,13 +111,19 @@ func TestStepCommand() *cobra.Command {
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
 
 			path, _ := os.Getwd()
-			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
 			err := piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
+
+			if len(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn, piperOsCmd.GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
