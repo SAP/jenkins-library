@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path"
 	"strings"
@@ -113,6 +114,12 @@ func runMtaBuild(config mtaBuildOptions,
 	if err != nil {
 		return err
 	}
+
+	err = npm.SetNpmRegistries(
+		&npm.NpmRegistryOptions{
+			DefaultNpmRegistry: config.DefaultNpmRegistry,
+			SapNpmRegistry:     config.SapNpmRegistry,
+		}, e)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
