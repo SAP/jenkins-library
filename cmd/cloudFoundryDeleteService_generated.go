@@ -50,6 +50,12 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -101,7 +107,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 					{
 						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
@@ -125,7 +131,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 					{
 						Name:        "cfOrg",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
@@ -133,7 +139,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 					{
 						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
@@ -141,7 +147,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 					{
 						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},

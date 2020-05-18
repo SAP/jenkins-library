@@ -1,6 +1,7 @@
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import java.nio.charset.StandardCharsets
@@ -67,14 +68,20 @@ void call(Map parameters = [:]) {
                     dockerOptions: config.dockerOptions
                 ) {
                     if(!fileExists('.git')) utils.unstash('git')
-                    withSonarQubeEnv(stepConfig.instance) {
-                        withCredentials(credentials) {
-                            withEnv(environment){
-                                sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                    piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                        withSonarQubeEnv(stepConfig.instance) {
+                            withCredentials(credentials) {
+                                withEnv(environment){
+                                    try {
+                                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                    } finally {
+                                        InfluxData.readFromDisk(script)
+                                    }
+                                }
                             }
                         }
+                        jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                     }
-                    jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                 }
             } finally {
                 def ignore = sh script: 'rm -rf .sonar-scanner .certificates', returnStatus: true
