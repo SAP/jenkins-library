@@ -57,6 +57,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/space
@@ -67,6 +68,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -77,6 +79,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceKeyName
