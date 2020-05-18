@@ -31,7 +31,6 @@ spec:
     - name: authToken
       type: string
       description: The FortifyToken to use for authentication
-      mandatory: true
       scope:
       - PARAMETERS
       - STAGES
