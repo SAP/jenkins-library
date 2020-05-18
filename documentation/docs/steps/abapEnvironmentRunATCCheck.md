@@ -29,7 +29,7 @@ abapEnvironmentRunATCCheck script: this
 
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
 
-```yml
+```yaml
 steps:
   abapEnvironmentRunATCCheck:
     abapCredentialsId: 'abapCredentialsId',
