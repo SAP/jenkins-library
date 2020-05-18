@@ -12,6 +12,9 @@ spec:
       - name: fortifyCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.
         type: jenkins
+        aliases:
+          - name: fortifyCredentialId
+            deprecated: true
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
@@ -334,6 +337,8 @@ spec:
     - name: serverUrl
       aliases:
       - name: fortifyServerUrl
+      - name: sscUrl
+        deprecated: true
       type: string
       description: Fortify SSC Url to be used for accessing the APIs
       scope:
