@@ -152,7 +152,9 @@ func applyContainerConditions(containers []config.Container, stepConfig *config.
 					if stepConfig.Config[param.Value] != nil {
 						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
 						for key, value := range containerConf {
-							stepConfig.Config[key] = value
+							if stepConfig.Config[key] == nil {
+								stepConfig.Config[key] = value
+							}
 						}
 						delete(stepConfig.Config, param.Value)
 					}
