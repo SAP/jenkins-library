@@ -128,7 +128,7 @@ func setNpmRegistries(options *npmExecuteScriptsOptions, execRunner execRunner) 
 
 		log.Entry().Info("Discovered pre-configured npm registry " + preConfiguredRegistry)
 
-		if registry == npmRegistry && options.DefaultNpmRegistry != "" && (preConfiguredRegistry == "undefined" || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org")) {
+		if registry == npmRegistry && options.DefaultNpmRegistry != "" && (strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org")) {
 			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
 			environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
 		}
