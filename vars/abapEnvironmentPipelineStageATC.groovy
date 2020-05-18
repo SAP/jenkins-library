@@ -17,13 +17,10 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName) {
+    abapEnvironmentRunATCCheck script: parameters.script
 
-        abapEnvironmentRunATCCheck script: parameters.script
-
-        def atcResult = readFile file: "ATCResults.xml"
-        if (atcResult != "") {
-            unstable('ATC Issues')
-        }
+    def atcResult = readFile file: "ATCResults.xml"
+    if (atcResult != "") {
+        unstable('ATC Issues')
     }
 }

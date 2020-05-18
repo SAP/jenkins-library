@@ -16,11 +16,8 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    stageName = stageName.replace('Declarative: ', '')
-
-    piperStageWrapper (script: script, stageName: stageName) {
-        if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
-            cloudFoundryDeleteService script: parameters.script
-        }
+    if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+        cloudFoundryDeleteService script: parameters.script
     }
+
 }

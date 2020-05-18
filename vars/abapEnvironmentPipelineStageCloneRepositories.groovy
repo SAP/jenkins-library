@@ -17,9 +17,6 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName) {
+    abapEnvironmentPullGitRepo script: parameters.script
 
-        abapEnvironmentPullGitRepo script: parameters.script
-
-    }
 }

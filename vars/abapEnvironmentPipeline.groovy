@@ -26,7 +26,7 @@ void call(parameters) {
             stage('ATC') {
                 when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                 steps {
-                    abapEnvironmentRunATCCheck script: parameters.script
+                    abapEnvironmentPipelineStageATC script: parameters.script
                 }
             }
         }
