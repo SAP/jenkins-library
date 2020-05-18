@@ -1,14 +1,15 @@
 package cmd
 
 import (
+	"os"
+	"testing"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
-	"os"
-	"testing"
 )
 
 func TestMarBuild(t *testing.T) {
@@ -48,6 +49,26 @@ func TestMarBuild(t *testing.T) {
 		if assert.Len(t, e.Calls, 2) { // the second (unchecked) entry is the mta call
 			assert.Equal(t, "npm", e.Calls[0].Exec)
 			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[0].Params)
+		}
+	})
+
+	t.Run("Provide SAP npm registry", func(t *testing.T) {
+
+		e := mock.ExecMockRunner{}
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
+
+		existingFiles := make(map[string]string)
+		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+
+		assert.Nil(t, err)
+
+		if assert.Len(t, e.Calls, 2) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[0].Exec)
+			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, e.Calls[0].Params)
 		}
 	})
 

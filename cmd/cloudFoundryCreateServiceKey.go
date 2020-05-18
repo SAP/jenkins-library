@@ -12,8 +12,8 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	config := cloudFoundryDeleteServiceOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,
@@ -64,7 +64,6 @@ func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions
 	} else {
 		cfCreateServiceKeyScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName, "-c", config.CfServiceKeyConfig}
 	}
-
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
 		return fmt.Errorf("Failed to Create Service Key: %w", err)
