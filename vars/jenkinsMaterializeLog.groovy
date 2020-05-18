@@ -37,9 +37,7 @@ void call(Map parameters = [:], body) {
 
 @NonCPS
 def writeLogToFile(fp) {
-    def logInputStream = currentBuild.rawBuild.getLogInputStream()
-    fp.copyFrom(logInputStream)
-    logInputStream.close()
+    currentBuild.rawBuild.getLogText().writeLogTo(0, fp.write())
 }
 
 @NonCPS
