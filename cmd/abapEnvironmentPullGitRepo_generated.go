@@ -77,6 +77,7 @@ Please provide either of the following options:
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentPullGitRepo(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

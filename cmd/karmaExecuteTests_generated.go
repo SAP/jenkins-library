@@ -74,6 +74,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
