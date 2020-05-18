@@ -469,7 +469,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		pipVersion = "pip2"
 	}
 
-	var classpath string = ""
+	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
