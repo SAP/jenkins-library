@@ -307,6 +307,17 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 
 func TestTriggerFortifyScan(t *testing.T) {
 	t.Run("maven", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test trigger fortify scan")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
 
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
@@ -325,6 +336,18 @@ func TestTriggerFortifyScan(t *testing.T) {
 	})
 
 	t.Run("pip", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test trigger fortify scan")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
 		triggerFortifyScan(config, &runner, "test", "testLabel")
