@@ -1,0 +1,106 @@
+metadata:
+  name: abapEnvironmentRunATCCheck
+  description: Runs an ATC Check
+  longDescription: |
+    Run ATC Check
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        aliases:
+          - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        type: jenkins
+    params:
+      - name: atcConfig
+        type: string
+        description: Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: cfOrg
+        type: string
+        description: CF org
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfServiceInstance
+        type: string
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Parameter of CloudFoundry Service Key to be created
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKeyName
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/space
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: User Password for CF User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      dockerWorkspace: '/home/piper'
+      imagePullPolicy: Never

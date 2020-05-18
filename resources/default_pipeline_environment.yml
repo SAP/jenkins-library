@@ -305,7 +305,7 @@ steps:
   kanikoExecute:
     containerBuildOptions: '--skip-tls-verify-pull'
     containerCommand: '/busybox/tail -f /dev/null'
-    containerPreparationCommand: 'rm /kaniko/.docker/config.json'
+    containerPreparationCommand: 'rm -f /kaniko/.docker/config.json'
     containerShell: '/busybox/sh'
     customTlsCertificateLinks: []
     dockerfile: Dockerfile

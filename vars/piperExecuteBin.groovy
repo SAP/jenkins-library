@@ -81,7 +81,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
