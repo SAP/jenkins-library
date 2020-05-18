@@ -16,11 +16,13 @@ On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c4
 ## Example: Configuration in the config.yml
 
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
+
 ```groovy
 abapEnvironmentPullGitRepo script: this
 ```
 
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
+
 ```yml
 
 steps:
@@ -31,6 +33,7 @@ steps:
 ```
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
+
 ```yml
 steps:
   abapEnvironmentPullGitRepo:
