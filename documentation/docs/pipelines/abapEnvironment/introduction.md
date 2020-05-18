@@ -90,7 +90,3 @@ steps:
 ```
 
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the steps `cloudFoundryDeleteService` as above.
-
-### Extension
-
-A documentation on how to extend stages can be found [here](https://sap.github.io/jenkins-library/extensibility/). This can be used to display ATC results with the Checksytle Plugin.
