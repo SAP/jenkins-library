@@ -106,15 +106,6 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = configureNpmRegistry(config.DefaultNpmRegistry, "default", "", e)
-	if err != nil {
-		return err
-	}
-	err = configureNpmRegistry(config.SapNpmRegistry, "SAP", "@sap", e)
-	if err != nil {
-		return err
-	}
-
 	err = npm.SetNpmRegistries(
 		&npm.NpmRegistryOptions{
 			DefaultNpmRegistry: config.DefaultNpmRegistry,

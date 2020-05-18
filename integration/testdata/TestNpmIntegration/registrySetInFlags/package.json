@@ -4,6 +4,6 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "ci-build": "echo build"
+        "ci-build": "npm config get @sap:registry"
     }
 }

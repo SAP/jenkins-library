@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"strings"
-
 )
 
 type NpmRegistryOptions struct {
@@ -14,20 +13,16 @@ type NpmRegistryOptions struct {
 }
 
 type runner interface {
-	SetDir(d string)
 	SetEnv(e []string)
 	Stdout(out io.Writer)
-	Stderr(err io.Writer)
 }
 
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error
 }
-//fixme import or copy the type?
 
 func SetNpmRegistries(options *NpmRegistryOptions, execRunner execRunner) error {
-	environment := []string{}
 	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
 	configurableRegistries := []string{npmRegistry, sapRegistry}
@@ -43,18 +38,26 @@ func SetNpmRegistries(options *NpmRegistryOptions, execRunner execRunner) error 
 
 		log.Entry().Info("Discovered pre-configured npm registry " + preConfiguredRegistry)
 
-		if registry == npmRegistry && options.DefaultNpmRegistry != "" && (strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, "https://registry.npmjs.org")) {
+		if registry == npmRegistry && options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
-			environment = append(environment, "npm_config_"+registry+"="+options.DefaultNpmRegistry)
+			err = execRunner.RunExecutable("npm", "config", "set", registry, options.DefaultNpmRegistry)
+			if err != nil {
+				return err
+			}
 		}
 
-		if registry == sapRegistry && (strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, "https://npm.sap.com")) {
+		if registry == sapRegistry && registryRequiresConfiguration(preConfiguredRegistry, "https://npm.sap.com") {
 			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
-			environment = append(environment, "npm_config_"+registry+"="+options.SapNpmRegistry)
+			err = execRunner.RunExecutable("npm", "config", "set", registry, options.SapNpmRegistry)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	log.Entry().Info("Setting environment: " + strings.Join(environment, ", "))
-	execRunner.SetEnv(environment)
 	return nil
+}
+
+func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
+	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
