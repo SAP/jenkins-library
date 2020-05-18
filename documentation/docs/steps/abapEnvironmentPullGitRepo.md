@@ -23,7 +23,7 @@ abapEnvironmentPullGitRepo script: this
 
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
 
-```yml
+```yaml
 
 steps:
   abapEnvironmentPullGitRepo:
@@ -34,11 +34,11 @@ steps:
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 
-```yml
+```yaml
 steps:
   abapEnvironmentPullGitRepo:
     repositoryNames: ['/DMO/GIT_REPOSITORY']
-    cfCredentialsId: 'abapCredentialsId'
+    cfCredentialsId: 'cfCredentialsId'
     cfApiEndpoint: 'https://test.server.com'
     cfOrg: 'cfOrg'
     cfSpace: 'cfSpace'
