@@ -1,0 +1,53 @@
+metadata:
+  name: containerSaveImage
+  description: Saves a container image as a tar file
+  longDescription: |-
+    This step allows you to save a container image, for example a Docker image into a tar file.
+
+    It can be used no matter if a Docker daemon is available or not. It will also work inside a Kubernetes cluster without access to a daemon.
+spec:
+  inputs:
+    params:
+    - name: containerRegistryUrl
+      aliases:
+        - name: dockerRegistryUrl
+      type: string
+      description: The reference to the container registry where the image is located.
+      mandatory: true
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/registryUrl
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: containerImage
+      aliases:
+      - name: dockerImage
+      - name: scanImage
+      type: string
+      description: Container image to be saved.
+      mandatory: true
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/imageNameTag
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: filePath
+      type: string
+      description: The path to the file to which the image should be saved. Defaults to `containerImage.tar`
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: includeLayers
+      type: bool
+      description: Flag if the docker layers should be included
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
