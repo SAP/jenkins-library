@@ -222,6 +222,8 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 		er.currentExecution().outWriter.Write([]byte(classpathPip))
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
+		dir, _ := os.Getwd()
+		fmt.Printf("current dir: %s, writing file %s", dir, path)
 		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
 		if err != nil {
 			return err
@@ -305,6 +307,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 
 func TestTriggerFortifyScan(t *testing.T) {
 	t.Run("maven", func(t *testing.T) {
+
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
 		triggerFortifyScan(config, &runner, "test", "testLabel")
