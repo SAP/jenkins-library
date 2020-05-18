@@ -61,6 +61,10 @@ spec:
       - STAGES
       - STEPS
       default: binary
+      possibleValues:
+        - none
+        - binary
+        - complete
     - name: filePath
       type: string
       description: The path to the file from local workspace to scan with Protecode
@@ -136,7 +140,10 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: user
+    - name: username
+      aliases:
+        - name: user
+          deprecated: true
       type: string
       description: User which is used for the protecode scan
       mandatory: true

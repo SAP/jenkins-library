@@ -16,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -95,14 +95,24 @@ func runMtaBuild(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
+	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
-	handleSettingsFiles(config, p, httpClient)
+	err = handleSettingsFiles(config, p, httpClient)
+	if err != nil {
+		return err
+	}
 
-	handleDefaultNpmRegistry(config, e)
+	err = configureNpmRegistry(config.DefaultNpmRegistry, "default", "", e)
+	if err != nil {
+		return err
+	}
+	err = configureNpmRegistry(config.SapNpmRegistry, "SAP", "@sap", e)
+	if err != nil {
+		return err
+	}
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -299,16 +309,21 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
-func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
+func configureNpmRegistry(registryURI string, registryName string, scope string, e execRunner) error {
+	if len(registryURI) == 0 {
+		log.Entry().Debugf("No %s npm registry provided via configuration. Leaving npm config untouched.", registryName)
+		return nil
+	}
 
-	if len(config.DefaultNpmRegistry) > 0 {
+	log.Entry().Debugf("Setting %s npm registry to \"%s\"", registryName, registryURI)
 
-		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
-		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
+	key := "registry"
+	if len(scope) > 0 {
+		key = fmt.Sprintf("%s:registry", scope)
+	}
+
+	if err := e.RunExecutable("npm", "config", "set", key, registryURI); err != nil {
+		return err
 	}
 
 	return nil

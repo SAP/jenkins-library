@@ -4,13 +4,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomData) string {
-	c := command.Command{}
+var writeFile = ioutil.WriteFile
 
+func mavenExecute(config mavenExecuteOptions, _ *telemetry.CustomData) {
+	runner := command.Command{}
+	err := runMavenExecute(config, &runner)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
 	options := maven.ExecuteOptions{
 		PomPath:                     config.PomPath,
 		ProjectSettingsFile:         config.ProjectSettingsFile,
@@ -23,10 +32,9 @@ func mavenExecute(config mavenExecuteOptions, telemetryData *telemetry.CustomDat
 		ReturnStdout:                config.ReturnStdout,
 	}
 
-	output, err := maven.Execute(&options, &c)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed")
+	output, err := maven.Execute(&options, runner)
+	if err == nil && config.ReturnStdout {
+		err = writeFile(".pipeline/maven_output.txt", []byte(output), 0644)
 	}
-
-	return output
+	return err
 }

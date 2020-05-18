@@ -15,11 +15,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
+	workingDir  string
 	binary      string
 	environment []string
 	options     []string
@@ -38,24 +41,27 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
+func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{}
 	// reroute command output to logging framework
-	runner.Stdout(log.Entry().Writer())
-	runner.Stderr(log.Entry().Writer())
+	runner.Stdout(log.Writer())
+	runner.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
+		workingDir:  "./",
 		binary:      "sonar-scanner",
 		environment: []string{},
 		options:     []string{},
 	}
 
+	influx.step_data.fields.sonar = "false"
 	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
+	influx.step_data.fields.sonar = "true"
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
@@ -93,9 +99,27 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		WithField("options", sonar.options).
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
-
+	// execute scan
 	runner.SetEnv(sonar.environment)
-	return runner.RunExecutable(sonar.binary, sonar.options...)
+	err := runner.RunExecutable(sonar.binary, sonar.options...)
+	if err != nil {
+		return err
+	}
+	// load task results
+	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
+	} else {
+		// write links JSON
+		links := []StepResults.Path{
+			StepResults.Path{
+				Target: taskReport.DashboardURL,
+				Name:   "Sonar Web UI",
+			},
+		}
+		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	}
+	return nil
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {

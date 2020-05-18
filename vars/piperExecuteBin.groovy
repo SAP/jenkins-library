@@ -1,14 +1,24 @@
 import com.sap.piper.BashUtils
+import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false) {
+@Field String STEP_NAME = getClass().getName()
 
-    handlePipelineStepErrors(stepName: stepName, stepParameters: parameters) {
+void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
+
+    handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
+    if (failOnError) {
+        handlePipelineStepErrorsParameters.failOnError = true
+    }
+
+    handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
 
         def stepParameters = [:].plus(parameters)
 
@@ -27,22 +37,32 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
         writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
 
+        // When converting to JSON and back again, entries which had a 'null' value will now have a value
+        // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+        stepParameters = MapUtils.pruneNulls(stepParameters)
+
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+            "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
             String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
+            echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
+
             // get context configuration
             Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Config: ${config}"
+            echo "Context Config: ${config}"
 
             dockerWrapper(script, config) {
-                credentialWrapper(config, credentialInfo) {
-                    sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                handleErrorDetails(stepName) {
+                    credentialWrapper(config, credentialInfo) {
+                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    }
+                    jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                    script.commonPipelineEnvironment.readFromDisk(script)
                 }
-                jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
             }
         }
     }
@@ -61,7 +81,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
@@ -127,5 +147,23 @@ void credentialWrapper(config, List credentialInfo, body) {
         }
     } else {
         body()
+    }
+}
+
+void handleErrorDetails(String stepName, Closure body) {
+    try {
+        body()
+    } catch (ex) {
+        def errorDetailsFileName = "${stepName}_errorDetails.json"
+        if (fileExists(file: errorDetailsFileName)) {
+            def errorDetails = readJSON(file: errorDetailsFileName)
+            def errorCategory = ""
+            if (errorDetails.category) {
+                errorCategory = " (category: ${errorDetails.category})"
+                DebugReport.instance.failedBuild.category = errorDetails.category
+            }
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
+        }
+        error "[${stepName}] Step execution failed. Error: ${ex}"
     }
 }

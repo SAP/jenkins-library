@@ -24,6 +24,7 @@ type mtaBuildOptions struct {
 	Platform            string `json:"platform,omitempty"`
 	ApplicationName     string `json:"applicationName,omitempty"`
 	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
+	SapNpmRegistry      string `json:"sapNpmRegistry,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 }
@@ -50,29 +51,42 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }
 
 // MtaBuildCommand Performs an mta build
 func MtaBuildCommand() *cobra.Command {
+	const STEP_NAME = "mtaBuild"
+
 	metadata := mtaBuildMetadata()
 	var stepConfig mtaBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment mtaBuildCommonPipelineEnvironment
 
 	var createMtaBuildCmd = &cobra.Command{
-		Use:   "mtaBuild",
+		Use:   STEP_NAME,
 		Short: "Performs an mta build",
 		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mtaBuild")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "mtaBuild", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -85,7 +99,7 @@ func MtaBuildCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mtaBuild")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mtaBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 		},
@@ -104,6 +118,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
+	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", os.Getenv("PIPER_sapNpmRegistry"), "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 
@@ -177,6 +192,14 @@ func mtaBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "defaultNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "sapNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

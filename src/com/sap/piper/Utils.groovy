@@ -159,8 +159,8 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
     String resolvedExpression = script.mavenExecute(
         script: script,
         pomPath: pomFileName,
-        goals: 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-        defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
+        goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+        defines: ["-Dexpression=$pomPathExpression", "-DforceStdout", "-q"],
         returnStdout: true
     )
     if (resolvedExpression.startsWith('null object or invalid expression')) {
@@ -172,4 +172,16 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
             "missing property or invalid expression '${pomPathExpression}'.")
     }
     return resolvedExpression
+}
+
+static List appendParameterToStringList(List list, Map parameters, String paramName) {
+    def value = parameters[paramName]
+    List result = []
+    result.addAll(list)
+    if (value in CharSequence) {
+        result.add(value)
+    } else if (value in List) {
+        result.addAll(value)
+    }
+    return result
 }

@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -20,12 +21,14 @@ type karmaExecuteTestsOptions struct {
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
+	const STEP_NAME = "karmaExecuteTests"
+
 	metadata := karmaExecuteTestsMetadata()
 	var stepConfig karmaExecuteTestsOptions
 	var startTime time.Time
 
 	var createKarmaExecuteTestsCmd = &cobra.Command{
-		Use:   "karmaExecuteTests",
+		Use:   STEP_NAME,
 		Short: "Executes the Karma test runner",
 		Long: `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
 
@@ -40,12 +43,23 @@ In the Docker network, the containers can be referenced by the values provided i
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("karmaExecuteTests")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			err := PrepareConfig(cmd, &metadata, "karmaExecuteTests", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -57,7 +71,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "karmaExecuteTests")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

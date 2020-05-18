@@ -14,6 +14,7 @@ Configuration of the Piper steps as well the Piper templates can be done in a hi
 1. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
 1. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
 1. General configuration parameters define parameters which are available across step boundaries
+1. Custom default configuration provided by the user through a reference in the `customDefaults` parameter of the project configuration
 1. Default configuration comes with the Piper library and is always available
 
 ![Piper Configuration](images/piper_config.png)
@@ -78,3 +79,32 @@ commonPipelineEnvironment.configuration.general.gitSshKeyCredentialsId
 Within library steps the `ConfigurationHelper` object is used.
 
 You can see its usage in all the Piper steps, for example [newmanExecute](https://github.com/SAP/jenkins-library/blob/master/vars/newmanExecute.groovy#L23).
+
+## Custom default configuration
+
+For projects that are composed of multiple repositories (microservices), it might be desired to provide custom default configurations.
+To do that, create a YAML file which is accessible from your CI/CD environment and configure it in your project configuration.
+For example, the custom default configuration can be stored in a GitHub repository and accessed via the "raw" URL:
+
+```yaml
+customDefaults: ['https://my.github.local/raw/someorg/custom-defaults/master/backend-service.yml']
+general:
+  ...
+```
+
+Note, the parameter `customDefaults` is required to be a list of strings and needs to be defined as a separate section of the project configuration.
+In addition, the item order in the list implies the precedence, i.e., the last item of the customDefaults list has highest precedence.
+
+It is important to ensure that the HTTP response body is proper YAML, as the pipeline will attempt to parse it.
+
+Anonymous read access to the `custom-defaults` repository is required.
+
+The custom default configuration is merged with the project's `.pipeline/config.yml`.
+Note, the project's config takes precedence, so you can override the custom default configuration in your project's local configuration.
+This might be useful to provide a default value that needs to be changed only in some projects.
+An overview of the configuration hierarchy is given at the beginning of this page.
+
+If you have different types of projects, they might require different custom default configuration.
+For example, you might not require all projects to have a certain code check (like Whitesource, etc.) active.
+This can be achieved by having multiple YAML files in the _custom-defaults_ repository.
+Configure the URL to the respective configuration file in the projects as described above.

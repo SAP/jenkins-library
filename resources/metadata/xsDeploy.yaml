@@ -45,6 +45,11 @@ spec:
         type: string
         description: Used for finalizing the blue-green deployment.
         default: NONE
+        possibleValues:
+          - NONE
+          - Resume
+          - Abort
+          - Retry
         scope:
         - PARAMETERS
         - STAGES
@@ -54,6 +59,10 @@ spec:
         type: string
         description: "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'"
         default: DEPLOY
+        possibleValues:
+          - NONE
+          - DEPLOY
+          - BG_DEPLOY
         scope:
         - PARAMETERS
         - STAGES

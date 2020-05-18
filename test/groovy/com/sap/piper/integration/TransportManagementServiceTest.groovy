@@ -94,6 +94,28 @@ class TransportManagementServiceTest extends BasePiperTest {
     }
 
     @Test
+    void retrieveOAuthToken__failure__status__less__than__300() {
+        def uaaUrl = 'http://dummy.sap.com/oauth'
+        def clientId = 'myId'
+        def clientSecret = 'mySecret'
+        def responseStatusCode = 201
+        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message, since it might contain a token, if for some reason authentication service spec changes'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}').")
+        thrown.expectMessage(not(containsString(responseContent)))
+        loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
+        loggingRule.notExpect(responseContent)
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: false])
+        tms.authentication(uaaUrl, clientId, clientSecret)
+    }
+
+    @Test
     void retrieveOAuthToken__failure__status__400__inVerboseMode() {
         def uaaUrl = 'http://dummy.sap.com/oauth'
         def clientId = 'myId'
@@ -105,6 +127,29 @@ class TransportManagementServiceTest extends BasePiperTest {
         thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}'). Response content '${responseContent}'.")
         loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
         loggingRule.expect("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'")
+
+        helper.registerAllowedMethod('httpRequest', [Map.class], {
+            return [content: responseContent, status: responseStatusCode]
+        })
+
+        def tms = new TransportManagementService(nullScript, [verbose: true])
+        tms.authentication(uaaUrl, clientId, clientSecret)
+    }
+
+    @Test
+    void retrieveOAuthToken__failure__status__less__than__300__inVerboseMode() {
+        def uaaUrl = 'http://dummy.sap.com/oauth'
+        def clientId = 'myId'
+        def clientSecret = 'mySecret'
+        def responseStatusCode = 201
+        def responseContent = 'This response content should not be printed to the logs as well as be thrown in exception message, since it might contain a token, if for some reason authentication service spec changes'
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("[TransportManagementService] OAuth Token retrieval failed (HTTP status code '${responseStatusCode}').")
+        thrown.expectMessage(not(containsString(responseContent)))
+        loggingRule.expect("[TransportManagementService] OAuth Token retrieval started.")
+        loggingRule.expect("[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${clientId}'")
+        loggingRule.notExpect(responseContent)
 
         helper.registerAllowedMethod('httpRequest', [Map.class], {
             return [content: responseContent, status: responseStatusCode]

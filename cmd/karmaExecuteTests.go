@@ -12,8 +12,8 @@ func karmaExecuteTests(config karmaExecuteTestsOptions, telemetryData *telemetry
 	c := command.Command{}
 	// reroute command output to loging framework
 	// also log stdout as Karma reports into it
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 	runKarma(config, &c)
 }
 

@@ -10,9 +10,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
-
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     'cloudFoundry',
         /**
          * Cloud Foundry API endpoint.
@@ -151,10 +149,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
 ]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * Deploys an application to a test or production space within Cloud Foundry.
@@ -364,8 +362,10 @@ private prepareBlueGreenCfNativeDeploy(config,script) {
         writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
     }
 
-    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-    sh "chmod +x ${config.smokeTestScript}"
+    if (config.smokeTestScript) {
+        config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+        sh "chmod +x ${config.smokeTestScript}"
+    }
 
     config.deployCommand = 'blue-green-deploy'
     cfManifestSubstituteVariables(
