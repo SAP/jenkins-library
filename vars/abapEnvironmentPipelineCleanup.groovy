@@ -16,7 +16,7 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+    if(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
         cloudFoundryDeleteService script: parameters.script
     }
 
