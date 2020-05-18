@@ -77,7 +77,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveImageOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "The reference to the container registry where the image is located.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Container image to be saved.")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file to which the image should be saved. Defaults to `imageName.tar`")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file to which the image should be saved. Defaults to `containerImage.tar`")
 	cmd.Flags().BoolVar(&stepConfig.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
