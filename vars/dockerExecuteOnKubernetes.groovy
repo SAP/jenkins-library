@@ -161,15 +161,6 @@ import hudson.AbortException
 /**
  * Executes a closure inside a container in a kubernetes pod.
  * Proxy environment variables defined on the Jenkins machine are also available in the container.
- *
- * By default jnlp agent defined for kubernetes-plugin will be used (see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support).
- *
- * It is possible to define a custom jnlp agent image by
- *
- * 1. Defining the jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape
- * 2. Defining the image via config (`jenkinsKubernetes.jnlpAgent`)
- *
- * Option 1 will take precedence over option 2.
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
@@ -357,11 +348,10 @@ private List getContainerList(config) {
 
     //If no custom jnlp agent provided as default jnlp agent (jenkins/jnlp-slave) as defined in the plugin, see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
     def result = []
-    //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
-    if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
+    if (config.jenkinsKubernetes.jnlpAgent) {
         result.push([
             name : 'jnlp',
-            image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
+            image: config.jenkinsKubernetes.jnlpAgent
         ])
     }
     config.containerMap.each { imageName, containerName ->
