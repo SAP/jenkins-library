@@ -447,36 +447,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testDockerExecuteOnKubernetesCustomJnlpViaEnv() {
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
-        ]
-        binding.variables.env.JENKINS_JNLP_IMAGE = 'env/jnlp:latest'
-        stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
-            juStabUtils: utils,
-            dockerImage: 'maven:3.5-jdk-8-alpine',
-        ) { bodyExecuted = true }
-        assertTrue(bodyExecuted)
-
-        assertThat(containersList, allOf(
-            hasItem('jnlp'),
-            hasItem('container-exec')
-        ))
-        assertThat(imageList, allOf(
-            hasItem('env/jnlp:latest'),
-            hasItem('maven:3.5-jdk-8-alpine'),
-        ))
-    }
-
-    @Test
     void testDockerExecuteOnKubernetesCustomJnlpViaConfig() {
 
         nullScript.commonPipelineEnvironment.configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
-        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
@@ -503,7 +479,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
-        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
