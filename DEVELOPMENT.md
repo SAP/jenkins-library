@@ -90,7 +90,7 @@ You can extract the binary using Docker means to your local filesystem:
 
 ```sh
 docker create --name piper piper:latest
-docker cp piper:/piper .
+docker cp piper:/build/piper .
 docker rm piper
 ```
 
