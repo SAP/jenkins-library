@@ -102,6 +102,7 @@ func MtaBuildCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mtaBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -110,12 +111,12 @@ func MtaBuildCommand() *cobra.Command {
 }
 
 func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", os.Getenv("PIPER_buildTarget"), "mtaBuildTool 'classic' only: The target platform to which the mtar can be deployed. Valid values: 'CF', 'NEO', 'XSA'.")
+	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", "NEO", "mtaBuildTool 'classic' only: The target platform to which the mtar can be deployed. Valid values: 'CF', 'NEO', 'XSA'.")
 	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", "cloudMbt", "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'.")
 	cmd.Flags().StringVar(&stepConfig.MtarName, "mtarName", os.Getenv("PIPER_mtarName"), "The name of the generated mtar file including its extension.")
-	cmd.Flags().StringVar(&stepConfig.MtaJarLocation, "mtaJarLocation", os.Getenv("PIPER_mtaJarLocation"), "mtaBuildTool 'classic' only: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If you run on Docker, this must match the location of the jar file in the container as well.")
+	cmd.Flags().StringVar(&stepConfig.MtaJarLocation, "mtaJarLocation", "/opt/sap/mta/lib/mta.jar", "mtaBuildTool 'classic' only: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If you run on Docker, this must match the location of the jar file in the container as well.")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
-	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed.")
+	cmd.Flags().StringVar(&stepConfig.Platform, "platform", "CF", "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
 	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", os.Getenv("PIPER_sapNpmRegistry"), "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.")

@@ -13,30 +13,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type gctsCreateRepositoryOptions struct {
-	Username            string `json:"username,omitempty"`
-	Password            string `json:"password,omitempty"`
-	Repository          string `json:"repository,omitempty"`
-	Host                string `json:"host,omitempty"`
-	Client              string `json:"client,omitempty"`
-	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
-	Role                string `json:"role,omitempty"`
-	VSID                string `json:"vSID,omitempty"`
-	Type                string `json:"type,omitempty"`
+type gctsDeployOptions struct {
+	Username   string `json:"username,omitempty"`
+	Password   string `json:"password,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	Host       string `json:"host,omitempty"`
+	Client     string `json:"client,omitempty"`
+	Commit     string `json:"commit,omitempty"`
 }
 
-// GctsCreateRepositoryCommand Creates a Git repository on an ABAP system
-func GctsCreateRepositoryCommand() *cobra.Command {
-	const STEP_NAME = "gctsCreateRepository"
+// GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
+func GctsDeployCommand() *cobra.Command {
+	const STEP_NAME = "gctsDeploy"
 
-	metadata := gctsCreateRepositoryMetadata()
-	var stepConfig gctsCreateRepositoryOptions
+	metadata := gctsDeployMetadata()
+	var stepConfig gctsDeployOptions
 	var startTime time.Time
 
-	var createGctsCreateRepositoryCmd = &cobra.Command{
+	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Creates a Git repository on an ABAP system",
-		Long:  `Creates a local Git repository on an ABAP system if it does not already exist.`,
+		Short: "Pulls a commit from the remote Git repository to a local repository",
+		Long:  `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -70,26 +67,23 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			gctsCreateRepository(stepConfig, &telemetryData)
+			gctsDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addGctsCreateRepositoryFlags(createGctsCreateRepositoryCmd, &stepConfig)
-	return createGctsCreateRepositoryCmd
+	addGctsDeployFlags(createGctsDeployCmd, &stepConfig)
+	return createGctsDeployCmd
 }
 
-func addGctsCreateRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCreateRepositoryOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Username to authenticate to the ABAP system")
+func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repository on the ABAP system")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host adress, including the port. Please provide in the format '<protocol>://<host>:<port>'")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be adressed")
-	cmd.Flags().StringVar(&stepConfig.RemoteRepositoryURL, "remoteRepositoryURL", os.Getenv("PIPER_remoteRepositoryURL"), "URL of the corresponding remote repository")
-	cmd.Flags().StringVar(&stepConfig.Role, "role", os.Getenv("PIPER_role"), "Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes")
-	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository")
-	cmd.Flags().StringVar(&stepConfig.Type, "type", "GIT", "Type of the used source code management tool")
+	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the commit to be deployed")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -99,10 +93,10 @@ func addGctsCreateRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCreateRepo
 }
 
 // retrieve step metadata
-func gctsCreateRepositoryMetadata() config.StepData {
+func gctsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsCreateRepository",
+			Name:    "gctsDeploy",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
@@ -149,31 +143,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "remoteRepositoryURL",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "role",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "vSID",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "type",
+						Name:        "commit",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
