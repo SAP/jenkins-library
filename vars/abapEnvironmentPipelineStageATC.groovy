@@ -21,6 +21,6 @@ void call(Map parameters = [:]) {
 
     def atcResult = readFile file: "ATCResults.xml"
     if (atcResult != "") {
-        unstable('ATC Issues')
+        unstable('ATC Issues detected - setting build status to UNSTABLE')
     }
 }

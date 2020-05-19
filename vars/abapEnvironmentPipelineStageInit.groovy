@@ -15,6 +15,9 @@ import static com.sap.piper.Prerequisites.checkScript
  * This stage initializes the ABAP Environment Pipeline run
  */
 void call(Map parameters = [:]) {
+
+    deleteDir()
+
     def script = checkScript(this, parameters) ?: this
 
     // load default & individual configuration
