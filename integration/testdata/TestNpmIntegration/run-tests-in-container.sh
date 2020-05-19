@@ -3,17 +3,14 @@
 # Fail script if any command returns non-zero exit code
 set -e
 
-function finish() {
-    if [ -f registrySetInFlags/test-log.txt ]; then
+function show_error_log() {
+    if [ -f test-log.txt ]; then
         echo Test failed, log:
-        cat registrySetInFlags/test-log.txt
+        cat test-log.txt
     fi
-    if [ -f registrySetInNpmrc/test-log.txt ]; then
-        echo Test failed, log:
-        cat registrySetInNpmrc/test-log.txt
-    fi
+    popd
 }
-trap finish EXIT
+trap show_error_log ERR
 
 cd /test
 
