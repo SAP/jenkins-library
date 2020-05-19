@@ -31,7 +31,10 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(this, utils)
+        stepParameters.remove('piperGoUtils')
+
+        piperGoUtils.unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
