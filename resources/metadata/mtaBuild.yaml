@@ -58,6 +58,8 @@ spec:
         - STEPS
         mandatory: false
         default:
+        aliases:
+          - name: extension
       - name: platform
         type: string
         description: "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed."
