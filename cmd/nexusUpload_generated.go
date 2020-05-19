@@ -90,6 +90,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
