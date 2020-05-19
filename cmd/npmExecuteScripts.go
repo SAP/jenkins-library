@@ -80,7 +80,7 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 
 		// set in each directory to respect existing config in rc files
 		err = npm.SetNpmRegistries(
-			&npm.NpmRegistryOptions{
+			&npm.RegistryOptions{
 				DefaultNpmRegistry: options.DefaultNpmRegistry,
 				SapNpmRegistry:     options.SapNpmRegistry,
 			}, execRunner)

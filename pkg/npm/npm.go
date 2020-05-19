@@ -7,22 +7,20 @@ import (
 	"strings"
 )
 
-type NpmRegistryOptions struct {
+// RegistryOptions holds the configured urls for npm registries
+type RegistryOptions struct {
 	DefaultNpmRegistry string
 	SapNpmRegistry     string
 }
 
-type runner interface {
-	SetEnv(e []string)
-	Stdout(out io.Writer)
-}
-
 type execRunner interface {
-	runner
-	RunExecutable(e string, p ...string) error
+	Stdout(out io.Writer)
+	RunExecutable(executable string, params ...string) error
 }
 
-func SetNpmRegistries(options *NpmRegistryOptions, execRunner execRunner) error {
+// SetNpmRegistries configures the given npm registries.
+// CAUTION: This will change the npm configuration in the user's home directory.
+func SetNpmRegistries(options *RegistryOptions, execRunner execRunner) error {
 	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
 	configurableRegistries := []string{npmRegistry, sapRegistry}
@@ -36,7 +34,9 @@ func SetNpmRegistries(options *NpmRegistryOptions, execRunner execRunner) error 
 		}
 		preConfiguredRegistry := buffer.String()
 
-		log.Entry().Info("Discovered pre-configured npm registry " + preConfiguredRegistry)
+		if registryIsNonEmpty(preConfiguredRegistry) {
+			log.Entry().Info("Discovered pre-configured npm registry " + registry + " with value " + preConfiguredRegistry)
+		}
 
 		if registry == npmRegistry && options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
@@ -56,6 +56,10 @@ func SetNpmRegistries(options *NpmRegistryOptions, execRunner execRunner) error 
 	}
 
 	return nil
+}
+
+func registryIsNonEmpty(preConfiguredRegistry string) bool {
+	return !strings.HasPrefix(preConfiguredRegistry, "undefined") && len(preConfiguredRegistry) > 0
 }
 
 func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {

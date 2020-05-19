@@ -107,7 +107,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	err = npm.SetNpmRegistries(
-		&npm.NpmRegistryOptions{
+		&npm.RegistryOptions{
 			DefaultNpmRegistry: config.DefaultNpmRegistry,
 			SapNpmRegistry:     config.SapNpmRegistry,
 		}, e)
