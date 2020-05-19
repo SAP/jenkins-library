@@ -31,6 +31,9 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
+        def piperGoPath = parameters.piperGoPath ?: './piper'
+        stepParameters.remove('piperGoPath')
+
         def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(this, utils)
         stepParameters.remove('piperGoUtils')
 
@@ -55,7 +58,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Context Config: ${config}"
 
             dockerWrapper(script, config) {
