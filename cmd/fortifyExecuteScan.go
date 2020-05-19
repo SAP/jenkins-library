@@ -215,7 +215,7 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
 			}
 			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
-			log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].GUID, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID, reducedFilterSelectorSet.FilterBySet[1].EntityType, reducedFilterSelectorSet.FilterBySet[1].GUID)
+			logUnauditedIssuesUrl(config, projectVersionID, reducedFilterSelectorSet)
 		}
 
 		if strings.Contains(config.SpotAuditIssueGroups, group) {
@@ -308,6 +308,26 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	influx.fortify_data.fields.suppressed = fmt.Sprintf("%v", suppressedCount)
 
 	return result
+}
+
+func logUnauditedIssuesUrl(config fortifyExecuteScanOptions, projectVersionID int64, reducedFilterSelectorSet *models.IssueFilterSelectorSet) {
+	url := fmt.Sprintf("%v/html/ssc/index.jsp#!/version/%v", config.ServerURL, projectVersionID)
+	if len(reducedFilterSelectorSet.FilterBySet) > 0 && len(reducedFilterSelectorSet.FilterBySet[0].SelectorOptions) > 0 {
+		url += fmt.Sprintf("/fix?issueFilters=%v_%v:%v",
+			reducedFilterSelectorSet.FilterBySet[0].EntityType,
+			reducedFilterSelectorSet.FilterBySet[0].GUID,
+			reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
+	} else {
+		log.Entry().Debugf("no 'filter by set' array entries")
+	}
+	if len(reducedFilterSelectorSet.FilterBySet) > 1 {
+		url += fmt.Sprintf("&issueFilters=%v_%v:",
+			reducedFilterSelectorSet.FilterBySet[1].EntityType,
+			reducedFilterSelectorSet.FilterBySet[1].GUID)
+	} else {
+		log.Entry().Debugf("no second entry in 'filter by set' array")
+	}
+	log.Entry().Error(url)
 }
 
 func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion) ([]byte, error) {
