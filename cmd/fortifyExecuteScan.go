@@ -223,6 +223,9 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 			if len(reducedFilterSelectorSet.FilterBySet) < 1 {
 				log.Entry().Fatalf("Failed to create project version issue groups filter for filter set %v and selector %v for project version ID %v", filterSet, issueFilterSelectorSet, projectVersionID)
 			}
+			if len(reducedFilterSelectorSet.FilterBySet[0].SelectorOptions) < 1 {
+				log.Entry().Fatalf("Reduced filter set does not contain selector options %v", reducedFilterSelectorSet.FilterBySet[0])
+			}
 			filter := fmt.Sprintf("%v:%v", reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
 			fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersionID, filter, filterSet.GUID, sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Category"}, nil))
 			if err != nil {
