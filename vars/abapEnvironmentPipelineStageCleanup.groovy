@@ -15,7 +15,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
-    echoe "STAGE: ${stageName}"
+    echo "STAGE: ${stageName}"
     stageName = stageName.replace('Declarative: ', '')
     System.out.println(stageName)
     piperStageWrapper (script: script, stageName: stageName, stageLocking: false) {
