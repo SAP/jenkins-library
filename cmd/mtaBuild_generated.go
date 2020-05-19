@@ -173,7 +173,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "extension"}},
 					},
 					{
 						Name:        "platform",
