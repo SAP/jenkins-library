@@ -65,10 +65,6 @@ jobs:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
         run: |
           go test -tags=integration ./integration/...
-
-          pushd integration/testdata/TestNpmIntegration/
-          bash run-tests.sh
-          popd
       - name: update status
         if: success()
         run: |

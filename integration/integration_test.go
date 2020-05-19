@@ -123,26 +123,3 @@ func createTmpDir(prefix string) (string, error) {
 	}
 	return path, nil
 }
-
-func fillTempTestDirectory(tempDir string, testdataPath string, piperCommandOptions string) (error){
-	defer os.RemoveAll(tempDir) // clean up
-
-	err := copyDir(testdataPath, tempDir)
-	if err != nil {
-		return err
-	}
-
-	//workaround to use test script util it is possible to set workdir for Exec call
-	testScript := fmt.Sprintf("#!/bin/sh\ncd /test\n/piperbin/piper %s >test-log.txt 2>&1", piperCommandOptions)
-	err = ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
-	return err
-}
-
-func readCommandOutput(tempDir string) (string,error){
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
-	if err != nil {
-		return "", err
-	}
-	output := string(content)
-	return output, nil
-}
