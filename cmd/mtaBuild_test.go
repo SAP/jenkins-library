@@ -163,7 +163,7 @@ func TestMarBuild(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName.mtar"}
 
 		cpe.mtarFilePath = ""
 
@@ -210,7 +210,7 @@ func TestMarBuild(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName.mtar"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
@@ -232,7 +232,7 @@ func TestMarBuild(t *testing.T) {
 
 		cpe.mtarFilePath = ""
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
