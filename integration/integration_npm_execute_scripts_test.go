@@ -27,7 +27,7 @@ func TestRegistrySetInFlags(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata","TestNpmIntegration", "registrySetInFlags"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestNpmIntegration", "registrySetInFlags"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
@@ -78,7 +78,7 @@ func TestRegistrySetInNpmrc(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata","TestNpmIntegration", "registrySetInNpmrc"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestNpmIntegration", "registrySetInNpmrc"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
@@ -129,7 +129,7 @@ func TestRegistryWithTwoModules(t *testing.T) {
 	defer os.RemoveAll(tempDir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata","TestNpmIntegration", "registryWithTwoModules"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestNpmIntegration", "registryWithTwoModules"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
