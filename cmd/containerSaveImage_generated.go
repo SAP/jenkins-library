@@ -67,6 +67,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			containerSaveImage(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
