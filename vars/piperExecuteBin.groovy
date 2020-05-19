@@ -31,7 +31,13 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
+        def piperGoPath = parameters.piperGoPath ?: './piper'
+        stepParameters.remove('piperGoPath')
+
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(this, utils)
+        stepParameters.remove('piperGoUtils')
+
+        piperGoUtils.unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
@@ -52,13 +58,13 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Context Config: ${config}"
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
