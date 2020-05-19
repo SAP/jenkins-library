@@ -4,6 +4,6 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "ci-build": "npm config get @sap:registry | grep --quiet https://example.com"
+        "ci-build": "npm config get @sap:registry"
     }
 }
