@@ -216,6 +216,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 				}
 			}
 		}
+		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
 		containerFilters = append(containerFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
@@ -225,6 +226,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 	if len(containerFilters) > 0 {
 		filters.All = append(filters.All, containerFilters...)
+		filters.General = append(filters.General, containerFilters...)
 		filters.Steps = append(filters.Steps, containerFilters...)
 		filters.Stages = append(filters.Stages, containerFilters...)
 		filters.Parameters = append(filters.Parameters, containerFilters...)
