@@ -16,9 +16,9 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
 
+    def script = checkScript(this, parameters) ?: this
     deleteDir()
     checkout scm
-    def script = checkScript(this, parameters) ?: this
 
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)

@@ -155,8 +155,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             stepsCalled.add('abapEnvironmentPipelineStageATC')
         })
 
-        helper.registerAllowedMethod('abapEnvironmentPipelineStageCleanup', [Map.class], {m ->
-            stepsCalled.add('abapEnvironmentPipelineStageCleanup')
+        helper.registerAllowedMethod('abapEnvironmentPipelineStagePost', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStagePost')
         })
 
         nullScript.prepareDefaultValues(script: nullScript)
@@ -176,7 +176,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
-            'abapEnvironmentPipelineStageCleanup'
+            'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStagePrepareSystem')))
     }
@@ -192,7 +192,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems(
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStagePrepareSystem',
-            'abapEnvironmentPipelineStageCleanup'
+            'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageCloneRepositories')))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageATC')))
@@ -213,7 +213,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
-            'abapEnvironmentPipelineStageCleanup'
+            'abapEnvironmentPipelineStagePost'
         ))
     }
 }

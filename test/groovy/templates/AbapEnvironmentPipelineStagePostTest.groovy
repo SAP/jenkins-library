@@ -13,7 +13,7 @@ import util.Rules
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class AbapEnvironmentPipelineStageCleanupTest extends BasePiperTest {
+class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -41,7 +41,7 @@ class AbapEnvironmentPipelineStageCleanupTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
-        jsr.step.abapEnvironmentPipelineStageCleanup(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript)
 
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
@@ -52,7 +52,7 @@ class AbapEnvironmentPipelineStageCleanupTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': false
         ]
-        jsr.step.abapEnvironmentPipelineStageCleanup(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript)
 
         assertThat(stepsCalled, not(hasItem('cloudFoundryDeleteService')))
     }
