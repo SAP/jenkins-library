@@ -228,15 +228,15 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 		}
 
 		if len(mtaID) == 0 {
-			return "", fmt.Errorf("Invalid mtar name. Was empty")
+			return "", fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID
+		mtarName = mtaID + ".mtar"
 	}
 
-	return mtarName + ".mtar", nil
+	return mtarName, nil
 
 }
 
