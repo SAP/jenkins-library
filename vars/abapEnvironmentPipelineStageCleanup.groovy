@@ -17,6 +17,8 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
     echo "STAGE: ${stageName}"
     stageName = stageName.replace('Declarative: ', '')
+    stageName = stageName.replace(' Actions', '')
+    echo "STAGE: ${stageName}"
     System.out.println(stageName)
     piperStageWrapper (script: script, stageName: stageName, stageLocking: false) {
         if(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
