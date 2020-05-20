@@ -99,7 +99,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-        default:
+        default: https://npm.sap.com
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
