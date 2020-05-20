@@ -39,6 +39,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         binding.setVariable('none', {})
 
         helper.registerAllowedMethod('options', [Closure.class], null)
+        helper.registerAllowedMethod('skipDefaultCheckout', [], {skipDefaultCheckout = true})
 
         helper.registerAllowedMethod('stages', [Closure.class], null)
 
