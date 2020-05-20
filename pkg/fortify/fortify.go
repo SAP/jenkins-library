@@ -53,6 +53,7 @@ type System interface {
 	GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error)
 	GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error)
 	GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error)
+	GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector
 	GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error)
 	ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet
 	GetIssueStatisticsOfProjectVersion(id int64) ([]*models.IssueStatistics, error)
@@ -499,6 +500,7 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	if issueFilterSelectorSet.GroupBySet != nil {
 		for _, group := range issueFilterSelectorSet.GroupBySet {
 			if piperutils.ContainsString(names, *group.DisplayName) {
+				log.Entry().Debugf("adding new grouping '%v' to reduced list", *group.DisplayName)
 				groupingList = append(groupingList, group)
 			}
 		}
@@ -507,20 +509,38 @@ func (sys *SystemInstance) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *
 	if issueFilterSelectorSet.FilterBySet != nil {
 		for _, filter := range issueFilterSelectorSet.FilterBySet {
 			if piperutils.ContainsString(names, filter.DisplayName) {
-				if options != nil && len(options) > 0 {
-					newOptions := []*models.SelectorOption{}
-					for _, option := range filter.SelectorOptions {
-						if piperutils.ContainsString(options, option.DisplayName) {
-							newOptions = append(newOptions, option)
-						}
+				newFilter := &models.IssueFilterSelector{}
+				newFilter.DisplayName = filter.DisplayName
+				newFilter.Description = filter.Description
+				newFilter.EntityType = filter.EntityType
+				newFilter.FilterSelectorType = filter.FilterSelectorType
+				newFilter.GUID = filter.GUID
+				newFilter.Value = filter.Value
+				newFilter.SelectorOptions = []*models.SelectorOption{}
+				for _, option := range filter.SelectorOptions {
+					if (nil != options && piperutils.ContainsString(options, option.DisplayName)) || options == nil || len(options) == 0 {
+						log.Entry().Debugf("adding selector option '%v' to list for filter selector '%v'", option.DisplayName, newFilter.DisplayName)
+						newFilter.SelectorOptions = append(newFilter.SelectorOptions, option)
 					}
-					filter.SelectorOptions = newOptions
 				}
-				filterList = append(filterList, filter)
+				log.Entry().Debugf("adding new filter '%v' to reduced list with selector options '%v'", newFilter.DisplayName, newFilter.SelectorOptions)
+				filterList = append(filterList, newFilter)
 			}
 		}
 	}
 	return &models.IssueFilterSelectorSet{GroupBySet: groupingList, FilterBySet: filterList}
+}
+
+//GetFilterSetByDisplayName returns the set identified by the provided name or nil
+func (sys *SystemInstance) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
+	if issueFilterSelectorSet.FilterBySet != nil {
+		for _, filter := range issueFilterSelectorSet.FilterBySet {
+			if filter.DisplayName == name {
+				return filter
+			}
+		}
+	}
+	return nil
 }
 
 func (sys *SystemInstance) getIssuesOfProjectVersion(id int64, filter, filterset, groupingtype string) ([]*models.ProjectVersionIssueGroup, error) {

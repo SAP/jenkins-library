@@ -44,7 +44,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	c.Stderr(log.Entry().Writer())
 	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
+		log.Entry().WithError(err).Fatalf("Fortify scan and check failed: %w", err)
 	}
 }
 
@@ -58,6 +58,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
+	log.Entry().Debugf("determined project coordinates %v", gav)
 	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
@@ -161,6 +162,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID)
 	}
+	log.Entry().Debugf("initial filter selector set: %v", issueFilterSelectorSet)
 	numberOfViolations := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 	numberOfViolations += analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 
@@ -202,6 +204,7 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 	groupTotalMinusAuditedDelta := total - audited
 	if groupTotalMinusAuditedDelta > 0 {
 		reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder", "Analysis"}, []string{group})
+		log.Entry().Debugf("reduced filters resulted in %v", reducedFilterSelectorSet)
 		auditStatus[group] = fmt.Sprintf("%v total : %v audited", total, audited)
 
 		if strings.Contains(config.MustAuditIssueGroups, group) {
@@ -215,29 +218,27 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
 			}
 			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
-			logUnauditedIssuesUrl(config, projectVersionID, reducedFilterSelectorSet)
+			logUnauditedIssuesURL(config, projectVersionID, reducedFilterSelectorSet)
 		}
 
 		if strings.Contains(config.SpotAuditIssueGroups, group) {
 			log.Entry().Infof("Analyzing %v", config.SpotAuditIssueGroups)
-			if len(reducedFilterSelectorSet.FilterBySet) < 1 {
-				log.Entry().Fatalf("Failed to create project version issue groups filter for filter set %v and selector %v for project version ID %v", filterSet, issueFilterSelectorSet, projectVersionID)
+			filterSelector := sys.GetFilterSetByDisplayName(reducedFilterSelectorSet, "Folder")
+			if filterSelector == nil {
+				log.Entry().Fatal("folder selector not found")
 			}
-			if len(reducedFilterSelectorSet.FilterBySet[0].SelectorOptions) < 1 {
-				log.Entry().Fatalf("Reduced filter set does not contain selector options %v", reducedFilterSelectorSet.FilterBySet[0])
-			}
-			filter := fmt.Sprintf("%v:%v", reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
+			filter := fmt.Sprintf("%v:%v", filterSelector.EntityType, filterSelector.SelectorOptions[0].GUID)
 			fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersionID, filter, filterSet.GUID, sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Category"}, nil))
 			if err != nil {
 				log.Entry().WithError(err).Fatalf("Failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v", filter, filterSet, issueFilterSelectorSet, projectVersionID)
 			}
-			totalMinusAuditedDelta += getSpotIssueCount(config, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx, auditStatus)
+			totalMinusAuditedDelta += getSpotIssueCount(config, sys, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx, auditStatus)
 		}
 	}
 	return totalMinusAuditedDelta
 }
 
-func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
+func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spotCheckCategories []*models.ProjectVersionIssueGroup, projectVersionID int64, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) int {
 	overallDelta := 0
 	overallIssues := 0
 	overallIssuesAudited := 0
@@ -258,9 +259,11 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, spotCheckCategories []*
 				currentDelta = total - audited
 			}
 			if currentDelta > 0 {
+				filterSelectorFolder := sys.GetFilterSetByDisplayName(issueFilterSelectorSet, "Folder")
+				filterSelectorAnalysis := sys.GetFilterSetByDisplayName(issueFilterSelectorSet, "Analysis")
 				overallDelta += currentDelta
 				log.Entry().Errorf("[projectVersionId %v]: %v unaudited spot check issues detected in group %v", projectVersionID, currentDelta, group)
-				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, issueFilterSelectorSet.FilterBySet[0].EntityType, issueFilterSelectorSet.FilterBySet[0].GUID, issueFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID, issueFilterSelectorSet.FilterBySet[1].EntityType, issueFilterSelectorSet.FilterBySet[1].GUID)
+				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, filterSelectorFolder.EntityType, filterSelectorFolder.GUID, filterSelectorFolder.SelectorOptions[0].GUID, filterSelectorAnalysis.EntityType, filterSelectorAnalysis.GUID)
 				flagOutput = checkString
 			}
 		}
@@ -316,12 +319,12 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	return result
 }
 
-func logUnauditedIssuesUrl(config fortifyExecuteScanOptions, projectVersionID int64, reducedFilterSelectorSet *models.IssueFilterSelectorSet) {
+func logUnauditedIssuesURL(config fortifyExecuteScanOptions, projectVersionID int64, reducedFilterSelectorSet *models.IssueFilterSelectorSet) {
 	url := fmt.Sprintf("%v/html/ssc/index.jsp#!/version/%v", config.ServerURL, projectVersionID)
 	if len(reducedFilterSelectorSet.FilterBySet) > 0 && len(reducedFilterSelectorSet.FilterBySet[0].SelectorOptions) > 0 {
 		url += fmt.Sprintf("/fix?issueFilters=%v_%v:%v",
 			reducedFilterSelectorSet.FilterBySet[0].EntityType,
-			reducedFilterSelectorSet.FilterBySet[0].GUID,
+			reducedFilterSelectorSet.FilterBySet[0].Value,
 			reducedFilterSelectorSet.FilterBySet[0].SelectorOptions[0].GUID)
 	} else {
 		log.Entry().Debugf("no 'filter by set' array entries")
@@ -329,7 +332,7 @@ func logUnauditedIssuesUrl(config fortifyExecuteScanOptions, projectVersionID in
 	if len(reducedFilterSelectorSet.FilterBySet) > 1 {
 		url += fmt.Sprintf("&issueFilters=%v_%v:",
 			reducedFilterSelectorSet.FilterBySet[1].EntityType,
-			reducedFilterSelectorSet.FilterBySet[1].GUID)
+			reducedFilterSelectorSet.FilterBySet[1].Value)
 	} else {
 		log.Entry().Debugf("no second entry in 'filter by set' array")
 	}
