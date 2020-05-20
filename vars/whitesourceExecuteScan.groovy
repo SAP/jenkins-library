@@ -222,7 +222,7 @@ import static com.sap.piper.Prerequisites.checkScript
  *     Also not all environments have been thoroughly tested already therefore you might need to tweak around with the default containers used or
  *     create your own ones to adequately support your scenario. To do so please modify `dockerImage` and `dockerWorkspace` parameters.
  *     The step expects an environment containing the programming language related compiler/interpreter as well as the related build tool. For a list
- *     of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
+ *     of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/804814917/Unified+Agent+Configuration+File+and+Parameters).
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
