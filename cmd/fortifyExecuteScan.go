@@ -44,7 +44,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	c.Stderr(log.Entry().Writer())
 	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Fortify scan and check failed: %w", err)
+		log.Entry().WithError(err).Fatalf("Fortify scan and check failed")
 	}
 }
 
