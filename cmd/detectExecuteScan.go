@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"strings"
+
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -26,6 +27,7 @@ func runDetect(config detectExecuteScanOptions, command shellRunner) {
 	script := strings.Join(args, " ")
 
 	command.SetDir(".")
+	command.SetEnv([]string{"BLACKDUCK_SKIP_PHONE_HOME=true"})
 
 	err := command.RunShell("/bin/bash", script)
 	if err != nil {
