@@ -39,7 +39,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
 	c := command.Command{}
-	// reroute command output to loging framework
+	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
