@@ -87,6 +87,16 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		}
 	}
 
+	if config.Owner == "" {
+		return fmt.Errorf("GitHub organization was not specified via parameter 'owner' and it could not be retried from resources")
+	}
+	if config.Repository == "" {
+		return fmt.Errorf("GitHub repository was not specified via parameter 'repository' and it could not be retried from resources")
+	}
+	if config.CommitID == "" {
+		return fmt.Errorf("commit ID was not specified via parameter 'commitID' and it could not be retried from resources")
+	}
+
 	log.Entry().Debugf("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	buildLabel := fmt.Sprintf("%v/repos/%v/%v/commits/%v", config.GithubAPIURL, config.Owner, config.Repository, config.CommitID)
 
