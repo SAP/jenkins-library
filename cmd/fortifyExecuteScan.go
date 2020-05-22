@@ -398,7 +398,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	var relatedUpload *models.Artifact
 	for relatedUpload == nil {
 		artifacts, err := sys.GetArtifactsOfProjectVersion(projectVersionID)
-		log.Entry().Debugf("Recieved %v artifacts for project version ID %v", len(artifacts), projectVersionID)
+		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Failed to fetch artifacts of project version ID %v", projectVersionID)
 		}
