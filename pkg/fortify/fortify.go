@@ -39,7 +39,9 @@ import (
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)
-	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string, projectVersionId int64) (*models.ProjectVersion, error)
+	GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error)
+	UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error)
+	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error)
 	GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error)
 	SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error)
 	CreateProjectVersionIfNotExist(projectName, projectVersionName, description string) (*models.ProjectVersion, error)
@@ -169,9 +171,34 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 	return projectVersion.Project, nil
 }
 
+// GetProjectVersionDetailsByVersionID returns the project-version identified by the provided projectVersionID
+func (sys *SystemInstance) GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error) {
+	params := &project_version_controller.ReadProjectVersionParams{ID: projectVersionID}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.ReadProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// UpdateProjectVersionDetails updates the project version identified by id with the data stored in project.
+func (sys *SystemInstance) UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error) {
+	params := &project_version_controller.UpdateProjectVersionParams{
+		ID:       id,
+		Resource: projectVersion,
+	}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
 // projectName parameter is only used if autoCreate=true
-func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string, projectVersionId int64) (*models.ProjectVersion, error) {
+func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	nameParam := fmt.Sprintf("name=%v", versionName)
 	fullText := true
 	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam, Fulltextsearch: &fullText}
@@ -181,10 +208,8 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 		return nil, err
 	}
 	for _, projectVersion := range result.GetPayload().Data {
+		log.Entry().Debugf("Found project version with name '%v' and ID '%v'", *projectVersion.Name, projectVersion.ID)
 		if *projectVersion.Name == versionName {
-			if projectVersionId != 0 && projectVersion.ID != projectVersionId {
-				continue
-			}
 			return projectVersion, nil
 		}
 	}
@@ -246,7 +271,7 @@ func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVe
 
 // LookupOrCreateProjectVersionDetailsForPullRequest looks up a project version for pull requests or creates it from scratch
 func (sys *SystemInstance) LookupOrCreateProjectVersionDetailsForPullRequest(projectID int64, masterProjectVersion *models.ProjectVersion, pullRequestName string) (*models.ProjectVersion, error) {
-	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName, false, "", 0)
+	projectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(projectID, pullRequestName, false, "")
 	if nil != projectVersion {
 		return projectVersion, nil
 	}
@@ -439,7 +464,7 @@ func (sys *SystemInstance) GetArtifactsOfProjectVersion(id int64) ([]*models.Art
 // MergeProjectVersionStateOfPRIntoMaster merges the PR project version's fpr result file into the master project version
 func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, uploadEndpoint string, masterProjectID, masterProjectVersionID int64, pullRequestName string) error {
 	log.Entry().Debugf("Looking up project version with name '%v' to merge audit status into master version", pullRequestName)
-	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName, false, "", 0)
+	prProjectVersion, _ := sys.GetProjectVersionDetailsByProjectIDAndVersionName(masterProjectID, pullRequestName, false, "")
 	if nil != prProjectVersion {
 		log.Entry().Debugf("Found project version with ID '%v', starting transfer", prProjectVersion.ID)
 		data, err := sys.DownloadResultFile(downloadEndpoint, prProjectVersion.ID)
