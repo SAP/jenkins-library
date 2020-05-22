@@ -48,7 +48,7 @@ type fortifyExecuteScanOptions struct {
 	ConsiderSuspicious              bool   `json:"considerSuspicious,omitempty"`
 	FprUploadEndpoint               string `json:"fprUploadEndpoint,omitempty"`
 	ProjectName                     string `json:"projectName,omitempty"`
-	ProjectVersionID                int    `json:"projectVersionId,omitempty"`
+	ProjectVersionID                string `json:"projectVersionId,omitempty"`
 	PythonIncludes                  string `json:"pythonIncludes,omitempty"`
 	Reporting                       bool   `json:"reporting,omitempty"`
 	ServerURL                       string `json:"serverUrl,omitempty"`
@@ -215,7 +215,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
-	cmd.Flags().IntVar(&stepConfig.ProjectVersionID, "projectVersionId", 0, "")
+	cmd.Flags().StringVar(&stepConfig.ProjectVersionID, "projectVersionId", os.Getenv("PIPER_projectVersionId"), "ID of your project in Fortify")
 	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `buildTool: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
@@ -505,7 +505,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name:        "projectVersionId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

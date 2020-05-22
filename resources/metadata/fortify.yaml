@@ -317,7 +317,8 @@ spec:
       - STEPS
       default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
     - name: projectVersionId
-      type: int
+      type: string
+      description: ID of your project in Fortify
       scope:
         - PARAMETERS
         - STAGES
