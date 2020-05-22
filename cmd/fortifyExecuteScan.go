@@ -76,7 +76,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 			return fmt.Errorf("failed to load project %v: %w", fortifyProjectName, err)
 		}
 		if *projectVersion.Name != fortifyProjectVersion {
-			log.Entry().Debugf("Updating project name with current version")
+			log.Entry().Debugf("Updating project-version name with current version '%v'", fortifyProjectVersion)
 			projectVersion.Name = &fortifyProjectVersion
 			projectVersion, err = sys.UpdateProjectVersionDetails(projectVersion.ID, projectVersion)
 			if err != nil {

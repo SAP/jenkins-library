@@ -188,6 +188,7 @@ func (sys *SystemInstance) UpdateProjectVersionDetails(id int64, projectVersion 
 		ID:       id,
 		Resource: projectVersion,
 	}
+	projectVersion.ID = 0
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
 	if err != nil {
