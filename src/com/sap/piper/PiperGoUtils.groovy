@@ -2,6 +2,8 @@ package com.sap.piper
 
 class PiperGoUtils implements Serializable {
 
+    private static piperExecutable = 'piper'
+
     private static Script steps
     private static Utils utils
 
@@ -58,8 +60,7 @@ class PiperGoUtils implements Serializable {
 
             }
         }
-
-        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', 'piper')
+        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', piperExecutable)
     }
 
     List getLibrariesInfo() {
@@ -69,10 +70,10 @@ class PiperGoUtils implements Serializable {
     private boolean downloadGoBinary(url) {
 
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ./piper '${url}'")
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
 
             if (httpStatus == '200') {
-                steps.sh(script: 'chmod +x ./piper')
+                steps.sh(script: "chmod +x ${piperExecutable}")
                 return true
             }
         } catch(err) {
