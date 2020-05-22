@@ -60,6 +60,8 @@ class PiperGoUtils implements Serializable {
 
             }
         }
+        def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
+        steps.echo "Piper go binary version: ${piperVersion}"
         utils.stashWithMessage('piper-bin', 'failed to stash piper binary', piperExecutable)
     }
 

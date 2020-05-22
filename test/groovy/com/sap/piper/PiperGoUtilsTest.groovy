@@ -65,9 +65,10 @@ class PiperGoUtilsTest extends BasePiperTest {
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         piperGoUtils.unstashPiperBin()
-        assertThat(shellCallRule.shell.size(), is(2))
+        assertThat(shellCallRule.shell.size(), is(3))
         assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
         assertThat(shellCallRule.shell[1].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[2].toString(), is('./piper version'))
     }
 
     @Test
@@ -84,9 +85,10 @@ class PiperGoUtilsTest extends BasePiperTest {
         shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/testTag/piper\'', '200')
 
         piperGoUtils.unstashPiperBin()
-        assertThat(shellCallRule.shell.size(), is(2))
+        assertThat(shellCallRule.shell.size(), is(3))
         assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/testTag/piper\''))
         assertThat(shellCallRule.shell[1].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[2].toString(), is('./piper version'))
     }
 
     @Test
@@ -105,10 +107,11 @@ class PiperGoUtilsTest extends BasePiperTest {
         })
 
         piperGoUtils.unstashPiperBin()
-        assertThat(shellCallRule.shell.size(), is(3))
+        assertThat(shellCallRule.shell.size(), is(4))
         assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\''))
         assertThat(shellCallRule.shell[1].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
         assertThat(shellCallRule.shell[2].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[3].toString(), is ('./piper version'))
     }
 
     @Test
