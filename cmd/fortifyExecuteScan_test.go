@@ -243,14 +243,14 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 	auditStatus := map[string]string{}
 	selectorSet := models.IssueFilterSelectorSet{
 		FilterBySet: []*models.IssueFilterSelector{
-			&models.IssueFilterSelector{
+			{
 				GUID:        selectorGUID,
 				DisplayName: selectorName,
 				EntityType:  selectorEntityType,
 			},
 		},
 		GroupBySet: []*models.IssueSelector{
-			&models.IssueSelector{
+			{
 				GUID:        &selectorGUID,
 				DisplayName: &selectorName,
 				EntityType:  &selectorEntityType,
@@ -274,17 +274,17 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	auditStatus := map[string]string{}
 	selectorSet := models.IssueFilterSelectorSet{
 		FilterBySet: []*models.IssueFilterSelector{
-			&models.IssueFilterSelector{
+			{
 				GUID:        "1",
 				DisplayName: "Folder",
 				EntityType:  "ET1",
 				SelectorOptions: []*models.SelectorOption{
-					&models.SelectorOption{
+					{
 						GUID: "abcd",
 					},
 				},
 			},
-			&models.IssueFilterSelector{
+			{
 				GUID:        "2",
 				DisplayName: "Category",
 				EntityType:  "ET2",
