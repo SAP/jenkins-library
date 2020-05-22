@@ -58,7 +58,7 @@ class PiperGoUtilsTest extends BasePiperTest {
     void testUnstashPiperBinMaster() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'master']]}
+        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'master']] }
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
@@ -80,7 +80,7 @@ class PiperGoUtilsTest extends BasePiperTest {
     void testUnstashPiperBinNonMaster() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'testTag']]}
+        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'testTag']] }
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
@@ -102,7 +102,7 @@ class PiperGoUtilsTest extends BasePiperTest {
     void testUnstashPiperBinFallback() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
@@ -127,7 +127,7 @@ class PiperGoUtilsTest extends BasePiperTest {
     @Test
     void testDownloadFailedWithErrorCode() {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
 
         httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper", {
             throw new AbortException("Fail: the returned code 404 is not in the accepted range");
@@ -147,9 +147,9 @@ class PiperGoUtilsTest extends BasePiperTest {
     @Test
     void testDownloadFailedWithError() {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
 
-        helper.registerAllowedMethod('sh', [Map.class], {m -> throw new AbortException('download failed')})
+        helper.registerAllowedMethod('sh', [Map.class], { m -> throw new AbortException('download failed') })
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
