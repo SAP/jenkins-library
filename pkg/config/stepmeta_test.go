@@ -412,13 +412,62 @@ func TestGetContextDefaults(t *testing.T) {
 		//assert.Equal(t, []interface{}{"mn3:mp3", "mn4:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
 	})
 
+	t.Run("Container conditions", func(t *testing.T) {
+		metadata := StepData{
+			Spec: StepSpec{
+				Inputs: StepInputs{
+					Parameters: []StepParameters{
+						{Name: "testParameter", Default: "test"},
+						{Name: "testConditionParameter", Default: "testConditionMet"},
+					},
+				},
+				Containers: []Container{
+					{
+						Image: "testImage1:tag",
+						Conditions: []Condition{
+							{
+								ConditionRef: "strings-equal",
+								Params:       []Param{{Name: "testConditionParameter", Value: "testConditionNotMet"}},
+							},
+						},
+					},
+					{
+						Image: "testImage2:tag",
+						Conditions: []Condition{
+							{
+								ConditionRef: "strings-equal",
+								Params:       []Param{{Name: "testConditionParameter", Value: "testConditionMet"}},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		cd, err := metadata.GetContextDefaults("testStep")
+
+		assert.NoError(t, err)
+
+		var d PipelineDefaults
+		d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+		assert.Equal(t, "testConditionMet", d.Defaults[0].Steps["testStep"]["testConditionParameter"])
+		assert.Nil(t, d.Defaults[0].Steps["testStep"]["dockerImage"])
+
+		metParameter := d.Defaults[0].Steps["testStep"]["testConditionMet"].(map[string]interface{})
+		assert.Equal(t, "testImage2:tag", metParameter["dockerImage"])
+
+		notMetParameter := d.Defaults[0].Steps["testStep"]["testConditionNotMet"].(map[string]interface{})
+		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
+	})
+
 	t.Run("Negative case", func(t *testing.T) {
 		metadataErr := []StepData{
-			StepData{},
-			StepData{
+			{},
+			{
 				Spec: StepSpec{},
 			},
-			StepData{
+			{
 				Spec: StepSpec{
 					Containers: []Container{},
 					Sidecars:   []Container{},
