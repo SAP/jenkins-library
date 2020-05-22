@@ -61,7 +61,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             Map config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
             echo "Context Config: ${config}"
 
-            dockerWrapper(script, config) {
+            dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
                         sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
@@ -101,8 +101,9 @@ static String getCustomConfigArg(def script) {
     return ''
 }
 
-void dockerWrapper(script, config, body) {
+void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
         dockerExecute(
             script: script,
             dockerImage: config.dockerImage,
