@@ -48,6 +48,7 @@ type fortifyExecuteScanOptions struct {
 	ConsiderSuspicious              bool   `json:"considerSuspicious,omitempty"`
 	FprUploadEndpoint               string `json:"fprUploadEndpoint,omitempty"`
 	ProjectName                     string `json:"projectName,omitempty"`
+	ProjectVersionID                int    `json:"projectVersionId,omitempty"`
 	PythonIncludes                  string `json:"pythonIncludes,omitempty"`
 	Reporting                       bool   `json:"reporting,omitempty"`
 	ServerURL                       string `json:"serverUrl,omitempty"`
@@ -195,8 +196,8 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `buildTool: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`: `./setup.py`.")
-	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifing artifacts throughout the scan.")
-	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifing pull request merges throughout the scan.")
+	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifying artifacts throughout the scan.")
+	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifying pull request merges throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
@@ -214,6 +215,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
+	cmd.Flags().IntVar(&stepConfig.ProjectVersionID, "projectVersionId", 0, "")
 	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `buildTool: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
@@ -498,6 +500,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
+					},
+					{
+						Name:        "projectVersionId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "pythonIncludes",

@@ -316,6 +316,12 @@ spec:
       - STAGES
       - STEPS
       default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
+    - name: projectVersionId
+      type: int
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: pythonIncludes
       type: string
       description: 'The includes pattern used in `buildTool: ''pip''` for including

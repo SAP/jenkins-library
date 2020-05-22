@@ -64,7 +64,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
 	}
-	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
+	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName, config.ProjectVersionID)
 	if err != nil {
 		return fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
