@@ -30,7 +30,7 @@ static void assertPluginIsActive(String pluginName) {
 
     if (!JenkinsUtils.isPluginActive(pluginName)) {
         String exception = """[ERROR] Plugin '${pluginName}' is not installed or not active.
-            | Please update the Jenkins image to the latest available version. 
+            | Please update the Jenkins image to the latest available version.
             | For more information how to update the image please visit:
             | https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md#update-image
             | """.stripMargin().stripIndent()
