@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v31/github"
+	"github.com/google/go-github/v28/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
