@@ -30,7 +30,7 @@ void call(Map parameters = [:]) {
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
-            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
+            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/abapStashSettings.yml')
             .use()
 
         Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))

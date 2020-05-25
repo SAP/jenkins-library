@@ -1,0 +1,16 @@
+Init:
+  unstash: []
+  stashes: []
+Prepare System:
+  unstash: []
+  stashes: []
+ATC:
+  unstash: []
+  stashes: []
+Clone Repositories:
+  unstash: []
+  stashes: []
+Post:
+  unstash: []
+  stashes: []
+
