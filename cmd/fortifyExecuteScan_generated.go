@@ -175,6 +175,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			fortifyExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
