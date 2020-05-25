@@ -15,12 +15,13 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
-    deleteDir()
-    checkout scm
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName) {
+
+        deleteDir()
+        checkout scm
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
