@@ -30,9 +30,12 @@ void call(Map parameters = [:]) {
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
+            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
             .use()
 
-        initStashConfiguration(script, config)
+        Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
+        if (config.verbose) echo "Stash config: ${stashConfiguration}"
+        script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 
         script.commonPipelineEnvironment.configuration.runStage = [:]
         script.commonPipelineEnvironment.configuration.runStep = [:]
