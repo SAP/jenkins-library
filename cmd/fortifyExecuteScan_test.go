@@ -317,7 +317,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 				EntityType:  "ET1",
 				SelectorOptions: []*models.SelectorOption{
 					{
-						GUID: "abcd",
+						Value: "abcd",
 					},
 				},
 			},
@@ -327,7 +327,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 				EntityType:  "ET2",
 				SelectorOptions: []*models.SelectorOption{
 					{
-						GUID: "abcd",
+						Value: "abcd",
 					},
 				},
 			},
@@ -337,7 +337,7 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 				EntityType:  "ET3",
 				SelectorOptions: []*models.SelectorOption{
 					{
-						GUID: "abcd",
+						Value: "abcd",
 					},
 				},
 			},
