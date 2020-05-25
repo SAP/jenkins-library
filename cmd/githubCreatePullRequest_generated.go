@@ -75,6 +75,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubCreatePullRequest(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

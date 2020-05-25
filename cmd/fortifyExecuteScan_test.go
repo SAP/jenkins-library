@@ -84,6 +84,16 @@ func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string
 func (f *fortifyMock) GetIssueFilterSelectorOfProjectVersionByName(id int64, names []string, options []string) (*models.IssueFilterSelectorSet, error) {
 	return &models.IssueFilterSelectorSet{}, nil
 }
+func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.IssueFilterSelectorSet, name string) *models.IssueFilterSelector {
+	if issueFilterSelectorSet.FilterBySet != nil {
+		for _, filter := range issueFilterSelectorSet.FilterBySet {
+			if filter.DisplayName == name {
+				return filter
+			}
+		}
+	}
+	return nil
+}
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
 	if filter == "ET1:abcd" {
 		group := "HTTP Verb tampering"
@@ -231,6 +241,33 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
+func TestParametersAreValidated(t *testing.T) {
+	type parameterTestData struct {
+		nameOfRun     string
+		config        fortifyExecuteScanOptions
+		expectedError string
+	}
+
+	testData := []parameterTestData{
+		{
+			nameOfRun:     "all parameters empty",
+			config:        fortifyExecuteScanOptions{},
+			expectedError: "unable to get artifact from descriptor : build tool '' not supported",
+		},
+	}
+
+	for _, data := range testData {
+		t.Run(data.nameOfRun, func(t *testing.T) {
+			ff := fortifyMock{}
+			runner := execRunnerMock{}
+			influx := fortifyExecuteScanInflux{}
+			auditStatus := map[string]string{}
+			err := runFortifyScan(data.config, &ff, &runner, nil, &influx, auditStatus)
+			assert.EqualError(t, err, data.expectedError)
+		})
+	}
+}
+
 func TestAnalyseSuspiciousExploitable(t *testing.T) {
 	config := fortifyExecuteScanOptions{SpotCheckMinimum: 4, MustAuditIssueGroups: "Audit All, Corporate Security Requirements", SpotAuditIssueGroups: "Spot Checks of Each Category"}
 	ff := fortifyMock{}
@@ -243,14 +280,14 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 	auditStatus := map[string]string{}
 	selectorSet := models.IssueFilterSelectorSet{
 		FilterBySet: []*models.IssueFilterSelector{
-			&models.IssueFilterSelector{
+			{
 				GUID:        selectorGUID,
 				DisplayName: selectorName,
 				EntityType:  selectorEntityType,
 			},
 		},
 		GroupBySet: []*models.IssueSelector{
-			&models.IssueSelector{
+			{
 				GUID:        &selectorGUID,
 				DisplayName: &selectorName,
 				EntityType:  &selectorEntityType,
@@ -274,20 +311,35 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	auditStatus := map[string]string{}
 	selectorSet := models.IssueFilterSelectorSet{
 		FilterBySet: []*models.IssueFilterSelector{
-			&models.IssueFilterSelector{
+			{
 				GUID:        "1",
 				DisplayName: "Folder",
 				EntityType:  "ET1",
 				SelectorOptions: []*models.SelectorOption{
-					&models.SelectorOption{
+					{
 						GUID: "abcd",
 					},
 				},
 			},
-			&models.IssueFilterSelector{
+			{
 				GUID:        "2",
 				DisplayName: "Category",
 				EntityType:  "ET2",
+				SelectorOptions: []*models.SelectorOption{
+					{
+						GUID: "abcd",
+					},
+				},
+			},
+			{
+				GUID:        "3",
+				DisplayName: "Analysis",
+				EntityType:  "ET3",
+				SelectorOptions: []*models.SelectorOption{
+					{
+						GUID: "abcd",
+					},
+				},
 			},
 		},
 	}

@@ -14,7 +14,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: NEO
         possibleValues:
           - CF
           - NEO
@@ -48,7 +48,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: /opt/sap/mta/lib/mta.jar
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
@@ -58,6 +58,8 @@ spec:
         - STEPS
         mandatory: false
         default:
+        aliases:
+          - name: extension
       - name: platform
         type: string
         description: "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed."
@@ -66,7 +68,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: CF
         possibleValues:
           - CF
           - NEO
@@ -97,7 +99,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-        default:
+        default: https://npm.sap.com
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
@@ -125,6 +127,16 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - name: mta
-      image: devxci/mbtci
+    - image: devxci/mbtci
       imagePullPolicy: Always
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: cloudMbt
+    - image: ppiper/mta-archive-builder
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: classic

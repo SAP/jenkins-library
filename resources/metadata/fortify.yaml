@@ -12,9 +12,6 @@ spec:
       - name: fortifyCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.
         type: jenkins
-        aliases:
-          - name: fortifyCredentialId
-            deprecated: true
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
@@ -139,7 +136,7 @@ spec:
       - STAGES
       - STEPS
     - name: commitId
-      description: 'Set the Git commit ID for identifing artifacts throughout the scan.'
+      description: 'Set the Git commit ID for identifying artifacts throughout the scan.'
       resourceRef:
         - name: commonPipelineEnvironment
           param: git/commitId
@@ -149,7 +146,7 @@ spec:
       - STEPS
       type: string
     - name: commitMessage
-      description: 'Set the Git commit message for identifing pull request merges throughout the scan.'
+      description: 'Set the Git commit message for identifying pull request merges throughout the scan.'
       resourceRef:
         - name: commonPipelineEnvironment
           param: git/commitMessage

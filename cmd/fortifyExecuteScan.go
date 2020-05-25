@@ -39,12 +39,12 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
 	c := command.Command{}
-	// reroute command output to loging framework
+	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Fortify scan and check failed: %w", err)
+		log.Entry().WithError(err).Fatalf("Fortify scan and check failed")
 	}
 }
 
@@ -389,7 +389,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	var relatedUpload *models.Artifact
 	for relatedUpload == nil {
 		artifacts, err := sys.GetArtifactsOfProjectVersion(projectVersionID)
-		log.Entry().Debugf("Recieved %v artifacts for project version ID %v", len(artifacts), projectVersionID)
+		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Failed to fetch artifacts of project version ID %v", projectVersionID)
 		}
