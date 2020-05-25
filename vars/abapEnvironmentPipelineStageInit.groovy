@@ -18,16 +18,15 @@ void call(Map parameters = [:]) {
     deleteDir()
     checkout scm
 
-    // load default & individual configuration
-    Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
-        .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
-        .use()
-
-
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName) {
+
+        // load default & individual configuration
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
+            .use()
 
         setupCommonPipelineEnvironment script: script
         script.commonPipelineEnvironment.configuration.runStage = [:]
