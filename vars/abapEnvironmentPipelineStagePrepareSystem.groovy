@@ -1,4 +1,3 @@
-import com.sap.piper.GenerateStageDocumentation
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
