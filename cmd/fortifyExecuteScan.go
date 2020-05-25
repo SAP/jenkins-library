@@ -223,7 +223,7 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
 			}
 			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
-			logUnauditedIssuesURL(config, projectVersionID, folderSelector, analysisSelector)
+			logIssueURL(config, projectVersionID, folderSelector, analysisSelector)
 		}
 
 		if strings.Contains(config.SpotAuditIssueGroups, group) {
@@ -264,7 +264,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 				filterSelectorAnalysis := sys.GetFilterSetByDisplayName(issueFilterSelectorSet, "Analysis")
 				overallDelta += currentDelta
 				log.Entry().Errorf("[projectVersionId %v]: %v unaudited spot check issues detected in group %v", projectVersionID, currentDelta, group)
-				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, filterSelectorFolder.EntityType, filterSelectorFolder.Value, filterSelectorFolder.SelectorOptions[0].Value, filterSelectorAnalysis.EntityType, filterSelectorAnalysis.Value)
+				logIssueURL(config, projectVersionID, filterSelectorFolder, filterSelectorAnalysis)
 				flagOutput = checkString
 			}
 		}
@@ -302,6 +302,7 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 		result = result + suspiciousCount + exploitableCount
 		log.Entry().Errorf("[projectVersionId %v]: %v suspicious and %v exploitable issues detected", projectVersion.ID, suspiciousCount, exploitableCount)
 		log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueGrouping=%v_%v&issueFilters=%v_%v", config.ServerURL, projectVersion.ID, reducedFilterSelectorSet.GroupBySet[0].EntityType, reducedFilterSelectorSet.GroupBySet[0].GUID, reducedFilterSelectorSet.FilterBySet[0].EntityType, reducedFilterSelectorSet.FilterBySet[0].GUID)
+		logIssueURL(config, projectVersionID, filterSelectorFolder, filterSelectorAnalysis)
 	}
 	issueStatistics, err := sys.GetIssueStatisticsOfProjectVersion(projectVersion.ID)
 	if err != nil {
@@ -320,7 +321,7 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	return result
 }
 
-func logUnauditedIssuesURL(config fortifyExecuteScanOptions, projectVersionID int64, folderSelector *models.IssueFilterSelector, analysisSelector *models.IssueFilterSelector) {
+func logIssueURL(config fortifyExecuteScanOptions, projectVersionID int64, folderSelector, analysisSelector *models.IssueFilterSelector) {
 	url := fmt.Sprintf("%v/html/ssc/index.jsp#!/version/%v", config.ServerURL, projectVersionID)
 	if len(folderSelector.SelectorOptions) > 0 {
 		url += fmt.Sprintf("/fix?issueFilters=%v_%v:%v",
