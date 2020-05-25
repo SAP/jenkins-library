@@ -24,12 +24,12 @@ void call(Map parameters = [:]) {
         .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
         .use()
 
-    setupCommonPipelineEnvironment script: script
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName) {
 
+        setupCommonPipelineEnvironment script: script
         script.commonPipelineEnvironment.configuration.runStage = [:]
         script.commonPipelineEnvironment.configuration.runStep = [:]
 
