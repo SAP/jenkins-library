@@ -37,7 +37,7 @@ func ConfigCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
 			if err != nil {
-				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
+				log.Entry().WithField("category", "configuration").WithError(err).Fatal("failed to retrieve configuration")
 			}
 		},
 	}
