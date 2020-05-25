@@ -10,6 +10,7 @@ import util.BasePiperTest
 import util.JenkinsHttpRequestRule
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
+import util.PluginMock
 import util.Rules
 
 import static org.hamcrest.Matchers.containsString
@@ -33,6 +34,7 @@ class PiperGoUtilsTest extends BasePiperTest {
     @Before
     void init() {
         helper.registerAllowedMethod("retry", [Integer, Closure], null)
+        JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
     }
 
     @Test
