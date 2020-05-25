@@ -77,3 +77,8 @@ func (y *YAMLfile) SetVersion(version string) error {
 
 	return nil
 }
+
+// GetCoordinates returns the coordinates
+func (y *YAMLfile) GetCoordinates() (Coordinates, error) {
+	return nil, nil
+}

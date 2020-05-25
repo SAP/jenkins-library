@@ -116,10 +116,10 @@ func XsDeployCommand() *cobra.Command {
 
 func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.DeployOpts, "deployOpts", os.Getenv("PIPER_deployOpts"), "Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
-	cmd.Flags().StringVar(&stepConfig.OperationIDLogPattern, "operationIdLogPattern", "^.*xs bg-deploy -i (.*) -a.*$", "Regex pattern for retrieving the ID of the operation from the xs log.")
+	cmd.Flags().StringVar(&stepConfig.OperationIDLogPattern, "operationIdLogPattern", `^.*xs bg-deploy -i (.*) -a.*$`, "Regex pattern for retrieving the ID of the operation from the xs log.")
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
-	cmd.Flags().StringVar(&stepConfig.Action, "action", "NONE", "Used for finalizing the blue-green deployment.")
-	cmd.Flags().StringVar(&stepConfig.Mode, "mode", "DEPLOY", "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
+	cmd.Flags().StringVar(&stepConfig.Action, "action", `NONE`, "Used for finalizing the blue-green deployment.")
+	cmd.Flags().StringVar(&stepConfig.Mode, "mode", `DEPLOY`, "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
 	cmd.Flags().StringVar(&stepConfig.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
