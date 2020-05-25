@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import hudson.AbortException
+
 class PiperGoUtils implements Serializable {
 
     private static piperExecutable = 'piper'
@@ -60,8 +62,12 @@ class PiperGoUtils implements Serializable {
 
             }
         }
-        def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
-        steps.echo "Piper go binary version: ${piperVersion}"
+        try {
+            def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
+            steps.echo "Piper go binary version: ${piperVersion}"
+        } catch(AbortException ex) {
+            steps.error "Cannot get piper go binary version: ${ex}"
+        }
         utils.stashWithMessage('piper-bin', 'failed to stash piper binary', piperExecutable)
     }
 
