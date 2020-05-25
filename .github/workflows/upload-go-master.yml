@@ -22,6 +22,6 @@ jobs:
             -o piper_master .
       - uses: SAP/project-piper-action@master
         with:
-          piper-version: latest
+          piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
