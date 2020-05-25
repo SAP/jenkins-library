@@ -173,6 +173,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }
