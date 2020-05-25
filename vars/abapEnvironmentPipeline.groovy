@@ -1,9 +1,9 @@
 void call(parameters) {
     pipeline {
         agent none
-        options {
-            skipDefaultCheckout()
-        }
+        // options {
+        //     skipDefaultCheckout()
+        // }
         stages {
 
             stage('Init') {

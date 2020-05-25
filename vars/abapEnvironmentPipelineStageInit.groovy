@@ -22,7 +22,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName) {
 
         //deleteDir()
-        checkout scm
+        //checkout scm
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
