@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"testing"
 	"time"
 
@@ -42,6 +43,10 @@ func (a *artifactVersioningMock) SetVersion(version string) error {
 	}
 	a.newVersion = version
 	return nil
+}
+
+func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 type gitRepositoryMock struct {

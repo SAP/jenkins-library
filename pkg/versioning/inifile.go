@@ -85,3 +85,8 @@ func (i *INIfile) SetVersion(version string) error {
 	}
 	return nil
 }
+
+// GetCoordinates returns the coordinates
+func (i *INIfile) GetCoordinates() (Coordinates, error) {
+	return nil, nil
+}
