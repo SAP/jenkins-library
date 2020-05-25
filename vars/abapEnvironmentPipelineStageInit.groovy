@@ -21,7 +21,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName) {
 
-        deleteDir()
+        //deleteDir()
         checkout scm
 
         // load default & individual configuration
