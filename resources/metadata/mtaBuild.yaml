@@ -14,7 +14,11 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: NEO
+        possibleValues:
+          - CF
+          - NEO
+          - XSA
       - name: mtaBuildTool
         type: string
         description: "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'."
@@ -24,6 +28,9 @@ spec:
         - STEPS
         mandatory: false
         default: cloudMbt
+        possibleValues:
+          - cloudMbt
+          - classic
       - name: mtarName
         type: string
         description: "The name of the generated mtar file including its extension."
@@ -41,7 +48,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: /opt/sap/mta/lib/mta.jar
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
@@ -51,6 +58,8 @@ spec:
         - STEPS
         mandatory: false
         default:
+        aliases:
+          - name: extension
       - name: platform
         type: string
         description: "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed."
@@ -59,7 +68,11 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: CF
+        possibleValues:
+          - CF
+          - NEO
+          - XSA
       - name: applicationName
         type: string
         description: "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts."
@@ -73,11 +86,20 @@ spec:
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
+      - name: sapNpmRegistry
+        type: string
+        description: "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: https://npm.sap.com
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
@@ -96,7 +118,6 @@ spec:
         - STEPS
         mandatory: false
         default:
-
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -106,6 +127,16 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - name: mta
-      image: devxci/mbtci
+    - image: devxci/mbtci
       imagePullPolicy: Always
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: cloudMbt
+    - image: ppiper/mta-archive-builder
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: classic

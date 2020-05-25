@@ -27,6 +27,7 @@ spec:
         description: Token used to authenticate with the Sonar Server.
         scope:
           - PARAMETERS
+        secret: true
         aliases:
           - name: sonarToken
       - name: organization
@@ -97,6 +98,8 @@ spec:
         type: string
         description: "Pull-Request only: The scm provider."
         default: GitHub
+        possibleValues:
+        - GitHub
         scope:
           - PARAMETERS
           - STAGES
@@ -133,6 +136,7 @@ spec:
         description: "Pull-Request only: Token for Github to set status on the Pull-Request."
         scope:
           - PARAMETERS
+        secret: true
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2"
@@ -163,6 +167,14 @@ spec:
       - name: githubTokenCredentialsId
         type: jenkins
         description: Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Github Server.
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: sonar
   containers:
     - name: sonar
       image: node:lts-stretch

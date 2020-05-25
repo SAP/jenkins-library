@@ -24,7 +24,6 @@ nav:
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
-            - 'Shared Configuration': pipelines/cloud-sdk/shared-config-between-projects.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
@@ -35,6 +34,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
+        - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
@@ -63,7 +63,9 @@ nav:
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
+        - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
+        - malwareExecuteScan: steps/malwareExecuteScan.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
@@ -96,6 +98,7 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+    - 'Command line tool': cli/index.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md
 

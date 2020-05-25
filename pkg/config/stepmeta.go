@@ -52,8 +52,10 @@ type StepParameters struct {
 	Type            string              `json:"type"`
 	Mandatory       bool                `json:"mandatory,omitempty"`
 	Default         interface{}         `json:"default,omitempty"`
+	PossibleValues  []interface{}       `json:"possibleValues,omitempty"`
 	Aliases         []Alias             `json:"aliases,omitempty"`
 	Conditions      []Condition         `json:"conditions,omitempty"`
+	Secret          bool                `json:"secret,omitempty"`
 }
 
 // ResourceReference defines the parameters of a resource reference
@@ -214,6 +216,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 				}
 			}
 		}
+		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
 		containerFilters = append(containerFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
@@ -223,6 +226,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 	if len(containerFilters) > 0 {
 		filters.All = append(filters.All, containerFilters...)
+		filters.General = append(filters.General, containerFilters...)
 		filters.Steps = append(filters.Steps, containerFilters...)
 		filters.Stages = append(filters.Stages, containerFilters...)
 		filters.Parameters = append(filters.Parameters, containerFilters...)
@@ -240,12 +244,20 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	if len(m.Spec.Containers) > 0 {
 		for _, container := range m.Spec.Containers {
 			key := ""
+			conditionParam := ""
 			if len(container.Conditions) > 0 {
 				key = container.Conditions[0].Params[0].Value
+				conditionParam = container.Conditions[0].Params[0].Name
 			}
 			p := map[string]interface{}{}
 			if key != "" {
 				root[key] = p
+				//add default for condition parameter if available
+				for _, inputParam := range m.Spec.Inputs.Parameters {
+					if inputParam.Name == conditionParam {
+						root[conditionParam] = inputParam.Default
+					}
+				}
 			} else {
 				p = root
 			}

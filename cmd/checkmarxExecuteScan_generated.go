@@ -154,19 +154,21 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }
 
 // CheckmarxExecuteScanCommand Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
 func CheckmarxExecuteScanCommand() *cobra.Command {
+	const STEP_NAME = "checkmarxExecuteScan"
+
 	metadata := checkmarxExecuteScanMetadata()
 	var stepConfig checkmarxExecuteScanOptions
 	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
-		Use:   "checkmarxExecuteScan",
+		Use:   STEP_NAME,
 		Short: "Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 		Long: `Checkmarx is a Static Application Security Testing (SAST) tool to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
@@ -180,9 +182,26 @@ You can adapt above thresholds specifically using the provided configuration par
 thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recommend you to stay with the defaults provided.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("checkmarxExecuteScan")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Username)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -194,9 +213,10 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "checkmarxExecuteScan")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			checkmarxExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

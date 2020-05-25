@@ -23,6 +23,7 @@ import (
 )
 
 type gitRepository interface {
+	CommitObject(plumbing.Hash) (*object.Commit, error)
 	CreateTag(string, plumbing.Hash, *git.CreateTagOptions) (*plumbing.Reference, error)
 	CreateRemote(*gitConfig.RemoteConfig) (*git.Remote, error)
 	DeleteRemote(string) error
@@ -33,7 +34,6 @@ type gitRepository interface {
 }
 
 type gitWorktree interface {
-	Add(string) (plumbing.Hash, error)
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 }
@@ -45,8 +45,8 @@ func getGitWorktree(repository gitRepository) (gitWorktree, error) {
 func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment) {
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	// open local .git repository
 	repository, err := openGit()
@@ -58,7 +58,6 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("artifactPrepareVersion failed")
 	}
-	log.Entry().Info("SUCCESS")
 }
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
@@ -75,8 +74,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
-		VersionField:        config.CustomversionField,
+		VersionField:        config.CustomVersionField,
 		VersionSection:      config.CustomVersionSection,
+		VersioningScheme:    config.CustomVersioningScheme,
+		VersionSource:       config.DockerVersionSource,
 	}
 
 	var err error
@@ -100,7 +101,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
-	gitCommit, err := getGitCommitID(repository)
+	gitCommit, gitCommitMessage, err := getGitCommitID(repository)
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		now := time.Now()
 
-		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, now)
+		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, config.ShortCommitID, config.UnixTimestamp, now)
 		if err != nil {
 			return errors.Wrap(err, "failed to calculate new version")
 		}
@@ -157,6 +158,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	return nil
 }
@@ -166,17 +168,28 @@ func openGit() (gitRepository, error) {
 	return git.PlainOpen(workdir)
 }
 
-func getGitCommitID(repository gitRepository) (plumbing.Hash, error) {
+func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {
 	commitID, err := repository.ResolveRevision(plumbing.Revision("HEAD"))
 	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to retrieve git commit ID")
+		return plumbing.Hash{}, "", errors.Wrap(err, "failed to retrieve git commit ID")
 	}
-	return *commitID, nil
+	// ToDo not too elegant to retrieve the commit message here, must be refactored sooner than later
+	// but to quickly address https://github.com/SAP/jenkins-library/pull/1515 let's revive this
+	commitObject, err := repository.CommitObject(*commitID)
+	if err != nil {
+		return *commitID, "", errors.Wrap(err, "failed to retrieve git commit message")
+	}
+	return *commitID, commitObject.Message, nil
 }
 
 func versioningTemplate(scheme string) (string, error) {
 	// generally: timestamp acts as build number providing a proper order
 	switch scheme {
+	case "docker":
+		// from Docker documentation:
+		// A tag name must be valid ASCII and may contain lowercase and uppercase letters, digits, underscores, periods and dashes.
+		// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
+		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}-{{.CommitID}}{{end}}{{end}}", nil
 	case "maven":
 		// according to https://www.mojohaus.org/versions-maven-plugin/version-rules.html
 		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}_{{.CommitID}}{{end}}{{end}}", nil
@@ -190,10 +203,15 @@ func versioningTemplate(scheme string) (string, error) {
 	return "", fmt.Errorf("versioning scheme '%v' not supported", scheme)
 }
 
-func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID bool, t time.Time) (string, error) {
+func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID, shortCommitID, unixTimestamp bool, t time.Time) (string, error) {
 	tmpl, err := template.New("version").Parse(versioningTemplate)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create version template: %v", versioningTemplate)
+	}
+
+	timestamp := t.Format("20060102150405")
+	if unixTimestamp {
+		timestamp = fmt.Sprint(t.Unix())
 	}
 
 	buf := new(bytes.Buffer)
@@ -203,11 +221,14 @@ func calculateNewVersion(versioningTemplate, currentVersion, commitID string, in
 		CommitID  string
 	}{
 		Version:   currentVersion,
-		Timestamp: t.Format("20060102150405"),
+		Timestamp: timestamp,
 	}
 
 	if includeCommitID {
 		versionParts.CommitID = commitID
+		if shortCommitID {
+			versionParts.CommitID = commitID[0:7]
+		}
 	}
 
 	err = tmpl.Execute(buf, versionParts)
@@ -317,13 +338,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
-	_, err := worktree.Add(".")
-	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
-	}
-
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}

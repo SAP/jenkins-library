@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io"
-	"os"
 )
 
 type configCommandOptions struct {
@@ -87,7 +88,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
@@ -148,11 +149,15 @@ func applyContainerConditions(containers []config.Container, stepConfig *config.
 			for _, param := range container.Conditions[0].Params {
 				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
 					var containerConf map[string]interface{}
-					containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-					for key, value := range containerConf {
-						stepConfig.Config[key] = value
+					if stepConfig.Config[param.Value] != nil {
+						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
+						for key, value := range containerConf {
+							if stepConfig.Config[key] == nil {
+								stepConfig.Config[key] = value
+							}
+						}
+						delete(stepConfig.Config, param.Value)
 					}
-					delete(stepConfig.Config, param.Value)
 				}
 			}
 		}

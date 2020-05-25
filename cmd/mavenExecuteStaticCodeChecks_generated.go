@@ -30,12 +30,14 @@ type mavenExecuteStaticCodeChecksOptions struct {
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
 func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
+	const STEP_NAME = "mavenExecuteStaticCodeChecks"
+
 	metadata := mavenExecuteStaticCodeChecksMetadata()
 	var stepConfig mavenExecuteStaticCodeChecksOptions
 	var startTime time.Time
 
 	var createMavenExecuteStaticCodeChecksCmd = &cobra.Command{
-		Use:   "mavenExecuteStaticCodeChecks",
+		Use:   STEP_NAME,
 		Short: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
 		Long: `Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
 SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
@@ -47,9 +49,24 @@ For SpotBugs include- and exclude filters as well as maximum allowed violations 
 For PMD the failure priority and the max allowed violations are configurable via .pipeline/config.yml.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenExecuteStaticCodeChecks")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecuteStaticCodeChecks", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -60,9 +77,10 @@ For PMD the failure priority and the max allowed violations are configurable via
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenExecuteStaticCodeChecks")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

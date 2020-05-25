@@ -4,9 +4,9 @@ on:
   # Allow to trigger this manually just in case updates are required outside of the schedule. See https://goobar.io/2019/12/07/manually-trigger-a-github-actions-workflow/ for info on how that works.
   repository_dispatch:
     types: update-dependencies
-  # Schedule after our weekly release, so we can update the dependencies for the new development cycle on the master branch.
+  # Schedule once a month
   schedule:
-    - cron:  '0 10 * * 1'
+    - cron:  '0 10 3 * *'
 
 jobs:
   build:
@@ -28,5 +28,6 @@ jobs:
       - name: Create Pull Request
         uses: SAP/project-piper-action@master
         with:
+          piper-version: master
           command: githubCreatePullRequest
-          flags: --body="Update Go dependencies" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GITHUB_TOKEN }}
+          flags: --body="Automated update for Go dependencies by running `go get -u` and `go mod tidy`" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GO_DEPENDENCY_UPDATE_TOKEN }}

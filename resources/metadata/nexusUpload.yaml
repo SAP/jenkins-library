@@ -115,11 +115,13 @@ spec:
         description: Username for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
+        secret: true
       - name: password
         type: string
         description: Password for accessing the Nexus endpoint.
         scope:
         - PARAMETERS
+        secret: true
   containers:
     # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
     - name: mvn-npm

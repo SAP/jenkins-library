@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -127,4 +129,55 @@ func TestGetProjectConfigFile(t *testing.T) {
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
 		})
 	}
+}
+
+func TestConvertTypes(t *testing.T) {
+	t.Run("Converts strings to booleans", func(t *testing.T) {
+		// Init
+		options := struct {
+			Foo bool `json:"foo,omitempty"`
+			Bar bool `json:"bar,omitempty"`
+		}{}
+		options.Foo = true
+		options.Bar = false
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = "False"
+		stepConfig["bar"] = "True"
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, false, stepConfig["foo"])
+		assert.Equal(t, true, stepConfig["bar"])
+		assert.Equal(t, false, options.Foo)
+		assert.Equal(t, true, options.Bar)
+	})
+	t.Run("Exits on unsupported type mismatch", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo []string `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = "entry"
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
+		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
 }

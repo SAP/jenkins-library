@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path"
 	"strings"
@@ -16,7 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -95,14 +96,21 @@ func runMtaBuild(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
+	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
-	handleSettingsFiles(config, p, httpClient)
+	err = handleSettingsFiles(config, p, httpClient)
+	if err != nil {
+		return err
+	}
 
-	handleDefaultNpmRegistry(config, e)
+	err = npm.SetNpmRegistries(
+		&npm.RegistryOptions{
+			DefaultNpmRegistry: config.DefaultNpmRegistry,
+			SapNpmRegistry:     config.SapNpmRegistry,
+		}, e)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -218,15 +226,15 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 		}
 
 		if len(mtaID) == 0 {
-			return "", fmt.Errorf("Invalid mtar name. Was empty")
+			return "", fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID
+		mtarName = mtaID + ".mtar"
 	}
 
-	return mtarName + ".mtar", nil
+	return mtarName, nil
 
 }
 
@@ -295,21 +303,6 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 
 	p.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
 	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
-
-	return nil
-}
-
-func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
-
-	if len(config.DefaultNpmRegistry) > 0 {
-
-		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
-		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
-	}
 
 	return nil
 }

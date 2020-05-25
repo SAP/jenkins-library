@@ -27,19 +27,36 @@ type mavenExecuteOptions struct {
 
 // MavenExecuteCommand This step allows to run maven commands
 func MavenExecuteCommand() *cobra.Command {
+	const STEP_NAME = "mavenExecute"
+
 	metadata := mavenExecuteMetadata()
 	var stepConfig mavenExecuteOptions
 	var startTime time.Time
 
 	var createMavenExecuteCmd = &cobra.Command{
-		Use:   "mavenExecute",
+		Use:   STEP_NAME,
 		Short: "This step allows to run maven commands",
 		Long:  `This step runs a maven command based on the parameters provided to the step.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("mavenExecute")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "mavenExecute", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -50,9 +67,10 @@ func MavenExecuteCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "mavenExecute")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecute(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

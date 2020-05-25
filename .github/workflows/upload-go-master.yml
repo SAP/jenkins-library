@@ -18,10 +18,10 @@ jobs:
         run: |
           go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GITHUB_SHA} \
                   -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GITHUB_REPOSITORY} \
-                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=${GITHUB_REPOSITORY}" \
+                  -X github.com/SAP/jenkins-library/pkg/telemetry.LibraryRepository=https://github.com/${GITHUB_REPOSITORY}.git" \
             -o piper_master .
       - uses: SAP/project-piper-action@master
         with:
-          piper-version: latest
+          piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
