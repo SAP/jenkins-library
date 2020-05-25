@@ -19,11 +19,11 @@ jobs:
           echo "::set-env name=PIPER_version::v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
       - uses: SAP/project-piper-action@master
         with:
-          piper-version: v1.34.0
+          piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --assetPath ./piper_master
       - uses: SAP/project-piper-action@master
         with:
-          piper-version: v1.34.0
+          piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
