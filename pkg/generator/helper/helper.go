@@ -115,6 +115,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

@@ -80,6 +80,7 @@ For PMD the failure priority and the max allowed violations are configurable via
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
