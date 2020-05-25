@@ -19,7 +19,7 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName) {
+    piperStageWrapper (script: script, stageName: stageName, telemetryDisabled: true) {
 
         //deleteDir()
         checkout scm
