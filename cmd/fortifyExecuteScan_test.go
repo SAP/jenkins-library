@@ -325,6 +325,21 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 				GUID:        "2",
 				DisplayName: "Category",
 				EntityType:  "ET2",
+				SelectorOptions: []*models.SelectorOption{
+					{
+						GUID: "abcd",
+					},
+				},
+			},
+			{
+				GUID:        "3",
+				DisplayName: "Analysis",
+				EntityType:  "ET3",
+				SelectorOptions: []*models.SelectorOption{
+					{
+						GUID: "abcd",
+					},
+				},
 			},
 		},
 	}

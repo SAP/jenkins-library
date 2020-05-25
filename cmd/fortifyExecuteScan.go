@@ -263,7 +263,7 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 				filterSelectorAnalysis := sys.GetFilterSetByDisplayName(issueFilterSelectorSet, "Analysis")
 				overallDelta += currentDelta
 				log.Entry().Errorf("[projectVersionId %v]: %v unaudited spot check issues detected in group %v", projectVersionID, currentDelta, group)
-				log.Entry().Errorf("%v/html/ssc/index.jsp#!/version/%v/fix?issueFilters=%v_%v:%v&issueFilters=%v_%v:", config.ServerURL, projectVersionID, filterSelectorFolder.EntityType, filterSelectorFolder.GUID, filterSelectorFolder.SelectorOptions[0].GUID, filterSelectorAnalysis.EntityType, filterSelectorAnalysis.GUID)
+				logSpotCheckIssueURL(config, projectVersionID, filterSelectorFolder, filterSelectorAnalysis)
 				flagOutput = checkString
 			}
 		}
@@ -335,6 +335,26 @@ func logUnauditedIssuesURL(config fortifyExecuteScanOptions, projectVersionID in
 			reducedFilterSelectorSet.FilterBySet[1].Value)
 	} else {
 		log.Entry().Debugf("no second entry in 'filter by set' array")
+	}
+	log.Entry().Error(url)
+}
+
+func logSpotCheckIssueURL(config fortifyExecuteScanOptions, projectVersionID int64, filterSelectorFolder, filterSelectorAnalysis *models.IssueFilterSelector) {
+	url := fmt.Sprintf("%v/html/ssc/index.jsp#!/version/%v", config.ServerURL, projectVersionID)
+	if filterSelectorFolder != nil && len(filterSelectorFolder.SelectorOptions) > 0 {
+		url += fmt.Sprintf("/fix?issueFilters=%v_%v:%v",
+			filterSelectorFolder.EntityType,
+			filterSelectorFolder.GUID,
+			filterSelectorFolder.SelectorOptions[0].GUID)
+	} else {
+		log.Entry().Debugf("no filter selector for 'Folder' found")
+	}
+	if filterSelectorAnalysis != nil {
+		url += fmt.Sprintf("&issueFilters=%v_%v:",
+			filterSelectorAnalysis.EntityType,
+			filterSelectorAnalysis.GUID)
+	} else {
+		log.Entry().Debugf("no filter selector for 'Analysis' found")
 	}
 	log.Entry().Error(url)
 }
