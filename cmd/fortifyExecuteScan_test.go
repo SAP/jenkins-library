@@ -254,23 +254,6 @@ func TestParametersAreValidated(t *testing.T) {
 			config:        fortifyExecuteScanOptions{},
 			expectedError: "unable to get artifact from descriptor : build tool '' not supported",
 		},
-		{
-			nameOfRun: "no owner",
-			config: fortifyExecuteScanOptions{
-				BuildTool: "maven",
-			},
-			expectedError: "GitHub organization was not specified via parameter 'owner' and it could not be retried from resources",
-		},
-		//{
-		//	nameOfRun: "no ???", // TODO: Find code-spot and improve error message
-		//	config: fortifyExecuteScanOptions{
-		//		BuildTool:  "maven",
-		//		Owner:      "repo-owner",
-		//		Repository: "some-project",
-		//		CommitID:   "idOfCommit",
-		//	},
-		//	expectedError: "No uploaded artifacts for assessment detected for project version with ID 0",
-		//},
 	}
 
 	for _, data := range testData {
