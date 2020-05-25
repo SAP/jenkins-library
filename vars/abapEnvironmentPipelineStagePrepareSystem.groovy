@@ -17,7 +17,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName) {
         cloudFoundryCreateService script: parameters.script
-        input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
+        //input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
         cloudFoundryCreateServiceKey script: parameters.script
     }
 
