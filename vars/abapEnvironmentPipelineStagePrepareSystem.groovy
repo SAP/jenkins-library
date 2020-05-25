@@ -1,4 +1,5 @@
 import groovy.transform.Field
+import com.sap.piper.Utils
 
 import static com.sap.piper.Prerequisites.checkScript
 
