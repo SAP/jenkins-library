@@ -31,24 +31,14 @@ void call(Map parameters = [:]) {
             .loadStepDefaults()
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')
             .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/abapStashSettings.yml')
+            .withMandatoryProperty('stageConfigResource')
             .use()
 
         Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
         if (config.verbose) echo "Stash config: ${stashConfiguration}"
         script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 
-        script.commonPipelineEnvironment.configuration.runStage = [:]
-        script.commonPipelineEnvironment.configuration.runStep = [:]
-
-        config.stages = (readYaml(text: libraryResource(config.stageConfigResource))).stages
-
         //handling of stage and step activation
-        config.stages.each {stage ->
-
-            //activate stage if stage configuration is available
-            if (ConfigurationLoader.stageConfiguration(script, stage.getKey())) {
-                script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
-            }
-        }
+        piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
     }
 }
