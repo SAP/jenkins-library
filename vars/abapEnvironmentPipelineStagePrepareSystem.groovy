@@ -18,8 +18,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
 
-    checkout scm
-
     def script = checkScript(this, parameters) ?: this
 
     def stageName = parameters.stageName?:env.STAGE_NAME
