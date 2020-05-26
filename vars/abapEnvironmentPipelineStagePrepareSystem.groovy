@@ -11,8 +11,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryCreateServiceKey'
 ]
-@Field Set STEP_CONFIG_KEYS = []
-@Field Set PARAMETER_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage prepares the SAP Cloud Platform ABAP Environment systems
  */
@@ -22,11 +22,9 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, ordinal: 10) {
-        //cloudFoundryCreateService script: parameters.script
-        //input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
-        //cloudFoundryCreateServiceKey script: parameters.script
-        System.out.println("Hello there!")
-        echo "General Kenobi!"
+        cloudFoundryCreateService script: parameters.script
+        input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
+        cloudFoundryCreateServiceKey script: parameters.script
     }
 
 }

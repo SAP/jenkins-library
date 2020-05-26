@@ -26,6 +26,12 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
 
     @Before
     void init()  {
+        binding.variables.env.STAGE_NAME = 'Prepare System'
+
+        helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
+            assertThat(m.stageName, is('Prepare System'))
+            return body()
+        })
         helper.registerAllowedMethod('input', [Map], {m -> return null})
         helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})

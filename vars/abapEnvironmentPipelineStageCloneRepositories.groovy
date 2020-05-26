@@ -10,8 +10,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Pulls Software Components / Git repositories into the ABAP Environment instance */
     'abapEnvironmentPullGitRepo'
 ]
-@Field Set STEP_CONFIG_KEYS = []
-@Field Set PARAMETER_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage clones Git repositories / software components to the ABAP Environment instance
  */

@@ -39,9 +39,6 @@ void call(parameters) {
             aborted {buildSetResult(currentBuild, 'ABORTED')}
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
-            unsuccessful {
-                input "Unsuccessful build: delete system?"
-            }
             cleanup {
                 abapEnvironmentPipelineStagePost script: parameters.script
             }

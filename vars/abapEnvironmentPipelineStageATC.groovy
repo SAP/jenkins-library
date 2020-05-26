@@ -10,8 +10,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Starts an ATC check run on the ABAP Environment instance */
     'abapEnvironmentRunATCCheck'
 ]
-@Field Set STEP_CONFIG_KEYS = []
-@Field Set PARAMETER_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage runs the ATC Checks
  */
