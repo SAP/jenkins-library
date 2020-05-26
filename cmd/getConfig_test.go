@@ -54,8 +54,7 @@ func TestConfigCommand(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			configOptions.openFile = configOpenFileMock
-			err := cmd.RunE(cmd, []string{})
-			assert.NoError(t, err, "error occured but none expected")
+			cmd.Run(cmd, []string{})
 		})
 	})
 }
