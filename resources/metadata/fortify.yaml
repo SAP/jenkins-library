@@ -271,7 +271,7 @@ spec:
       default: PDF
     - name: pythonAdditionalPath
       type: string
-      description: 'The addional path which can be used in `buildTool: ''pip''` for
+      description: 'The additional path which can be used in `buildTool: ''pip''` for
         customization purposes'
       scope:
       - PARAMETERS
@@ -315,6 +315,13 @@ spec:
       - STAGES
       - STEPS
       default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
+    - name: projectVersionId
+      type: string
+      description: ID of your project version in Fortify
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: pythonIncludes
       type: string
       description: 'The includes pattern used in `buildTool: ''pip''` for including

@@ -19,11 +19,19 @@ import (
 )
 
 type fortifyMock struct {
-	Successive bool
+	Successive  bool
+	projectName string
 }
 
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
+	f.projectName = name
 	return &models.Project{Name: &name}, nil
+}
+func (f *fortifyMock) GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error) {
+	return &models.ProjectVersion{ID: projectVersionID, Name: &f.projectName, Project: &models.Project{Name: &f.projectName}}, nil
+}
+func (f *fortifyMock) UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error) {
+	return projectVersion, nil
 }
 func (f *fortifyMock) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: id, Name: &name, Project: &models.Project{Name: &projectName}}, nil
@@ -43,7 +51,6 @@ func (f *fortifyMock) LookupOrCreateProjectVersionDetailsForPullRequest(projectI
 func (f *fortifyMock) CreateProjectVersion(version *models.ProjectVersion) (*models.ProjectVersion, error) {
 	return version, nil
 }
-
 func (f *fortifyMock) ProjectVersionCopyFromPartial(sourceID, targetID int64) error {
 	return nil
 }

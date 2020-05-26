@@ -39,6 +39,8 @@ import (
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)
+	GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error)
+	UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error)
 	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error)
 	GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error)
 	SetProjectVersionAttributesByProjectVersionID(id int64, attributes []*models.Attribute) ([]*models.Attribute, error)
@@ -169,6 +171,32 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 	return projectVersion.Project, nil
 }
 
+// GetProjectVersionDetailsByVersionID returns the project-version identified by the provided projectVersionID
+func (sys *SystemInstance) GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error) {
+	params := &project_version_controller.ReadProjectVersionParams{ID: projectVersionID}
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.ReadProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
+// UpdateProjectVersionDetails updates the project version identified by id with the data stored in project.
+func (sys *SystemInstance) UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error) {
+	params := &project_version_controller.UpdateProjectVersionParams{
+		ID:       id,
+		Resource: projectVersion,
+	}
+	projectVersion.ID = 0
+	params.WithTimeout(sys.timeout)
+	result, err := sys.client.ProjectVersionController.UpdateProjectVersion(params, sys)
+	if err != nil {
+		return nil, err
+	}
+	return result.GetPayload().Data, nil
+}
+
 // GetProjectVersionDetailsByProjectIDAndVersionName returns the project version details of the project version identified by the id and project versionname
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
@@ -181,6 +209,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 		return nil, err
 	}
 	for _, projectVersion := range result.GetPayload().Data {
+		log.Entry().Debugf("Found project version with name '%v' and ID '%v'", *projectVersion.Name, projectVersion.ID)
 		if *projectVersion.Name == versionName {
 			return projectVersion, nil
 		}
