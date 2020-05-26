@@ -8,7 +8,6 @@ void call(parameters) {
 
             stage('Init') {
                 steps {
-                    library 'piper-lib-os-dev'
                     abapEnvironmentPipelineStageInit script: parameters.script
                 }
             }

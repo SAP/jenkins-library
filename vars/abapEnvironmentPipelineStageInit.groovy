@@ -25,8 +25,8 @@ void call(Map parameters = [:]) {
         checkout scm
 
         setupCommonPipelineEnvironment script: script
-        // load default & individual configuration
 
+        // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/abapStageDefaults.yml')

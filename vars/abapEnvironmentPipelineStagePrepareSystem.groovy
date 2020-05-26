@@ -5,7 +5,12 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /** Creates a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
+    'cloudFoundryCreateService',
+    /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
+    'cloudFoundryCreateServiceKey'
+]
 @Field Set STEP_CONFIG_KEYS = []
 @Field Set PARAMETER_KEYS = []
 /**

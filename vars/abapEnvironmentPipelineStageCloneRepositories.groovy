@@ -6,7 +6,10 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /** Pulls Software Components / Git repositories into the ABAP Environment instance */
+    'abapEnvironmentPullGitRepo'
+]
 @Field Set STEP_CONFIG_KEYS = []
 @Field Set PARAMETER_KEYS = []
 /**
