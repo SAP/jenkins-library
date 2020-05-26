@@ -80,7 +80,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 			projectVersion.Name = &fortifyProjectVersion
 			projectVersion, err = sys.UpdateProjectVersionDetails(projectVersion.ID, projectVersion)
 			if err != nil {
-				return fmt.Errorf("failed to update project version %v: %w", fortifyProjectName, err)
+				return fmt.Errorf("failed to update project version with ID %v with name '%v': %w", projectVersionID, fortifyProjectVersion, err)
 			}
 		}
 	} else {
