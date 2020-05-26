@@ -16,7 +16,7 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName) {
+    piperStageWrapper (script: script, stageName: stageName, ordinal: 10) {
         //cloudFoundryCreateService script: parameters.script
         //input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
         //cloudFoundryCreateServiceKey script: parameters.script
