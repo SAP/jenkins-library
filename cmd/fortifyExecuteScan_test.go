@@ -624,7 +624,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Exclude: "./**/*"}
 		err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*","exclude":"./**/*"}]`, config.Translate, "Expected different parameters")
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`, config.Translate, "Expected different parameters")
 	})
 
 	t.Run("src with translate", func(t *testing.T) {
