@@ -370,7 +370,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		}()
 
 		runner := execRunnerMock{}
-		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
+		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G", Src: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}
 		triggerFortifyScan(config, &runner, "test", "testLabel")
 
 		assert.Equal(t, 3, runner.numExecutions)
