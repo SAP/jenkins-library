@@ -252,15 +252,15 @@ spec:
         - STEPS
     - name: src
       type: string
-      description: Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If set this will be mixed in to `translate`.
+      description: Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If `translate` is set, this will ignored.
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"
+      default: "**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*"
     - name: exclude
       type: string
-      description: Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If set this will be mixed in to `translate`.
+      description: Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If `translate` is set, this will ignored.
       scope:
         - PARAMETERS
         - STAGES
