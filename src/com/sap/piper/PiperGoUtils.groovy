@@ -51,11 +51,10 @@ class PiperGoUtils implements Serializable {
                 //Fallback to master version & throw error in case this fails
                 steps.retry(5) {
                     if (!downloadGoBinary(fallbackUrl)) {
-                        steps.sleep(2)
+                        steps.sleep(10)
                         steps.error("Download of Piper go binary failed.")
                     }
                 }
-
             }
         }
 
