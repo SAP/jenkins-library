@@ -528,23 +528,33 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 
 		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
-		if len(config.Translate) == 0 {
-			translate := `[{"pythonPath":"`
-			translate += classpath
-			translate += ";"
-			translate += config.PythonAdditionalPath
-			translate += `","pythonIncludes":"`
-			translate += config.PythonIncludes
-			translate += `","pythonExcludes":"`
-			translate += strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
-			translate += `"}]`
-			config.Translate = translate
+		config.Translate, err = populatePipTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to read pythonAdditionalPath or pythonIncludes from project configuration source: '%s', exclude: '%s'", config.PythonAdditionalPath, config.PythonIncludes)
 		}
+
 	}
 
 	translateProject(&config, command, buildID, classpath)
 
 	scanProject(&config, command, buildID, buildLabel)
+}
+
+func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+
+	translateList[0]["pythonPath"] = classpath + ";" + config.PythonAdditionalPath
+	translateList[0]["pythonIncludes"] = config.PythonIncludes
+	translateList[0]["pythonExcludes"] = strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
+
+	translateJson, err := json.Marshal(translateList)
+
+	return string(translateJson), err
 }
 
 func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
