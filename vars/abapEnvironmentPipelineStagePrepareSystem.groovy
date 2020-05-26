@@ -17,6 +17,9 @@ import static com.sap.piper.Prerequisites.checkScript
  * This stage prepares the SAP Cloud Platform ABAP Environment systems
  */
 void call(Map parameters = [:]) {
+
+    checkout scm
+
     def script = checkScript(this, parameters) ?: this
 
     def stageName = parameters.stageName?:env.STAGE_NAME
