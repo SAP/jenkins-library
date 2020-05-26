@@ -1,4 +1,4 @@
-name: "MarkDown"
+name: "Documentation"
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
 jobs:
   markdownlint:
     runs-on: ubuntu-latest
-    name: 'format'
+    name: 'Format'
     steps:
     - uses: actions/checkout@v2
     - name: markdownlint
