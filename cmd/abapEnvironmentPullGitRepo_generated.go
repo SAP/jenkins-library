@@ -77,6 +77,7 @@ Please provide either of the following options:
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentPullGitRepo(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -145,7 +146,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
@@ -153,7 +154,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfOrg",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
@@ -161,7 +162,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
@@ -169,7 +170,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
@@ -177,10 +178,10 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfServiceKey",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKeyName"}},
 					},
 				},
 			},
