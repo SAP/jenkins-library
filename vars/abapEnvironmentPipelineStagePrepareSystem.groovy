@@ -13,14 +13,15 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-    def utils = parameters.juStabUtils ?: new Utils()
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName, juStabUtils: utils) {
-        cloudFoundryCreateService script: parameters.script
+    piperStageWrapper (script: script, stageName: stageName) {
+        //cloudFoundryCreateService script: parameters.script
         //input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
-        cloudFoundryCreateServiceKey script: parameters.script
+        //cloudFoundryCreateServiceKey script: parameters.script
+        System.out.println("Hello there!")
+        echo "General Kenobi!"
     }
 
 }
