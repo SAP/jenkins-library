@@ -218,7 +218,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersionID, "projectVersionId", os.Getenv("PIPER_projectVersionId"), "ID of your project version in Fortify")
+	cmd.Flags().StringVar(&stepConfig.ProjectVersionID, "projectVersionId", os.Getenv("PIPER_projectVersionId"), "ID of your project version in Fortify. If this parameter is provided, the scan results are uploaded to this project version and its name is updated with the current version from the versioning scheme.")
 	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `buildTool: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
