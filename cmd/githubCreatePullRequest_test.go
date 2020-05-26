@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v31/github"
+	"github.com/google/go-github/v28/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,9 +46,9 @@ func (g *ghIssueMock) Edit(ctx context.Context, owner string, repo string, numbe
 	g.owner = owner
 	g.repo = repo
 	g.number = number
-	labels := []*github.Label{}
+	labels := []github.Label{}
 	for _, l := range *issue.Labels {
-		labels = append(labels, &github.Label{Name: &l})
+		labels = append(labels, github.Label{Name: &l})
 	}
 
 	assignees := []*github.User{}
