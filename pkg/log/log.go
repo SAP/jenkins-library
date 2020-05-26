@@ -29,18 +29,18 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		stepName = "(noStepName)"
 	}
 
-	errorMessage := entry.Data[logrus.ErrorKey]
-	if errorMessage == nil {
-		errorMessage = "(noErrorMessage)"
+	errorMessageSnippet := ""
+	if entry.Data[logrus.ErrorKey] != nil {
+		errorMessageSnippet = fmt.Sprintf(" - %s", entry.Data[logrus.ErrorKey])
 	}
 
 	switch formatter.logFormat {
 	case logFormatDefault:
-		message = fmt.Sprintf("%-5s %-6s - %s - %s\n", entry.Level, stepName, entry.Message, errorMessage)
+		message = fmt.Sprintf("%-5s %-6s - %s%s\n", entry.Level, stepName, entry.Message, errorMessageSnippet)
 	case logFormatWithTimestamp:
-		message = fmt.Sprintf("%s %-5s %-6s - %s - %s\n", entry.Time.Format("15:04:05"), entry.Level, stepName, entry.Message, errorMessage)
+		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), entry.Level, stepName, entry.Message, errorMessageSnippet)
 	case logFormatPlain:
-		message = fmt.Sprintf("%s - %s\n", entry.Message, errorMessage)
+		message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
 	default:
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
 		if err != nil {
