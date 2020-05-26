@@ -50,5 +50,7 @@ void call(Map parameters = [:]) {
                 script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
             }
         }
+
+        pipelineStashFilesBeforeBuild script: script
     }
 }
