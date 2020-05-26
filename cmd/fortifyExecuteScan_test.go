@@ -626,6 +626,13 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		assert.Equal(t, `[{"classpath":"","exclude":"./**/*"}]`, translate, "Expected different parameters")
 	})
 
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"classpath":""}]`, Src: "./**/*", Exclude: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":""}]`, translate, "Expected different parameters")
+	})
+
 }
 
 func TestPopulatePipTranslate(t *testing.T) {
@@ -643,4 +650,17 @@ func TestPopulatePipTranslate(t *testing.T) {
 		assert.Equal(t, `[{"pythonExcludes":"","pythonIncludes":"./**/*","pythonPath":";"}]`, translate, "Expected different parameters")
 	})
 
+	t.Run("PythonExcludes without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonExcludes: "-exclude ./**/tests/**/*;./**/setup.py"}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"./**/tests/**/*;./**/setup.py","pythonIncludes":"","pythonPath":";"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"pythonPath":""}]`, PythonIncludes: "./**/*", PythonAdditionalPath: "./lib;."}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
+	})
 }
