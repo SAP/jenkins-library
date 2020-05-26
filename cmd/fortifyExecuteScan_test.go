@@ -27,7 +27,7 @@ func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVers
 	f.projectName = name
 	return &models.Project{Name: &name}, nil
 }
-func (f *fortifyMock) GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error) {
+func (f *fortifyMock) GetProjectVersionDetailsByID(projectVersionID int64) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: projectVersionID, Name: &f.projectName, Project: &models.Project{Name: &f.projectName}}, nil
 }
 func (f *fortifyMock) UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error) {

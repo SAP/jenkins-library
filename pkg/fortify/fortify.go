@@ -39,7 +39,7 @@ import (
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)
-	GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error)
+	GetProjectVersionDetailsByID(projectVersionID int64) (*models.ProjectVersion, error)
 	UpdateProjectVersionDetails(id int64, projectVersion *models.ProjectVersion) (*models.ProjectVersion, error)
 	GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error)
 	GetProjectVersionAttributesByProjectVersionID(id int64) ([]*models.Attribute, error)
@@ -171,8 +171,8 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 	return projectVersion.Project, nil
 }
 
-// GetProjectVersionDetailsByVersionID returns the project-version identified by the provided projectVersionID
-func (sys *SystemInstance) GetProjectVersionDetailsByVersionID(projectVersionID int64) (*models.ProjectVersion, error) {
+// GetProjectVersionDetailsByID returns the project-version identified by the provided projectVersionID
+func (sys *SystemInstance) GetProjectVersionDetailsByID(projectVersionID int64) (*models.ProjectVersion, error) {
 	params := &project_version_controller.ReadProjectVersionParams{ID: projectVersionID}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionController.ReadProjectVersion(params, sys)

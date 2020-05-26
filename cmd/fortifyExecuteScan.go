@@ -71,7 +71,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		if err != nil {
 			return fmt.Errorf("projectVersionId is not a valid integer: %w", err)
 		}
-		projectVersion, err = sys.GetProjectVersionDetailsByVersionID(projectVersionID)
+		projectVersion, err = sys.GetProjectVersionDetailsByID(projectVersionID)
 		if err != nil {
 			return fmt.Errorf("failed to load project version by ID %v: %w", projectVersionID, err)
 		}
