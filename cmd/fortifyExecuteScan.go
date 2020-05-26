@@ -552,9 +552,9 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 	translateList[0]["pythonIncludes"] = config.PythonIncludes
 	translateList[0]["pythonExcludes"] = strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
 
-	translateJson, err := json.Marshal(translateList)
+	translateJSON, err := json.Marshal(translateList)
 
-	return string(translateJson), err
+	return string(translateJSON), err
 }
 
 func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
@@ -573,9 +573,9 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 		translateList[0]["exclude"] = config.Exclude
 	}
 
-	translateJson, err := json.Marshal(translateList)
+	translateJSON, err := json.Marshal(translateList)
 
-	return string(translateJson), err
+	return string(translateJSON), err
 }
 
 func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
