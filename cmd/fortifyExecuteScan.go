@@ -508,12 +508,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
 		}
-		if len(config.Translate) == 0 {
-			translate := `[{"classpath":"`
-			translate += classpath
-			translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
-			config.Translate = translate
-		}
+		populateMavenTranslate(&config, classpath)
 	}
 	if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
@@ -546,6 +541,38 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	translateProject(&config, command, buildID, classpath)
 
 	scanProject(&config, command, buildID, buildLabel)
+}
+
+func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) error {
+	// TODO: handle error
+	var translateList []map[string]interface{}
+	if len(config.Translate) == 0 {
+		translateList = append(translateList, make(map[string]interface{}))
+		translateList[0]["classpath"] = classpath
+
+		if len(config.Src) > 0 {
+			translateList[0]["src"] = config.Src
+		} else {
+			translateList[0]["src"] = "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"
+		}
+		if len(config.Exclude) > 0 {
+			translateList[0]["exclude"] = config.Exclude
+		}
+	} else {
+		err := json.Unmarshal([]byte(config.Translate), &translateList)
+		if err != nil {
+			return err
+		}
+		if len(config.Src) > 0 {
+			translateList[0]["src"] = config.Src
+		}
+		if len(config.Exclude) > 0 {
+			translateList[0]["exclude"] = config.Exclude
+		}
+	}
+	translateJson, _ := json.Marshal(translateList)
+	config.Translate = string(translateJson)
+	return nil
 }
 
 func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {

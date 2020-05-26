@@ -610,3 +610,34 @@ func TestAutoresolveClasspath(t *testing.T) {
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
 }
+
+func TestPopulateMavenTranslate(t *testing.T) {
+	// TODO: adjust exclude (order of expected string)
+	t.Run("src without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Src: "./**/*"}
+		err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","src":"./**/*"}]`, config.Translate, "Expected different parameters")
+	})
+
+	t.Run("exclude without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Exclude: "./**/*"}
+		err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*","exclude":"./**/*"}]`, config.Translate, "Expected different parameters")
+	})
+
+	t.Run("src with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/"}]`, Src: "./**/*"}
+		err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`, config.Translate, "Expected different parameters")
+	})
+
+	t.Run("exclude with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/"}]`, Exclude: "./**/*"}
+		err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"./classes/*.jar","exclude":"./**/*","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/"}]`, config.Translate, "Expected different parameters")
+	})
+}

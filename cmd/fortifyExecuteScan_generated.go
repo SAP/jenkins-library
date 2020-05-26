@@ -41,6 +41,8 @@ type fortifyExecuteScanOptions struct {
 	PollingMinutes                  int    `json:"pollingMinutes,omitempty"`
 	QuickScan                       bool   `json:"quickScan,omitempty"`
 	Translate                       string `json:"translate,omitempty"`
+	Src                             string `json:"src,omitempty"`
+	Exclude                         string `json:"exclude,omitempty"`
 	APIEndpoint                     string `json:"apiEndpoint,omitempty"`
 	ReportType                      string `json:"reportType,omitempty"`
 	PythonAdditionalPath            string `json:"pythonAdditionalPath,omitempty"`
@@ -209,7 +211,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", `/transfer/reportDownload.html`, "Fortify SSC endpoint for Report downloads")
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
-	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
+	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
+	cmd.Flags().StringVar(&stepConfig.Src, "src", os.Getenv("PIPER_src"), "Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If set this will be mixed in to `translate`.")
+	cmd.Flags().StringVar(&stepConfig.Exclude, "exclude", os.Getenv("PIPER_exclude"), "Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If set this will be mixed in to `translate`.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
 	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", `./lib;.`, "The addional path which can be used in `buildTool: 'pip'` for customization purposes")
@@ -440,6 +444,22 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "translate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "src",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "exclude",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
