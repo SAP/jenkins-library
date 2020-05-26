@@ -497,6 +497,7 @@ func readClasspathFile(file string) string {
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
 	if config.PythonVersion != "python3" {
@@ -508,7 +509,10 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
 		}
-		populateMavenTranslate(&config, classpath)
+		config.Translate, err = populateMavenTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to read src or exclude from project configuration source: '%s', exclude: '%s'", config.Src, config.Exclude)
+		}
 	}
 	if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
@@ -543,36 +547,25 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	scanProject(&config, command, buildID, buildLabel)
 }
 
-func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) error {
-	// TODO: handle error
-	var translateList []map[string]interface{}
-	if len(config.Translate) == 0 {
-		translateList = append(translateList, make(map[string]interface{}))
-		translateList[0]["classpath"] = classpath
-
-		if len(config.Src) > 0 {
-			translateList[0]["src"] = config.Src
-		} else {
-			translateList[0]["src"] = "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"
-		}
-		if len(config.Exclude) > 0 {
-			translateList[0]["exclude"] = config.Exclude
-		}
-	} else {
-		err := json.Unmarshal([]byte(config.Translate), &translateList)
-		if err != nil {
-			return err
-		}
-		if len(config.Src) > 0 {
-			translateList[0]["src"] = config.Src
-		}
-		if len(config.Exclude) > 0 {
-			translateList[0]["exclude"] = config.Exclude
-		}
+func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
 	}
-	translateJson, _ := json.Marshal(translateList)
-	config.Translate = string(translateJson)
-	return nil
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+	translateList[0]["classpath"] = classpath
+
+	if len(config.Src) > 0 {
+		translateList[0]["src"] = config.Src
+	}
+	if len(config.Exclude) > 0 {
+		translateList[0]["exclude"] = config.Exclude
+	}
+
+	translateJson, err := json.Marshal(translateList)
+
+	return string(translateJson), err
 }
 
 func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {

@@ -257,6 +257,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      default: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"
     - name: exclude
       type: string
       description: Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If set this will be mixed in to `translate`.
