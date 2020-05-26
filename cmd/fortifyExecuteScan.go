@@ -700,6 +700,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
 		}
+		if len(t["exclude"]) > 0 {
+			options = append(options, "-exclude", t["exclude"])
+		}
 		return append(options, tokenize(t["src"])...)
 	}
 	if config.BuildTool == "pip" {
