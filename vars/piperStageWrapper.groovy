@@ -62,8 +62,13 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 
     try {
         // Add general stage stashes to config.stashContent
+        echo("------------------Trying to unstash Stage Files-------------------")
+        echo("stash Content:" + config.stashContent)
+        if(!utils) {
+            echo("Utils is NULL")
+        }
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
-
+        echo("------------------End unstash Stage Files-------------------")
         /* Defining the sources where to look for a project extension and a repository extension.
         * Files need to be named like the executed stage to be recognized.
         */
@@ -117,6 +122,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 
     } finally {
         //Perform stashing of selected files in workspace
+
         utils.stashStageFiles(script, stageName)
 
         // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
