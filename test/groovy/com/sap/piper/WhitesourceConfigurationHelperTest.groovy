@@ -100,6 +100,21 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
     }
 
     @Test
+    void testExtendConfigurationFileUnifiedAgentDocker() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'docker', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'],
+            allOf(
+                containsString("apiKey=abcd"),
+                containsString("productName=DIST - name1"),
+                containsString("productToken=1234"),
+                containsString("docker.scanImages=true"),
+                containsString("docker.scanTarFiles=true"),
+                containsString("docker.includes=*.tar"),
+            )
+        )
+    }
+
+    @Test
     void testExtendConfigurationFileUnifiedAgentSbt() {
         WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'sbt', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'],
