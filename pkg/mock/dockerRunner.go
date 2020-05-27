@@ -16,7 +16,7 @@ type baseRunner interface {
 	RunExecutable(e string, p ...string) error
 }
 
-// DockerExecConfig is the configuration for an individual tool that shall be executed on docker.
+// DockerExecConfig is the configuration for an individual tool that shall be executed in docker.
 type DockerExecConfig struct {
 	// Image is the fully qualified docker image name that is passed to docker for this tool.
 	Image string
@@ -27,7 +27,9 @@ type DockerExecConfig struct {
 
 // DockerExecRunner can be used "in place" of another ExecRunner in order to transparently
 // execute commands within a docker container. One use-case is to test locally with tools
-// that are not available on the current platform.
+// that are not available on the current platform. When entering the run*() function of a
+// step implementation, a DockerExecRunner can be wrapped around a command.Command{}
+// an be configured to run certain executables within docker.
 type DockerExecRunner struct {
 	// Runner is the ExecRunner to which all executions are forwarded in the end.
 	Runner            baseRunner
