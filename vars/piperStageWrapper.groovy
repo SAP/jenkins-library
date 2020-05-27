@@ -68,7 +68,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         if(!config.stashContent) {
             echo("config.stashContent is NULL")
         }
-        if(members.empty) {
+        if(config.stashContent.empty) {
             echo("config.stashContent is empty")
         }
         if(utils) {
