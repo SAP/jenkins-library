@@ -251,7 +251,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "fortifyExecuteScan",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

@@ -1,7 +1,5 @@
 metadata:
   name: fortifyExecuteScan
-  aliases:
-    - name: mavenExecute
   description: This BETA step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
   longDescription: |-
     This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
