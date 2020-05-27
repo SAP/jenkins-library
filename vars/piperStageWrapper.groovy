@@ -5,7 +5,6 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.DebugReport
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
-import java.lang.reflect.*
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -63,27 +62,8 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 
     try {
         // Add general stage stashes to config.stashContent
-        echo("------------------Trying to unstash Stage Files-------------------")
-        echo("stash Content before:" + config.stashContent)
-        if(!config.stashContent) {
-            echo("config.stashContent is NULL")
-        }
-        if(config.stashContent.empty) {
-            echo("config.stashContent is empty")
-        }
-        if(utils) {
-            echo("Utils is not NULL")
-        } else {
-            echo("Utils is NULL")
-        }
-        if(utils.getClass() == com.sap.piper.Utils){
-            echo("utils is com.sap.piper.Utils")
-        } else {
-            echo("utils is not com.sap.piper.Utils")
-        }
-        config.stashContent = utils.unstashStageFiles(script, stageName, [])
-        echo("stash Content after:" + config.stashContent)
-        echo("------------------End unstash Stage Files-------------------")
+        config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
+
         /* Defining the sources where to look for a project extension and a repository extension.
         * Files need to be named like the executed stage to be recognized.
         */
@@ -137,7 +117,6 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
 
     } finally {
         //Perform stashing of selected files in workspace
-
         utils.stashStageFiles(script, stageName)
 
         // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
