@@ -75,7 +75,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         } else {
             echo("not com.sap.piper.Utils")
         }
-        config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
+        config.stashContent = utils.unstashStageFiles(script, stageName, [])
         echo("stash Content after:" + config.stashContent)
         echo("------------------End unstash Stage Files-------------------")
         /* Defining the sources where to look for a project extension and a repository extension.
