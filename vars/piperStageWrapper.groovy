@@ -74,6 +74,11 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         } else {
             echo("not com.sap.piper.Utils")
         }
+        Class thisClass = com.sap.piper.Utils.class;
+        Method[] methods = thisClass.getDeclaredMethods();
+        for (int i = 0; i < methods.length; i++) {
+            echo(methods[i].toString());
+        }
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
         echo("------------------End unstash Stage Files-------------------")
         /* Defining the sources where to look for a project extension and a repository extension.
