@@ -4,18 +4,22 @@ Init:
   - name: "source"
     includes: "**/*"
     excludes: ".pipeline/**"
+
 'Prepare System':
   unstash:
   - source
   stashes: []
+
 ATC:
   unstash:
   - source
   stashes: []
+
 'Clone Repositories':
   unstash:
   - source
   stashes: []
+
 Post:
   unstash: []
   stashes: []

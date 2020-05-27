@@ -65,15 +65,18 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         // Add general stage stashes to config.stashContent
         echo("------------------Trying to unstash Stage Files-------------------")
         echo("stash Content before:" + config.stashContent)
+        if(config.stashContent == null) {
+            echo("config.stashContent is NULL")
+        }
         if(utils) {
             echo("Utils is not NULL")
         } else {
             echo("Utils is NULL")
         }
         if(utils.getClass() == com.sap.piper.Utils){
-            echo("com.sap.piper.Utils")
+            echo("utils is com.sap.piper.Utils")
         } else {
-            echo("not com.sap.piper.Utils")
+            echo("utils is not com.sap.piper.Utils")
         }
         config.stashContent = utils.unstashStageFiles(script, stageName, [])
         echo("stash Content after:" + config.stashContent)
