@@ -64,7 +64,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
     try {
         // Add general stage stashes to config.stashContent
         echo("------------------Trying to unstash Stage Files-------------------")
-        echo("stash Content:" + config.stashContent)
+        echo("stash Content before:" + config.stashContent)
         if(utils) {
             echo("Utils is not NULL")
         } else {
@@ -75,16 +75,8 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         } else {
             echo("not com.sap.piper.Utils")
         }
-        Class thisClass = com.sap.piper.Utils.class;
-        Method[] methods = thisClass.getDeclaredMethods();
-        for (int i = 0; i < methods.length; i++) {
-            try{
-                echo(methods[i].toString());
-            } catch(error) {
-                echo("skip")
-            }
-        }
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
+        echo("stash Content after:" + config.stashContent)
         echo("------------------End unstash Stage Files-------------------")
         /* Defining the sources where to look for a project extension and a repository extension.
         * Files need to be named like the executed stage to be recognized.
