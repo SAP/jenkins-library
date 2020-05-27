@@ -21,7 +21,7 @@ type YAMLfile struct {
 	path            string
 	content         map[string]interface{}
 	versionField    string
-	artifactIdField string
+	artifactIDField string
 	readFile        func(string) ([]byte, error)
 	writeFile       func(string, []byte, os.FileMode) error
 }
@@ -30,8 +30,8 @@ func (y *YAMLfile) init() {
 	if len(y.versionField) == 0 {
 		y.versionField = "version"
 	}
-	if len(y.artifactIdField) == 0 {
-		y.artifactIdField = "ID"
+	if len(y.artifactIDField) == 0 {
+		y.artifactIDField = "ID"
 	}
 	if y.readFile == nil {
 		y.readFile = ioutil.ReadFile
@@ -73,7 +73,7 @@ func (y *YAMLfile) VersioningScheme() string {
 // GetArtifactID returns the current ID of the artifact
 func (y *YAMLfile) GetArtifactID() (string, error) {
 	y.init()
-	return y.readField(y.artifactIdField)
+	return y.readField(y.artifactIDField)
 }
 
 // GetVersion returns the current version of the artifact with a YAML-based build descriptor

@@ -45,7 +45,7 @@ func TestYAMLfileGetArtifactID(t *testing.T) {
 	t.Run("error case", func(t *testing.T) {
 		yamlfile := YAMLfile{
 			path:            "my.yaml",
-			artifactIdField: "theArtifact",
+			artifactIDField: "theArtifact",
 			readFile:        func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
 		}
 		artifactID, err := yamlfile.GetArtifactID()

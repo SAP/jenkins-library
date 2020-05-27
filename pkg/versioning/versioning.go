@@ -101,7 +101,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		artifact = &YAMLfile{
 			path:            buildDescriptorFilePath,
 			versionField:    "version",
-			artifactIdField: "ID",
+			artifactIDField: "ID",
 		}
 	case "npm":
 		if len(buildDescriptorFilePath) == 0 {
