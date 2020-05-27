@@ -474,12 +474,18 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	return readClasspathFile(file)
 }
 
-func autoresolveMavenClasspath(pomFilePath, file string, command execRunner) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command execRunner) string {
 	executeOptions := maven.ExecuteOptions{
-		PomPath:      pomFilePath,
-		Goals:        []string{"dependency:build-classpath"},
-		Defines:      []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
-		ReturnStdout: false,
+		PomPath:             config.BuildDescriptorFile,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Goals:               []string{"dependency:build-classpath"},
+		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		ReturnStdout:        false,
+	}
+	if len(strings.TrimSpace(config.MvnCustomArgs)) > 0 {
+		executeOptions.Flags = tokenize(config.MvnCustomArgs)
 	}
 	_, err := maven.Execute(&executeOptions, command)
 	if err != nil {
@@ -507,7 +513,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
-			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
+			classpath = autoresolveMavenClasspath(config, classpathFileName, command)
 		}
 		config.Translate, err = populateMavenTranslate(&config, classpath)
 		if err != nil {

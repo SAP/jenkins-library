@@ -604,7 +604,7 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath("pom.xml", file, &execRunner)
+		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &execRunner)
 		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
