@@ -1,9 +1,9 @@
 Init:
   unstash: []
   stashes:
-    - name: "source"
-      includes: "**/*"
-      excludes: ".pipeline/**"
+  - name: "source"
+    includes: "**/*"
+    excludes: ".pipeline/**"
 'Prepare System':
   unstash:
   - source
