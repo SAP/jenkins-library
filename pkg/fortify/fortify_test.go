@@ -328,7 +328,7 @@ func TestSetProjectVersionAttributesByProjectVersionID(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		value := "abcd"
 		defID := int64(18)
-		attributes := []*models.Attribute{&models.Attribute{ID: 4712, Value: &value, AttributeDefinitionID: &defID}}
+		attributes := []*models.Attribute{{ID: 4712, Value: &value, AttributeDefinitionID: &defID}}
 		result, err := sys.SetProjectVersionAttributesByProjectVersionID(4711, attributes)
 		assert.NoError(t, err, "SetProjectVersionAttributesByProjectVersionID call not successful")
 		assert.Equal(t, 1, len(result), "Expected to get slice with different amount of values")
@@ -670,7 +670,7 @@ func TestReduceIssueFilterSelectorSet(t *testing.T) {
 	name1 := "Special"
 	name2 := "Other"
 	guid := "FOLDER"
-	options := []*models.SelectorOption{&models.SelectorOption{GUID: "1234567", DisplayName: "Test"}, &models.SelectorOption{GUID: "1234568", DisplayName: "Test2"}}
+	options := []*models.SelectorOption{{GUID: "1234567", DisplayName: "Test"}, {GUID: "1234568", DisplayName: "Test2"}}
 	filterSet := models.IssueFilterSelectorSet{FilterBySet: []*models.IssueFilterSelector{}, GroupBySet: []*models.IssueSelector{}}
 	filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name1, SelectorOptions: options})
 	filterSet.FilterBySet = append(filterSet.FilterBySet, &models.IssueFilterSelector{DisplayName: name2})
