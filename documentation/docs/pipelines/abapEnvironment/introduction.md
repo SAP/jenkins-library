@@ -92,3 +92,30 @@ steps:
 ```
 
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the steps `cloudFoundryDeleteService` as above.
+
+## Extension
+
+You can extend each stage of this pipeline following the [documentation](../extensibility.md).
+
+For example, this can be used to display ATC results utilizing the checkstyle format with the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) ([GitHub Project](https://github.com/jenkinsci/warnings-ng-plugin)).
+To achieve this, create a file `.pipeline/extensions/ATC.groovy` with the following content:
+
+```groovy
+void call(Map params) {
+  //access stage name
+  echo "Start - Extension for stage: ${params.stageName}"
+
+  //access config
+  echo "Current stage config: ${params.config}"
+
+  //execute original stage as defined in the template
+  params.originalStage()
+
+  recordIssues tools: [checkStyle(pattern: '**/ATCResults.xml')], qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
+
+  echo "End - Extension for stage: ${params.stageName}"
+}
+return this
+```
+
+While `tools: [checkStyle(pattern: '**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
