@@ -99,8 +99,9 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "mta.yaml"
 		}
 		artifact = &YAMLfile{
-			path:         buildDescriptorFilePath,
-			versionField: "version",
+			path:            buildDescriptorFilePath,
+			versionField:    "version",
+			artifactIdField: "ID",
 		}
 	case "npm":
 		if len(buildDescriptorFilePath) == 0 {
