@@ -146,6 +146,14 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'cvssSeverityLimit',
     /**
+     * For `scanType: docker`: defines the docker image which should be scanned
+     */
+    'scanImage',
+    /**
+     * For `scanType: docker`: defines the registry where the scanImage is located
+     */
+    'scanImageRegistryUrl',
+    /**
      * List of stashes to be unstashed into the workspace before performing the scan.
      */
     'stashContent',
@@ -259,6 +267,8 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('whitesource/orgToken')
             .withMandatoryProperty('whitesource/userTokenCredentialsId')
             .withMandatoryProperty('whitesource/productName')
+            .addIfEmpty('whitesource/scanImage', script.commonPipelineEnvironment.containerProperties?.imageNameTag)
+            .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
             .use()
 
         config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
@@ -383,6 +393,9 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                     dockerWorkspace: config.dockerWorkspace,
                     stashContent: config.stashContent
                 ) {
+                    if (config.scanType == 'docker') {
+                        containerSaveImage script: parameters.script, containerImage: config.whitesource.scanImage, containerRegistryUrl: config.whitesource.scanImageRegistryUrl
+                    }
                     if (config.whitesource.agentDownloadUrl) {
                         def agentDownloadUrl = new GStringTemplateEngine().createTemplate(config.whitesource.agentDownloadUrl).make([config: config]).toString()
                         //if agentDownloadUrl empty, rely on dockerImage to contain unifiedAgent correctly set up and available
