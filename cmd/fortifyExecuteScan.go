@@ -511,7 +511,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		}
 		config.Translate, err = populateMavenTranslate(&config, classpath)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to read src or exclude from project configuration source: '%s', exclude: '%s'", config.Src, config.Exclude)
+			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
 	}
 	if config.BuildTool == "pip" {
@@ -530,7 +530,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 
 		config.Translate, err = populatePipTranslate(&config, classpath)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to read pythonAdditionalPath or pythonIncludes from project configuration source: '%s', exclude: '%s'", config.PythonAdditionalPath, config.PythonIncludes)
+			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or pythonIncludes ('%s') parameter", config.PythonAdditionalPath, config.PythonIncludes)
 		}
 
 	}
