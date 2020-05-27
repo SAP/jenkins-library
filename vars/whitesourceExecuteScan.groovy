@@ -152,7 +152,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * For `scanType: docker`: defines the registry where the scanImage is located
      */
-    'scanImageRegistry',
+    'scanImageRegistryUrl',
     /**
      * List of stashes to be unstashed into the workspace before performing the scan.
      */
@@ -268,7 +268,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('whitesource/userTokenCredentialsId')
             .withMandatoryProperty('whitesource/productName')
             .addIfEmpty('whitesource/scanImage', script.commonPipelineEnvironment.containerProperties?.imageNameTag)
-            .addIfEmpty('whitesource/scanImageRegistry', script.commonPipelineEnvironment.containerProperties?.registryUrl)
+            .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
             .use()
 
         config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
@@ -394,7 +394,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                     stashContent: config.stashContent
                 ) {
                     if (config.scanType == 'docker') {
-                        containerSaveImage script: parameters.script, containerImage: config.whitesource.scanImage, containerRegistryUrl: config.whitesource.scanImageRegistry
+                        containerSaveImage script: parameters.script, containerImage: config.whitesource.scanImage, containerRegistryUrl: config.whitesource.scanImageRegistryUrl
                     }
                     if (config.whitesource.agentDownloadUrl) {
                         def agentDownloadUrl = new GStringTemplateEngine().createTemplate(config.whitesource.agentDownloadUrl).make([config: config]).toString()
