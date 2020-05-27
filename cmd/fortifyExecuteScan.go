@@ -497,6 +497,7 @@ func readClasspathFile(file string) string {
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
 	if config.PythonVersion != "python3" {
@@ -508,11 +509,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
 		}
-		if len(config.Translate) == 0 {
-			translate := `[{"classpath":"`
-			translate += classpath
-			translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
-			config.Translate = translate
+		config.Translate, err = populateMavenTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
 	}
 	if config.BuildTool == "pip" {
@@ -529,23 +528,54 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 
 		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
-		if len(config.Translate) == 0 {
-			translate := `[{"pythonPath":"`
-			translate += classpath
-			translate += ";"
-			translate += config.PythonAdditionalPath
-			translate += `","pythonIncludes":"`
-			translate += config.PythonIncludes
-			translate += `","pythonExcludes":"`
-			translate += strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
-			translate += `"}]`
-			config.Translate = translate
+		config.Translate, err = populatePipTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or pythonIncludes ('%s') parameter", config.PythonAdditionalPath, config.PythonIncludes)
 		}
+
 	}
 
 	translateProject(&config, command, buildID, classpath)
 
 	scanProject(&config, command, buildID, buildLabel)
+}
+
+func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+
+	translateList[0]["pythonPath"] = classpath + ";" + config.PythonAdditionalPath
+	translateList[0]["pythonIncludes"] = config.PythonIncludes
+	translateList[0]["pythonExcludes"] = strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
+
+	translateJSON, err := json.Marshal(translateList)
+
+	return string(translateJSON), err
+}
+
+func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+	translateList[0]["classpath"] = classpath
+
+	if len(config.Src) > 0 {
+		translateList[0]["src"] = config.Src
+	}
+	if len(config.Exclude) > 0 {
+		translateList[0]["exclude"] = config.Exclude
+	}
+
+	translateJSON, err := json.Marshal(translateList)
+
+	return string(translateJSON), err
 }
 
 func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
@@ -669,6 +699,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		}
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
+		}
+		if len(t["exclude"]) > 0 {
+			options = append(options, "-exclude", t["exclude"])
 		}
 		return append(options, tokenize(t["src"])...)
 	}
