@@ -5,6 +5,7 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.DebugReport
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
+import java.lang.reflect.*
 
 import static com.sap.piper.Prerequisites.checkScript
 
