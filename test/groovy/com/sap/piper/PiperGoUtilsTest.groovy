@@ -70,12 +70,12 @@ class PiperGoUtilsTest extends BasePiperTest {
         httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/latest/download/piper_master", {})
 
         piperGoUtils.unstashPiperBin()
-        assertThat(shellCallRule.shell.size(), is(1))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x ./piper'))
+        assertThat(shellCallRule.shell.size(), is(2))
+        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[1].toString(), is('./piper version'))
 
         assertThat(httpRequestRule.requests.size(), is(1))
         assertThat(httpRequestRule.requests[0].url, is('https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'))
-
     }
 
     @Test
@@ -89,15 +89,17 @@ class PiperGoUtilsTest extends BasePiperTest {
             return []
         })
 
+
         httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/download/testTag/piper", {})
 
         piperGoUtils.unstashPiperBin()
 
-        assertThat(shellCallRule.shell.size(), is(1))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x ./piper'))
+        assertThat(shellCallRule.shell.size(), is(2))
+        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
 
         assertThat(httpRequestRule.requests.size(), is(1))
         assertThat(httpRequestRule.requests[0].url.toString(), is('https://github.com/SAP/jenkins-library/releases/download/testTag/piper'))
+
     }
 
     @Test
@@ -116,10 +118,13 @@ class PiperGoUtilsTest extends BasePiperTest {
         })
         httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/latest/download/piper_master", {})
 
+        shellCallRule.setReturnValue('./piper version', "1.2.3")
+
         piperGoUtils.unstashPiperBin()
 
-        assertThat(shellCallRule.shell.size(), is(1))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x ./piper'))
+        assertThat(shellCallRule.shell.size(), is(2))
+        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[1].toString(), is ('./piper version'))
 
         assertThat(httpRequestRule.requests.size(), is(2))
         assertThat(httpRequestRule.requests[0].url.toString(), is('https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper'))

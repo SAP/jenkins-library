@@ -1,9 +1,4 @@
 import hudson.FilePath
-import hudson.console.AnnotatedLargeText
-import java.io.Writer
-import groovy.mock.interceptor.MockFor
-import java.lang.Integer
-
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test

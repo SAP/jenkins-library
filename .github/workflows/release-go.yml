@@ -27,3 +27,11 @@ jobs:
           piper-version: master
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper
+
+      - name: Build and publish jar for consumption in unit tests
+        run: mvn package
+      - uses: SAP/project-piper-action@master
+        with:
+          piper-version: master
+          command: githubPublishRelease
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./target/jenkins-library.jar

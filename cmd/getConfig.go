@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +29,16 @@ func ConfigCommand() *cobra.Command {
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return generateConfig()
+		PreRun: func(cmd *cobra.Command, args []string) {
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+		},
+		Run: func(cmd *cobra.Command, _ []string) {
+			err := generateConfig()
+			if err != nil {
+				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+			}
 		},
 	}
 

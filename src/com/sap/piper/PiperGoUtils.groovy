@@ -1,6 +1,10 @@
 package com.sap.piper
 
+import hudson.AbortException
+
 class PiperGoUtils implements Serializable {
+
+    private static piperExecutable = 'piper'
 
     private static Script steps
     private static Utils utils
@@ -60,8 +64,13 @@ class PiperGoUtils implements Serializable {
 
             }
         }
-
-        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', 'piper')
+        try {
+            def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
+            steps.echo "Piper go binary version: ${piperVersion}"
+        } catch(AbortException ex) {
+            steps.error "Cannot get piper go binary version: ${ex}"
+        }
+        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', piperExecutable)
     }
 
     List getLibrariesInfo() {
@@ -70,8 +79,8 @@ class PiperGoUtils implements Serializable {
 
     private boolean downloadGoBinary(url) {
         try {
-            steps.httpRequest ignoreSslErrors: true, outputFile: 'piper', url: url, validResponseCodes: '200'
-            steps.sh(script: 'chmod +x ./piper')
+            steps.httpRequest ignoreSslErrors: true, outputFile: piperExecutable, url: url, validResponseCodes: '200'
+            steps.sh(script: "chmod +x ${piperExecutable}")
             return true
         } catch (err) {
             //nothing to do since error should just result in downloaded=false
