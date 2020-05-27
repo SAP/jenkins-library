@@ -17,15 +17,11 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-
     def stageName = parameters.stageName?:env.STAGE_NAME
+
     piperStageWrapper (script: script, stageName: stageName) {
 
         abapEnvironmentRunATCCheck script: parameters.script
 
-        def atcResult = readFile file: "ATCResults.xml"
-        if (atcResult != '<?xml version="1.0" encoding="utf-8"?><checkstyle version="1.0"/>') {
-            unstable('ATC Issues detected - setting build status to UNSTABLE')
-        }
     }
 }
