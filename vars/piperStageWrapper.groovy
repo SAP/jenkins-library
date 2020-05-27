@@ -65,8 +65,11 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         // Add general stage stashes to config.stashContent
         echo("------------------Trying to unstash Stage Files-------------------")
         echo("stash Content before:" + config.stashContent)
-        if(config.stashContent == null) {
+        if(!config.stashContent) {
             echo("config.stashContent is NULL")
+        }
+        if(members.empty) {
+            echo("config.stashContent is empty")
         }
         if(utils) {
             echo("Utils is not NULL")
