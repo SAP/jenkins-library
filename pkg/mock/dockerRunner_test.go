@@ -13,6 +13,7 @@ func TestDockerExecRunnerAddExecConfig(t *testing.T) {
 		dockerRunner := DockerExecRunner{}
 		err := dockerRunner.AddExecConfig("", DockerExecConfig{})
 		assert.Error(t, err, "'executable' needs to be provided")
+		assert.Nil(t, dockerRunner.executablesToWrap)
 	})
 	t.Run("no image provided results in error", func(t *testing.T) {
 		dockerRunner := DockerExecRunner{}
