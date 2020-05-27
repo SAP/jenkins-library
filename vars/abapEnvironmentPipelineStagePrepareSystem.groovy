@@ -17,12 +17,10 @@ import static com.sap.piper.Prerequisites.checkScript
  * This stage prepares the SAP Cloud Platform ABAP Environment systems
  */
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
-
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 10, stageLocking: true) {
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: true) {
         cloudFoundryCreateService script: parameters.script
         input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
         cloudFoundryCreateServiceKey script: parameters.script

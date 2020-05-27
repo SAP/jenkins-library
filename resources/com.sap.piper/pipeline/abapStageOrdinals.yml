@@ -1,0 +1,14 @@
+Init:
+  ordinal: 1
+
+'Prepare System':
+  ordinal: 10
+
+ATC:
+  ordinal: 20
+
+'Clone Repositories':
+  ordinal: 30
+
+Post:
+  ordinal: 40
