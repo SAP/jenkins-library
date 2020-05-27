@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.DownloadCacheUtils
@@ -7,7 +8,7 @@ import com.sap.piper.DownloadCacheUtils
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
 }
