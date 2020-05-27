@@ -860,12 +860,12 @@ func TestGetReportDetails(t *testing.T) {
 	})
 }
 
-func TestGetFileUploadToken(t *testing.T) {
+func TestGetFileToken(t *testing.T) {
 	// Start a local HTTP server
 	bodyContent := ""
-	reference := `{"fileTokenType":"UPLOAD"}
+	reference := `{"fileTokenType":"TOKEN_TYPE"}
 `
-	response := `{"data": {"fileTokenType": "UPLOAD","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
+	response := `{"data": {"fileTokenType": "TOKEN_TYPE","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/fileTokens" {
 			header := rw.Header()
@@ -881,66 +881,10 @@ func TestGetFileUploadToken(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		result, err := sys.getFileUploadToken()
-		assert.NoError(t, err, "getFileUploadToken call not successful")
-		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
-		assert.Equal(t, reference, bodyContent, "Different request content expected")
-	})
-}
-
-func TestGetFileDownloadToken(t *testing.T) {
-	// Start a local HTTP server
-	bodyContent := ""
-	reference := `{"fileTokenType":"DOWNLOAD"}
-`
-	response := `{"data": {"fileTokenType": "DOWNLOAD","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
-	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/fileTokens" {
-			header := rw.Header()
-			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
-			bodyContent = string(bodyBytes)
-			rw.WriteHeader(201)
-			rw.Write([]byte(response))
-			return
-		}
-	})
-	// Close the server when test finishes
-	defer server.Close()
-
-	t.Run("test success", func(t *testing.T) {
-		result, err := sys.getFileDownloadToken()
-		assert.NoError(t, err, "getFileDownloadToken call not successful")
-		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
-		assert.Equal(t, reference, bodyContent, "Different request content expected")
-	})
-}
-
-func TestGetReportFileToken(t *testing.T) {
-	// Start a local HTTP server
-	bodyContent := ""
-	reference := `{"fileTokenType":"REPORT_FILE"}
-`
-	response := `{"data": {"fileTokenType": "REPORT_FILE","token": "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj"},"responseCode": 201}`
-	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/fileTokens" {
-			header := rw.Header()
-			header.Add("Content-type", "application/json")
-			bodyBytes, _ := ioutil.ReadAll(req.Body)
-			bodyContent = string(bodyBytes)
-			rw.WriteHeader(201)
-			rw.Write([]byte(response))
-			return
-		}
-	})
-	// Close the server when test finishes
-	defer server.Close()
-
-	t.Run("test success", func(t *testing.T) {
-		result, err := sys.getReportFileToken()
-		assert.NoError(t, err, "getReportFileToken call not successful")
-		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token, "Different result content expected")
-		assert.Equal(t, reference, bodyContent, "Different request content expected")
+		result, err := sys.getFileToken("TOKEN_TYPE")
+		assert.NoError(t, err)
+		assert.Equal(t, "ZjE1OTdjZjEtMjAzNS00NTFmLThiOWItNzBkYzI0MWEzZGNj", result.Token)
+		assert.Equal(t, reference, bodyContent)
 	})
 }
 
