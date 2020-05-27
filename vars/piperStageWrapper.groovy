@@ -78,7 +78,11 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         Class thisClass = com.sap.piper.Utils.class;
         Method[] methods = thisClass.getDeclaredMethods();
         for (int i = 0; i < methods.length; i++) {
-            echo(methods[i].toString());
+            try{
+                echo(methods[i].toString());
+            } catch(error) {
+                echo("skip")
+            }
         }
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
         echo("------------------End unstash Stage Files-------------------")
