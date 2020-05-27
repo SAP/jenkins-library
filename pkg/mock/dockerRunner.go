@@ -36,22 +36,28 @@ type DockerExecRunner struct {
 	executablesToWrap map[string]DockerExecConfig
 }
 
+// SetDir directly forwards to the provided BaseRunner.
 func (d *DockerExecRunner) SetDir(dir string) {
 	d.Runner.SetDir(dir)
 }
 
+// SetEnv directly forwards to the provided BaseRunner.
 func (d *DockerExecRunner) SetEnv(env []string) {
 	d.Runner.SetEnv(env)
 }
 
+// Stdout directly forwards to the provided BaseRunner.
 func (d *DockerExecRunner) Stdout(out io.Writer) {
 	d.Runner.Stdout(out)
 }
 
+// Stderr directly forwards to the provided BaseRunner.
 func (d *DockerExecRunner) Stderr(err io.Writer) {
 	d.Runner.Stderr(err)
 }
 
+// AddExecConfig needs to be called to store a configuration for a specific executable, in order
+// to run this executable within docker.
 func (d *DockerExecRunner) AddExecConfig(executable string, config DockerExecConfig) error {
 	if executable == "" {
 		return fmt.Errorf("'executable' needs to be provided")
@@ -66,6 +72,9 @@ func (d *DockerExecRunner) AddExecConfig(executable string, config DockerExecCon
 	return nil
 }
 
+// RunExecutable runs the provided executable within docker, if a DockerExecConfig has been previously
+// associated with this executable via AddExecConfig(). Otherwise runs it directly. The BaseRunner is
+// used for execution in any case.
 func (d *DockerExecRunner) RunExecutable(executable string, parameters ...string) error {
 	if config, ok := d.executablesToWrap[executable]; ok {
 		wrappedParameters := []string{"run", "--entrypoint=" + executable}
