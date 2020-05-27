@@ -64,7 +64,9 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         // Add general stage stashes to config.stashContent
         echo("------------------Trying to unstash Stage Files-------------------")
         echo("stash Content:" + config.stashContent)
-        if(!utils) {
+        if(utils) {
+            echo("Utils is not NULL")
+        } else {
             echo("Utils is NULL")
         }
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
