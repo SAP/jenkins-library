@@ -34,11 +34,17 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		errorMessageSnippet = fmt.Sprintf(" - %s", entry.Data[logrus.ErrorKey])
 	}
 
+	level, _ := entry.Level.MarshalText()
+	levelString := string(level)
+	if levelString == "warning" {
+		levelString = "warn"
+	}
+
 	switch formatter.logFormat {
 	case logFormatDefault:
-		message = fmt.Sprintf("%-5s %-6s - %s%s\n", entry.Level, stepName, entry.Message, errorMessageSnippet)
+		message = fmt.Sprintf("%-5s %-6s - %s%s\n", levelString, stepName, entry.Message, errorMessageSnippet)
 	case logFormatWithTimestamp:
-		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), entry.Level, stepName, entry.Message, errorMessageSnippet)
+		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), levelString, stepName, entry.Message, errorMessageSnippet)
 	case logFormatPlain:
 		message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
 	default:
