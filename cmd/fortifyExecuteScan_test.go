@@ -370,7 +370,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		}()
 
 		runner := execRunnerMock{}
-		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
+		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G", Src: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}
 		triggerFortifyScan(config, &runner, "test", "testLabel")
 
 		assert.Equal(t, 3, runner.numExecutions)
@@ -608,5 +608,59 @@ func TestAutoresolveClasspath(t *testing.T) {
 		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
+	})
+}
+
+func TestPopulateMavenTranslate(t *testing.T) {
+	t.Run("src without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Src: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","src":"./**/*"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("exclude without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Exclude: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"classpath":""}]`, Src: "./**/*", Exclude: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "ignored/path")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":""}]`, translate, "Expected different parameters")
+	})
+
+}
+
+func TestPopulatePipTranslate(t *testing.T) {
+	t.Run("PythonAdditionalPath without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonAdditionalPath: "./lib;."}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"","pythonIncludes":"","pythonPath":";./lib;."}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("PythonIncludes without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonIncludes: "./**/*"}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"","pythonIncludes":"./**/*","pythonPath":";"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("PythonExcludes without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonExcludes: "-exclude ./**/tests/**/*;./**/setup.py"}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"./**/tests/**/*;./**/setup.py","pythonIncludes":"","pythonPath":";"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"pythonPath":""}]`, PythonIncludes: "./**/*", PythonAdditionalPath: "./lib;."}
+		translate, err := populatePipTranslate(&config, "ignored/path")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
 	})
 }
