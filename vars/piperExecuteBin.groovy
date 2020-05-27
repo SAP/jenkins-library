@@ -58,8 +58,11 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Context Config: ${config}"
+            Map config
+            handleErrorDetails(stepName) {
+                config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+                echo "Context Config: ${config}"
+            }
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
@@ -170,6 +173,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }
