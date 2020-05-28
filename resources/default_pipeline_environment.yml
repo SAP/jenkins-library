@@ -340,6 +340,9 @@ steps:
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
+  buildExecute:
+    npmInstall: true
+    npmRunScripts: []
   mtaBuild:
     buildTarget: 'NEO'
     mtaBuildTool: cloudMbt

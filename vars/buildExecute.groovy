@@ -22,7 +22,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
 
-    /** Only for Docker builds on the local deamon: Defines the build options for the build.*/
+    /** Only for Docker builds on the local daemon: Defines the build options for the build.*/
     'containerBuildOptions',
     /** For custom build types: Defines the command to be executed within the `dockerImage` in order to execute the build. */
     'dockerCommand',
@@ -30,6 +30,10 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerImage',
     /** For Docker builds only (mandatory): tag of the image to be built. */
     'dockerImageTag',
+    /** For buildTool npm: Execute npm install (boolean, default 'true') */
+    'npmInstall',
+    /** For buildTool npm: List of npm run scripts to execute */
+    'npmRunScripts'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -74,7 +78,7 @@ void call(Map parameters = [:]) {
                 mtaBuild script: script
                 break
             case 'npm':
-                npmExecuteScripts script: script, install: true //todo runScripts
+                npmExecuteScripts script: script, install: config.npmInstall, runScripts: config.npmRunScripts
                 break
             case ['docker', 'kaniko']:
                 DockerUtils dockerUtils = new DockerUtils(script)
