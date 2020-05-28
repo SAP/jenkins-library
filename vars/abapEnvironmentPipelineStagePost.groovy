@@ -20,7 +20,7 @@ void call(Map parameters = [:]) {
     stageName = stageName.replace('Declarative: ', '')
     stageName = stageName.replace(' Actions', '')
 
-    piperStageWrapper (script: script, stageName: stageName, stageLocking: false) {
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
             cloudFoundryDeleteService script: parameters.script
         }
