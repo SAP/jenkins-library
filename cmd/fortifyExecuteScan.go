@@ -499,7 +499,11 @@ func readClasspathFile(file string) string {
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
 	}
-	return strings.TrimSpace(string(data))
+	result := strings.TrimSpace(string(data))
+	if len(result) == 0 {
+		log.Entry().Warnf("classpath from file '%v' was empty", file)
+	}
+	return result
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
@@ -590,7 +594,10 @@ func translateProject(config *fortifyExecuteScanOptions, command execRunner, bui
 	log.Entry().Debugf("Translating with options: %v", translateList)
 	for _, translate := range translateList {
 		if len(classpath) > 0 {
+			log.Entry().Debugf("Setting 'autoClasspath': %v", classpath)
 			translate["autoClasspath"] = classpath
+		} else {
+			log.Entry().Debugf("Not setting 'autoClasspath': %v", classpath)
 		}
 		handleSingleTranslate(config, command, buildID, translate)
 	}
@@ -690,6 +697,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
 			options = append(options, "-cp", t["classpath"])
+		} else {
+			log.Entry().Debugf("no field 'autoClasspath' or 'classpath' in map or both empty")
 		}
 		if len(t["extdirs"]) > 0 {
 			options = append(options, "-extdirs", t["extdirs"])
