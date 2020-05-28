@@ -243,5 +243,6 @@ spec:
         type: piperEnvironment
         params:
           - name: artifactVersion
+          - name: originalArtifactVersion
           - name: git/commitId
           - name: git/commitMessage
