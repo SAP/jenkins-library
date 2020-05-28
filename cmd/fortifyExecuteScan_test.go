@@ -376,7 +376,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, 3, runner.numExecutions)
 
 		assert.Equal(t, "mvn", runner.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[1].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
