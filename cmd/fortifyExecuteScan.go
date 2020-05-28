@@ -107,7 +107,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		}
 	}
 
-	triggerFortifyScan(config, command, buildID, buildLabel)
+	triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
 
 	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
@@ -506,7 +506,7 @@ func readClasspathFile(file string) string {
 	return result
 }
 
-func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
 	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
@@ -547,7 +547,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 
 	translateProject(&config, command, buildID, classpath)
 
-	scanProject(&config, command, buildID, buildLabel)
+	scanProject(&config, command, buildID, buildLabel, buildProject)
 }
 
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
@@ -624,7 +624,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command execRunner
 	}
 }
 
-func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
 	var scanOptions = []string{
 		"-verbose",
 		"-64",
@@ -638,6 +638,9 @@ func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID,
 	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
+	}
+	if len(buildProject) > 0 {
+		scanOptions = append(scanOptions, "-build-project", buildProject)
 	}
 	scanOptions = append(scanOptions, "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr")
 

@@ -371,7 +371,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G", Src: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}
-		triggerFortifyScan(config, &runner, "test", "testLabel")
+		triggerFortifyScan(config, &runner, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, runner.numExecutions)
 
@@ -382,7 +382,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[2].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
 	})
 
 	t.Run("pip", func(t *testing.T) {
@@ -400,7 +400,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
-		triggerFortifyScan(config, &runner, "test", "testLabel")
+		triggerFortifyScan(config, &runner, "test", "testLabel", "")
 
 		assert.Equal(t, 5, runner.numExecutions)
 
@@ -569,15 +569,15 @@ func TestScanProject(t *testing.T) {
 
 	t.Run("normal", func(t *testing.T) {
 		execRunner := execRunnerMock{}
-		scanProject(&config, &execRunner, "/commit/7267658798797", "label")
+		scanProject(&config, &execRunner, "/commit/7267658798797", "label", "my.group-myartifact")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("quick", func(t *testing.T) {
 		execRunner := execRunnerMock{}
 		config.QuickScan = true
-		scanProject(&config, &execRunner, "/commit/7267658798797", "")
+		scanProject(&config, &execRunner, "/commit/7267658798797", "", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
