@@ -74,7 +74,7 @@ void call(Map parameters = [:]) {
                 mtaBuild script: script
                 break
             case 'npm':
-                npmExecute script: script
+                npmExecuteScripts script: script, install: true //todo runScripts
                 break
             case ['docker', 'kaniko']:
                 DockerUtils dockerUtils = new DockerUtils(script)
