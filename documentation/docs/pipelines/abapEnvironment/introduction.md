@@ -95,7 +95,7 @@ If one stage of the pipeline is not configured in this yml file, the stage will 
 
 ## Extension
 
-You can extend each stage of this pipeline following the [documentation](../extensibility.md).
+You can extend each stage of this pipeline following the [documentation](../../extensibility.md).
 
 For example, this can be used to display ATC results utilizing the checkstyle format with the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) ([GitHub Project](https://github.com/jenkinsci/warnings-ng-plugin)).
 To achieve this, create a file `.pipeline/extensions/ATC.groovy` with the following content:
