@@ -511,17 +511,11 @@ func readAllClasspathFiles(file string) string {
 		log.Entry().Debugf("Concatenating the class paths from %v", paths)
 	}
 	var contents string
+	const separator = ":"
 	for _, path := range paths {
-		contentsToAppend := readClasspathFile(path)
-		if contents != "" && contentsToAppend != "" &&
-			!strings.HasSuffix(contents, ":") &&
-			!strings.HasPrefix(contentsToAppend, ":") {
-			contents = contents + ":" + contentsToAppend
-		} else {
-			contents += readClasspathFile(path)
-		}
+		contents += separator + readClasspathFile(path)
 	}
-	return contents
+	return removeDuplicates(contents, separator)
 }
 
 func readClasspathFile(file string) string {
@@ -534,6 +528,28 @@ func readClasspathFile(file string) string {
 		log.Entry().Warnf("classpath from file '%v' was empty", file)
 	}
 	return result
+}
+
+func removeDuplicates(contents, separator string) string {
+	if separator == "" || contents == "" {
+		return contents
+	}
+	entries := strings.Split(contents, separator)
+	entrySet := map[string]struct{}{}
+	for _, entry := range entries {
+		if entry != "" {
+			entrySet[entry] = struct{}{}
+		}
+	}
+	contents = ""
+	for entry := range entrySet {
+		contents += entry + separator
+	}
+	if contents != "" {
+		// Remove trailing "separator"
+		contents = contents[:len(contents)-len(separator)]
+	}
+	return contents
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {

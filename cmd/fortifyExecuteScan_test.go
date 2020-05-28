@@ -664,3 +664,23 @@ func TestPopulatePipTranslate(t *testing.T) {
 		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
 	})
 }
+
+func TestRemoveDuplicates(t *testing.T) {
+	testData := []struct {
+		name      string
+		input     string
+		expected  string
+		separator string
+	}{
+		{"empty", "", "", "x"},
+		{"no duplicates", ":a::b::", "a:b", ":"},
+		{"duplicates", "::a:b:a:b::a", "a:b", ":"},
+		{"long separator", "..a.b....ab..a.b", "a.b..ab", ".."},
+		{"no separator", "abc", "abc", ""},
+	}
+	for _, data := range testData {
+		t.Run(data.name, func(t *testing.T) {
+			assert.Equal(t, data.expected, removeDuplicates(data.input, data.separator))
+		})
+	}
+}
