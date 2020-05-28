@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"io"
 	"io/ioutil"
 	"os"
@@ -608,6 +609,19 @@ func TestAutoresolveClasspath(t *testing.T) {
 		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
+	})
+
+	t.Run("real thing maven", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{
+			BuildTool:           "maven",
+			BuildDescriptorFile: "pom.xml",
+			AutodetectClasspath: true,
+		}
+
+		execRunner := command.Command{}
+		_ = os.Chdir("../../GettingStartedBookshop")
+
+		triggerFortifyScan(config, &execRunner, "build-id", "build-label", "build-project")
 	})
 }
 

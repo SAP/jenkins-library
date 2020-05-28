@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"math"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -33,7 +35,7 @@ type pullRequestService interface {
 }
 
 const checkString = "<---CHECK FORTIFY---"
-const classpathFileName = "cp.txt"
+const classpathFileName = "fortify-execute-scan-cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
@@ -475,6 +477,9 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 }
 
 func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command execRunner) string {
+	if filepath.IsAbs(file) {
+		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
+	}
 	executeOptions := maven.ExecuteOptions{
 		PomPath:             config.BuildDescriptorFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
@@ -491,7 +496,25 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, co
 	if err != nil {
 		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
 	}
-	return readClasspathFile(file)
+	return readAllClasspathFiles(file)
+}
+
+// readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
+// all files under the current directory with the given file name and concatenate their contents.
+// Otherwise it will return the contents pointed to by the absolute path.
+func readAllClasspathFiles(file string) string {
+	var paths []string
+	if filepath.IsAbs(file) {
+		paths = []string{file}
+	} else {
+		paths, _ = doublestar.Glob(filepath.Join("**", file))
+		log.Entry().Debugf("Concatenating the class paths from %v", paths)
+	}
+	var contents string
+	for _, path := range paths {
+		contents += readClasspathFile(path)
+	}
+	return contents
 }
 
 func readClasspathFile(file string) string {
