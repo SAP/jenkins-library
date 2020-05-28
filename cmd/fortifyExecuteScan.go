@@ -640,10 +640,7 @@ func translateProject(config *fortifyExecuteScanOptions, command execRunner, bui
 	log.Entry().Debugf("Translating with options: %v", translateList)
 	for _, translate := range translateList {
 		if len(classpath) > 0 {
-			log.Entry().Debugf("Setting 'autoClasspath': %v", classpath)
 			translate["autoClasspath"] = classpath
-		} else {
-			log.Entry().Debugf("Not setting 'autoClasspath': %v", classpath)
 		}
 		handleSingleTranslate(config, command, buildID, translate)
 	}
