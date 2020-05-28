@@ -574,7 +574,6 @@ func TestScanProject(t *testing.T) {
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
-
 	t.Run("quick", func(t *testing.T) {
 		execRunner := execRunnerMock{}
 		config.QuickScan = true
