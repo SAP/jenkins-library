@@ -511,11 +511,15 @@ func readAllClasspathFiles(file string) string {
 		log.Entry().Debugf("Concatenating the class paths from %v", paths)
 	}
 	var contents string
-	for i, path := range paths {
-		if i > 0 {
-			contents += ":"
+	for _, path := range paths {
+		contentsToAppend := readClasspathFile(path)
+		if contents != "" && contentsToAppend != "" &&
+			!strings.HasSuffix(contents, ":") &&
+			!strings.HasPrefix(contentsToAppend, ":") {
+			contents = contents + ":" + contentsToAppend
+		} else {
+			contents += readClasspathFile(path)
 		}
-		contents += readClasspathFile(path)
 	}
 	return contents
 }
