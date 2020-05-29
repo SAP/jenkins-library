@@ -441,6 +441,11 @@ spec:
       type: string
       description: "Scan type used for the step which can be `'maven'`, `'pip'`"
       scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: maven
     # Global maven settings, should be added to all maven steps
     - name: projectSettingsFile
       type: string
