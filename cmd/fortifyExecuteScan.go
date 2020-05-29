@@ -814,7 +814,6 @@ func setTranslateEntryIfNotEmpty(translate map[string]interface{}, key, separato
 func getSeparator() string {
 	if runtime.GOOS == "windows" {
 		return ";"
-	} else {
-		return ":"
 	}
+	return ":"
 }
