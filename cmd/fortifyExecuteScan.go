@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"math"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -34,7 +36,7 @@ type pullRequestService interface {
 }
 
 const checkString = "<---CHECK FORTIFY---"
-const classpathFileName = "cp.txt"
+const classpathFileName = "fortify-execute-scan-cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
@@ -475,18 +477,46 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	return readClasspathFile(file)
 }
 
-func autoresolveMavenClasspath(pomFilePath, file string, command execRunner) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command execRunner) string {
+	if filepath.IsAbs(file) {
+		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
+	}
 	executeOptions := maven.ExecuteOptions{
-		PomPath:      pomFilePath,
-		Goals:        []string{"dependency:build-classpath"},
-		Defines:      []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
-		ReturnStdout: false,
+		PomPath:             config.BuildDescriptorFile,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Goals:               []string{"dependency:build-classpath"},
+		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		ReturnStdout:        false,
+	}
+	if len(strings.TrimSpace(config.MvnCustomArgs)) > 0 {
+		executeOptions.Flags = tokenize(config.MvnCustomArgs)
 	}
 	_, err := maven.Execute(&executeOptions, command)
 	if err != nil {
 		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
 	}
-	return readClasspathFile(file)
+	return readAllClasspathFiles(file)
+}
+
+// readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
+// all files under the current directory with the given file name and concatenate their contents.
+// Otherwise it will return the contents pointed to by the absolute path.
+func readAllClasspathFiles(file string) string {
+	var paths []string
+	if filepath.IsAbs(file) {
+		paths = []string{file}
+	} else {
+		paths, _ = doublestar.Glob(filepath.Join("**", file))
+		log.Entry().Debugf("Concatenating the class paths from %v", paths)
+	}
+	var contents string
+	const separator = ":"
+	for _, path := range paths {
+		contents += separator + readClasspathFile(path)
+	}
+	return removeDuplicates(contents, separator)
 }
 
 func readClasspathFile(file string) string {
@@ -494,7 +524,35 @@ func readClasspathFile(file string) string {
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
 	}
-	return strings.TrimSpace(string(data))
+	result := strings.TrimSpace(string(data))
+	if len(result) == 0 {
+		log.Entry().Warnf("classpath from file '%v' was empty", file)
+	}
+	return result
+}
+
+func removeDuplicates(contents, separator string) string {
+	if separator == "" || contents == "" {
+		return contents
+	}
+	entries := strings.Split(contents, separator)
+	entrySet := map[string]struct{}{}
+	contents = ""
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		_, contained := entrySet[entry]
+		if !contained {
+			entrySet[entry] = struct{}{}
+			contents += entry + separator
+		}
+	}
+	if contents != "" {
+		// Remove trailing "separator"
+		contents = contents[:len(contents)-len(separator)]
+	}
+	return contents
 }
 
 func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
@@ -508,7 +566,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
-			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
+			classpath = autoresolveMavenClasspath(config, classpathFileName, command)
 		}
 		config.Translate, err = populateMavenTranslate(&config, classpath)
 		if err != nil {
@@ -694,6 +752,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
 			options = append(options, "-cp", t["classpath"])
+		} else {
+			log.Entry().Debugf("no field 'autoClasspath' or 'classpath' in map or both empty")
 		}
 		if len(t["extdirs"]) > 0 {
 			options = append(options, "-extdirs", t["extdirs"])

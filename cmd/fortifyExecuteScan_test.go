@@ -381,7 +381,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, 3, runner.numExecutions)
 
 		assert.Equal(t, "mvn", runner.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[1].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
@@ -611,7 +611,7 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath("pom.xml", file, &execRunner)
+		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &execRunner)
 		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
@@ -684,4 +684,24 @@ func TestPopulatePipTranslate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
 	})
+}
+
+func TestRemoveDuplicates(t *testing.T) {
+	testData := []struct {
+		name      string
+		input     string
+		expected  string
+		separator string
+	}{
+		{"empty", "", "", "x"},
+		{"no duplicates", ":a::b::", "a:b", ":"},
+		{"duplicates", "::a:b:a:b::a", "a:b", ":"},
+		{"long separator", "..a.b....ab..a.b", "a.b..ab", ".."},
+		{"no separator", "abc", "abc", ""},
+	}
+	for _, data := range testData {
+		t.Run(data.name, func(t *testing.T) {
+			assert.Equal(t, data.expected, removeDuplicates(data.input, data.separator))
+		})
+	}
 }
