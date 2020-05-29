@@ -490,9 +490,6 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, co
 		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
 		ReturnStdout:        false,
 	}
-	if len(strings.TrimSpace(config.MvnCustomArgs)) > 0 {
-		executeOptions.Flags = tokenize(config.MvnCustomArgs)
-	}
 	_, err := maven.Execute(&executeOptions, command)
 	if err != nil {
 		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
