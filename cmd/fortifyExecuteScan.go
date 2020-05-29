@@ -536,14 +536,16 @@ func removeDuplicates(contents, separator string) string {
 	}
 	entries := strings.Split(contents, separator)
 	entrySet := map[string]struct{}{}
-	for _, entry := range entries {
-		if entry != "" {
-			entrySet[entry] = struct{}{}
-		}
-	}
 	contents = ""
-	for entry := range entrySet {
-		contents += entry + separator
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		_, contained := entrySet[entry]
+		if !contained {
+			entrySet[entry] = struct{}{}
+			contents += entry + separator
+		}
 	}
 	if contents != "" {
 		// Remove trailing "separator"
