@@ -35,7 +35,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
 	}
 	clientOptions := piperhttp.ClientOptions{
-		MaxRequestDuration: 60 * time.Second,
+		MaxRequestDuration: 180 * time.Second,
 		CookieJar:          cookieJar,
 		Username:           connectionDetails.User,
 		Password:           connectionDetails.Password,

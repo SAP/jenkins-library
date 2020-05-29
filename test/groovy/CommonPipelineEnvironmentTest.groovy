@@ -61,12 +61,14 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
     @Test
     void testWritetoDisk() {
         nullScript.commonPipelineEnvironment.artifactVersion = '1.0.0'
+        nullScript.commonPipelineEnvironment.originalArtifactVersion = '2.0.0'
         nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
         nullScript.commonPipelineEnvironment.setValue('custom1', 'customVal1')
         nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
 
 
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/artifactVersion'], is('1.0.0'))
+        assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/originalArtifactVersion'], is('2.0.0'))
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/container/image'], is('myImage'))
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/custom/custom1'], is('customVal1'))
     }
@@ -76,6 +78,7 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
         fileExistsRule.existingFiles.addAll([
             '.pipeline/commonPipelineEnvironment/artifactVersion',
+            '.pipeline/commonPipelineEnvironment/originalArtifactVersion',
             '.pipeline/commonPipelineEnvironment/custom/custom1',
         ])
 
@@ -90,12 +93,14 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
         readFileRule.files.putAll([
             '.pipeline/commonPipelineEnvironment/artifactVersion': '1.0.0',
+            '.pipeline/commonPipelineEnvironment/originalArtifactVersion': '2.0.0',
             '.pipeline/commonPipelineEnvironment/custom': 'customVal1',
         ])
 
         nullScript.commonPipelineEnvironment.readFromDisk(nullScript)
 
         assertThat(nullScript.commonPipelineEnvironment.artifactVersion, is('1.0.0'))
+        assertThat(nullScript.commonPipelineEnvironment.originalArtifactVersion, is('2.0.0'))
         assertThat(nullScript.commonPipelineEnvironment.valueMap['custom1'], is('customVal1'))
     }
 

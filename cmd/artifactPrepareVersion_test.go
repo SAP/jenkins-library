@@ -205,6 +205,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.True(t, repo.pushCalled)
 
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
 		assert.Equal(t, "Test commit message", cpe.git.commitMessage)
 
@@ -247,6 +248,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		assert.False(t, repo.pushCalled)
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
 	})
 

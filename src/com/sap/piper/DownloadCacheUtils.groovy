@@ -3,7 +3,7 @@ package com.sap.piper
 
 class DownloadCacheUtils {
 
-    static Map injectDownloadCacheInMavenParameters(Script script, Map parameters) {
+    static Map injectDownloadCacheInParameters(Script script, Map parameters, BuildTool buildTool) {
         if (DownloadCacheUtils.isEnabled(script)) {
 
             if (!parameters.dockerOptions) {
@@ -18,11 +18,17 @@ class DownloadCacheUtils {
             }
             parameters.dockerOptions.add(DownloadCacheUtils.getDockerOptions(script))
 
-            if (parameters.globalSettingsFile) {
-                throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
+            if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
+                if (parameters.globalSettingsFile) {
+                    throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
+                }
+
+                parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
             }
 
-            parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
+            if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
+                parameters['defaultNpmRegistry'] = DownloadCacheUtils.getNpmRegistryUri(script)
+            }
         }
 
         return parameters
@@ -76,9 +82,10 @@ class DownloadCacheUtils {
     }
 
     static String getNpmRegistryUri(Script script) {
+        String npmRegistry = ''
         script.node('master') {
-            return "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
+            npmRegistry = "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
         }
-        return ""
+        return npmRegistry
     }
 }
