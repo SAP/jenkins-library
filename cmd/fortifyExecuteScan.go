@@ -789,13 +789,15 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 	return options
 }
 
-func getSuppliedOrDefaultListAsString(suppliedList, defaultList []string, separator string) string {
-	var effectiveList []string
+func getSuppliedOrDefaultList(suppliedList, defaultList []string) []string {
 	if len(suppliedList) > 0 {
-		effectiveList = suppliedList
-	} else {
-		effectiveList = defaultList
+		return suppliedList
 	}
+	return defaultList
+}
+
+func getSuppliedOrDefaultListAsString(suppliedList, defaultList []string, separator string) string {
+	effectiveList := getSuppliedOrDefaultList(suppliedList, defaultList)
 	return strings.Join(effectiveList, separator)
 }
 
