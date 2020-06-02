@@ -1,0 +1,11 @@
+metadata:
+  name: npmExecuteLint
+  description: Execute ci-lint script on all npm packages in a project or execute default linting
+  longDescription: |
+    Execute ci-lint script for all package json files, if they implement the script. If no ci-lint script is defined
+    either use ESLint configurations present in the project or use the provided general purpose configuration to run ESLint.
+spec:
+  containers:
+    - name: node
+      image: node:12-buster-slim
+      imagePullPolicy: Never
