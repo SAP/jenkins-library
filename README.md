@@ -8,7 +8,6 @@ The Project "Piper" offers default pipelines to easily implement CI/CD processes
 
 # User Documentation
 
-
 If you want to view the User Documentation of Project Piper please follow this [Piper Pages Link][piper-library-user-doc].
 
 # Known Issues
