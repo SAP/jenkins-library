@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"math"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -33,7 +35,7 @@ type pullRequestService interface {
 }
 
 const checkString = "<---CHECK FORTIFY---"
-const classpathFileName = "cp.txt"
+const classpathFileName = "fortify-execute-scan-cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
@@ -107,7 +109,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		}
 	}
 
-	triggerFortifyScan(config, command, buildID, buildLabel)
+	triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
 
 	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
@@ -474,18 +476,46 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	return readClasspathFile(file)
 }
 
-func autoresolveMavenClasspath(pomFilePath, file string, command execRunner) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command execRunner) string {
+	if filepath.IsAbs(file) {
+		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
+	}
 	executeOptions := maven.ExecuteOptions{
-		PomPath:      pomFilePath,
-		Goals:        []string{"dependency:build-classpath"},
-		Defines:      []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
-		ReturnStdout: false,
+		PomPath:             config.BuildDescriptorFile,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+		Goals:               []string{"dependency:build-classpath"},
+		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		ReturnStdout:        false,
+	}
+	if len(strings.TrimSpace(config.MvnCustomArgs)) > 0 {
+		executeOptions.Flags = tokenize(config.MvnCustomArgs)
 	}
 	_, err := maven.Execute(&executeOptions, command)
 	if err != nil {
 		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
 	}
-	return readClasspathFile(file)
+	return readAllClasspathFiles(file)
+}
+
+// readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
+// all files under the current directory with the given file name and concatenate their contents.
+// Otherwise it will return the contents pointed to by the absolute path.
+func readAllClasspathFiles(file string) string {
+	var paths []string
+	if filepath.IsAbs(file) {
+		paths = []string{file}
+	} else {
+		paths, _ = doublestar.Glob(filepath.Join("**", file))
+		log.Entry().Debugf("Concatenating the class paths from %v", paths)
+	}
+	var contents string
+	const separator = ":"
+	for _, path := range paths {
+		contents += separator + readClasspathFile(path)
+	}
+	return removeDuplicates(contents, separator)
 }
 
 func readClasspathFile(file string) string {
@@ -493,10 +523,39 @@ func readClasspathFile(file string) string {
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to read classpath from file '%v'", file)
 	}
-	return strings.TrimSpace(string(data))
+	result := strings.TrimSpace(string(data))
+	if len(result) == 0 {
+		log.Entry().Warnf("classpath from file '%v' was empty", file)
+	}
+	return result
 }
 
-func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+func removeDuplicates(contents, separator string) string {
+	if separator == "" || contents == "" {
+		return contents
+	}
+	entries := strings.Split(contents, separator)
+	entrySet := map[string]struct{}{}
+	contents = ""
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		_, contained := entrySet[entry]
+		if !contained {
+			entrySet[entry] = struct{}{}
+			contents += entry + separator
+		}
+	}
+	if contents != "" {
+		// Remove trailing "separator"
+		contents = contents[:len(contents)-len(separator)]
+	}
+	return contents
+}
+
+func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
+	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
 	if config.PythonVersion != "python3" {
@@ -506,13 +565,11 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
-			classpath = autoresolveMavenClasspath(config.BuildDescriptorFile, classpathFileName, command)
+			classpath = autoresolveMavenClasspath(config, classpathFileName, command)
 		}
-		if len(config.Translate) == 0 {
-			translate := `[{"classpath":"`
-			translate += classpath
-			translate += `","src":"**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}]`
-			config.Translate = translate
+		config.Translate, err = populateMavenTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
 	}
 	if config.BuildTool == "pip" {
@@ -529,23 +586,54 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 
 		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
-		if len(config.Translate) == 0 {
-			translate := `[{"pythonPath":"`
-			translate += classpath
-			translate += ";"
-			translate += config.PythonAdditionalPath
-			translate += `","pythonIncludes":"`
-			translate += config.PythonIncludes
-			translate += `","pythonExcludes":"`
-			translate += strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
-			translate += `"}]`
-			config.Translate = translate
+		config.Translate, err = populatePipTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or pythonIncludes ('%s') parameter", config.PythonAdditionalPath, config.PythonIncludes)
 		}
+
 	}
 
 	translateProject(&config, command, buildID, classpath)
 
-	scanProject(&config, command, buildID, buildLabel)
+	scanProject(&config, command, buildID, buildLabel, buildProject)
+}
+
+func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+
+	translateList[0]["pythonPath"] = classpath + ";" + config.PythonAdditionalPath
+	translateList[0]["pythonIncludes"] = config.PythonIncludes
+	translateList[0]["pythonExcludes"] = strings.ReplaceAll(config.PythonExcludes, "-exclude ", "")
+
+	translateJSON, err := json.Marshal(translateList)
+
+	return string(translateJSON), err
+}
+
+func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+	translateList[0]["classpath"] = classpath
+
+	if len(config.Src) > 0 {
+		translateList[0]["src"] = config.Src
+	}
+	if len(config.Exclude) > 0 {
+		translateList[0]["exclude"] = config.Exclude
+	}
+
+	translateJSON, err := json.Marshal(translateList)
+
+	return string(translateJSON), err
 }
 
 func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
@@ -581,7 +669,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command execRunner
 	}
 }
 
-func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel string) {
+func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
 	var scanOptions = []string{
 		"-verbose",
 		"-64",
@@ -595,6 +683,9 @@ func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID,
 	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
+	}
+	if len(buildProject) > 0 {
+		scanOptions = append(scanOptions, "-build-project", buildProject)
 	}
 	scanOptions = append(scanOptions, "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr")
 
@@ -654,6 +745,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
 			options = append(options, "-cp", t["classpath"])
+		} else {
+			log.Entry().Debugf("no field 'autoClasspath' or 'classpath' in map or both empty")
 		}
 		if len(t["extdirs"]) > 0 {
 			options = append(options, "-extdirs", t["extdirs"])
@@ -669,6 +762,9 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		}
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
+		}
+		if len(t["exclude"]) > 0 {
+			options = append(options, "-exclude", t["exclude"])
 		}
 		return append(options, tokenize(t["src"])...)
 	}

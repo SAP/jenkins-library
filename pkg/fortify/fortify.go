@@ -588,9 +588,9 @@ func (sys *SystemInstance) GenerateQGateReport(projectID, projectVersionID, repo
 	paramType := "SINGLE_PROJECT"
 	paramName := "Q-gate-report"
 	reportType := "PORTFOLIO"
-	inputReportParameters := []*models.InputReportParameter{&models.InputReportParameter{Name: &paramName, Identifier: &paramIdentifier, ParamValue: projectVersionID, Type: &paramType}}
-	reportProjectVersions := []*models.ReportProjectVersion{&models.ReportProjectVersion{ID: projectVersionID, Name: projectVersionName}}
-	reportProjects := []*models.ReportProject{&models.ReportProject{ID: projectID, Name: projectName, Versions: reportProjectVersions}}
+	inputReportParameters := []*models.InputReportParameter{{Name: &paramName, Identifier: &paramIdentifier, ParamValue: projectVersionID, Type: &paramType}}
+	reportProjectVersions := []*models.ReportProjectVersion{{ID: projectVersionID, Name: projectVersionName}}
+	reportProjects := []*models.ReportProject{{ID: projectID, Name: projectName, Versions: reportProjectVersions}}
 	report := models.SavedReport{Name: fmt.Sprintf("FortifyReport: %v:%v", projectName, projectVersionName), Type: &reportType, ReportDefinitionID: &reportTemplateID, Format: &reportFormat, Projects: reportProjects, InputReportParameters: inputReportParameters}
 	params := &saved_report_controller.CreateSavedReportParams{Resource: &report}
 	params.WithTimeout(sys.timeout)
@@ -621,6 +621,7 @@ func (sys *SystemInstance) invalidateFileTokens() error {
 }
 
 func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, error) {
+	log.Entry().Debugf("fetching file token of type %v", tokenType)
 	token := models.FileToken{FileTokenType: &tokenType}
 	params := &file_token_controller.CreateFileTokenParams{Resource: &token}
 	params.WithTimeout(sys.timeout)
@@ -629,21 +630,6 @@ func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, er
 		return nil, err
 	}
 	return result.GetPayload().Data, nil
-}
-
-func (sys *SystemInstance) getFileUploadToken() (*models.FileToken, error) {
-	log.Entry().Debug("fetching upload token")
-	return sys.getFileToken("UPLOAD")
-}
-
-func (sys *SystemInstance) getFileDownloadToken() (*models.FileToken, error) {
-	log.Entry().Debug("fetching download token")
-	return sys.getFileToken("DOWNLOAD")
-}
-
-func (sys *SystemInstance) getReportFileToken() (*models.FileToken, error) {
-	log.Entry().Debug("fetching report download token")
-	return sys.getFileToken("REPORT_FILE")
 }
 
 // UploadResultFile uploads a fpr file to the fortify backend
@@ -658,7 +644,7 @@ func (sys *SystemInstance) UploadResultFile(endpoint, file string, projectVersio
 }
 
 func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileContent io.Reader, projectVersionID int64) error {
-	token, err := sys.getFileUploadToken()
+	token, err := sys.getFileToken("UPLOAD")
 	if err != nil {
 		return err
 	}
@@ -684,7 +670,13 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 }
 
 // DownloadFile downloads a file from Fortify backend
-func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadToken string, projectVersionID int64) ([]byte, error) {
+func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, projectVersionID int64) ([]byte, error) {
+	token, err := sys.getFileToken(tokenType)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error fetching file token")
+	}
+	defer sys.invalidateFileTokens()
+
 	header := http.Header{}
 	header.Add("Cache-Control", "no-cache, no-store, must-revalidate")
 	header.Add("Pragma", "no-cache")
@@ -692,10 +684,9 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 	header.Add("Content-Type", "application/form-data")
 	body := url.Values{
 		"id":  {fmt.Sprintf("%v", projectVersionID)},
-		"mat": {downloadToken},
+		"mat": {token.Token},
 	}
 	var response *http.Response
-	var err error
 	if method == http.MethodGet {
 		response, err = sys.httpClient.SendRequest(method, fmt.Sprintf("%v%v?%v", sys.serverURL, endpoint, body.Encode()), nil, header, nil)
 	} else {
@@ -714,12 +705,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, downloadTo
 
 // DownloadReportFile downloads a report file from Fortify backend
 func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	token, err := sys.getReportFileToken()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error fetching report download token")
-	}
-	defer sys.invalidateFileTokens()
-	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", token.Token, projectVersionID)
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", projectVersionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error downloading report file")
 	}
@@ -728,12 +714,7 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID 
 
 // DownloadResultFile downloads a result file from Fortify backend
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	token, err := sys.getFileDownloadToken()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error fetching result file download token")
-	}
-	defer sys.invalidateFileTokens()
-	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/zip", token.Token, projectVersionID)
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/zip", "DOWNLOAD", projectVersionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error downloading result file")
 	}

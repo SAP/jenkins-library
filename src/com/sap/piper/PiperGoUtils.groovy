@@ -26,7 +26,7 @@ class PiperGoUtils implements Serializable {
         if (steps.env.REPOSITORY_UNDER_TEST && steps.env.LIBRARY_VERSION_UNDER_TEST) {
             steps.echo("Running in a consumer test, building unit-under-test binary for verification.")
             steps.dockerExecute(script: steps, dockerImage: 'golang:1.13', dockerOptions: '-u 0', dockerEnvVars: [
-                REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
+                REPOSITORY_UNDER_TEST     : steps.env.REPOSITORY_UNDER_TEST,
                 LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
             ]) {
                 steps.sh 'wget https://github.com/$REPOSITORY_UNDER_TEST/archive/$LIBRARY_VERSION_UNDER_TEST.tar.gz'
@@ -39,11 +39,13 @@ class PiperGoUtils implements Serializable {
         } else {
             def libraries = getLibrariesInfo()
             String version
-            libraries.each {lib ->
+            libraries.each { lib ->
                 if (lib.name == 'piper-lib-os') {
                     version = lib.version
                 }
             }
+
+            JenkinsUtils.assertPluginIsActive('http_request')
 
             def fallbackUrl = 'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'
             def piperBinUrl = (version == 'master') ? fallbackUrl : "https://github.com/SAP/jenkins-library/releases/download/${version}/piper"
@@ -51,15 +53,14 @@ class PiperGoUtils implements Serializable {
             boolean downloaded = downloadGoBinary(piperBinUrl)
             if (!downloaded) {
                 //Inform that no Piper binary is available for used library branch
-                steps.echo ("Not able to download go binary of Piper for version ${version}")
+                steps.echo("Not able to download go binary of Piper for version ${version}")
                 //Fallback to master version & throw error in case this fails
-                steps.retry(5) {
+                steps.retry(12) {
                     if (!downloadGoBinary(fallbackUrl)) {
-                        steps.sleep(2)
+                        steps.sleep(10)
                         steps.error("Download of Piper go binary failed.")
                     }
                 }
-
             }
         }
         try {
@@ -76,15 +77,11 @@ class PiperGoUtils implements Serializable {
     }
 
     private boolean downloadGoBinary(url) {
-
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
-
-            if (httpStatus == '200') {
-                steps.sh(script: "chmod +x ${piperExecutable}")
-                return true
-            }
-        } catch(err) {
+            steps.httpRequest ignoreSslErrors: true, outputFile: piperExecutable, url: url, validResponseCodes: '200'
+            steps.sh(script: "chmod +x ${piperExecutable}")
+            return true
+        } catch (err) {
             //nothing to do since error should just result in downloaded=false
             steps.echo "Failed downloading Piper go binary with error '${err}'"
         }

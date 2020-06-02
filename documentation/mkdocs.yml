@@ -54,6 +54,7 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
+        - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md

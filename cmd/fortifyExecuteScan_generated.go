@@ -41,6 +41,8 @@ type fortifyExecuteScanOptions struct {
 	PollingMinutes                  int    `json:"pollingMinutes,omitempty"`
 	QuickScan                       bool   `json:"quickScan,omitempty"`
 	Translate                       string `json:"translate,omitempty"`
+	Src                             string `json:"src,omitempty"`
+	Exclude                         string `json:"exclude,omitempty"`
 	APIEndpoint                     string `json:"apiEndpoint,omitempty"`
 	ReportType                      string `json:"reportType,omitempty"`
 	PythonAdditionalPath            string `json:"pythonAdditionalPath,omitempty"`
@@ -63,6 +65,9 @@ type fortifyExecuteScanOptions struct {
 	PullRequestName                 string `json:"pullRequestName,omitempty"`
 	PullRequestMessageRegex         string `json:"pullRequestMessageRegex,omitempty"`
 	BuildTool                       string `json:"buildTool,omitempty"`
+	ProjectSettingsFile             string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string `json:"globalSettingsFile,omitempty"`
+	M2Path                          string `json:"m2Path,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -209,7 +214,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", `/transfer/reportDownload.html`, "Fortify SSC endpoint for Report downloads")
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
-	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
+	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
+	cmd.Flags().StringVar(&stepConfig.Src, "src", `**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*`, "Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If `translate` is set, this will ignored.")
+	cmd.Flags().StringVar(&stepConfig.Exclude, "exclude", os.Getenv("PIPER_exclude"), "Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If `translate` is set, this will ignored.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
 	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", `./lib;.`, "The addional path which can be used in `buildTool: 'pip'` for customization purposes")
@@ -232,6 +239,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", `.*Merge pull request #(\\d+) from.*`, "Regex used to identify the PR-XXX reference within the merge commit message")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 
 	cmd.MarkFlagRequired("authToken")
 }
@@ -447,6 +457,22 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "src",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "exclude",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "apiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -621,6 +647,30 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 				},
 			},

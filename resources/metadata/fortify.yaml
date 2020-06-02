@@ -50,7 +50,7 @@ spec:
       secret: true
     - name: autoCreate
       type: bool
-      description: Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend 
+      description: Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend
       scope:
       - PARAMETERS
       - STAGES
@@ -245,11 +245,26 @@ spec:
       default: false
     - name: translate
       type: string
-      description: JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`
+      description: "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
+    - name: src
+      type: string
+      description: Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If `translate` is set, this will ignored.
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*"
+    - name: exclude
+      type: string
+      description: Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If `translate` is set, this will ignored.
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: apiEndpoint
       aliases:
       - name: fortifyApiEndpoint
@@ -281,7 +296,7 @@ spec:
       deprecated: true
     - name: artifactUrl
       type: string
-      description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build' 
+      description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build'
       scope:
       - PARAMETERS
       - STAGES
@@ -447,6 +462,37 @@ spec:
       - STAGES
       - STEPS
       default: maven
+    # Global maven settings, should be added to all maven steps
+    - name: projectSettingsFile
+      type: string
+      description: Path to the mvn settings file that should be used as project settings file.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/projectSettingsFile
+    - name: globalSettingsFile
+      type: string
+      description: Path to the mvn settings file that should be used as global settings file.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/globalSettingsFile
+    - name: m2Path
+      type: string
+      description: Path to the location of the local repository that should be used.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/m2Path
   containers:
   - image: ppiper/fortify
     workingDir: /home/piper

@@ -370,19 +370,19 @@ func TestTriggerFortifyScan(t *testing.T) {
 		}()
 
 		runner := execRunnerMock{}
-		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G"}
-		triggerFortifyScan(config, &runner, "test", "testLabel")
+		config := fortifyExecuteScanOptions{BuildTool: "maven", AutodetectClasspath: true, BuildDescriptorFile: "./pom.xml", Memory: "-Xmx4G -Xms2G", Src: "**/*.xml **/*.html **/*.jsp **/*.js src/main/resources/**/* src/main/java/**/*"}
+		triggerFortifyScan(config, &runner, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, runner.numExecutions)
 
 		assert.Equal(t, "mvn", runner.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[1].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[2].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
 	})
 
 	t.Run("pip", func(t *testing.T) {
@@ -400,7 +400,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		runner := execRunnerMock{}
 		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
-		triggerFortifyScan(config, &runner, "test", "testLabel")
+		triggerFortifyScan(config, &runner, "test", "testLabel", "")
 
 		assert.Equal(t, 5, runner.numExecutions)
 
@@ -569,15 +569,15 @@ func TestScanProject(t *testing.T) {
 
 	t.Run("normal", func(t *testing.T) {
 		execRunner := execRunnerMock{}
-		scanProject(&config, &execRunner, "/commit/7267658798797", "label")
+		scanProject(&config, &execRunner, "/commit/7267658798797", "label", "my.group-myartifact")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("quick", func(t *testing.T) {
 		execRunner := execRunnerMock{}
 		config.QuickScan = true
-		scanProject(&config, &execRunner, "/commit/7267658798797", "")
+		scanProject(&config, &execRunner, "/commit/7267658798797", "", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
@@ -604,9 +604,83 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath("pom.xml", file, &execRunner)
+		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &execRunner)
 		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
+}
+
+func TestPopulateMavenTranslate(t *testing.T) {
+	t.Run("src without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Src: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","src":"./**/*"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("exclude without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Exclude: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"classpath":""}]`, Src: "./**/*", Exclude: "./**/*"}
+		translate, err := populateMavenTranslate(&config, "ignored/path")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"classpath":""}]`, translate, "Expected different parameters")
+	})
+
+}
+
+func TestPopulatePipTranslate(t *testing.T) {
+	t.Run("PythonAdditionalPath without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonAdditionalPath: "./lib;."}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"","pythonIncludes":"","pythonPath":";./lib;."}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("PythonIncludes without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonIncludes: "./**/*"}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"","pythonIncludes":"./**/*","pythonPath":";"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("PythonExcludes without translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{PythonExcludes: "-exclude ./**/tests/**/*;./**/setup.py"}
+		translate, err := populatePipTranslate(&config, "")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonExcludes":"./**/tests/**/*;./**/setup.py","pythonIncludes":"","pythonPath":";"}]`, translate, "Expected different parameters")
+	})
+
+	t.Run("with translate", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{Translate: `[{"pythonPath":""}]`, PythonIncludes: "./**/*", PythonAdditionalPath: "./lib;."}
+		translate, err := populatePipTranslate(&config, "ignored/path")
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"pythonPath":""}]`, translate, "Expected different parameters")
+	})
+}
+
+func TestRemoveDuplicates(t *testing.T) {
+	testData := []struct {
+		name      string
+		input     string
+		expected  string
+		separator string
+	}{
+		{"empty", "", "", "x"},
+		{"no duplicates", ":a::b::", "a:b", ":"},
+		{"duplicates", "::a:b:a:b::a", "a:b", ":"},
+		{"long separator", "..a.b....ab..a.b", "a.b..ab", ".."},
+		{"no separator", "abc", "abc", ""},
+	}
+	for _, data := range testData {
+		t.Run(data.name, func(t *testing.T) {
+			assert.Equal(t, data.expected, removeDuplicates(data.input, data.separator))
+		})
+	}
 }
