@@ -375,7 +375,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 			AutodetectClasspath: true,
 			BuildDescriptorFile: "./pom.xml",
 			Memory:              "-Xmx4G -Xms2G",
-			Src:                 []string{"**/*.xml", "**/*.html **/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+			Src:                 []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
 		triggerFortifyScan(config, &runner, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, runner.numExecutions)
@@ -540,7 +540,7 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 func TestTranslateProject(t *testing.T) {
 	t.Run("python", func(t *testing.T) {
 		execRunner := execRunnerMock{}
-		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","pythonIncludes":"./**/*","pythonExcludes":"./tests/**/*"}]`}
+		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","src":"./**/*","exclude":"./tests/**/*"}]`}
 		translateProject(&config, &execRunner, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
@@ -551,7 +551,7 @@ func TestTranslateProject(t *testing.T) {
 		config := fortifyExecuteScanOptions{BuildTool: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
 		translateProject(&config, &execRunner, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-exclude", "./tests/**/*", "-libdirs", "tmp/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-libdirs", "tmp/", "-exclude", "./tests/**/*", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("java", func(t *testing.T) {
@@ -630,7 +630,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {
@@ -647,7 +647,7 @@ func TestPopulatePipTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{PythonAdditionalPath: []string{"./lib", "."}}
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
-		expected := fmt.Sprintf(`[{"pythonExcludes":"./**/tests/**/*%v./**/setup.py","pythonIncludes":"./**/*","pythonPath":"%v./lib%v."}]`,
+		expected := fmt.Sprintf(`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v./lib%v.","src":"./**/*"}]`,
 			separator, separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
@@ -658,7 +658,7 @@ func TestPopulatePipTranslate(t *testing.T) {
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"pythonExcludes":"./**/tests/**/*%v./**/setup.py","pythonIncludes":"./**/*.py","pythonPath":"%v"}]`,
+			`[{"exclude":"./**/tests/**/*%v./**/setup.py","pythonPath":"%v","src":"./**/*.py"}]`,
 			separator, separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)
@@ -669,7 +669,7 @@ func TestPopulatePipTranslate(t *testing.T) {
 		translate, err := populatePipTranslate(&config, "")
 		separator := getSeparator()
 		expected := fmt.Sprintf(
-			`[{"pythonExcludes":"./**/tests/**/*","pythonIncludes":"./**/*","pythonPath":"%v"}]`,
+			`[{"exclude":"./**/tests/**/*","pythonPath":"%v","src":"./**/*"}]`,
 			separator)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, translate)

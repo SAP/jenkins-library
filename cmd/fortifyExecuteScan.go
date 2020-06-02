@@ -610,9 +610,9 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	translateList[0]["pythonPath"] = classpath + separator +
 		getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
-	translateList[0]["pythonIncludes"] = getSuppliedOrDefaultListAsString(
-		config.Src, []string{"./**/*"}, " ")
-	translateList[0]["pythonExcludes"] = getSuppliedOrDefaultListAsString(
+	translateList[0]["src"] = getSuppliedOrDefaultListAsString(
+		config.Src, []string{"./**/*"}, ":")
+	translateList[0]["exclude"] = getSuppliedOrDefaultListAsString(
 		config.Exclude, []string{"./**/tests/**/*", "./**/setup.py"}, separator)
 
 	translateJSON, err := json.Marshal(translateList)
@@ -629,8 +629,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	translateList = append(translateList, make(map[string]interface{}))
 	translateList[0]["classpath"] = classpath
 
-	// "src" will be tokenized at " " in the end. This is probably fragile as it does not allow paths with spaces.
-	setTranslateEntryIfNotEmpty(translateList[0], "src", " ", config.Src,
+	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
 		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{})
@@ -729,22 +728,19 @@ func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteS
 }
 
 func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[string]string) []string {
-	if config.BuildTool == "windows" {
+	switch config.BuildTool {
+	case "windows":
 		if len(t["aspnetcore"]) > 0 {
 			options = append(options, "-aspnetcore")
 		}
 		if len(t["dotNetCoreVersion"]) > 0 {
 			options = append(options, "-dotnet-core-version", t["dotNetCoreVersion"])
 		}
-		if len(t["exclude"]) > 0 {
-			options = append(options, "-exclude", t["exclude"])
-		}
 		if len(t["libDirs"]) > 0 {
 			options = append(options, "-libdirs", t["libDirs"])
 		}
-		return append(options, tokenize(t["src"])...)
-	}
-	if config.BuildTool == "maven" {
+
+	case "maven":
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-cp", t["autoClasspath"])
 		} else if len(t["classpath"]) > 0 {
@@ -767,12 +763,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
 		}
-		if len(t["exclude"]) > 0 {
-			options = append(options, "-exclude", t["exclude"])
-		}
-		return append(options, tokenize(t["src"])...)
-	}
-	if config.BuildTool == "pip" {
+
+	case "pip":
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-python-path", t["autoClasspath"])
 		} else if len(t["pythonPath"]) > 0 {
@@ -781,12 +773,15 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
-		if len(t["pythonExcludes"]) > 0 {
-			options = append(options, "-exclude", t["pythonExcludes"])
-		}
-		return append(options, tokenize(t["pythonIncludes"])...)
+
+	default:
+		return options
 	}
-	return options
+
+	if len(t["exclude"]) > 0 {
+		options = append(options, "-exclude", t["exclude"])
+	}
+	return append(options, strings.Split(t["src"], ":")...)
 }
 
 func getSuppliedOrDefaultList(suppliedList, defaultList []string) []string {
