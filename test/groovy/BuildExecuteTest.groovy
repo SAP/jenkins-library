@@ -15,7 +15,11 @@ import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.CoreMatchers.hasItem
 import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.CoreMatchers.nullValue
+import static org.junit.Assert.assertArrayEquals
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class BuildExecuteTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
@@ -96,7 +100,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testNpm() {
         def buildToolCalled = false
-        helper.registerAllowedMethod('npmExecute', [Map.class], {m ->
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
             buildToolCalled = true
             return
         })
@@ -105,6 +109,46 @@ class BuildExecuteTest extends BasePiperTest {
             buildTool: 'npm',
         )
         assertThat(buildToolCalled, is(true))
+    }
+
+    @Test
+    void testNpmWithScripts() {
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+            assertEquals('foo', m['runScripts'][0])
+            assertEquals('bar', m['runScripts'][1])
+            return
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            npmRunScripts: ['foo', 'bar']
+        )
+    }
+
+    @Test
+    void testNpmWithInstallFalse() {
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+            assertFalse(m['install'])
+            return
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            npmInstall: false
+        )
+    }
+
+    @Test
+    void testNpmWithInstallTrue() {
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+            assertTrue(m['install'])
+            return
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'npm',
+            npmInstall: true
+        )
     }
 
     @Test
