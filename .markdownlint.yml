@@ -21,5 +21,4 @@ MD039: false #no-space-in-links
 MD040: false #fenced-code-language
 MD042: false #no-empty-links
 MD041: false #first-line-heading/first-line-h1
-#MD046: false #code-block-style
-
+MD046: false #code-block-style
