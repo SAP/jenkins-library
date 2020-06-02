@@ -573,8 +573,8 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, bu
 	if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
 			separator := getSeparator()
-			template := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
-			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", template}, classpathFileName, command)
+			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
+			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", script}, classpathFileName, command)
 		}
 		// install the dev dependencies
 		if len(config.PythonRequirementsFile) > 0 {
