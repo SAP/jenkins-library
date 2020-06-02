@@ -95,7 +95,7 @@ spec:
         audited issues are enforced"
       scope:
         - PARAMETERS
-        - STAGE
+        - STAGES
         - STEPS
       default: "Spot Checks of Each Category"
     - name: pythonRequirementsInstallSuffix
