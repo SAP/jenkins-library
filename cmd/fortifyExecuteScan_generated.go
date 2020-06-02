@@ -307,7 +307,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 					{
 						Name:        "spotAuditIssueGroups",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGE", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -438,7 +438,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pythonIncludes"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "exclude",
@@ -446,7 +446,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pythonExcludes"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "apiEndpoint",

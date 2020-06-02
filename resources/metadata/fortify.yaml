@@ -250,9 +250,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      aliases:
-        - name: pythonIncludes
-          deprecated: true
     - name: exclude
       type: "[]string"
       description: "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g.,
@@ -261,9 +258,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      aliases:
-        - name: pythonExcludes
-          deprecated: true
     - name: apiEndpoint
       aliases:
       - name: fortifyApiEndpoint
