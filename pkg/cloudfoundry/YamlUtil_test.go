@@ -5,9 +5,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"regexp"
 	"testing"
 	"time"
-	"regexp"
 )
 
 type fileInfoMock struct {
@@ -41,7 +41,6 @@ func TestFilesRelated(t *testing.T) {
 		_traverse = oldTraverse
 	}()
 
-
 	reset := func() {
 
 		writeFileCalled = false
@@ -53,19 +52,21 @@ func TestFilesRelated(t *testing.T) {
 		_stat = func(name string) (os.FileInfo, error) {
 			return fileInfoMock{}, nil
 		}
-	
+
 		_readFile = func(name string) ([]byte, error) {
-			if name == "manifest.yml" || name == "replacements.yml" {
+			if name == "manifest.yml" {
+				return []byte("a: dummy"), nil
+			} else if name == "replacements.yml" {
 				return []byte{}, nil
 			}
 			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
 		}
-	
+
 		_writeFile = func(name string, data []byte, mode os.FileMode) error {
 			writeFileCalled = true
 			return nil
 		}
-	
+
 		_traverse = func(_ interface{}, _replacements map[string]interface{}) (interface{}, bool, error) {
 			replacements = _replacements
 			traverseCalled = true
@@ -106,27 +107,93 @@ func TestFilesRelated(t *testing.T) {
 		}
 	})
 
-	t.Run("Read multiple replacement yamls in one file",func(t *testing.T) {
+	t.Run("Read multiple replacement yamls in one file", func(t *testing.T) {
 
 		// expected behaviour in case of multiple yaml documents in one "file":
 		// we merge the content. The latest wins
 
 		_readFile = func(name string) ([]byte, error) {
 			if name == "manifest.yml" {
-				return []byte{}, nil
+				return []byte("a: dummy"), nil
 			} else if name == "replacements.yml" {
 				// here we have two yaml documents in one "file"
 				return []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"), nil
 			}
 			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
 		}
-	
+
 		defer reset()
 
 		_, err := Substitute("manifest.yml", "replacements.yml")
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]interface{}{"a": "b", "c": "d", "zz": 1234},  replacements)
+			assert.Equal(t, map[string]interface{}{"a": "b", "c": "d", "zz": 1234}, replacements)
+		}
+	})
+
+	t.Run("Handle multi manifest", func(t *testing.T) {
+
+		var written string
+
+		_writeFile = func(name string, data []byte, mode os.FileMode) error {
+			written = string(data)
+			return nil
+		}
+
+		_traverse = func(_ interface{}, _replacements map[string]interface{}) (interface{}, bool, error) {
+			return map[string]interface{}{"called": true}, true, nil
+		}
+
+		_readFile = func(name string) ([]byte, error) {
+			if name == "manifest.yml" {
+				return []byte("a: dummy\n---\n b: otherDummy\n"), nil
+			} else if name == "replacements.yml" {
+				// here we have two yaml documents in one "file" ...
+				return []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"), nil
+			}
+			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+		}
+
+		defer reset()
+
+		_, err := Substitute("manifest.yml", "replacements.yml")
+
+		if assert.NoError(t, err) {
+			// ... the two yaml files results in two yaml documents, separated by '---'
+			assert.Equal(t, "called: true\n---\ncalled: true\n", written)
+		}
+	})
+
+	t.Run("Handle single manifest", func(t *testing.T) {
+
+		_readFile = func(name string) ([]byte, error) {
+			if name == "manifest.yml" {
+				return []byte("a: dummy\n"), nil
+			} else if name == "replacements.yml" {
+				// here we have two yaml documents in one "file"
+				return []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"), nil
+			}
+			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+		}
+
+		var written string
+
+		_writeFile = func(name string, data []byte, mode os.FileMode) error {
+			written = string(data)
+			return nil
+		}
+
+		_traverse = func(_ interface{}, _replacements map[string]interface{}) (interface{}, bool, error) {
+			return map[string]interface{}{"called": true}, true, nil
+		}
+
+		defer reset()
+
+		_, err := Substitute("manifest.yml", "replacements.yml")
+
+		if assert.NoError(t, err) {
+			// we have a single yaml document (no '---' inbetween)
+			assert.Equal(t, "called: true\n", written)
 		}
 	})
 
@@ -161,7 +228,7 @@ func TestSubstitution(t *testing.T) {
 	replacements := make(map[string]interface{})
 
 	yaml.Unmarshal([]byte(
-`unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
+		`unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
 xsuaa-instance-name: uniquePrefix-catalog-service-odatav2-xsuaa
 hana-instance-name: uniquePrefix-catalog-service-odatav2-hana
 integer-variable: 1
@@ -215,13 +282,12 @@ object-variable:
 		assert.True(t, updated)
 	})
 
-	
 	t.Run("Check no variables left", func(t *testing.T) {
 
 		data, err := yaml.Marshal(&replaced)
 
 		if assert.NoError(t, err) {
-			assert.Nil(t, regexp.MustCompile("\\(\\(.*\\)\\)").Find(data))		
+			assert.Nil(t, regexp.MustCompile("\\(\\(.*\\)\\)").Find(data))
 		}
 	})
 

@@ -3,15 +3,15 @@ package cloudfoundry
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/ghodss/yaml"
+	//"github.com/ghodss/yaml"
+	"bytes"
 	gopkgyaml "gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
-	"bytes"
-	"io"
 )
 
 var _readFile = ioutil.ReadFile
@@ -33,19 +33,15 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 		return false, err
 	}
 
-	mIn := make(map[string]interface{})
 	mReplacements := make(map[string]interface{})
 
-
-
-	yaml.Unmarshal(bIn, &mIn)
-
 	r := bytes.NewReader(bReplacements)
+	in := bytes.NewReader(bIn)
 
-	decoder := gopkgyaml.NewDecoder(r)
+	replacementsDecoder := gopkgyaml.NewDecoder(r)
 
 	for {
-		decodeErr := decoder.Decode(&mReplacements)
+		decodeErr := replacementsDecoder.Decode(&mReplacements)
 
 		if decodeErr != nil {
 			if decodeErr == io.EOF {
@@ -55,24 +51,57 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 		}
 	}
 
-	out, updated, err := _traverse(mIn, mReplacements)
+	inDecoder := gopkgyaml.NewDecoder(in)
 
-	if err != nil {
-		return false, err
+	buf := new(bytes.Buffer)
+	outEncoder := gopkgyaml.NewEncoder(buf)
+
+	var updated bool
+
+	for {
+
+		mIn := make(map[string]interface{})
+
+		log.Entry().Info("DECODING ====")
+
+		decodeErr := inDecoder.Decode(&mIn)
+
+		if decodeErr != nil {
+			if decodeErr == io.EOF {
+				log.Entry().Infof("THE END ====")
+				break
+			}
+
+			log.Entry().Infof("FAILED_TO_DECODE: '%v' ====", decodeErr.Error())
+			return false, decodeErr
+		}
+
+		log.Entry().Infof("TRAVERSING IN ..., Replacements: %v", mReplacements)
+
+		out, _updated, err := _traverse(mIn, mReplacements)
+
+		if err != nil {
+			log.Entry().Infof("Cannot traverse: '%v'", err.Error())
+			return false, err
+		}
+
+		log.Entry().Infof("IN TRAVERSED: '%v'  ====", _updated)
+
+		updated = _updated || updated
+
+		log.Entry().Infof("IN TRAVERSED: U: '%v'  ====", updated)
+
+		err = outEncoder.Encode(out)
 	}
 
 	if updated {
-		bOut, err := yaml.Marshal(&out)
-		if err != nil {
-			return false, err
-		}
 
 		fInfo, err := _stat(ymlFile)
 		if err != nil {
 			return false, err
 		}
 
-		err = _writeFile(ymlFile, bOut, fInfo.Mode())
+		err = _writeFile(ymlFile, buf.Bytes(), fInfo.Mode())
 		if err != nil {
 			return false, err
 		}
