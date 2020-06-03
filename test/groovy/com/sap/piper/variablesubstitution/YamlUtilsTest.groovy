@@ -231,11 +231,11 @@ class YamlUtilsTest extends BasePiperTest {
 
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("services").get(0) instanceof String)
 
-        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariable").equals(true))
-        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariable") instanceof Boolean)
+        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariableTrue").equals(true))
+        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariableTrue") instanceof Boolean)
 
-        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariable2").equals(false))
-        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariable2") instanceof Boolean)
+        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariableFalse").equals(false))
+        assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("booleanVariableFalse") instanceof Boolean)
 
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("floatVariable") == 0.25)
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("floatVariable") instanceof Double)

@@ -3,8 +3,8 @@ unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
 xsuaa-instance-name: uniquePrefix-catalog-service-odatav2-xsuaa
 hana-instance-name: uniquePrefix-catalog-service-odatav2-hana
 integer-variable: 1
-boolean-variable: Yes
-boolean-variable2: false
+boolean-variable-true: Yes
+boolean-variable-false: false
 float-variable: 0.25
 json-variable: >
   [
