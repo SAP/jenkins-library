@@ -23,6 +23,7 @@ type testStepOptions struct {
 
 
 type testStepCommonPipelineEnvironment struct {
+	
 	artifactVersion string
 	git struct {
 		commitID string
