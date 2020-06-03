@@ -23,7 +23,6 @@ var _traverse = traverse
 func Substitute(ymlFile, replacements string) (bool, error) {
 
 	bIn, err := _readFile(ymlFile)
-
 	if err != nil {
 		return false, err
 	}
@@ -35,10 +34,7 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 
 	mReplacements := make(map[string]interface{})
 
-	r := bytes.NewReader(bReplacements)
-	in := bytes.NewReader(bIn)
-
-	replacementsDecoder := gopkgyaml.NewDecoder(r)
+	replacementsDecoder := gopkgyaml.NewDecoder(bytes.NewReader(bReplacements))
 
 	for {
 		decodeErr := replacementsDecoder.Decode(&mReplacements)
@@ -51,7 +47,7 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 		}
 	}
 
-	inDecoder := gopkgyaml.NewDecoder(in)
+	inDecoder := gopkgyaml.NewDecoder(bytes.NewReader(bIn))
 
 	buf := new(bytes.Buffer)
 	outEncoder := gopkgyaml.NewEncoder(buf)
@@ -62,34 +58,23 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 
 		mIn := make(map[string]interface{})
 
-		log.Entry().Info("DECODING ====")
-
 		decodeErr := inDecoder.Decode(&mIn)
 
 		if decodeErr != nil {
 			if decodeErr == io.EOF {
-				log.Entry().Infof("THE END ====")
 				break
 			}
 
-			log.Entry().Infof("FAILED_TO_DECODE: '%v' ====", decodeErr.Error())
 			return false, decodeErr
 		}
-
-		log.Entry().Infof("TRAVERSING IN ..., Replacements: %v", mReplacements)
 
 		out, _updated, err := _traverse(mIn, mReplacements)
 
 		if err != nil {
-			log.Entry().Infof("Cannot traverse: '%v'", err.Error())
 			return false, err
 		}
 
-		log.Entry().Infof("IN TRAVERSED: '%v'  ====", _updated)
-
 		updated = _updated || updated
-
-		log.Entry().Infof("IN TRAVERSED: U: '%v'  ====", updated)
 
 		err = outEncoder.Encode(out)
 	}
