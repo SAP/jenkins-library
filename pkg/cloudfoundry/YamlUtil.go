@@ -1,11 +1,10 @@
 package cloudfoundry
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
-	//"github.com/ghodss/yaml"
-	"bytes"
-	gopkgyaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
@@ -34,7 +33,7 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 
 	mReplacements := make(map[string]interface{})
 
-	replacementsDecoder := gopkgyaml.NewDecoder(bytes.NewReader(bReplacements))
+	replacementsDecoder := yaml.NewDecoder(bytes.NewReader(bReplacements))
 
 	for {
 		decodeErr := replacementsDecoder.Decode(&mReplacements)
@@ -47,10 +46,10 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 		}
 	}
 
-	inDecoder := gopkgyaml.NewDecoder(bytes.NewReader(bIn))
+	inDecoder := yaml.NewDecoder(bytes.NewReader(bIn))
 
 	buf := new(bytes.Buffer)
-	outEncoder := gopkgyaml.NewEncoder(buf)
+	outEncoder := yaml.NewEncoder(buf)
 
 	var updated bool
 
