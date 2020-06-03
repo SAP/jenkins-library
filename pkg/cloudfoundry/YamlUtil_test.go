@@ -264,15 +264,15 @@ func getApplication(t *testing.T, tree interface{}, index int) map[string]interf
 	const nodeNameApplications = "applications"
 
 	if m, ok := tree.(map[string]interface{}); !ok {
-		assert.FailNow(t, "Outermost node inside replaced structure is not a map.")
+		assert.FailNow(t, "Cannot prepare tests", "Outermost node inside replaced structure is not a map.")
 	} else {
 		if apps, ok := m[nodeNameApplications].([]interface{}); !ok {
-			assert.FailNowf(t, "Node '%s' is not an interface slice.", nodeNameApplications)
+			assert.FailNowf(t, "Cannot prepare tests", "Node '%s' is not an interface slice.", nodeNameApplications)
 		} else {
 			if app, ok := apps[0].(map[string]interface{}); ok {
 				return app
 			} else {
-				assert.FailNowf(t, "The first node inside '%s' is not a map.", nodeNameApplications)
+				assert.FailNowf(t, "Cannot prepare tests", "The first node inside '%s' is not a map.", nodeNameApplications)
 			}
 		}
 	}
