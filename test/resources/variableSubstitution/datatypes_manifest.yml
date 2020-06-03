@@ -20,6 +20,7 @@ applications:
     xsuaa-instance-name: ((xsuaa-instance-name))
     db_service_instance_name: ((hana-instance-name))
     booleanVariable: ((boolean-variable))
+    booleanVariable2: ((boolean-variable2))
     floatVariable: ((float-variable))
     json-variable: ((json-variable))
     object-variable: ((object-variable))

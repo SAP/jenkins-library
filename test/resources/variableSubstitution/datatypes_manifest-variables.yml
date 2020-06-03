@@ -4,6 +4,7 @@ xsuaa-instance-name: uniquePrefix-catalog-service-odatav2-xsuaa
 hana-instance-name: uniquePrefix-catalog-service-odatav2-hana
 integer-variable: 1
 boolean-variable: Yes
+boolean-variable2: false
 float-variable: 0.25
 json-variable: >
   [
