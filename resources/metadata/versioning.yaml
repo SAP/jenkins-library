@@ -245,3 +245,26 @@ spec:
           - name: artifactVersion
           - name: git/commitId
           - name: git/commitMessage
+  containers:
+    - image: '' # default should be 'no image'
+    - image: devxci/mbtci
+      imagePullPolicy: Always
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: mta
+    - image: maven:3.6-jdk-8
+      imagePullPolicy: Never
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: maven
+    - image: node:12-buster-slim
+      imagePullPolicy: Never
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: npm
