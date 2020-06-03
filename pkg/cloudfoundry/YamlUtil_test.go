@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"regexp"
 )
 
 type fileInfoMock struct {
@@ -26,6 +27,8 @@ func TestFilesRelated(t *testing.T) {
 	writeFileCalled := false
 	traverseCalled := false
 
+	var replacements map[string]interface{}
+
 	oldStat := _stat
 	oldReadFile := _readFile
 	oldWriteFile := _writeFile
@@ -38,33 +41,43 @@ func TestFilesRelated(t *testing.T) {
 		_traverse = oldTraverse
 	}()
 
-	_stat = func(name string) (os.FileInfo, error) {
-		return fileInfoMock{}, nil
-	}
 
-	_readFile = func(name string) ([]byte, error) {
-		if name == "manifest.yml" || name == "replacements.yml" {
-			return []byte{}, nil
+	reset := func() {
+
+		writeFileCalled = false
+
+		traverseCalled = false
+
+		replacements = make(map[string]interface{})
+
+		_stat = func(name string) (os.FileInfo, error) {
+			return fileInfoMock{}, nil
 		}
-		return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+	
+		_readFile = func(name string) ([]byte, error) {
+			if name == "manifest.yml" || name == "replacements.yml" {
+				return []byte{}, nil
+			}
+			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+		}
+	
+		_writeFile = func(name string, data []byte, mode os.FileMode) error {
+			writeFileCalled = true
+			return nil
+		}
+	
+		_traverse = func(_ interface{}, _replacements map[string]interface{}) (interface{}, bool, error) {
+			replacements = _replacements
+			traverseCalled = true
+			return nil, true, nil
+		}
 	}
 
-	_writeFile = func(name string, data []byte, mode os.FileMode) error {
-		writeFileCalled = true
-		return nil
-	}
-
-	_traverse = func(interface{}, map[string]interface{}) (interface{}, bool, error) {
-		traverseCalled = true
-		return nil, true, nil
-	}
+	reset()
 
 	t.Run("WriteFileOnUpdate", func(t *testing.T) {
 
-		defer func() {
-			writeFileCalled = false
-			traverseCalled = false
-		}()
+		defer reset()
 
 		updated, err := Substitute("manifest.yml", "replacements.yml")
 
@@ -82,14 +95,7 @@ func TestFilesRelated(t *testing.T) {
 			return nil, false, nil
 		}
 
-		defer func() {
-			writeFileCalled = false
-			traverseCalled = false
-			_traverse = func(interface{}, map[string]interface{}) (interface{}, bool, error) {
-				traverseCalled = true
-				return nil, true, nil
-			}
-		}()
+		defer reset()
 
 		updated, err := Substitute("manifest.yml", "replacements.yml")
 
@@ -100,7 +106,33 @@ func TestFilesRelated(t *testing.T) {
 		}
 	})
 
+	t.Run("Read multiple replacement yamls in one file",func(t *testing.T) {
+
+		// expected behaviour in case of multiple yaml documents in one "file":
+		// we merge the content. The latest wins
+
+		_readFile = func(name string) ([]byte, error) {
+			if name == "manifest.yml" {
+				return []byte{}, nil
+			} else if name == "replacements.yml" {
+				// here we have two yaml documents in one "file"
+				return []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"), nil
+			}
+			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+		}
+	
+		defer reset()
+
+		_, err := Substitute("manifest.yml", "replacements.yml")
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]interface{}{"a": "b", "c": "d", "zz": 1234},  replacements)
+		}
+	})
+
 	t.Run("Manifest does not exist", func(t *testing.T) {
+
+		defer reset()
 
 		_, err := Substitute("manifestDoesNotExist.yml", "replacements.yml")
 
@@ -108,10 +140,11 @@ func TestFilesRelated(t *testing.T) {
 			assert.False(t, writeFileCalled)
 			assert.False(t, traverseCalled)
 		}
-
 	})
 
 	t.Run("Replacements does not exist", func(t *testing.T) {
+
+		defer reset()
 
 		_, err := Substitute("manifest.yml", "replacementsDoesNotExist.yml")
 
@@ -180,6 +213,16 @@ object-variable:
 	t.Run("The basics", func(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, updated)
+	})
+
+	
+	t.Run("Check no variables left", func(t *testing.T) {
+
+		data, err := yaml.Marshal(&replaced)
+
+		if assert.NoError(t, err) {
+			assert.Nil(t, regexp.MustCompile("\\(\\(.*\\)\\)").Find(data))		
+		}
 	})
 
 	app := getApplication(t, replaced, 0)

@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/ghodss/yaml"
+	gopkgyaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"bytes"
+	"io"
 )
 
 var _readFile = ioutil.ReadFile
@@ -33,8 +36,24 @@ func Substitute(ymlFile, replacements string) (bool, error) {
 	mIn := make(map[string]interface{})
 	mReplacements := make(map[string]interface{})
 
+
+
 	yaml.Unmarshal(bIn, &mIn)
-	yaml.Unmarshal(bReplacements, &mReplacements)
+
+	r := bytes.NewReader(bReplacements)
+
+	decoder := gopkgyaml.NewDecoder(r)
+
+	for {
+		decodeErr := decoder.Decode(&mReplacements)
+
+		if decodeErr != nil {
+			if decodeErr == io.EOF {
+				break
+			}
+			return false, decodeErr
+		}
+	}
 
 	out, updated, err := _traverse(mIn, mReplacements)
 

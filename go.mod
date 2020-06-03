@@ -31,4 +31,5 @@ require (
 	github.com/testcontainers/testcontainers-go v0.5.1
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	gopkg.in/ini.v1 v1.56.0
+	gopkg.in/yaml.v2 v2.2.8
 )
