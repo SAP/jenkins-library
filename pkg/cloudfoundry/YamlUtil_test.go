@@ -128,7 +128,7 @@ func TestSubstitution(t *testing.T) {
 	replacements := make(map[string]interface{})
 
 	yaml.Unmarshal([]byte(
-		`unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
+`unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
 xsuaa-instance-name: uniquePrefix-catalog-service-odatav2-xsuaa
 hana-instance-name: uniquePrefix-catalog-service-odatav2-hana
 integer-variable: 1
