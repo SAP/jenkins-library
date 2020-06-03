@@ -15,7 +15,6 @@ import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.CoreMatchers.hasItem
 import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.CoreMatchers.nullValue
-import static org.junit.Assert.assertArrayEquals
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
@@ -72,7 +71,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testMaven() {
         def buildToolCalled = false
-        helper.registerAllowedMethod('mavenExecute', [Map.class], {m ->
+        helper.registerAllowedMethod('mavenBuild', [Map.class], {m ->
             buildToolCalled = true
             return
         })

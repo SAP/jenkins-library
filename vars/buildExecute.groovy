@@ -3,7 +3,6 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
-import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -72,7 +71,7 @@ void call(Map parameters = [:]) {
 
         switch(config.buildTool){
             case 'maven':
-                mavenExecute script: script
+                mavenBuild script: script
                 break
             case 'mta':
                 mtaBuild script: script
