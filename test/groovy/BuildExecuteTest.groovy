@@ -37,9 +37,10 @@ class BuildExecuteTest extends BasePiperTest {
 
     def dockerMockArgs = [:]
     class DockerMock {
-        DockerMock(name){
+        DockerMock(name) {
             dockerMockArgs.name = name
         }
+
         def build(image, options) {
             return [image: image, options: options]
         }
@@ -71,7 +72,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testMaven() {
         def buildToolCalled = false
-        helper.registerAllowedMethod('mavenBuild', [Map.class], {m ->
+        helper.registerAllowedMethod('mavenBuild', [Map.class], { m ->
             buildToolCalled = true
             return
         })
@@ -85,7 +86,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testMta() {
         def buildToolCalled = false
-        helper.registerAllowedMethod('mtaBuild', [Map.class], {m ->
+        helper.registerAllowedMethod('mtaBuild', [Map.class], { m ->
             buildToolCalled = true
             return
         })
@@ -99,7 +100,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testNpm() {
         def buildToolCalled = false
-        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
             buildToolCalled = true
             return
         })
@@ -112,9 +113,9 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmWithScripts() {
-        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
-            assertEquals('foo', m['runScripts'][0])
-            assertEquals('bar', m['runScripts'][1])
+        boolean actualValue = false
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            actualValue = (m['runScripts'][0] == 'foo' && m['runScripts'][1] == 'bar')
             return
         })
         stepRule.step.buildExecute(
@@ -122,12 +123,14 @@ class BuildExecuteTest extends BasePiperTest {
             buildTool: 'npm',
             npmRunScripts: ['foo', 'bar']
         )
+        assertTrue(actualValue)
     }
 
     @Test
     void testNpmWithInstallFalse() {
-        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
-            assertFalse(m['install'])
+        boolean actualValue = true
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            actualValue = m['install']
             return
         })
         stepRule.step.buildExecute(
@@ -135,12 +138,14 @@ class BuildExecuteTest extends BasePiperTest {
             buildTool: 'npm',
             npmInstall: false
         )
+        assertFalse(actualValue)
     }
 
     @Test
     void testNpmWithInstallTrue() {
-        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
-            assertTrue(m['install'])
+        boolean actualValue = false
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            actualValue = m['install']
             return
         })
         stepRule.step.buildExecute(
@@ -148,13 +153,14 @@ class BuildExecuteTest extends BasePiperTest {
             buildTool: 'npm',
             npmInstall: true
         )
+        assertTrue(actualValue)
     }
 
     @Test
     void testDocker() {
         binding.setVariable('docker', new DockerMock('test'))
-        def pushParams= [:]
-        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], {m ->
+        def pushParams = [:]
+        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], { m ->
             pushParams = m
             return
         })
@@ -175,8 +181,8 @@ class BuildExecuteTest extends BasePiperTest {
     void testDockerWithEnv() {
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
         binding.setVariable('docker', new DockerMock('test'))
-        def pushParams= [:]
-        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], {m ->
+        def pushParams = [:]
+        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], { m ->
             pushParams = m
             return
         })
@@ -195,8 +201,8 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testDockerNoPush() {
         binding.setVariable('docker', new DockerMock('test'))
-        def pushParams= [:]
-        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], {m ->
+        def pushParams = [:]
+        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], { m ->
             pushParams = m
             return
         })
@@ -215,7 +221,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testKaniko() {
         def kanikoParams = [:]
-        helper.registerAllowedMethod('kanikoExecute', [Map.class], {m ->
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
             kanikoParams = m
             return
         })
@@ -234,7 +240,7 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void testKanikoNoPush() {
         def kanikoParams = [:]
-        helper.registerAllowedMethod('kanikoExecute', [Map.class], {m ->
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
             kanikoParams = m
             return
         })
@@ -254,7 +260,7 @@ class BuildExecuteTest extends BasePiperTest {
     void testSwitchToKaniko() {
         shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
         def kanikoParams = [:]
-        helper.registerAllowedMethod('kanikoExecute', [Map.class], {m ->
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
             kanikoParams = m
             return
         })
