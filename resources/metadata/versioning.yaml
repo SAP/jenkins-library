@@ -2,7 +2,6 @@ metadata:
   name: artifactPrepareVersion
   aliases:
     - name: artifactSetVersion
-    - name: mavenExecute
     - name: setVersion
       deprecated: true
   description: Prepares and potentially updates the artifact's version before building the artifact.
@@ -247,7 +246,6 @@ spec:
           - name: git/commitId
           - name: git/commitMessage
   containers:
-    - image: '' # default should be 'no image'
     - image: devxci/mbtci
       imagePullPolicy: Always
       conditions:
