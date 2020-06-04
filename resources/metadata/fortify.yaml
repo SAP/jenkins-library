@@ -12,10 +12,10 @@ spec:
   inputs:
     secrets:
       - name: fortifyCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.
+        description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC."
         type: jenkins
       - name: githubTokenCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
+        description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub."
         type: jenkins
     resources:
       - name: commonPipelineEnvironment
@@ -32,235 +32,228 @@ spec:
     params:
     - name: authToken
       type: string
-      description: The FortifyToken to use for authentication
+      description: "The FortifyToken to use for authentication"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       mandatory: true
       secret: true
     - name: githubToken
-      description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
+      description: "GitHub personal access token as per
+        https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
       secret: true
     - name: autoCreate
       type: bool
-      description: Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend
+      description: "Whether Fortify project and project version shall be implicitly auto created in case they
+        cannot be found in the backend"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: mvnCustomArgs
-      type: string
-      description: Allows providing additional Maven command line parameters
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ''
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: modulePath
       type: string
-      description: Allows providing the path for the module to scan
+      description: "Allows providing the path for the module to scan"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: './'
     - name: pythonRequirementsFile
       type: string
-      description: 'The requirements file used in `buildTool: ''pip''` to populate
-        the build environment with the necessary dependencies'
+      description: "The requirements file used in `buildTool: 'pip'` to populate
+        the build environment with the necessary dependencies"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: autodetectClasspath
       type: bool
-      description: Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all
+      description: "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: mustAuditIssueGroups
       type: string
-      description: Comma separated list of issue groups that must be audited completely
+      description: "Comma separated list of issue groups that must be audited completely"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 'Corporate Security Requirements, Audit All'
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "Corporate Security Requirements, Audit All"
     - name: spotAuditIssueGroups
       type: string
-      description: 'Comma separated list of issue groups that are spot checked and for which `spotCheckMinimum` audited issues are enforced'
+      description: "Comma separated list of issue groups that are spot checked and for which `spotCheckMinimum`
+        audited issues are enforced"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 'Spot Checks of Each Category'
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "Spot Checks of Each Category"
     - name: pythonRequirementsInstallSuffix
       type: string
-      description: 'The suffix for the command used to install the requirements file in `buildTool: ''pip''` to populate
-        the build environment with the necessary dependencies'
+      description: "The suffix for the command used to install the requirements file in `buildTool: 'pip'` to populate
+        the build environment with the necessary dependencies"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: pythonVersion
       type: string
-      description: 'Python version to be used in `buildTool: ''pip''`'
+      description: "Python version to be used in `buildTool: 'pip'`"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: python3
     - name: uploadResults
       type: bool
-      description: Whether results shall be uploaded or not
+      description: "Whether results shall be uploaded or not"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: buildDescriptorFile
       type: string
-      description: 'Path to the build descriptor file addressing the module/folder
+      description: "Path to the build descriptor file addressing the module/folder
         to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`:
-        `./setup.py`.'
+        `./setup.py`."
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: commitId
-      description: 'Set the Git commit ID for identifying artifacts throughout the scan.'
+      description: "Set the Git commit ID for identifying artifacts throughout the scan."
       resourceRef:
         - name: commonPipelineEnvironment
           param: git/commitId
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
     - name: commitMessage
-      description: 'Set the Git commit message for identifying pull request merges throughout the scan.'
+      description: "Set the Git commit message for identifying pull request merges throughout the scan."
       resourceRef:
         - name: commonPipelineEnvironment
           param: git/commitMessage
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
     - name: githubApiUrl
-      description: Set the GitHub API url.
+      description: "Set the GitHub API URL."
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
-      default: https://api.github.com
+      default: "https://api.github.com"
     - name: owner
       aliases:
         - name: githubOrg
-      description: 'Set the GitHub organization.'
+      description: "Set the GitHub organization."
       resourceRef:
         - name: commonPipelineEnvironment
           param: github/owner
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
     - name: repository
       aliases:
         - name: githubRepo
-      description: 'Set the GitHub repository.'
+      description: "Set the GitHub repository."
       resourceRef:
         - name: commonPipelineEnvironment
           param: github/repository
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       type: string
     - name: memory
       type: string
-      description: The amount of memory granted to the translate/scan executions
+      description: "The amount of memory granted to the translate/scan executions"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: -Xmx4G -Xms512M
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "-Xmx4G -Xms512M"
     - name: updateRulePack
       type: bool
-      description: Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not
+      description: "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
-    - name: pythonExcludes
-      type: string
-      description: 'The excludes pattern used in `buildTool: ''pip''` for excluding
-        specific .py files i.e. tests'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: -exclude ./**/tests/**/*;./**/setup.py
-      deprecated: true
     - name: reportDownloadEndpoint
       aliases:
       - name: fortifyReportDownloadEndpoint
       type: string
-      description: Fortify SSC endpoint for Report downloads
+      description: "Fortify SSC endpoint for Report downloads"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: /transfer/reportDownload.html
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "/transfer/reportDownload.html"
     - name: pollingMinutes
       type: int
-      description: The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown
+      description: "The number of minutes for which an uploaded FPR artifact''s status is being polled to finish
+        queuing/processing, if exceeded polling will be stopped and an error will be thrown"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 30
     - name: quickScan
       type: bool
-      description: Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting
+      description: "Whether a quick scan should be performed, please consult the related Fortify documentation on
+        JAM on the impact of this setting"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: false
     - name: translate
       type: string
-      description: "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`"
+      description: "Options for translate phase of Fortify. Most likely, you do not need to set this parameter.
+        See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details:
+        It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`,
+        `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`"
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
     - name: src
-      type: string
-      description: Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If `translate` is set, this will ignored.
+      type: "[]string"
+      description: "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
+        If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
+        ['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*'], for
+        `buildTool: 'pip'` it is ['./**/*']."
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: "**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*"
     - name: exclude
-      type: string
-      description: Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If `translate` is set, this will ignored.
+      type: "[]string"
+      description: "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g.,
+        `'**/Test.java'`. If `translate` is set, this will ignored."
       scope:
         - PARAMETERS
         - STAGES
@@ -269,202 +262,218 @@ spec:
       aliases:
       - name: fortifyApiEndpoint
       type: string
-      description: Fortify SSC endpoint used for uploading the scan results and checking the audit state
+      description: "Fortify SSC endpoint used for uploading the scan results and checking the audit state"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: /api/v1
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "/api/v1"
     - name: reportType
       type: string
       description: The type of report to be generated
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: PDF
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "PDF"
     - name: pythonAdditionalPath
-      type: string
-      description: 'The addional path which can be used in `buildTool: ''pip''` for
-        customization purposes'
+      type: "[]string"
+      description: "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./lib;.
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: ["./lib", "."]
       deprecated: true
     - name: artifactUrl
       type: string
-      description: 'Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build'
+      description: "Path/URL pointing to an additional artifact repository for resolution of additional
+        artifacts during the build"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: considerSuspicious
       type: bool
-      description: Whether suspicious issues should trigger the check to fail or not
+      description: "Whether suspicious issues should trigger the check to fail or not"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: fprUploadEndpoint
       aliases:
-      - name: fortifyFprUploadEndpoint
+        - name: fortifyFprUploadEndpoint
       type: string
-      description: Fortify SSC endpoint for FPR uploads
+      description: "Fortify SSC endpoint for FPR uploads"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: /upload/resultFileUpload.html
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "/upload/resultFileUpload.html"
     - name: projectName
       aliases:
-      - name: fortifyProjectName
+        - name: fortifyProjectName
       type: string
-      description: The project used for reporting results in SSC
+      description: "The project used for reporting results in SSC"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
-    - name: pythonIncludes
-      type: string
-      description: 'The includes pattern used in `buildTool: ''pip''` for including
-        .py files'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./**/*
-      deprecated: true
     - name: reporting
       type: bool
       description: Influences whether a report is generated or not
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: false
     - name: serverUrl
       aliases:
-      - name: fortifyServerUrl
-      - name: sscUrl
-        deprecated: true
+        - name: fortifyServerUrl
+        - name: sscUrl
+          deprecated: true
       type: string
-      description: Fortify SSC Url to be used for accessing the APIs
+      description: "Fortify SSC Url to be used for accessing the APIs"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: buildDescriptorExcludeList
-      type: string
-      description: Build descriptor files to exclude modules from being scanned
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: []
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: pullRequestMessageRegexGroup
       type: int
-      description: The group number for extracting the pull request id in `pullRequestMessageRegex`
+      description: "The group number for extracting the pull request id in `'pullRequestMessageRegex'`"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 1
     - name: deltaMinutes
       type: int
-      description: The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown
+      description: "The number of minutes for which an uploaded FPR artifact is considered to be recent and
+        healthy, if exceeded an error will be thrown"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 5
     - name: spotCheckMinimum
       type: int
-      description: The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown
+      description: "The minimum number of issues that must be audited per category in the `Spot Checks of each
+        Category` folder to avoid an error being thrown"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 1
     - name: fprDownloadEndpoint
       aliases:
-      - name: fortifyFprDownloadEndpoint
+        - name: fortifyFprDownloadEndpoint
       type: string
-      description: Fortify SSC endpoint  for FPR downloads
+      description: "Fortify SSC endpoint for FPR downloads"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: /download/currentStateFprDownload.html
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "/download/currentStateFprDownload.html"
     - name: defaultVersioningModel
       type: string
-      description: The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`
+      description: "The default project versioning model used in case `projectVersion` parameter is empty for
+        creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`,
+        `'major-minor'`, `'semantic'`, `'full'`"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 'major'
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "major"
     - name: pythonInstallCommand
       type: string
-      description: 'Additional install command that can be run when `buildTool: ''pip''`
-        is used which allows further customizing the execution environment of the
-        scan'
+      description: "Additional install command that can be run when `buildTool: 'pip'`
+        is used which allows further customizing the execution environment of the scan"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: "{{.Pip}} install --user ."
     - name: reportTemplateId
       type: int
-      description: Report template ID to be used for generating the Fortify report
+      description: "Report template ID to be used for generating the Fortify report"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 18
     - name: filterSetTitle
       type: string
-      description: Title of the filter set to use for analysing the results
+      description: "Title of the filter set to use for analysing the results"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: "SAP"
     - name: pullRequestName
       type: string
-      description: The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version
+      description: "The name of the pull request branch which will trigger creation of a new version in Fortify
+        SSC based on the master branch version"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: pullRequestMessageRegex
       type: string
-      description: Regex used to identify the PR-XXX reference within the merge commit message
+      description: "Regex used to identify the PR-XXX reference within the merge commit message"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: '.*Merge pull request #(\\d+) from.*'
     - name: buildTool
       type: string
-      description: Scan type used for the step which can be `'maven'`, `'pip'`
+      description: "Scan type used for the step which can be `'maven'`, `'pip'`"
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: maven
+    # Global maven settings, should be added to all maven steps
+    - name: projectSettingsFile
+      type: string
+      description: Path to the mvn settings file that should be used as project settings file.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/projectSettingsFile
+    - name: globalSettingsFile
+      type: string
+      description: Path to the mvn settings file that should be used as global settings file.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/globalSettingsFile
+    - name: m2Path
+      type: string
+      description: Path to the location of the local repository that should be used.
+      scope:
+        - GENERAL
+        - STEPS
+        - STAGES
+        - PARAMETERS
+      aliases:
+        - name: maven/m2Path
   containers:
-  - image: ppiper/fortify
-    workingDir: /home/piper
+  - image: "ppiper/fortify"
+    workingDir: "/home/piper"
   outputs:
     resources:
       - name: influx
