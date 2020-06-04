@@ -80,7 +80,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		updated, err := Substitute("manifest.yml", "replacements.yml")
+		updated, err := Substitute("manifest.yml", []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			assert.True(t, updated)
@@ -98,7 +98,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		updated, err := Substitute("manifest.yml", "replacements.yml")
+		updated, err := Substitute("manifest.yml", []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			assert.False(t, updated)
@@ -124,7 +124,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifest.yml", "replacements.yml")
+		_, err := Substitute("manifest.yml", []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]interface{}{"a": "b", "c": "d", "zz": 1234}, replacements)
@@ -156,7 +156,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifest.yml", "replacements.yml")
+		_, err := Substitute("manifest.yml", []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			// ... the two yaml files results in two yaml documents, separated by '---'
@@ -189,7 +189,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifest.yml", "replacements.yml")
+		_, err := Substitute("manifest.yml", []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			// we have a single yaml document (no '---' inbetween)
@@ -201,7 +201,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifestDoesNotExist.yml", "replacements.yml")
+		_, err := Substitute("manifestDoesNotExist.yml", []string{"replacements.yml"})
 
 		if assert.EqualError(t, err, "open manifestDoesNotExist.yml: no such file or directory") {
 			assert.False(t, writeFileCalled)
@@ -213,7 +213,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifest.yml", "replacementsDoesNotExist.yml")
+		_, err := Substitute("manifest.yml", []string{"replacementsDoesNotExist.yml"})
 
 		if assert.EqualError(t, err, "open replacementsDoesNotExist.yml: no such file or directory") {
 			assert.False(t, writeFileCalled)

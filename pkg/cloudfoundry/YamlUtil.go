@@ -19,7 +19,7 @@ var _writeFile = ioutil.WriteFile
 var _traverse = traverse
 
 // Substitute ...
-func Substitute(ymlFile, replacementsFile string) (bool, error) {
+func Substitute(ymlFile string, replacementsFiles []string) (bool, error) {
 
 	bIn, err := _readFile(ymlFile)
 	if err != nil {
@@ -47,7 +47,7 @@ func Substitute(ymlFile, replacementsFile string) (bool, error) {
 			return false, decodeErr
 		}
 
-		mReplacements, err := getReplacements(replacementsFile)
+		mReplacements, err := getReplacements(replacementsFiles)
 		if err != nil {
 			return false, err
 		}
@@ -192,26 +192,29 @@ func handleMap(t map[string]interface{}, replacements map[string]interface{}) (m
 	return tNode, updated, nil
 }
 
-func getReplacements(replacementsFile string) (map[string]interface{}, error) {
-
-	bReplacements, err := _readFile(replacementsFile)
-	if err != nil {
-		return nil, err
-	}
+func getReplacements(replacementsFiles []string) (map[string]interface{}, error) {
 
 	mReplacements := make(map[string]interface{})
-	replacementsDecoder := yaml.NewDecoder(bytes.NewReader(bReplacements))
 
-	for {
-		decodeErr := replacementsDecoder.Decode(&mReplacements)
+	for _, replacementsFile := range replacementsFiles {
+		bReplacements, err := _readFile(replacementsFile)
+		if err != nil {
+			return nil, err
+		}
 
-		if decodeErr != nil {
-			if decodeErr == io.EOF {
-				break
+			replacementsDecoder := yaml.NewDecoder(bytes.NewReader(bReplacements))
+
+		for {
+			decodeErr := replacementsDecoder.Decode(&mReplacements)
+
+			if decodeErr != nil {
+				if decodeErr == io.EOF {
+					break
+				}
+				return nil, decodeErr
 			}
-			return nil, decodeErr
 		}
 	}
-
+	
 	return mReplacements, nil
 }
