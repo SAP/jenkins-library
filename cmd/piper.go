@@ -84,6 +84,7 @@ func Execute() {
 	rootCmd.AddCommand(NexusUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
