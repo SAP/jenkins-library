@@ -19,7 +19,7 @@ var _writeFile = ioutil.WriteFile
 var _traverse = traverse
 
 // Substitute ...
-func Substitute(ymlFile string, replacementsFiles []string) (bool, error) {
+func Substitute(ymlFile string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
 
 	bIn, err := _readFile(ymlFile)
 	if err != nil {
@@ -47,12 +47,21 @@ func Substitute(ymlFile string, replacementsFiles []string) (bool, error) {
 			return false, decodeErr
 		}
 
-		mReplacements, err := getReplacements(replacementsFiles)
+
+		fileReplacements, err := getReplacements(replacementsFiles)
 		if err != nil {
 			return false, err
 		}
 
-		out, _updated, err := _traverse(mIn, mReplacements)
+		out, _updated, err := _traverse(mIn, replacements)
+
+		if err != nil {
+			return false, err
+		}
+
+		updated = _updated || updated
+
+		out, _updated, err = _traverse(out, fileReplacements)
 
 		if err != nil {
 			return false, err
