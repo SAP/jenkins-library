@@ -132,6 +132,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
+		log.Entry().Infof("Project config: passed via JSON")
 		// ignore config & defaults in favor of passed stepConfigJSON
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
 	} else {
@@ -145,10 +146,11 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			exists, err := piperutils.FileExists(projectConfigFile)
 			if exists {
 				if customConfig, err = openFile(projectConfigFile); err != nil {
-					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return errors.Wrapf(err, "Project config: cannot read '%s'", projectConfigFile)
 				}
+				log.Entry().Infof("Project config: '%s'", projectConfigFile)
 			} else {
-				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
+				log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
 				customConfig = nil
 			}
 
