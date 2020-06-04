@@ -26,7 +26,7 @@ metadata:
     * Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
     * You need to ensure that your CI/CD system can push back to your SCM (via providing ssh or HTTP(s) credentials)
 
-    **This pattern is the default** behavior (`versioningType: cloud`) since this is suitable for for most cloud deliveries.
+    **This pattern is the default** behavior (`versioningType: cloud`) since this is suitable for most cloud deliveries.
 
     It is possible to use `versioningType: cloud_noTag` which has a slighly different behavior than described above:
 
@@ -222,12 +222,18 @@ spec:
         - STEPS
       - name: versioningType
         type: string
-        description: "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)"
+        description: "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
+          tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor,
+          but not generate a new version)"
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
         default: cloud
+        possibleValues:
+          - cloud
+          - cloud_noTag
+          - library
     secrets:
     - name: gitHttpsCredentialsId
       type: jenkins
