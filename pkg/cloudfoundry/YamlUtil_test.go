@@ -220,6 +220,35 @@ func TestFilesRelated(t *testing.T) {
 			assert.False(t, traverseCalled)
 		}
 	})
+
+	t.Run("Replacements from map has precedence over replacments from file", func(t *testing.T) {
+
+		_readFile = func(name string) ([]byte, error) {
+			if name == "manifest.yml" {
+				return []byte("a: ((a))\nb: ((b))"), nil
+			} else if name == "replacements.yml" {
+				return []byte("a: aa # A comment.\nb: bb\n"), nil
+			}
+			return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
+		}
+
+		var written string
+
+		_writeFile = func(name string, data []byte, mode os.FileMode) error {
+			written = string(data)
+			return nil
+		}
+
+		_traverse = traverse
+
+		defer reset()
+
+		_, err := Substitute("manifest.yml", map[string]interface{}{"b": "xx"}, []string{"replacements.yml"})
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "a: aa\nb: xx\n", written)
+		}
+	})
 }
 
 func TestSubstitution(t *testing.T) {

@@ -47,23 +47,17 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 			return false, decodeErr
 		}
 
-		fileReplacements, err := getReplacements(replacementsFiles)
+		replacements, err := getReplacements(replacements, replacementsFiles)
 		if err != nil {
 			return false, err
 		}
 
-		var out interface{}
-		var _updated bool
-
-		out = mIn
-
-		for _, r := range []map[string]interface{} {replacements, fileReplacements} {
-			out, _updated, err = _traverse(out, r)
-			if err != nil {
-				return false, err
-			}
-			updated = _updated || updated
+		out, _updated, err := _traverse(mIn, replacements)
+		if err != nil {
+			return false, err
 		}
+
+		updated = _updated || updated
 
 		err = outEncoder.Encode(out)
 	}
@@ -197,7 +191,7 @@ func handleMap(t map[string]interface{}, replacements map[string]interface{}) (m
 	return tNode, updated, nil
 }
 
-func getReplacements(replacementsFiles []string) (map[string]interface{}, error) {
+func getReplacements(replacements map[string]interface{}, replacementsFiles []string) (map[string]interface{}, error) {
 
 	mReplacements := make(map[string]interface{})
 
@@ -221,5 +215,10 @@ func getReplacements(replacementsFiles []string) (map[string]interface{}, error)
 		}
 	}
 	
+	// the parameters from the map has a higher precedence,
+	// hence we merge after resolving parameters from the files
+	for k, v := range replacements {
+		mReplacements[k] = v
+	}
 	return mReplacements, nil
 }
