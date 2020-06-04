@@ -136,10 +136,8 @@ func (m Manifest) GetAppName(index int) (string, error) {
 		return "", err
 	}
 
-	if n, ok := appName.(string); ok {
-		return n, nil
-	} else {
-		return "", fmt.Errorf("Cannot cast value for property 'name' to string")
+	if name, ok := appName.(string); ok {
+		return name, nil
 	}
 
 	return "", fmt.Errorf("Cannot retrieve application name for app at index %d", index)
