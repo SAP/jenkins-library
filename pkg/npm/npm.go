@@ -2,6 +2,7 @@ package npm
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -201,8 +202,11 @@ func FindPackageJSONFiles(utils NpmUtils) ([]string, error) {
 	}
 
 	var packageJSONFiles []string
-
-	for _, file := range unfilteredListOfPackageJSONFiles {
+	fmt.Println()
+	fmt.Println("thats length of unfiltered packages")
+	fmt.Println(len(unfilteredListOfPackageJSONFiles))
+	for i, file := range unfilteredListOfPackageJSONFiles {
+		fmt.Println(i)
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
