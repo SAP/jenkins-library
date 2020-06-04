@@ -38,9 +38,6 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
-    println("parameters.stageName " + parameters.stageName)
-    println("env.STAGE_NAME " + env.STAGE_NAME)
-
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     Map config = ConfigurationHelper.newInstance(this)
