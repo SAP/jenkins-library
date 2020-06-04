@@ -143,7 +143,9 @@ func (m Manifest) GetAppName(index int) (string, error) {
 	return "", fmt.Errorf("Cannot retrieve application name for app at index %d", index)
 }
 
-// Transform ...
+// Transform For each app in the manifest the first entry in the build packs list
+// gets moved to the top level under the key 'buildpack'. The 'buildpacks' list is
+// deleted.
 func (m *Manifest) Transform() error {
 
 	sliced, err := toSlice(m.self[propApplications])
