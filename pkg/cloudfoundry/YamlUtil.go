@@ -33,6 +33,11 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 
 	var updated bool
 
+	mergedReplacements, err := getReplacements(replacements, replacementsFiles)
+	if err != nil {
+		return false, err
+	}
+
 	for {
 
 		mIn := make(map[string]interface{})
@@ -43,16 +48,14 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 			if decodeErr == io.EOF {
 				break
 			}
-
 			return false, decodeErr
 		}
 
-		replacements, err := getReplacements(replacements, replacementsFiles)
 		if err != nil {
 			return false, err
 		}
 
-		out, _updated, err := _traverse(mIn, replacements)
+		out, _updated, err := _traverse(mIn, mergedReplacements)
 		if err != nil {
 			return false, err
 		}
