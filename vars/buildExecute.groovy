@@ -72,6 +72,10 @@ void call(Map parameters = [:]) {
         switch(config.buildTool){
             case 'maven':
                 mavenBuild script: script
+                // in case node_modules exists we assume npm install was executed by maven clean install
+                if (fileExists('package.json') && !fileExists('node_modules')) {
+                    npmExecuteScripts script: script, install: true
+                }
                 break
             case 'mta':
                 mtaBuild script: script
