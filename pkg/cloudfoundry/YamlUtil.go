@@ -204,7 +204,7 @@ func getReplacements(replacements map[string]interface{}, replacementsFiles []st
 			return nil, err
 		}
 
-			replacementsDecoder := yaml.NewDecoder(bytes.NewReader(bReplacements))
+		replacementsDecoder := yaml.NewDecoder(bytes.NewReader(bReplacements))
 
 		for {
 			decodeErr := replacementsDecoder.Decode(&mReplacements)
@@ -217,7 +217,7 @@ func getReplacements(replacements map[string]interface{}, replacementsFiles []st
 			}
 		}
 	}
-	
+
 	// the parameters from the map has a higher precedence,
 	// hence we merge after resolving parameters from the files
 	for k, v := range replacements {

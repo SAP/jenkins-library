@@ -189,7 +189,7 @@ func TestFilesRelated(t *testing.T) {
 
 		defer reset()
 
-		_, err := Substitute("manifest.yml", map[string]interface{}{},[]string{"replacements.yml"})
+		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
 			// we have a single yaml document (no '---' inbetween)
