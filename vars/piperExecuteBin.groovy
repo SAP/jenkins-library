@@ -71,7 +71,6 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
-                    stashAll(utils, stashInfo)
                 }
             }
         }
@@ -107,6 +106,7 @@ static String getCustomConfigArg(def script) {
 
 void dockerWrapper(def script, Map config, def utils, List stashInfo, Closure body) {
     if (config.dockerImage) {
+        stashAll(utils, stashInfo)
         dockerExecute(
             script: script,
             dockerImage: config.dockerImage,
@@ -114,12 +114,13 @@ void dockerWrapper(def script, Map config, def utils, List stashInfo, Closure bo
             dockerOptions: config.dockerOptions,
             //ToDo: add additional dockerExecute parameters
         ) {
-            // Assume files need to be un-stashed once in the container
             unstashAll(utils, stashInfo)
             body()
+            stashAll(utils, stashInfo)
         }
     } else {
         body()
+        stashAll(utils, stashInfo)
     }
 }
 
