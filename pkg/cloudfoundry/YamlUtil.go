@@ -47,27 +47,23 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 			return false, decodeErr
 		}
 
-
 		fileReplacements, err := getReplacements(replacementsFiles)
 		if err != nil {
 			return false, err
 		}
 
-		out, _updated, err := _traverse(mIn, replacements)
+		var out interface{}
+		var _updated bool
 
-		if err != nil {
-			return false, err
+		out = mIn
+
+		for _, r := range []map[string]interface{} {replacements, fileReplacements} {
+			out, _updated, err = _traverse(out, r)
+			if err != nil {
+				return false, err
+			}
+			updated = _updated || updated
 		}
-
-		updated = _updated || updated
-
-		out, _updated, err = _traverse(out, fileReplacements)
-
-		if err != nil {
-			return false, err
-		}
-
-		updated = _updated || updated
 
 		err = outEncoder.Encode(out)
 	}
