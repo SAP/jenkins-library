@@ -11,7 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false, List stashInfo = []) {
+void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
 
     handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
     if (failOnError) {
@@ -64,7 +64,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                 echo "Context Config: ${config}"
             }
 
-            dockerWrapper(script, config, utils, stashInfo) {
+            dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
                         sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
@@ -104,9 +104,8 @@ static String getCustomConfigArg(def script) {
     return ''
 }
 
-void dockerWrapper(def script, Map config, def utils, List stashInfo, Closure body) {
+void dockerWrapper(script, config, body) {
     if (config.dockerImage) {
-        stashAll(utils, stashInfo)
         dockerExecute(
             script: script,
             dockerImage: config.dockerImage,
@@ -114,13 +113,10 @@ void dockerWrapper(def script, Map config, def utils, List stashInfo, Closure bo
             dockerOptions: config.dockerOptions,
             //ToDo: add additional dockerExecute parameters
         ) {
-            unstashAll(utils, stashInfo)
             body()
-            stashAll(utils, stashInfo)
         }
     } else {
         body()
-        stashAll(utils, stashInfo)
     }
 }
 
@@ -160,26 +156,6 @@ void credentialWrapper(config, List credentialInfo, body) {
         }
     } else {
         body()
-    }
-}
-
-void stashAll(def utils, List stashInfo) {
-    stashInfo.each { item ->
-        if (!(item in Map)) {
-            return
-        }
-        Map info = item as Map
-        utils.stash(info.name, info.includes, info.excludes, info.useDefaultExcludes)
-    }
-}
-
-void unstashAll(def utils, List stashInfo) {
-    stashInfo.each { item ->
-        if (!(item in Map)) {
-            return
-        }
-        Map info = item as Map
-        utils.unstash(info.name)
     }
 }
 
