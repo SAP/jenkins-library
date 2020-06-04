@@ -14,6 +14,9 @@ void call(Map parameters = [:]) {
         [type: 'ssh', id: 'gitSshKeyCredentialsId'],
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
+    List stashes = [
+        [name: 'git', includes: '**/.git/**', excludes: '', useDefaultExcludes: false]
+    ]
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true, stashes)
 }
