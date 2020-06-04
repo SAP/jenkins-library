@@ -71,16 +71,25 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void testMaven() {
-        def buildToolCalled = false
+        boolean buildToolCalled = false
+        boolean installOptionSet = false
         helper.registerAllowedMethod('mavenBuild', [Map.class], { m ->
             buildToolCalled = true
             return
+        })
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], { m ->
+            installOptionSet = m['install']
+            return
+        })
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == 'package.json'
         })
         stepRule.step.buildExecute(
             script: nullScript,
             buildTool: 'maven',
         )
-        assertThat(buildToolCalled, is(true))
+        assertTrue(buildToolCalled)
+        assertTrue(installOptionSet)
     }
 
     @Test
