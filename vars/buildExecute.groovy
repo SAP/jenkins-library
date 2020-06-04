@@ -9,18 +9,18 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-
+    /**
+     * Defines the tool used for the build.
+     * @possibleValues `docker`, `kaniko`, `maven`, `mta`, `npm`
+     */
+    'buildTool',
     /** For Docker builds only (mandatory): name of the image to be built. */
     'dockerImageName',
     /** For Docker builds only: Defines the registry url where the image should be pushed to, incl. the protocol like `https://my.registry.com`. If it is not defined, image will not be pushed to a registry.*/
     'dockerRegistryUrl',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * Defines the tool used for the build.
-     * @possibleValues `docker`, `kaniko`, `maven`, `mta`, `npm`
-     */
-    'buildTool',
+
     /** Only for Docker builds on the local daemon: Defines the build options for the build.*/
     'containerBuildOptions',
     /** For custom build types: Defines the command to be executed within the `dockerImage` in order to execute the build. */
@@ -72,8 +72,7 @@ void call(Map parameters = [:]) {
         switch(config.buildTool){
             case 'maven':
                 mavenBuild script: script
-                // Install npm dependencies if project has a package.json file and maven lifecycle did not install it.
-                // This is required by certain projects following the SAP Cloud SDK maven archetypes.
+                // in case node_modules exists we assume npm install was executed by maven clean install
                 if (fileExists('package.json') && !fileExists('node_modules')) {
                     npmExecuteScripts script: script, install: true
                 }
