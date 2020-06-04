@@ -24,7 +24,7 @@ gctsCloneRepository(
   client: "000",
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
   repository: "myrepo"
-  )
+)
 ```
 
 Example for the use in a YAML configuration file (such as `.pipeline/config.yaml`).
