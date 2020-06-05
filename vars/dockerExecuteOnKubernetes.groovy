@@ -323,7 +323,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             name: stashName,
             includes: includes,
             excludes: excludes,
-            useDefaultExcludes: false,
+//            useDefaultExcludes: false,
         )
         //inactive due to negative side-effects, we may require a dedicated git stash to be used
         //useDefaultExcludes: false)
