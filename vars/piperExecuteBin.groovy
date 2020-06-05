@@ -64,6 +64,8 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                 echo "Context Config: ${config}"
             }
 
+            config = mergeJenkinsParameters(config, parameters)
+
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
@@ -102,6 +104,16 @@ static String getCustomConfigArg(def script) {
         return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
+}
+
+/**
+ * Merges parameters that are only relevant in the Jenkins context from 'parameters' into 'config'
+ */
+static Map mergeJenkinsParameters(Map config, Map parameters) {
+    if (parameters.containsKey('stashUseDefaultExcludes')) {
+        config['stashUseDefaultExcludes'] = parameters['stashUseDefaultExcludes']
+    }
+    return config
 }
 
 void dockerWrapper(script, config, body) {
