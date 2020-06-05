@@ -7,7 +7,9 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    'buildTool'
+]
 @Field STAGE_STEP_KEYS = [
     /** Starts build execution. This is always being executed.*/
     'buildExecute',
