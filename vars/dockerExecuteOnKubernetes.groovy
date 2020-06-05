@@ -152,6 +152,13 @@ import hudson.AbortException
      * * `stashBack`: Pattern for bringing data from container back to Jenkins workspace. If not set: defaults to setting for `workspace`.
      */
     'stashIncludes',
+    /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This configuration defines include pattern for stashing from Jenkins workspace to working directory in container and back.
+     * This flag controls whether the stashing uses the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * @possibleValues `true`, `false`
+     */
+    'stashUseDefaultExcludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -319,14 +326,18 @@ chown -R ${runAsUser}:${fsGroup} ."""
             excludes = config.stashExcludes.workspace
         }
 
+        boolean useDefaultExcludes = true
+        if (config.containsKey('stashUseDefaultExcludes')) {
+            useDefaultExcludes = config.stashUseDefaultExcludes
+        }
+
         stash(
             name: stashName,
             includes: includes,
             excludes: excludes,
-//            useDefaultExcludes: false,
+            // 'true' by default due to negative side-effects
+            useDefaultExcludes: useDefaultExcludes,
         )
-        //inactive due to negative side-effects, we may require a dedicated git stash to be used
-        //useDefaultExcludes: false)
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
