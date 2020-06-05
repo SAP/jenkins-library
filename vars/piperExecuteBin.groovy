@@ -111,6 +111,7 @@ void dockerWrapper(script, config, body) {
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
+            stashUseDefaultExcludes : config.stashUseDefaultExcludes,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()
