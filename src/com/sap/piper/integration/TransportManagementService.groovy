@@ -130,7 +130,7 @@ class TransportManagementService implements Serializable {
         echo(successMessage)
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
-    
+
     def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
 
         echo("MTA Extension Descriptor Upload started.")
@@ -154,16 +154,16 @@ class TransportManagementService implements Serializable {
                                                 |      -F 'description=${description}' \\
                                                 |      --output ${responseExtDescriptorUpload} \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
-        
+
         return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '201', 'MTA Extension Descriptor Upload'))
     }
-    
+
     def getNodes(String url, String token) {
-        
+
         if (config.verbose) {
             echo("Get nodes started. URL: '${url}'")
         }
-        
+
         def parameters = [
             url          : "${url}/v2/nodes",
             httpMode     : "GET",
@@ -176,37 +176,37 @@ class TransportManagementService implements Serializable {
                 ]
             ]
         ]
-        
+
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
-        
+
         if (proxy){
             parameters["httpProxy"] = proxy
         }
-        
+
         def response = sendApiRequest(parameters)
         if (response.status != 200) {
             prepareAndThrowException(response, "Get nodes failed (HTTP status code '${response.status}').")
         }
-        
+
         if (config.verbose) {
             echo("Get nodes successful. Response content '${response.content}'.")
         }
-        
+
         return jsonUtils.jsonStringToGroovyObject(response.content)
     }
-    
+
     def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaExtDescriptor, String file, String mtaVersion, String description, String namedUser) {
-        
+
         echo("MTA Extension Descriptor Update started.")
-        
+
         if (config.verbose) {
         echo("URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaExtDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
         }
-        
+
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
-        
+
         def responseExtDescriptorUpdate = 'responseExtDescriptorUpdate.txt'
-        
+ 
         def responseCode = script.sh returnStdout: true,
                                      script: """|#!/bin/sh -e
                                                 | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
@@ -219,13 +219,13 @@ class TransportManagementService implements Serializable {
                                                 |      --output ${responseExtDescriptorUpdate} \\
                                                 |      -X PUT \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaExtDescriptor}'""".stripMargin()
-        
+
         return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpdate, responseCode, '200', 'MTA Extension Descriptor Update'))
     }
-    
+
     def getMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
         echo("Get Extension descriptor started.")
-        
+
         if (config.verbose) {
             echo("URL: '${url}', NodeId: '${nodeId}', MtaId: '${mtaId}', MtaVersion: '${mtaVersion}'")
         }
@@ -257,18 +257,18 @@ class TransportManagementService implements Serializable {
         if (config.verbose) {
             echo("Response content '${response.content}'.")
         }
-        
+
         // because the API is called with params, the return is always a map with either a empty list or a list containing one element
         Map mtaExtDescriptor = [:]
         Map responseContent = jsonUtils.jsonStringToGroovyObject(response.content)
         if(responseContent.get("mtaExtDescriptors")) {
             mtaExtDescriptor = responseContent.get("mtaExtDescriptors").get(0);
         }
-        
+
         echo("Get Extension descriptor successful.")
         return mtaExtDescriptor
     }
-    
+
     private sendApiRequest(parameters) {
         def defaultParameters = [
             acceptType            : 'APPLICATION_JSON',
@@ -296,26 +296,26 @@ class TransportManagementService implements Serializable {
         return URLEncoder.encode(data, "UTF-8").replace('%20', '+')
     }
 
-    
+
     private String getResponseBody(String responseFileName, String actualStatus, String expectStatus, String action) {
         def responseBody = 'n/a'
-        
+
         boolean gotResponse = script.fileExists(responseFileName)
         if(gotResponse) {
             responseBody = script.readFile(responseFileName)
             if(config.verbose) {
                 echo("Response body: ${responseBody}")
-            }            
+            }
         }
-        
+
         if (actualStatus != expectStatus) {
             def message = "Unexpected response code received from ${action} (${actualStatus}). ${expectStatus} expected."
             echo "${message} Response body: ${responseBody}"
             script.error message
         }
-        
+
         echo("${action} successful.")
-        
+
         if (! gotResponse) {
             script.error "Cannot provide response for ${action}."
         }

@@ -208,14 +208,14 @@ def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List node
     if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
         errorMsg = "Parameter 'mtaVersion' does not match the MTA version in mta.yaml. "
     }
-    
+
     nodeExtDescriptorMapping.each{ key, value ->
         if(nodes.any {it.name == key}) {
             nodeIdExtDesMap.put(nodes.find {it.name == key}.getAt("id"), [key, value])
         } else {
             errorNodeNameList.add(key)
         }
-        
+
         if(!fileExists(value)) {
             errorPathList.add(value)
         } else {
@@ -224,7 +224,7 @@ def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List node
             }
         }
     }
-    
+
     if(!errorPathList.isEmpty() || !errorMtaId.isEmpty() || !errorNodeNameList.isEmpty() ) {
         if(!errorPathList.isEmpty()) {
             errorMsg += "MTA extension descriptor files ${errorPathList} don't exist. "
@@ -237,6 +237,6 @@ def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List node
         }
         error(errorMsg)
     }
-    
+
     return nodeIdExtDesMap
 }
