@@ -206,7 +206,7 @@ class TransportManagementService implements Serializable {
         def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
 
         def responseExtDescriptorUpdate = 'responseExtDescriptorUpdate.txt'
- 
+
         def responseCode = script.sh returnStdout: true,
                                      script: """|#!/bin/sh -e
                                                 | curl ${proxy ? '--proxy ' + proxy + ' ' : ''} \\
