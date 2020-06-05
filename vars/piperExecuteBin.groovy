@@ -66,7 +66,7 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
             if (parameters.stashNoDefaultExcludes) {
                 // Merge this parameter which is only relevant in Jenkins context
-                // and go binary doesn't know about
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
