@@ -109,7 +109,7 @@ static String getCustomConfigArg(def script) {
 /**
  * Merges parameters that are only relevant in the Jenkins context from 'parameters' into 'config'
  */
-static Map mergeJenkinsParameters(Map config, Map parameters) {
+Map mergeJenkinsParameters(Map config, Map parameters) {
     if (parameters.containsKey('stashUseDefaultExcludes')) {
         echo "copying stashUseDefaultExcludes value from parameters"
         config['stashUseDefaultExcludes'] = parameters['stashUseDefaultExcludes']
