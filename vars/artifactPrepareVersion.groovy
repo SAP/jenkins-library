@@ -14,8 +14,9 @@ void call(Map parameters = [:]) {
         [type: 'ssh', id: 'gitSshKeyCredentialsId'],
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
-    // Insert parameters which would tell dockerExecuteOnKubernetes (if used) to stash also .-folders
 
+    // Tell dockerExecuteOnKubernetes (if used) to stash also .-folders
+    parameters['stashUseDefaultExcludes'] = false
 
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
