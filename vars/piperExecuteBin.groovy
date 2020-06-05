@@ -110,9 +110,9 @@ static String getCustomConfigArg(def script) {
  * Merges parameters that are only relevant in the Jenkins context from 'parameters' into 'config'
  */
 Map mergeJenkinsParameters(Map config, Map parameters) {
-    if (parameters.containsKey('stashUseDefaultExcludes')) {
-        echo "copying stashUseDefaultExcludes value from parameters"
-        config['stashUseDefaultExcludes'] = parameters['stashUseDefaultExcludes']
+    if (parameters.containsKey('stashNoDefaultExcludes')) {
+        echo "copying stashNoDefaultExcludes value from parameters"
+        config['stashNoDefaultExcludes'] = parameters['stashNoDefaultExcludes']
     }
     return config
 }
@@ -124,7 +124,7 @@ void dockerWrapper(script, config, body) {
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
-            stashUseDefaultExcludes : config.stashUseDefaultExcludes,
+            stashNoDefaultExcludes : config.stashNoDefaultExcludes,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()

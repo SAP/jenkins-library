@@ -155,10 +155,10 @@ import hudson.AbortException
     /**
      * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
      * This configuration defines include pattern for stashing from Jenkins workspace to working directory in container and back.
-     * This flag controls whether the stashing uses the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
      * @possibleValues `true`, `false`
      */
-    'stashUseDefaultExcludes'
+    'stashNoDefaultExcludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -327,8 +327,8 @@ chown -R ${runAsUser}:${fsGroup} ."""
         }
 
         boolean useDefaultExcludes = true
-        if (config.containsKey('stashUseDefaultExcludes')) {
-            useDefaultExcludes = config.stashUseDefaultExcludes
+        if (config.containsKey('stashNoDefaultExcludes')) {
+            useDefaultExcludes = !(config.stashNoDefaultExcludes)
             echo "useDefaultExcludes: $useDefaultExcludes"
         } else {
             echo "using default for useDefaultExcludes (true)"

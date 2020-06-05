@@ -163,7 +163,8 @@ void call(Map parameters = [:], body) {
                         dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent
+                        stashContent: config.stashContent,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()

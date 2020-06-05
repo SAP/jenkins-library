@@ -16,7 +16,7 @@ void call(Map parameters = [:]) {
     ]
 
     // Tell dockerExecuteOnKubernetes (if used) to stash also .-folders
-    parameters['stashUseDefaultExcludes'] = false
+    parameters['stashNoDefaultExcludes'] = true
 
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
