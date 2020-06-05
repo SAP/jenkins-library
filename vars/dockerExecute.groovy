@@ -103,7 +103,14 @@ import groovy.transform.Field
      */
     'stashContent'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * @possibleValues `true`, `false`
+     */
+    'stashNoDefaultExcludes',
+])
 
 /**
  * Executes a closure inside a docker container with the specified docker image.
@@ -164,7 +171,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
-                        stashNoDefaultExcludes: parameters.stashNoDefaultExcludes,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
@@ -180,7 +187,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
-                        stashNoDefaultExcludes: parameters.stashNoDefaultExcludes,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
