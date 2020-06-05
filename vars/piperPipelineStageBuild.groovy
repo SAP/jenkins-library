@@ -56,7 +56,7 @@ void call(Map parameters = [:]) {
 
         durationMeasure(script: script, measurementName: 'build_duration') {
 
-            buildExecute script: script
+            buildExecute script: script, buildTool: parameters.buildTool
             pipelineStashFilesAfterBuild script: script
 
             testsPublishResults script: script, junit: [updateResults: true]
