@@ -105,7 +105,7 @@ void call(Map parameters = [:]) {
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
-        
+
         def mtaVersion = config.mtaVersion ? "${config.mtaVersion}" : "*"
         Map nodeExtDescriptorMapping = (config.nodeExtDescriptorMapping && config.nodeExtDescriptorMapping.size()>0) ? config.nodeExtDescriptorMapping : null
 
@@ -138,7 +138,7 @@ void call(Map parameters = [:]) {
             }
 
             def token = tms.authentication(uaaUrl, clientId, clientSecret)
-            
+
             if(nodeExtDescriptorMapping) {
                 // validate the whole mapping and then throw errors together,
                 // so that user can get them in one pipeline run
@@ -146,7 +146,7 @@ void call(Map parameters = [:]) {
                 List nodes = tms.getNodes(uri, token).getAt("nodes");
                 Map mtaYaml = getMtaYaml();
                 Map nodeIdExtDesMap = validateNodeExtDescriptorMapping(nodeExtDescriptorMapping, nodes, mtaYaml, mtaVersion)
-                
+
                 if(nodeIdExtDesMap) {
                     nodeIdExtDesMap.each{ key, value ->
                         Map mtaExtDescriptor = tms.getMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
@@ -160,7 +160,7 @@ void call(Map parameters = [:]) {
                     }
                 }
             }
-            
+
             def fileUploadResponse = tms.uploadFile(uri, token, "${workspace}/${mtaPath}", namedUser)
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
@@ -204,7 +204,7 @@ def Map validateNodeExtDescriptorMapping(Map nodeExtDescriptorMapping, List node
     def errorNodeNameList = []
     def errorMsg = ""
     Map nodeIdExtDesMap = [:]
-    
+
     if(mtaVersion != "*" && mtaVersion != mtaYaml.version) {
         errorMsg = "Parameter 'mtaVersion' does not match the MTA version in mta.yaml. "
     }
