@@ -18,17 +18,30 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	CorrelationID  string
-	CustomConfig   string
-	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	ParametersJSON string
-	EnvRootPath    string
-	NoTelemetry    bool
-	StageName      string
-	StepConfigJSON string
-	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName       string
-	Verbose        bool
+	CorrelationID        string
+	CustomConfig         string
+	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	IgnoreCustomDefaults bool
+	ParametersJSON       string
+	EnvRootPath          string
+	NoTelemetry          bool
+	StageName            string
+	StepConfigJSON       string
+	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName             string
+	Verbose              bool
+	LogFormat            string
+	HookConfig           HookConfiguration
+}
+
+// HookConfiguration contains the configuration for supported hooks, so far only Sentry is supported.
+type HookConfiguration struct {
+	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
+}
+
+// SentryConfiguration defines the configuration options for the Sentry logging system
+type SentryConfiguration struct {
+	Dsn string `json:"dsn,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -49,6 +62,7 @@ func Execute() {
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
+	rootCmd.AddCommand(ContainerSaveImageCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
@@ -60,6 +74,7 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
+	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
@@ -67,15 +82,17 @@ func Execute() {
 	rootCmd.AddCommand(MavenBuildCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
+	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		// in case we end up here we know that something in the PreRunE function went wrong
 		// and thus this indicates a configuration issue
-		log.Entry().WithError(err).WithField("category", "configuration").Fatal("configuration error")
+		log.Entry().WithError(err).WithField("category", "config").Fatal("configuration error")
 	}
 }
 
@@ -84,12 +101,14 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default, timestamp, plain, full.")
 
 }
 
@@ -109,6 +128,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -145,7 +166,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
@@ -163,16 +184,23 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
-	stepConfig.Config = convertTypes(stepConfig.Config, options)
+	stepConfig.Config = checkTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
+	for name, v := range stepConfig.HookConfig {
+		if name == "sentry" {
+			hookConfig, _ := v.MarshalJSON()
+			_ = json.Unmarshal(hookConfig, &GeneralConfig.HookConfig.SentryConfig)
+		}
+	}
+
 	return nil
 }
 
-func convertTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
 
 	for paramName := range config {
@@ -183,7 +211,7 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 
 		paramValueType := reflect.ValueOf(config[paramName])
 		if paramValueType.Kind() != reflect.String {
-			// We can only convert from strings at the moment
+			// Type check is limited to strings at the moment
 			continue
 		}
 
@@ -192,14 +220,15 @@ func convertTypes(config map[string]interface{}, options interface{}) map[string
 
 		switch optionsField.Type.Kind() {
 		case reflect.String:
-			// Types already match, ignore
+			// Types match, ignore
 			logWarning = false
 		case reflect.Slice, reflect.Array:
-			if optionsField.Type.Elem().Kind() == reflect.String {
-				config[paramName] = []string{paramValue}
-				logWarning = false
-			}
+			// Could do automatic conversion for those types in theory,
+			// but that might obscure what really happens in error cases.
+			log.Entry().Fatalf("Type mismatch in configuration for option '%s'. Expected type to be a list (or slice, or array) but got %s.", paramName, paramValueType.Kind())
 		case reflect.Bool:
+			// Sensible to convert strings "true"/"false" to respective boolean values as it is
+			// common practice to write booleans as string in yaml files.
 			paramValue = strings.ToLower(paramValue)
 			if paramValue == "true" {
 				config[paramName] = true

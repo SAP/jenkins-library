@@ -44,23 +44,16 @@ public class CommonStepsTest extends BasePiperTest{
      */
     @Test
     public void scriptReferenceNotHandedOverTest() {
-
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
-            'artifactPrepareVersion',
             'commonPipelineEnvironment',
-            'checkmarxExecuteScan',
-            'kubernetesDeploy',
             'handlePipelineStepErrors',
             'pipelineExecute',
             'piperPipeline',
             'piperExecuteBin',
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
-            'buildSetResult',
-            'mavenExecuteStaticCodeChecks',
-            'cloudFoundryCreateServiceKey',
-            'gctsCreateRepository'
+            'buildSetResult'
         ]
 
         List steps = getSteps().stream()
@@ -133,13 +126,18 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'npmExecuteScripts', //implementing new golang pattern without fields
+        'malwareExecuteScan', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
+        'fortifyExecuteScan', //implementing new golang pattern without fields
+        'gctsDeploy', //implementing new golang pattern without fields
     ]
 
     @Test

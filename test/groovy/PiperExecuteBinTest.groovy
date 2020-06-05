@@ -256,6 +256,7 @@ class PiperExecuteBinTest extends BasePiperTest {
             'metadata/test.yaml',
             [],
             true,
+            false,
             false
         )
     }
@@ -314,7 +315,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
-        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1")
+        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1, please see log file for more details.")
 
         stepRule.step.piperExecuteBin(
             [
@@ -327,5 +328,35 @@ class PiperExecuteBinTest extends BasePiperTest {
             'metadata/test.yaml',
             []
         )
+    }
+
+    @Test
+    void testRespectPipelineResilienceSetting() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
+        helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
+
+        def unstableCalled
+        helper.registerAllowedMethod('unstable', [String.class], {s -> unstableCalled = true})
+
+        try {
+            nullScript.commonPipelineEnvironment.configuration.steps = [handlePipelineStepErrors: [failOnError: false]]
+
+            stepRule.step.piperExecuteBin(
+                [
+                    juStabUtils: utils,
+                    jenkinsUtilsStub: jenkinsUtils,
+                    testParam: "This is test content",
+                    script: nullScript
+                ],
+                'noDetailsStep',
+                'metadata/test.yaml',
+                []
+            )
+        } finally {
+            //clean up
+            nullScript.commonPipelineEnvironment.configuration.steps = [handlePipelineStepErrors: [failOnError: true]]
+        }
+        assertThat(unstableCalled, is(true))
+
     }
 }

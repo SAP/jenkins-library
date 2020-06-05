@@ -76,3 +76,8 @@ func (j *JSONfile) SetVersion(version string) error {
 
 	return nil
 }
+
+// GetCoordinates returns the coordinates
+func (j *JSONfile) GetCoordinates() (Coordinates, error) {
+	return nil, nil
+}

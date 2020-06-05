@@ -63,7 +63,7 @@ const mavenExecutable = "mvn"
 func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 	stdOutBuf, stdOut := evaluateStdOut(options)
 	command.Stdout(stdOut)
-	command.Stderr(log.Entry().Writer())
+	command.Stderr(log.Writer())
 
 	parameters, err := getParametersFromOptions(options, newUtils())
 	if err != nil {
@@ -105,9 +105,7 @@ func Evaluate(pomFile, expression string, command mavenExecRunner) (string, erro
 
 func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
-	var stdOut io.Writer
-
-	stdOut = log.Entry().Writer()
+	stdOut := log.Writer()
 	if config.ReturnStdout {
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
@@ -157,6 +155,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	parameters = append(parameters, "--batch-mode")
 
 	parameters = append(parameters, options.Goals...)
+
 	return parameters, nil
 }
 

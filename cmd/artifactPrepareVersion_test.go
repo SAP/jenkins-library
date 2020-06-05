@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"testing"
 	"time"
 
@@ -44,6 +45,10 @@ func (a *artifactVersioningMock) SetVersion(version string) error {
 	return nil
 }
 
+func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 type gitRepositoryMock struct {
 	createRemoteConfigs []*gitConfig.RemoteConfig
 	createRemoteCalls   int
@@ -64,6 +69,12 @@ type gitRepositoryMock struct {
 	tagError            string
 	worktree            *git.Worktree
 	worktreeError       string
+	commitObjectHash    string
+}
+
+func (r *gitRepositoryMock) CommitObject(hash plumbing.Hash) (*object.Commit, error) {
+	r.commitObjectHash = hash.String()
+	return &object.Commit{Hash: hash, Message: "Test commit message"}, nil
 }
 
 func (r *gitRepositoryMock) CreateTag(name string, hash plumbing.Hash, opts *git.CreateTagOptions) (*plumbing.Reference, error) {
@@ -125,8 +136,6 @@ func (r *gitRepositoryMock) Worktree() (*git.Worktree, error) {
 }
 
 type gitWorktreeMock struct {
-	addPath       string
-	addError      string
 	checkoutError string
 	checkoutOpts  *git.CheckoutOptions
 	commitHash    plumbing.Hash
@@ -135,13 +144,6 @@ type gitWorktreeMock struct {
 	commitError   string
 }
 
-func (w *gitWorktreeMock) Add(path string) (plumbing.Hash, error) {
-	if len(w.addError) > 0 {
-		return plumbing.Hash{}, fmt.Errorf(w.addError)
-	}
-	w.addPath = path
-	return plumbing.Hash{}, nil
-}
 func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	if len(w.checkoutError) > 0 {
 		return fmt.Errorf(w.checkoutError)
@@ -203,7 +205,9 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.True(t, repo.pushCalled)
 
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
+		assert.Equal(t, "Test commit message", cpe.git.commitMessage)
 
 		assert.Equal(t, telemetry.CustomData{Custom1Label: "buildTool", Custom1: "maven", Custom2Label: "filePath", Custom2: ""}, telemetryData)
 	})
@@ -244,6 +248,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		assert.False(t, repo.pushCalled)
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
 	})
 
@@ -400,7 +405,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 			versioningScheme: "maven",
 		}
 
-		worktree := gitWorktreeMock{addError: "add error"}
+		worktree := gitWorktreeMock{}
 		repo := gitRepositoryMock{}
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, nil, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
@@ -441,16 +446,20 @@ func TestCalculateNewVersion(t *testing.T) {
 	tt := []struct {
 		versioningTemplate string
 		includeCommitID    bool
+		shortCommitID      bool
+		unixTimestamp      bool
 		expected           string
 		expectedErr        string
 	}{
 		{versioningTemplate: "", expectedErr: "failed calculate version, new version is ''"},
 		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", expected: "1.2.3-20200101000000"},
 		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, expected: "1.2.3-20200101000000+428ecf70bc22df0ba3dcf194b5ce53e769abab07"},
+		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, shortCommitID: true, expected: "1.2.3-20200101000000+428ecf7"},
+		{versioningTemplate: "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", includeCommitID: true, unixTimestamp: true, expected: "1.2.3-1577836800+428ecf70bc22df0ba3dcf194b5ce53e769abab07"},
 	}
 
 	for _, test := range tt {
-		version, err := calculateNewVersion(test.versioningTemplate, currentVersion, commitID, test.includeCommitID, testTime)
+		version, err := calculateNewVersion(test.versioningTemplate, currentVersion, commitID, test.includeCommitID, test.shortCommitID, test.unixTimestamp, testTime)
 		assert.Equal(t, test.expected, version)
 		if len(test.expectedErr) == 0 {
 			assert.NoError(t, err)
@@ -477,7 +486,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &http.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
@@ -496,7 +505,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
@@ -518,16 +527,6 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}}, repo.pushOptions)
-	})
-
-	t.Run("error - git add", func(t *testing.T) {
-		config := artifactPrepareVersionOptions{}
-		repo := gitRepositoryMock{}
-		worktree := gitWorktreeMock{addError: "add error", commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
-
-		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
-		assert.Equal(t, "0000000000000000000000000000000000000000", commitID)
-		assert.EqualError(t, err, "failed to execute 'git add .': add error")
 	})
 
 	t.Run("error - commit", func(t *testing.T) {

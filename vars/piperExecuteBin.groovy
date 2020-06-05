@@ -5,12 +5,20 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false) {
+@Field String STEP_NAME = getClass().getName()
 
-    handlePipelineStepErrors(stepName: stepName, stepParameters: parameters) {
+void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
+
+    handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
+    if (failOnError) {
+        handlePipelineStepErrorsParameters.failOnError = true
+    }
+
+    handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
 
         def stepParameters = [:].plus(parameters)
 
@@ -23,7 +31,13 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
+        def piperGoPath = parameters.piperGoPath ?: './piper'
+        stepParameters.remove('piperGoPath')
+
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(this, utils)
+        stepParameters.remove('piperGoUtils')
+
+        piperGoUtils.unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
@@ -41,14 +55,19 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
+            echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
+
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Config: ${config}"
+            Map config
+            handleErrorDetails(stepName) {
+                config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+                echo "Context Config: ${config}"
+            }
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -71,7 +90,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
@@ -154,6 +173,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }

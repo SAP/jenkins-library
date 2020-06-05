@@ -22,12 +22,14 @@ type Config struct {
 	General        map[string]interface{}            `json:"general"`
 	Stages         map[string]map[string]interface{} `json:"stages"`
 	Steps          map[string]map[string]interface{} `json:"steps"`
+	Hooks          map[string]*json.RawMessage       `json:"hooks,omitempty"`
 	openFile       func(s string) (io.ReadCloser, error)
 }
 
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
-	Config map[string]interface{}
+	Config     map[string]interface{}
+	HookConfig map[string]*json.RawMessage
 }
 
 // ReadConfig loads config and returns its content
@@ -120,7 +122,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -132,8 +134,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
-	// consider custom defaults defined in config.yml
-	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
+	// consider custom defaults defined in config.yml unless told otherwise
+	if ignoreCustomDefaults {
+		log.Entry().Info("Ignoring custom defaults from pipeline config")
+	} else if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
 		if c.openFile == nil {
 			c.openFile = OpenPiperFile
 		}
@@ -158,6 +162,11 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
+
+		// process hook configuration - this is only supported via defaults
+		if stepConfig.HookConfig == nil {
+			stepConfig.HookConfig = def.Hooks
+		}
 	}
 
 	// merge parameters provided by Piper environment

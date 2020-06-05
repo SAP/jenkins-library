@@ -50,6 +50,12 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			if err != nil {
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -64,6 +70,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -72,7 +79,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 }
 
 func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children.")
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")

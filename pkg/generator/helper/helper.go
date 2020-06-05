@@ -7,8 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -56,8 +59,13 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{- range $key, $value := .StepParameters }}
-	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
+	{{- $names := list ""}}
+	{{- range $key, $value := uniqueName .StepParameters }}
+	{{ if ne (has $value.Name $names) true -}}
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
+	{{- else -}}
+	{{- $names = append $names $value.Name }} {{ end -}}
+	{{ end }}
 }
 
 {{ range $notused, $oRes := .OutputResources }}
@@ -84,7 +92,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
 
 			path, _ := os.Getwd()
-			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
@@ -93,6 +101,12 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			}
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
+
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -109,6 +123,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -117,7 +132,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := .StepParameters }}
+	{{- range $key, $value := uniqueName .StepParameters }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
@@ -181,8 +196,8 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -293,9 +308,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "int":
 				param.Default = fmt.Sprintf("%v", param.Default)
 			case "string":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
-				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
+				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -425,12 +440,12 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 func stepTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-		"longName":   longName,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["longName"] = longName
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
 	checkError(err)
@@ -444,11 +459,11 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 
 func stepTestTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
 	checkError(err)
@@ -462,9 +477,9 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 func stepImplementation(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"title": strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
 	checkError(err)
@@ -528,4 +543,28 @@ func getStringSliceFromInterface(iSlice interface{}) []string {
 	}
 
 	return s
+}
+
+func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error) {
+	tp := reflect.TypeOf(list).Kind()
+	switch tp {
+	case reflect.Slice, reflect.Array:
+		l2 := reflect.ValueOf(list)
+
+		l := l2.Len()
+		names := []string{}
+		dest := []config.StepParameters{}
+		var item config.StepParameters
+		for i := 0; i < l; i++ {
+			item = l2.Index(i).Interface().(config.StepParameters)
+			if !piperutils.ContainsString(names, item.Name) {
+				names = append(names, item.Name)
+				dest = append(dest, item)
+			}
+		}
+
+		return dest, nil
+	default:
+		return nil, fmt.Errorf("Cannot find uniq on type %s", tp)
+	}
 }
