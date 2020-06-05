@@ -332,7 +332,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
             excludes: excludes,
             // 'true' by default due to negative side-effects, but can be overwritten via parameters
             // (as done by artifactPrepareVersion to preserve the .git folder)
-            useDefaultExcludes: !(config.stashNoDefaultExcludes),
+            useDefaultExcludes: !config.stashNoDefaultExcludes,
         )
         return stashName
     } catch (AbortException | IOException e) {
