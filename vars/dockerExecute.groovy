@@ -164,7 +164,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
-                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                        stashNoDefaultExcludes: parameters.stashNoDefaultExcludes,
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
@@ -180,6 +180,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
+                        stashNoDefaultExcludes: parameters.stashNoDefaultExcludes,
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
