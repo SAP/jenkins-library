@@ -329,6 +329,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         boolean useDefaultExcludes = true
         if (config.containsKey('stashUseDefaultExcludes')) {
             useDefaultExcludes = config.stashUseDefaultExcludes
+            echo "useDefaultExcludes: $useDefaultExcludes"
+        } else {
+            echo "using default for useDefaultExcludes (true)"
         }
 
         stash(
