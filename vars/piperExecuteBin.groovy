@@ -111,6 +111,7 @@ static String getCustomConfigArg(def script) {
  */
 static Map mergeJenkinsParameters(Map config, Map parameters) {
     if (parameters.containsKey('stashUseDefaultExcludes')) {
+        echo "copying stashUseDefaultExcludes value from parameters"
         config['stashUseDefaultExcludes'] = parameters['stashUseDefaultExcludes']
     }
     return config
