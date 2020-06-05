@@ -64,7 +64,11 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                 echo "Context Config: ${config}"
             }
 
-            config = mergeJenkinsParameters(config, parameters)
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
@@ -104,17 +108,6 @@ static String getCustomConfigArg(def script) {
         return " --customConfig ${BashUtils.quoteAndEscape(script.commonPipelineEnvironment.configurationFile)}"
     }
     return ''
-}
-
-/**
- * Merges parameters that are only relevant in the Jenkins context from 'parameters' into 'config'
- */
-Map mergeJenkinsParameters(Map config, Map parameters) {
-    if (parameters.containsKey('stashNoDefaultExcludes')) {
-        echo "copying stashNoDefaultExcludes value from parameters"
-        config['stashNoDefaultExcludes'] = parameters['stashNoDefaultExcludes']
-    }
-    return config
 }
 
 void dockerWrapper(script, config, body) {

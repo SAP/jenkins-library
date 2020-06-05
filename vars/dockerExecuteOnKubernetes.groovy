@@ -326,20 +326,13 @@ chown -R ${runAsUser}:${fsGroup} ."""
             excludes = config.stashExcludes.workspace
         }
 
-        boolean useDefaultExcludes = true
-        if (config.containsKey('stashNoDefaultExcludes')) {
-            useDefaultExcludes = !(config.stashNoDefaultExcludes)
-            echo "useDefaultExcludes: $useDefaultExcludes"
-        } else {
-            echo "using default for useDefaultExcludes (true)"
-        }
-
         stash(
             name: stashName,
             includes: includes,
             excludes: excludes,
-            // 'true' by default due to negative side-effects
-            useDefaultExcludes: useDefaultExcludes,
+            // 'true' by default due to negative side-effects, but can be overwritten via parameters
+            // (as done by artifactPrepareVersion to preserve the .git folder)
+            useDefaultExcludes: !(config.stashNoDefaultExcludes),
         )
         return stashName
     } catch (AbortException | IOException e) {
