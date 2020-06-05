@@ -2,49 +2,44 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"path"
+	"strconv"
+	"strings"
 )
 
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
 	utils := npm.NpmUtilsBundle{}
 
-	err := runNpmExecuteLint(&config, telemetryData, &c, &utils)
+	err := runNpmExecuteLint(&utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runNpmExecuteLint(config *npmExecuteLintOptions, telemetryData *telemetry.CustomData, command execRunner, utils npm.NpmUtils) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-	// if ci-lint in any package.json; runCiLint(), move findPackageJsonFiles to pkg? what about execute scripts? could also be useful for other steps?
-	// move npmUtilsBundle to pkg
-	// installDependencies if needed
-	// else runDefaultLint(), retrieve ESLint config from resources? how to run eslint (npm/npx) from go?
-	//packageJSONFiles, err := npm.FindPackageJSONFiles(&npm.NpmUtilsBundle{})
+func runNpmExecuteLint(utils npm.NpmUtils) error {
 	packageJSONFiles, err := npm.FindPackageJSONFiles(utils)
 	if err != nil {
 		return err
 	}
+
 	packagesWithCilint, err := findPackagesWithCilint(packageJSONFiles, utils)
 	if err != nil {
 		return err
 	}
-	fmt.Println(packageJSONFiles)
-	fmt.Println("these files have a ci-lint script")
-	fmt.Println(packagesWithCilint)
 
 	if len(packagesWithCilint) > 0 {
 		err = runCiLint(packagesWithCilint, utils)
+		if err != nil {
+			return err
+		}
 	} else {
 		err = runDefaultLint(utils)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -55,7 +50,6 @@ func findPackagesWithCilint(packageJSONFiles []string, utils npm.NpmUtils) ([]st
 	var packagesWithCilint []string
 
 	for _, file := range packageJSONFiles {
-		fmt.Println(file)
 		packageRaw, err := utils.FileRead(file)
 		if err != nil {
 			return nil, err
@@ -65,20 +59,12 @@ func findPackagesWithCilint(packageJSONFiles []string, utils npm.NpmUtils) ([]st
 
 		scripts, ok := packageJSON["scripts"].(map[string]interface{})
 		if ok {
-			ciLint, ok := scripts["ci-lint"].(string)
+			_, ok := scripts["ci-lint"].(string)
 			if ok {
-				fmt.Println(ciLint)
 				packagesWithCilint = append(packagesWithCilint, file)
-
-			} else {
-				fmt.Println("No ci-lint script defined")
+				log.Entry().Info("Discovered ci-lint script in " + file)
 			}
-		} else {
-			fmt.Println("No ci-lint script defined")
 		}
-		//fmt.Println("Thats the package.json: ")
-		//fmt.Println(packageJSON)
-		// if len(packagesWithCilint) > 0 {runCiLint() } else{ runDefaultLint}
 		packageJSON = nil
 	}
 	return packagesWithCilint, nil
@@ -86,34 +72,21 @@ func findPackagesWithCilint(packageJSONFiles []string, utils npm.NpmUtils) ([]st
 
 func runCiLint(packagesWithCilint []string, utils npm.NpmUtils) error {
 	execRunner := utils.GetExecRunner()
-	fmt.Println("Here the packageJSONs that have cilint again: ")
-	fmt.Println(packagesWithCilint)
-	fmt.Println("thats the length of packageswithcilint: ----------------")
-	fmt.Println(len(packagesWithCilint))
 	oldWorkingDirectory, err := utils.Getwd()
 	if err != nil {
 		return err
 	}
 
-	for i, packageJSON := range packagesWithCilint {
-		fmt.Println(i)
-		fmt.Println("thats the package json for which we need to run ci-lint:")
-		fmt.Println(packageJSON)
+	for _, packageJSON := range packagesWithCilint {
 		dir := path.Dir(packageJSON)
 		err := utils.Chdir(dir)
-		fmt.Println("thats the directory of the package json:")
-		fmt.Println(dir)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Now run ci-lint: ")
+
+		// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
 		err = execRunner.RunExecutable("npm", "run", "--silent", "ci-lint")
-		if err != nil {
-			fmt.Println("err was not nil -------------------------")
-			fmt.Println(err)
-			//return err
-		}
-		fmt.Println("reached the end of the loop")
+
 		err = utils.Chdir(oldWorkingDirectory)
 		if err != nil {
 			return err
@@ -123,11 +96,55 @@ func runCiLint(packagesWithCilint []string, utils npm.NpmUtils) error {
 }
 
 func runDefaultLint(utils npm.NpmUtils) error {
-	// if ESLint config in project: run eslint with user config } else { use config from resources }
+	execRunner := utils.GetExecRunner()
+	eslintConfigs, err := findEslintConfigs(utils)
+	if err != nil {
+		return err
+	}
+
+	// If the user has ESLint configs in the project we use them to lint existing JS files. In this case we do not lint other types of files,
+	// i.e., .jsx, .ts, .tsx, since we can not be sure that the provided config enables parsing of these file types.
+	if len(eslintConfigs) > 0 {
+		for i, config := range eslintConfigs {
+			dir := path.Dir(config)
+			if dir == "." {
+				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
+				err = execRunner.RunExecutable("npx", "eslint", ".", "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
+			} else {
+				lintPattern := dir + "/**/*.js"
+				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
+				err = execRunner.RunExecutable("npx", "eslint", lintPattern , "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
+			}
+		}
+	} else {
+		// Install dependencies manually, since npx cannot resolve the dependencies required for general purpose
+		// ESLint config, e.g., TypeScript ESLint plugin
+		log.Entry().Info("Run ESLint with general purpose config")
+		// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
+		err = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0" )
+		err = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js" )
+	}
 	return nil
 }
 
-func findEslintConfigs(utils npm.NpmUtils) error {
+func findEslintConfigs(utils npm.NpmUtils) ([]string, error) {
+	unfilteredListOfEslintConfigs, err := utils.Glob("**/.eslintrc.*")
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
+	var eslintConfigs []string
+
+	for _, config := range unfilteredListOfEslintConfigs {
+		if strings.Contains(config, "node_modules") {
+			continue
+		}
+		if strings.HasPrefix(config, ".pipeline/") {
+			continue
+		}
+
+		eslintConfigs = append(eslintConfigs, config)
+		log.Entry().Info("Discovered ESLint config " + config)
+	}
+	return eslintConfigs, nil
 }

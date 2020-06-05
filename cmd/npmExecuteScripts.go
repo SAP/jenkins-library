@@ -15,6 +15,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
+
 func runNpmExecuteScripts(utils npm.NpmUtils, options *npmExecuteScriptsOptions) error {
 	execRunner := utils.GetExecRunner()
 	packageJSONFiles, err := npm.FindPackageJSONFiles(utils)
@@ -71,4 +72,3 @@ func runNpmExecuteScripts(utils npm.NpmUtils, options *npmExecuteScriptsOptions)
 
 	return err
 }
-

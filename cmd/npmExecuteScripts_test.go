@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/bmatcuk/doublestar"
 	"github.com/stretchr/testify/assert"
 	"sort"
@@ -13,13 +14,17 @@ type npmExecuteScriptsMockUtilsBundle struct {
 	files      map[string][]byte
 }
 
-func (u *npmExecuteScriptsMockUtilsBundle) fileExists(path string) (bool, error) {
+func (u *npmExecuteScriptsMockUtilsBundle) FileExists(path string) (bool, error) {
 	_, exists := u.files[path]
 	return exists, nil
 }
 
+func (u *npmExecuteScriptsMockUtilsBundle) FileRead(path string) ([]byte, error) {
+	return u.files[path], nil
+}
+
 // duplicated from nexusUpload_test.go for now, refactor later?
-func (u *npmExecuteScriptsMockUtilsBundle) glob(pattern string) ([]string, error) {
+func (u *npmExecuteScriptsMockUtilsBundle) Glob(pattern string) ([]string, error) {
 	var matches []string
 	for path := range u.files {
 		matched, _ := doublestar.Match(pattern, path)
@@ -32,15 +37,15 @@ func (u *npmExecuteScriptsMockUtilsBundle) glob(pattern string) ([]string, error
 	return matches, nil
 }
 
-func (u *npmExecuteScriptsMockUtilsBundle) getwd() (dir string, err error) {
+func (u *npmExecuteScriptsMockUtilsBundle) Getwd() (dir string, err error) {
 	return "/project", nil
 }
 
-func (u *npmExecuteScriptsMockUtilsBundle) chdir(dir string) error {
+func (u *npmExecuteScriptsMockUtilsBundle) Chdir(dir string) error {
 	return nil
 }
 
-func (u *npmExecuteScriptsMockUtilsBundle) getExecRunner() execRunner {
+func (u *npmExecuteScriptsMockUtilsBundle) GetExecRunner() npm.ExecRunner {
 	return &u.execRunner
 }
 

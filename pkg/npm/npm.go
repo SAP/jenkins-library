@@ -2,7 +2,6 @@ package npm
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -18,38 +17,18 @@ type RegistryOptions struct {
 	SapNpmRegistry     string
 }
 
-type execRunner interface {
+type ExecRunner interface {
 	Stdout(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 }
 
-/*type npmUtils interface{
-	glob(pattern string) (matches []string, err error)
-}
-
-type NpmUtilsBundle struct {
-	projectStructure FileUtils.ProjectStructure
-	fileUtils        FileUtils.Files
-	execRunner       *command.Command
-}
-
-func (u *NpmUtilsBundle) glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
-}*/
-
-
-/*func glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
-}*/
-
-
 type NpmUtils interface {
-	fileExists(path string) (bool, error)
+	FileExists(path string) (bool, error)
 	FileRead(path string) ([]byte , error)
-	glob(pattern string) (matches []string, err error)
+	Glob(pattern string) (matches []string, err error)
 	Getwd() (dir string, err error)
 	Chdir(dir string) error
-	GetExecRunner() execRunner
+	GetExecRunner() ExecRunner
 }
 
 type NpmUtilsBundle struct {
@@ -58,7 +37,7 @@ type NpmUtilsBundle struct {
 	execRunner       *command.Command
 }
 
-func (u *NpmUtilsBundle) fileExists(path string) (bool, error) {
+func (u *NpmUtilsBundle) FileExists(path string) (bool, error) {
 	return u.fileUtils.FileExists(path)
 }
 
@@ -66,7 +45,7 @@ func (u *NpmUtilsBundle) FileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
 }
 
-func (u *NpmUtilsBundle) glob(pattern string) (matches []string, err error) {
+func (u *NpmUtilsBundle) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
 
@@ -78,7 +57,7 @@ func (u *NpmUtilsBundle) Chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
-func (u *NpmUtilsBundle) GetExecRunner() execRunner {
+func (u *NpmUtilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
@@ -87,10 +66,9 @@ func (u *NpmUtilsBundle) GetExecRunner() execRunner {
 	return u.execRunner
 }
 
-
 // SetNpmRegistries configures the given npm registries.
 // CAUTION: This will change the npm configuration in the user's home directory.
-func SetNpmRegistries(options *RegistryOptions, execRunner execRunner) error {
+func SetNpmRegistries(options *RegistryOptions, execRunner ExecRunner) error {
 	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
 	configurableRegistries := []string{npmRegistry, sapRegistry}
@@ -135,43 +113,21 @@ func registryIsNonEmpty(preConfiguredRegistry string) bool {
 func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
-/*
-//func FindPackageJSONFiles(utils npmUtils) ([]string, error) {
-func FindPackageJSONFiles() ([]string, error) {*/
-	//unfilteredListOfPackageJSONFiles, err := glob("**/package.json")
-	/*if err != nil {
-		return nil, err
-	}
 
-	var packageJSONFiles []string
-
-	for _, file := range unfilteredListOfPackageJSONFiles {
-		if strings.Contains(file, "node_modules") {
-			continue
-		}
-		if strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/") {
-			continue
-		}
-		packageJSONFiles = append(packageJSONFiles, file)
-		log.Entry().Info("Discovered package.json file " + file)
-	}
-	return packageJSONFiles, nil
-}
-*/
 func CheckIfLockFilesExist(utils NpmUtils) (bool, bool, error) {
-	packageLockExists, err := utils.fileExists("package-lock.json")
+	packageLockExists, err := utils.FileExists("package-lock.json")
 
 	if err != nil {
 		return false, false, err
 	}
-	yarnLockExists, err := utils.fileExists("yarn.lock")
+	yarnLockExists, err := utils.FileExists("yarn.lock")
 	if err != nil {
 		return false, false, err
 	}
 	return packageLockExists, yarnLockExists, nil
 }
 
-func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner execRunner) (err error) {
+func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner ExecRunner) (err error) {
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
 		err = execRunner.RunExecutable("npm", "ci")
@@ -195,18 +151,16 @@ func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool
 	}
 	return nil
 }
+
 func FindPackageJSONFiles(utils NpmUtils) ([]string, error) {
-	unfilteredListOfPackageJSONFiles, err := utils.glob("**/package.json")
+	unfilteredListOfPackageJSONFiles, err := utils.Glob("**/package.json")
 	if err != nil {
 		return nil, err
 	}
 
 	var packageJSONFiles []string
-	fmt.Println()
-	fmt.Println("thats length of unfiltered packages")
-	fmt.Println(len(unfilteredListOfPackageJSONFiles))
-	for i, file := range unfilteredListOfPackageJSONFiles {
-		fmt.Println(i)
+
+	for _, file := range unfilteredListOfPackageJSONFiles {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
