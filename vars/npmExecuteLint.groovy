@@ -15,5 +15,3 @@ void call(Map parameters = [:]) {
 
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
 }
-
-// TODO: Add visualization of linting results
