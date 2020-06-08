@@ -103,6 +103,29 @@ func Evaluate(pomFile, expression string, command mavenExecRunner) (string, erro
 	return value, nil
 }
 
+// InstallFile ...
+func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsFile, globalSettingsFile, m2Path string) error {
+	var defines []string
+	if len(file) > 0 {
+		defines = append(defines, "-Dfile="+file)
+	}
+	if len(pomFile) > 0 {
+		defines = append(defines, "-DpomFile="+pomFile)
+	}
+	mavenOptionsInstall := ExecuteOptions{
+		Flags:                       []string{},
+		Goals:                       []string{"install:install-file"},
+		Defines:                     defines,
+		PomPath:                     pomFile,
+		ProjectSettingsFile:         projectSettingsFile,
+		GlobalSettingsFile:          globalSettingsFile,
+		M2Path:                      m2Path,
+		LogSuccessfulMavenTransfers: false,
+	}
+	_, err := Execute(&mavenOptionsInstall, command)
+	return err
+}
+
 func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	stdOut := log.Writer()
