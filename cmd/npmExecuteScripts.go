@@ -8,7 +8,7 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
-	utils := npm.NpmUtilsBundle{}
+	utils := npm.UtilsBundle{}
 
 	err := runNpmExecuteScripts(&utils, &config)
 	if err != nil {
@@ -16,7 +16,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 	}
 }
 
-func runNpmExecuteScripts(utils npm.NpmUtils, options *npmExecuteScriptsOptions) error {
+func runNpmExecuteScripts(utils npm.Utils, options *npmExecuteScriptsOptions) error {
 	execRunner := utils.GetExecRunner()
 	packageJSONFiles, err := npm.FindPackageJSONFiles(utils)
 	if err != nil {

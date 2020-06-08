@@ -22,7 +22,7 @@ type ExecRunner interface {
 	RunExecutable(executable string, params ...string) error
 }
 
-type NpmUtils interface {
+type Utils interface {
 	FileExists(path string) (bool, error)
 	FileRead(path string) ([]byte , error)
 	Glob(pattern string) (matches []string, err error)
@@ -31,33 +31,33 @@ type NpmUtils interface {
 	GetExecRunner() ExecRunner
 }
 
-type NpmUtilsBundle struct {
+type UtilsBundle struct {
 	projectStructure FileUtils.ProjectStructure
 	fileUtils        FileUtils.Files
 	execRunner       *command.Command
 }
 
-func (u *NpmUtilsBundle) FileExists(path string) (bool, error) {
+func (u *UtilsBundle) FileExists(path string) (bool, error) {
 	return u.fileUtils.FileExists(path)
 }
 
-func (u *NpmUtilsBundle) FileRead(path string) ([]byte, error) {
+func (u *UtilsBundle) FileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
 }
 
-func (u *NpmUtilsBundle) Glob(pattern string) (matches []string, err error) {
+func (u *UtilsBundle) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
 
-func (u *NpmUtilsBundle) Getwd() (dir string, err error) {
+func (u *UtilsBundle) Getwd() (dir string, err error) {
 	return os.Getwd()
 }
 
-func (u *NpmUtilsBundle) Chdir(dir string) error {
+func (u *UtilsBundle) Chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
-func (u *NpmUtilsBundle) GetExecRunner() ExecRunner {
+func (u *UtilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
@@ -114,7 +114,7 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
-func CheckIfLockFilesExist(utils NpmUtils) (bool, bool, error) {
+func CheckIfLockFilesExist(utils Utils) (bool, bool, error) {
 	packageLockExists, err := utils.FileExists("package-lock.json")
 
 	if err != nil {
@@ -152,7 +152,7 @@ func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool
 	return nil
 }
 
-func FindPackageJSONFiles(utils NpmUtils) ([]string, error) {
+func FindPackageJSONFiles(utils Utils) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, err := utils.Glob("**/package.json")
 	if err != nil {
 		return nil, err
