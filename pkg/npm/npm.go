@@ -26,7 +26,7 @@ type ExecRunner interface {
 // Interface for functions that need to be mocked for testing
 type Utils interface {
 	FileExists(path string) (bool, error)
-	FileRead(path string) ([]byte , error)
+	FileRead(path string) ([]byte, error)
 	Glob(pattern string) (matches []string, err error)
 	Getwd() (dir string, err error)
 	Chdir(dir string) error

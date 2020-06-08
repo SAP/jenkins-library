@@ -106,7 +106,7 @@ func runDefaultLint(utils npm.Utils) {
 			} else {
 				lintPattern := dir + "/**/*.js"
 				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
-				_ = execRunner.RunExecutable("npx", "eslint", lintPattern , "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
+				_ = execRunner.RunExecutable("npx", "eslint", lintPattern, "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
 			}
 		}
 	} else {
@@ -114,8 +114,8 @@ func runDefaultLint(utils npm.Utils) {
 		// ESLint config, e.g., TypeScript ESLint plugin
 		log.Entry().Info("Run ESLint with general purpose config")
 		// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
-		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0" )
-		_ = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js" )
+		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
+		_ = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js")
 	}
 }
 
