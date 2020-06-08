@@ -6,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 import util.BasePiperTest
+import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
@@ -24,6 +25,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, "./")
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules
@@ -33,6 +35,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         .around(thrown)
         .around(shellRule)
         .around(readFileRule)
+        .around(loggingRule)
 
 
     @Before
@@ -95,13 +98,14 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    public void testAttemptToLoadNonExistingConfigFile() {
+    void testAttemptToLoadNonExistingConfigFile() {
 
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             switch(path) {
                 case 'default_pipeline_environment.yml': return false
                 case 'custom.yml': return false
                 case 'notFound.yml': return false
+                case '': throw new RuntimeException('cannot call fileExists with empty path')
                 default: return true
             }
         })
@@ -121,10 +125,47 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+    void testInvalidEntriesInCustomDefaults() {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            switch(path) {
+                case 'default_pipeline_environment.yml': return false
+                case '': throw new RuntimeException('cannot call fileExists with empty path')
+                default: return true
+            }
+        })
+
+        helper.registerAllowedMethod("handlePipelineStepErrors", [Map,Closure], { Map map, Closure closure ->
+            closure()
+        })
+
+        helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
+            Yaml yamlParser = new Yaml()
+            if (parameters.text) {
+                return yamlParser.load(parameters.text)
+            } else if (parameters.file) {
+                if (parameters.file == '.pipeline/config-with-custom-defaults.yml') {
+                    return [customDefaults: ['', true]]
+                }
+            }
+            throw new IllegalArgumentException("Unexpected invocation of readYaml step")
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(
+            script: nullScript,
+            configFile: '.pipeline/config-with-custom-defaults.yml'
+        )
+
+        assertEquals('WARNING: Ignoring invalid entry in custom defaults from files: \'\' \n' +
+            'WARNING: Ignoring invalid entry in custom defaults from files: \'true\' \n', loggingRule.getLog())
+    }
+
+    @Test
     void testAttemptToLoadFileFromURL() {
         helper.registerAllowedMethod("fileExists", [String], {String path ->
             switch (path) {
                 case 'default_pipeline_environment.yml': return false
+                case '': throw new RuntimeException('cannot call fileExists with empty path')
                 default: return true
             }
         })
