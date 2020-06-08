@@ -17,11 +17,13 @@ type RegistryOptions struct {
 	SapNpmRegistry     string
 }
 
+// Interface for ExecRunner to be mocked for testing
 type ExecRunner interface {
 	Stdout(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 }
 
+// Interface for functions that need to be mocked for testing
 type Utils interface {
 	FileExists(path string) (bool, error)
 	FileRead(path string) ([]byte , error)
@@ -31,32 +33,39 @@ type Utils interface {
 	GetExecRunner() ExecRunner
 }
 
+// UtilsBundle holds utils for mocking used by npmExecuteScripts/-Lint
 type UtilsBundle struct {
 	projectStructure FileUtils.ProjectStructure
 	fileUtils        FileUtils.Files
 	execRunner       *command.Command
 }
 
+// Implements FileExists function for mock interface
 func (u *UtilsBundle) FileExists(path string) (bool, error) {
 	return u.fileUtils.FileExists(path)
 }
 
+// Implements FileRead function for mock interface
 func (u *UtilsBundle) FileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
 }
 
+// Implements Glob function for mock interface
 func (u *UtilsBundle) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
 
+// Implements Getwd function for mock interface
 func (u *UtilsBundle) Getwd() (dir string, err error) {
 	return os.Getwd()
 }
 
+// Implements Chdir function for mock interface
 func (u *UtilsBundle) Chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
+// Constructs ExecRunner, that redirects Stdout and Stderr to logging framework
 func (u *UtilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
