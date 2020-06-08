@@ -14,7 +14,7 @@ void call(Map parameters = [:]) {
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.NPM)
 
     String eslintDefaultConfig = libraryResource ".eslintrc.json"
-    writeFile file: ".pipeline/.eslintrc.json", text: eslintConfigDefault
+    writeFile file: ".pipeline/.eslintrc.json", text: eslintDefaultConfig
 
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
 }
