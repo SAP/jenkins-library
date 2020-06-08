@@ -85,7 +85,8 @@ class PiperGoUtils implements Serializable {
             }
         } catch(err) {
             //nothing to do since error should just result in downloaded=false
-            steps.echo "Failed downloading Piper go binary with error '${err}'"
+            steps.echo "Failed downloading Piper go binary with error '${err}'. " +
+                "If curl is missing, please ensure that curl is available in the Jenkins master and the agents. It is a prerequisite to run piper."
         }
         return false
     }
