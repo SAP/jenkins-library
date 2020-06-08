@@ -190,3 +190,17 @@ func TestGetTestModulesExcludes(t *testing.T) {
 		assert.Equal(t, expected, modulesExcludes)
 	})
 }
+
+func TestMavenInstall(t *testing.T) {
+	t.Run("Should return path to jar file", func(t *testing.T) {
+		actual := jarFile("my-app")
+		assert.Equal(t, "target/my-app.jar", actual)
+	})
+
+	t.Run("Should return path to war file", func(t *testing.T) {
+		actual := warFile("my-app")
+		assert.Equal(t, "target/my-app.war", actual)
+	})
+
+
+}

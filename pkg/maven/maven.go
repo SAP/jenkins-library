@@ -133,17 +133,7 @@ func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsF
 }
 
 func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalSettingsFile, m2Path string, p piperutils.FileUtils) error {
-	mavenOptionsFlatten := ExecuteOptions{
-		Flags:                       []string{},
-		Goals:                       []string{"flatten:flatten"},
-		Defines:                     []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath:                     "pom.xml",
-		ProjectSettingsFile:         projectSettingsFile,
-		GlobalSettingsFile:          globalSettingsFile,
-		M2Path:                      m2Path,
-		LogSuccessfulMavenTransfers: false,
-	}
-	_, err := Execute(&mavenOptionsFlatten, command)
+	err := flattenPom(command, projectSettingsFile, globalSettingsFile, m2Path)
 	if err != nil {
 		return err
 	}
@@ -159,9 +149,12 @@ func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalS
 	}
 
 	for _, pomFile := range pomFiles {
-		log.Entry().Info("Installing maven module " + pomFile)
+		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
 		dir := path.Dir(pomFile)
-		os.Chdir(dir)
+		err = os.Chdir(dir)
+		if err != nil {
+			return err
+		}
 
 		pomXmlBytes, err := p.FileRead("pom.xml")
 		if err != nil {
@@ -178,36 +171,60 @@ func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalS
 			if err != nil {
 				return err
 			}
-			jarExists, err := p.FileExists("target/" + finalName + ".jar")
+			jarExists, err := p.FileExists(jarFile(finalName))
 			if err != nil {
 				return err
 			}
-			warExists, err := p.FileExists("target/" + finalName + ".war")
+			warExists, err := p.FileExists(warFile(finalName))
 			if err != nil {
 				return err
 			}
 
-			if jarExists { //fixme path
-				err = InstallFile("target/"+finalName+".jar", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+			if jarExists {
+				err = InstallFile(jarFile(finalName), "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
 				if err != nil {
 					return err
 				}
 			}
 
 			if warExists {
-				err = InstallFile("target/"+finalName+".war", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+				err = InstallFile(warFile(finalName), "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
 				if err != nil {
 					return err
 				}
 			}
-
 		}
 
-		os.Chdir(oldWorkingDirectory)
+		err = os.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return err
+		}
 	}
-	return nil
+	return err
 }
 
+func jarFile(finalName string) string {
+	return "target/" + finalName + ".jar"
+}
+
+func warFile(finalName string) string {
+	return "target/" + finalName + ".war"
+}
+
+func flattenPom(command mavenExecRunner, projectSettingsFile string, globalSettingsFile string, m2Path string) error {
+	mavenOptionsFlatten := ExecuteOptions{
+		Flags:                       []string{},
+		Goals:                       []string{"flatten:flatten"},
+		Defines:                     []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath:                     "pom.xml",
+		ProjectSettingsFile:         projectSettingsFile,
+		GlobalSettingsFile:          globalSettingsFile,
+		M2Path:                      m2Path,
+		LogSuccessfulMavenTransfers: false,
+	}
+	_, err := Execute(&mavenOptionsFlatten, command)
+	return err
+}
 
 func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
