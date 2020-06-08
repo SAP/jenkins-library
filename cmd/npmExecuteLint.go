@@ -26,10 +26,10 @@ func runNpmExecuteLint(utils npm.Utils) error {
 		return err
 	}
 
-	packagesWithCilint := findPackagesWithCilint(packageJSONFiles, utils)
+	packagesWithCiLint := findPackagesWithCiLint(packageJSONFiles, utils)
 
-	if len(packagesWithCilint) > 0 {
-		err = runCiLint(packagesWithCilint, utils)
+	if len(packagesWithCiLint) > 0 {
+		err = runCiLint(packagesWithCiLint, utils)
 		if err != nil {
 			return err
 		}
@@ -40,8 +40,8 @@ func runNpmExecuteLint(utils npm.Utils) error {
 	return nil
 }
 
-func findPackagesWithCilint(packageJSONFiles []string, utils npm.Utils) []string {
-	var packagesWithCilint []string
+func findPackagesWithCiLint(packageJSONFiles []string, utils npm.Utils) []string {
+	var packagesWithCiLint []string
 
 	for _, file := range packageJSONFiles {
 		var packageJSON map[string]interface{}
@@ -58,22 +58,22 @@ func findPackagesWithCilint(packageJSONFiles []string, utils npm.Utils) []string
 		if ok {
 			_, ok := scripts["ci-lint"].(string)
 			if ok {
-				packagesWithCilint = append(packagesWithCilint, file)
+				packagesWithCiLint = append(packagesWithCiLint, file)
 				log.Entry().Info("Discovered ci-lint script in " + file)
 			}
 		}
 	}
-	return packagesWithCilint
+	return packagesWithCiLint
 }
 
-func runCiLint(packagesWithCilint []string, utils npm.Utils) error {
+func runCiLint(packagesWithCiLint []string, utils npm.Utils) error {
 	execRunner := utils.GetExecRunner()
 	oldWorkingDirectory, err := utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing ci-lint scripts: %w", err)
 	}
 
-	for _, packageJSON := range packagesWithCilint {
+	for _, packageJSON := range packagesWithCiLint {
 		dir := path.Dir(packageJSON)
 		err := utils.Chdir(dir)
 		if err != nil {

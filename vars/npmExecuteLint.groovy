@@ -17,4 +17,13 @@ void call(Map parameters = [:]) {
     writeFile file: ".pipeline/.eslintrc.json", text: eslintDefaultConfig
 
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
+
+    visualizeLintingResults(script)
+}
+
+private visualizeLintingResults(Script script) {
+    recordIssues blameDisabled: true,
+        enabledForFailure: true,
+        aggregatingResults: false,
+        tool: script.checkStyle(id: "lint", name: "Lint", pattern: "*lint.xml")
 }
