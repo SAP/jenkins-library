@@ -3,8 +3,12 @@ package maven
 import (
 	"bytes"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -108,6 +112,8 @@ func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsF
 	var defines []string
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
+	} else {
+		defines = append(defines, "-Dfile="+pomFile)
 	}
 	if len(pomFile) > 0 {
 		defines = append(defines, "-DpomFile="+pomFile)
@@ -125,6 +131,83 @@ func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsF
 	_, err := Execute(&mavenOptionsInstall, command)
 	return err
 }
+
+func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalSettingsFile, m2Path string, p piperutils.FileUtils) error {
+	mavenOptionsFlatten := ExecuteOptions{
+		Flags:                       []string{},
+		Goals:                       []string{"flatten:flatten"},
+		Defines:                     []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath:                     "pom.xml",
+		ProjectSettingsFile:         projectSettingsFile,
+		GlobalSettingsFile:          globalSettingsFile,
+		M2Path:                      m2Path,
+		LogSuccessfulMavenTransfers: false,
+	}
+	_, err := Execute(&mavenOptionsFlatten, command)
+	if err != nil {
+		return err
+	}
+
+	pomFiles, err := doublestar.Glob(filepath.Join("**", "pom.xml"))
+	if err != nil {
+		return err
+	}
+
+	oldWorkingDirectory, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	for _, pomFile := range pomFiles {
+		log.Entry().Info("Installing maven module " + pomFile)
+		dir := path.Dir(pomFile)
+		os.Chdir(dir)
+
+		pomXmlBytes, err := p.FileRead("pom.xml")
+		if err != nil {
+			return err
+		}
+		pomXmlString := string(pomXmlBytes)
+		if strings.Contains(pomXmlString, "<packaging>pom</packaging>") {
+			err = InstallFile("", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+			if err != nil {
+				return err
+			}
+		} else {
+			finalName, err := Evaluate("pom.xml", "project.build.finalName", command)
+			if err != nil {
+				return err
+			}
+			jarExists, err := p.FileExists("target/" + finalName + ".jar")
+			if err != nil {
+				return err
+			}
+			warExists, err := p.FileExists("target/" + finalName + ".war")
+			if err != nil {
+				return err
+			}
+
+			if jarExists { //fixme path
+				err = InstallFile("target/"+finalName+".jar", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+				if err != nil {
+					return err
+				}
+			}
+
+			if warExists {
+				err = InstallFile("target/"+finalName+".war", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+
+		os.Chdir(oldWorkingDirectory)
+	}
+	return nil
+}
+
 
 func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer

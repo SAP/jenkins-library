@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/npm"
-	"github.com/bmatcuk/doublestar"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -190,96 +188,19 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
-	//fixme(refactor): postprocess mta
-
 	pomXmlExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
 	}
 	if pomXmlExists {
-		// flatten pom
-		mavenOptionsFlatten := maven.ExecuteOptions{
-			Flags:                       []string{},
-			Goals:                       []string{"flatten:flatten"},
-			Defines:                     []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-			PomPath:                     "pom.xml",
-			ProjectSettingsFile:         config.ProjectSettingsFile,
-			GlobalSettingsFile:          config.GlobalSettingsFile,
-			M2Path:                      config.M2Path,
-			LogSuccessfulMavenTransfers: false,
-		}
-		_, err = maven.Execute(&mavenOptionsFlatten, e)
+		err = maven.InstallMavenArtifacts(e, config.ProjectSettingsFile, config.GlobalSettingsFile, config.M2Path, p)
 		if err != nil {
 			return err
 		}
-
-		pomFiles, err := doublestar.Glob(filepath.Join("**", "pom.xml"))
-		if err != nil {
-			return err
-		}
-
-		oldWorkingDirectory, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		for _, pomFile := range pomFiles {
-
-
-			log.Entry().Info("Installing maven module " + pomFile)
-			dir := path.Dir(pomFile)
-			os.Chdir(dir)
-
-			pomFileWithoutLeadingPath := path.Base(pomFile) //todo could be constant "pom.xml"??
-
-			pomXmlBytes, err := p.FileRead(pomFileWithoutLeadingPath)
-			if err != nil {
-				return err
-			}
-			pomXmlString := string(pomXmlBytes)
-			if strings.Contains(pomXmlString, "<packaging>pom</packaging>") {
-				err = maven.InstallFile("", pomFileWithoutLeadingPath, e, config.ProjectSettingsFile, config.GlobalSettingsFile, config.M2Path)
-				if err != nil {
-					return err
-				}
-			} else {
-				finalName, err := maven.Evaluate(pomFileWithoutLeadingPath, "project.build.finalName", e)
-				if err != nil {
-					return err
-				}
-				jarExists, err := p.FileExists("target/" + finalName + ".jar")
-				if err != nil {
-					return err
-				}
-				warExists, err := p.FileExists("target/" + finalName + ".war")
-				if err != nil {
-					return err
-				}
-
-				if jarExists { //fixme path
-					err = maven.InstallFile("target/" + finalName + ".jar", "pom.xml", e, config.ProjectSettingsFile, config.GlobalSettingsFile, config.M2Path)
-					if err != nil {
-						return err
-					}
-				}
-
-				if warExists {
-					err = maven.InstallFile("target/" + finalName + ".war", "pom.xml", e, config.ProjectSettingsFile, config.GlobalSettingsFile, config.M2Path)
-					if err != nil {
-						return err
-					}
-				}
-
-			}
-
-			os.Chdir(oldWorkingDirectory)
-		}
-
 	}
 
 	return nil
 }
-
 
 func getMarJarName(config mtaBuildOptions) string {
 
