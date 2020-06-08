@@ -65,7 +65,7 @@ func (u *UtilsBundle) Chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
-// ExecRunner, that redirects Stdout and Stderr to logging framework
+// GetExecRunner returns/creates an ExecRunner that redirects Stdout and Stderr to logging framework
 func (u *UtilsBundle) GetExecRunner() ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
@@ -123,6 +123,7 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
+// CheckIfLockFilesExist checks if yarn/package lock files exist
 func CheckIfLockFilesExist(utils Utils) (bool, bool, error) {
 	packageLockExists, err := utils.FileExists("package-lock.json")
 
@@ -136,6 +137,7 @@ func CheckIfLockFilesExist(utils Utils) (bool, bool, error) {
 	return packageLockExists, yarnLockExists, nil
 }
 
+// InstallDependencies executes npm or yarn install
 func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner ExecRunner) (err error) {
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
 	if packageLockExists {
@@ -161,6 +163,7 @@ func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool
 	return nil
 }
 
+// FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
 func FindPackageJSONFiles(utils Utils) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, err := utils.Glob("**/package.json")
 	if err != nil {
