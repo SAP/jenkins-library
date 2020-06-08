@@ -7,9 +7,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    'buildTool'
-]
+@Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /** Starts build execution. This is always being executed.*/
     'buildExecute',
@@ -56,7 +54,7 @@ void call(Map parameters = [:]) {
 
         durationMeasure(script: script, measurementName: 'build_duration') {
 
-            buildExecute script: script, buildTool: parameters.buildTool
+            buildExecute script: script
             pipelineStashFilesAfterBuild script: script
 
             testsPublishResults script: script, junit: [updateResults: true]
