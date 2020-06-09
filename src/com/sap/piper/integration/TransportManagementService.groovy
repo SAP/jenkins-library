@@ -62,7 +62,7 @@ class TransportManagementService implements Serializable {
 
     def uploadFile(String url, String token, String file, String namedUser) {
 
-        echo("File Upload started.")
+        echo("File upload started.")
 
         if (config.verbose) {
             echo("URL: '${url}', File: '${file}'")
@@ -84,7 +84,7 @@ class TransportManagementService implements Serializable {
                                                 |      --output ${responseFileUpload} \\
                                                 |      '${url}/v2/files/upload'""".stripMargin()
 
-        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseFileUpload, responseCode, '201', 'File Upload'))
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseFileUpload, responseCode, '201', 'File upload'))
     }
 
 
@@ -133,7 +133,7 @@ class TransportManagementService implements Serializable {
 
     def uploadMtaExtDescriptorToNode(String url, String token, Long nodeId, String file, String mtaVersion, String description, String namedUser) {
 
-        echo("MTA Extension Descriptor Upload started.")
+        echo("MTA Extension Descriptor upload started.")
 
         if (config.verbose) {
             echo("URL: '${url}', NodeId: '${nodeId}', File: '${file}', MtaVersion: '${mtaVersion}'")
@@ -155,7 +155,7 @@ class TransportManagementService implements Serializable {
                                                 |      --output ${responseExtDescriptorUpload} \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors'""".stripMargin()
 
-        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '201', 'MTA Extension Descriptor Upload'))
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpload, responseCode, '201', 'MTA Extension Descriptor upload'))
     }
 
     def getNodes(String url, String token) {
@@ -197,7 +197,7 @@ class TransportManagementService implements Serializable {
 
     def updateMtaExtDescriptor(String url, String token, Long nodeId, Long idOfMtaExtDescriptor, String file, String mtaVersion, String description, String namedUser) {
 
-        echo("MTA Extension Descriptor Update started.")
+        echo("MTA Extension Descriptor update started.")
 
         if (config.verbose) {
         echo("URL: '${url}', NodeId: '${nodeId}', IdOfMtaDescriptor: '${idOfMtaExtDescriptor}', File: '${file}', MtaVersion: '${mtaVersion}'")
@@ -220,11 +220,11 @@ class TransportManagementService implements Serializable {
                                                 |      -X PUT \\
                                                 |      '${url}/v2/nodes/${nodeId}/mtaExtDescriptors/${idOfMtaExtDescriptor}'""".stripMargin()
 
-        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpdate, responseCode, '200', 'MTA Extension Descriptor Update'))
+        return jsonUtils.jsonStringToGroovyObject(getResponseBody(responseExtDescriptorUpdate, responseCode, '200', 'MTA Extension Descriptor update'))
     }
 
     def getMtaExtDescriptor(String url, String token, Long nodeId, String mtaId, String mtaVersion) {
-        echo("Get Extension descriptor started.")
+        echo("Get MTA Extension Descriptor started.")
 
         if (config.verbose) {
             echo("URL: '${url}', NodeId: '${nodeId}', MtaId: '${mtaId}', MtaVersion: '${mtaVersion}'")
@@ -251,7 +251,7 @@ class TransportManagementService implements Serializable {
 
         def response = sendApiRequest(parameters)
         if (response.status != 200) {
-            prepareAndThrowException(response, "Get Extension descriptor failed (HTTP status code '${response.status}').")
+            prepareAndThrowException(response, "Get MTA Extension Descriptor failed (HTTP status code '${response.status}').")
         }
 
         if (config.verbose) {
@@ -265,7 +265,7 @@ class TransportManagementService implements Serializable {
             mtaExtDescriptor = responseContent.get("mtaExtDescriptors").get(0);
         }
 
-        echo("Get Extension descriptor successful.")
+        echo("Get MTA Extension Descriptor successful.")
         return mtaExtDescriptor
     }
 
