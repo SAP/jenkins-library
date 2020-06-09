@@ -54,7 +54,6 @@ func (m *mockUtils) dir(input string) string {
 }
 
 type fileUtils struct {
-
 }
 
 func (f *fileUtils) Copy(src, dest string) (int64, error) {
@@ -257,8 +256,7 @@ func TestMavenInstall(t *testing.T) {
 	t.Run("Install files in a project", func(t *testing.T) {
 		utils := newMockUtils(false)
 		execMockRunner := mock.ExecMockRunner{}
-		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo",
-			}
+		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
 		fileUtils := fileUtils{}
 		err := InstallMavenArtifacts(&execMockRunner, &utils, &fileUtils, "", "", "")
 
