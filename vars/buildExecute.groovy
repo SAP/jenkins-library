@@ -64,6 +64,7 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('dockerImageTag', script.commonPipelineEnvironment.getArtifactVersion())
+            .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .use()
 
         // telemetry reporting
