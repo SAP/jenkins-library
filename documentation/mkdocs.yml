@@ -73,9 +73,9 @@ nav:
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
-        - npmExecuteScripts: steps/npmExecuteScripts.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
+        - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
