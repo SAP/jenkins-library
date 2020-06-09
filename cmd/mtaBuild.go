@@ -193,7 +193,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 	if pomXmlExists {
-		err = maven.InstallMavenArtifacts(e, config.ProjectSettingsFile, config.GlobalSettingsFile, config.M2Path, p)
+		err = maven.InstallMavenArtifacts(e, config.GlobalSettingsFile, config.ProjectSettingsFile, p, config.M2Path)
 		if err != nil {
 			return err
 		}

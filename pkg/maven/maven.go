@@ -38,6 +38,10 @@ type mavenExecRunner interface {
 type mavenUtils interface {
 	FileExists(path string) (bool, error)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	glob(pattern string) (matches []string, err error)
+	getwd() (dir string, err error)
+	chdir(dir string) error
+	dir(string) string
 }
 
 type utilsBundle struct {
@@ -58,6 +62,22 @@ func (u *utilsBundle) FileExists(path string) (bool, error) {
 
 func (u *utilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return u.httpClient.DownloadFile(url, filename, header, cookies)
+}
+
+func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
+	return doublestar.Glob(pattern)
+}
+
+func (u *utilsBundle) getwd() (dir string, err error) {
+	return os.Getwd()
+}
+
+func (u *utilsBundle) chdir(dir string) error {
+	return os.Chdir(dir)
+}
+
+func (u *utilsBundle) dir(input string) string {
+	return path.Dir(input)
 }
 
 const mavenExecutable = "mvn"
@@ -107,17 +127,21 @@ func Evaluate(pomFile, expression string, command mavenExecRunner) (string, erro
 	return value, nil
 }
 
-// InstallFile ...
-func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsFile, globalSettingsFile, m2Path string) error {
+// InstallFile installs a maven artifact and its pom into the local maven repository.
+// If "file" is empty, only the pom is installed.
+// "pomFile" may not be empty.
+func InstallFile(file, pomFile string, command mavenExecRunner, utils mavenUtils, projectSettingsFile, globalSettingsFile, m2Path string) error {
+	if len(pomFile) == 0 {
+		return fmt.Errorf("pomFile can't be empty")
+	}
+
 	var defines []string
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
 	} else {
 		defines = append(defines, "-Dfile="+pomFile)
 	}
-	if len(pomFile) > 0 {
-		defines = append(defines, "-DpomFile="+pomFile)
-	}
+	defines = append(defines, "-DpomFile="+pomFile)
 	mavenOptionsInstall := ExecuteOptions{
 		Flags:                       []string{},
 		Goals:                       []string{"install:install-file"},
@@ -132,26 +156,27 @@ func InstallFile(file, pomFile string, command mavenExecRunner, projectSettingsF
 	return err
 }
 
-func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalSettingsFile, m2Path string, p piperutils.FileUtils) error {
+// InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
+func InstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, p piperutils.FileUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
 	err := flattenPom(command, projectSettingsFile, globalSettingsFile, m2Path)
 	if err != nil {
 		return err
 	}
 
-	pomFiles, err := doublestar.Glob(filepath.Join("**", "pom.xml"))
+	pomFiles, err := utils.glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		return err
 	}
 
-	oldWorkingDirectory, err := os.Getwd()
+	oldWorkingDirectory, err := utils.getwd()
 	if err != nil {
 		return err
 	}
 
 	for _, pomFile := range pomFiles {
 		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
-		dir := path.Dir(pomFile)
-		err = os.Chdir(dir)
+		dir := utils.dir(pomFile)
+		err = utils.chdir(dir)
 		if err != nil {
 			return err
 		}
@@ -162,7 +187,7 @@ func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalS
 		}
 		pomXmlString := string(pomXmlBytes)
 		if strings.Contains(pomXmlString, "<packaging>pom</packaging>") {
-			err = InstallFile("", "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+			err = InstallFile("", "pom.xml", command, utils, projectSettingsFile, globalSettingsFile, m2Path)
 			if err != nil {
 				return err
 			}
@@ -181,21 +206,21 @@ func InstallMavenArtifacts(command mavenExecRunner, projectSettingsFile, globalS
 			}
 
 			if jarExists {
-				err = InstallFile(jarFile(finalName), "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+				err = InstallFile(jarFile(finalName), "pom.xml", command, utils, projectSettingsFile, globalSettingsFile, m2Path)
 				if err != nil {
 					return err
 				}
 			}
 
 			if warExists {
-				err = InstallFile(warFile(finalName), "pom.xml", command, projectSettingsFile, globalSettingsFile, m2Path)
+				err = InstallFile(warFile(finalName), "pom.xml", command, utils, projectSettingsFile, globalSettingsFile, m2Path)
 				if err != nil {
 					return err
 				}
 			}
 		}
 
-		err = os.Chdir(oldWorkingDirectory)
+		err = utils.chdir(oldWorkingDirectory)
 		if err != nil {
 			return err
 		}
