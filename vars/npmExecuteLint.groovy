@@ -15,8 +15,15 @@ void call(Map parameters = [:]) {
 
     String eslintDefaultConfig = libraryResource ".eslintrc.json"
     writeFile file: ".pipeline/.eslintrc.json", text: eslintDefaultConfig
+    try {
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
+    } catch (Exception exception) {
+        error("Linter execution failed. Please examine the reports which are also available in the Jenkins user interface.")
+    }
+    finally {
+        showIssues(script)
+    }
 
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
 
     visualizeLintingResults(script)
 }
