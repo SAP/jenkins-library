@@ -22,6 +22,7 @@ type Product struct {
 
 // Project defines a WhiteSource project with name and token
 type Project struct {
+	ID             int64  `json:"id"`
 	Name           string `json:"name"`
 	PluginName     string `json:"pluginName"`
 	Token          string `json:"token"`
@@ -35,6 +36,7 @@ type Request struct {
 	RequestType  string `json:"requestType,omitempty"`
 	UserKey      string `json:"userKey,omitempty"`
 	ProductToken string `json:"productToken,omitempty"`
+	ProductName  string `json:"productName,omitempty"`
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
 }
@@ -45,6 +47,15 @@ type System struct {
 	OrgToken   string
 	ServerURL  string
 	UserToken  string
+}
+
+func NewSystem(serverUrl, orgToken, userToken string) System {
+	return System{
+		ServerURL:  serverUrl,
+		OrgToken:   orgToken,
+		UserToken:  userToken,
+		HTTPClient: &piperhttp.Client{},
+	}
 }
 
 // GetProductsMetaInfo retrieves meta information for all WhiteSource products a user has access to
@@ -115,24 +126,42 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 }
 
 //GetProjectToken returns the project token for a project with a given name
-func (s *System) GetProjectToken(productToken, projectName string) (string, error) {
+func (s *System) GetProjectByName(productToken, projectName string) (*Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
 	}
 
 	for _, project := range projects {
 		if projectName == project.Name {
-			return project.Token, nil
+			return &project, nil
 		}
 	}
-	return "", nil
+	return nil, errors.New(fmt.Sprintf("Failed to find a project with name: %s", projectName))
+}
+
+// get all projects tokens for a list of given project ids
+func (s *System) GetProjectTokensByIds(productToken string, projectIds []int64) ([]Project, error) {
+	projectsMatched := []Project{}
+
+	projects, err := s.GetProjectsMetaInfo(productToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+	}
+
+	for _, project := range projects {
+		for _, projectId := range projectIds {
+			if projectId == project.ID {
+				projectsMatched = append(projectsMatched, project)
+			}
+		}
+	}
+	return projectsMatched, nil
 }
 
 //GetProjectTokens returns the project tokens for a list of given project names
-func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
+func (s *System) GetProjectTokensByNames(productToken string, projectNames []string) ([]string, error) {
 	projectTokens := []string{}
-
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
 		return projectTokens, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
@@ -206,4 +235,58 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
 	}
 	return responseBody, nil
+}
+
+// Get PDF Risk report
+func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
+	req := Request{
+		RequestType:  "getProjectRiskReport",
+		ProjectToken: projectToken,
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource getProjectRiskReport request failed")
+	}
+
+	return respBody, nil
+}
+
+func (s *System) GetOrganizationProductVitals() ([]Product, error) {
+	wsResponse := struct {
+		ProductVitals []Product `json:"productVitals"`
+	}{
+		ProductVitals: []Product{},
+	}
+
+	req := Request{
+		RequestType: "getOrganizationProductVitals",
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	err = json.Unmarshal(respBody, &wsResponse)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+
+	return wsResponse.ProductVitals, nil
+}
+
+func (s *System) GetProductByName(productName string) (*Product, error) {
+	products, err := s.GetOrganizationProductVitals()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to getOrganizationProductVitals")
+	}
+
+	for _, product := range products {
+		if product.Name == productName {
+			return &product, nil
+		}
+	}
+
+	return nil, errors.Wrap(err, "Product could not be found")
 }
