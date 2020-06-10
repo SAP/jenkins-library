@@ -1,6 +1,7 @@
 import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
+import hudson.AbortException
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -21,11 +22,8 @@ void call(Map parameters = [:]) {
         error("Linter execution failed. Please examine the reports which are also available in the Jenkins user interface.")
     }
     finally {
-        showIssues(script)
+        visualizeLintingResults(script)
     }
-
-
-    visualizeLintingResults(script)
 }
 
 private visualizeLintingResults(Script script) {
