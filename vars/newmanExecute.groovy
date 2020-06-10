@@ -164,9 +164,9 @@ void call(Map parameters = [:]) {
                         config: config.plus([newmanCollection: collection]),
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
-                def command_secrets
+                def command_secrets = ''
                 if(config.cfAppsWithSecrets){
-                    CloudFoundry cfUtils = new CloudFoundry();
+                    CloudFoundry cfUtils = new CloudFoundry(script);
                     config.cfAppsWithSecrets.each { appName ->
                         def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
                                                     config.cloudFoundry.org,
