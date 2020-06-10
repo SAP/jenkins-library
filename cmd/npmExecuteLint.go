@@ -46,7 +46,7 @@ func runNpmExecuteLint(utils npm.Utils, config *npmExecuteLintOptions) error {
 }
 
 func runCiLint(utils npm.Utils, options npm.ExecuteOptions, failOnError bool) error {
-	err := npm.ExecuteScripts(utils, options)
+	err := npm.ExecuteAllScripts(utils, options)
 	if err != nil {
 		if failOnError {
 			return err

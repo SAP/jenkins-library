@@ -26,13 +26,13 @@ func runNpmExecuteScripts(utils npm.Utils, config *npmExecuteScriptsOptions) err
 	packageJSONFiles := npm.FindPackageJSONFiles(utils)
 
 	if options.Install {
-		err := npm.InstallDependencies(packageJSONFiles, utils, &options)
+		err := npm.InstallAllDependencies(packageJSONFiles, utils, &options)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := npm.ExecuteScripts(utils, options)
+	err := npm.ExecuteAllScripts(utils, options)
 	if err != nil {
 		return err
 	}
