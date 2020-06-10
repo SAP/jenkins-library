@@ -154,11 +154,11 @@ func InstallFile(file, pomFile string, command mavenExecRunner, utils mavenUtils
 }
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
-func InstallMavenArtifacts(command mavenExecRunner, p piperutils.FileUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
-	return doInstallMavenArtifacts(command, newUtils(), p, m2Path, projectSettingsFile, globalSettingsFile)
+func InstallMavenArtifacts(command mavenExecRunner, m2Path, projectSettingsFile, globalSettingsFile string) error {
+	return doInstallMavenArtifacts(command, newUtils(), m2Path, projectSettingsFile, globalSettingsFile)
 }
 
-func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, p piperutils.FileUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
+func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
 	err := flattenPom(command, projectSettingsFile, globalSettingsFile, m2Path)
 	if err != nil {
 		return err
@@ -197,11 +197,11 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, p piperu
 			if err != nil {
 				return err
 			}
-			jarExists, err := p.FileExists(jarFile(finalName))
+			jarExists, err := utils.FileExists(jarFile(finalName))
 			if err != nil {
 				return err
 			}
-			warExists, err := p.FileExists(warFile(finalName))
+			warExists, err := utils.FileExists(warFile(finalName))
 			if err != nil {
 				return err
 			}

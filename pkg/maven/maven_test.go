@@ -49,29 +49,6 @@ func (m *mockUtils) chdir(dir string) error {
 	return nil
 }
 
-type fileUtils struct {
-}
-
-func (f *fileUtils) Copy(src, dest string) (int64, error) {
-	panic("Should not be called, just here to implement the interface.")
-}
-
-func (f *fileUtils) FileWrite(path string, content []byte, perm os.FileMode) error {
-	panic("Should not be called, just here to implement the interface.")
-}
-
-func (f *fileUtils) MkdirAll(path string, perm os.FileMode) error {
-	panic("Should not be called, just here to implement the interface.")
-}
-
-func (f *fileUtils) FileExists(path string) (bool, error) {
-	return true, nil
-}
-
-func (f *fileUtils) FileRead(path string) ([]byte, error) {
-	return []byte{}, nil
-}
-
 func newMockUtils(downloadShouldFail bool) mockUtils {
 	utils := mockUtils{shouldFail: downloadShouldFail}
 	utils.files = map[string][]byte{}
@@ -251,19 +228,22 @@ func TestMavenInstall(t *testing.T) {
 
 	t.Run("Install files in a project", func(t *testing.T) {
 		utils := newMockUtils(false)
+		utils.files["target/foo.jar"] = []byte("dummyContent")
+		utils.files["target/foo.war"] = []byte("dummyContent")
 		execMockRunner := mock.ExecMockRunner{}
 		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
-		fileUtils := fileUtils{}
-		err := doInstallMavenArtifacts(&execMockRunner, &utils, &fileUtils, "", "", "")
+		err := doInstallMavenArtifacts(&execMockRunner, &utils, "", "", "")
 
 		assert.NoError(t, err)
-		assert.Equal(t, 7, len(execMockRunner.Calls))
+		assert.Equal(t, 9, len(execMockRunner.Calls))
 		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, execMockRunner.Calls[0])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[1])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.war", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[4])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[5])
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.war", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[6])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[1])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[2])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.war", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[5])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[6])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[7])
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--file", "pom.xml", "-Dfile=target/foo.war", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[8])
 	})
 }
