@@ -14,6 +14,11 @@ void call(Map parameters = [:]) {
         [type: 'ssh', id: 'gitSshKeyCredentialsId'],
         [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
+
+    // Tell dockerExecuteOnKubernetes (if used) to stash also .-folders
+    // This preserves the '.git' folder into the pod and restores it from the pod with the created tag.
+    parameters['stashNoDefaultExcludes'] = true
+
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
 }

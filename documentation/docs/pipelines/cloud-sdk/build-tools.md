@@ -23,7 +23,7 @@ The following table gives an overview over the features available per build tool
 
 | Feature                    | Maven | npm | MTA Maven | MTA npm |
 |----------------------------|-------|-----|-----------|---------|
-| Automatic Versioning       | x     |     | x         | x       |
+| Automatic Versioning       | x     | x   | x         | x       |
 | Build                      | x     | x   | x         | x       |
 | Backend Integration Tests  | x     | x   | x         | x       |
 | Frontend Integration Tests | x     | x   | x         | x       |
