@@ -5,6 +5,34 @@ metadata:
     Execute ci-lint script for all package json files, if they implement the script. If no ci-lint script is defined,
     either use ESLint configurations present in the project or use the provided general purpose configuration to run ESLint.
 spec:
+  inputs:
+    params:
+      - name: failOnError
+        type: bool
+        description: Defines the behavior in case linting errors are found.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
+      - name: defaultNpmRegistry
+        type: string
+        description: URL of the npm registry to use. Defaults to https://registry.npmjs.org/
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: sapNpmRegistry
+        type: string
+        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: https://npm.sap.com
   containers:
     - name: node
       image: node:12-buster-slim

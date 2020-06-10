@@ -14,6 +14,9 @@ import (
 )
 
 type npmExecuteLintOptions struct {
+	FailOnError        bool   `json:"failOnError,omitempty"`
+	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
+	SapNpmRegistry     string `json:"sapNpmRegistry,omitempty"`
 }
 
 // NpmExecuteLintCommand Execute ci-lint script on all npm packages in a project or execute default linting
@@ -71,6 +74,9 @@ either use ESLint configurations present in the project or use the provided gene
 }
 
 func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOptions) {
+	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior in case linting errors are found.")
+	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
+	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", `https://npm.sap.com`, "The default npm registry URL to be used as the remote mirror for the SAP npm packages.")
 
 }
 
@@ -83,7 +89,32 @@ func npmExecuteLintMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{},
+				Parameters: []config.StepParameters{
+					{
+						Name:        "failOnError",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "defaultNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "sapNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+				},
 			},
 		},
 	}

@@ -2,19 +2,25 @@ package npm
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 	"io"
 	"os"
+	"path"
 	"strings"
 )
 
-// RegistryOptions holds the configured urls for npm registries
-type RegistryOptions struct {
-	DefaultNpmRegistry string
-	SapNpmRegistry     string
+// ExecuteOptions holds the list of scripts to be executed by ExecuteScripts, options for npm run and the npm registry configuration
+type ExecuteOptions struct {
+	Install            bool     `json:"install,omitempty"`
+	RunScripts         []string `json:"runScripts,omitempty"`
+	RunOptions         []string `json:"runOptions,omitempty"`
+	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
+	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
 }
 
 // ExecRunner interface to enable mocking for testing
@@ -77,7 +83,7 @@ func (u *UtilsBundle) GetExecRunner() ExecRunner {
 
 // SetNpmRegistries configures the given npm registries.
 // CAUTION: This will change the npm configuration in the user's home directory.
-func SetNpmRegistries(options *RegistryOptions, execRunner ExecRunner) error {
+func SetNpmRegistries(execRunner ExecRunner, options *ExecuteOptions) error {
 	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
 	configurableRegistries := []string{npmRegistry, sapRegistry}
@@ -111,7 +117,6 @@ func SetNpmRegistries(options *RegistryOptions, execRunner ExecRunner) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -123,52 +128,66 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
-// CheckIfLockFilesExist checks if yarn/package lock files exist
-func CheckIfLockFilesExist(utils Utils) (bool, bool, error) {
-	packageLockExists, err := utils.FileExists("package-lock.json")
+// ExecuteScripts runs all scripts defined in ExecuteOptions.RunScripts
+func ExecuteScripts(utils Utils, options ExecuteOptions) error {
+	packageJSONFiles := FindPackageJSONFiles(utils)
 
-	if err != nil {
-		return false, false, err
-	}
-	yarnLockExists, err := utils.FileExists("yarn.lock")
-	if err != nil {
-		return false, false, err
-	}
-	return packageLockExists, yarnLockExists, nil
-}
-
-// InstallDependencies executes npm or yarn install
-func InstallDependencies(dir string, packageLockExists bool, yarnLockExists bool, execRunner ExecRunner) (err error) {
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
-	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
+	for _, script := range options.RunScripts {
+		packagesWithScript, err := FindPackageJSONFilesWithScript(utils, packageJSONFiles, script)
 		if err != nil {
 			return err
 		}
-	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
-		if err != nil {
-			return err
+
+		if len(packagesWithScript) == 0 {
+			log.Entry().Warnf("could not find any package.json file with script " + script)
+			continue
 		}
-	} else {
-		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
-			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
+
+		execRunner := utils.GetExecRunner()
+		oldWorkingDirectory, err := utils.Getwd()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
+		}
+
+		for _, packageJSON := range packagesWithScript {
+			dir := path.Dir(packageJSON)
+			err := utils.Chdir(dir)
+			if err != nil {
+				return fmt.Errorf("failed to change into directory for executing script: %w", err)
+			}
+
+			if !(options.Install) {
+				// set in each directory to respect existing config in rc files
+				err = SetNpmRegistries(execRunner, &options)
+				if err != nil {
+					return err
+				}
+			}
+
+			log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + script)
+
+			npmRunArgs := []string{"run", script}
+			if len(options.RunOptions) > 0 {
+				npmRunArgs = append(npmRunArgs, options.RunOptions...)
+			}
+
+			err = execRunner.RunExecutable("npm", npmRunArgs...)
+			if err != nil {
+				return fmt.Errorf("failed to run npm script %s: %w", script, err)
+			}
+
+			err = utils.Chdir(oldWorkingDirectory)
+			if err != nil {
+				return fmt.Errorf("failed to change back into original directory: %w", err)
+			}
 		}
 	}
 	return nil
 }
 
 // FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
-func FindPackageJSONFiles(utils Utils) ([]string, error) {
-	unfilteredListOfPackageJSONFiles, err := utils.Glob("**/package.json")
-	if err != nil {
-		return nil, err
-	}
+func FindPackageJSONFiles(utils Utils) []string {
+	unfilteredListOfPackageJSONFiles, _ := utils.Glob("**/package.json")
 
 	var packageJSONFiles []string
 
@@ -176,11 +195,111 @@ func FindPackageJSONFiles(utils Utils) ([]string, error) {
 		if strings.Contains(file, "node_modules") {
 			continue
 		}
+
 		if strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/") {
 			continue
 		}
+
 		packageJSONFiles = append(packageJSONFiles, file)
 		log.Entry().Info("Discovered package.json file " + file)
 	}
-	return packageJSONFiles, nil
+	return packageJSONFiles
+}
+
+// FindPackageJSONFilesWithScript returns a list of package.json files that contain the script
+func FindPackageJSONFilesWithScript(utils Utils, packageJSONFiles []string, script string) ([]string, error) {
+	var packagesWithScript []string
+
+	for _, file := range packageJSONFiles {
+		var packageJSON map[string]interface{}
+
+		packageRaw, err := utils.FileRead(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read %s to check for existence of %s script: %w", file, script, err)
+		}
+
+		err = json.Unmarshal(packageRaw, &packageJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %s to check for existence of %s script: %w", file, script, err)
+		}
+
+		scripts, ok := packageJSON["scripts"].(map[string]interface{})
+		if ok {
+			_, ok := scripts[script].(string)
+			if ok {
+				packagesWithScript = append(packagesWithScript, file)
+				log.Entry().Info("Discovered " + script + " script in " + file)
+			}
+		}
+	}
+	return packagesWithScript, nil
+}
+
+// InstallDependencies executes npm or yarn install for all package.json files defined in packageJSONFiles
+func InstallDependencies(packageJSONFiles []string, utils Utils, options *ExecuteOptions) error {
+	execRunner := utils.GetExecRunner()
+	oldWorkingDirectory, err := utils.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
+	}
+
+	for _, packageJSON := range packageJSONFiles {
+		dir := path.Dir(packageJSON)
+		err := utils.Chdir(dir)
+		if err != nil {
+			return fmt.Errorf("failed to change into directory for executing script: %w", err)
+		}
+
+		err = SetNpmRegistries(utils.GetExecRunner(), options)
+		if err != nil {
+			return err
+		}
+
+		packageLockExists, yarnLockExists, err := checkIfLockFilesExist(utils)
+		if err != nil {
+			return err
+		}
+
+		log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
+		if packageLockExists {
+			err = execRunner.RunExecutable("npm", "ci")
+			if err != nil {
+				return err
+			}
+		} else if yarnLockExists {
+			err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Entry().Warn("No package lock file found. " +
+				"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
+				" Add this file to your version control. " +
+				"By doing so, the builds of your application become more reliable.")
+			err = execRunner.RunExecutable("npm", "install")
+			if err != nil {
+				return err
+			}
+		}
+
+		err = utils.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return fmt.Errorf("failed to change back into original directory: %w", err)
+		}
+	}
+	return nil
+}
+
+// checkIfLockFilesExist checks if yarn/package lock files exist
+func checkIfLockFilesExist(utils Utils) (bool, bool, error) {
+	packageLockExists, err := utils.FileExists("package-lock.json")
+	if err != nil {
+		return false, false, err
+	}
+
+	yarnLockExists, err := utils.FileExists("yarn.lock")
+	if err != nil {
+		return false, false, err
+	}
+	return packageLockExists, yarnLockExists, nil
 }

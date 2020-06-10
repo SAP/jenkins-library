@@ -75,6 +75,7 @@ nav:
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
         - npmExecute: steps/npmExecute.md
+        - npmExecuteLint: steps/npmExecuteLint.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md

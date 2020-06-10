@@ -4,7 +4,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"path"
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
@@ -16,59 +15,26 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 	}
 }
 
-func runNpmExecuteScripts(utils npm.Utils, options *npmExecuteScriptsOptions) error {
-	execRunner := utils.GetExecRunner()
-	packageJSONFiles, err := npm.FindPackageJSONFiles(utils)
+func runNpmExecuteScripts(utils npm.Utils, config *npmExecuteScriptsOptions) error {
+	options := npm.ExecuteOptions{
+		Install:            config.Install,
+		RunScripts:         config.RunScripts,
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		SapNpmRegistry:     config.SapNpmRegistry,
+	}
+
+	packageJSONFiles := npm.FindPackageJSONFiles(utils)
+
+	if options.Install {
+		err := npm.InstallDependencies(packageJSONFiles, utils, &options)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := npm.ExecuteScripts(utils, options)
 	if err != nil {
 		return err
 	}
-
-	oldWorkingDirectory, err := utils.Getwd()
-	if err != nil {
-		return err
-	}
-
-	for _, file := range packageJSONFiles {
-		dir := path.Dir(file)
-		err = utils.Chdir(dir)
-		if err != nil {
-			return err
-		}
-
-		// set in each directory to respect existing config in rc files
-		err = npm.SetNpmRegistries(
-			&npm.RegistryOptions{
-				DefaultNpmRegistry: options.DefaultNpmRegistry,
-				SapNpmRegistry:     options.SapNpmRegistry,
-			}, execRunner)
-
-		if err != nil {
-			return err
-		}
-
-		packageLockExists, yarnLockExists, err := npm.CheckIfLockFilesExist(utils)
-		if err != nil {
-			return err
-		}
-		if options.Install {
-			err = npm.InstallDependencies(dir, packageLockExists, yarnLockExists, execRunner)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, v := range options.RunScripts {
-			log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + v)
-			err = execRunner.RunExecutable("npm", "run-script", v, "--if-present")
-			if err != nil {
-				return err
-			}
-		}
-		err = utils.Chdir(oldWorkingDirectory)
-		if err != nil {
-			return err
-		}
-	}
-
 	return err
 }

@@ -11,7 +11,7 @@ import (
 
 type npmExecuteScriptsMockUtilsBundle struct {
 	execRunner mock.ExecMockRunner
-	files      map[string][]byte
+	files      map[string]string
 }
 
 func (u *npmExecuteScriptsMockUtilsBundle) FileExists(path string) (bool, error) {
@@ -20,7 +20,7 @@ func (u *npmExecuteScriptsMockUtilsBundle) FileExists(path string) (bool, error)
 }
 
 func (u *npmExecuteScriptsMockUtilsBundle) FileRead(path string) ([]byte, error) {
-	return u.files[path], nil
+	return []byte(u.files[path]), nil
 }
 
 // duplicated from nexusUpload_test.go for now, refactor later?
@@ -52,23 +52,23 @@ func (u *npmExecuteScriptsMockUtilsBundle) GetExecRunner() npm.ExecRunner {
 func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call without install and run-scripts", func(t *testing.T) {
 		utils := newNpmExecuteScriptsMockUtilsBundle()
-		utils.files["package.json"] = []byte(`abc`)
-		utils.files["package-lock.json"] = []byte(`abc`)
-		options := npmExecuteScriptsOptions{}
+		utils.files["package.json"] = "{\"name\": \"Test\" }"
+		utils.files["package-lock.json"] = "{\"name\": \"Test\" }"
+		config := npmExecuteScriptsOptions{}
 
-		err := runNpmExecuteScripts(&utils, &options)
+		err := runNpmExecuteScripts(&utils, &config)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(utils.execRunner.Calls))
+		assert.Equal(t, 0, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with package lock", func(t *testing.T) {
 		utils := newNpmExecuteScriptsMockUtilsBundle()
-		utils.files["package.json"] = []byte(`abc`)
-		utils.files["foo/bar/node_modules/package.json"] = []byte(`abc`) // is filtered out
-		utils.files["gen/bar/package.json"] = []byte(`abc`)              // is filtered out
-		utils.files["foo/gen/package.json"] = []byte(`abc`)              // is filtered out
-		utils.files["package-lock.json"] = []byte(`abc`)
+		utils.files["package.json"] = "{\"scripts\": { \"foo\": \"\" , \"bar\": \"\" } }"
+		utils.files["foo/bar/node_modules/package.json"] = "{\"name\": \"Test\" }" // is filtered out
+		utils.files["gen/bar/package.json"] = "{\"name\": \"Test\" }"              // is filtered out
+		utils.files["foo/gen/package.json"] = "{\"name\": \"Test\" }"              // is filtered out
+		utils.files["package-lock.json"] = "{\"name\": \"Test\" }"
 		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
@@ -78,16 +78,16 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "bar"}}, utils.execRunner.Calls[4])
 		assert.Equal(t, 5, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with two package json files", func(t *testing.T) {
 		utils := newNpmExecuteScriptsMockUtilsBundle()
-		utils.files["package.json"] = []byte(`abc`)
-		utils.files["foo/bar/package.json"] = []byte(`abc`)
-		utils.files["package-lock.json"] = []byte(`abc`)
+		utils.files["package.json"] = "{\"scripts\": { \"foo\": \"\" , \"bar\": \"\" } }"
+		utils.files["foo/bar/package.json"] = "{\"scripts\": { \"foo\": \"\" , \"bar\": \"\" } }"
+		utils.files["package-lock.json"] = "{\"name\": \"Test\" }"
 		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
@@ -96,18 +96,18 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[7])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[8])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[9])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[5])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[6])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[7])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "bar"}}, utils.execRunner.Calls[8])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "bar"}}, utils.execRunner.Calls[9])
 		assert.Equal(t, 10, len(utils.execRunner.Calls))
 	})
 
 	t.Run("Project with yarn lock", func(t *testing.T) {
 		utils := newNpmExecuteScriptsMockUtilsBundle()
-		utils.files["package.json"] = []byte(`abc`)
-		utils.files["yarn.lock"] = []byte(`abc`)
+		utils.files["package.json"] = "{\"scripts\": { \"foo\": \"\" , \"bar\": \"\" } }"
+		utils.files["yarn.lock"] = "{\"name\": \"Test\" }"
 		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
@@ -116,13 +116,13 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "bar"}}, utils.execRunner.Calls[4])
 	})
 
 	t.Run("Project without lock file", func(t *testing.T) {
 		utils := newNpmExecuteScriptsMockUtilsBundle()
-		utils.files["package.json"] = []byte(`abc`)
+		utils.files["package.json"] = "{\"scripts\": { \"foo\": \"\" , \"bar\": \"\" } }"
 		options := npmExecuteScriptsOptions{}
 		options.Install = true
 		options.RunScripts = []string{"foo", "bar"}
@@ -131,13 +131,13 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utils.execRunner.Calls[2])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[3])
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "bar"}}, utils.execRunner.Calls[4])
 	})
 }
 
 func newNpmExecuteScriptsMockUtilsBundle() npmExecuteScriptsMockUtilsBundle {
 	utils := npmExecuteScriptsMockUtilsBundle{}
-	utils.files = map[string][]byte{}
+	utils.files = map[string]string{}
 	return utils
 }

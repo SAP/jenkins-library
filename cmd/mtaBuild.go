@@ -106,11 +106,10 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = npm.SetNpmRegistries(
-		&npm.RegistryOptions{
-			DefaultNpmRegistry: config.DefaultNpmRegistry,
-			SapNpmRegistry:     config.SapNpmRegistry,
-		}, e)
+	err = npm.SetNpmRegistries(e, &npm.ExecuteOptions{
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		SapNpmRegistry:     config.SapNpmRegistry,
+	})
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
