@@ -15,7 +15,6 @@ import (
 )
 
 func TestMavenProject(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -48,12 +47,12 @@ cd /test
 		},
 	}
 
-	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	mbtContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: reqNode,
 		Started:          true,
 	})
 
-	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	code, err := mbtContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
