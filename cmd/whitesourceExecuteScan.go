@@ -39,7 +39,7 @@ func runWhitesourceExecuteScan(config whitesourceExecuteScanOptions, sys whiteso
 
 	if config.ProjectToken == "" {
 		// This state occurs when the project was created during the triggerWhitesourceScan step above,
-		resolveProjectIdentifiers(&config, command, sys) //we need to resolve the ProjectToken for pdf report download below
+		resolveProjectIdentifiers(&config, command, sys) // we need to resolve the ProjectToken for pdf report download stage below
 	}
 	fmt.Println("Config.ProjectToken: ", config.ProjectToken)
 	fmt.Println("Config.ProductVersion: ", config.ProductVersion)
@@ -64,15 +64,17 @@ func downloadRiskReport(projectToken string, projectName string, sys whitesource
 	if err != nil {
 		log.Entry().Warn(fmt.Sprintf("Failed to generate report for project name %s", projectName))
 	}
-	reportFileName := fmt.Sprintf("%s-risk-report.pdf", projectName)
-	newFile, err := os.OpenFile(reportFileName, os.O_CREATE|os.O_RDWR, 0777)
+	reportFileName := fmt.Sprintf("whitesource-report/%s-risk-report.pdf", projectName)
+
+	// create report directory
+	err = os.Mkdir("whitesource-report", 0777)
 	if err != nil {
-		log.Entry().Warn(fmt.Sprintf("Failed to create/open risk report file: %s", err))
+		log.Entry().Warn("Failed to create whitesource-report directory: ", err)
 	}
 
-	_, err = newFile.Write(reportBytes)
+	err = ioutil.WriteFile(reportFileName, reportBytes, 0777)
 	if err != nil {
-		log.Entry().Warn(fmt.Sprintf("Failed to write to %s-risk-report.pdf: %s", projectName, err))
+		log.Entry().Warn("Failed to write to ./whitesource-report/", projectName, "-risk-report.pdf:", err)
 	}
 }
 
@@ -94,7 +96,7 @@ func triggerWhitesourceScan(command *command.Command, config whitesourceExecuteS
 		cmd := exec.Command("java", "-jar", config.AgentFileName, "-d", ".", "-c", "wss-generated-file.config",
 			"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 			"-product", config.ProductName, "-productVersion", config.ProductVersion)
-		cmd.Stdout = outBuffer
+		cmd.Stdout = os.Stdout
 		err = cmd.Run()
 		if err != nil {
 			log.Entry().WithError(err).Fatal("Failed to run Whitesource unified agent, exit..")
@@ -108,7 +110,7 @@ func triggerWhitesourceScan(command *command.Command, config whitesourceExecuteS
 			cmd = exec.Command("grep", "URL: ")
 			projectsInfoBuffer := &bytes.Buffer{}
 			cmd.Stdout = projectsInfoBuffer
-			cmd.Stdin = outBuffer
+			cmd.Stdin = os.Stdout
 			err = cmd.Run()
 			if err != nil {
 				log.Entry().WithError(err).Fatal("Failed to run 'grep URL: ', exit..")
