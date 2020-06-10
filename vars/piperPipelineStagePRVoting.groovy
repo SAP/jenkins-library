@@ -27,6 +27,8 @@ import static com.sap.piper.Prerequisites.checkScript
      * * explicit activation via stage configuration.
      */
     'karmaExecuteTests',
+    /** Executes a Sonar scan.*/
+    'sonarExecuteScan',
     /** Publishes test results to Jenkins. It will always be active. */
     'testsPublishResults',
     /** Executes a WhiteSource scan
@@ -96,10 +98,15 @@ void call(Map parameters = [:]) {
             }
 
             buildExecute script: script, buildTool: config.buildTool, dockerRegistryUrl: dockerRegistryUrl
-
-            //needs to run right after build, otherwise we may face "ERROR: Test reports were found but none of them are new"
-            testsPublishResults script: script
-            checksPublishResults script: script
+            try{
+                //needs to run right after build, otherwise we may face "ERROR: Test reports were found but none of them are new"
+                testsPublishResults script: script
+                checksPublishResults script: script
+            } finally {
+                if(config.sonarExecuteScan){
+                    sonarExecuteScan script: script
+                }
+            }
 
             if (config.karmaExecuteTests) {
                 karmaExecuteTests script: script
