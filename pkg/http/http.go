@@ -38,7 +38,7 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
-	// TransportTimeout defaults to 10 seconds, if not specified. It is
+	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout         time.Duration
 	Username                 string
