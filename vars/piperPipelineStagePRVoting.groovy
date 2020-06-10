@@ -98,12 +98,12 @@ void call(Map parameters = [:]) {
             }
 
             buildExecute script: script, buildTool: config.buildTool, dockerRegistryUrl: dockerRegistryUrl
-            try{
+            try {
                 //needs to run right after build, otherwise we may face "ERROR: Test reports were found but none of them are new"
                 testsPublishResults script: script
                 checksPublishResults script: script
             } finally {
-                if(config.sonarExecuteScan){
+                if (config.sonarExecuteScan) {
                     sonarExecuteScan script: script
                 }
             }

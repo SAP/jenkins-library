@@ -59,11 +59,11 @@ void call(Map parameters = [:]) {
             buildExecute script: script
             pipelineStashFilesAfterBuild script: script
 
-            try{
+            try {
                 testsPublishResults script: script, junit: [updateResults: true]
                 checksPublishResults script: script
             } finally {
-                if(config.sonarExecuteScan){
+                if (config.sonarExecuteScan) {
                     sonarExecuteScan script: script
                 }
             }
