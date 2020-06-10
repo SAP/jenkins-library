@@ -29,6 +29,7 @@ type ghRCMock struct {
 	listOpts          *github.ListOptions
 	latestStatusCode  int
 	latestErr         error
+	preRelease        bool
 	uploadID          int64
 	uploadOpts        *github.UploadOptions
 	uploadOwner       string
