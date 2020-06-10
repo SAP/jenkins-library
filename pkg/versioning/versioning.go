@@ -9,11 +9,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
+// Coordinates to address the artifact
+type Coordinates interface{}
+
 // Artifact defines the versioning operations for various build tools
 type Artifact interface {
 	VersioningScheme() string
 	GetVersion() (string, error)
 	SetVersion(string) error
+	GetCoordinates() (Coordinates, error)
 }
 
 // Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
@@ -95,8 +99,9 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "mta.yaml"
 		}
 		artifact = &YAMLfile{
-			path:         buildDescriptorFilePath,
-			versionField: "version",
+			path:            buildDescriptorFilePath,
+			versionField:    "version",
+			artifactIDField: "ID",
 		}
 	case "npm":
 		if len(buildDescriptorFilePath) == 0 {
@@ -109,14 +114,14 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION", "setup.py"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
 		}
-		artifact = &Versionfile{
-			path:             buildDescriptorFilePath,
-			versioningScheme: "pep440",
+		artifact = &Pip{
+			path:       buildDescriptorFilePath,
+			fileExists: fileExists,
 		}
 	case "sbt":
 		if len(buildDescriptorFilePath) == 0 {

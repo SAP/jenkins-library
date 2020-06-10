@@ -58,7 +58,6 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("artifactPrepareVersion failed")
 	}
-	log.Entry().Info("SUCCESS")
 }
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
@@ -159,6 +158,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	return nil

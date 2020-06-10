@@ -77,6 +77,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

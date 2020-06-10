@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 type configCommandOptions struct {
@@ -27,8 +29,16 @@ func ConfigCommand() *cobra.Command {
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return generateConfig()
+		PreRun: func(cmd *cobra.Command, args []string) {
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+		},
+		Run: func(cmd *cobra.Command, _ []string) {
+			err := generateConfig()
+			if err != nil {
+				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+			}
 		},
 	}
 
@@ -148,11 +158,15 @@ func applyContainerConditions(containers []config.Container, stepConfig *config.
 			for _, param := range container.Conditions[0].Params {
 				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
 					var containerConf map[string]interface{}
-					containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-					for key, value := range containerConf {
-						stepConfig.Config[key] = value
+					if stepConfig.Config[param.Value] != nil {
+						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
+						for key, value := range containerConf {
+							if stepConfig.Config[key] == nil {
+								stepConfig.Config[key] = value
+							}
+						}
+						delete(stepConfig.Config, param.Value)
 					}
-					delete(stepConfig.Config, param.Value)
 				}
 			}
 		}

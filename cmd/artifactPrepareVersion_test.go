@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"testing"
 	"time"
 
@@ -42,6 +43,10 @@ func (a *artifactVersioningMock) SetVersion(version string) error {
 	}
 	a.newVersion = version
 	return nil
+}
+
+func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 type gitRepositoryMock struct {
@@ -200,6 +205,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.True(t, repo.pushCalled)
 
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, worktree.commitHash.String(), cpe.git.commitID)
 		assert.Equal(t, "Test commit message", cpe.git.commitMessage)
 
@@ -242,6 +248,7 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		assert.False(t, repo.pushCalled)
 		assert.Contains(t, cpe.artifactVersion, "1.2.3")
+		assert.Contains(t, cpe.originalArtifactVersion, "1.2.3")
 		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
 	})
 

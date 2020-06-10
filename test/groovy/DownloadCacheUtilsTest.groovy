@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
 import org.junit.Before
 import org.junit.Rule
@@ -91,13 +92,13 @@ class DownloadCacheUtilsTest extends BasePiperTest {
     }
 
     @Test
-    void 'injectDownloadCacheInMavenParameters should not change the parameters if dl cache not active'() {
-        Map newParameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(nullScript, [:])
+    void 'injectDownloadCacheInParameters should not change the parameters if dl cache not active'() {
+        Map newParameters = DownloadCacheUtils.injectDownloadCacheInParameters(nullScript, [:], BuildTool.MAVEN)
         assertTrue(newParameters.isEmpty())
     }
 
     @Test
-    void 'injectDownloadCacheInMavenParameters should set docker options and global settings'() {
+    void 'injectDownloadCacheInParameters should set docker options and global settings for maven'() {
         nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
         nullScript.env.DL_CACHE_NETWORK = 'cx-network'
 
@@ -106,13 +107,44 @@ class DownloadCacheUtilsTest extends BasePiperTest {
             globalSettingsFile: '.pipeline/global_settings.xml'
         ]
 
-        Map actual = DownloadCacheUtils.injectDownloadCacheInMavenParameters(nullScript, [:])
+        Map actual = DownloadCacheUtils.injectDownloadCacheInParameters(nullScript, [:], BuildTool.MAVEN)
 
         assertEquals(expected, actual)
     }
 
     @Test
-    void 'injectDownloadCacheInMavenParameters should append docker options'() {
+    void 'injectDownloadCacheInParameters should set docker options, global settings and npm default registry for mta'() {
+        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+
+        Map expected = [
+            dockerOptions: ['--network=cx-network'],
+            globalSettingsFile: '.pipeline/global_settings.xml',
+            defaultNpmRegistry: 'http://cx-downloadcache:8081/repository/npm-proxy/'
+        ]
+
+        Map actual = DownloadCacheUtils.injectDownloadCacheInParameters(nullScript, [:], BuildTool.MTA)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'injectDownloadCacheInParameters should set docker options and default npm config for npm'() {
+        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+
+        Map expected = [
+            dockerOptions: ['--network=cx-network'],
+            defaultNpmRegistry: 'http://cx-downloadcache:8081/repository/npm-proxy/'
+        ]
+
+        Map actual = DownloadCacheUtils.injectDownloadCacheInParameters(nullScript, [:], BuildTool.NPM)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'injectDownloadCacheInParameters should append docker options'() {
         nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
         nullScript.env.DL_CACHE_NETWORK = 'cx-network'
 
@@ -120,7 +152,7 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
 
 
-        Map actual = DownloadCacheUtils.injectDownloadCacheInMavenParameters(nullScript, [dockerOptions: '--test'])
+        Map actual = DownloadCacheUtils.injectDownloadCacheInParameters(nullScript, [dockerOptions: '--test'], BuildTool.MAVEN)
 
         assertEquals(expectedDockerOptions, actual.dockerOptions)
     }
