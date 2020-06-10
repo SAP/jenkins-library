@@ -58,6 +58,7 @@ cd /test
 
 	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
+		mbtContainer.Exec(ctx, []string{"sh", "find", "/tmp"})
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
