@@ -1,4 +1,4 @@
-// +build integration
+// +build integrationDisableForNow
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -15,6 +15,7 @@ import (
 )
 
 func TestMavenProject(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
