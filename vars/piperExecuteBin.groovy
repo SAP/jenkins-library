@@ -64,6 +64,12 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
                 echo "Context Config: ${config}"
             }
 
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
+
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
@@ -111,6 +117,7 @@ void dockerWrapper(script, config, body) {
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
+            stashNoDefaultExcludes : config.stashNoDefaultExcludes,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()
