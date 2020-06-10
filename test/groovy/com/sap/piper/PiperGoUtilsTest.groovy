@@ -7,10 +7,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
-import util.JenkinsHttpRequestRule
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
-import util.PluginMock
 import util.Rules
 
 import static org.hamcrest.Matchers.containsString
@@ -22,19 +20,16 @@ class PiperGoUtilsTest extends BasePiperTest {
     public ExpectedException exception = ExpectedException.none()
     public JenkinsShellCallRule shellCallRule = new JenkinsShellCallRule(this)
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    public JenkinsHttpRequestRule httpRequestRule = new JenkinsHttpRequestRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(shellCallRule)
         .around(exception)
         .around(loggingRule)
-        .around(httpRequestRule)
 
     @Before
     void init() {
         helper.registerAllowedMethod("retry", [Integer, Closure], null)
-        JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
     }
 
     @Test
@@ -60,88 +55,88 @@ class PiperGoUtilsTest extends BasePiperTest {
     void testUnstashPiperBinMaster() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'master']] }
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'master']]}
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
         })
 
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/latest/download/piper_master", {})
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         piperGoUtils.unstashPiperBin()
-        assertThat(shellCallRule.shell.size(), is(2))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
-        assertThat(shellCallRule.shell[1].toString(), is('./piper version'))
-
-        assertThat(httpRequestRule.requests.size(), is(1))
-        assertThat(httpRequestRule.requests[0].url, is('https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'))
+        assertThat(shellCallRule.shell.size(), is(3))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
+        assertThat(shellCallRule.shell[1].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[2].toString(), is('./piper version'))
     }
 
     @Test
     void testUnstashPiperBinNonMaster() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'testTag']] }
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'testTag']]}
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
         })
 
-
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/download/testTag/piper", {})
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/testTag/piper\'', '200')
 
         piperGoUtils.unstashPiperBin()
-
-        assertThat(shellCallRule.shell.size(), is(2))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
-
-        assertThat(httpRequestRule.requests.size(), is(1))
-        assertThat(httpRequestRule.requests[0].url.toString(), is('https://github.com/SAP/jenkins-library/releases/download/testTag/piper'))
-
+        assertThat(shellCallRule.shell.size(), is(3))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/testTag/piper\''))
+        assertThat(shellCallRule.shell[1].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[2].toString(), is('./piper version'))
     }
 
     @Test
     void testUnstashPiperBinFallback() {
 
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+
+        shellCallRule.setReturnValue('./piper version', "1.2.3")
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
         })
 
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper", {
-            throw new AbortException("Fail: the returned code 404 is not in the accepted range");
-        })
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/latest/download/piper_master", {})
-
-        shellCallRule.setReturnValue('./piper version', "1.2.3")
-
         piperGoUtils.unstashPiperBin()
-
-        assertThat(shellCallRule.shell.size(), is(2))
-        assertThat(shellCallRule.shell[0].toString(), is('chmod +x piper'))
-        assertThat(shellCallRule.shell[1].toString(), is ('./piper version'))
-
-        assertThat(httpRequestRule.requests.size(), is(2))
-        assertThat(httpRequestRule.requests[0].url.toString(), is('https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper'))
-        assertThat(httpRequestRule.requests[1].url.toString(), is('https://github.com/SAP/jenkins-library/releases/latest/download/piper_master'))
+        assertThat(shellCallRule.shell.size(), is(4))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\''))
+        assertThat(shellCallRule.shell[1].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
+        assertThat(shellCallRule.shell[2].toString(), is('chmod +x piper'))
+        assertThat(shellCallRule.shell[3].toString(), is ('./piper version'))
     }
 
     @Test
     void testDownloadFailedWithErrorCode() {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper", {
-            throw new AbortException("Fail: the returned code 404 is not in the accepted range");
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+
+        helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
+            return []
         })
-        httpRequestRule.mockUrl("https://github.com/SAP/jenkins-library/releases/latest/download/piper_master", {
-            throw new AbortException("Fail: the returned code 500 is not in the accepted range");
-        })
+
+        exception.expectMessage(containsString('Download of Piper go binary failed'))
+        piperGoUtils.unstashPiperBin()
+    }
+
+    @Test
+    void testDownloadFailedWithHTTPCode() {
+        def piperGoUtils = new PiperGoUtils(nullScript, utils)
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
@@ -154,9 +149,9 @@ class PiperGoUtilsTest extends BasePiperTest {
     @Test
     void testDownloadFailedWithError() {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
-        piperGoUtils.metaClass.getLibrariesInfo = { -> return [[name: 'piper-lib-os', version: 'notAvailable']] }
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        helper.registerAllowedMethod('sh', [Map.class], { m -> throw new AbortException('download failed') })
+        helper.registerAllowedMethod('sh', [Map.class], {m -> throw new AbortException('download failed')})
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
