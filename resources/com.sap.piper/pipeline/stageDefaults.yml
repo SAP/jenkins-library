@@ -4,8 +4,14 @@ stages:
       slackSendNotification:
         configKeys:
           - 'channel'
-  'Pull-Request Voting': {}
-  Build: {}
+  'Pull-Request Voting':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+  Build:
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
   'Additional Unit Tests':
     stepConditions:
       batsExecuteTests:
