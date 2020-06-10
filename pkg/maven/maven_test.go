@@ -49,10 +49,6 @@ func (m *mockUtils) chdir(dir string) error {
 	return nil
 }
 
-func (m *mockUtils) dir(input string) string {
-	return "/tmp"
-}
-
 type fileUtils struct {
 }
 

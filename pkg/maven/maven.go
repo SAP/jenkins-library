@@ -41,7 +41,6 @@ type mavenUtils interface {
 	glob(pattern string) (matches []string, err error)
 	getwd() (dir string, err error)
 	chdir(dir string) error
-	dir(string) string
 }
 
 type utilsBundle struct {
@@ -74,10 +73,6 @@ func (u *utilsBundle) getwd() (dir string, err error) {
 
 func (u *utilsBundle) chdir(dir string) error {
 	return os.Chdir(dir)
-}
-
-func (u *utilsBundle) dir(input string) string {
-	return path.Dir(input)
 }
 
 const mavenExecutable = "mvn"
@@ -128,8 +123,7 @@ func Evaluate(pomFile, expression string, command mavenExecRunner) (string, erro
 }
 
 // InstallFile installs a maven artifact and its pom into the local maven repository.
-// If "file" is empty, only the pom is installed.
-// "pomFile" may not be empty.
+// If "file" is empty, only the pom is installed. "pomFile" must not be empty.
 func InstallFile(file, pomFile string, command mavenExecRunner, utils mavenUtils, projectSettingsFile, globalSettingsFile, m2Path string) error {
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
@@ -153,7 +147,10 @@ func InstallFile(file, pomFile string, command mavenExecRunner, utils mavenUtils
 		LogSuccessfulMavenTransfers: false,
 	}
 	_, err := Execute(&mavenOptionsInstall, command)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to install maven artifacts: %w", err)
+	}
+	return nil
 }
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
@@ -179,18 +176,18 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, p piperu
 
 	for _, pomFile := range pomFiles {
 		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
-		dir := utils.dir(pomFile)
+		dir := path.Dir(pomFile)
 		err = utils.chdir(dir)
 		if err != nil {
 			return err
 		}
 
-		pomXmlBytes, err := p.FileRead("pom.xml")
+		packaging, err := Evaluate("pom.xml", "project.packaging", command)
 		if err != nil {
 			return err
 		}
-		pomXmlString := string(pomXmlBytes)
-		if strings.Contains(pomXmlString, "<packaging>pom</packaging>") {
+
+		if packaging == "pom" {
 			err = InstallFile("", "pom.xml", command, utils, projectSettingsFile, globalSettingsFile, m2Path)
 			if err != nil {
 				return err
