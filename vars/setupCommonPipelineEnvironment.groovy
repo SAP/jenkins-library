@@ -57,9 +57,7 @@ void call(Map parameters = [:]) {
 
         List customDefaultsFiles = Utils.appendParameterToStringList(
             [], parameters, 'customDefaultsFromFiles')
-        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
 
-        List customDefaultsConfig = []
         if (script.commonPipelineEnvironment.configuration.customDefaults) {
             if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
                 // Align with Go side on supported parameter type.
@@ -68,16 +66,15 @@ void call(Map parameters = [:]) {
                     "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
                     "more details."
             }
-            customDefaultsConfig = Utils.appendParameterToStringList(
-                [], script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+            customDefaultsFiles = Utils.appendParameterToStringList(
+                customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultsConfig = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsConfig)
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
 
         prepareDefaultValues([
             script: script,
             customDefaults: parameters.customDefaults,
-            customDefaultsFromFiles: customDefaultsFiles,
-            customDefaultsFromConfig: customDefaultsConfig ])
+            customDefaultsFromFiles: customDefaultsFiles ])
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
@@ -120,6 +117,10 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
         // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
+        if (!(customDefaults[i] in CharSequence) || customDefaults[i] == '') {
+            script.echo "WARNING: Ignoring invalid entry in custom defaults from files: '${customDefaults[i]}'"
+            continue
+        }
         String fileName
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = "custom_default_from_url_${urlCount}.yml"

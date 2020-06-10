@@ -31,7 +31,13 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         stepParameters.remove('jenkinsUtilsStub')
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
+        def piperGoPath = parameters.piperGoPath ?: './piper'
+        stepParameters.remove('piperGoPath')
+
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(this, utils)
+        stepParameters.remove('piperGoUtils')
+
+        piperGoUtils.unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
@@ -52,13 +58,22 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Context Config: ${config}"
+            Map config
+            handleErrorDetails(stepName) {
+                config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+                echo "Context Config: ${config}"
+            }
+
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -81,7 +96,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
@@ -102,6 +117,7 @@ void dockerWrapper(script, config, body) {
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
+            stashNoDefaultExcludes : config.stashNoDefaultExcludes,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()
@@ -164,6 +180,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }

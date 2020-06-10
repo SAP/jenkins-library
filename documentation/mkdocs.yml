@@ -34,6 +34,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
+        - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
@@ -53,6 +54,7 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
+        - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md
@@ -65,6 +67,7 @@ nav:
         - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
         - malwareExecuteScan: steps/malwareExecuteScan.md
+        - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
@@ -72,7 +75,7 @@ nav:
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
-        - npmExecute: steps/npmExecute.md
+        - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
@@ -97,6 +100,7 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - npmExecute: steps/npmExecute.md
     - 'Command line tool': cli/index.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md

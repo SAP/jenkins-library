@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.hasEntry
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
+import util.JenkinsReadFileRule
 import util.BasePiperTest
 import util.Rules
 
@@ -26,6 +27,7 @@ class InfluxDataTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, null)
 
     @Rule
     public RuleChain rules = Rules
@@ -33,6 +35,7 @@ class InfluxDataTest extends BasePiperTest {
         .around(thrown)
         .around(jscr)
         .around(jlr)
+        .around(readFileRule)
 
     @Before
     void setup() {
@@ -100,5 +103,28 @@ class InfluxDataTest extends BasePiperTest {
         assertThat(InfluxData.instance.fields.jenkins_custom_data, is([:]))
         assertThat(InfluxData.instance.fields.pipeline_data, is([:]))
         assertThat(InfluxData.instance.fields.step_data, is([:]))
+    }
+
+    @Test
+    void testReadFromDisk() {
+        // init
+        helper.registerAllowedMethod("findFiles", [Map.class], { map ->
+            if(map.glob == '.pipeline/influx/**')
+                return [
+                    new File(".pipeline/influx/step_data/fields/sonar"),
+                    new File(".pipeline/influx/step_data/fields/protecode"),
+                    new File("cst/test2.yml"),
+                ].toArray()
+            return [].toArray()
+        })
+        readFileRule.files.putAll([
+            '.pipeline/influx/step_data/fields/sonar': 'true',
+            '.pipeline/influx/step_data/fields/protecode': 'false',
+        ])
+
+        // tests
+        InfluxData.readFromDisk(nullScript)
+        // asserts
+        assertThat(InfluxData.instance.fields.step_data, is([sonar: true, protecode: false]))
     }
 }
