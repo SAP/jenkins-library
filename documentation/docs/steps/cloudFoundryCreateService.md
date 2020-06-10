@@ -36,7 +36,7 @@ cloudFoundryCreateService(
     cfSpace: 'cfSpace',
     cfCredentialsId: 'cfCredentialsId',
     cfService:  'myService',
-    cfServiceInstanceName: 'myServiceInstanceName', 
+    cfServiceInstanceName: 'myServiceInstanceName',
     cfServicePlan: 'myPlan',
     cfCreateServiceConfig: '{\"example\":\"value\",\"example\":\"value\"}',
     cfServiceTags: 'list, of, tags',
@@ -64,7 +64,7 @@ cloudFoundryCreateService(
     cfSpace: 'cfSpace',
     cfCredentialsId: 'cfCredentialsId',
     cfService:  'myService',
-    cfServiceInstanceName: 'myServiceInstanceName', 
+    cfServiceInstanceName: 'myServiceInstanceName',
     cfServicePlan: 'myPlan',
     cfCreateServiceConfig: 'createServiceConfig.json',
     cfServiceTags: 'list, of, tags',
@@ -81,7 +81,7 @@ It requires a dedicated YAML file, e.g. `manifest.yml`, that contains all the in
 Such a `manifest.yml` file needs to have the following structure:
 
 ```yaml
-  
+
 ---
 create-services:
 - name:   "testService1"
@@ -96,7 +96,7 @@ create-services:
   broker: "testBroker"
   plan:   "testPlan"
 ```
-        
+
 The path of the `manifest.yml` config file needs to be passed as a parameter in the `serviceManifest` flag.
 You can store the credentials in Jenkins and use the `cfCredentialsId` parameter to authenticate to Cloud Foundry.
 
@@ -120,7 +120,7 @@ Additionally the Cloud Foundry Create-Service-Push Plugin offers the option to m
 For both ways you need to adapt the `manifest.yml` file to be relevant for variable substitution. This can be done according to below example:
 
 ```yaml
-  
+
 ---
 create-services:
 - name:   ((name1))

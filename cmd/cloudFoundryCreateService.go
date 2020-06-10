@@ -68,7 +68,7 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 			cfCreateServiceScript = append(cfCreateServiceScript, "--vars-file", config.ManifestVariablesFiles)
 		}
 		if len(config.ManifestVariables) >= 0 {
-			err, varPart = varOptions(config.ManifestVariables)
+			varPart, err = varOptions(config.ManifestVariables)
 		}
 		for _, s := range varPart {
 			cfCreateServiceScript = append(cfCreateServiceScript, s)
@@ -86,10 +86,10 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 	return nil
 }
 
-func varOptions(options []string) (error, []string) {
+func varOptions(options []string) ([]string, error) {
 	var varOptionsString []string
 	for _, s := range options {
 		varOptionsString = append(varOptionsString, "--var", s)
 	}
-	return nil, varOptionsString
+	return varOptionsString, nil
 }
