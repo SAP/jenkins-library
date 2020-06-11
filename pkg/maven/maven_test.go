@@ -221,8 +221,9 @@ func TestMavenInstall(t *testing.T) {
 		err := InstallFile("app.jar", "pom.xml", &execMockRunner)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params))
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters}, execMockRunner.Calls[0])
+		if assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params)) {
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters}, execMockRunner.Calls[0])
+		}
 	})
 
 	t.Run("Install files in a project", func(t *testing.T) {
