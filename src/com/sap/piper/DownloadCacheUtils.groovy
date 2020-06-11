@@ -34,15 +34,20 @@ class DownloadCacheUtils {
         return parameters
     }
 
+    static String networkName() {
+        return System.getenv('DL_CACHE_NETWORK')
+    }
+
+    static String hostname() {
+        return System.getenv('DL_CACHE_HOSTNAME')
+    }
+
     static boolean isEnabled(Script script) {
         if (script.env.ON_K8S) {
             return false
         }
-        script.node('master') {
-            String network = script.env.DL_CACHE_NETWORK
-            String host = script.env.DL_CACHE_HOSTNAME
-            return (network.asBoolean() && host.asBoolean())
-        }
+
+        return (networkName() && hostname())
     }
 
     static String getDockerOptions(Script script) {
@@ -61,10 +66,7 @@ class DownloadCacheUtils {
             return globalSettingsFilePath
         }
 
-        String hostname = ''
-        script.node('master') {
-            hostname = script.env.DL_CACHE_HOSTNAME // set by cx-server
-        }
+        String hostname = hostname()
 
         if (!hostname) {
             return ''
@@ -82,10 +84,7 @@ class DownloadCacheUtils {
     }
 
     static String getNpmRegistryUri(Script script) {
-        String npmRegistry = ''
-        script.node('master') {
-            npmRegistry = "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
-        }
+        String npmRegistry = "http://${hostname()}:8081/repository/npm-proxy/"
         return npmRegistry
     }
 }
