@@ -331,7 +331,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	} else {
 
-		log.Entry().Debugf("Project settings file not provided via configuation.")
+		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
 	if len(config.GlobalSettingsFile) > 0 {
@@ -341,7 +341,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 		}
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuation.")
+		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
 	return nil
