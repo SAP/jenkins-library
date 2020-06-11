@@ -229,9 +229,10 @@ func TestMavenInstall(t *testing.T) {
 		utils := newMockUtils(false)
 		utils.files["target/foo.jar"] = []byte("dummyContent")
 		utils.files["target/foo.war"] = []byte("dummyContent")
+		options := EvaluateOptions{}
 		execMockRunner := mock.ExecMockRunner{}
 		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
-		err := doInstallMavenArtifacts(&execMockRunner, &utils)
+		err := doInstallMavenArtifacts(&execMockRunner, options, &utils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 9, len(execMockRunner.Calls))
