@@ -51,13 +51,12 @@ class DownloadCacheUtils {
     }
 
     static String getDockerOptions(Script script) {
-        script.node('master') {
-            String dockerNetwork = script.env.DL_CACHE_NETWORK
-            if (!dockerNetwork) {
-                return ''
-            }
-            return "--network=$dockerNetwork"
+
+        String dockerNetwork = networkName()
+        if (!dockerNetwork) {
+            return ''
         }
+        return "--network=$dockerNetwork"
     }
 
     static String getGlobalMavenSettingsForDownloadCache(Script script) {
