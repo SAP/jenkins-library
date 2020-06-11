@@ -29,6 +29,15 @@ type ExecuteOptions struct {
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
 }
 
+// EvaluateOptions are used by Evaluate() to construct the Maven command line.
+// In contrast to ExecuteOptions, fewer settings are required for Evaluate and thus a separate type is needed.
+type EvaluateOptions struct {
+	PomPath             string `json:"pomPath,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
+}
+
 type mavenExecRunner interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
@@ -44,23 +53,23 @@ type mavenUtils interface {
 }
 
 type utilsBundle struct {
-	httpClient piperhttp.Client
-	fileUtils  piperutils.Files
+	*piperhttp.Client
+	*piperutils.Files
 }
 
 func newUtils() *utilsBundle {
 	return &utilsBundle{
-		httpClient: piperhttp.Client{},
-		fileUtils:  piperutils.Files{},
+		Client: &piperhttp.Client{},
+		Files:  &piperutils.Files{},
 	}
 }
 
 func (u *utilsBundle) FileExists(path string) (bool, error) {
-	return u.fileUtils.FileExists(path)
+	return u.Files.FileExists(path)
 }
 
 func (u *utilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return u.httpClient.DownloadFile(url, filename, header, cookies)
+	return u.Client.DownloadFile(url, filename, header, cookies)
 }
 
 func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
@@ -104,20 +113,23 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // Evaluate constructs ExecuteOptions for using the maven-help-plugin's 'evaluate' goal to
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
-func Evaluate(pomFile, expression string, command mavenExecRunner) (string, error) {
+func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunner) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
-	options := ExecuteOptions{
-		PomPath:      pomFile,
-		Goals:        []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
-		Defines:      []string{expressionDefine, "-DforceStdout", "-q"},
-		ReturnStdout: true,
+	executeOptions := ExecuteOptions{
+		PomPath:             options.PomPath,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
+		Goals:               []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
+		Defines:             []string{expressionDefine, "-DforceStdout", "-q"},
+		ReturnStdout:        true,
 	}
-	value, err := Execute(&options, command)
+	value, err := Execute(&executeOptions, command)
 	if err != nil {
 		return "", err
 	}
 	if strings.HasPrefix(value, "null object or invalid expression") {
-		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
+		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, options.PomPath)
 	}
 	return value, nil
 }
@@ -149,16 +161,11 @@ func InstallFile(file, pomFile string, command mavenExecRunner) error {
 }
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
-func InstallMavenArtifacts(command mavenExecRunner, m2Path, projectSettingsFile, globalSettingsFile string) error {
-	return doInstallMavenArtifacts(command, newUtils(), m2Path, projectSettingsFile, globalSettingsFile)
+func InstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions) error {
+	return doInstallMavenArtifacts(command, options, newUtils())
 }
 
-// InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
-func InstallMavenArtifacts2(command mavenExecRunner) error {
-	return doInstallMavenArtifacts(command, newUtils(), "", "", "")
-}
-
-func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
+func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, utils mavenUtils) error {
 	err := flattenPom(command)
 	if err != nil {
 		return err
@@ -182,7 +189,9 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, 
 			return err
 		}
 
-		packaging, err := Evaluate("pom.xml", "project.packaging", command)
+		// Set pom path fix here because we cd'ed into the module's directory, so the pom is not in a subdirectory
+		options.PomPath = "pom.xml"
+		packaging, err := Evaluate(&options, "project.packaging", command)
 		if err != nil {
 			return err
 		}
@@ -193,7 +202,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, 
 				return err
 			}
 		} else {
-			err = installJarWarArtifacts(command, utils)
+			err = installJarWarArtifacts(command, utils, options)
 			if err != nil {
 				return err
 			}
@@ -207,8 +216,10 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, 
 	return err
 }
 
-func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils) error {
-	finalName, err := Evaluate("pom.xml", "project.build.finalName", command)
+func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
+	// Set pom path fix here because we cd'ed into the module's directory, so the pom is not in a subdirectory
+	options.PomPath = "pom.xml"
+	finalName, err := Evaluate(&options, "project.build.finalName", command)
 	if err != nil {
 		return err
 	}
@@ -263,10 +274,10 @@ func flattenPom(command mavenExecRunner) error {
 	return err
 }
 
-func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	stdOut := log.Writer()
-	if config.ReturnStdout {
+	if options.ReturnStdout {
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	}
