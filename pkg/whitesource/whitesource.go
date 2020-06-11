@@ -141,7 +141,7 @@ func (s *System) GetProjectByName(productToken, projectName string) (*Project, e
 }
 
 // get all projects tokens for a list of given project ids
-func (s *System) GetProjectTokensByIds(productToken string, projectIds []int64) ([]Project, error) {
+func (s *System) GetProjectsByIds(productToken string, projectIds []int64) ([]Project, error) {
 	projectsMatched := []Project{}
 
 	projects, err := s.GetProjectsMetaInfo(productToken)
