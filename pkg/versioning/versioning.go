@@ -36,8 +36,8 @@ type mvnRunner struct{}
 func (m *mvnRunner) Execute(options *maven.ExecuteOptions, execRunner mavenExecRunner) (string, error) {
 	return maven.Execute(options, execRunner)
 }
-func (m *mvnRunner) Evaluate(pomFile, expression string, execRunner mavenExecRunner) (string, error) {
-	return maven.Evaluate(pomFile, expression, execRunner)
+func (m *mvnRunner) Evaluate(options *maven.Options, expression string, execRunner mavenExecRunner) (string, error) {
+	return maven.Evaluate(options, expression, execRunner)
 }
 
 var fileExists func(string) (bool, error)
@@ -87,12 +87,14 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "pom.xml"
 		}
 		artifact = &Maven{
-			runner:              &mvnRunner{},
-			execRunner:          execRunner,
-			pomPath:             buildDescriptorFilePath,
-			projectSettingsFile: opts.ProjectSettingsFile,
-			globalSettingsFile:  opts.GlobalSettingsFile,
-			m2Path:              opts.M2Path,
+			runner:     &mvnRunner{},
+			execRunner: execRunner,
+			options: maven.Options{
+				PomPath:             buildDescriptorFilePath,
+				ProjectSettingsFile: opts.ProjectSettingsFile,
+				GlobalSettingsFile:  opts.GlobalSettingsFile,
+				M2Path:              opts.M2Path,
+			},
 		}
 	case "mta":
 		if len(buildDescriptorFilePath) == 0 {

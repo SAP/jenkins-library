@@ -12,6 +12,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+// Options stores basic options for a maven execution context.
+type Options struct {
+	PomPath             string `json:"pomPath,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
+}
+
 // ExecuteOptions are used by Execute() to construct the Maven command line.
 type ExecuteOptions struct {
 	PomPath                     string   `json:"pomPath,omitempty"`
@@ -37,23 +45,15 @@ type mavenUtils interface {
 }
 
 type utilsBundle struct {
-	httpClient piperhttp.Client
-	fileUtils  piperutils.Files
+	*piperhttp.Client
+	*piperutils.Files
 }
 
 func newUtils() *utilsBundle {
 	return &utilsBundle{
-		httpClient: piperhttp.Client{},
-		fileUtils:  piperutils.Files{},
+		Client: &piperhttp.Client{},
+		Files:  &piperutils.Files{},
 	}
-}
-
-func (u *utilsBundle) FileExists(path string) (bool, error) {
-	return u.fileUtils.FileExists(path)
-}
-
-func (u *utilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return u.httpClient.DownloadFile(url, filename, header, cookies)
 }
 
 const mavenExecutable = "mvn"
@@ -85,28 +85,31 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // Evaluate constructs ExecuteOptions for using the maven-help-plugin's 'evaluate' goal to
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
-func Evaluate(pomFile, expression string, command mavenExecRunner) (string, error) {
+func Evaluate(options *Options, expression string, command mavenExecRunner) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
-	options := ExecuteOptions{
-		PomPath:      pomFile,
-		Goals:        []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
-		Defines:      []string{expressionDefine, "-DforceStdout", "-q"},
-		ReturnStdout: true,
+	executeOptions := ExecuteOptions{
+		PomPath:             options.PomPath,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
+		Goals:               []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
+		Defines:             []string{expressionDefine, "-DforceStdout", "-q"},
+		ReturnStdout:        true,
 	}
-	value, err := Execute(&options, command)
+	value, err := Execute(&executeOptions, command)
 	if err != nil {
 		return "", err
 	}
 	if strings.HasPrefix(value, "null object or invalid expression") {
-		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, pomFile)
+		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, options.PomPath)
 	}
 	return value, nil
 }
 
-func evaluateStdOut(config *ExecuteOptions) (*bytes.Buffer, io.Writer) {
+func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	var stdOutBuf *bytes.Buffer
 	stdOut := log.Writer()
-	if config.ReturnStdout {
+	if options.ReturnStdout {
 		stdOutBuf = new(bytes.Buffer)
 		stdOut = io.MultiWriter(stdOut, stdOutBuf)
 	}

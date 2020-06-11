@@ -33,7 +33,7 @@ type nexusUploadUtils interface {
 	usesNpm() bool
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
-	evaluate(pomFile, expression string) (string, error)
+	evaluate(options *maven.Options, expression string) (string, error)
 	glob(pattern string) (matches []string, err error)
 }
 
@@ -114,8 +114,8 @@ func (u *utilsBundle) getExecRunner() execRunner {
 	return u.execRunner
 }
 
-func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
-	return maven.Evaluate(pomFile, expression, u.getExecRunner())
+func (u *utilsBundle) evaluate(options *maven.Options, expression string) (string, error) {
+	return maven.Evaluate(options, expression, u.getExecRunner())
 }
 
 func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
@@ -422,7 +422,13 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 
-	packaging, _ := utils.evaluate(pomFile, "project.packaging")
+	evaluateOptions := &maven.Options{
+		PomPath:            pomFile,
+		GlobalSettingsFile: options.GlobalSettingsFile,
+		M2Path:             options.M2Path,
+	}
+
+	packaging, _ := utils.evaluate(evaluateOptions, "project.packaging")
 	if packaging == "" {
 		packaging = "jar"
 	}
@@ -434,21 +440,21 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 			return nil
 		}
 	}
-	groupID, _ := utils.evaluate(pomFile, "project.groupId")
+	groupID, _ := utils.evaluate(evaluateOptions, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
 	}
-	artifactID, err := utils.evaluate(pomFile, "project.artifactId")
+	artifactID, err := utils.evaluate(evaluateOptions, "project.artifactId")
 	var artifactsVersion string
 	if err == nil {
-		artifactsVersion, err = utils.evaluate(pomFile, "project.version")
+		artifactsVersion, err = utils.evaluate(evaluateOptions, "project.version")
 	}
 	if err == nil {
 		err = uploader.SetInfo(groupID, artifactID, artifactsVersion)
 	}
 	var finalBuildName string
 	if err == nil {
-		finalBuildName, _ = utils.evaluate(pomFile, "project.build.finalName")
+		finalBuildName, _ = utils.evaluate(evaluateOptions, "project.build.finalName")
 		if finalBuildName == "" {
 			// Fallback to composing final build name, see http://maven.apache.org/pom.html#BaseBuild_Element
 			finalBuildName = artifactID + "-" + artifactsVersion
