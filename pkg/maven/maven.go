@@ -150,10 +150,15 @@ func InstallFile(file, pomFile string, command mavenExecRunner) error {
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
 func InstallMavenArtifacts(command mavenExecRunner, m2Path, projectSettingsFile, globalSettingsFile string) error {
-	return doInstallMavenArtifacts(command, newUtils())
+	return doInstallMavenArtifacts(command, newUtils(), m2Path, projectSettingsFile, globalSettingsFile)
 }
 
-func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils) error {
+// InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
+func InstallMavenArtifacts2(command mavenExecRunner) error {
+	return doInstallMavenArtifacts(command, newUtils(), "", "", "")
+}
+
+func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils, m2Path, projectSettingsFile, globalSettingsFile string) error {
 	err := flattenPom(command)
 	if err != nil {
 		return err
