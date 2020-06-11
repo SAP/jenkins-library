@@ -137,9 +137,9 @@ func InstallFile(file, pomFile string, command mavenExecRunner) error {
 	}
 	defines = append(defines, "-DpomFile="+pomFile)
 	mavenOptionsInstall := ExecuteOptions{
-		Goals:                       []string{"install:install-file"},
-		Defines:                     defines,
-		PomPath:                     pomFile,
+		Goals:   []string{"install:install-file"},
+		Defines: defines,
+		PomPath: pomFile,
 	}
 	_, err := Execute(&mavenOptionsInstall, command)
 	if err != nil {
@@ -234,9 +234,9 @@ func warFile(finalName string) string {
 
 func flattenPom(command mavenExecRunner) error {
 	mavenOptionsFlatten := ExecuteOptions{
-		Goals:                       []string{"flatten:flatten"},
-		Defines:                     []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath:                     "pom.xml",
+		Goals:   []string{"flatten:flatten"},
+		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath: "pom.xml",
 	}
 	_, err := Execute(&mavenOptionsFlatten, command)
 	return err
