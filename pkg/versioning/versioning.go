@@ -20,7 +20,7 @@ type Artifact interface {
 	GetCoordinates() (Coordinates, error)
 }
 
-// EvaluateOptions define build tool specific settings in order to properly retrieve e.g. the version of an artifact
+// Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
 type Options struct {
 	ProjectSettingsFile string
 	GlobalSettingsFile  string
