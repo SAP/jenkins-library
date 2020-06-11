@@ -215,11 +215,10 @@ func TestMavenInstall(t *testing.T) {
 	})
 
 	t.Run("Install a file", func(t *testing.T) {
-		utils := newMockUtils(false)
 		execMockRunner := mock.ExecMockRunner{}
 		expectedParameters := []string{"--file", "pom.xml", "-Dfile=app.jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}
 
-		err := InstallFile("app.jar", "pom.xml", &execMockRunner, &utils, "", "", "")
+		err := InstallFile("app.jar", "pom.xml", &execMockRunner)
 
 		assert.NoError(t, err)
 		assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params))
@@ -232,7 +231,7 @@ func TestMavenInstall(t *testing.T) {
 		utils.files["target/foo.war"] = []byte("dummyContent")
 		execMockRunner := mock.ExecMockRunner{}
 		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
-		err := doInstallMavenArtifacts(&execMockRunner, &utils, "", "", "")
+		err := doInstallMavenArtifacts(&execMockRunner, &utils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 9, len(execMockRunner.Calls))
