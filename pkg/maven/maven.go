@@ -188,31 +188,9 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils) error {
 				return err
 			}
 		} else {
-			finalName, err := Evaluate("pom.xml", "project.build.finalName", command)
+			err = installJarWarArtifacts(command, utils)
 			if err != nil {
 				return err
-			}
-			jarExists, err := utils.FileExists(jarFile(finalName))
-			if err != nil {
-				return err
-			}
-			warExists, err := utils.FileExists(warFile(finalName))
-			if err != nil {
-				return err
-			}
-
-			if jarExists {
-				err = InstallFile(jarFile(finalName), "pom.xml", command)
-				if err != nil {
-					return err
-				}
-			}
-
-			if warExists {
-				err = InstallFile(warFile(finalName), "pom.xml", command)
-				if err != nil {
-					return err
-				}
 			}
 		}
 
@@ -222,6 +200,44 @@ func doInstallMavenArtifacts(command mavenExecRunner, utils mavenUtils) error {
 		}
 	}
 	return err
+}
+
+func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils) error {
+	finalName, err := Evaluate("pom.xml", "project.build.finalName", command)
+	if err != nil {
+		return err
+	}
+	if finalName == "" {
+		log.Entry().Warn("project.build.finalName is empty, skipping install of artifact. Installing only the pom file.")
+		err = InstallFile("", "pom.xml", command)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	jarExists, err := utils.FileExists(jarFile(finalName))
+	if err != nil {
+		return err
+	}
+	warExists, err := utils.FileExists(warFile(finalName))
+	if err != nil {
+		return err
+	}
+
+	if jarExists {
+		err = InstallFile(jarFile(finalName), "pom.xml", command)
+		if err != nil {
+			return err
+		}
+	}
+
+	if warExists {
+		err = InstallFile(warFile(finalName), "pom.xml", command)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func jarFile(finalName string) string {
