@@ -83,7 +83,12 @@ class DownloadCacheUtils {
     }
 
     static String getNpmRegistryUri(Script script) {
-        String npmRegistry = "http://${hostname()}:8081/repository/npm-proxy/"
+        String hostname = hostname()
+
+        if (!hostname) {
+            return ''
+        }
+        String npmRegistry = "http://${hostname}:8081/repository/npm-proxy/"
         return npmRegistry
     }
 }
