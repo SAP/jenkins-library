@@ -64,14 +64,6 @@ func newUtils() *utilsBundle {
 	}
 }
 
-func (u *utilsBundle) FileExists(path string) (bool, error) {
-	return u.Files.FileExists(path)
-}
-
-func (u *utilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return u.Client.DownloadFile(url, filename, header, cookies)
-}
-
 func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
@@ -181,6 +173,8 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 		return err
 	}
 
+	// Set pom path fix here because we will change into the respective pom's directory
+	options.PomPath = "pom.xml"
 	for _, pomFile := range pomFiles {
 		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
 		dir := path.Dir(pomFile)
@@ -189,8 +183,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 			return err
 		}
 
-		// Set pom path fix here because we cd'ed into the module's directory, so the pom is not in a subdirectory
-		options.PomPath = "pom.xml"
+
 		packaging, err := Evaluate(&options, "project.packaging", command)
 		if err != nil {
 			return err
@@ -217,8 +210,6 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 }
 
 func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
-	// Set pom path fix here because we cd'ed into the module's directory, so the pom is not in a subdirectory
-	options.PomPath = "pom.xml"
 	finalName, err := Evaluate(&options, "project.build.finalName", command)
 	if err != nil {
 		return err
