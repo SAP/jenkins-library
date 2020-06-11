@@ -97,7 +97,7 @@ func TestEvaluate(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "com.awesome"}
 
-		result, err := Evaluate(&Options{PomPath: "pom.xml"}, "project.groupId", &execMockRunner)
+		result, err := Evaluate(&EvaluateOptions{PomPath: "pom.xml"}, "project.groupId", &execMockRunner)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "com.awesome", result)
 		}
@@ -106,7 +106,7 @@ func TestEvaluate(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		execMockRunner.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.groupId -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "null object or invalid expression"}
 
-		result, err := Evaluate(&Options{PomPath: "pom.xml"}, "project.groupId", &execMockRunner)
+		result, err := Evaluate(&EvaluateOptions{PomPath: "pom.xml"}, "project.groupId", &execMockRunner)
 		if assert.EqualError(t, err, "expression 'project.groupId' in file 'pom.xml' could not be resolved") {
 			assert.Equal(t, "", result)
 		}

@@ -18,7 +18,7 @@ type mavenExecRunner interface {
 
 type mavenRunner interface {
 	Execute(*maven.ExecuteOptions, mavenExecRunner) (string, error)
-	Evaluate(*maven.Options, string, mavenExecRunner) (string, error)
+	Evaluate(*maven.EvaluateOptions, string, mavenExecRunner) (string, error)
 }
 
 // MavenDescriptor holds the unique identifier combination for Maven built Java artifacts
@@ -31,7 +31,7 @@ type MavenDescriptor struct {
 
 // Maven defines a maven artifact used for versioning
 type Maven struct {
-	options    maven.Options
+	options    maven.EvaluateOptions
 	runner     mavenRunner
 	execRunner mavenExecRunner
 }

@@ -12,12 +12,12 @@ type mavenMockRunner struct {
 	evaluateErrorString string
 	executeErrorString  string
 	stdout              string
-	opts                *maven.Options
+	opts                *maven.EvaluateOptions
 	execOpts            *maven.ExecuteOptions
 	expression          string
 }
 
-func (m *mavenMockRunner) Evaluate(opts *maven.Options, expression string, runner mavenExecRunner) (string, error) {
+func (m *mavenMockRunner) Evaluate(opts *maven.EvaluateOptions, expression string, runner mavenExecRunner) (string, error) {
 	m.opts = opts
 	m.expression = expression
 	if len(m.evaluateErrorString) > 0 {
@@ -44,7 +44,7 @@ func TestMavenGetVersion(t *testing.T) {
 		}
 		mvn := &Maven{
 			runner:  &runner,
-			options: maven.Options{PomPath: "path/to/pom.xml", M2Path: "path/to/m2"},
+			options: maven.EvaluateOptions{PomPath: "path/to/pom.xml", M2Path: "path/to/m2"},
 		}
 		version, err := mvn.GetVersion()
 		assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestMavenSetVersion(t *testing.T) {
 		}
 		mvn := &Maven{
 			runner: &runner,
-			options: maven.Options{
+			options: maven.EvaluateOptions{
 				PomPath:             "path/to/pom.xml",
 				ProjectSettingsFile: "project-settings.xml",
 				GlobalSettingsFile:  "global-settings.xml",
@@ -102,7 +102,7 @@ func TestMavenSetVersion(t *testing.T) {
 		}
 		mvn := &Maven{
 			runner:  &runner,
-			options: maven.Options{PomPath: "path/to/pom.xml"},
+			options: maven.EvaluateOptions{PomPath: "path/to/pom.xml"},
 		}
 		err := mvn.SetVersion("1.2.4")
 		assert.EqualError(t, err, "Maven - getting groupId failed: maven eval failed")
@@ -115,7 +115,7 @@ func TestMavenSetVersion(t *testing.T) {
 		}
 		mvn := &Maven{
 			runner:  &runner,
-			options: maven.Options{PomPath: "path/to/pom.xml"},
+			options: maven.EvaluateOptions{PomPath: "path/to/pom.xml"},
 		}
 		err := mvn.SetVersion("1.2.4")
 		assert.EqualError(t, err, "Maven - setting version 1.2.4 failed: maven exec failed")

@@ -12,14 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-// Options stores basic options for a maven execution context.
-type Options struct {
-	PomPath             string `json:"pomPath,omitempty"`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
-	M2Path              string `json:"m2Path,omitempty"`
-}
-
 // ExecuteOptions are used by Execute() to construct the Maven command line.
 type ExecuteOptions struct {
 	PomPath                     string   `json:"pomPath,omitempty"`
@@ -31,6 +23,15 @@ type ExecuteOptions struct {
 	Flags                       []string `json:"flags,omitempty"`
 	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
+}
+
+// EvaluateOptions are used by Evaluate() to construct the Maven command line.
+// In contrast to ExecuteOptions, fewer settings are required for Evaluate and thus a separate type is needed.
+type EvaluateOptions struct {
+	PomPath             string `json:"pomPath,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
 }
 
 type mavenExecRunner interface {
@@ -85,7 +86,7 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // Evaluate constructs ExecuteOptions for using the maven-help-plugin's 'evaluate' goal to
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
-func Evaluate(options *Options, expression string, command mavenExecRunner) (string, error) {
+func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunner) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
 	executeOptions := ExecuteOptions{
 		PomPath:             options.PomPath,

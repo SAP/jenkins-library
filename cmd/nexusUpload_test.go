@@ -102,7 +102,7 @@ func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
 	pom[expression] = value
 }
 
-func (m *mockUtilsBundle) evaluate(options *maven.Options, expression string) (string, error) {
+func (m *mockUtilsBundle) evaluate(options *maven.EvaluateOptions, expression string) (string, error) {
 	pom := m.properties[options.PomPath]
 	if pom == nil {
 		return "", fmt.Errorf("pom file '%s' not found", options.PomPath)

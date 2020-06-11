@@ -20,7 +20,7 @@ type Artifact interface {
 	GetCoordinates() (Coordinates, error)
 }
 
-// Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
+// EvaluateOptions define build tool specific settings in order to properly retrieve e.g. the version of an artifact
 type Options struct {
 	ProjectSettingsFile string
 	GlobalSettingsFile  string
@@ -36,7 +36,7 @@ type mvnRunner struct{}
 func (m *mvnRunner) Execute(options *maven.ExecuteOptions, execRunner mavenExecRunner) (string, error) {
 	return maven.Execute(options, execRunner)
 }
-func (m *mvnRunner) Evaluate(options *maven.Options, expression string, execRunner mavenExecRunner) (string, error) {
+func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, execRunner mavenExecRunner) (string, error) {
 	return maven.Evaluate(options, expression, execRunner)
 }
 
@@ -89,7 +89,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		artifact = &Maven{
 			runner:     &mvnRunner{},
 			execRunner: execRunner,
-			options: maven.Options{
+			options: maven.EvaluateOptions{
 				PomPath:             buildDescriptorFilePath,
 				ProjectSettingsFile: opts.ProjectSettingsFile,
 				GlobalSettingsFile:  opts.GlobalSettingsFile,

@@ -33,7 +33,7 @@ type nexusUploadUtils interface {
 	usesNpm() bool
 	getEnvParameter(path, name string) string
 	getExecRunner() execRunner
-	evaluate(options *maven.Options, expression string) (string, error)
+	evaluate(options *maven.EvaluateOptions, expression string) (string, error)
 	glob(pattern string) (matches []string, err error)
 }
 
@@ -114,7 +114,7 @@ func (u *utilsBundle) getExecRunner() execRunner {
 	return u.execRunner
 }
 
-func (u *utilsBundle) evaluate(options *maven.Options, expression string) (string, error) {
+func (u *utilsBundle) evaluate(options *maven.EvaluateOptions, expression string) (string, error) {
 	return maven.Evaluate(options, expression, u.getExecRunner())
 }
 
@@ -422,7 +422,7 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 
-	evaluateOptions := &maven.Options{
+	evaluateOptions := &maven.EvaluateOptions{
 		PomPath:            pomFile,
 		GlobalSettingsFile: options.GlobalSettingsFile,
 		M2Path:             options.M2Path,
