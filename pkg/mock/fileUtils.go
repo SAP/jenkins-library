@@ -15,17 +15,17 @@ var dirContent []byte
 
 // FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
-	Files        map[string]*[]byte
-	RemovedFiles map[string]*[]byte
+	files        map[string]*[]byte
+	removedFiles map[string]*[]byte
 	currentDir   string
 }
 
 func (f *FilesMock) init() {
-	if f.Files == nil {
-		f.Files = map[string]*[]byte{}
+	if f.files == nil {
+		f.files = map[string]*[]byte{}
 	}
-	if f.RemovedFiles == nil {
-		f.RemovedFiles = map[string]*[]byte{}
+	if f.removedFiles == nil {
+		f.removedFiles = map[string]*[]byte{}
 	}
 }
 
@@ -39,22 +39,32 @@ func (f *FilesMock) toAbsPath(path string) string {
 // AddFile establishes the existence of a virtual file.
 func (f *FilesMock) AddFile(path string, contents []byte) {
 	f.init()
-	f.Files[f.toAbsPath(path)] = &contents
+	f.files[f.toAbsPath(path)] = &contents
 }
 
 // AddDir establishes the existence of a virtual directory.
 func (f *FilesMock) AddDir(path string) {
 	f.init()
-	f.Files[f.toAbsPath(path)] = &dirContent
+	f.files[f.toAbsPath(path)] = &dirContent
+}
+
+func (f *FilesMock) HasFile(path string) bool {
+	_, exists := f.files[f.toAbsPath(path)]
+	return exists
+}
+
+func (f *FilesMock) HasRemovedFile(path string) bool {
+	_, exists := f.removedFiles[f.toAbsPath(path)]
+	return exists
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
-	if f.Files == nil {
+	if f.files == nil {
 		return false, nil
 	}
-	content, exists := f.Files[f.toAbsPath(path)]
+	content, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
 	}
@@ -66,7 +76,7 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 // Only relative paths are supported.
 func (f *FilesMock) DirExists(path string) (bool, error) {
 	path = f.toAbsPath(path)
-	for entry, content := range f.Files {
+	for entry, content := range f.files {
 		var dirComponents []string
 		if content == &dirContent {
 			dirComponents = strings.Split(entry, string(os.PathSeparator))
@@ -93,7 +103,7 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 // Copy checks if content has been associated with the given src path, and if so copies it under the given path dst.
 func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	f.init()
-	content, exists := f.Files[f.toAbsPath(src)]
+	content, exists := f.files[f.toAbsPath(src)]
 	if !exists || content == &dirContent {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
@@ -105,7 +115,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
-	content, exists := f.Files[f.toAbsPath(path)]
+	content, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return nil, fmt.Errorf("could not read '%s'", path)
 	}
@@ -128,16 +138,16 @@ func (f *FilesMock) FileWrite(path string, content []byte, _ os.FileMode) error 
 // FileRemove deletes the association of the given path with any content and records the removal of the file.
 // If the path has not been registered before, it returns an error.
 func (f *FilesMock) FileRemove(path string) error {
-	if f.Files == nil {
+	if f.files == nil {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	absPath := f.toAbsPath(path)
-	content, exists := f.Files[absPath]
+	content, exists := f.files[absPath]
 	if !exists {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
-	delete(f.Files, absPath)
-	f.RemovedFiles[absPath] = content
+	delete(f.files, absPath)
+	f.removedFiles[absPath] = content
 	return nil
 }
 
@@ -153,16 +163,17 @@ func (f *FilesMock) MkdirAll(path string, _ os.FileMode) error {
 // Glob returns an array of path strings which match the given glob-pattern. Double star matching is supported.
 func (f *FilesMock) Glob(pattern string) ([]string, error) {
 	var matches []string
-	if f.Files == nil {
+	if f.files == nil {
 		return matches, nil
 	}
-	for path := range f.Files {
+	for path := range f.files {
+		path = strings.TrimLeft(path, string(os.PathSeparator))
 		matched, _ := doublestar.Match(pattern, path)
 		if matched {
 			matches = append(matches, path)
 		}
 	}
-	// The order in f.Files is not deterministic, this would result in flaky tests.
+	// The order in f.files is not deterministic, this would result in flaky tests.
 	sort.Strings(matches)
 	return matches, nil
 }

@@ -647,8 +647,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, 2, len(utils.execRunner.Env))
 		assert.Equal(t, expectedEnv, utils.execRunner.Env)
 
-		assert.Nil(t, utils.Files[settingsPath])
-		assert.NotNil(t, utils.RemovedFiles[settingsPath])
+		assert.False(t, utils.HasFile(settingsPath))
+		assert.True(t, utils.HasRemovedFile(settingsPath))
 	})
 }
 
@@ -665,5 +665,5 @@ func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
 	assert.Equal(t, expectedEnv, utils.execRunner.Env)
 
 	assert.True(t, settingsPath != "")
-	assert.NotNil(t, utils.Files[settingsPath])
+	assert.True(t, utils.HasFile(settingsPath))
 }
