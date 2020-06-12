@@ -38,7 +38,7 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
-	// TransportTimeout defaults to 10 seconds, if not specified. It is
+	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout         time.Duration
 	Username                 string
@@ -342,7 +342,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 
 func (c *Client) applyDefaults() {
 	if c.transportTimeout == 0 {
-		c.transportTimeout = 10 * time.Second
+		c.transportTimeout = 3 * time.Minute
 	}
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
