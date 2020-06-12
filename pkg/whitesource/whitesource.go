@@ -190,7 +190,6 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 	return projectTokens, nil
 }
 
-
 //GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
 	wsResponse := struct {

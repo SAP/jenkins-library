@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PipDescriptor holds the unique identifier combination for pip built Python artifacts
+// GoModDescriptor holds the unique identifier combination for Go modules
 type GoModDescriptor struct {
 	GroupID    string
 	ArtifactID string
@@ -17,7 +17,7 @@ type GoModDescriptor struct {
 	Packaging  string
 }
 
-// Pip utility to interact with Python specific versioning
+// go.mod utility to interact with Go Modules specific versioning
 type GoMod struct {
 	path                   string
 	readFile               func(string) ([]byte, error)
@@ -61,7 +61,7 @@ func (m *GoMod) GetVersion() (string, error) {
 			if err != nil {
 				return "", errors.Wrap(err, "failed to parse go.mod file")
 			}
-			if parsed.Module.Mod.Version != ""{
+			if parsed.Module.Mod.Version != "" {
 				return parsed.Module.Mod.Version, nil
 			}
 
@@ -77,7 +77,7 @@ func (m *GoMod) GetVersion() (string, error) {
 
 // SetVersion sets the Pip descriptor version property
 func (m *GoMod) SetVersion(v string) error {
-return nil
+	return nil
 }
 
 // VersioningScheme returns the relevant versioning scheme
@@ -85,7 +85,7 @@ func (m *GoMod) VersioningScheme() string {
 	return "semver2"
 }
 
-// GetCoordinates returns the pip build descriptor coordinates
+// GetCoordinates returns the go.mod build descriptor coordinates
 func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	err := m.init()
 	if err != nil {
