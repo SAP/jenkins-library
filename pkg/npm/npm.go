@@ -14,65 +14,87 @@ import (
 	"strings"
 )
 
-// ExecuteOptions holds the list of scripts to be executed by ExecuteAllScripts, options for npm run and the npm registry configuration
-type ExecuteOptions struct {
-	Install            bool     `json:"install,omitempty"`
-	RunScripts         []string `json:"runScripts,omitempty"`
-	RunOptions         []string `json:"runOptions,omitempty"`
-	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
-	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
+type execute struct {
+	utils   utils
+	options executeOptions
 }
 
-// ExecRunner interface to enable mocking for testing
-type ExecRunner interface {
+// Executor interface to enable mocking for testing
+type Executor interface {
+	FindPackageJSONFiles() []string
+	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
+	ExecuteAllScripts() error
+	InstallAllDependencies(packageJSONFiles []string) error
+	SetNpmRegistries() error
+}
+
+// NewExecutor instantiates execute struct and sets executeOptions
+func NewExecutor(installDeps bool, runScripts []string, runOptions []string, defaultNpmRegistry string, sapNpmRegistry string) (*execute, error) {
+	utils := utilsBundle{}
+	options := executeOptions{
+		install:            installDeps,
+		runScripts:         runScripts,
+		runOptions:         runOptions,
+		defaultNpmRegistry: defaultNpmRegistry,
+		sapNpmRegistry:     sapNpmRegistry,
+	}
+	exec := &execute{
+		utils:   &utils,
+		options: options,
+	}
+	return exec, nil
+}
+
+// ExecuteOptions holds the list of scripts to be executed by ExecuteAllScripts, options for npm run and the npm registry configuration
+type executeOptions struct {
+	install            bool
+	runScripts         []string
+	runOptions         []string
+	defaultNpmRegistry string
+	sapNpmRegistry     string
+}
+
+// execRunner interface to enable mocking for testing
+type execRunner interface {
 	Stdout(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 }
 
-// Utils interface for functions that need to be mocked for testing
-type Utils interface {
-	FileExists(path string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	Glob(pattern string) (matches []string, err error)
-	Getwd() (dir string, err error)
-	Chdir(dir string) error
-	GetExecRunner() ExecRunner
+type utils interface {
+	fileExists(path string) (bool, error)
+	fileRead(path string) ([]byte, error)
+	glob(pattern string) (matches []string, err error)
+	getwd() (dir string, err error)
+	chdir(dir string) error
+	getExecRunner() execRunner
 }
 
-// UtilsBundle holds utils for mocking used by npmExecuteScripts/-Lint
-type UtilsBundle struct {
-	projectStructure FileUtils.ProjectStructure
-	fileUtils        FileUtils.Files
-	execRunner       *command.Command
+type utilsBundle struct {
+	fileUtils  FileUtils.Files
+	execRunner *command.Command
 }
 
-// FileExists function for mock interface
-func (u *UtilsBundle) FileExists(path string) (bool, error) {
+func (u *utilsBundle) fileExists(path string) (bool, error) {
 	return u.fileUtils.FileExists(path)
 }
 
-// FileRead function for mock interface
-func (u *UtilsBundle) FileRead(path string) ([]byte, error) {
+func (u *utilsBundle) fileRead(path string) ([]byte, error) {
 	return u.fileUtils.FileRead(path)
 }
 
-// Glob function for mock interface
-func (u *UtilsBundle) Glob(pattern string) (matches []string, err error) {
+func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
 
-// Getwd function for mock interface
-func (u *UtilsBundle) Getwd() (dir string, err error) {
+func (u *utilsBundle) getwd() (dir string, err error) {
 	return os.Getwd()
 }
 
-// Chdir function for mock interface
-func (u *UtilsBundle) Chdir(dir string) error {
+func (u *utilsBundle) chdir(dir string) error {
 	return os.Chdir(dir)
 }
 
-// GetExecRunner returns/creates an ExecRunner that redirects Stdout and Stderr to logging framework
-func (u *UtilsBundle) GetExecRunner() ExecRunner {
+func (u *utilsBundle) getExecRunner() execRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
@@ -83,7 +105,8 @@ func (u *UtilsBundle) GetExecRunner() ExecRunner {
 
 // SetNpmRegistries configures the given npm registries.
 // CAUTION: This will change the npm configuration in the user's home directory.
-func SetNpmRegistries(execRunner ExecRunner, options *ExecuteOptions) error {
+func (exec *execute) SetNpmRegistries() error {
+	execRunner := exec.utils.getExecRunner()
 	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
 	configurableRegistries := []string{npmRegistry, sapRegistry}
@@ -101,17 +124,17 @@ func SetNpmRegistries(execRunner ExecRunner, options *ExecuteOptions) error {
 			log.Entry().Info("Discovered pre-configured npm registry " + registry + " with value " + preConfiguredRegistry)
 		}
 
-		if registry == npmRegistry && options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.DefaultNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, options.DefaultNpmRegistry)
+		if registry == npmRegistry && exec.options.defaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
+			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.options.defaultNpmRegistry)
+			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.options.defaultNpmRegistry)
 			if err != nil {
 				return err
 			}
 		}
 
-		if registry == sapRegistry && options.SapNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://npm.sap.com") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + options.SapNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, options.SapNpmRegistry)
+		if registry == sapRegistry && exec.options.sapNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://npm.sap.com") {
+			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.options.sapNpmRegistry)
+			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.options.sapNpmRegistry)
 			if err != nil {
 				return err
 			}
@@ -128,12 +151,12 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
-// ExecuteAllScripts runs all scripts defined in ExecuteOptions.RunScripts
-func ExecuteAllScripts(utils Utils, options ExecuteOptions) error {
-	packageJSONFiles := FindPackageJSONFiles(utils)
+// ExecuteAllScripts runs all scripts defined in ExecuteOptions.runScripts
+func (exec *execute) ExecuteAllScripts() error {
+	packageJSONFiles := exec.FindPackageJSONFiles()
 
-	for _, script := range options.RunScripts {
-		packagesWithScript, err := FindPackageJSONFilesWithScript(utils, packageJSONFiles, script)
+	for _, script := range exec.options.runScripts {
+		packagesWithScript, err := exec.FindPackageJSONFilesWithScript(packageJSONFiles, script)
 		if err != nil {
 			return err
 		}
@@ -144,7 +167,7 @@ func ExecuteAllScripts(utils Utils, options ExecuteOptions) error {
 		}
 
 		for _, packageJSON := range packagesWithScript {
-			err = executeScript(utils, options, packageJSON, script)
+			err = exec.executeScript(packageJSON, script)
 			if err != nil {
 				return err
 			}
@@ -153,22 +176,22 @@ func ExecuteAllScripts(utils Utils, options ExecuteOptions) error {
 	return nil
 }
 
-func executeScript(utils Utils, options ExecuteOptions, packageJSON string, script string) error {
-	execRunner := utils.GetExecRunner()
-	oldWorkingDirectory, err := utils.Getwd()
+func (exec *execute) executeScript(packageJSON string, script string) error {
+	execRunner := exec.utils.getExecRunner()
+	oldWorkingDirectory, err := exec.utils.getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
 	}
 
 	dir := path.Dir(packageJSON)
-	err = utils.Chdir(dir)
+	err = exec.utils.chdir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to change into directory for executing script: %w", err)
 	}
 
-	if !(options.Install) {
-		// set in each directory to respect existing config in rc files
-		err = SetNpmRegistries(execRunner, &options)
+	if !(exec.options.install) {
+		// set in each directory to respect existing config in rc fileUtils
+		err = exec.SetNpmRegistries()
 		if err != nil {
 			return err
 		}
@@ -177,8 +200,8 @@ func executeScript(utils Utils, options ExecuteOptions, packageJSON string, scri
 	log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + script)
 
 	npmRunArgs := []string{"run", script}
-	if len(options.RunOptions) > 0 {
-		npmRunArgs = append(npmRunArgs, options.RunOptions...)
+	if len(exec.options.runOptions) > 0 {
+		npmRunArgs = append(npmRunArgs, exec.options.runOptions...)
 	}
 
 	err = execRunner.RunExecutable("npm", npmRunArgs...)
@@ -186,16 +209,16 @@ func executeScript(utils Utils, options ExecuteOptions, packageJSON string, scri
 		return fmt.Errorf("failed to run npm script %s: %w", script, err)
 	}
 
-	err = utils.Chdir(oldWorkingDirectory)
+	err = exec.utils.chdir(oldWorkingDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
 	return nil
 }
 
-// FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
-func FindPackageJSONFiles(utils Utils) []string {
-	unfilteredListOfPackageJSONFiles, _ := utils.Glob("**/package.json")
+// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+func (exec *execute) FindPackageJSONFiles() []string {
+	unfilteredListOfPackageJSONFiles, _ := exec.utils.glob("**/package.json")
 
 	var packageJSONFiles []string
 
@@ -214,14 +237,14 @@ func FindPackageJSONFiles(utils Utils) []string {
 	return packageJSONFiles
 }
 
-// FindPackageJSONFilesWithScript returns a list of package.json files that contain the script
-func FindPackageJSONFilesWithScript(utils Utils, packageJSONFiles []string, script string) ([]string, error) {
+// FindPackageJSONFilesWithScript returns a list of package.json fileUtils that contain the script
+func (exec *execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error) {
 	var packagesWithScript []string
 
 	for _, file := range packageJSONFiles {
 		var packageJSON map[string]interface{}
 
-		packageRaw, err := utils.FileRead(file)
+		packageRaw, err := exec.utils.fileRead(file)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s to check for existence of %s script: %w", file, script, err)
 		}
@@ -243,10 +266,10 @@ func FindPackageJSONFilesWithScript(utils Utils, packageJSONFiles []string, scri
 	return packagesWithScript, nil
 }
 
-// InstallAllDependencies executes npm or yarn install for all package.json files defined in packageJSONFiles
-func InstallAllDependencies(packageJSONFiles []string, utils Utils, options *ExecuteOptions) error {
+// InstallAllDependencies executes npm or yarn install for all package.json fileUtils defined in packageJSONFiles
+func (exec *execute) InstallAllDependencies(packageJSONFiles []string) error {
 	for _, packageJSON := range packageJSONFiles {
-		err := Install(utils, packageJSON, options)
+		err := exec.install(packageJSON)
 		if err != nil {
 			return err
 		}
@@ -254,27 +277,27 @@ func InstallAllDependencies(packageJSONFiles []string, utils Utils, options *Exe
 	return nil
 }
 
-// Install executes npm or yarn install for package.json
-func Install(utils Utils, packageJSON string, options *ExecuteOptions) error {
-	execRunner := utils.GetExecRunner()
+// install executes npm or yarn install for package.json
+func (exec *execute) install(packageJSON string) error {
+	execRunner := exec.utils.getExecRunner()
 
-	oldWorkingDirectory, err := utils.Getwd()
+	oldWorkingDirectory, err := exec.utils.getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
 	}
 
 	dir := path.Dir(packageJSON)
-	err = utils.Chdir(dir)
+	err = exec.utils.chdir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to change into directory for executing script: %w", err)
 	}
 
-	err = SetNpmRegistries(utils.GetExecRunner(), options)
+	err = exec.SetNpmRegistries()
 	if err != nil {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := checkIfLockFilesExist(utils)
+	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
 	if err != nil {
 		return err
 	}
@@ -301,21 +324,21 @@ func Install(utils Utils, packageJSON string, options *ExecuteOptions) error {
 		}
 	}
 
-	err = utils.Chdir(oldWorkingDirectory)
+	err = exec.utils.chdir(oldWorkingDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
 	return nil
 }
 
-// checkIfLockFilesExist checks if yarn/package lock files exist
-func checkIfLockFilesExist(utils Utils) (bool, bool, error) {
-	packageLockExists, err := utils.FileExists("package-lock.json")
+// checkIfLockFilesExist checks if yarn/package lock fileUtils exist
+func (exec *execute) checkIfLockFilesExist() (bool, bool, error) {
+	packageLockExists, err := exec.utils.fileExists("package-lock.json")
 	if err != nil {
 		return false, false, err
 	}
 
-	yarnLockExists, err := utils.FileExists("yarn.lock")
+	yarnLockExists, err := exec.utils.fileExists("yarn.lock")
 	if err != nil {
 		return false, false, err
 	}

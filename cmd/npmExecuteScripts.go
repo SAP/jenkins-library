@@ -7,32 +7,25 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
-	utils := npm.UtilsBundle{}
+	npmExecutor, err := npm.NewExecutor(config.Install, config.RunScripts, []string{}, config.DefaultNpmRegistry, config.SapNpmRegistry)
 
-	err := runNpmExecuteScripts(&utils, &config)
+	err = runNpmExecuteScripts(npmExecutor, &config)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runNpmExecuteScripts(utils npm.Utils, config *npmExecuteScriptsOptions) error {
-	options := npm.ExecuteOptions{
-		Install:            config.Install,
-		RunScripts:         config.RunScripts,
-		DefaultNpmRegistry: config.DefaultNpmRegistry,
-		SapNpmRegistry:     config.SapNpmRegistry,
-	}
+func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
+	packageJSONFiles := npmExecutor.FindPackageJSONFiles()
 
-	packageJSONFiles := npm.FindPackageJSONFiles(utils)
-
-	if options.Install {
-		err := npm.InstallAllDependencies(packageJSONFiles, utils, &options)
+	if config.Install {
+		err := npmExecutor.InstallAllDependencies(packageJSONFiles)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := npm.ExecuteAllScripts(utils, options)
+	err := npmExecutor.ExecuteAllScripts()
 	if err != nil {
 		return err
 	}
