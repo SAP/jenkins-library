@@ -188,18 +188,18 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
-	err = installMavenArtifacts(e)
+	err = installMavenArtifacts(e, config)
 
 	return err
 }
 
-func installMavenArtifacts(e execRunner) error {
+func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
 	}
 	if pomXMLExists {
-		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{})
+		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
 		if err != nil {
 			return err
 		}

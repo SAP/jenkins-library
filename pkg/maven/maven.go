@@ -128,7 +128,7 @@ func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunn
 
 // InstallFile installs a maven artifact and its pom into the local maven repository.
 // If "file" is empty, only the pom is installed. "pomFile" must not be empty.
-func InstallFile(file, pomFile string, command mavenExecRunner) error {
+func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
@@ -151,6 +151,7 @@ func InstallFile(file, pomFile string, command mavenExecRunner) error {
 		Goals:   []string{"install:install-file"},
 		Defines: defines,
 		PomPath: pomFile,
+		M2Path:  m2Path,
 	}
 	_, err := Execute(&mavenOptionsInstall, command)
 	if err != nil {
@@ -196,7 +197,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 		}
 
 		if packaging == "pom" {
-			err = InstallFile("", "pom.xml", command)
+			err = InstallFile("", "pom.xml", options.M2Path, command)
 			if err != nil {
 				return err
 			}
@@ -222,7 +223,7 @@ func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options E
 	}
 	if finalName == "" {
 		log.Entry().Warn("project.build.finalName is empty, skipping install of artifact. Installing only the pom file.")
-		err = InstallFile("", "pom.xml", command)
+		err = InstallFile("", "pom.xml", options.M2Path, command)
 		if err != nil {
 			return err
 		}
@@ -233,21 +234,21 @@ func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options E
 	classesJarExists, _ := utils.FileExists(classesJarFile(finalName))
 
 	if jarExists {
-		err = InstallFile(jarFile(finalName), "pom.xml", command)
+		err = InstallFile(jarFile(finalName), "pom.xml", options.M2Path, command)
 		if err != nil {
 			return err
 		}
 	}
 
 	if warExists {
-		err = InstallFile(warFile(finalName), "pom.xml", command)
+		err = InstallFile(warFile(finalName), "pom.xml", options.M2Path, command)
 		if err != nil {
 			return err
 		}
 	}
 
 	if classesJarExists {
-		err = InstallFile(classesJarFile(finalName), "pom.xml", command)
+		err = InstallFile(classesJarFile(finalName), "pom.xml", options.M2Path, command)
 		if err != nil {
 			return err
 		}

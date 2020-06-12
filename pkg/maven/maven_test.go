@@ -218,7 +218,7 @@ func TestMavenInstall(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		expectedParameters := []string{"--file", "pom.xml", "-Dfile=app.jar", "-Dpackaging=jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}
 
-		err := InstallFile("app.jar", "pom.xml", &execMockRunner)
+		err := InstallFile("app.jar", "pom.xml", "", &execMockRunner)
 
 		assert.NoError(t, err)
 		if assert.Equal(t, len(expectedParameters), len(execMockRunner.Calls[0].Params)) {
