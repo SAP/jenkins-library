@@ -195,3 +195,13 @@ func (f Files) MkdirAll(path string, perm os.FileMode) error {
 func (f Files) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
 }
+
+// Getwd is a wrapper for os.Getwd().
+func (f Files) Getwd() (string, error) {
+	return os.Getwd()
+}
+
+// Chdir is a wrapper for os.Chdir().
+func (f Files) Chdir(path string) error {
+	return os.Chdir(path)
+}

@@ -17,6 +17,7 @@ var dirContent []byte
 type FilesMock struct {
 	Files        map[string]*[]byte
 	RemovedFiles map[string]*[]byte
+	currentDir   string
 }
 
 func (f *FilesMock) init() {
@@ -28,24 +29,32 @@ func (f *FilesMock) init() {
 	}
 }
 
+func (f *FilesMock) toAbsPath(path string) string {
+	if !strings.HasPrefix(path, string(os.PathSeparator)) {
+		path = string(os.PathSeparator) + filepath.Join(f.currentDir, path)
+	}
+	return path
+}
+
 // AddFile establishes the existence of a virtual file.
 func (f *FilesMock) AddFile(path string, contents []byte) {
 	f.init()
-	f.Files[path] = &contents
+	f.Files[f.toAbsPath(path)] = &contents
 }
 
 // AddDir establishes the existence of a virtual directory.
 func (f *FilesMock) AddDir(path string) {
 	f.init()
-	f.Files[path] = &dirContent
+	f.Files[f.toAbsPath(path)] = &dirContent
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
+// Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
 	if f.Files == nil {
 		return false, nil
 	}
-	content, exists := f.Files[path]
+	content, exists := f.Files[f.toAbsPath(path)]
 	if !exists {
 		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
 	}
@@ -54,7 +63,9 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 
 // DirExists returns true, if the given path is a previously added directory, or a parent directory for any of the
 // previously added files.
+// Only relative paths are supported.
 func (f *FilesMock) DirExists(path string) (bool, error) {
+	path = f.toAbsPath(path)
 	for entry, content := range f.Files {
 		var dirComponents []string
 		if content == &dirContent {
@@ -82,7 +93,7 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 // Copy checks if content has been associated with the given src path, and if so copies it under the given path dst.
 func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	f.init()
-	content, exists := f.Files[src]
+	content, exists := f.Files[f.toAbsPath(src)]
 	if !exists || content == &dirContent {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
@@ -94,7 +105,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
-	content, exists := f.Files[path]
+	content, exists := f.Files[f.toAbsPath(path)]
 	if !exists {
 		return nil, fmt.Errorf("could not read '%s'", path)
 	}
@@ -120,12 +131,13 @@ func (f *FilesMock) FileRemove(path string) error {
 	if f.Files == nil {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
-	content, exists := f.Files[path]
+	absPath := f.toAbsPath(path)
+	content, exists := f.Files[absPath]
 	if !exists {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
-	delete(f.Files, path)
-	f.RemovedFiles[path] = content
+	delete(f.Files, absPath)
+	f.RemovedFiles[absPath] = content
 	return nil
 }
 
@@ -153,4 +165,28 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 	// The order in f.Files is not deterministic, this would result in flaky tests.
 	sort.Strings(matches)
 	return matches, nil
+}
+
+// Getwd returns the rooted current virtual working directory
+func (f *FilesMock) Getwd() (string, error) {
+	return f.toAbsPath(""), nil
+}
+
+// Chdir changes virtually in to the given directory.
+// The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
+// The implementation is limited
+func (f *FilesMock) Chdir(path string) error {
+	if path == "." || path == "."+string(os.PathSeparator) {
+		return nil
+	}
+
+	path = f.toAbsPath(path)
+
+	exists, _ := f.DirExists(path)
+	if !exists {
+		return fmt.Errorf("failed to change current directory into '%s': %w", path, os.ErrNotExist)
+	}
+
+	f.currentDir = strings.TrimLeft(path, string(os.PathSeparator))
+	return nil
 }

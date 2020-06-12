@@ -2,6 +2,7 @@ package mock
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -29,6 +30,26 @@ func TestFilesMockFileExists(t *testing.T) {
 		files.AddDir(path)
 		exists, err := files.FileExists(path)
 		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+	t.Run("file exists after changing current dir", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("some", "path")
+		files.AddFile(path, []byte("dummy content"))
+		err := files.Chdir("some")
+		assert.NoError(t, err)
+		exists, err := files.FileExists("path")
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+	t.Run("file does not exist after changing current dir", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("some", "path")
+		files.AddFile(path, []byte("dummy content"))
+		err := files.Chdir("some")
+		assert.NoError(t, err)
+		exists, err := files.FileExists(path)
+		assert.EqualError(t, err, "'"+path+"': file does not exist")
 		assert.False(t, exists)
 	})
 }
@@ -116,4 +137,26 @@ func TestFilesMockCopy(t *testing.T) {
 }
 
 func TestFilesMockMkdirAll(t *testing.T) {
+}
+
+func TestFilesMockGetwd(t *testing.T) {
+	t.Parallel()
+	t.Run("test root", func(t *testing.T) {
+		files := FilesMock{}
+		dir, err := files.Getwd()
+		assert.NoError(t, err)
+		assert.Equal(t, string(os.PathSeparator), dir)
+	})
+	t.Run("test sub folder", func(t *testing.T) {
+		files := FilesMock{}
+		dirChain := []string{"some", "deep", "folder"}
+		files.AddDir(filepath.Join(dirChain...))
+		for _, element := range dirChain {
+			err := files.Chdir(element)
+			assert.NoError(t, err)
+		}
+		dir, err := files.Getwd()
+		assert.NoError(t, err)
+		assert.Equal(t, string(os.PathSeparator)+filepath.Join(dirChain...), dir)
+	})
 }
