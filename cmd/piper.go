@@ -135,6 +135,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
+		log.Entry().Infof("Project config: passed via JSON")
+		log.Entry().Infof("Project defaults: passed via JSON")
 	} else {
 		// use config & defaults
 		var customConfig io.ReadCloser
@@ -142,31 +144,33 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-
-			exists, err := piperutils.FileExists(projectConfigFile)
-			if exists {
+			if exists, err := piperutils.FileExists(projectConfigFile); exists {
+				log.Entry().Infof("Project config: '%s'", projectConfigFile)
 				if customConfig, err = openFile(projectConfigFile); err != nil {
 					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
-				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
+				log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
 				customConfig = nil
 			}
-
 		}
 		var defaultConfig []io.ReadCloser
-		for _, f := range GeneralConfig.DefaultConfig {
-			fc, err := openFile(f)
+		if len(GeneralConfig.DefaultConfig) == 0 {
+			log.Entry().Info("Project defaults: NONE")
+		}
+		for _, projectDefaultFile := range GeneralConfig.DefaultConfig {
+			fc, err := openFile(projectDefaultFile)
 			// only create error for non-default values
-			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
-			}
-			if err == nil {
+			if err != nil {
+				if projectDefaultFile != ".pipeline/defaults.yaml" {
+					log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectDefaultFile)
+				}
+			} else {
+				log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
 				defaultConfig = append(defaultConfig, fc)
-				log.Entry().Infof("Added default config '%s'", f)
 			}
 		}
-
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
