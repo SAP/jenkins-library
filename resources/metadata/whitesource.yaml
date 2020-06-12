@@ -102,7 +102,7 @@ spec:
       conditions:
       - conditionRef: strings-equal
         params:
-        - name: scanType 
+        - name: scanType
           value: sbt
     - name: buildDescriptorFile
       type: string
@@ -118,6 +118,14 @@ spec:
         params:
         - name: scanType
           value: dub
+    - name: defaultVersioningModel
+      type: string
+      description: The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 'major'
     - name: createProductFromPipeline
       type: bool
       description: Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.
@@ -153,7 +161,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}
+      default: https://github.com/unified-agent-distribution/releases/latest/download/${config.agentFileName}
     - name: configFilePath
       type: string
       description: Explicit path to the WhiteSource Unified Agent configuration file.
@@ -191,7 +199,7 @@ spec:
       - STAGES
       - STEPS
       default: true
-    - name: whitesource/serviceUrl
+    - name: serviceUrl
       type: string
       description: URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.
       mandatory: false
@@ -210,7 +218,7 @@ spec:
       - STAGES
       - STEPS
       default: []
-    - name: whitesource/orgToken
+    - name: orgToken
       type: string
       description: WhiteSource token identifying your organization.
       mandatory: true
@@ -219,6 +227,16 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
+      default: null
+    - name: userToken
+      type: string
+      description: WhiteSource token identifying the user executing the scan
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: null
     - name: licensingVulnerabilities
       type: bool
@@ -247,7 +265,7 @@ spec:
       - STAGES
       - STEPS
       default: []
-    - name: whitesource/productVersion
+    - name: productVersion
       type: string
       description: Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
       mandatory: false
@@ -257,7 +275,7 @@ spec:
       - STAGES
       - STEPS
       default: null
-    - name: whitesource/jreDownloadUrl
+    - name: jreDownloadUrl
       type: string
       description: URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.
       mandatory: false
@@ -267,7 +285,7 @@ spec:
       - STAGES
       - STEPS
       default: null
-    - name: whitesource/productName
+    - name: productName
       type: string
       description: Name of the WhiteSource product to be created and used for results aggregation.
       mandatory: true
@@ -287,15 +305,35 @@ spec:
       - STAGES
       - STEPS
       default: false
-    - name: whitesource/projectNames
+    - name: projectName
+      aliases:
+        - name: whitesourceProjectName
       type: string
-      description: List of WhiteSource projects to be included in the assessment part of the step, usually determined automatically.
+      description: "The project used for reporting results in Whitesource"
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
+    - name: projectToken
+      type: string
+      description: Project token to execute scan on
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: null
+    - name: projectName
+      type: string
+      description: Project name to execute scan on
+      mandatory: false
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: null
     - name: vulnerabilityReportTitle
       type: string
@@ -334,7 +372,7 @@ spec:
       - STAGES
       - STEPS
       default: 7
-    - name: whitesource/productToken
+    - name: productToken
       type: string
       description: Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
       mandatory: false
@@ -354,9 +392,9 @@ spec:
       - STEPS
       default: ''
     secrets:
-    - name: whitesource/userTokenCredentialsId
+    - name: userTokenCredentialsId
       type: jenkins
-    - name: whitesource/orgAdminUserTokenCredentialsId
+    - name: orgAdminUserTokenCredentialsId
       type: jenkins
     resources:
     - name: buildDescriptor
@@ -465,14 +503,6 @@ spec:
         - name: scanType
           value: dub
   containers:
-  - image: docker.wdf.sap.corp:50000/piper/golang
-    workingDir: /home/piper
-    env: []
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: scanType
-        value: golang
   - image: maven:3.5-jdk-8
     workingDir: /home/java
     env: []
@@ -497,14 +527,6 @@ spec:
       params:
       - name: scanType
         value: npm
-  - image: docker.wdf.sap.corp:50000/piper/node
-    workingDir: /home/piper
-    env: []
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: scanType
-        value: pip
   - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
     workingDir: /home/scala
     env: []

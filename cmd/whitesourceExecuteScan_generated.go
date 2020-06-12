@@ -15,6 +15,7 @@ import (
 
 type whitesourceExecuteScanOptions struct {
 	BuildDescriptorFile                  string `json:"buildDescriptorFile,omitempty"`
+	DefaultVersioningModel               string `json:"defaultVersioningModel,omitempty"`
 	CreateProductFromPipeline            bool   `json:"createProductFromPipeline,omitempty"`
 	SecurityVulnerabilities              bool   `json:"securityVulnerabilities,omitempty"`
 	Timeout                              string `json:"timeout,omitempty"`
@@ -27,17 +28,15 @@ type whitesourceExecuteScanOptions struct {
 	BuildDescriptorExcludeList           string `json:"buildDescriptorExcludeList,omitempty"`
 	OrgToken                             string `json:"orgToken,omitempty"`
 	UserToken                            string `json:"userToken,omitempty"`
-	ProjectToken                         string `json:"projectToken,omitempty"`
 	LicensingVulnerabilities             bool   `json:"licensingVulnerabilities,omitempty"`
 	AgentFileName                        string `json:"agentFileName,omitempty"`
 	EmailAddressesOfInitialProductAdmins string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	ProductVersion                       string `json:"productVersion,omitempty"`
-	ProjectVersion                       string `json:"projectVersion,omitempty"`
 	JreDownloadURL                       string `json:"jreDownloadUrl,omitempty"`
 	ProductName                          string `json:"productName,omitempty"`
 	Verbose                              bool   `json:"verbose,omitempty"`
-	ProjectNames                         string `json:"projectNames,omitempty"`
 	ProjectName                          string `json:"projectName,omitempty"`
+	ProjectToken                         string `json:"projectToken,omitempty"`
 	VulnerabilityReportTitle             string `json:"vulnerabilityReportTitle,omitempty"`
 	InstallCommand                       string `json:"installCommand,omitempty"`
 	ScanType                             string `json:"scanType,omitempty"`
@@ -114,47 +113,38 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 }
 
 func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./Gopkg.toml", "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./pom.xml", "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./package.json", "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./setup.py", "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./build.sbt", "Explicit path to the build descriptor file.")
-	// cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", "./dub.json", "Explicit path to the build descriptor file.")
+	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", `./Gopkg.toml`, "Explicit path to the build descriptor file.")
+	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
-	cmd.Flags().StringVar(&stepConfig.Timeout, "timeout", "0", "Timeout in seconds until a HTTP call is forcefully terminated.")
-	cmd.Flags().StringVar(&stepConfig.AgentDownloadURL, "agentDownloadUrl", "https://github.com/unified-agent-distribution/releases/latest/download/${config.agentFileName}", "URL used to download the latest version of the WhiteSource Unified Agent.")
-	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", "./wss-unified-agent.config", "Explicit path to the WhiteSource Unified Agent configuration file.")
-	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFileName, "vulnerabilityReportFileName", "piper_whitesource_vulnerability_report", "Name of the file the vulnerability report is written to.")
-	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", "15", "Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
+	cmd.Flags().StringVar(&stepConfig.Timeout, "timeout", `0`, "Timeout in seconds until a HTTP call is forcefully terminated.")
+	cmd.Flags().StringVar(&stepConfig.AgentDownloadURL, "agentDownloadUrl", `https://github.com/unified-agent-distribution/releases/latest/download/${config.agentFileName}`, "URL used to download the latest version of the WhiteSource Unified Agent.")
+	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-unified-agent.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
+	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFileName, "vulnerabilityReportFileName", `piper_whitesource_vulnerability_report`, "Name of the file the vulnerability report is written to.")
+	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", `15`, "Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`.")
-	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", "https://saas.whitesourcesoftware.com/api", "URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", "[]", "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
+	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.")
+	cmd.Flags().StringVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", `[]`, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.OrgToken, "orgToken", os.Getenv("PIPER_orgToken"), "WhiteSource token identifying your organization.")
-	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying your user.")
-	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "WhiteSource project token identifying your project.")
-
+	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying the user executing the scan")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "Whether license compliance is considered and reported as part of the assessment.")
-	cmd.Flags().StringVar(&stepConfig.AgentFileName, "agentFileName", "wss-unified-agent.jar", "Locally used name for the Unified Agent jar file after download.")
-	cmd.Flags().StringVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", "[]", "The list of email addresses to assign as product admins for newly created WhiteSource products.")
+	cmd.Flags().StringVar(&stepConfig.AgentFileName, "agentFileName", `wss-unified-agent.jar`, "Locally used name for the Unified Agent jar file after download.")
+	cmd.Flags().StringVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", `[]`, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringVar(&stepConfig.ProductVersion, "productVersion", os.Getenv("PIPER_productVersion"), "Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
-	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "Version of the WhiteSource project to be created and used for results aggregation, usually determined automatically.")
-
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", os.Getenv("PIPER_jreDownloadUrl"), "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.ProductName, "productName", os.Getenv("PIPER_productName"), "Name of the WhiteSource product to be created and used for results aggregation.")
 	cmd.Flags().BoolVar(&stepConfig.Verbose, "verbose", false, "Whether verbose output should be produced.")
-	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "WhiteSource project to be included in the assessment part of the step, usually determined automatically.")
-
-	cmd.Flags().StringVar(&stepConfig.ProjectNames, "projectNames", os.Getenv("PIPER_projectNames"), "List of WhiteSource projects to be included in the assessment part of the step, usually determined automatically.")
-	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportTitle, "vulnerabilityReportTitle", "WhiteSource Security Vulnerability Report", "Title of vulnerability report written during the assessment phase.")
+	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in Whitesource")
+	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on")
+	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportTitle, "vulnerabilityReportTitle", `WhiteSource Security Vulnerability Report`, "Title of vulnerability report written during the assessment phase.")
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution.")
-	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", "7", "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
+	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `7`, "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
-	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", "", "Additional parameters passed to the Unified Agent command line.")
+	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", ``, "Additional parameters passed to the Unified Agent command line.")
 
 	cmd.MarkFlagRequired("orgToken")
+	cmd.MarkFlagRequired("userToken")
 	cmd.MarkFlagRequired("productName")
 }
 
@@ -218,6 +208,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "buildDescriptorFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "defaultVersioningModel",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -321,14 +319,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "projectToken",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "licensingVulnerabilities",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -354,14 +344,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "productVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "projectVersion",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -395,13 +377,21 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{
 						Name:        "projectName",
 						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "whitesourceProjectName"}},
+					},
+					{
+						Name:        "projectToken",
+						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "projectNames",
+						Name:        "projectName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
