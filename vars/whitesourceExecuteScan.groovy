@@ -373,7 +373,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 statusCode = 0
                 break
             default:
-                def path = config.buildDescriptorFile.substring(0, config.buildDescriptorFile.lastIndexOf('/') + 1)
+                def path = config.buildDescriptorFile ? config.buildDescriptorFile.substring(0, config.buildDescriptorFile.lastIndexOf('/') + 1) : './'
                 resolveProjectIdentifiers(script, descriptorUtils, config)
 
                 def projectName = "${config.whitesource.projectName}${config.whitesource.productVersion?' - ':''}${config.whitesource.productVersion?:''}".toString()
