@@ -64,6 +64,7 @@ jobs:
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
         run: go test -tags=integration -timeout 20m ./integration/...
+      - run: cd integration/testdata/TestMtaIntegration/maven; ./run.sh
       - name: update status
         if: success()
         run: |
