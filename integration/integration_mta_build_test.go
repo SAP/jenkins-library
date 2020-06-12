@@ -1,4 +1,4 @@
-// +build integrationDisableForNow
+// +build integration
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -35,13 +35,17 @@ func TestMavenProject(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
+curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
+tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
+mv mbt /usr/bin
 /piperbin/piper mtaBuild >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "devxci/mbtci:1.0.14",
+		Image: "maven:3-openjdk-8-slim",
 		Cmd:   []string{"tail", "-f"},
+
 		BindMounts: map[string]string{
 			pwd:     "/piperbin",
 			tempDir: "/test",
