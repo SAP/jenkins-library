@@ -190,7 +190,6 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 			return err
 		}
 
-
 		packaging, err := Evaluate(&options, "project.packaging", command)
 		if err != nil {
 			return err
@@ -229,18 +228,9 @@ func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options E
 		}
 		return nil
 	}
-	jarExists, err := utils.FileExists(jarFile(finalName))
-	if err != nil {
-		return err
-	}
-	warExists, err := utils.FileExists(warFile(finalName))
-	if err != nil {
-		return err
-	}
-	classesJarExists, err := utils.FileExists(classesJarFile(finalName))
-	if err != nil {
-		return err
-	}
+	jarExists, _ := utils.FileExists(jarFile(finalName))
+	warExists, _ := utils.FileExists(warFile(finalName))
+	classesJarExists, _ := utils.FileExists(classesJarFile(finalName))
 
 	if jarExists {
 		err = InstallFile(jarFile(finalName), "pom.xml", command)
