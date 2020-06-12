@@ -35,6 +35,7 @@ func TestMavenProject(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
+apt-get -yqq update; apt-get -yqq install make
 curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 mv mbt /usr/bin
