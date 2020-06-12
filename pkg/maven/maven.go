@@ -136,6 +136,13 @@ func InstallFile(file, pomFile string, command mavenExecRunner) error {
 	var defines []string
 	if len(file) > 0 {
 		defines = append(defines, "-Dfile="+file)
+		if strings.Contains(file, ".jar") {
+			defines = append(defines, "-Dpackaging=jar")
+		}
+		if strings.Contains(file, "-classes") {
+			defines = append(defines, "-Dclassifier=classes")
+		}
+
 	} else {
 		defines = append(defines, "-Dfile="+pomFile)
 	}
@@ -230,6 +237,10 @@ func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options E
 	if err != nil {
 		return err
 	}
+	classesJarExists, err := utils.FileExists(classesJarFile(finalName))
+	if err != nil {
+		return err
+	}
 
 	if jarExists {
 		err = InstallFile(jarFile(finalName), "pom.xml", command)
@@ -244,11 +255,22 @@ func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options E
 			return err
 		}
 	}
+
+	if classesJarExists {
+		err = InstallFile(classesJarFile(finalName), "pom.xml", command)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func jarFile(finalName string) string {
 	return "target/" + finalName + ".jar"
+}
+
+func classesJarFile(finalName string) string {
+	return "target/" + finalName + "-classes.jar"
 }
 
 func warFile(finalName string) string {
