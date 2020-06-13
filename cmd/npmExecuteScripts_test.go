@@ -129,6 +129,23 @@ func TestNpmExecuteScripts(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
 	})
+
+	t.Run("Call run-scripts with virtual frame buffer", func(t *testing.T) {
+		utils := newNpmExecuteScriptsMockUtilsBundle()
+		utils.files["package.json"] = "{\"scripts\": { \"foo\": \"\" } }"
+		utils.files["package-lock.json"] = "{\"name\": \"Test\" }"
+		options := npmExecuteScriptsOptions{}
+		options.Install = false
+		options.RunScripts = []string{"foo"}
+		options.VirtualFrameBuffer = true
+
+		err := runNpmExecuteScripts(&utils, &options)
+
+		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
+		assert.NoError(t, err)
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[2])
+		assert.Equal(t, 3, len(utils.execRunner.Calls))
+	})
 }
 
 func newNpmExecuteScriptsMockUtilsBundle() npmExecuteScriptsMockUtilsBundle {

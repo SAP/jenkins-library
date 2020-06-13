@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
@@ -69,6 +70,15 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	oldWorkingDirectory, err := utils.getwd()
 	if err != nil {
 		return err
+	}
+
+	if options.VirtualFrameBuffer {
+		cmd, err := execRunner.RunExecutableInBackground("Xvfb", "-ac", ":99", "-screen", "0", "1280x1024x16")
+		if err != nil {
+			return fmt.Errorf("failed to start virual fram buffer%w", err)
+		}
+		defer cmd.Process.Kill()
+		execRunner.SetEnv([]string{"DISPLAY=:99"})
 	}
 
 	for _, file := range packageJSONFiles {

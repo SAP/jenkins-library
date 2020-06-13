@@ -38,6 +38,13 @@ spec:
           - STAGES
           - STEPS
         default: https://npm.sap.com
+      - name: virtualFrameBuffer
+        type: bool
+        description: Run the scripts in a virtual frame buffer.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: node
       image: node:12-buster-slim
