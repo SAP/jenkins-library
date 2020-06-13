@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io"
+	"os/exec"
 )
 
 type runner interface {
@@ -14,6 +15,7 @@ type runner interface {
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error
+	RunExecutableInBackground(executable string, params ...string) (*exec.Cmd, error)
 }
 
 type shellRunner interface {

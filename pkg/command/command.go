@@ -92,6 +92,29 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 	return nil
 }
 
+// RunExecutable runs the specified executable with parameters
+// !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
+//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+func (c *Command) RunExecutableInBackground(executable string, params ...string) (*exec.Cmd, error) {
+
+	_out, _err := prepareOut(c.stdout, c.stderr)
+
+	cmd := ExecCommand(executable, params...)
+
+	if len(c.dir) > 0 {
+		cmd.Dir = c.dir
+	}
+
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
+
+	appendEnvironment(cmd, c.env)
+
+	if err := startCmd(cmd, _out, _err); err != nil {
+		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
+	}
+	return cmd, nil
+}
+
 func appendEnvironment(cmd *exec.Cmd, env []string) {
 
 	if len(env) > 0 {
@@ -119,12 +142,38 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
+func startCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
+
+	stdout, stderr, err := cmdPipes(cmd)
+
+	if err != nil {
+		return errors.Wrap(err, "getting command pipes failed")
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return errors.Wrap(err, "starting command failed")
+	}
+
+	var errStdout, errStderr error
+
+	go func() {
+		_, errStdout = io.Copy(_out, stdout)
+	}()
+
+	go func() {
+		_, errStderr = io.Copy(_err, stderr)
+	}()
+
+	return nil
+}
+
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
 
 	stdout, stderr, err := cmdPipes(cmd)
 
 	if err != nil {
-		return errors.Wrap(err, "getting commmand pipes failed")
+		return errors.Wrap(err, "getting command pipes failed")
 	}
 
 	err = cmd.Start()
@@ -149,14 +198,14 @@ func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
 
 	wg.Wait()
 
+	if errStdout != nil || errStderr != nil {
+		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", errStdout, errStderr)
+	}
+
 	err = cmd.Wait()
 
 	if err != nil {
 		return errors.Wrap(err, "cmd.Run() failed")
-	}
-
-	if errStdout != nil || errStderr != nil {
-		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", errStdout, errStderr)
 	}
 
 	return nil
