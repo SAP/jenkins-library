@@ -142,15 +142,15 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
-		assert.Equal(t, 4, len(utils.execRunner.Calls))
+		if assert.Len(t, utils.execRunner.Calls, 4) {
+			xvfbCall := utils.execRunner.Calls[0]
+			assert.Equal(t, "Xvfb", xvfbCall.Exec)
+			assert.Equal(t, []string{"-ac", ":99", "-screen", "0", "1280x1024x16"}, xvfbCall.Params)
+			assert.True(t, xvfbCall.Async)
+			assert.True(t, xvfbCall.Execution.Killed)
 
-		xvfbCall := utils.execRunner.Calls[0]
-		assert.Equal(t, "Xvfb", xvfbCall.Exec)
-		assert.Equal(t, []string{"-ac", ":99", "-screen", "0", "1280x1024x16"}, xvfbCall.Params)
-		assert.True(t, xvfbCall.Async)
-		assert.True(t, xvfbCall.Execution.Killed)
-
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
+		}
 	})
 }
 

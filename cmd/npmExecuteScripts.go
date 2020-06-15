@@ -75,7 +75,7 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 	if options.VirtualFrameBuffer {
 		cmd, err := execRunner.RunExecutableInBackground("Xvfb", "-ac", ":99", "-screen", "0", "1280x1024x16")
 		if err != nil {
-			return fmt.Errorf("failed to start virual fram buffer%w", err)
+			return fmt.Errorf("failed to start virtual frame buffer%w", err)
 		}
 		defer cmd.Kill()
 		execRunner.SetEnv([]string{"DISPLAY=:99"})
