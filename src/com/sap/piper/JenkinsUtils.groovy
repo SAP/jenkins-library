@@ -21,23 +21,6 @@ static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
-@API
-@NonCPS
-static void assertPluginIsActive(String pluginName) {
-    if (pluginName == null || pluginName.empty) {
-        throw new RuntimeException("Plugin name cannot be null or empty.")
-    }
-
-    if (!JenkinsUtils.isPluginActive(pluginName)) {
-        String exception = """[ERROR] Plugin '${pluginName}' is not installed or not active.
-            | Please update the Jenkins image to the latest available version.
-            | For more information how to update the image please visit:
-            | https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md#update-image
-            | """.stripMargin().stripIndent()
-        throw new RuntimeException(exception)
-    }
-}
-
 static boolean hasTestFailures(build){
     //build: https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
     //getRawBuild: https://javadoc.jenkins.io/plugin/workflow-job/org/jenkinsci/plugins/workflow/job/WorkflowRun.html

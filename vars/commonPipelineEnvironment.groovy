@@ -10,6 +10,9 @@ class commonPipelineEnvironment implements Serializable {
     def artifactVersion
     def originalArtifactVersion
 
+    //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
+    String buildTool
+
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
 
@@ -53,6 +56,8 @@ class commonPipelineEnvironment implements Serializable {
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
+
+        buildTool = null
 
         configuration = [:]
         containerProperties = [:]
