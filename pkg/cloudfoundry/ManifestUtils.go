@@ -37,7 +37,6 @@ func ReadManifest(name string) (Manifest, error) {
 	}
 
 	err = yaml.Unmarshal(content, &m.self)
-
 	if err != nil {
 		return m, errors.Wrapf(err, "Cannot parse yaml file '%s': %s", m.name, string(content))
 	}
@@ -80,7 +79,6 @@ func (m Manifest) GetApplications() ([]interface{}, error) {
 func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
-
 	if err != nil {
 		return false, err
 	}
@@ -90,7 +88,6 @@ func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 	}
 
 	_m, err := toMap(sliced[index])
-
 	if err != nil {
 		return false, err
 	}
@@ -104,7 +101,6 @@ func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
-
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +110,6 @@ func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, e
 	}
 
 	app, err := toMap(sliced[index])
-
 	if err != nil {
 		return "", err
 	}
@@ -130,7 +125,6 @@ func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, e
 func (m Manifest) GetAppName(index int) (string, error) {
 
 	appName, err := m.GetApplicationProperty(index, "name")
-
 	if err != nil {
 		return "", err
 	}
@@ -159,7 +153,6 @@ func (m *Manifest) Transform() error {
 		}
 
 		err = transformApp(appAsMap, m)
-
 		if err != nil {
 			return err
 		}
@@ -186,7 +179,6 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 	}
 
 	buildPacks, err := toSlice(app[constPropBuildpacks])
-
 	if err != nil {
 		return err
 	}
