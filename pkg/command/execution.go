@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+//errCopyStdout and errCopyStderr are filled after the command execution after Wait() terminates
 type execution struct {
 	cmd           *exec.Cmd
 	wg            sync.WaitGroup
