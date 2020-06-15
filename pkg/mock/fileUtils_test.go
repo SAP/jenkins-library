@@ -218,7 +218,7 @@ func TestFilesMockGlob(t *testing.T) {
 		matches, err := files.Glob("*/*.xml")
 		assert.NoError(t, err)
 		if assert.Len(t, matches, 1) {
-			assert.Equal(t, matches[1], filepath.Join("dir", "foo.xml"))
+			assert.Equal(t, matches[0], filepath.Join("dir", "foo.xml"))
 		}
 	})
 	t.Run("match for two levels", func(t *testing.T) {
