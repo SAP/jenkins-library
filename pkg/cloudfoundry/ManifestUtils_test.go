@@ -76,7 +76,7 @@ func TestTransformGoodCase(t *testing.T) {
 func TestTransformMultipleBuildPacks(t *testing.T) {
 	_readFile = func(filename string) ([]byte, error) {
 		if filename == "myManifest.yaml" {
-			return []byte("no-route: true\napplications: [{name: 'manifestAppName', buildpacks: [sap_java_buildpack, 'another_buildpack']}]"), nil
+			return []byte("applications: [{name: 'manifestAppName', buildpacks: [sap_java_buildpack, 'another_buildpack']}]"), nil
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
