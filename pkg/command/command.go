@@ -109,7 +109,7 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 
 	execution, err := startCmd(cmd, _out, _err)
 
-	if  err != nil {
+	if err != nil {
 		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
 	}
 

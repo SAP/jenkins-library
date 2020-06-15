@@ -12,7 +12,6 @@ type runner interface {
 	Stderr(err io.Writer)
 }
 
-
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error

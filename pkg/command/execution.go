@@ -6,8 +6,8 @@ import (
 )
 
 type execution struct {
-	cmd *exec.Cmd
-	wg sync.WaitGroup
+	cmd           *exec.Cmd
+	wg            sync.WaitGroup
 	errCopyStdout error
 	errCopyStderr error
 }

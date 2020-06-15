@@ -22,9 +22,9 @@ type ExecMockRunner struct {
 
 type ExecCall struct {
 	Execution *MockExecution
-	Async bool
-	Exec   string
-	Params []string
+	Async     bool
+	Exec      string
+	Params    []string
 }
 
 type MockExecution struct {
@@ -69,7 +69,7 @@ func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (comma
 	c := strings.Join(append([]string{e}, p...), " ")
 
 	err := handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	return &execution, nil
