@@ -114,7 +114,7 @@ func runCiLint(npmExecutor npm.Executor, failOnError bool) error {
 	err := npmExecutor.ExecuteAllScripts()
 	if err != nil {
 		if failOnError {
-			return err
+			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the ci-lint.xml file, if available, or the log above. ", err)
 		}
 	}
 	return nil
@@ -144,7 +144,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 			}
 			if err != nil {
 				if failOnError {
-					return fmt.Errorf("failed to run ESLint with config %s: %w", config, err)
+					return fmt.Errorf("Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (%s), or another issue. Please examine the linting results in the UI or in %s, if available, or the log above. ", config, strconv.Itoa(i)+"_defaultlint.xml")
 				}
 			}
 		}
