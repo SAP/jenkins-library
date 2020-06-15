@@ -187,7 +187,7 @@ func (f *FilesMock) Getwd() (string, error) {
 
 // Chdir changes virtually in to the given directory.
 // The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
-// The implementation is limited
+// The implementation does not support relative path components such as "..".
 func (f *FilesMock) Chdir(path string) error {
 	if path == "." || path == "."+string(os.PathSeparator) {
 		return nil
