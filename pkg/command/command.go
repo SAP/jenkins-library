@@ -95,7 +95,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
-func (c *Command) RunExecutableInBackground(executable string, params ...string) (*exec.Cmd, error) {
+func (c *Command) RunExecutableInBackground(executable string, params ...string) (*Execution, error) {
 
 	_out, _err := prepareOut(c.stdout, c.stderr)
 
@@ -109,10 +109,13 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 
 	appendEnvironment(cmd, c.env)
 
-	if err := startCmd(cmd, _out, _err); err != nil {
+	execution, err := startCmd(cmd, _out, _err)
+
+	if  err != nil {
 		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
 	}
-	return cmd, nil
+
+	return execution, nil
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
@@ -142,30 +145,30 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
-func startCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
+func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*Execution, error) {
 
 	stdout, stderr, err := cmdPipes(cmd)
 
 	if err != nil {
-		return errors.Wrap(err, "getting command pipes failed")
+		return nil, errors.Wrap(err, "getting command pipes failed")
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return errors.Wrap(err, "starting command failed")
+		return nil, errors.Wrap(err, "starting command failed")
 	}
 
-	var errStdout, errStderr error
-
 	go func() {
-		_, errStdout = io.Copy(_out, stdout)
+		io.Copy(_out, stdout)
 	}()
 
 	go func() {
-		_, errStderr = io.Copy(_err, stderr)
+		io.Copy(_err, stderr)
 	}()
 
-	return nil
+	execution := Execution{cmd: cmd}
+
+	return &execution, nil
 }
 
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
