@@ -169,9 +169,11 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 
 	// Ensure m2 path is an absolute path, even if it is given relative
 	// This is important to avoid getting multiple m2 directories in a maven multimodule project
-	options.M2Path, err = filepath.Abs(options.M2Path)
-	if err != nil {
-		return err
+	if options.M2Path != "" {
+		options.M2Path, err = filepath.Abs(options.M2Path)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Set pom path fix here because we will change into the respective pom's directory
