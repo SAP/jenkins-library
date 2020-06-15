@@ -228,7 +228,7 @@ func TestFilesMockGlob(t *testing.T) {
 			assert.Equal(t, matches[0], filepath.Join("dir", "another", "foo.xml"))
 		}
 	})
-	t.Run("match for two levels", func(t *testing.T) {
+	t.Run("match prefix", func(t *testing.T) {
 		matches, err := files.Glob("**/baz*")
 		assert.NoError(t, err)
 		if assert.Len(t, matches, 2) {
