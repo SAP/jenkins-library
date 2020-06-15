@@ -28,7 +28,7 @@ func (u *npmExecuteScriptsMockUtilsBundle) glob(pattern string) ([]string, error
 		}
 	}
 	// The order in m.files is not deterministic, this would result in flaky tests.
-	sort.Sort(byLen(matches))
+	sort.Strings(matches)
 	return matches, nil
 }
 
