@@ -30,7 +30,7 @@ func TestNoRoute(t *testing.T) {
 		if filename == "myManifest.yaml" {
 			return []byte("applications: [{name: 'manifestAppName', no-route: true}]"), nil
 		}
-		return []byte{}, fmt.Errorf("File '%s' not foound", filename)
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
 	manifest, err := ReadManifest("myManifest.yaml")
@@ -54,7 +54,7 @@ func TestTransformGoodCase(t *testing.T) {
 		if filename == "myManifest.yaml" {
 			return []byte("applications: [{name: 'manifestAppName', no-route: true, buildpacks: [sap_java_buildpack]}]"), nil
 		}
-		return []byte{}, fmt.Errorf("File '%s' not foound", filename)
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
 	manifest, err := ReadManifest("myManifest.yaml")
@@ -78,7 +78,7 @@ func TestTransformMultipleBuildPacks(t *testing.T) {
 		if filename == "myManifest.yaml" {
 			return []byte("no-route: true\napplications: [{name: 'manifestAppName', buildpacks: [sap_java_buildpack, 'another_buildpack']}]"), nil
 		}
-		return []byte{}, fmt.Errorf("File '%s' not foound", filename)
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
 	manifest, err := ReadManifest("myManifest.yaml")
@@ -94,7 +94,7 @@ func TestTransformUnchanged(t *testing.T) {
 		if filename == "myManifest.yaml" {
 			return []byte("applications: [{name: 'manifestAppName', no-route: true, buildpack: sap_java_buildpack}]"), nil
 		}
-		return []byte{}, fmt.Errorf("File '%s' not foound", filename)
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
 	manifest, err := ReadManifest("myManifest.yaml")
