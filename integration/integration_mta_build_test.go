@@ -19,13 +19,18 @@ func TestMavenProject(t *testing.T) {
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
-	assert.NoError(t, err, "Getting current working directory failed.")
+	if err != nil {
+		t.Fatalf("Getting current working directory failed: %v", err)
+	}
 	pwd = filepath.Dir(pwd)
 
 	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
 	tempDir, err := createTmpDir("")
 	defer os.RemoveAll(tempDir) // clean up
-	assert.NoError(t, err, "Error when creating temp dir")
+
+	if err != nil {
+		t.Fatalf("Error when creating temp dir: %v", err)
+	}
 
 	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestMtaIntegration", "maven"), tempDir)
 	if err != nil {
@@ -59,8 +64,14 @@ mv mbt /usr/bin
 	})
 
 	code, err := mbtContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
-	assert.NoError(t, err)
-	assert.Equal(t, 0, code)
+
+	if err != nil {
+		t.Fatalf("Script returened error: %v", err)
+	}
+
+	if code != 0 {
+		t.Fatalf("Script returned non-zero exit code: %d", code)
+	}
 
 	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
