@@ -48,11 +48,14 @@ func (f *FilesMock) AddDir(path string) {
 	f.files[f.toAbsPath(path)] = &dirContent
 }
 
+// HasFile returns true if the virtual file system contains an entry for the given path.
 func (f *FilesMock) HasFile(path string) bool {
 	_, exists := f.files[f.toAbsPath(path)]
 	return exists
 }
 
+// HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
+// and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
 	_, exists := f.removedFiles[f.toAbsPath(path)]
 	return exists
