@@ -49,7 +49,7 @@ type System struct {
 	UserToken  string
 }
 
-// Construct and return a new whitesource.System instance
+// NewSystem constructs a new system instance
 func NewSystem(serverUrl, orgToken, userToken string) System {
 	return System{
 		ServerURL:  serverUrl,
@@ -126,7 +126,7 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	return wsResponse.ProjectVitals, nil
 }
 
-//GetProjectToken returns the project token for a project with a given name
+// GetProjectToken returns the project token for a project with a given name
 func (s *System) GetProjectToken(productToken, projectName string) (string, error) {
 	project, err := s.GetProjectByName(productToken, projectName)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 	return project.Token, nil
 }
 
-//GetProjectByName returns the finds and returns a project by name
+// GetProjectByName returns the finds and returns a project by name
 func (s *System) GetProjectByName(productToken, projectName string) (*Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
@@ -172,7 +172,7 @@ func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Pr
 	return projectsMatched, nil
 }
 
-//GetProjectTokens returns the project tokens matching a given a slice of project names
+// GetProjectTokens returns the project tokens matching a given a slice of project names
 func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
 	projectTokens := []string{}
 	projects, err := s.GetProjectsMetaInfo(productToken)
@@ -190,7 +190,7 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 	return projectTokens, nil
 }
 
-//GetProductName returns the product name for a given product token
+// GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
@@ -219,7 +219,7 @@ func (s *System) GetProductName(productToken string) (string, error) {
 	return "", nil
 }
 
-// Get PDF Risk report
+// GetProjectRiskReport
 func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 	req := Request{
 		RequestType:  "getProjectRiskReport",

@@ -3,17 +3,17 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/versioning"
 	"io/ioutil"
-	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/SAP/jenkins-library/pkg/whitesource"
 )
 
@@ -26,20 +26,20 @@ func whitesourceExecuteScan(config whitesourceExecuteScanOptions, telemetryData 
 	c.Stderr(log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runWhitesourceScan(config, sys, telemetryData, &c)
+	err := runWhitesourceScan(&config, sys, telemetryData, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runWhitesourceScan(config whitesourceExecuteScanOptions, sys whitesource.System, telemetryData *telemetry.CustomData, command *command.Command) error {
-	err := resolveProjectIdentifiers(command, &config)
+func runWhitesourceScan(config *whitesourceExecuteScanOptions, sys whitesource.System, telemetryData *telemetry.CustomData, command *command.Command) error {
+	err := resolveProjectIdentifiers(command, config)
 	if err != nil {
 		return err
 	}
 
 	// Start the scan
-	projectsScanned, err := triggerWhitesourceScan(command, &config, sys)
+	projectsScanned, err := triggerWhitesourceScan(command, config, sys)
 	if err != nil {
 		return err
 	}
@@ -51,8 +51,9 @@ func runWhitesourceScan(config whitesourceExecuteScanOptions, sys whitesource.Sy
 	log.Entry().Infof("Project Token: %s", config.ProjectToken)
 	log.Entry().Infof("Number of projects scanned: %v", len(projectsScanned))
 	log.Entry().Info("-----------------------------------------------------")
+
 	if config.Reporting {
-		var links []StepResults.Path
+		var links []piperutils.Path
 		for _, proj := range projectsScanned {
 			proj.Name = strings.Split(proj.Name, " - ")[0]
 			link, err := downloadRiskReport(proj.Token, proj.Name, sys)
@@ -63,7 +64,7 @@ func runWhitesourceScan(config whitesourceExecuteScanOptions, sys whitesource.Sy
 		}
 
 		// publish pdf file locations
-		StepResults.PersistReportsAndLinks("whitesourceExecuteScan", "./", nil, links)
+		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "./", nil, links)
 	}
 	return nil
 }
@@ -78,8 +79,9 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 		return err
 	}
 	projectName, projectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
-
-	config.ProjectName = projectName
+	if config.ProjectName == "" {
+		config.ProjectName = projectName
+	}
 	if config.ProductVersion == "" {
 		config.ProductVersion = projectVersion
 	}
@@ -199,7 +201,7 @@ func executeNpmScan(config whitesourceExecuteScanOptions, command *command.Comma
 		"devDep": true
 	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion))
 
-	err := ioutil.WriteFile("./whitesource.config.json", npmConfig, 0644)
+	err := ioutil.WriteFile("whitesource.config.json", npmConfig, 0644)
 	if err != nil {
 		return err
 	}
@@ -219,8 +221,8 @@ func executeNpmScan(config whitesourceExecuteScanOptions, command *command.Comma
 	return nil
 }
 
-// Download PDF Risk report for a given projectToken and projectName
-func downloadRiskReport(projectToken string, projectName string, sys whitesource.System) (*StepResults.Path, error) {
+// downloadRiskReport downloads a project's risk report and returns a piperutils.Path which link to the file
+func downloadRiskReport(projectToken string, projectName string, sys whitesource.System) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectRiskReport(projectToken)
 	if err != nil {
 		return nil, err
@@ -228,18 +230,18 @@ func downloadRiskReport(projectToken string, projectName string, sys whitesource
 
 	// create report directory if dne
 	reportDir := "whitesource-report"
-	if _, err := os.Stat(reportDir); os.IsNotExist(err) {
-		err = os.Mkdir(reportDir, 0777)
-		if err != nil {
-			return nil, err
-		}
+	utils := piperutils.Files{}
+	err = utils.MkdirAll(reportDir, 0777)
+	if err != nil {
+		return nil, err
 	}
-	reportFileName := fmt.Sprintf("%s/%s-risk-report.pdf", reportDir, projectName)
+
+	reportFileName := filepath.Join(reportDir, projectName+"-risk-report.pdf")
 	err = ioutil.WriteFile(reportFileName, reportBytes, 0644)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Entry().Infof("Successfully downloaded risk report to ./%s", reportFileName)
-	return &StepResults.Path{Name: fmt.Sprintf("%s PDF Risk Report", projectName), Target: reportFileName}, nil
+	log.Entry().Infof("Successfully downloaded risk report to %s", reportFileName)
+	return &piperutils.Path{Name: fmt.Sprintf("%s PDF Risk Report", projectName), Target: reportFileName}, nil
 }

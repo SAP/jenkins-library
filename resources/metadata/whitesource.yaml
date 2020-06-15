@@ -325,16 +325,6 @@ spec:
         - STAGES
         - STEPS
       default: null
-    - name: projectName
-      type: string
-      description: Project name to execute scan on
-      mandatory: false
-      scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      default: null
     - name: vulnerabilityReportTitle
       type: string
       description: Title of vulnerability report written during the assessment phase.

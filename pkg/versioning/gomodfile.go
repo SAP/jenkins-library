@@ -45,7 +45,7 @@ func (m *GoMod) init() error {
 	return nil
 }
 
-// GetVersion returns the Pip descriptor version property
+// GetVersion returns the go.mod descriptor version property
 func (m *GoMod) GetVersion() (string, error) {
 	buildDescriptorFilePath := m.path
 	var err error
@@ -75,7 +75,7 @@ func (m *GoMod) GetVersion() (string, error) {
 	return artifact.GetVersion()
 }
 
-// SetVersion sets the Pip descriptor version property
+// SetVersion sets the go.mod descriptor version property
 func (m *GoMod) SetVersion(v string) error {
 	return nil
 }
@@ -103,8 +103,8 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 	}
 	if parsed.Module.Mod.Path != "" {
 		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
-		artifactId := artifactSplit[len(artifactSplit)-1]
-		descriptor.ArtifactID = artifactId
+		artifactID := artifactSplit[len(artifactSplit)-1]
+		descriptor.ArtifactID = artifactID
 	}
 	descriptor.Version = parsed.Module.Mod.Version
 	if descriptor.Version == "" {

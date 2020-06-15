@@ -82,10 +82,10 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 
 		switch buildDescriptorFilePath {
 		case "go.mod":
-			artifact = &GoMod { path: buildDescriptorFilePath }
+			artifact = &GoMod{path: buildDescriptorFilePath}
 			break
 		default:
-			artifact = &Versionfile{ path: buildDescriptorFilePath }
+			artifact = &Versionfile{path: buildDescriptorFilePath}
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {
