@@ -44,7 +44,8 @@ apt-get -yqq update; apt-get -yqq install make
 curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 mv mbt /usr/bin
-/piperbin/piper mtaBuild >test-log.txt 2>&1
+mkdir mym2
+/piperbin/piper mtaBuild --m2Path=mym2 >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -75,9 +76,9 @@ mv mbt /usr/bin
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
-	assert.Contains(t, output, "Installing /test/pom.xml to /root/.m2/repository/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
-	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /root/.m2/repository/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
-	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /root/.m2/repository/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
+	assert.Contains(t, output, "Installing /test/pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
+	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
+	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
 }
 
 func TestNPMProject(t *testing.T) {
