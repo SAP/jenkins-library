@@ -110,6 +110,69 @@ func TestTransformUnchanged(t *testing.T) {
 	assert.False(t, manifest.HasModified())
 }
 
+func TestGetManifestName(t *testing.T) {
+
+	_readFile = func(filename string) ([]byte, error) {
+		if filename == "myManifest.yaml" {
+			return []byte("applications: [{name: 'firstApp'}]"), nil
+		}
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
+	}
+
+	manifest, err := ReadManifest("myManifest.yaml")
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, "myManifest.yaml", manifest.GetName())
+	}
+}
+
+func TestApplicationHasProperty(t *testing.T) {
+
+	_readFile = func(filename string) ([]byte, error) {
+		if filename == "myManifest.yaml" {
+			return []byte("applications: [{name: 'firstApp'}]"), nil
+		}
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
+	}
+
+	manifest, err := ReadManifest("myManifest.yaml")
+
+	if assert.NoError(t, err) {
+
+		t.Run("Property exists", func(t *testing.T) {
+			hasProp, err := manifest.ApplicationHasProperty(0, "name")
+			if assert.NoError(t, err) {
+				assert.True(t, hasProp)
+			}
+		})
+
+		t.Run("Property does not exist", func(t *testing.T) {
+			hasProp, err := manifest.ApplicationHasProperty(0, "foo")
+			if assert.NoError(t, err) {
+				assert.False(t, hasProp)
+			}
+		})
+		t.Run("Index out of bounds", func(t *testing.T) {
+			_, err := manifest.ApplicationHasProperty(1, "foo")
+			assert.EqualError(t, err, "Index (1) out of bound. Number of apps: 1")
+		})
+	}
+}
+
+func TestGetApplicationsWhenNoApplicationNoIsPresent(t *testing.T) {
+
+	_readFile = func(filename string) ([]byte, error) {
+		if filename == "myManifest.yaml" {
+			return []byte("noApps: true"), nil
+		}
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
+	}
+
+	manifest, err := ReadManifest("myManifest.yaml")
+	_, err = manifest.GetApplications()
+
+	assert.EqualError(t, err, "Failed to convert <nil> to slice. Was <nil>")
+}
 func TestGetApplications(t *testing.T) {
 
 	_readFile = func(filename string) ([]byte, error) {
@@ -122,10 +185,10 @@ func TestGetApplications(t *testing.T) {
 	manifest, err := ReadManifest("myManifest.yaml")
 	apps, err := manifest.GetApplications()
 
-	if(assert.NoError(t, err)) {
+	if assert.NoError(t, err) {
 		assert.Len(t, apps, 2)
-		assert.Equal(t, map[string]interface{} {"name": "firstApp"}, apps[0])
-		assert.Equal(t, map[string]interface{} {"name": "secondApp"}, apps[1])
+		assert.Equal(t, map[string]interface{}{"name": "firstApp"}, apps[0])
+		assert.Equal(t, map[string]interface{}{"name": "secondApp"}, apps[1])
 
 	}
 }
