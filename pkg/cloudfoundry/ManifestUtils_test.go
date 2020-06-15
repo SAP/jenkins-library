@@ -109,3 +109,23 @@ func TestTransformUnchanged(t *testing.T) {
 	assert.EqualError(t, err, "No such property: 'buildpacks' available in application at position 0")
 	assert.False(t, manifest.HasModified())
 }
+
+func TestGetApplications(t *testing.T) {
+
+	_readFile = func(filename string) ([]byte, error) {
+		if filename == "myManifest.yaml" {
+			return []byte("applications: [{name: 'firstApp'}, {name: 'secondApp'}]"), nil
+		}
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
+	}
+
+	manifest, err := ReadManifest("myManifest.yaml")
+	apps, err := manifest.GetApplications()
+
+	if(assert.NoError(t, err)) {
+		assert.Len(t, apps, 2)
+		assert.Equal(t, map[string]interface{} {"name": "firstApp"}, apps[0])
+		assert.Equal(t, map[string]interface{} {"name": "secondApp"}, apps[1])
+
+	}
+}

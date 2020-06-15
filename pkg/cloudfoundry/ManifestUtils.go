@@ -74,7 +74,7 @@ func (m Manifest) GetName() string {
 
 // GetApplications ...
 func (m Manifest) GetApplications() ([]interface{}, error) {
-	return toSlice(m.self)
+	return toSlice(m.self["applications"])
 }
 
 // ApplicationHasProperty Checks if the application denoted by 'index' has the property 'name'
