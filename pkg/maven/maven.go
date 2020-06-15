@@ -166,7 +166,7 @@ func InstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions) err
 }
 
 func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, utils mavenUtils) error {
-	err := flattenPom(command)
+	err := flattenPom(command, options)
 	if err != nil {
 		return err
 	}
@@ -268,11 +268,12 @@ func warFile(finalName string) string {
 	return "target/" + finalName + ".war"
 }
 
-func flattenPom(command mavenExecRunner) error {
+func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
 	mavenOptionsFlatten := ExecuteOptions{
 		Goals:   []string{"flatten:flatten"},
 		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
 		PomPath: "pom.xml",
+		M2Path:  o.M2Path,
 	}
 	_, err := Execute(&mavenOptionsFlatten, command)
 	return err
