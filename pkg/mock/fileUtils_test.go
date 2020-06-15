@@ -71,7 +71,16 @@ func TestFilesMockDirExists(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
-
+	t.Run("absolute dir exists after AddDir()", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("some", "path")
+		files.AddDir(path)
+		err := files.Chdir("some")
+		assert.NoError(t, err)
+		exists, err := files.DirExists(string(os.PathSeparator) + path)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
 	t.Run("parent dirs exists after AddFile()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("path", "to", "some", "file")

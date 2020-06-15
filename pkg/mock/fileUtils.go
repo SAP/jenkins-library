@@ -76,7 +76,6 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 
 // DirExists returns true, if the given path is a previously added directory, or a parent directory for any of the
 // previously added files.
-// Only relative paths are supported.
 func (f *FilesMock) DirExists(path string) (bool, error) {
 	path = f.toAbsPath(path)
 	for entry, content := range f.files {
