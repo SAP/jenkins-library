@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"os"
 )
 
 func TestReadManifest(t *testing.T) {
@@ -208,6 +209,49 @@ func TestGetApplications(t *testing.T) {
 	}
 }
 
+func TestWriteManifest(t *testing.T) {
+
+	var _content string
+
+	_readFile = func(filename string) ([]byte, error) {
+		if filename == "myManifest.yaml" {
+			return []byte("applications: [{name: 'manifestAppName', no-route: true, buildpacks: [sap_java_buildpack]}]"), nil
+		}
+		return []byte{}, fmt.Errorf("File '%s' not found", filename)
+	}
+
+	_writeFile = func(name string, content []byte, mode os.FileMode) error {
+
+		_content = string(content)
+		return nil
+	}
+
+	defer cleanup()
+
+	manifest, err := ReadManifest("myManifest.yaml")
+	if !assert.NoError(t, err) {
+		assert.FailNow(t, "Cannot read manifest")
+	}
+
+	err = manifest.Transform()
+
+	if !assert.True(t, manifest.IsModified()) {
+		assert.FailNow(t, "Manifest claims to be unchanged, but should have been changed.")
+	}
+
+	manifest.WriteManifest()
+
+	// after saving it is considered unchanged again.
+	t.Run("Unchanged flag", func(t *testing.T) {
+		assert.False(t, manifest.IsModified())
+	})
+
+	t.Run("Check content", func(t *testing.T) {
+		assert.Equal(t, "applications:\n- buildpack: sap_java_buildpack\n  name: manifestAppName\n  no-route: true\n", _content)
+	})
+}
+
 func cleanup() {
 	_readFile = ioutil.ReadFile
+	_writeFile = ioutil.WriteFile
 }

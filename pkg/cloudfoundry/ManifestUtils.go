@@ -22,6 +22,7 @@ type Manifest struct {
 }
 
 var _readFile = ioutil.ReadFile
+var _writeFile = ioutil.WriteFile
 
 // ReadManifest ...
 func ReadManifest(name string) (Manifest, error) {
@@ -55,7 +56,7 @@ func (m *Manifest) WriteManifest() error {
 	}
 
 	log.Entry().Debugf("Writing manifest file '%s'", m.name)
-	err = ioutil.WriteFile(m.name, d, 0644)
+	err = _writeFile(m.name, d, 0644)
 
 	if err == nil {
 		m.modified = false
