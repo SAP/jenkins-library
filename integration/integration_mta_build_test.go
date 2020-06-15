@@ -68,14 +68,10 @@ mv mbt /usr/bin
 	if err != nil {
 		t.Fatalf("Script returened error: %v", err)
 	}
-
-	if code != 0 {
-		t.Fatalf("Script returned non-zero exit code: %d", code)
-	}
+	assert.Equal(t, 0, code)
 
 	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
-		mbtContainer.Exec(ctx, []string{"sh", "find", "/tmp"})
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
@@ -138,14 +134,10 @@ mv mbt /usr/bin
 	if err != nil {
 		t.Fatalf("Script returened error: %v", err)
 	}
-
-	if code != 0 {
-		t.Fatalf("Script returned non-zero exit code: %d", code)
-	}
+	assert.Equal(t, 0, code)
 
 	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
-		mbtContainer.Exec(ctx, []string{"sh", "find", "/tmp"})
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)

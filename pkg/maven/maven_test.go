@@ -179,6 +179,7 @@ func TestGetTestModulesExcludes(t *testing.T) {
 }
 
 func TestMavenInstall(t *testing.T) {
+	t.Parallel()
 	t.Run("Should return path to jar file", func(t *testing.T) {
 		actual := jarFile("my-app")
 		assert.Equal(t, "target/my-app.jar", actual)
