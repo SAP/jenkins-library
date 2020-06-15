@@ -207,6 +207,7 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 func (m Manifest) HasModified() bool {
 	return m.modified
 }
+
 func toMap(i interface{}) (map[string]interface{}, error) {
 
 	if m, ok := i.(map[string]interface{}); ok {
