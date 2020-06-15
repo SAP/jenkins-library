@@ -77,7 +77,7 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 		if err != nil {
 			return fmt.Errorf("failed to start virual fram buffer%w", err)
 		}
-		defer cmd.Process.Kill()
+		defer cmd.Kill()
 		execRunner.SetEnv([]string{"DISPLAY=:99"})
 	}
 

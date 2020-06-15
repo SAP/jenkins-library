@@ -3,6 +3,7 @@
 package mock
 
 import (
+	"github.com/SAP/jenkins-library/pkg/command"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -57,7 +58,7 @@ func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
 }
 
-func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (*MockExecution, error) {
+func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (command.CommandExecution, error) {
 
 	exec := ExecCall{Exec: e, Params: p}
 	m.Calls = append(m.Calls, exec)

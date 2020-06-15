@@ -95,7 +95,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 // RunExecutable runs the specified executable with parameters
 // !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
 //    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
-func (c *Command) RunExecutableInBackground(executable string, params ...string) (*Execution, error) {
+func (c *Command) RunExecutableInBackground(executable string, params ...string) (CommandExecution, error) {
 
 	_out, _err := prepareOut(c.stdout, c.stderr)
 

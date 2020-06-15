@@ -13,3 +13,8 @@ func (execution *Execution) Kill() error {
 func (execution *Execution) Wait() error {
 	return execution.cmd.Wait()
 }
+
+type CommandExecution interface {
+	Kill() error
+	Wait() error
+}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/command"
 	"io"
 )
 
@@ -11,15 +12,11 @@ type runner interface {
 	Stderr(err io.Writer)
 }
 
-type execRunnerExecution interface {
-	Kill() error
-	Wait() error
-}
 
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error
-	RunExecutableInBackground(executable string, params ...string) (*execRunnerExecution, error)
+	RunExecutableInBackground(executable string, params ...string) (command.CommandExecution, error)
 }
 
 type shellRunner interface {
