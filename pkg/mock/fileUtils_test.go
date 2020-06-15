@@ -187,3 +187,58 @@ func TestFilesMockGetwd(t *testing.T) {
 		assert.Equal(t, string(os.PathSeparator)+filepath.Join(dirChain...), dir)
 	})
 }
+
+func TestFilesMockGlob(t *testing.T) {
+	t.Parallel()
+
+	files := FilesMock{}
+	content := []byte("dummy content")
+	files.AddFile(filepath.Join("dir", "foo.xml"), content)
+	files.AddFile(filepath.Join("dir", "another", "foo.xml"), content)
+	files.AddFile(filepath.Join("dir", "baz"), content)
+	files.AddFile(filepath.Join("baz.xml"), content)
+
+	t.Run("one match in root-dir", func(t *testing.T) {
+		matches, err := files.Glob("*.xml")
+		assert.NoError(t, err)
+		if assert.Len(t, matches, 1) {
+			assert.Equal(t, matches[0], "baz.xml")
+		}
+	})
+	t.Run("three matches in all levels", func(t *testing.T) {
+		matches, err := files.Glob("**/*.xml")
+		assert.NoError(t, err)
+		if assert.Len(t, matches, 3) {
+			assert.Equal(t, matches[0], "baz.xml")
+			assert.Equal(t, matches[1], filepath.Join("dir", "another", "foo.xml"))
+			assert.Equal(t, matches[2], filepath.Join("dir", "foo.xml"))
+		}
+	})
+	t.Run("match only in sub-dir", func(t *testing.T) {
+		matches, err := files.Glob("*/*.xml")
+		assert.NoError(t, err)
+		if assert.Len(t, matches, 1) {
+			assert.Equal(t, matches[1], filepath.Join("dir", "foo.xml"))
+		}
+	})
+	t.Run("match for two levels", func(t *testing.T) {
+		matches, err := files.Glob("*/*/*.xml")
+		assert.NoError(t, err)
+		if assert.Len(t, matches, 1) {
+			assert.Equal(t, matches[0], filepath.Join("dir", "another", "foo.xml"))
+		}
+	})
+	t.Run("match for two levels", func(t *testing.T) {
+		matches, err := files.Glob("**/baz*")
+		assert.NoError(t, err)
+		if assert.Len(t, matches, 2) {
+			assert.Equal(t, matches[0], filepath.Join("baz.xml"))
+			assert.Equal(t, matches[1], filepath.Join("dir", "baz"))
+		}
+	})
+	t.Run("no matches", func(t *testing.T) {
+		matches, err := files.Glob("**/*bar*")
+		assert.NoError(t, err)
+		assert.Len(t, matches, 0)
+	})
+}
