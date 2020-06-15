@@ -75,10 +75,10 @@ func TestGetArtifact(t *testing.T) {
 
 		theType, ok := maven.(*Maven)
 		assert.True(t, ok)
-		assert.Equal(t, "pom.xml", theType.pomPath)
-		assert.Equal(t, opts.ProjectSettingsFile, theType.projectSettingsFile)
-		assert.Equal(t, opts.GlobalSettingsFile, theType.globalSettingsFile)
-		assert.Equal(t, opts.M2Path, theType.m2Path)
+		assert.Equal(t, "pom.xml", theType.options.PomPath)
+		assert.Equal(t, opts.ProjectSettingsFile, theType.options.ProjectSettingsFile)
+		assert.Equal(t, opts.GlobalSettingsFile, theType.options.GlobalSettingsFile)
+		assert.Equal(t, opts.M2Path, theType.options.M2Path)
 		assert.Equal(t, "maven", maven.VersioningScheme())
 	})
 
