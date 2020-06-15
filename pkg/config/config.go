@@ -107,7 +107,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 	for _, stepAlias := range stepAliases {
 		if c.Steps[stepAlias.Name] != nil {
 			if stepAlias.Deprecated {
-				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step configuration used for step '%v'. Please switch to '%v'!", stepAlias.Name, stepName)
+				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: step configuration available for deprecated step '%v'. Please remove or move configuration to step '%v'!", stepAlias.Name, stepName)
 			}
 			for paramName, paramValue := range c.Steps[stepAlias.Name] {
 				if c.Steps[stepName] == nil {
