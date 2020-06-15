@@ -173,9 +173,9 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 
 	appName := "n/a"
 
-	if n, ok := app["name"].(string); ok {
-		if len(n) > 0 {
-			appName = n
+	if name, ok := app["name"].(string); ok {
+		if len(name) > 0 {
+			appName = name
 		}
 	}
 
