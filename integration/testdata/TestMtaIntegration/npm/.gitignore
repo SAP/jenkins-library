@@ -1,4 +1,3 @@
-# CAP bookshop-mta-js
 _out
 *.db
 connection.properties
@@ -6,27 +5,17 @@ default-*.json
 node_modules/
 package-lock.json
 target/
-
-# Web IDE, App Studio
 .che/
 .gen/
-
-# MTA
 *_mta_build_tmp
 *.mtar
 mta_archives/
 Makefile_*.mta
-
-# Other
 .DS_Store
 *.orig
 *.log
-
 .pipeline
-
 mtaBuild_errorDetails.json
 test-mta-js.mtar
-
 .nyc_output/
-
 s4hana_pipeline
