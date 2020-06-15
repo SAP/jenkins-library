@@ -72,7 +72,7 @@ func TestTransformGoodCase(t *testing.T) {
 
 	assert.Equal(t, "sap_java_buildpack", buildpack)
 	assert.Equal(t, "", buildpacks)
-	assert.True(t, manifest.HasModified())
+	assert.True(t, manifest.IsModified())
 
 }
 
@@ -114,7 +114,7 @@ func TestTransformUnchanged(t *testing.T) {
 	_, err = manifest.GetApplicationProperty(0, "buildpacks")
 	assert.Equal(t, "sap_java_buildpack", buildpack)
 	assert.EqualError(t, err, "No such property: 'buildpacks' available in application at position 0")
-	assert.False(t, manifest.HasModified())
+	assert.False(t, manifest.IsModified())
 }
 
 func TestGetManifestName(t *testing.T) {

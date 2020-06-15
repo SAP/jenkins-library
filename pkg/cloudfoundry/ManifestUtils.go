@@ -203,8 +203,8 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 	return nil
 }
 
-// HasModified ...
-func (m Manifest) HasModified() bool {
+// IsModified ...
+func (m Manifest) IsModified() bool {
 	return m.modified
 }
 
