@@ -3,10 +3,8 @@ package maven
 import (
 	"bytes"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -47,9 +45,9 @@ type mavenExecRunner interface {
 type mavenUtils interface {
 	FileExists(path string) (bool, error)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	glob(pattern string) (matches []string, err error)
-	getwd() (dir string, err error)
-	chdir(dir string) error
+	Glob(pattern string) (matches []string, err error)
+	Getwd() (dir string, err error)
+	Chdir(dir string) error
 }
 
 type utilsBundle struct {
@@ -62,18 +60,6 @@ func newUtils() *utilsBundle {
 		Client: &piperhttp.Client{},
 		Files:  &piperutils.Files{},
 	}
-}
-
-func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
-}
-
-func (u *utilsBundle) getwd() (dir string, err error) {
-	return os.Getwd()
-}
-
-func (u *utilsBundle) chdir(dir string) error {
-	return os.Chdir(dir)
 }
 
 const mavenExecutable = "mvn"
@@ -171,12 +157,12 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 		return err
 	}
 
-	pomFiles, err := utils.glob(filepath.Join("**", "pom.xml"))
+	pomFiles, err := utils.Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		return err
 	}
 
-	oldWorkingDirectory, err := utils.getwd()
+	oldWorkingDirectory, err := utils.Getwd()
 	if err != nil {
 		return err
 	}
@@ -186,7 +172,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 	for _, pomFile := range pomFiles {
 		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
 		dir := path.Dir(pomFile)
-		err = utils.chdir(dir)
+		err = utils.Chdir(dir)
 		if err != nil {
 			return err
 		}
@@ -208,7 +194,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 			}
 		}
 
-		err = utils.chdir(oldWorkingDirectory)
+		err = utils.Chdir(oldWorkingDirectory)
 		if err != nil {
 			return err
 		}
