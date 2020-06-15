@@ -40,11 +40,7 @@ func TestNoRoute(t *testing.T) {
 
 	noRoute, err := manifest.GetApplicationProperty(0, "no-route")
 	if assert.NoError(t, err) {
-		noRouteAsBool, ok := noRoute.(bool)
-
-		if assert.True(t, ok) && assert.NoError(t, err) {
-			assert.True(t, noRouteAsBool)
-		}
+		assert.Equal(t, noRoute, true)
 	}
 }
 
