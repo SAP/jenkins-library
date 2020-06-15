@@ -15,7 +15,7 @@ type runner interface {
 type execRunner interface {
 	runner
 	RunExecutable(e string, p ...string) error
-	RunExecutableInBackground(executable string, params ...string) (command.CommandExecution, error)
+	RunExecutableInBackground(executable string, params ...string) (command.Execution, error)
 }
 
 type shellRunner interface {

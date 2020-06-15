@@ -21,13 +21,13 @@ type ExecMockRunner struct {
 }
 
 type ExecCall struct {
-	Execution *MockExecution
+	Execution *Execution
 	Async     bool
 	Exec      string
 	Params    []string
 }
 
-type MockExecution struct {
+type Execution struct {
 	Killed bool
 }
 
@@ -60,9 +60,9 @@ func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
 }
 
-func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (command.CommandExecution, error) {
+func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (command.Execution, error) {
 
-	execution := MockExecution{}
+	execution := Execution{}
 	exec := ExecCall{Exec: e, Params: p, Async: true, Execution: &execution}
 	m.Calls = append(m.Calls, exec)
 
@@ -103,12 +103,12 @@ func (m *ShellMockRunner) RunShell(s string, c string) error {
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
 }
 
-func (e *MockExecution) Kill() error {
+func (e *Execution) Kill() error {
 	e.Killed = true
 	return nil
 }
 
-func (e *MockExecution) Wait() error {
+func (e *Execution) Wait() error {
 	return nil
 }
 

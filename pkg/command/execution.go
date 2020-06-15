@@ -21,7 +21,8 @@ func (execution *execution) Wait() error {
 	return execution.cmd.Wait()
 }
 
-type CommandExecution interface {
+// Execution references a background process which is started by RunExecutableInBackground
+type Execution interface {
 	Kill() error
 	Wait() error
 }
