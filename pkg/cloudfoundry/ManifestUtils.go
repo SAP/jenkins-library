@@ -21,8 +21,6 @@ type Manifest struct {
 	name     string
 }
 
-var m Manifest
-
 var _readFile = ioutil.ReadFile
 
 // ReadManifest ...
