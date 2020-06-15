@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 )
 
 func TestReadManifest(t *testing.T) {
@@ -15,6 +16,8 @@ func TestReadManifest(t *testing.T) {
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
+
+	defer cleanup()
 
 	manifest, err := ReadManifest("myManifest.yaml")
 
@@ -32,6 +35,8 @@ func TestNoRoute(t *testing.T) {
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
+
+	defer cleanup()
 
 	manifest, err := ReadManifest("myManifest.yaml")
 	if !assert.NoError(t, err) {
@@ -52,6 +57,8 @@ func TestTransformGoodCase(t *testing.T) {
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
+
+	defer cleanup()
 
 	manifest, err := ReadManifest("myManifest.yaml")
 	assert.NoError(t, err)
@@ -77,6 +84,8 @@ func TestTransformMultipleBuildPacks(t *testing.T) {
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
+	defer cleanup()
+
 	manifest, err := ReadManifest("myManifest.yaml")
 	assert.NoError(t, err)
 
@@ -92,6 +101,8 @@ func TestTransformUnchanged(t *testing.T) {
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
+
+	defer cleanup()
 
 	manifest, err := ReadManifest("myManifest.yaml")
 	assert.NoError(t, err)
@@ -115,6 +126,8 @@ func TestGetManifestName(t *testing.T) {
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
+	defer cleanup()
+
 	manifest, err := ReadManifest("myManifest.yaml")
 
 	if assert.NoError(t, err) {
@@ -130,6 +143,8 @@ func TestApplicationHasProperty(t *testing.T) {
 		}
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
+
+	defer cleanup()
 
 	manifest, err := ReadManifest("myManifest.yaml")
 
@@ -164,6 +179,8 @@ func TestGetApplicationsWhenNoApplicationNoIsPresent(t *testing.T) {
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
+	defer cleanup()
+
 	manifest, err := ReadManifest("myManifest.yaml")
 	_, err = manifest.GetApplications()
 
@@ -178,6 +195,8 @@ func TestGetApplications(t *testing.T) {
 		return []byte{}, fmt.Errorf("File '%s' not found", filename)
 	}
 
+	defer cleanup()
+
 	manifest, err := ReadManifest("myManifest.yaml")
 	apps, err := manifest.GetApplications()
 
@@ -187,4 +206,8 @@ func TestGetApplications(t *testing.T) {
 		assert.Equal(t, map[string]interface{}{"name": "secondApp"}, apps[1])
 
 	}
+}
+
+func cleanup() {
+	_readFile = ioutil.ReadFile
 }
