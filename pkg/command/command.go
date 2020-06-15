@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
-
-	"github.com/pkg/errors"
 )
 
 // Command defines the information required for executing a call to any executable
@@ -145,7 +143,7 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
-func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*Execution, error) {
+func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*execution, error) {
 
 	stdout, stderr, err := cmdPipes(cmd)
 
@@ -158,54 +156,34 @@ func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*Execution, error) {
 		return nil, errors.Wrap(err, "starting command failed")
 	}
 
+	execution := execution{cmd: cmd}
+	execution.wg.Add(2)
+
 	go func() {
-		io.Copy(_out, stdout)
+		_, execution.errCopyStdout = io.Copy(_out, stdout)
+		execution.wg.Done()
 	}()
 
 	go func() {
-		io.Copy(_err, stderr)
+		_, execution.errCopyStderr = io.Copy(_err, stderr)
+		execution.wg.Done()
 	}()
-
-	execution := Execution{cmd: cmd}
 
 	return &execution, nil
 }
 
 func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
 
-	stdout, stderr, err := cmdPipes(cmd)
-
+	execution, err := startCmd(cmd, _out, _err)
 	if err != nil {
-		return errors.Wrap(err, "getting command pipes failed")
+		return err
 	}
 
-	err = cmd.Start()
-	if err != nil {
-		return errors.Wrap(err, "starting command failed")
+	err = execution.Wait()
+
+	if execution.errCopyStdout != nil || execution.errCopyStderr != nil {
+		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", execution.errCopyStdout, execution.errCopyStderr)
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	var errStdout, errStderr error
-
-	go func() {
-		_, errStdout = io.Copy(_out, stdout)
-		wg.Done()
-	}()
-
-	go func() {
-		_, errStderr = io.Copy(_err, stderr)
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	if errStdout != nil || errStderr != nil {
-		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", errStdout, errStderr)
-	}
-
-	err = cmd.Wait()
 
 	if err != nil {
 		return errors.Wrap(err, "cmd.Run() failed")
