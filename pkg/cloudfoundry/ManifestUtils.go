@@ -10,9 +10,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-const propApplications = "applications"
-const propBuildpacks = "buildpacks"
-const propBuildpack = "buildpack"
+const constPropApplications = "applications"
+const constPropBuildpacks = "buildpacks"
+const constPropBuildpack = "buildpack"
 
 // Manifest ...
 type Manifest struct {
@@ -79,7 +79,7 @@ func (m Manifest) GetApplications() ([]interface{}, error) {
 // ApplicationHasProperty Checks if the application denoted by 'index' has the property 'name'
 func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 
-	sliced, err := toSlice(m.self[propApplications])
+	sliced, err := toSlice(m.self[constPropApplications])
 
 	if err != nil {
 		return false, err
@@ -103,7 +103,7 @@ func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 // GetApplicationProperty ...
 func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
 
-	sliced, err := toSlice(m.self[propApplications])
+	sliced, err := toSlice(m.self[constPropApplications])
 
 	if err != nil {
 		return "", err
@@ -147,7 +147,7 @@ func (m Manifest) GetAppName(index int) (string, error) {
 // deleted.
 func (m *Manifest) Transform() error {
 
-	sliced, err := toSlice(m.self[propApplications])
+	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
 		return err
 	}
@@ -178,14 +178,14 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 		}
 	}
 
-	if app[propBuildpacks] == nil {
+	if app[constPropBuildpacks] == nil {
 		// Revisit: not sure if a build pack is mandatory.
 		// In that case we should check that app.buildpack
 		// is present.
 		return nil
 	}
 
-	buildPacks, err := toSlice(app[propBuildpacks])
+	buildPacks, err := toSlice(app[constPropBuildpacks])
 
 	if err != nil {
 		return err
@@ -196,8 +196,8 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 	}
 
 	if len(buildPacks) == 1 {
-		app[propBuildpack] = buildPacks[0]
-		delete(app, propBuildpacks)
+		app[constPropBuildpack] = buildPacks[0]
+		delete(app, constPropBuildpacks)
 		m.modified = true
 	}
 
