@@ -145,7 +145,25 @@ func TestFilesMockCopy(t *testing.T) {
 	})
 }
 
-func TestFilesMockMkdirAll(t *testing.T) {
+func TestFilesMockFileRemove(t *testing.T) {
+	t.Parallel()
+	t.Run("fail to remove non-existing file", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("some", "file")
+		err := files.FileRemove(path)
+		assert.EqualError(t, err, "the file '"+path+"' does not exist: file does not exist")
+		assert.False(t, files.HasRemovedFile(path))
+	})
+	t.Run("track removing a file", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("some", "file")
+		files.AddFile(path, []byte("dummy content"))
+		assert.True(t, files.HasFile(path))
+		err := files.FileRemove(path)
+		assert.NoError(t, err)
+		assert.False(t, files.HasFile(path))
+		assert.True(t, files.HasRemovedFile(path))
+	})
 }
 
 func TestFilesMockGetwd(t *testing.T) {
