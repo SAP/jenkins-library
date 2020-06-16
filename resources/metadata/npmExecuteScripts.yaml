@@ -38,6 +38,13 @@ spec:
           - STAGES
           - STEPS
         default: https://npm.sap.com
+      - name: virtualFrameBuffer
+        type: bool
+        description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: node
       image: node:12-buster-slim
