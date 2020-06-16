@@ -9,7 +9,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    /** Runs npm scripts to run generic integration tests written on java script */
+    /** Runs npm scripts to run generic integration tests written on JavaScript */
     'npmExecuteScripts',
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
     'testsPublishResults',
