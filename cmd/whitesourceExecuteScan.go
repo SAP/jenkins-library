@@ -78,12 +78,14 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 	if err != nil {
 		return err
 	}
-	projectName, projectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
-	if config.ProjectName == "" {
-		config.ProjectName = projectName
-	}
-	if config.ProductVersion == "" {
-		config.ProductVersion = projectVersion
+	if config.ProjectName == "" || config.ProductVersion == "" {
+		projectName, projectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
+		if config.ProjectName == "" {
+			config.ProjectName = projectName
+		}
+		if config.ProductVersion == "" {
+			config.ProductVersion = projectVersion
+		}
 	}
 	return nil
 }
