@@ -132,8 +132,9 @@ func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, e
 		return nil, err
 	}
 
-	if app[name] != nil {
-		return app[name], nil
+	value, exists := app[name]
+	if exists {
+		return value, nil
 	}
 
 	return nil, fmt.Errorf("No such property: '%s' available in application at position %d", name, index)
