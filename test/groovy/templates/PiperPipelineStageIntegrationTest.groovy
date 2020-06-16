@@ -47,7 +47,7 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(hasItems('npmExecuteScripts', 'testsPublishResults')))
+        assertThat(stepsCalled, not(anyOf(hasItem('npmExecuteScripts'), hasItem('testsPublishResults'))))
     }
 
     @Test
