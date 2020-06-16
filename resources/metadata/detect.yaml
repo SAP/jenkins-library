@@ -111,6 +111,6 @@ spec:
         - STAGES
         - STEPS
   containers:
-    - name: curl
-      image: curlimages/curl:latest
-      workingDir: /home/curl_user
+    - name: openjdk
+      image: openjdk:11
+      workingDir: /root
