@@ -9,7 +9,6 @@ import (
 )
 
 func TestFileExists(t *testing.T) {
-	t.Parallel()
 	runInTempDir(t, "testing dir returns false", "dir", func(t *testing.T) {
 		err := os.Mkdir("test", 0777)
 		if err != nil {
