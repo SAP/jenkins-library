@@ -72,7 +72,7 @@ func TestTransformGoodCase(t *testing.T) {
 	buildpacks, err := manifest.GetApplicationProperty(0, "buildpacks")
 
 	assert.Equal(t, "sap_java_buildpack", buildpack)
-	assert.Equal(t, "", buildpacks)
+	assert.Equal(t, nil, buildpacks)
 	assert.True(t, manifest.IsModified())
 
 }
