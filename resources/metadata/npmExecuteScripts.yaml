@@ -40,7 +40,7 @@ spec:
         default: https://npm.sap.com
       - name: virtualFrameBuffer
         type: bool
-        description: Run the scripts in a virtual frame buffer.
+        description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.
         scope:
           - PARAMETERS
           - STAGES
