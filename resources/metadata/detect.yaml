@@ -111,6 +111,6 @@ spec:
         - STAGES
         - STEPS
   containers:
-    - name: mvn
-      image: maven:3.6-jdk-8
-      workingDir: .
+    - name: debian
+      image: debian:stretch
+      workingDir: /root
