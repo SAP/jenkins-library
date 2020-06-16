@@ -1,0 +1,7 @@
+app/target
+app/.pipeline
+mtaBuild_errorDetails.json
+foo.mtar
+.flattened-pom.xml
+.pipeline/
+mym2

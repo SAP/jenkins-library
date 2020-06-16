@@ -1,0 +1,16 @@
+_schema-version: '3.1'
+ID: test-mta-js
+version: 1.0.0
+
+build-parameters:
+  before-all:
+   - builder: custom
+     commands:
+      - npm install
+      - npm run-script ci-backend-unit-test
+      - npm run-script ci-it-backend
+
+modules:
+ - name: test-mta-js-srv
+   type: nodejs
+   path: gen/srv

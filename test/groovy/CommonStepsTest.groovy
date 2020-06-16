@@ -138,6 +138,9 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsCreateRepository', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
+        'containerSaveImage', //implementing new golang pattern without fields
+        'detectExecuteScan' //implementing new golang pattern without fields
+
     ]
 
     @Test

@@ -85,5 +85,5 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
-      dockerWorkspace: '/home/piper'
+      workingDir: '/home/piper'
       imagePullPolicy: Never
