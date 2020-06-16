@@ -34,11 +34,12 @@ type ExecutorOptions struct {
 	RunOptions         []string
 	DefaultNpmRegistry string
 	SapNpmRegistry     string
+	VirtualFrameBuffer bool
 	ExecRunner         execRunner
 }
 
 // NewExecutor instantiates execute struct and sets executeOptions
-func NewExecutor(executorOptions ExecutorOptions) (*execute, error) {
+func NewExecutor(executorOptions ExecutorOptions) (Executor, error) {
 	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
 	executeOptions := executeOptions{
 		install:            executorOptions.Install,
@@ -46,6 +47,7 @@ func NewExecutor(executorOptions ExecutorOptions) (*execute, error) {
 		runOptions:         executorOptions.RunOptions,
 		defaultNpmRegistry: executorOptions.DefaultNpmRegistry,
 		sapNpmRegistry:     executorOptions.SapNpmRegistry,
+		virtualFrameBuffer: executorOptions.VirtualFrameBuffer,
 	}
 	exec := &execute{
 		utils:   &utils,
@@ -60,13 +62,16 @@ type executeOptions struct {
 	runOptions         []string
 	defaultNpmRegistry string
 	sapNpmRegistry     string
+	virtualFrameBuffer bool
 }
 
 // execRunner interface to enable mocking for testing
 type execRunner interface {
+	SetEnv(e []string)
 	Stdout(out io.Writer)
 	Stderr(out io.Writer)
 	RunExecutable(executable string, params ...string) error
+	RunExecutableInBackground(executable string, params ...string) (command.Execution, error)
 }
 
 type utils interface {
@@ -144,6 +149,16 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 // ExecuteAllScripts runs all scripts defined in ExecuteOptions.RunScripts
 func (exec *execute) ExecuteAllScripts() error {
 	packageJSONFiles := exec.FindPackageJSONFiles()
+	execRunner := exec.utils.getExecRunner()
+
+	if exec.options.virtualFrameBuffer {
+		cmd, err := execRunner.RunExecutableInBackground("Xvfb", "-ac", ":99", "-screen", "0", "1280x1024x16")
+		if err != nil {
+			return fmt.Errorf("failed to start virtual frame buffer%w", err)
+		}
+		defer cmd.Kill()
+		execRunner.SetEnv([]string{"DISPLAY=:99"})
+	}
 
 	for _, script := range exec.options.runScripts {
 		packagesWithScript, err := exec.FindPackageJSONFilesWithScript(packageJSONFiles, script)

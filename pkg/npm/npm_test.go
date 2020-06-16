@@ -91,7 +91,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"ci"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -111,7 +111,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"Install"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"Install"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -132,7 +132,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"yarn", []string{"Install", "--frozen-lockfile"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"Install", "--frozen-lockfile"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -155,8 +155,8 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 6, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"ci"}}, utilsMock.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{"npm", []string{"ci"}}, utilsMock.execRunner.Calls[5])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utilsMock.execRunner.Calls[5])
 			}
 		}
 	})
@@ -217,7 +217,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"run", "ci-lint", "--silent"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -239,8 +239,8 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 6, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"run", "ci-lint"}}, utilsMock.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{"npm", []string{"run", "ci-build"}}, utilsMock.execRunner.Calls[5])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utilsMock.execRunner.Calls[5])
 			}
 		}
 	})
@@ -261,8 +261,8 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"config", "get", "registry"}}, utilsMock.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{"npm", []string{"config", "set", "registry", exec.options.defaultNpmRegistry}}, utilsMock.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utilsMock.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.options.defaultNpmRegistry}}, utilsMock.execRunner.Calls[1])
 			}
 		}
 	})
@@ -283,9 +283,37 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{"npm", []string{"config", "get", "@sap:registry"}}, utilsMock.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{"npm", []string{"config", "set", "@sap:registry", exec.options.sapNpmRegistry}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "@sap:registry"}}, utilsMock.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@sap:registry", exec.options.sapNpmRegistry}}, utilsMock.execRunner.Calls[2])
 			}
+		}
+	})
+
+	t.Run("Call run-scripts with virtual frame buffer", func(t *testing.T) {
+		utilsMock := newNpmMockUtilsBundle()
+		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"))
+
+		options := executeOptions{}
+		options.install = false
+		options.runScripts = []string{"foo"}
+		options.virtualFrameBuffer = true
+
+		exec := &execute{
+			utils:   &utilsMock,
+			options: options,
+		}
+		err := exec.ExecuteAllScripts()
+
+		assert.Contains(t, utilsMock.execRunner.Env, "DISPLAY=:99")
+		assert.NoError(t, err)
+		if assert.Len(t, utilsMock.execRunner.Calls, 4) {
+			xvfbCall := utilsMock.execRunner.Calls[0]
+			assert.Equal(t, "Xvfb", xvfbCall.Exec)
+			assert.Equal(t, []string{"-ac", ":99", "-screen", "0", "1280x1024x16"}, xvfbCall.Params)
+			assert.True(t, xvfbCall.Async)
+			assert.True(t, xvfbCall.Execution.Killed)
+
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utilsMock.execRunner.Calls[3])
 		}
 	})
 }

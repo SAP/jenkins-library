@@ -187,6 +187,23 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+
+	err = installMavenArtifacts(e, config)
+
+	return err
+}
+
+func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+	pomXMLExists, err := piperutils.FileExists("pom.xml")
+	if err != nil {
+		return err
+	}
+	if pomXMLExists {
+		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -319,7 +336,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	} else {
 
-		log.Entry().Debugf("Project settings file not provided via configuation.")
+		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
 	if len(config.GlobalSettingsFile) > 0 {
@@ -329,7 +346,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 		}
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuation.")
+		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
 	return nil

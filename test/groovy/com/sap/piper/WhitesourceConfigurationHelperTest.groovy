@@ -109,7 +109,7 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
                 containsString("productToken=1234"),
                 containsString("docker.scanImages=true"),
                 containsString("docker.scanTarFiles=true"),
-                containsString("docker.includes=*.tar"),
+                containsString("docker.includes=.*.tar"),
             )
         )
     }
