@@ -22,6 +22,7 @@ type githubPublishReleaseOptions struct {
 	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
 	Labels                []string `json:"labels,omitempty"`
 	Owner                 string   `json:"owner,omitempty"`
+	PreRelease            bool     `json:"preRelease,omitempty"`
 	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
 	Repository            string   `json:"repository,omitempty"`
 	ServerURL             string   `json:"serverUrl,omitempty"`
@@ -102,6 +103,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
 	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to include in issue search.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().BoolVar(&stepConfig.PreRelease, "preRelease", false, "If set to `true` the release will be marked as Pre-release.")
 	cmd.Flags().StringVar(&stepConfig.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url for end-user access.")
@@ -191,6 +193,14 @@ func githubPublishReleaseMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubOrg"}},
+					},
+					{
+						Name:        "preRelease",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "releaseBodyHeader",
