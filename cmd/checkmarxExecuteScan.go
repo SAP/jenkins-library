@@ -188,7 +188,8 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 	for true {
 		stepDetail := "..."
 		stageDetail := "..."
-		status, detail := sys.GetScanStatusAndDetail(scan.ID)
+		var detail checkmarx.ScanStatusDetail
+		status, detail = sys.GetScanStatusAndDetail(scan.ID)
 		if status == "Finished" || status == "Canceled" || status == "Failed" {
 			break
 		}
