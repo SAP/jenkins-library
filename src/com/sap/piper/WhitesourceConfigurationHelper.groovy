@@ -86,7 +86,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                 mapping += [
                     [name: 'docker.scanImages', value: true, force: true],
                     [name: 'docker.scanTarFiles', value: true, force: true],
-                    [name: 'docker.includes', value: '*.tar', force: true],
+                    [name: 'docker.includes', value: /.*.tar/, force: true],
                     [name: 'ignoreSourceFiles', value: true, force: true],
                     [name: 'python.resolveGlobalPackages', value: true, force: true],
                     [name: 'resolveAllDependencies', value: true, force: true],
