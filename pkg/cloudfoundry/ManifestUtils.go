@@ -24,7 +24,7 @@ type Manifest struct {
 var _readFile = ioutil.ReadFile
 var _writeFile = ioutil.WriteFile
 
-// ReadManifest ...
+// ReadManifest Reads the manifest denoted by 'name'
 func ReadManifest(name string) (Manifest, error) {
 
 	log.Entry().Infof("Reading manifest file  '%s'", name)
@@ -46,7 +46,9 @@ func ReadManifest(name string) (Manifest, error) {
 	return m, nil
 }
 
-// WriteManifest ...
+// WriteManifest Writes the manifest to the file denoted
+// by the name property (GetName()). The modified flag is
+// resetted after the write operation.
 func (m *Manifest) WriteManifest() error {
 
 	d, err := yaml.Marshal(&m.self)
