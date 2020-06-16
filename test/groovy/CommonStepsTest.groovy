@@ -139,7 +139,7 @@ public class CommonStepsTest extends BasePiperTest{
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields
-
+        'cloudFoundryCreateService',
     ]
 
     @Test
