@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bmatcuk/doublestar"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -35,6 +36,13 @@ type pullRequestService interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 }
 
+type fortifyExecRunner interface {
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	SetDir(d string)
+	RunExecutable(e string, p ...string) error
+}
+
 const checkString = "<---CHECK FORTIFY---"
 const classpathFileName = "fortify-execute-scan-cp.txt"
 
@@ -51,7 +59,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	}
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command execRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
+func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
 	if err != nil {
@@ -447,7 +455,7 @@ func calculateTimeDifferenceToLastUpload(uploadDate models.Iso8601MilliDateTime,
 	return absoluteSeconds
 }
 
-func executeTemplatedCommand(command execRunner, cmdTemplate []string, context map[string]string) {
+func executeTemplatedCommand(command fortifyExecRunner, cmdTemplate []string, context map[string]string) {
 	for index, cmdTemplatePart := range cmdTemplate {
 		result, err := piperutils.ExecuteTemplate(cmdTemplatePart, context)
 		if err != nil {
@@ -461,7 +469,7 @@ func executeTemplatedCommand(command execRunner, cmdTemplate []string, context m
 	}
 }
 
-func autoresolvePipClasspath(executable string, parameters []string, file string, command execRunner) string {
+func autoresolvePipClasspath(executable string, parameters []string, file string, command fortifyExecRunner) string {
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
@@ -477,7 +485,7 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	return readClasspathFile(file)
 }
 
-func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command execRunner) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command fortifyExecRunner) string {
 	if filepath.IsAbs(file) {
 		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
 	}
@@ -552,7 +560,7 @@ func removeDuplicates(contents, separator string) string {
 	return contents
 }
 
-func triggerFortifyScan(config fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
+func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRunner, buildID, buildLabel, buildProject string) {
 	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
@@ -639,7 +647,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	return string(translateJSON), err
 }
 
-func translateProject(config *fortifyExecuteScanOptions, command execRunner, buildID, classpath string) {
+func translateProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID, classpath string) {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
@@ -651,7 +659,7 @@ func translateProject(config *fortifyExecuteScanOptions, command execRunner, bui
 	}
 }
 
-func handleSingleTranslate(config *fortifyExecuteScanOptions, command execRunner, buildID string, t map[string]string) {
+func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID string, t map[string]string) {
 	if t != nil {
 		log.Entry().Debugf("Handling translate config %v", t)
 		translateOptions := []string{
@@ -672,7 +680,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command execRunner
 	}
 }
 
-func scanProject(config *fortifyExecuteScanOptions, command execRunner, buildID, buildLabel, buildProject string) {
+func scanProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID, buildLabel, buildProject string) {
 	var scanOptions = []string{
 		"-verbose",
 		"-64",
