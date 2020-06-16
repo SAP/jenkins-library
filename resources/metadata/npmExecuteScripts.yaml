@@ -28,16 +28,22 @@ spec:
         description: URL of the npm registry to use. Defaults to https://registry.npmjs.org/
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
       - name: sapNpmRegistry
         type: string
         description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         default: https://npm.sap.com
+        aliases:
+          - name: npm/sapNpmRegistry
   containers:
     - name: node
       image: node:12-buster-slim

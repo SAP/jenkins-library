@@ -14,7 +14,7 @@ import (
 )
 
 type execute struct {
-	utils utils
+	utils   utils
 	options executeOptions
 }
 
@@ -217,7 +217,7 @@ func (exec *execute) FindPackageJSONFiles() []string {
 			continue
 		}
 
-		if strings.HasPrefix(file, "gen" + string(os.PathSeparator)) || strings.Contains(file, string(os.PathSeparator) + "gen" + string(os.PathSeparator)) {
+		if strings.HasPrefix(file, "gen"+string(os.PathSeparator)) || strings.Contains(file, string(os.PathSeparator)+"gen"+string(os.PathSeparator)) {
 			continue
 		}
 

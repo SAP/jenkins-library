@@ -85,7 +85,7 @@ func npmExecuteLintMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "npmExecuteLint",
-			Aliases: []config.Alias{},
+			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -101,18 +101,18 @@ func npmExecuteLintMetadata() config.StepData {
 					{
 						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
 						Name:        "sapNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
 					},
 				},
 			},

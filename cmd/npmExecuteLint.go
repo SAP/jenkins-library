@@ -158,7 +158,7 @@ func findEslintConfigs(utils lintUtils) []string {
 			continue
 		}
 
-		if strings.HasPrefix(config, ".pipeline" + string(os.PathSeparator)) {
+		if strings.HasPrefix(config, ".pipeline"+string(os.PathSeparator)) {
 			continue
 		}
 
