@@ -6,16 +6,15 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
 type execute struct {
-	utils   utils
+	utils utils
 	options executeOptions
 }
 
@@ -28,24 +27,33 @@ type Executor interface {
 	SetNpmRegistries() error
 }
 
+// ExecutorOptions holds parameters to pass to NewExecutor()
+type ExecutorOptions struct {
+	Install            bool
+	RunScripts         []string
+	RunOptions         []string
+	DefaultNpmRegistry string
+	SapNpmRegistry     string
+	ExecRunner         execRunner
+}
+
 // NewExecutor instantiates execute struct and sets executeOptions
-func NewExecutor(installDeps bool, runScripts []string, runOptions []string, defaultNpmRegistry string, sapNpmRegistry string) (*execute, error) {
-	utils := utilsBundle{}
-	options := executeOptions{
-		install:            installDeps,
-		runScripts:         runScripts,
-		runOptions:         runOptions,
-		defaultNpmRegistry: defaultNpmRegistry,
-		sapNpmRegistry:     sapNpmRegistry,
+func NewExecutor(executorOptions ExecutorOptions) (*execute, error) {
+	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	executeOptions := executeOptions{
+		install:            executorOptions.Install,
+		runScripts:         executorOptions.RunScripts,
+		runOptions:         executorOptions.RunOptions,
+		defaultNpmRegistry: executorOptions.DefaultNpmRegistry,
+		sapNpmRegistry:     executorOptions.SapNpmRegistry,
 	}
 	exec := &execute{
 		utils:   &utils,
-		options: options,
+		options: executeOptions,
 	}
 	return exec, nil
 }
 
-// ExecuteOptions holds the list of scripts to be executed by ExecuteAllScripts, options for npm run and the npm registry configuration
 type executeOptions struct {
 	install            bool
 	runScripts         []string
@@ -57,41 +65,23 @@ type executeOptions struct {
 // execRunner interface to enable mocking for testing
 type execRunner interface {
 	Stdout(out io.Writer)
+	Stderr(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 }
 
 type utils interface {
-	fileExists(path string) (bool, error)
-	fileRead(path string) ([]byte, error)
-	glob(pattern string) (matches []string, err error)
-	getwd() (dir string, err error)
-	chdir(dir string) error
+	Chdir(path string) error
+	FileExists(filename string) (bool, error)
+	FileRead(path string) ([]byte, error)
+	Getwd() (string, error)
+	Glob(pattern string) (matches []string, err error)
+
 	getExecRunner() execRunner
 }
 
 type utilsBundle struct {
-	fileUtils  FileUtils.Files
-	execRunner *command.Command
-}
-
-func (u *utilsBundle) fileExists(path string) (bool, error) {
-	return u.fileUtils.FileExists(path)
-}
-
-func (u *utilsBundle) fileRead(path string) ([]byte, error) {
-	return u.fileUtils.FileRead(path)
-}
-
-func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
-}
-
-func (u *utilsBundle) getwd() (dir string, err error) {
-	return os.Getwd()
-}
-
-func (u *utilsBundle) chdir(dir string) error {
-	return os.Chdir(dir)
+	*piperutils.Files
+	execRunner execRunner
 }
 
 func (u *utilsBundle) getExecRunner() execRunner {
@@ -151,7 +141,7 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
-// ExecuteAllScripts runs all scripts defined in ExecuteOptions.runScripts
+// ExecuteAllScripts runs all scripts defined in ExecuteOptions.RunScripts
 func (exec *execute) ExecuteAllScripts() error {
 	packageJSONFiles := exec.FindPackageJSONFiles()
 
@@ -178,13 +168,13 @@ func (exec *execute) ExecuteAllScripts() error {
 
 func (exec *execute) executeScript(packageJSON string, script string) error {
 	execRunner := exec.utils.getExecRunner()
-	oldWorkingDirectory, err := exec.utils.getwd()
+	oldWorkingDirectory, err := exec.utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
 	}
 
-	dir := path.Dir(packageJSON)
-	err = exec.utils.chdir(dir)
+	dir := filepath.Dir(packageJSON)
+	err = exec.utils.Chdir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to change into directory for executing script: %w", err)
 	}
@@ -209,7 +199,7 @@ func (exec *execute) executeScript(packageJSON string, script string) error {
 		return fmt.Errorf("failed to run npm script %s: %w", script, err)
 	}
 
-	err = exec.utils.chdir(oldWorkingDirectory)
+	err = exec.utils.Chdir(oldWorkingDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
@@ -218,7 +208,7 @@ func (exec *execute) executeScript(packageJSON string, script string) error {
 
 // FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
 func (exec *execute) FindPackageJSONFiles() []string {
-	unfilteredListOfPackageJSONFiles, _ := exec.utils.glob("**/package.json")
+	unfilteredListOfPackageJSONFiles, _ := exec.utils.Glob("**/package.json")
 
 	var packageJSONFiles []string
 
@@ -227,7 +217,7 @@ func (exec *execute) FindPackageJSONFiles() []string {
 			continue
 		}
 
-		if strings.HasPrefix(file, "gen/") || strings.Contains(file, "/gen/") {
+		if strings.HasPrefix(file, "gen" + string(os.PathSeparator)) || strings.Contains(file, string(os.PathSeparator) + "gen" + string(os.PathSeparator)) {
 			continue
 		}
 
@@ -244,7 +234,7 @@ func (exec *execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 	for _, file := range packageJSONFiles {
 		var packageJSON map[string]interface{}
 
-		packageRaw, err := exec.utils.fileRead(file)
+		packageRaw, err := exec.utils.FileRead(file)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s to check for existence of %s script: %w", file, script, err)
 		}
@@ -266,7 +256,7 @@ func (exec *execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 	return packagesWithScript, nil
 }
 
-// InstallAllDependencies executes npm or yarn install for all package.json fileUtils defined in packageJSONFiles
+// InstallAllDependencies executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
 func (exec *execute) InstallAllDependencies(packageJSONFiles []string) error {
 	for _, packageJSON := range packageJSONFiles {
 		err := exec.install(packageJSON)
@@ -277,17 +267,17 @@ func (exec *execute) InstallAllDependencies(packageJSONFiles []string) error {
 	return nil
 }
 
-// install executes npm or yarn install for package.json
+// install executes npm or yarn Install for package.json
 func (exec *execute) install(packageJSON string) error {
 	execRunner := exec.utils.getExecRunner()
 
-	oldWorkingDirectory, err := exec.utils.getwd()
+	oldWorkingDirectory, err := exec.utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
 	}
 
-	dir := path.Dir(packageJSON)
-	err = exec.utils.chdir(dir)
+	dir := filepath.Dir(packageJSON)
+	err = exec.utils.Chdir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to change into directory for executing script: %w", err)
 	}
@@ -302,29 +292,29 @@ func (exec *execute) install(packageJSON string) error {
 		return err
 	}
 
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running install")
+	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
 	if packageLockExists {
 		err = execRunner.RunExecutable("npm", "ci")
 		if err != nil {
 			return err
 		}
 	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
+		err = execRunner.RunExecutable("yarn", "Install", "--frozen-lockfile")
 		if err != nil {
 			return err
 		}
 	} else {
 		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
+			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 			" Add this file to your version control. " +
 			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
+		err = execRunner.RunExecutable("npm", "Install")
 		if err != nil {
 			return err
 		}
 	}
 
-	err = exec.utils.chdir(oldWorkingDirectory)
+	err = exec.utils.Chdir(oldWorkingDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
@@ -333,12 +323,12 @@ func (exec *execute) install(packageJSON string) error {
 
 // checkIfLockFilesExist checks if yarn/package lock fileUtils exist
 func (exec *execute) checkIfLockFilesExist() (bool, bool, error) {
-	packageLockExists, err := exec.utils.fileExists("package-lock.json")
+	packageLockExists, err := exec.utils.FileExists("package-lock.json")
 	if err != nil {
 		return false, false, err
 	}
 
-	yarnLockExists, err := exec.utils.fileExists("yarn.lock")
+	yarnLockExists, err := exec.utils.FileExists("yarn.lock")
 	if err != nil {
 		return false, false, err
 	}

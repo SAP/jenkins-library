@@ -49,7 +49,7 @@ func TestFilesMockFileExists(t *testing.T) {
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.FileExists(path)
-		assert.EqualError(t, err, "'"+path+"': file does not exist")
+		assert.NoError(t, err)
 		assert.False(t, exists)
 	})
 }
@@ -169,7 +169,7 @@ func TestFilesMockFileRemove(t *testing.T) {
 func TestFilesMockGetwd(t *testing.T) {
 	t.Parallel()
 	t.Run("test root", func(t *testing.T) {
-		files := FilesMock{}
+		files := FilesMock{Separator: string(os.PathSeparator)}
 		dir, err := files.Getwd()
 		assert.NoError(t, err)
 		assert.Equal(t, string(os.PathSeparator), dir)

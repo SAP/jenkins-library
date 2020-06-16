@@ -7,7 +7,8 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
-	npmExecutor, err := npm.NewExecutor(config.Install, config.RunScripts, []string{}, config.DefaultNpmRegistry, config.SapNpmRegistry)
+	npmExecutorOptions := npm.ExecutorOptions{Install: config.Install, RunScripts: config.RunScripts, DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry}
+	npmExecutor, err := npm.NewExecutor(npmExecutorOptions)
 
 	err = runNpmExecuteScripts(npmExecutor, &config)
 	if err != nil {
@@ -25,9 +26,5 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	err := npmExecutor.ExecuteAllScripts()
-	if err != nil {
-		return err
-	}
-	return err
+	return npmExecutor.ExecuteAllScripts()
 }

@@ -3,49 +3,37 @@ package cmd
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
+	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 type lintUtils interface {
-	fileWrite(path string, content []byte, perm os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
+
 	getExecRunner() execRunner
 	getGeneralPurposeConfig(configURL string) error
-	glob(pattern string) (matches []string, err error)
 }
 
 type lintUtilsBundle struct {
-	fileUtils  FileUtils.Files
+	*piperutils.Files
 	execRunner *command.Command
-	client     http.Client
+	client     *piperhttp.Client
 }
 
 func newLintUtilsBundle() *lintUtilsBundle {
 	return &lintUtilsBundle{
-		fileUtils: FileUtils.Files{},
-		client:    http.Client{},
+		Files:  &piperutils.Files{},
+		client: &piperhttp.Client{},
 	}
-}
-
-func (u *lintUtilsBundle) fileWrite(path string, content []byte, perm os.FileMode) error {
-	parent := filepath.Dir(path)
-	if parent != "" {
-		err := u.fileUtils.MkdirAll(parent, 0775)
-		if err != nil {
-			return err
-		}
-	}
-	return u.fileUtils.FileWrite(path, content, perm)
 }
 
 func (u *lintUtilsBundle) getExecRunner() execRunner {
@@ -58,7 +46,7 @@ func (u *lintUtilsBundle) getExecRunner() execRunner {
 }
 
 func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
-	response, err := u.client.SendRequest("GET", configURL, nil, nil, nil)
+	response, err := u.client.SendRequest(http.MethodGet, configURL, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -70,7 +58,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
 		return fmt.Errorf("error reading %v: %w", response.Body, err)
 	}
 
-	err = u.fileWrite(".pipeline/.eslintrc.json", content, os.ModePerm)
+	err = u.FileWrite(filepath.Join(".pipeline", ".eslintrc.json"), content, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to write .eslintrc.json file to .pipeline/: %w", err)
 	}
@@ -78,13 +66,10 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
 	return nil
 }
 
-func (u *lintUtilsBundle) glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
-}
-
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
 	utils := newLintUtilsBundle()
-	npmExecutor, err := npm.NewExecutor(false, []string{"ci-lint"}, []string{"--silent"}, config.DefaultNpmRegistry, config.SapNpmRegistry)
+	npmExecutorOptions := npm.ExecutorOptions{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
+	npmExecutor, err := npm.NewExecutor(npmExecutorOptions)
 
 	err = runNpmExecuteLint(npmExecutor, utils, &config)
 	if err != nil {
@@ -133,7 +118,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 	// i.e., .jsx, .ts, .tsx, since we can not be sure that the provided config enables parsing of these file types.
 	if len(eslintConfigs) > 0 {
 		for i, config := range eslintConfigs {
-			dir := path.Dir(config)
+			dir := filepath.Dir(config)
 			if dir == "." {
 				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
 				err = execRunner.RunExecutable("npx", "eslint", ".", "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
@@ -152,7 +137,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 		// install dependencies manually, since npx cannot resolve the dependencies required for general purpose
 		// ESLint config, e.g., TypeScript ESLint plugin
 		log.Entry().Info("Run ESLint with general purpose config")
-		err = utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/stepNpmLint/resources/.eslintrc.json")
+		err = utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
 		if err != nil {
 			return err
 		}
@@ -164,7 +149,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 }
 
 func findEslintConfigs(utils lintUtils) []string {
-	unfilteredListOfEslintConfigs, _ := utils.glob("**/.eslintrc.*")
+	unfilteredListOfEslintConfigs, _ := utils.Glob("**/.eslintrc.*")
 
 	var eslintConfigs []string
 
@@ -173,7 +158,7 @@ func findEslintConfigs(utils lintUtils) []string {
 			continue
 		}
 
-		if strings.HasPrefix(config, ".pipeline/") {
+		if strings.HasPrefix(config, ".pipeline" + string(os.PathSeparator)) {
 			continue
 		}
 

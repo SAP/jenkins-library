@@ -37,6 +37,7 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide default npm registry", func(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
+		e.StdoutReturn = map[string]string{"npm config get registry": "undefined"}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
 
@@ -45,21 +46,21 @@ func TestMarBuild(t *testing.T) {
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
 		utils := newNpmMockUtilsBundle()
-		utils.execRunner = mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
+		utils.execRunner = e
 
 		npmExecutor := npmExecutorMock{utils: utils, options: npmExecuteOptions{
 			install:            false,
 			runScripts:         []string{},
 			runOptions:         []string{},
 			defaultNpmRegistry: options.DefaultNpmRegistry,
-			defaultSapRegistry: options.SapNpmRegistry,
+			sapNpmRegistry:     options.SapNpmRegistry,
 		}}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 4) { // the second (unchecked) entry is the mta call
+		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 3) { // the second (unchecked) entry is the mta call
 			assert.Equal(t, "npm", npmExecutor.utils.execRunner.Calls[1].Exec)
 			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, npmExecutor.utils.execRunner.Calls[1].Params)
 		}
@@ -68,6 +69,7 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide SAP npm registry", func(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
+		e.StdoutReturn = map[string]string{"npm config get registry": "undefined"}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
 
@@ -76,23 +78,23 @@ func TestMarBuild(t *testing.T) {
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
 		utils := newNpmMockUtilsBundle()
-		utils.execRunner = mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
+		utils.execRunner = e
 
 		npmExecutor := npmExecutorMock{utils: utils, options: npmExecuteOptions{
 			install:            false,
 			runScripts:         []string{},
 			runOptions:         []string{},
 			defaultNpmRegistry: options.DefaultNpmRegistry,
-			defaultSapRegistry: options.SapNpmRegistry,
+			sapNpmRegistry:     options.SapNpmRegistry,
 		}}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 4) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", npmExecutor.utils.execRunner.Calls[3].Exec)
-			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, npmExecutor.utils.execRunner.Calls[3].Params)
+		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 3) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", npmExecutor.utils.execRunner.Calls[2].Exec)
+			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, npmExecutor.utils.execRunner.Calls[2].Params)
 		}
 	})
 

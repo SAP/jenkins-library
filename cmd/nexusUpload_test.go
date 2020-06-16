@@ -6,6 +6,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,6 +51,9 @@ func (m *mockUtilsBundle) getExecRunner() execRunner {
 }
 
 func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
+	pomFile = strings.ReplaceAll(pomFile, "/", string(os.PathSeparator))
+	pomFile = strings.ReplaceAll(pomFile, "\\", string(os.PathSeparator))
+
 	pom := m.properties[pomFile]
 	if pom == nil {
 		pom = map[string]string{}
@@ -424,7 +430,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
 		utils.AddFile("pom.xml", testPomXml)
-		utils.AddFile("target/my-app-1.0.jar", []byte("contentsOfJar"))
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -439,7 +445,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -451,7 +457,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.packaging", "<empty>")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
 		utils.AddFile("pom.xml", testPomXml)
-		utils.AddFile("target/my-app-1.0.jar", []byte("contentsOfJar"))
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -465,7 +471,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -501,7 +507,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.AddFile("pom.xml", testPomXml)
-		utils.AddFile("target/my-app-1.0.jar", []byte("contentsOfJar"))
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -517,7 +523,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -548,7 +554,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("performance-tests/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("performance-tests/pom.xml", "project.packaging", "")
 		utils.AddFile("pom.xml", testPomXml)
-		utils.AddFile("application/pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("application", "pom.xml"), testPomXml)
 		utils.AddFile("application/target/final-artifact.war", []byte("contentsOfJar"))
 		utils.AddFile("application/target/final-artifact-classes.jar", []byte("contentsOfClassesJar"))
 		utils.AddFile("integration-tests/pom.xml", testPomXml)
@@ -566,13 +572,13 @@ func TestUploadMavenProjects(t *testing.T) {
 
 		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 4, len(artifacts)) {
-			assert.Equal(t, "application/pom.xml", artifacts[0].File)
+			assert.Equal(t, filepath.Join("application", "pom.xml"), artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "application/target/final-artifact.war", artifacts[1].File)
+			assert.Equal(t, filepath.Join("application", "target", "final-artifact.war"), artifacts[1].File)
 			assert.Equal(t, "war", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/final-artifact-classes.jar", artifacts[2].File)
+			assert.Equal(t, filepath.Join("application", "target", "final-artifact-classes.jar"), artifacts[2].File)
 			assert.Equal(t, "jar", artifacts[2].Type)
 
 			assert.Equal(t, "pom.xml", artifacts[3].File)
@@ -585,9 +591,9 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-DgroupId=com.mycompany.app",
 				"-Dversion=1.0",
 				"-DartifactId=my-app-app",
-				"-Dfile=application/pom.xml",
+				"-Dfile=" + filepath.Join("application", "pom.xml"),
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
+				"-Dfiles=" + filepath.Join("application", "target", "final-artifact.war") + "," + filepath.Join("application", "target", "final-artifact-classes.jar"),
 				"-Dclassifiers=,classes",
 				"-Dtypes=war,jar",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
