@@ -169,7 +169,7 @@ import hudson.AbortException
  * Executes a closure inside a container in a kubernetes pod.
  * Proxy environment variables defined on the Jenkins machine are also available in the container.
  *
- * By default jnlp agent defined for kubernetes-plugin will be used (see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support).
+ * By default jnlp agent defined for kubernetes-plugin will be used (see [https://github.com/jenkinsci/kubernetes-plugin#pipeline-support](https://github.com/jenkinsci/kubernetes-plugin#pipeline-support)).
  *
  * It is possible to define a custom jnlp agent image by
  *
