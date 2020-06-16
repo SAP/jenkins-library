@@ -24,6 +24,7 @@ type testStepOptions struct {
 
 
 type testStepCommonPipelineEnvironment struct {
+	
 	artifactVersion string
 	git struct {
 		commitID string
@@ -149,7 +150,7 @@ func TestStepCommand() *cobra.Command {
 }
 
 func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
-	cmd.Flags().StringVar(&stepConfig.Param0, "param0", "val0", "param0 description")
+	cmd.Flags().StringVar(&stepConfig.Param0, "param0", `val0`, "param0 description")
 	cmd.Flags().StringVar(&stepConfig.Param1, "param1", os.Getenv("PIPER_param1"), "param1 description")
 	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param1 description")
 

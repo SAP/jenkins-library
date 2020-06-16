@@ -1,6 +1,10 @@
 package com.sap.piper
 
+import hudson.AbortException
+
 class PiperGoUtils implements Serializable {
+
+    private static piperExecutable = 'piper'
 
     private static Script steps
     private static Utils utils
@@ -49,17 +53,21 @@ class PiperGoUtils implements Serializable {
                 //Inform that no Piper binary is available for used library branch
                 steps.echo ("Not able to download go binary of Piper for version ${version}")
                 //Fallback to master version & throw error in case this fails
-                steps.retry(5) {
+                steps.retry(12) {
                     if (!downloadGoBinary(fallbackUrl)) {
-                        steps.sleep(2)
+                        steps.sleep(10)
                         steps.error("Download of Piper go binary failed.")
                     }
                 }
-
             }
         }
-
-        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', 'piper')
+        try {
+            def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
+            steps.echo "Piper go binary version: ${piperVersion}"
+        } catch(AbortException ex) {
+            steps.error "Cannot get piper go binary version: ${ex}"
+        }
+        utils.stashWithMessage('piper-bin', 'failed to stash piper binary', piperExecutable)
     }
 
     List getLibrariesInfo() {
@@ -69,15 +77,16 @@ class PiperGoUtils implements Serializable {
     private boolean downloadGoBinary(url) {
 
         try {
-            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ./piper '${url}'")
+            def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ${piperExecutable} '${url}'")
 
             if (httpStatus == '200') {
-                steps.sh(script: 'chmod +x ./piper')
+                steps.sh(script: "chmod +x ${piperExecutable}")
                 return true
             }
         } catch(err) {
             //nothing to do since error should just result in downloaded=false
-            steps.echo "Failed downloading Piper go binary with error '${err}'"
+            steps.echo "Failed downloading Piper go binary with error '${err}'. " +
+                "If curl is missing, please ensure that curl is available in the Jenkins master and the agents. It is a prerequisite to run piper."
         }
         return false
     }

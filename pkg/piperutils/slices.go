@@ -24,6 +24,16 @@ func ContainsString(s []string, e string) bool {
 	return false
 }
 
+//ContainsStringPart check wether the element is contained as part of one of the elements of the slice
+func ContainsStringPart(s []string, part string) bool {
+	for _, a := range s {
+		if strings.Contains(a, part) {
+			return true
+		}
+	}
+	return false
+}
+
 //Prefix adds a prefix to each element of the slice
 func Prefix(in []string, prefix string) []string {
 	return _prefix(in, prefix, true)

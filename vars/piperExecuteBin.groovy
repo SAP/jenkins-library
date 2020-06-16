@@ -58,8 +58,17 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Context Config: ${config}"
+            Map config
+            handleErrorDetails(stepName) {
+                config = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+                echo "Context Config: ${config}"
+            }
+
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
 
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
@@ -109,6 +118,7 @@ void dockerWrapper(script, stepName, config, body) {
             dockerImage: config.dockerImage,
             dockerWorkspace: config.dockerWorkspace,
             dockerOptions: config.dockerOptions,
+            stashNoDefaultExcludes : config.stashNoDefaultExcludes,
             //ToDo: add additional dockerExecute parameters
         ) {
             body()
@@ -171,6 +181,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }

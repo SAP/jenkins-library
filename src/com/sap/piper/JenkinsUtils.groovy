@@ -214,7 +214,13 @@ void handleStepResults(String stepName, boolean failOnMissingReports, boolean fa
     } else if (reportsFileExists) {
         def reports = readJSON(file: reportsFileName)
         for (report in reports) {
-            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+            String target = report['target'] as String
+            if (target != null && target.startsWith("./")) {
+                // archiveArtifacts does not match any files when they start with "./",
+                // even though that is a correct relative path.
+                target = target.substring(2)
+            }
+            archiveArtifacts artifacts: target, allowEmptyArchive: !report['mandatory']
         }
     }
 
