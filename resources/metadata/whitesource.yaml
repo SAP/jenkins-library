@@ -201,7 +201,7 @@ spec:
       default: true
     - name: serviceUrl
       type: string
-      description: URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.
+      description: URL to the WhiteSource server API used for communication.
       mandatory: false
       scope:
       - GENERAL
