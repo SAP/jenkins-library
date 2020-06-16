@@ -70,9 +70,25 @@ func (m Manifest) GetName() string {
 	return m.name
 }
 
-// GetApplications ...
-func (m Manifest) GetApplications() ([]interface{}, error) {
-	return toSlice(m.self["applications"])
+// GetApplications Returns all applications denoted in the manifest file.
+// The applications are returned as a slice of maps. Each app is represented by
+// a map.
+func (m Manifest) GetApplications() ([]map[string]interface{}, error) {
+	apps, err := toSlice(m.self["applications"])
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]map[string]interface{}, 0)
+
+	for _, app := range apps {
+		if _app, ok := app.(map[string]interface{}); ok {
+			result = append(result, _app)
+		} else {
+			return nil, fmt.Errorf("Cannot cast applications to map. Manifest file '%s' has invalid format", m.GetName())
+		}
+	}
+	return result, nil
 }
 
 // ApplicationHasProperty Checks if the application denoted by 'index' has the property 'name'
