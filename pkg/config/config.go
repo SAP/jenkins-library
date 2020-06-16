@@ -176,6 +176,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
+		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {

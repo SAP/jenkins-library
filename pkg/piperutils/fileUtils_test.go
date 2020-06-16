@@ -9,7 +9,6 @@ import (
 )
 
 func TestFileExists(t *testing.T) {
-	t.Parallel()
 	runInTempDir(t, "testing dir returns false", "dir", func(t *testing.T) {
 		err := os.Mkdir("test", 0777)
 		if err != nil {
@@ -29,7 +28,6 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	t.Parallel()
 	runInTempDir(t, "copying file succeeds", "dir2", func(t *testing.T) {
 		file := "testFile"
 		err := ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)
