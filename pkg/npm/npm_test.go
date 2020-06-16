@@ -52,7 +52,7 @@ func TestNpm(t *testing.T) {
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
 
-		assert.Equal(t, []string{"package.json", "src\\package.json"}, packageJSONFiles)
+		assert.Equal(t, []string{"package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
 	})
 
 	t.Run("find package.json files with script", func(t *testing.T) {
