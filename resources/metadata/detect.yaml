@@ -114,3 +114,6 @@ spec:
     - name: openjdk
       image: openjdk:11
       workingDir: /root
+      options:
+        - name: -u
+          value: '0'
