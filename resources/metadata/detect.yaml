@@ -111,6 +111,6 @@ spec:
         - STAGES
         - STEPS
   containers:
-    - name: debian
-      image: debian:stretch
-      workingDir: /root
+    - name: curl
+      image: curlimages/curl:latest
+      workingDir: /home/curl_user
