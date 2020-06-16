@@ -111,7 +111,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"Install"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -132,7 +132,7 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"Install", "--frozen-lockfile"}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})

@@ -314,7 +314,7 @@ func (exec *execute) install(packageJSON string) error {
 			return err
 		}
 	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "Install", "--frozen-lockfile")
+		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
 		if err != nil {
 			return err
 		}
@@ -323,7 +323,7 @@ func (exec *execute) install(packageJSON string) error {
 			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 			" Add this file to your version control. " +
 			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "Install")
+		err = execRunner.RunExecutable("npm", "install")
 		if err != nil {
 			return err
 		}
