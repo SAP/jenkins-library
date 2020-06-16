@@ -65,7 +65,7 @@ func (m *Manifest) WriteManifest() error {
 	return err
 }
 
-// GetName ...
+// GetName Returns the file name of the manifest.
 func (m Manifest) GetName() string {
 	return m.name
 }
