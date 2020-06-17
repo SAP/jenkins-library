@@ -72,6 +72,7 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
+	
 	return result, nil
 }
 
@@ -108,6 +109,7 @@ func (g *Gradle) GetArtifactID() (string, error) {
 	match := string(regex.Find(g.gradlePropsOut))
 	artifactID := strings.Split(match, `'`)[1]
 
+	log.Entry().Infof("Resolved artifact ID: %s", artifactID)
 	return artifactID, nil
 }
 
@@ -126,6 +128,7 @@ func (g *Gradle) GetVersion() (string, error) {
 		versionID = versionIDSlice[1]
 	}
 
+	log.Entry().Infof("Resolved version: %s", versionID)
 	return versionID, nil
 }
 

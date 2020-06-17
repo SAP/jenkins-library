@@ -3,9 +3,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -79,7 +81,8 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 		return err
 	}
 	if config.ProjectName == "" || config.ProductVersion == "" {
-		projectName, projectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
+		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
+		projectName, projectVersion := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
 		if config.ProjectName == "" {
 			config.ProjectName = projectName
 		}
@@ -112,9 +115,8 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 		cmd := exec.Command("java", "-jar", config.AgentFileName, "-d", ".", "-c", "wss-generated-file.config",
 			"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 			"-product", config.ProductName, "-productVersion", config.ProductVersion)
-		cmd.Stdout = wsOutputBuffer
+		cmd.Stdout = io.MultiWriter(log.Writer(), wsOutputBuffer)
 		err = cmd.Run()
-		log.Entry().Info(wsOutputBuffer.String())
 		if err != nil {
 			return nil, err
 		}
@@ -168,17 +170,16 @@ func extractProjectTokensFromStdout(wsOutput *bytes.Buffer, config whitesourceEx
 	}
 
 	ids := []int64{}
+	r := regexp.MustCompile(`#!project;id=(.*[0-9])`)
 	projectMetaStr := projectsInfoBuffer.String()
-	projectMetas := strings.Split(projectMetaStr, "id=")
-	for _, idStr := range projectMetas {
-		idStr = strings.Split(idStr, `\n`)[0]
-		if !strings.HasPrefix(idStr, "[INFO]") {
-			idInt, err := strconv.Atoi(idStr)
-			if err != nil {
-				return nil, err
-			}
-			ids = append(ids, int64(idInt))
+	matches := r.FindAllString(projectMetaStr, -1)
+	for _, match := range matches {
+		versionStr := strings.Split(match, "id=")[1]
+		versionInt, err := strconv.Atoi(versionStr)
+		if err != nil {
+			return nil, err
 		}
+		ids = append(ids, int64(versionInt))
 	}
 
 	log.Entry().Info("Getting projects by ids..")
