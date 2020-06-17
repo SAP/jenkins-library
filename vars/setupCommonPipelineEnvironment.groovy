@@ -134,6 +134,7 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
                 validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
             ]
             if(credentialsId){
+                echo "Using $credentialsId"
                 httpRequestParameter.authentication = credentialsId
             }
             def response = script.httpRequest(
