@@ -120,26 +120,26 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         utils.stashStageFiles(script, stageName)
 
         // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
-        if(!telemetryDisabled){
+        if (!telemetryDisabled) {
             def duration = System.currentTimeMillis() - startTime
             utils.pushToSWA([
-                eventType: 'library-os-stage',
-                stageName: stageName,
-                stepParamKey1: 'buildResult',
-                stepParam1: "${script.currentBuild.currentResult}",
-                buildResult: "${script.currentBuild.currentResult}",
-                stepParamKey2: 'stageStartTime',
-                stepParam2: "${startTime}",
-                stageStartTime: "${startTime}",
-                stepParamKey3: 'stageDuration',
-                stepParam3: "${duration}",
-                stageDuration: "${duration}",
-                stepParamKey4: 'projectExtension',
-                stepParam4: "${projectExtensions}",
+                eventType       : 'library-os-stage',
+                stageName       : stageName,
+                stepParamKey1   : 'buildResult',
+                stepParam1      : "${script.currentBuild.currentResult}",
+                buildResult     : "${script.currentBuild.currentResult}",
+                stepParamKey2   : 'stageStartTime',
+                stepParam2      : "${startTime}",
+                stageStartTime  : "${startTime}",
+                stepParamKey3   : 'stageDuration',
+                stepParam3      : "${duration}",
+                stageDuration   : "${duration}",
+                stepParamKey4   : 'projectExtension',
+                stepParam4      : "${projectExtensions}",
                 projectExtension: "${projectExtensions}",
-                stepParamKey5: 'globalExtension',
-                stepParam5: "${globalExtensions}",
-                globalExtension: "${globalExtensions}"
+                stepParamKey5   : 'globalExtension',
+                stepParam5      : "${globalExtensions}",
+                globalExtension : "${globalExtensions}"
             ], config)
         }
     }
@@ -191,6 +191,6 @@ private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
     return method != null
 }
 
-private boolean allowExtensions(){
+private boolean allowExtensions() {
     return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == false
 }
