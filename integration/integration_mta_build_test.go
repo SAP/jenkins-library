@@ -76,7 +76,7 @@ mkdir mym2
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
-	assert.Contains(t, output, "Installing /test/pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
+	assert.Contains(t, output, "Installing /test/.flattened-pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
 	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
 	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
 }
