@@ -7,6 +7,10 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <!--
+    All sub-modules must be known to the root pom.
+    If this is not the case, "-pl app" won't work in maven.
+    -->
     <modules>
         <module>app</module>
     </modules>
