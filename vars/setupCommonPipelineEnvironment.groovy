@@ -11,7 +11,10 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** */
-    'collectTelemetryData'
+    'collectTelemetryData',
+
+    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    'customDefaultCredentialId'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -69,7 +72,8 @@ void call(Map parameters = [:]) {
             customDefaultsFiles = Utils.appendParameterToStringList(
                 customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
+        String customDefaultCredentialId = script.commonPipelineEnvironment.configuration.general?.customDefaultCredentialId
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles, customDefaultCredentialId)
 
         prepareDefaultValues([
             script: script,
@@ -112,7 +116,7 @@ private static loadConfigurationFromFile(script, String configFile) {
     }
 }
 
-private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
+private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults, String credentialsId) {
     List fileList = []
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
@@ -125,6 +129,13 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = "custom_default_from_url_${urlCount}.yml"
 
+            Map httpRequestParameter = [
+                url: customDefaults[i],
+                validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
+            ]
+            if(credentialsId){
+                httpRequestParameter.authentication = credentialsId
+            }
             def response = script.httpRequest(
                 url: customDefaults[i],
                 validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
