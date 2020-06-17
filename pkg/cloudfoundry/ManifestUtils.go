@@ -15,7 +15,19 @@ const constPropBuildpacks = "buildpacks"
 const constPropBuildpack = "buildpack"
 
 // Manifest ...
-type Manifest struct {
+type Manifest interface {
+	GetFileName() string
+	GetAppName(index int) (string, error)
+	ApplicationHasProperty(index int, name string) (bool, error)
+	GetApplicationProperty(index int, name string) (interface{}, error)
+	Transform() error
+	IsModified() bool
+	GetApplications() ([]map[string]interface{}, error)
+	WriteManifest() error
+}
+
+// manifest ...
+type manifest struct {
 	self     map[string]interface{}
 	modified bool
 	name     string
@@ -29,7 +41,7 @@ func ReadManifest(name string) (Manifest, error) {
 
 	log.Entry().Infof("Reading manifest file  '%s'", name)
 
-	m := Manifest{self: make(map[string]interface{}), name: name, modified: false}
+	m := &manifest{self: make(map[string]interface{}), name: name, modified: false}
 
 	content, err := _readFile(name)
 	if err != nil {
@@ -47,17 +59,17 @@ func ReadManifest(name string) (Manifest, error) {
 }
 
 // WriteManifest Writes the manifest to the file denoted
-// by the name property (GetName()). The modified flag is
+// by the name property (GetFileName()). The modified flag is
 // resetted after the write operation.
-func (m *Manifest) WriteManifest() error {
+func (m *manifest) WriteManifest() error {
 
 	d, err := yaml.Marshal(&m.self)
 	if err != nil {
 		return err
 	}
 
-	log.Entry().Debugf("Writing manifest file '%s'", m.name)
-	err = _writeFile(m.name, d, 0644)
+	log.Entry().Debugf("Writing manifest file '%s'", m.GetFileName())
+	err = _writeFile(m.GetFileName(), d, 0644)
 
 	if err == nil {
 		m.modified = false
@@ -68,14 +80,14 @@ func (m *Manifest) WriteManifest() error {
 }
 
 // GetName Returns the file name of the manifest.
-func (m Manifest) GetName() string {
+func (m manifest) GetFileName() string {
 	return m.name
 }
 
 // GetApplications Returns all applications denoted in the manifest file.
 // The applications are returned as a slice of maps. Each app is represented by
 // a map.
-func (m Manifest) GetApplications() ([]map[string]interface{}, error) {
+func (m manifest) GetApplications() ([]map[string]interface{}, error) {
 	apps, err := toSlice(m.self["applications"])
 	if err != nil {
 		return nil, err
@@ -87,14 +99,14 @@ func (m Manifest) GetApplications() ([]map[string]interface{}, error) {
 		if _app, ok := app.(map[string]interface{}); ok {
 			result = append(result, _app)
 		} else {
-			return nil, fmt.Errorf("Cannot cast applications to map. Manifest file '%s' has invalid format", m.GetName())
+			return nil, fmt.Errorf("Cannot cast applications to map. Manifest file '%s' has invalid format", m.GetFileName())
 		}
 	}
 	return result, nil
 }
 
 // ApplicationHasProperty Checks if the application denoted by 'index' has the property 'name'
-func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
+func (m manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -116,7 +128,7 @@ func (m Manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 }
 
 // GetApplicationProperty ...
-func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
+func (m manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -141,7 +153,7 @@ func (m Manifest) GetApplicationProperty(index int, name string) (interface{}, e
 }
 
 // GetAppName Gets the name of the app at 'index'
-func (m Manifest) GetAppName(index int) (string, error) {
+func (m manifest) GetAppName(index int) (string, error) {
 
 	appName, err := m.GetApplicationProperty(index, "name")
 	if err != nil {
@@ -158,7 +170,7 @@ func (m Manifest) GetAppName(index int) (string, error) {
 // Transform For each app in the manifest the first entry in the build packs list
 // gets moved to the top level under the key 'buildpack'. The 'buildpacks' list is
 // deleted.
-func (m *Manifest) Transform() error {
+func (m *manifest) Transform() error {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -180,7 +192,7 @@ func (m *Manifest) Transform() error {
 	return nil
 }
 
-func transformApp(app map[string]interface{}, m *Manifest) error {
+func transformApp(app map[string]interface{}, m *manifest) error {
 
 	appName := "n/a"
 
@@ -216,7 +228,7 @@ func transformApp(app map[string]interface{}, m *Manifest) error {
 }
 
 // IsModified ...
-func (m Manifest) IsModified() bool {
+func (m manifest) IsModified() bool {
 	return m.modified
 }
 
