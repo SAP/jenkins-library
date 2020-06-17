@@ -31,11 +31,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'nodeName',
     /**
-     * Defines the MTA version of the corresponding MTA id that MTA Extension Descriptor can be applied.
+     * Defines the MTA version of the corresponding MTA id that MTA Extension Descriptor can be applied. If the parameter is not configured, an asterisk (*) is used as the version. This means that the MTA extension descriptor is valid for all versions of the MTA.
      */
     'mtaVersion',
     /**
-     * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext']`.
+     * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext']`. Usage of MTA Extension Descriptors is supported for transports in Cloud Foundry Environment only.
      */
     'nodeExtDescriptorMapping',
     /**
