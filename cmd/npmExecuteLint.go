@@ -99,7 +99,7 @@ func runCiLint(npmExecutor npm.Executor, failOnError bool) error {
 	err := npmExecutor.ExecuteAllScripts()
 	if err != nil {
 		if failOnError {
-			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the ci-lint.xml file, if available, or the log above. ", err)
+			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", err)
 		}
 	}
 	return nil
