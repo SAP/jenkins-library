@@ -191,6 +191,7 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 
 // Getwd returns the rooted current virtual working directory
 func (f *FilesMock) Getwd() (string, error) {
+	f.init()
 	return f.toAbsPath(""), nil
 }
 
