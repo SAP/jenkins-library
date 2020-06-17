@@ -91,26 +91,10 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
 func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunner) (string, error) {
-	expressionDefine := "-Dexpression=" + expression
-	executeOptions := ExecuteOptions{
-		PomPath:             options.PomPath,
-		M2Path:              options.M2Path,
-		ProjectSettingsFile: options.ProjectSettingsFile,
-		GlobalSettingsFile:  options.GlobalSettingsFile,
-		Goals:               []string{"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"},
-		Defines:             []string{expressionDefine, "-DforceStdout", "-q"},
-		ReturnStdout:        true,
-	}
-	value, err := Execute(&executeOptions, command)
-	if err != nil {
-		return "", err
-	}
-	if strings.HasPrefix(value, "null object or invalid expression") {
-		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, options.PomPath)
-	}
-	return value, nil
+	return EvaluateWithCustomDefines(options, expression, command, []string{})
 }
 
+// EvaluateWithCustomDefines is the same as Evaluate, but allows to pass in additionalDefines
 func EvaluateWithCustomDefines(options *EvaluateOptions, expression string, command mavenExecRunner, additionalDefines []string) (string, error) {
 	expressionDefine := "-Dexpression=" + expression
 	defines := []string{expressionDefine, "-DforceStdout", "-q"}
