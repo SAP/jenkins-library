@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -43,6 +45,9 @@ type mavenExecRunner interface {
 type mavenUtils interface {
 	FileExists(path string) (bool, error)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Glob(pattern string) (matches []string, err error)
+	Getwd() (dir string, err error)
+	Chdir(dir string) error
 }
 
 type utilsBundle struct {
@@ -105,6 +110,168 @@ func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunn
 		return "", fmt.Errorf("expression '%s' in file '%s' could not be resolved", expression, options.PomPath)
 	}
 	return value, nil
+}
+
+// InstallFile installs a maven artifact and its pom into the local maven repository.
+// If "file" is empty, only the pom is installed. "pomFile" must not be empty.
+func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
+	if len(pomFile) == 0 {
+		return fmt.Errorf("pomFile can't be empty")
+	}
+
+	var defines []string
+	if len(file) > 0 {
+		defines = append(defines, "-Dfile="+file)
+		if strings.Contains(file, ".jar") {
+			defines = append(defines, "-Dpackaging=jar")
+		}
+		if strings.Contains(file, "-classes") {
+			defines = append(defines, "-Dclassifier=classes")
+		}
+
+	} else {
+		defines = append(defines, "-Dfile="+pomFile)
+	}
+	defines = append(defines, "-DpomFile="+pomFile)
+	mavenOptionsInstall := ExecuteOptions{
+		Goals:   []string{"install:install-file"},
+		Defines: defines,
+		PomPath: pomFile,
+		M2Path:  m2Path,
+	}
+	_, err := Execute(&mavenOptionsInstall, command)
+	if err != nil {
+		return fmt.Errorf("failed to install maven artifacts: %w", err)
+	}
+	return nil
+}
+
+// InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
+func InstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions) error {
+	return doInstallMavenArtifacts(command, options, newUtils())
+}
+
+func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, utils mavenUtils) error {
+	err := flattenPom(command, options)
+	if err != nil {
+		return err
+	}
+
+	pomFiles, err := utils.Glob(filepath.Join("**", "pom.xml"))
+	if err != nil {
+		return err
+	}
+
+	oldWorkingDirectory, err := utils.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Ensure m2 path is an absolute path, even if it is given relative
+	// This is important to avoid getting multiple m2 directories in a maven multimodule project
+	if options.M2Path != "" {
+		options.M2Path, err = filepath.Abs(options.M2Path)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set pom path fix here because we will change into the respective pom's directory
+	options.PomPath = "pom.xml"
+	for _, pomFile := range pomFiles {
+		log.Entry().Info("Installing maven artifacts from module: " + pomFile)
+		dir := path.Dir(pomFile)
+		err = utils.Chdir(dir)
+		if err != nil {
+			return err
+		}
+
+		packaging, err := Evaluate(&options, "project.packaging", command)
+		if err != nil {
+			return err
+		}
+
+		if packaging == "pom" {
+			err = InstallFile("", "pom.xml", options.M2Path, command)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = installJarWarArtifacts(command, utils, options)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = utils.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func installJarWarArtifacts(command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
+	finalName, err := Evaluate(&options, "project.build.finalName", command)
+	if err != nil {
+		return err
+	}
+	if finalName == "" {
+		log.Entry().Warn("project.build.finalName is empty, skipping install of artifact. Installing only the pom file.")
+		err = InstallFile("", "pom.xml", options.M2Path, command)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	jarExists, _ := utils.FileExists(jarFile(finalName))
+	warExists, _ := utils.FileExists(warFile(finalName))
+	classesJarExists, _ := utils.FileExists(classesJarFile(finalName))
+
+	if jarExists {
+		err = InstallFile(jarFile(finalName), "pom.xml", options.M2Path, command)
+		if err != nil {
+			return err
+		}
+	}
+
+	if warExists {
+		err = InstallFile(warFile(finalName), "pom.xml", options.M2Path, command)
+		if err != nil {
+			return err
+		}
+	}
+
+	if classesJarExists {
+		err = InstallFile(classesJarFile(finalName), "pom.xml", options.M2Path, command)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func jarFile(finalName string) string {
+	return "target/" + finalName + ".jar"
+}
+
+func classesJarFile(finalName string) string {
+	return "target/" + finalName + "-classes.jar"
+}
+
+func warFile(finalName string) string {
+	return "target/" + finalName + ".war"
+}
+
+func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
+	mavenOptionsFlatten := ExecuteOptions{
+		Goals:   []string{"flatten:flatten"},
+		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath: "pom.xml",
+		M2Path:  o.M2Path,
+	}
+	_, err := Execute(&mavenOptionsFlatten, command)
+	return err
 }
 
 func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {

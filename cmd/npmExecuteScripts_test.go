@@ -28,7 +28,7 @@ func (u *npmExecuteScriptsMockUtilsBundle) glob(pattern string) ([]string, error
 		}
 	}
 	// The order in m.files is not deterministic, this would result in flaky tests.
-	sort.Sort(byLen(matches))
+	sort.Strings(matches)
 	return matches, nil
 }
 
@@ -128,6 +128,29 @@ func TestNpmExecuteScripts(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install"}}, utils.execRunner.Calls[2])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
 		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "bar", "--if-present"}}, utils.execRunner.Calls[4])
+	})
+
+	t.Run("Call run-scripts with virtual frame buffer", func(t *testing.T) {
+		utils := newNpmExecuteScriptsMockUtilsBundle()
+		utils.files["package.json"] = []byte("{\"scripts\": { \"foo\": \"\" } }")
+		options := npmExecuteScriptsOptions{}
+		options.Install = false
+		options.RunScripts = []string{"foo"}
+		options.VirtualFrameBuffer = true
+
+		err := runNpmExecuteScripts(&utils, &options)
+
+		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
+		assert.NoError(t, err)
+		if assert.Len(t, utils.execRunner.Calls, 4) {
+			xvfbCall := utils.execRunner.Calls[0]
+			assert.Equal(t, "Xvfb", xvfbCall.Exec)
+			assert.Equal(t, []string{"-ac", ":99", "-screen", "0", "1280x1024x16"}, xvfbCall.Params)
+			assert.True(t, xvfbCall.Async)
+			assert.True(t, xvfbCall.Execution.Killed)
+
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run-script", "foo", "--if-present"}}, utils.execRunner.Calls[3])
+		}
 	})
 }
 
