@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/npm"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/bmatcuk/doublestar"
@@ -88,12 +87,13 @@ func runNpmExecuteScripts(utils npmExecuteScriptsUtilsInterface, options *npmExe
 			return err
 		}
 
+		//fixme
 		// set in each directory to respect existing config in rc files
-		err = npm.SetNpmRegistries(
-			&npm.RegistryOptions{
-				DefaultNpmRegistry: options.DefaultNpmRegistry,
-				SapNpmRegistry:     options.SapNpmRegistry,
-			}, execRunner)
+		//err = npm.SetNpmRegistries(
+		//	&npm.RegistryOptions{
+		//		DefaultNpmRegistry: options.DefaultNpmRegistry,
+		//		SapNpmRegistry:     options.SapNpmRegistry,
+		//	}, execRunner)
 
 		if err != nil {
 			return err

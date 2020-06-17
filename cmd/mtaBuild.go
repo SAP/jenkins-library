@@ -106,11 +106,12 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = npm.SetNpmRegistries(
-		&npm.RegistryOptions{
-			DefaultNpmRegistry: config.DefaultNpmRegistry,
-			SapNpmRegistry:     config.SapNpmRegistry,
-		}, e)
+	//fixme
+	//err = npm.SetNpmRegistries(
+	//	&npm.RegistryOptions{
+	//		DefaultNpmRegistry: config.DefaultNpmRegistry,
+	//		SapNpmRegistry:     config.SapNpmRegistry,
+	//	}, e)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -188,8 +189,22 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
+	// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
 	err = installMavenArtifacts(e, config)
+	// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
+	err = installNpmDependencies()
 
+	return err
+}
+
+func installNpmDependencies() error {
+	npmExecutor, err := npm.NewExecutor(npm.ExecutorOptions{Install: true})
+	if err != nil {
+		return err
+	}
+	if npmExecutor != nil {
+		err = npmExecutor.ExecuteAllScripts()
+	}
 	return err
 }
 

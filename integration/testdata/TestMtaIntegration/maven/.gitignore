@@ -5,3 +5,4 @@ foo.mtar
 .flattened-pom.xml
 .pipeline/
 mym2
+app/node_modules
