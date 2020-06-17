@@ -80,14 +80,14 @@ func (m *manifest) WriteManifest() error {
 }
 
 // GetFileName returns the file name of the manifest.
-func (m manifest) GetFileName() string {
+func (m *manifest) GetFileName() string {
 	return m.name
 }
 
 // GetApplications Returns all applications denoted in the manifest file.
 // The applications are returned as a slice of maps. Each app is represented by
 // a map.
-func (m manifest) GetApplications() ([]map[string]interface{}, error) {
+func (m *manifest) GetApplications() ([]map[string]interface{}, error) {
 	apps, err := toSlice(m.self["applications"])
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (m manifest) GetApplications() ([]map[string]interface{}, error) {
 }
 
 // ApplicationHasProperty Checks if the application denoted by 'index' has the property 'name'
-func (m manifest) ApplicationHasProperty(index int, name string) (bool, error) {
+func (m *manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -128,7 +128,7 @@ func (m manifest) ApplicationHasProperty(index int, name string) (bool, error) {
 }
 
 // GetApplicationProperty ...
-func (m manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
+func (m *manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -153,7 +153,7 @@ func (m manifest) GetApplicationProperty(index int, name string) (interface{}, e
 }
 
 // GetAppName Gets the name of the app at 'index'
-func (m manifest) GetAppName(index int) (string, error) {
+func (m *manifest) GetAppName(index int) (string, error) {
 
 	appName, err := m.GetApplicationProperty(index, "name")
 	if err != nil {
@@ -228,7 +228,7 @@ func transformApp(app map[string]interface{}, m *manifest) error {
 }
 
 // IsModified ...
-func (m manifest) IsModified() bool {
+func (m *manifest) IsModified() bool {
 	return m.modified
 }
 
