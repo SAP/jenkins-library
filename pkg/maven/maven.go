@@ -260,15 +260,15 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 }
 
 func jarFile(dir, finalName string) string {
-	return dir + "/target/" + finalName + ".jar"
+	return filepath.Join(dir, "target", finalName+".jar")
 }
 
 func classesJarFile(dir, finalName string) string {
-	return dir + "/target/" + finalName + "-classes.jar"
+	return filepath.Join(dir, "target", finalName+"-classes.jar")
 }
 
 func warFile(dir, finalName string) string {
-	return dir + "/target/" + finalName + ".war"
+	return filepath.Join(dir, "target", finalName+".war")
 }
 
 func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
