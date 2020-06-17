@@ -87,10 +87,10 @@ def call(Map parameters) {
 
     mavenExecute(
         script: parameters.script,
-        flags: '--batch-mode',
+        flags: ['--batch-mode'],
         pomPath: 'application/pom.xml',
         m2Path: s4SdkGlobals.m2Directory,
-        goals: 'checkstyle:checkstyle',
+        goals: ['checkstyle:checkstyle'],
     )
 
     recordIssues blameDisabled: true,
