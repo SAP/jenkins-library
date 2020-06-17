@@ -185,8 +185,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 3, len(npmExecutor.utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -208,9 +208,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 6, len(npmExecutor.utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[5])
+			if assert.Equal(t, 6, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utils.execRunner.Calls[5])
 			}
 		}
 	})
@@ -330,8 +330,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.EqualError(t, err, "ci-lint script execution failed with error: failed to run npm script ci-lint: exit 1. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the ci-lint.xml file, if available, or the log above. ") {
-			if assert.Equal(t, 3, len(npmExecutor.utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})

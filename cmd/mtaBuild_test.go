@@ -60,9 +60,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 4) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", npmExecutor.utils.execRunner.Calls[1].Exec)
-			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, npmExecutor.utils.execRunner.Calls[1].Params)
+		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[1].Exec)
+			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[1].Params)
 		}
 	})
 
@@ -92,9 +92,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, npmExecutor.utils.execRunner.Calls, 4) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", npmExecutor.utils.execRunner.Calls[2].Exec)
-			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, npmExecutor.utils.execRunner.Calls[2].Params)
+		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[2].Exec)
+			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, e.Calls[2].Params)
 		}
 	})
 
