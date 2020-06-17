@@ -48,7 +48,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
     }
 
     @Test
