@@ -10,7 +10,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     'detect',
     /**
-     * Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
+     * Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsys Detect (formerly BlackDuck) Server.
      * @parentConfigKey detect
      */
     'apiTokenCredentialsId',
@@ -25,22 +25,22 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'buildTool',
     /**
-     * Name of the Synopsis Detect (formerly BlackDuck) project.
+     * Name of the Synopsys Detect (formerly BlackDuck) project.
      * @parentConfigKey detect
      */
     'projectName',
     /**
-     * Version of the Synopsis Detect (formerly BlackDuck) project.
+     * Version of the Synopsys Detect (formerly BlackDuck) project.
      * @parentConfigKey detect
      */
     'projectVersion',
     /**
-     * List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.
+     * List of paths which should be scanned by the Synopsys Detect (formerly BlackDuck) scan.
      * @parentConfigKey detect
      */
     'scanPaths',
     /**
-     * Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)
+     * Properties passed to the Synopsys Detect (formerly BlackDuck) scan. You can find details in the [Synopsys Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)
      * @parentConfigKey detect
      */
     'scanProperties',
@@ -54,7 +54,18 @@ import static com.sap.piper.Prerequisites.checkScript
      * Server url to the Synopsis Detect (formerly BlackDuck) Server.
      * @parentConfigKey detect
      */
-    'serverUrl'
+    'serverUrl',
+    /**
+     * User groups the project should belong to
+     * @parentConfigKey detect
+     */
+     'groups',
+    /**
+     * Policies on which the build will be marked as failed. This will trigger a synchronous call and wait for the policies to be applied to the generated BOM after the scan is complete.
+     * @parentConfigKey detect
+     * @possibleValues ['ALL','BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'NONE']
+     */
+     'failOn',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /** @see dockerExecute */
@@ -74,7 +85,9 @@ import static com.sap.piper.Prerequisites.checkScript
         scanners: 'scanners',
         scanPaths: 'scanPaths',
         scanProperties: 'scanProperties',
-        serverUrl: 'serverUrl'
+        serverUrl: 'serverUrl',
+	    groups: 'groups',
+        failOn: 'failOn'
     ]
 ]
 
@@ -134,6 +147,11 @@ void call(Map parameters = [:]) {
                 "--detect.project.version.name='${config.detect.projectVersion}'",
                 "--detect.code.location.name='${config.detect.projectName}/${config.detect.projectVersion}'",
                 "--blackduck.url=${config.detect.serverUrl}",
+	    	    "--detect.project.user.groups='${config.detect.groups}'"
+            ]
+
+            if (config.detect.failOn) [
+                config.detect.scanProperties.add("--detect.policy.check.fail.on.severities=BLOCKER")
             ]
 
             if ('signature' in config.detect.scanners) [

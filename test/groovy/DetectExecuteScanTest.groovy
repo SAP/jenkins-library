@@ -52,7 +52,8 @@ class DetectExecuteScanTest extends BasePiperTest {
             projectName: 'testProject',
             serverUrl: 'https://test.blackducksoftware.com',
             juStabUtils: utils,
-            script: nullScript
+            script: nullScript,
+            groups: 'testGroup'
         ])
 
         //ToDo: assert unstashing
@@ -66,6 +67,7 @@ class DetectExecuteScanTest extends BasePiperTest {
         assertThat(detectProperties, containsString("--blackduck.timeout=6000"))
         assertThat(detectProperties, containsString("--blackduck.trust.cert=true"))
         assertThat(detectProperties, containsString("--detect.report.timeout=4800"))
+        assertThat(detectProperties, containsString("--detect.project.user.groups='testGroup'"))
     }
 
     @Test
