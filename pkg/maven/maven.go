@@ -29,10 +29,11 @@ type ExecuteOptions struct {
 // EvaluateOptions are used by Evaluate() to construct the Maven command line.
 // In contrast to ExecuteOptions, fewer settings are required for Evaluate and thus a separate type is needed.
 type EvaluateOptions struct {
-	PomPath             string `json:"pomPath,omitempty"`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
-	M2Path              string `json:"m2Path,omitempty"`
+	PomPath             string   `json:"pomPath,omitempty"`
+	ProjectSettingsFile string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string   `json:"globalSettingsFile,omitempty"`
+	M2Path              string   `json:"m2Path,omitempty"`
+	Defines             []string `json:"defines,omitempty"`
 }
 
 type mavenExecRunner interface {
@@ -91,14 +92,8 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
 func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunner) (string, error) {
-	return EvaluateWithCustomDefines(options, expression, command, []string{})
-}
-
-// EvaluateWithCustomDefines is the same as Evaluate, but allows to pass in additionalDefines
-func EvaluateWithCustomDefines(options *EvaluateOptions, expression string, command mavenExecRunner, additionalDefines []string) (string, error) {
-	expressionDefine := "-Dexpression=" + expression
-	defines := []string{expressionDefine, "-DforceStdout", "-q"}
-	defines = append(defines, additionalDefines...)
+	defines := []string{"-Dexpression=" + expression, "-DforceStdout", "-q"}
+	defines = append(defines, options.Defines...)
 	executeOptions := ExecuteOptions{
 		PomPath:             options.PomPath,
 		M2Path:              options.M2Path,
@@ -214,8 +209,8 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 }
 
 func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
-
-	finalName, err := EvaluateWithCustomDefines(&options, "project.build.finalName", command, []string{"-pl", dir})
+	options.Defines = []string{"-pl", dir}
+	finalName, err := Evaluate(&options, "project.build.finalName", command)
 	if err != nil {
 		return err
 	}
