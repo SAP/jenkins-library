@@ -39,6 +39,10 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
             stepsCalled.add('testsPublishResults')
             stepParameters.testsPublishResults = m
         })
+
+        helper.registerAllowedMethod('withEnv', [List.class, Closure.class], {env, body ->
+            body()
+        })
     }
 
     @Test
