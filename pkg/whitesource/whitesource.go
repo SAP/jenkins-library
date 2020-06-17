@@ -50,9 +50,9 @@ type System struct {
 }
 
 // NewSystem constructs a new system instance
-func NewSystem(serverUrl, orgToken, userToken string) System {
+func NewSystem(serverURL, orgToken, userToken string) System {
 	return System{
-		ServerURL:  serverUrl,
+		ServerURL:  serverURL,
 		OrgToken:   orgToken,
 		UserToken:  userToken,
 		HTTPClient: &piperhttp.Client{},

@@ -1,10 +1,11 @@
 package versioning
 
 import (
-	"golang.org/x/mod/modfile"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 
 	"github.com/pkg/errors"
 )
@@ -17,7 +18,7 @@ type GoModDescriptor struct {
 	Packaging  string
 }
 
-// go.mod utility to interact with Go Modules specific versioning
+// GoMod utility to interact with Go Modules specific versioning
 type GoMod struct {
 	path                   string
 	readFile               func(string) ([]byte, error)
