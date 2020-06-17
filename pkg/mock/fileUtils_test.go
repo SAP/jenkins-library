@@ -169,7 +169,8 @@ func TestFilesMockFileRemove(t *testing.T) {
 func TestFilesMockGetwd(t *testing.T) {
 	t.Parallel()
 	t.Run("test root", func(t *testing.T) {
-		files := FilesMock{Separator: string(os.PathSeparator)}
+		files := FilesMock{}
+		files.init()
 		dir, err := files.Getwd()
 		assert.NoError(t, err)
 		assert.Equal(t, string(os.PathSeparator), dir)

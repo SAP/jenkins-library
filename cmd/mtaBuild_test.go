@@ -69,7 +69,7 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide SAP npm registry", func(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
-		e.StdoutReturn = map[string]string{"npm config get registry": "undefined"}
+		e.StdoutReturn = map[string]string{"npm config get @sap:registry": "undefined"}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
 

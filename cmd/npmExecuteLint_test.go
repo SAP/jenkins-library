@@ -126,7 +126,7 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 	for _, registry := range configurableRegistries {
 		var buffer bytes.Buffer
 		n.utils.execRunner.Stdout(&buffer)
-		err := n.utils.execRunner.RunExecutable("npm", "config", "get", "registry")
+		err := n.utils.execRunner.RunExecutable("npm", "config", "get", registry)
 		preConfiguredRegistry := buffer.String()
 		if strings.HasPrefix(preConfiguredRegistry, "undefined") {
 			if registry == npmRegistry && n.options.defaultNpmRegistry != "" {
