@@ -227,9 +227,9 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 	warExists, _ := utils.FileExists(warFile(dir, finalName))
 	classesJarExists, _ := utils.FileExists(classesJarFile(dir, finalName))
 
-	log.Entry().Infof("JAR file with name %s does exist: %t\n", jarFile(dir, finalName), jarExists)
-	log.Entry().Infof("WAR file with name %s does exist: %t\n", warFile(dir, finalName), warExists)
-	log.Entry().Infof("Classes-JAR file with name %s does exist: %t\n", classesJarFile(dir, finalName), classesJarExists)
+	log.Entry().Infof("JAR file with name %s does exist: %t", jarFile(dir, finalName), jarExists)
+	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
+	log.Entry().Infof("Classes-JAR file with name %s does exist: %t", classesJarFile(dir, finalName), classesJarExists)
 
 	if jarExists {
 		err = InstallFile(jarFile(dir, finalName), pomFile, options.M2Path, command)
