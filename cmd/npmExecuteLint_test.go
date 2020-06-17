@@ -15,11 +15,11 @@ import (
 
 type mockLintUtilsBundle struct {
 	*mock.FilesMock
-	execRunner mock.ExecMockRunner
+	execRunner *mock.ExecMockRunner
 }
 
 func (u *mockLintUtilsBundle) getExecRunner() execRunner {
-	return &u.execRunner
+	return u.execRunner
 }
 
 func (u *mockLintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
@@ -28,7 +28,7 @@ func (u *mockLintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
 }
 
 func newNpmMockUtilsBundle() mockLintUtilsBundle {
-	utils := mockLintUtilsBundle{FilesMock: &mock.FilesMock{}}
+	utils := mockLintUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
 	return utils
 }
 
@@ -74,12 +74,21 @@ func (n *npmExecutorMock) ExecuteAllScripts() error {
 			log.Entry().Warnf("could not find any package.json file with script " + script)
 			continue
 		}
+
 		npmRunArgs := []string{"run", script}
 		if len(n.options.runOptions) > 0 {
 			npmRunArgs = append(npmRunArgs, n.options.runOptions...)
 		}
 
 		for range packagesWithScript {
+			if !(n.options.install) {
+				// set in each directory to respect existing config in rc fileUtils
+				err = n.SetNpmRegistries()
+				if err != nil {
+					return err
+				}
+			}
+
 			err = n.utils.execRunner.RunExecutable("npm", npmRunArgs...)
 			if err != nil {
 				return fmt.Errorf("failed to run npm script %s: %w", script, err)
@@ -176,8 +185,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 1, len(npmExecutor.utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[0])
+			if assert.Equal(t, 3, len(npmExecutor.utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -199,9 +208,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(npmExecutor.utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[1])
+			if assert.Equal(t, 6, len(npmExecutor.utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[5])
 			}
 		}
 	})
@@ -223,8 +232,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[0])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -247,9 +256,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", "src/**/*.js", "-f", "checkstyle", "-o", "./1_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", "src/**/*.js", "-f", "checkstyle", "-o", "./1_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[3])
 			}
 		}
 	})
@@ -270,9 +279,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[3])
 			}
 		}
 	})
@@ -295,9 +304,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[3])
 			}
 		}
 
@@ -306,7 +315,7 @@ func TestNpmExecuteLint(t *testing.T) {
 	t.Run("Call with ci-lint script and failOnError", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
-		utils.execRunner = mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
+		utils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
 		config := npmExecuteLintOptions{}
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
@@ -320,16 +329,18 @@ func TestNpmExecuteLint(t *testing.T) {
 		}}
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
-		assert.EqualError(t, err, "ci-lint script execution failed with error: failed to run npm script ci-lint: exit 1. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the ci-lint.xml file, if available, or the log above. ")
-		assert.Equal(t, 1, len(npmExecutor.utils.execRunner.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[0])
+		if assert.EqualError(t, err, "ci-lint script execution failed with error: failed to run npm script ci-lint: exit 1. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the ci-lint.xml file, if available, or the log above. ") {
+			if assert.Equal(t, 3, len(npmExecutor.utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, npmExecutor.utils.execRunner.Calls[2])
+			}
+		}
 	})
 
 	t.Run("Call default with ESLint config from user and failOnError", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
-		utils.execRunner = mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"eslint . -f checkstyle -o ./0_defaultlint.xml --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js": errors.New("exit 1")}}
+		utils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"eslint . -f checkstyle -o ./0_defaultlint.xml --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js": errors.New("exit 1")}}
 		config := npmExecuteLintOptions{}
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
@@ -344,8 +355,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		err := runNpmExecuteLint(&npmExecutor, &utils, &config)
 
 		if assert.EqualError(t, err, "Lint execution failed. This might be the result of severe linting findings, problems with the provided ESLint configuration (.eslintrc.json), or another issue. Please examine the linting results in the UI or in 0_defaultlint.xml, if available, or the log above. ") {
-			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[0])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"eslint", ".", "-f", "checkstyle", "-o", "./0_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
