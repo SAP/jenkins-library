@@ -39,9 +39,9 @@ void call(parameters) {
             aborted {buildSetResult(currentBuild, 'ABORTED')}
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
-            cleanup {
-                abapEnvironmentPipelineStagePost script: parameters.script
-            }
+            // cleanup {
+            //     abapEnvironmentPipelineStagePost script: parameters.script
+            // }
         }
     }
 }
