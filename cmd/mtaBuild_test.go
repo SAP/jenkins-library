@@ -205,15 +205,18 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npmExecutorMock{utils: utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
@@ -232,15 +235,18 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npmExecutorMock{utils: utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 	})
 
@@ -254,15 +260,18 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npmExecutorMock{utils: utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 	})
 
@@ -278,15 +287,18 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npmExecutorMock{utils: utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "mbt", e.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "mbt", e.Calls[2].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[2].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
