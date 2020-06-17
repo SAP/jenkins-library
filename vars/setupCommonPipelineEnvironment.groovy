@@ -136,10 +136,7 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
             if(credentialsId){
                 httpRequestParameter.authentication = credentialsId
             }
-            def response = script.httpRequest(
-                url: customDefaults[i],
-                validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
-            )
+            def response = script.httpRequest(httpRequestParameter)
             if (response.status == 404) {
                 error "URL for remote custom defaults (${customDefaults[i]}) appears to be incorrect. " +
                     "Server returned HTTP status code 404. " +
