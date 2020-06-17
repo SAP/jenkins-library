@@ -1,0 +1,22 @@
+metadata:
+  name: schemaPatch
+  description: Patches a json schema with a patch file
+  longDescription: |-
+    This steps allows us to patch a json schema file with patch file.
+spec:
+  inputs:
+    params:
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: The reference to the container registry where the image is located.
+        mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
