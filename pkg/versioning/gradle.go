@@ -2,11 +2,11 @@ package versioning
 
 import (
 	"bytes"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"regexp"
 	"strings"
-	"github.com/SAP/jenkins-library/pkg/command"
 )
 
 type gradleExecRunner interface {
@@ -25,7 +25,7 @@ type GradleDescriptor struct {
 
 // Gradle defines a maven artifact used for versioning
 type Gradle struct {
-	execRunner gradleExecRunner
+	execRunner     gradleExecRunner
 	gradlePropsOut []byte
 }
 
@@ -104,10 +104,10 @@ func (g *Gradle) GetArtifactID() (string, error) {
 		return "", err
 	}
 
-	regex := regexp.MustCompile(`rootProject: root project '(.*)'`)
+	regex := regexp.MustCompile(`(?m:^rootProject: root project '(.*)')`)
 	match := string(regex.Find(g.gradlePropsOut))
 	artifactID := strings.Split(match, `'`)[1]
-	log.Entry().Info("Determined artifact ID: %s", artifactID)
+
 	return artifactID, nil
 }
 
@@ -119,17 +119,14 @@ func (g *Gradle) GetVersion() (string, error) {
 		return "", err
 	}
 
-	regex := regexp.MustCompile(`version: (.*)`)
-	match := string(regex.Find(g.gradlePropsOut))
+	r := regexp.MustCompile("(?m:^version: (.*))")
+	match := r.FindString(string(g.gradlePropsOut))
 	versionIDSlice := strings.Split(match, ` `)
-	log.Entry().Info("version ID slice:", versionIDSlice)
-	log.Entry().Info("Match:", match)
 	if len(versionIDSlice) > 1 {
 		versionID = versionIDSlice[1]
 	}
-	log.Entry().Info("Determined version: ", versionID)
-	return versionID, nil
 
+	return versionID, nil
 }
 
 // SetVersion updates the version of the artifact
