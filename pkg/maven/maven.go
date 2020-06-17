@@ -209,7 +209,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 }
 
 func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
-	options.Defines = []string{"-pl", dir}
+	options.PomPath = filepath.Join(dir, "pom.xml")
 	finalName, err := Evaluate(&options, "project.build.finalName", command)
 	if err != nil {
 		return err
