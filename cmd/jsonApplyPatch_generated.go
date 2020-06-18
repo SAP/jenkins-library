@@ -30,7 +30,8 @@ func JsonApplyPatchCommand() *cobra.Command {
 	var createJsonApplyPatchCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Patches a json with a patch file",
-		Long:  `This steps patches a json file with patch file using the json patch standard.`,
+		Long: `This steps patches a json file with patch file using the json patch standard.
+This step can, e.g., be used if there is a json schema which needs to be patched.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
