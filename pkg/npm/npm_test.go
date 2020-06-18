@@ -9,15 +9,15 @@ import (
 
 type npmMockUtilsBundle struct {
 	*mock.FilesMock
-	execRunner mock.ExecMockRunner
+	execRunner *mock.ExecMockRunner
 }
 
 func (u *npmMockUtilsBundle) getExecRunner() execRunner {
-	return &u.execRunner
+	return u.execRunner
 }
 
 func newNpmMockUtilsBundle() npmMockUtilsBundle {
-	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}}
+	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
 	return utils
 }
 
@@ -26,9 +26,9 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 
-		options := executeOptions{}
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -43,9 +43,9 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{}"))
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{}"))
 		utilsMock.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
-		options := executeOptions{}
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -61,9 +61,9 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{ \"name\": \"test\" }"))
 		utilsMock.AddFile(filepath.Join("test", "package.json"), []byte("{ \"scripts\": { \"test\": \"exit 0\" } }"))
 
-		options := executeOptions{}
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -80,10 +80,10 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile("package-lock.json", []byte("{}"))
 
-		options := executeOptions{}
-		options.defaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -100,10 +100,10 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := executeOptions{}
-		options.defaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -121,10 +121,10 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile("yarn.lock", []byte("{}"))
 
-		options := executeOptions{}
-		options.defaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -144,10 +144,10 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
 
-		options := executeOptions{}
-		options.defaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -167,9 +167,9 @@ func TestNpm(t *testing.T) {
 		utilsMock.AddFile("yarn.lock", []byte("{}"))
 		utilsMock.AddFile("package-lock.json", []byte("{}"))
 
-		options := executeOptions{}
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -185,10 +185,10 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := executeOptions{}
-		options.sapNpmRegistry = "foo.sap"
+		options := ExecutorOptions{}
+		options.SapNpmRegistry = "foo.sap"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -200,20 +200,17 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("check execute script", func(t *testing.T) {
+	t.Run("check Execute script", func(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := executeOptions{}
-		options.install = false
-		options.runScripts = []string{"ci-lint"}
-		options.runOptions = []string{"--silent"}
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
-		err := exec.executeScript("package.json", "ci-lint")
+		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"})
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
@@ -222,20 +219,19 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("check execute all scripts", func(t *testing.T) {
+	t.Run("check Execute all scripts", func(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 
-		options := executeOptions{}
-		options.install = false
-		options.runScripts = []string{"ci-lint", "ci-build"}
+		options := ExecutorOptions{}
+		runScripts := []string{"ci-lint", "ci-build"}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
-		err := exec.ExecuteAllScripts()
+		err := exec.RunScriptsInAllPackages(runScripts, nil, false)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 6, len(utilsMock.execRunner.Calls)) {
@@ -249,11 +245,11 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
-		utilsMock.execRunner = mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
-		options := executeOptions{}
-		options.defaultNpmRegistry = "https://example.org/npm"
+		utilsMock.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "https://example.org/npm"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -262,7 +258,7 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utilsMock.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.options.defaultNpmRegistry}}, utilsMock.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.options.DefaultNpmRegistry}}, utilsMock.execRunner.Calls[1])
 			}
 		}
 	})
@@ -271,11 +267,11 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utilsMock.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
-		utilsMock.execRunner = mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get @sap:registry": "undefined"}}
-		options := executeOptions{}
-		options.sapNpmRegistry = "https://example.sap/npm"
+		utilsMock.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get @sap:registry": "undefined"}}
+		options := ExecutorOptions{}
+		options.SapNpmRegistry = "https://example.sap/npm"
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
@@ -284,7 +280,7 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utilsMock.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "@sap:registry"}}, utilsMock.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@sap:registry", exec.options.sapNpmRegistry}}, utilsMock.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@sap:registry", exec.options.SapNpmRegistry}}, utilsMock.execRunner.Calls[2])
 			}
 		}
 	})
@@ -293,16 +289,13 @@ func TestNpm(t *testing.T) {
 		utilsMock := newNpmMockUtilsBundle()
 		utilsMock.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"))
 
-		options := executeOptions{}
-		options.install = false
-		options.runScripts = []string{"foo"}
-		options.virtualFrameBuffer = true
+		options := ExecutorOptions{}
 
-		exec := &execute{
+		exec := &Execute{
 			utils:   &utilsMock,
 			options: options,
 		}
-		err := exec.ExecuteAllScripts()
+		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, true)
 
 		assert.Contains(t, utilsMock.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
