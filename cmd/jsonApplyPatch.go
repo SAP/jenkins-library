@@ -17,11 +17,10 @@ func jsonApplyPatch(config jsonApplyPatchOptions, telemetryData *telemetry.Custo
 }
 
 func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileUtils) error {
-	schemaFile, err := fileUtils.FileRead(config.Input)
+	schema, err := fileUtils.FileRead(config.Input)
 	if err != nil {
 		return nil
 	}
-	schema := []byte(string(schemaFile))
 
 	patchFile, err := fileUtils.FileRead(config.Patch)
 	if err != nil {
@@ -39,10 +38,11 @@ func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileU
 
 	formattedJson, err := formatJson(patchedSchema)
 	if err != nil {
+		// Ignore error and just use original result.
 		formattedJson = patchedSchema
 	}
 
-	err = fileUtils.FileWrite(config.Output, formattedJson, 0700)
+	err = fileUtils.FileWrite(config.Output, formattedJson, 0644)
 	if err != nil {
 		return err
 	}
