@@ -112,18 +112,18 @@ func npmExecuteScriptsMetadata() config.StepData {
 					{
 						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
 						Name:        "sapNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
 					},
 					{
 						Name:        "virtualFrameBuffer",
