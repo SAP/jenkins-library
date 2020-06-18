@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     params:
-      - name: schema
+      - name: input
         type: string
         description: File path to the json file which schould be patched.
         mandatory: true

@@ -9,15 +9,15 @@ import (
 	"github.com/evanphx/json-patch"
 )
 
-func schemaPatch(config schemaPatchOptions, telemetryData *telemetry.CustomData) {
-	err := runSchemaPatch(&config, &piperutils.Files{})
+func jsonApplyPatch(config jsonApplyPatchOptions, telemetryData *telemetry.CustomData) {
+	err := runJsonApplyPatch(&config, &piperutils.Files{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runSchemaPatch(config *schemaPatchOptions, fileUtils piperutils.FileUtils) error {
-	schemaFile, err := fileUtils.FileRead(config.Schema)
+func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileUtils) error {
+	schemaFile, err := fileUtils.FileRead(config.Input)
 	if err != nil {
 		return nil
 	}

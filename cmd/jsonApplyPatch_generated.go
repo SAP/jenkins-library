@@ -13,24 +13,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type schemaPatchOptions struct {
-	Schema string `json:"schema,omitempty"`
+type jsonApplyPatchOptions struct {
+	Input  string `json:"input,omitempty"`
 	Patch  string `json:"patch,omitempty"`
 	Output string `json:"output,omitempty"`
 }
 
-// SchemaPatchCommand Patches a json schema with a patch file
-func SchemaPatchCommand() *cobra.Command {
-	const STEP_NAME = "schemaPatch"
+// JsonApplyPatchCommand Patches a json with a patch file
+func JsonApplyPatchCommand() *cobra.Command {
+	const STEP_NAME = "jsonApplyPatch"
 
-	metadata := schemaPatchMetadata()
-	var stepConfig schemaPatchOptions
+	metadata := jsonApplyPatchMetadata()
+	var stepConfig jsonApplyPatchOptions
 	var startTime time.Time
 
-	var createSchemaPatchCmd = &cobra.Command{
+	var createJsonApplyPatchCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Patches a json schema with a patch file",
-		Long:  `This steps patches a json schema file with patch file using the json patch standard.`,
+		Short: "Patches a json with a patch file",
+		Long:  `This steps patches a json file with patch file using the json patch standard.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -62,38 +62,38 @@ func SchemaPatchCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			schemaPatch(stepConfig, &telemetryData)
+			jsonApplyPatch(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addSchemaPatchFlags(createSchemaPatchCmd, &stepConfig)
-	return createSchemaPatchCmd
+	addJsonApplyPatchFlags(createJsonApplyPatchCmd, &stepConfig)
+	return createJsonApplyPatchCmd
 }
 
-func addSchemaPatchFlags(cmd *cobra.Command, stepConfig *schemaPatchOptions) {
-	cmd.Flags().StringVar(&stepConfig.Schema, "schema", os.Getenv("PIPER_schema"), "File path to the schema which schould be patched.")
-	cmd.Flags().StringVar(&stepConfig.Patch, "patch", os.Getenv("PIPER_patch"), "File path to the patch which should be applied to the schema.")
-	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "File path to destination of the patched schema.")
+func addJsonApplyPatchFlags(cmd *cobra.Command, stepConfig *jsonApplyPatchOptions) {
+	cmd.Flags().StringVar(&stepConfig.Input, "input", os.Getenv("PIPER_input"), "File path to the json file which schould be patched.")
+	cmd.Flags().StringVar(&stepConfig.Patch, "patch", os.Getenv("PIPER_patch"), "File path to the patch which should be applied to the json file.")
+	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "File path to destination of the patched json file.")
 
-	cmd.MarkFlagRequired("schema")
+	cmd.MarkFlagRequired("input")
 	cmd.MarkFlagRequired("patch")
 	cmd.MarkFlagRequired("output")
 }
 
 // retrieve step metadata
-func schemaPatchMetadata() config.StepData {
+func jsonApplyPatchMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "schemaPatch",
+			Name:    "jsonApplyPatch",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "schema",
+						Name:        "input",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",

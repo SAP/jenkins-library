@@ -65,15 +65,15 @@ var patchedSchema = []byte(`{
 
 func TestSchemaPatch(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
-		options := schemaPatchOptions{
-			Schema: "schema.json",
+		options := jsonApplyPatchOptions{
+			Input: "schema.json",
 			Patch:  "patch.json",
 			Output: "output.json",
 		}
 		filesMock := mock.FilesMock{}
 		filesMock.AddFile("schema.json", schema)
 		filesMock.AddFile("patch.json", patch)
-		err := runSchemaPatch(&options, &filesMock)
+		err := runJsonApplyPatch(&options, &filesMock)
 		assert.NoError(t, err)
 		patchedSchemaResult, err := filesMock.FileRead("output.json")
 		assert.NoError(t, err)

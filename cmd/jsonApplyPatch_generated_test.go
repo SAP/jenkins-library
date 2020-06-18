@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSchemaPatchCommand(t *testing.T) {
+func TestJsonApplyPatchCommand(t *testing.T) {
 
-	testCmd := SchemaPatchCommand()
+	testCmd := JsonApplyPatchCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "schemaPatch", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "jsonApplyPatch", testCmd.Use, "command name incorrect")
 
 }
