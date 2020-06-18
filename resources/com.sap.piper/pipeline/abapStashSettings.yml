@@ -3,7 +3,7 @@ Init:
   stashes:
   - name: "source"
     includes: "**/*"
-    excludes: ".pipeline/**"
+    #excludes: ".pipeline/**"
 
 'Prepare System':
   unstash:
