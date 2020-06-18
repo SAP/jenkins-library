@@ -179,7 +179,26 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: piper_whitesource_vulnerability_report
+      default: "${config.projectName}-vulnerability-report"
+    - name: riskReportFileName
+      type: string
+      description: Name of the file the PDF risk report is written to.
+      mandatory: false
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "${config.projectName}-risk-report"
+    - name: vulnerabilityReportFormat
+      type: string
+      description: Format of the file the vulnerability report is written to.
+      mandatory: false
+      possibleValues: [xlsx, json, xml]
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: xlsx
     - name: parallelLimit
       type: string
       description: 'Limit of parallel jobs being run at once in case of `scanType:
@@ -352,7 +371,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: 7
+      default: -1
     - name: productToken
       type: string
       description: Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -34,7 +35,9 @@ func whitesourceExecuteScan(config whitesourceExecuteScanOptions, telemetryData 
 	}
 }
 
-func runWhitesourceScan(config *whitesourceExecuteScanOptions, sys whitesource.System, telemetryData *telemetry.CustomData, command *command.Command) error {
+func runWhitesourceScan(config *whitesourceExecuteScanOptions, sys whitesource.System, _ *telemetry.CustomData,
+	command *command.Command) error {
+
 	err := resolveProjectIdentifiers(command, config)
 	if err != nil {
 		return err
@@ -51,28 +54,39 @@ func runWhitesourceScan(config *whitesourceExecuteScanOptions, sys whitesource.S
 	log.Entry().Infof("Project name: '%s'", config.ProjectName)
 	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
 	log.Entry().Infof("Project Token: %s", config.ProjectToken)
+	log.Entry().Infof("BuildDescriptorFile: %s", config.BuildDescriptorFile)
 	log.Entry().Infof("Number of projects scanned: %v", len(projectsScanned))
 	log.Entry().Info("-----------------------------------------------------")
 
 	if config.Reporting {
-		var links []piperutils.Path
+		var finalPaths []piperutils.Path
 		for _, proj := range projectsScanned {
 			proj.Name = strings.Split(proj.Name, " - ")[0]
-			link, err := downloadRiskReport(proj.Token, proj.Name, sys)
+			paths, err := downloadReports(proj.Name, proj.Token, config, sys)
 			if err != nil {
 				return err
 			}
-			links = append(links, *link)
+			finalPaths = append(finalPaths, paths...)
 		}
-
-		// publish pdf file locations
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "./", nil, links)
+		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "./", nil, finalPaths)
 	}
+
+	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
+	if config.SecurityVulnerabilities {
+		for _, proj := range projectsScanned {
+			err = checkSecurityViolations(proj.Token, config, sys)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
 func resolveProjectIdentifiers(command *command.Command, config *whitesourceExecuteScanOptions) error {
-	artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, &versioning.Options{}, command)
+	opts := &versioning.Options{}
+	artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, command)
 	if err != nil {
 		return err
 	}
@@ -83,7 +97,9 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 	log.Entry().Info("GAV:", gav)
 	if config.ProjectName == "" || config.ProductVersion == "" {
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		projectName, projectVersion := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
+		projectName, projectVersion := versioning.DetermineProjectCoordinates(nameTmpl,
+			config.DefaultVersioningModel, gav)
+
 		log.Entry().Info("Determined project version:", projectVersion)
 		if config.ProjectName == "" {
 			config.ProjectName = projectName
@@ -95,9 +111,10 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 	return nil
 }
 
-func triggerWhitesourceScan(command *command.Command, config *whitesourceExecuteScanOptions, sys whitesource.System) ([]whitesource.Project, error) {
-	var projectsScanned []whitesource.Project
+func triggerWhitesourceScan(command *command.Command, config *whitesourceExecuteScanOptions,
+	sys whitesource.System) ([]whitesource.Project, error) {
 
+	var projectsScanned []whitesource.Project
 	switch config.ScanType {
 	case "npm":
 		err := executeNpmScan(*config, command)
@@ -109,7 +126,8 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 	default:
 		// Download the unified agent jar file if one does not exist
 		if !fileExists(config.AgentFileName) {
-			err := command.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", config.AgentFileName)
+			err := command.RunExecutable("curl", "-L", config.AgentDownloadURL,
+				"-o", config.AgentFileName)
 			if err != nil {
 				return nil, err
 			}
@@ -117,12 +135,13 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 
 		// Auto generate a config file based on the current directory structure.
 		// Generated file name will be 'wss-generated-file.config'
-		err := command.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect")
+		err := command.RunExecutable("java", "-jar", config.AgentFileName,
+			"-d", ".", "-detect")
 		if err != nil {
 			return nil, err
 		}
 
-		// Rename generated config file to the config.ConfigFilePath parameter
+		// Rename generated config file to config.ConfigFilePath parameter
 		err = os.Rename("wss-generated-file.config", config.ConfigFilePath)
 		if err != nil {
 			return nil, err
@@ -130,9 +149,10 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 
 		wsOutputBuffer := &bytes.Buffer{}
 		command.Stdout(io.MultiWriter(log.Writer(), wsOutputBuffer))
-		err = command.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
-			"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
-			"-product", config.ProductName, "-productVersion", config.ProductVersion)
+		err = command.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".",
+			"-c", config.ConfigFilePath, "-apiKey", config.OrgToken, "-userKey", config.UserToken,
+			"-project", config.ProjectName, "-product", config.ProductName, "-productVersion",
+			config.ProductVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +166,8 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 		}
 
 		if config.ProjectToken == "" {
-			projectToken, err := sys.GetProjectToken(config.ProductToken, config.ProjectName+" - "+config.ProductVersion)
+			fullProjName := fmt.Sprintf("%s-%s", config.ProjectName, config.ProductVersion)
+			projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 			if err != nil {
 				return nil, err
 			}
@@ -172,7 +193,8 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 // Problem: Find all project tokens scanned that are apart of multimodule scan.
 // Issue: Only have access to a single project token to begin with (config.ProjectToken)
 // TODO: Find a better way of doing this instead of extracting from unified agent's stdout...
-func extractProjectTokensFromStdout(wsOutput *bytes.Buffer, config whitesourceExecuteScanOptions, sys whitesource.System) ([]whitesource.Project, error) {
+func extractProjectTokensFromStdout(wsOutput *bytes.Buffer, config whitesourceExecuteScanOptions,
+	sys whitesource.System) ([]whitesource.Project, error) {
 	log.Entry().Info("Extracting project tokens from whitesource stdout..")
 
 	ids := []int64{}
@@ -230,27 +252,118 @@ func executeNpmScan(config whitesourceExecuteScanOptions, command *command.Comma
 	return nil
 }
 
-// downloadRiskReport downloads a project's risk report and returns a piperutils.Path which link to the file
-func downloadRiskReport(projectToken string, projectName string, sys whitesource.System) (*piperutils.Path, error) {
+// checkSecurityViolations
+func checkSecurityViolations(projectToken string, config *whitesourceExecuteScanOptions, sys whitesource.System) error {
+	severeVulnerabilities := 0
+
+	// convert config parameter to float
+	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
+	if err != nil {
+		return err
+	}
+
+	// get project alerts
+	alerts, err := sys.GetProjectAlerts(projectToken)
+	if err != nil {
+		return err
+	}
+
+	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L537
+	for _, alert := range alerts {
+		vuln := alert.Vulnerability
+		if vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit && cvssSeverityLimit >= 0 {
+			severeVulnerabilities++
+		}
+	}
+
+	//https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L547
+	nonSevereVulnerabilities := len(alerts) - severeVulnerabilities
+	if nonSevereVulnerabilities > 0 {
+		log.Entry().Infof("WARNING: %v Open Source Software Security vulnerabilities with "+
+			"CVSS score below %s detected.", nonSevereVulnerabilities, config.CvssSeverityLimit)
+	} else if len(alerts) == 0 {
+		log.Entry().Info("No Open Source Software Security vulnerabilities detected.")
+	}
+
+	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
+	if severeVulnerabilities > 0 {
+		return errors.New(fmt.Sprintf("%v Open Source Software Security vulnerabilities with CVSS "+
+			"score greater or equal to %s detected.", severeVulnerabilities, config.CvssSeverityLimit))
+	}
+	return nil
+}
+
+// downloadReports downloads a project's risk and vulnerability reports
+func downloadReports(projectName, projectToken string, config *whitesourceExecuteScanOptions,
+	sys whitesource.System) ([]piperutils.Path, error) {
+
+	vulnPath, err := downloadVulnerabilityReport(projectName, projectToken, config, sys)
+	if err != nil {
+		return nil, err
+	}
+	riskPath, err := downloadRiskReport(projectName, projectToken, config, sys)
+	if err != nil {
+		return nil, err
+	}
+	return []piperutils.Path{*vulnPath, *riskPath}, nil
+}
+
+func downloadVulnerabilityReport(projectName, projectToken string, config *whitesourceExecuteScanOptions,
+	sys whitesource.System) (*piperutils.Path, error) {
+
+	// create report directory if it DNE
+	reportDir := "whitesource-report"
+	utils := piperutils.Files{}
+	err := utils.MkdirAll(reportDir, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	// Download report from Whitesource API
+	reportBytes, err := sys.GetProjectVulnerabilityReport(projectToken, config.VulnerabilityReportFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	// Write report to file
+	reportFileName := strings.Replace(config.VulnerabilityReportFileName, `${config.projectName}`,
+		projectName, -1)
+	reportFileName = filepath.Join(reportDir, fmt.Sprintf("%s.%s", reportFileName,
+		config.VulnerabilityReportFormat))
+	err = ioutil.WriteFile(reportFileName, reportBytes, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Entry().Infof("Successfully downloaded vulnerability report to %s", reportFileName)
+	pathName := fmt.Sprintf("%s Vulnerability Report", projectName)
+	return &piperutils.Path{Name: pathName, Target: reportFileName}, nil
+}
+
+func downloadRiskReport(projectName, projectToken string, config *whitesourceExecuteScanOptions,
+	sys whitesource.System) (*piperutils.Path, error) {
+
+	// create report directory if dne
+	reportDir := "whitesource-report"
+	utils := piperutils.Files{}
+	err := utils.MkdirAll(reportDir, 0777)
+	if err != nil {
+		return nil, err
+	}
+
 	reportBytes, err := sys.GetProjectRiskReport(projectToken)
 	if err != nil {
 		return nil, err
 	}
 
-	// create report directory if dne
-	reportDir := "whitesource-report"
-	utils := piperutils.Files{}
-	err = utils.MkdirAll(reportDir, 0777)
-	if err != nil {
-		return nil, err
-	}
-
-	reportFileName := filepath.Join(reportDir, projectName+"-risk-report.pdf")
+	reportFileName := strings.Replace(config.RiskReportFileName, `${config.projectName}`, projectName, -1)
+	reportFileName = filepath.Join(reportDir, fmt.Sprintf("%s.pdf", reportFileName))
 	err = ioutil.WriteFile(reportFileName, reportBytes, 0644)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Entry().Infof("Successfully downloaded risk report to %s", reportFileName)
-	return &piperutils.Path{Name: fmt.Sprintf("%s PDF Risk Report", projectName), Target: reportFileName}, nil
+	pathName := fmt.Sprintf("%s PDF Risk Report", projectName)
+	return &piperutils.Path{Name: pathName, Target: reportFileName}, nil
 }

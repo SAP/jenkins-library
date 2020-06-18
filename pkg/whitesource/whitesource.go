@@ -20,6 +20,19 @@ type Product struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
+type Alert struct {
+	Vulnerability Vulnerability `json:"vulnerability"`
+}
+
+type Vulnerability struct {
+	Name          string  `json:"name"`
+	Type          string  `json:"type"`
+	CVSS3Severity string  `json:"cvss3_severity,omitempty"`
+	CVSS3Score    float64 `json:"cvss3_score,omitempty"`
+	Score         float64 `json:"score,omitempty"`
+	PublishDate   string  `json:"publishDate,omitempty"`
+}
+
 // Project defines a WhiteSource project with name and token
 type Project struct {
 	ID             int64  `json:"id"`
@@ -39,6 +52,7 @@ type Request struct {
 	ProductName  string `json:"productName,omitempty"`
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
+	Format       string `jdon:"format,omitempty"`
 }
 
 // System defines a WhiteSource system including respective tokens (e.g. org token, user token)
@@ -234,6 +248,22 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 	return respBody, nil
 }
 
+// GetProjectVulnerabilityReport
+func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
+	req := Request{
+		RequestType:  "getProjectVulnerabilityReport",
+		ProjectToken: projectToken,
+		Format:       format,
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource getProjectVulnerabilityReport request failed")
+	}
+
+	return respBody, nil
+}
+
 // GetOrganizationProductVitals
 func (s *System) GetOrganizationProductVitals() ([]Product, error) {
 	wsResponse := struct {
@@ -273,6 +303,33 @@ func (s *System) GetProductByName(productName string) (*Product, error) {
 	}
 
 	return nil, errors.New("Product could not be found")
+}
+
+// GetProjectAlerts
+func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
+	wsResponse := struct {
+		Alerts []Alert `json:"alerts"`
+	}{
+		Alerts: []Alert{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectAlerts",
+		ProjectToken: projectToken,
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	err = json.Unmarshal(respBody, &wsResponse)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+	log.Entry().Info("WSResponse.Alerts:", wsResponse)
+
+	return wsResponse.Alerts, nil
 }
 
 func (s *System) sendRequest(req Request) ([]byte, error) {

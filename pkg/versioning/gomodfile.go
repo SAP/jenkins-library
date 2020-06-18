@@ -31,11 +31,9 @@ func (m *GoMod) init() error {
 	if m.readFile == nil {
 		m.readFile = ioutil.ReadFile
 	}
-
 	if m.writeFile == nil {
 		m.writeFile = ioutil.WriteFile
 	}
-
 	if len(m.buildDescriptorContent) == 0 {
 		content, err := m.readFile(m.path)
 		if err != nil {
