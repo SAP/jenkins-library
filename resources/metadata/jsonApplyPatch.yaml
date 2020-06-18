@@ -3,6 +3,7 @@ metadata:
   description: Patches a json with a patch file
   longDescription: |-
     This steps patches a json file with patch file using the json patch standard.
+    This step can, e.g., be used if there is a json schema which needs to be patched.
 spec:
   inputs:
     params:

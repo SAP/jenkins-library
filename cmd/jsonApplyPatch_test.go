@@ -66,7 +66,7 @@ var patchedSchema = []byte(`{
 func TestSchemaPatch(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		options := jsonApplyPatchOptions{
-			Input: "schema.json",
+			Input:  "schema.json",
 			Patch:  "patch.json",
 			Output: "output.json",
 		}
