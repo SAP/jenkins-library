@@ -88,6 +88,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
+	rootCmd.AddCommand(SchemaPatchCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

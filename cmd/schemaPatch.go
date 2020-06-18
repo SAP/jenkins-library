@@ -3,57 +3,57 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/evanphx/json-patch"
-	"io/ioutil"
 )
 
 func schemaPatch(config schemaPatchOptions, telemetryData *telemetry.CustomData) {
-	err := runSchemaPatch(&config, telemetryData, &command.Command{})
+	err := runSchemaPatch(&config, &piperutils.Files{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runSchemaPatch(config *schemaPatchOptions, telemetryData *telemetry.CustomData, command execRunner) error {
-	schemaFile, err := ioutil.ReadFile(config.Schema)
+func runSchemaPatch(config *schemaPatchOptions, fileUtils piperutils.FileUtils) error {
+	schemaFile, err := fileUtils.FileRead(config.Schema)
 	if err != nil {
 		return nil
 	}
 	schema := []byte(string(schemaFile))
 
-	patchFile, err := ioutil.ReadFile(config.Patch)
+	patchFile, err := fileUtils.FileRead(config.Patch)
 	if err != nil {
 		return nil
 	}
-	patch := []byte(string(patchFile))
-	patcher, err := jsonpatch.DecodePatch(patch)
+	patcher, err := jsonpatch.DecodePatch(patchFile)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	patchedSchema, err := patcher.Apply(schema)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	formattedJson, err := jsonPrettyPrint(string(patchedSchema))
+	formattedJson, err := formatJson(patchedSchema)
+	if err != nil {
+		formattedJson = patchedSchema
+	}
+
+	err = fileUtils.FileWrite(config.Output, formattedJson, 0700)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(config.Output, formattedJson, 0700)
-	if err != nil {
-		return err
-	}
+	return nil
 }
 
-func jsonPrettyPrint(input string) ([]byte, error) {
-	var out bytes.Buffer
-	err := json.Indent(&out, []byte(input), "", "  ")
+func formatJson(input []byte) ([]byte, error) {
+	var output bytes.Buffer
+	err := json.Indent(&output, input, "", "    ")
 	if err != nil {
 		return nil, err
 	}
-	return out.Bytes(), nil
+	return output.Bytes(), nil
 }
