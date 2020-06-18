@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		npmExecutor := npmExecutorMock{}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -48,13 +49,8 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils, options: npmExecuteOptions{
-			install:            false,
-			runScripts:         []string{},
-			runOptions:         []string{},
-			defaultNpmRegistry: options.DefaultNpmRegistry,
-			sapNpmRegistry:     options.SapNpmRegistry,
-		}}
+		npmOptions := npm.ExecutorOptions{DefaultNpmRegistry: options.DefaultNpmRegistry}
+		npmExecutor := npm.Execute{Utils: &utils, Options: npmOptions}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -80,13 +76,8 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils, options: npmExecuteOptions{
-			install:            false,
-			runScripts:         []string{},
-			runOptions:         []string{},
-			defaultNpmRegistry: options.DefaultNpmRegistry,
-			sapNpmRegistry:     options.SapNpmRegistry,
-		}}
+		npmOptions := npm.ExecutorOptions{SapNpmRegistry: options.SapNpmRegistry}
+		npmExecutor := npm.Execute{Utils: &utils, Options: npmOptions}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -106,7 +97,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		npmExecutor := npmExecutorMock{}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -127,7 +118,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		npmExecutor := npmExecutorMock{}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -168,7 +159,7 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		npmExecutor := npmExecutorMock{}
 
 		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -186,7 +177,7 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there with-${timestamp}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+		npmExecutor := npmExecutorMock{}
 
 		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -208,7 +199,7 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils}
+		npmExecutor := npm.Execute{Utils: &utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -238,7 +229,7 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils}
+		npmExecutor := npm.Execute{Utils: &utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -263,7 +254,7 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils}
+		npmExecutor := npm.Execute{Utils: &utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -290,7 +281,7 @@ func TestMarBuild(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.execRunner = &e
 
-		npmExecutor := npmExecutorMock{utils: utils}
+		npmExecutor := npm.Execute{Utils: &utils}
 
 		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -337,7 +328,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+			npmExecutor := npmExecutorMock{}
 
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
@@ -358,7 +349,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			npmExecutor := npmExecutorMock{utils: newNpmMockUtilsBundle()}
+			npmExecutor := npmExecutorMock{}
 
 			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 

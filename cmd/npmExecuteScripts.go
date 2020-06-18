@@ -7,10 +7,10 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
-	npmExecutorOptions := npm.ExecutorOptions{Install: config.Install, RunScripts: config.RunScripts, DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, VirtualFrameBuffer: config.VirtualFrameBuffer}
-	npmExecutor, err := npm.NewExecutor(npmExecutorOptions)
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err = runNpmExecuteScripts(npmExecutor, &config)
+	err := runNpmExecuteScripts(npmExecutor, &config)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -26,5 +26,5 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	return npmExecutor.ExecuteAllScripts()
+	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.VirtualFrameBuffer)
 }
