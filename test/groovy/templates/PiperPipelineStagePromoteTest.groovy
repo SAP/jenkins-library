@@ -51,7 +51,7 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(hasItems('containerPushToRegistry')))
+        assertThat(stepsCalled, not(hasItem('containerPushToRegistry')))
 
     }
 
