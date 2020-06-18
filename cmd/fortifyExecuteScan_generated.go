@@ -16,55 +16,54 @@ import (
 )
 
 type fortifyExecuteScanOptions struct {
-	AuthToken                       string `json:"authToken,omitempty"`
-	GithubToken                     string `json:"githubToken,omitempty"`
-	AutoCreate                      bool   `json:"autoCreate,omitempty"`
-	MvnCustomArgs                   string `json:"mvnCustomArgs,omitempty"`
-	ModulePath                      string `json:"modulePath,omitempty"`
-	PythonRequirementsFile          string `json:"pythonRequirementsFile,omitempty"`
-	AutodetectClasspath             bool   `json:"autodetectClasspath,omitempty"`
-	MustAuditIssueGroups            string `json:"mustAuditIssueGroups,omitempty"`
-	SpotAuditIssueGroups            string `json:"spotAuditIssueGroups,omitempty"`
-	PythonRequirementsInstallSuffix string `json:"pythonRequirementsInstallSuffix,omitempty"`
-	PythonVersion                   string `json:"pythonVersion,omitempty"`
-	UploadResults                   bool   `json:"uploadResults,omitempty"`
-	BuildDescriptorFile             string `json:"buildDescriptorFile,omitempty"`
-	CommitID                        string `json:"commitId,omitempty"`
-	CommitMessage                   string `json:"commitMessage,omitempty"`
-	GithubAPIURL                    string `json:"githubApiUrl,omitempty"`
-	Owner                           string `json:"owner,omitempty"`
-	Repository                      string `json:"repository,omitempty"`
-	Memory                          string `json:"memory,omitempty"`
-	UpdateRulePack                  bool   `json:"updateRulePack,omitempty"`
-	PythonExcludes                  string `json:"pythonExcludes,omitempty"`
-	ReportDownloadEndpoint          string `json:"reportDownloadEndpoint,omitempty"`
-	PollingMinutes                  int    `json:"pollingMinutes,omitempty"`
-	QuickScan                       bool   `json:"quickScan,omitempty"`
-	Translate                       string `json:"translate,omitempty"`
-	Src                             string `json:"src,omitempty"`
-	Exclude                         string `json:"exclude,omitempty"`
-	APIEndpoint                     string `json:"apiEndpoint,omitempty"`
-	ReportType                      string `json:"reportType,omitempty"`
-	PythonAdditionalPath            string `json:"pythonAdditionalPath,omitempty"`
-	ArtifactURL                     string `json:"artifactUrl,omitempty"`
-	ConsiderSuspicious              bool   `json:"considerSuspicious,omitempty"`
-	FprUploadEndpoint               string `json:"fprUploadEndpoint,omitempty"`
-	ProjectName                     string `json:"projectName,omitempty"`
-	PythonIncludes                  string `json:"pythonIncludes,omitempty"`
-	Reporting                       bool   `json:"reporting,omitempty"`
-	ServerURL                       string `json:"serverUrl,omitempty"`
-	BuildDescriptorExcludeList      string `json:"buildDescriptorExcludeList,omitempty"`
-	PullRequestMessageRegexGroup    int    `json:"pullRequestMessageRegexGroup,omitempty"`
-	DeltaMinutes                    int    `json:"deltaMinutes,omitempty"`
-	SpotCheckMinimum                int    `json:"spotCheckMinimum,omitempty"`
-	FprDownloadEndpoint             string `json:"fprDownloadEndpoint,omitempty"`
-	DefaultVersioningModel          string `json:"defaultVersioningModel,omitempty"`
-	PythonInstallCommand            string `json:"pythonInstallCommand,omitempty"`
-	ReportTemplateID                int    `json:"reportTemplateId,omitempty"`
-	FilterSetTitle                  string `json:"filterSetTitle,omitempty"`
-	PullRequestName                 string `json:"pullRequestName,omitempty"`
-	PullRequestMessageRegex         string `json:"pullRequestMessageRegex,omitempty"`
-	BuildTool                       string `json:"buildTool,omitempty"`
+	AuthToken                       string   `json:"authToken,omitempty"`
+	GithubToken                     string   `json:"githubToken,omitempty"`
+	AutoCreate                      bool     `json:"autoCreate,omitempty"`
+	ModulePath                      string   `json:"modulePath,omitempty"`
+	PythonRequirementsFile          string   `json:"pythonRequirementsFile,omitempty"`
+	AutodetectClasspath             bool     `json:"autodetectClasspath,omitempty"`
+	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty"`
+	SpotAuditIssueGroups            string   `json:"spotAuditIssueGroups,omitempty"`
+	PythonRequirementsInstallSuffix string   `json:"pythonRequirementsInstallSuffix,omitempty"`
+	PythonVersion                   string   `json:"pythonVersion,omitempty"`
+	UploadResults                   bool     `json:"uploadResults,omitempty"`
+	BuildDescriptorFile             string   `json:"buildDescriptorFile,omitempty"`
+	CommitID                        string   `json:"commitId,omitempty"`
+	CommitMessage                   string   `json:"commitMessage,omitempty"`
+	GithubAPIURL                    string   `json:"githubApiUrl,omitempty"`
+	Owner                           string   `json:"owner,omitempty"`
+	Repository                      string   `json:"repository,omitempty"`
+	Memory                          string   `json:"memory,omitempty"`
+	UpdateRulePack                  bool     `json:"updateRulePack,omitempty"`
+	ReportDownloadEndpoint          string   `json:"reportDownloadEndpoint,omitempty"`
+	PollingMinutes                  int      `json:"pollingMinutes,omitempty"`
+	QuickScan                       bool     `json:"quickScan,omitempty"`
+	Translate                       string   `json:"translate,omitempty"`
+	Src                             []string `json:"src,omitempty"`
+	Exclude                         []string `json:"exclude,omitempty"`
+	APIEndpoint                     string   `json:"apiEndpoint,omitempty"`
+	ReportType                      string   `json:"reportType,omitempty"`
+	PythonAdditionalPath            []string `json:"pythonAdditionalPath,omitempty"`
+	ArtifactURL                     string   `json:"artifactUrl,omitempty"`
+	ConsiderSuspicious              bool     `json:"considerSuspicious,omitempty"`
+	FprUploadEndpoint               string   `json:"fprUploadEndpoint,omitempty"`
+	ProjectName                     string   `json:"projectName,omitempty"`
+	Reporting                       bool     `json:"reporting,omitempty"`
+	ServerURL                       string   `json:"serverUrl,omitempty"`
+	PullRequestMessageRegexGroup    int      `json:"pullRequestMessageRegexGroup,omitempty"`
+	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
+	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
+	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
+	DefaultVersioningModel          string   `json:"defaultVersioningModel,omitempty"`
+	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
+	ReportTemplateID                int      `json:"reportTemplateId,omitempty"`
+	FilterSetTitle                  string   `json:"filterSetTitle,omitempty"`
+	PullRequestName                 string   `json:"pullRequestName,omitempty"`
+	PullRequestMessageRegex         string   `json:"pullRequestMessageRegex,omitempty"`
+	BuildTool                       string   `json:"buildTool,omitempty"`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
+	M2Path                          string   `json:"m2Path,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -190,7 +189,6 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
-	cmd.Flags().StringVar(&stepConfig.MvnCustomArgs, "mvnCustomArgs", ``, "Allows providing additional Maven command line parameters")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all")
@@ -202,40 +200,40 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`: `./setup.py`.")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifying artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifying pull request merges throughout the scan.")
-	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Memory, "memory", `-Xmx4G -Xms512M`, "The amount of memory granted to the translate/scan executions")
 	cmd.Flags().BoolVar(&stepConfig.UpdateRulePack, "updateRulePack", true, "Whether the rule pack shall be updated and pulled from Fortify SSC before scanning or not")
-	cmd.Flags().StringVar(&stepConfig.PythonExcludes, "pythonExcludes", `-exclude ./**/tests/**/*;./**/setup.py`, "The excludes pattern used in `buildTool: 'pip'` for excluding specific .py files i.e. tests")
 	cmd.Flags().StringVar(&stepConfig.ReportDownloadEndpoint, "reportDownloadEndpoint", `/transfer/reportDownload.html`, "Fortify SSC endpoint for Report downloads")
-	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact's status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
+	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact''s status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
-	cmd.Flags().StringVar(&stepConfig.Src, "src", `**/*.xml **/*.html **/*.jsp **/*.js **/src/main/resources/**/* **/src/main/java/**/*`, "Source directories to scan. Multiple entries are separated by space and wildcards can be used, e.g., `'src/main/resources/**/* src/main/java/**/*'`. If `translate` is set, this will ignored.")
-	cmd.Flags().StringVar(&stepConfig.Exclude, "exclude", os.Getenv("PIPER_exclude"), "Exludes directories/files from scan. Multiple entries are separated by semicolon and wildcards can be used, e.g., `'fileA;fileB;**/Test.java;'`. If `translate` is set, this will ignored.")
+	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is ['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*'], for `buildTool: 'pip'` it is ['./**/*'].")
+	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
-	cmd.Flags().StringVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", `./lib;.`, "The addional path which can be used in `buildTool: 'pip'` for customization purposes")
-	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/Url pointing to an additional artifact repository for resolution of additional artifacts during the build")
+	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
+	cmd.Flags().StringVar(&stepConfig.ArtifactURL, "artifactUrl", os.Getenv("PIPER_artifactUrl"), "Path/URL pointing to an additional artifact repository for resolution of additional artifacts during the build")
 	cmd.Flags().BoolVar(&stepConfig.ConsiderSuspicious, "considerSuspicious", true, "Whether suspicious issues should trigger the check to fail or not")
 	cmd.Flags().StringVar(&stepConfig.FprUploadEndpoint, "fprUploadEndpoint", `/upload/resultFileUpload.html`, "Fortify SSC endpoint for FPR uploads")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`, "The project used for reporting results in SSC")
-	cmd.Flags().StringVar(&stepConfig.PythonIncludes, "pythonIncludes", `./**/*`, "The includes pattern used in `buildTool: 'pip'` for including .py files")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", false, "Influences whether a report is generated or not")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Fortify SSC Url to be used for accessing the APIs")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", `[]`, "Build descriptor files to exclude modules from being scanned")
-	cmd.Flags().IntVar(&stepConfig.PullRequestMessageRegexGroup, "pullRequestMessageRegexGroup", 1, "The group number for extracting the pull request id in `pullRequestMessageRegex`")
+	cmd.Flags().IntVar(&stepConfig.PullRequestMessageRegexGroup, "pullRequestMessageRegexGroup", 1, "The group number for extracting the pull request id in `'pullRequestMessageRegex'`")
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
-	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint  for FPR downloads")
-	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
+	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint for FPR downloads")
+	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `buildTool: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request branch which will trigger creation of a new version in Fortify SSC based on the master branch version")
 	cmd.Flags().StringVar(&stepConfig.PullRequestMessageRegex, "pullRequestMessageRegex", `.*Merge pull request #(\\d+) from.*`, "Regex used to identify the PR-XXX reference within the merge commit message")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Scan type used for the step which can be `'maven'`, `'pip'`")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 
 	cmd.MarkFlagRequired("authToken")
 }
@@ -271,14 +269,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "mvnCustomArgs",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -411,14 +401,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "pythonExcludes",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "reportDownloadEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -454,7 +436,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name:        "src",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -462,7 +444,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name:        "exclude",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -486,7 +468,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name:        "pythonAdditionalPath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -523,14 +505,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
 					},
 					{
-						Name:        "pythonIncludes",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "reporting",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -545,14 +519,6 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl"}},
-					},
-					{
-						Name:        "buildDescriptorExcludeList",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "pullRequestMessageRegexGroup",
@@ -641,6 +607,30 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 				},
 			},
