@@ -67,7 +67,8 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         /* Defining the sources where to look for a project extension and a repository extension.
         * Files need to be named like the executed stage to be recognized.
         */
-        echo "---------------------------------------> dir: ${config.projectExtrensionDirectory}"
+        echo "---------------------------------------> dirProj: ${config.projectExtensionsDirectory}"
+        echo "---------------------------------------> dirGlobal: ${config.globalExtensionsDirectory}"
         echo "---------------------------------------> stageName: ${stageName}"
         def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
