@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"testing"
 
@@ -25,7 +26,9 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := npmExecutorMock{}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
@@ -43,7 +46,13 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmOptions := npm.ExecutorOptions{DefaultNpmRegistry: options.DefaultNpmRegistry}
+		npmExecutor := npm.Execute{Utils: &utils, Options: npmOptions}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -64,7 +73,13 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmOptions := npm.ExecutorOptions{SapNpmRegistry: options.SapNpmRegistry}
+		npmExecutor := npm.Execute{Utils: &utils, Options: npmOptions}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -82,7 +97,9 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := npmExecutorMock{}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.NotNil(t, err)
 
@@ -101,7 +118,9 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := npmExecutorMock{}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -140,7 +159,9 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := npmExecutorMock{}
+
+		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Empty(t, fileUtils.writtenFiles)
 	})
@@ -156,7 +177,9 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there with-${timestamp}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := npmExecutorMock{}
+
+		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
 	})
@@ -173,7 +196,12 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npm.Execute{Utils: &utils}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -198,7 +226,12 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npm.Execute{Utils: &utils}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -218,7 +251,12 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npm.Execute{Utils: &utils}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -240,7 +278,12 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		utils := newNpmMockUtilsBundle()
+		utils.execRunner = &e
+
+		npmExecutor := npm.Execute{Utils: &utils}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 		assert.Nil(t, err)
 
@@ -285,7 +328,9 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+			npmExecutor := npmExecutorMock{}
+
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 			assert.Nil(t, err)
 
@@ -304,7 +349,9 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+			npmExecutor := npmExecutorMock{}
+
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, &npmExecutor)
 
 			assert.Nil(t, err)
 
