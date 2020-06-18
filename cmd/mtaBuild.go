@@ -203,7 +203,8 @@ func installNpmDependencies() error {
 		return err
 	}
 	if npmExecutor != nil {
-		err = npmExecutor.ExecuteAllScripts()
+		x := npmExecutor.FindPackageJSONFiles()
+		err = npmExecutor.InstallAllDependencies(x)
 	}
 	return err
 }

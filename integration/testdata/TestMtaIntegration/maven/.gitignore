@@ -6,3 +6,4 @@ foo.mtar
 .pipeline/
 mym2
 app/node_modules
+app/package-lock.json
