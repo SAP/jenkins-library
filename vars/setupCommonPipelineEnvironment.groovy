@@ -14,7 +14,7 @@ import groovy.transform.Field
     'collectTelemetryData',
 
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
-    'customDefaultCredentialsId'
+    'customDefaultsCredentialsId'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -72,8 +72,8 @@ void call(Map parameters = [:]) {
             customDefaultsFiles = Utils.appendParameterToStringList(
                 customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        String customDefaultCredentialId = script.commonPipelineEnvironment.configuration.general?.customDefaultCredentialId
-        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles, customDefaultCredentialsId)
+        String customDefaultsCredentialsId = script.commonPipelineEnvironment.configuration.general?.customDefaultsCredentialsId
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles, customDefaultsCredentialsId)
 
         prepareDefaultValues([
             script: script,
