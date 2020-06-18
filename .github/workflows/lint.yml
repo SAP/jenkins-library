@@ -7,16 +7,12 @@ on:
   pull_request:
     branches:
     - master
-    paths:
-      - '**/*.md'
 
 jobs:
-  markdownlint:
+  lint:
     runs-on: ubuntu-latest
     name: 'Format'
     steps:
     - uses: actions/checkout@v2
-    - name: Markdown Linting
-      uses: nosborn/github-action-markdown-cli@v1.1.1
-      with:
-        files: .
+    - name: Lint Code Base
+      uses: github/super-linter@v2.0.0
