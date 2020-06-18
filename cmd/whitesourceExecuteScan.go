@@ -80,9 +80,11 @@ func resolveProjectIdentifiers(command *command.Command, config *whitesourceExec
 	if err != nil {
 		return err
 	}
+	log.Entry().Info("GAV:", gav)
 	if config.ProjectName == "" || config.ProductVersion == "" {
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		projectName, projectVersion := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
+		log.Entry().Info("Determined project version:", projectVersion)
 		if config.ProjectName == "" {
 			config.ProjectName = projectName
 		}

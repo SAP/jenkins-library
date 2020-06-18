@@ -72,7 +72,6 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
-	
 	return result, nil
 }
 

@@ -28,7 +28,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ./Gopkg.toml
+      default: null
       conditions:
       - conditionRef: strings-equal
         params:
@@ -295,16 +295,6 @@ spec:
       - STAGES
       - STEPS
       default: null
-    - name: verbose
-      type: bool
-      description: Whether verbose output should be produced.
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: false
     - name: projectName
       aliases:
         - name: whitesourceProjectName
@@ -353,6 +343,7 @@ spec:
       - STAGES
       - STEPS
       default: null
+      possibleValues: ["golang", "npm", "gradle", "pip"]
     - name: cvssSeverityLimit
       type: string
       description: Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.
