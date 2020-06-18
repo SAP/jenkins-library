@@ -37,19 +37,19 @@ func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileU
 		return err
 	}
 
-	formattedJSON, err := formatJSON(patchedSchema)
+	formattedJson, err := formatJson(patchedSchema)
 	if err != nil {
-		formattedJSON = patchedSchema
+		formattedJson = patchedSchema
 	}
 
-	err = fileUtils.FileWrite(config.Output, formattedJSON, 0700)
+	err = fileUtils.FileWrite(config.Output, formattedJson, 0700)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func formatJSON(input []byte) ([]byte, error) {
+func formatJson(input []byte) ([]byte, error) {
 	var output bytes.Buffer
 	err := json.Indent(&output, input, "", "    ")
 	if err != nil {
