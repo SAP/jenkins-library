@@ -68,10 +68,10 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
 
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
 	utils := newLintUtilsBundle()
-	npmExecutorOptions := npm.ExecutorOptions{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}, DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
-	npmExecutor, err := npm.NewExecutor(npmExecutorOptions)
+	npmExecutorOptions := npm.ExecutorOptions{ DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err = runNpmExecuteLint(npmExecutor, utils, &config)
+	err := runNpmExecuteLint(npmExecutor, utils, &config)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -96,7 +96,10 @@ func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExe
 }
 
 func runCiLint(npmExecutor npm.Executor, failOnError bool) error {
-	err := npmExecutor.ExecuteAllScripts()
+	runScripts := []string{"ci-lint"}
+	runOptions := []string{"--silent"}
+
+	err := npmExecutor.RunScriptsInAllPackages(runScripts, runOptions, false)
 	if err != nil {
 		if failOnError {
 			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", err)
