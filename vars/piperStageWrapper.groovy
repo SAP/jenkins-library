@@ -59,6 +59,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
     boolean projectExtensions
     boolean globalExtensions
     def startTime = System.currentTimeMillis()
+
     try {
         // Add general stage stashes to config.stashContent
         config.stashContent = utils.unstashStageFiles(script, stageName, config.stashContent)
@@ -70,7 +71,6 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
         projectExtensions = fileExists(projectInterceptorFile)
         globalExtensions = fileExists(globalInterceptorFile)
-
         // Pre-defining the real originalStage in body variable, might be overwritten later if extensions exist
         def body = originalStage
 
