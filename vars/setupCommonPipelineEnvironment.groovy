@@ -129,14 +129,14 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = "custom_default_from_url_${urlCount}.yml"
 
-            Map httpRequestParameter = [
+            Map httpRequestParameters = [
                 url: customDefaults[i],
                 validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
             ]
-            if(credentialsId){
-                httpRequestParameter.authentication = credentialsId
+            if (credentialsId) {
+                httpRequestParameters.authentication = credentialsId
             }
-            def response = script.httpRequest(httpRequestParameter)
+            def response = script.httpRequest(httpRequestParameters)
             if (response.status == 404) {
                 error "URL for remote custom defaults (${customDefaults[i]}) appears to be incorrect. " +
                     "Server returned HTTP status code 404. " +
