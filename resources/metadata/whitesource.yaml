@@ -161,7 +161,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: https://github.com/unified-agent-distribution/releases/latest/download/${config.agentFileName}
+      default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
     - name: configFilePath
       type: string
       description: Explicit path to the WhiteSource Unified Agent configuration file.
@@ -170,7 +170,7 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: ./wss-unified-agent.config
+      default: ./wss-generated-file.config
     - name: vulnerabilityReportFileName
       type: string
       description: Name of the file the vulnerability report is written to.

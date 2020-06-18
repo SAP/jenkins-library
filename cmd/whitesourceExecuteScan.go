@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -107,18 +107,32 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 		break
 
 	default:
+		// Download the unified agent jar file if one does not exist
+		if !fileExists(config.AgentFileName) {
+			err := command.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", config.AgentFileName)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// Auto generate a config file based on the current directory structure.
+		// Generated file name will be 'wss-generated-file.config'
 		err := command.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect")
 		if err != nil {
 			return nil, err
 		}
 
+		// Rename generated config file to the config.ConfigFilePath parameter
+		err = os.Rename("wss-generated-file.config", config.ConfigFilePath)
+		if err != nil {
+			return nil, err
+		}
+
 		wsOutputBuffer := &bytes.Buffer{}
-		cmd := exec.Command("java", "-jar", config.AgentFileName, "-d", ".", "-c", "wss-generated-file.config",
+		command.Stdout(io.MultiWriter(log.Writer(), wsOutputBuffer))
+		err = command.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 			"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 			"-product", config.ProductName, "-productVersion", config.ProductVersion)
-		cmd.Stdout = io.MultiWriter(log.Writer(), wsOutputBuffer)
-		err = cmd.Run()
 		if err != nil {
 			return nil, err
 		}
@@ -161,19 +175,9 @@ func triggerWhitesourceScan(command *command.Command, config *whitesourceExecute
 func extractProjectTokensFromStdout(wsOutput *bytes.Buffer, config whitesourceExecuteScanOptions, sys whitesource.System) ([]whitesource.Project, error) {
 	log.Entry().Info("Extracting project tokens from whitesource stdout..")
 
-	// TODO: Use regexp
-	cmd := exec.Command("grep", "URL: ")
-	projectsInfoBuffer := &bytes.Buffer{}
-	cmd.Stdout = projectsInfoBuffer
-	cmd.Stdin = wsOutput
-	err := cmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
 	ids := []int64{}
 	r := regexp.MustCompile(`#!project;id=(.*[0-9])`)
-	projectMetaStr := projectsInfoBuffer.String()
+	projectMetaStr := wsOutput.String()
 	matches := r.FindAllString(projectMetaStr, -1)
 	for _, match := range matches {
 		versionStr := strings.Split(match, "id=")[1]
