@@ -87,7 +87,7 @@ void call(Map parameters = [:]) {
         def globalExtensionsLibraryConfig = "${configuration.globalExtensionsDirectory}/sharedLibraries.yml"
 
         if(fileExists(globalExtensionsLibraryConfig)){
-            loadLibrariesFromFile(globalExtensionsLibraryConfig, "global")
+            loadLibrariesFromFile(globalExtensionsLibraryConfig)
         }
     }
 }
