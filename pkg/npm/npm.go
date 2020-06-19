@@ -44,7 +44,7 @@ func NewExecutor(executorOptions ExecutorOptions) Executor {
 	}
 }
 
-// execRunner interface to enable mocking for testing
+// ExecRunner interface to enable mocking for testing
 type ExecRunner interface {
 	SetEnv(e []string)
 	Stdout(out io.Writer)
