@@ -25,6 +25,7 @@ class ContainerMap implements Serializable {
     }
 
     void initFromResource(Script script, String yamlResourceName, String buildTool) {
+        script.echo "initFromResource(yamlResourceName: $yamlResourceName, buildTool: $buildTool)"
         Map containers = [:]
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
@@ -67,8 +68,9 @@ class ContainerMap implements Serializable {
     }
 
     static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata, String buildTool) {
+        script.echo "Getting docker image name for Go step '$stepName' in stage '$stageName'"
         Map config
-        script.withEnv() {
+        script.withEnv(["STAGE_NAME=$stageName"]) {
             script.piperExecuteBin.prepareExecutionAndGetStepParameters(script, ['buildTool': buildTool], stepMetadata)
 
             String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
@@ -81,6 +83,7 @@ class ContainerMap implements Serializable {
     }
 
     static String getDockerImageNameForGroovyStep(Script script, String stageName, String stepName, String buildTool) {
+        script.echo "Getting docker image name for Groovy step '$stepName' in stage '$stageName'"
         Map configuration = loadEffectiveStepConfigurationInStage(script, stageName, stepName)
         String dockerImage = configuration.dockerImage
 
