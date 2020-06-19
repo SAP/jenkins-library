@@ -32,6 +32,12 @@ stages:
           - 'testRepository'
   Security:
     stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'checkmarxCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
       whitesourceExecuteScan:
         configKeys:
           - 'userTokenCredentialsId'
