@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,7 @@ import (
 func TestSetErrorCategory(t *testing.T) {
 	SetErrorCategory(ErrorCustom)
 	assert.Equal(t, errorCategory, ErrorCustom)
+	assert.Equal(t, "custom", fmt.Sprint(errorCategory))
 }
 
 func TestGetErrorCategory(t *testing.T) {
