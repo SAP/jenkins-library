@@ -51,6 +51,7 @@ void call(Map parameters = [:]) {
             if(configuration.globalExtensionsVersion){
                 gitParameters.branch = configuration.globalExtensionsVersion
             }
+            git gitParameters
         }
     }
 }
