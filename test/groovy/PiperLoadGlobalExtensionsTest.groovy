@@ -145,12 +145,10 @@ class PiperLoadGlobalExtensionsTest extends BasePiperTest {
 
         readYamlRule.registerYaml("test/sharedLibraries.yml", "[{name: my-extension-dependency, version: my-git-tag}]")
 
-
         List libsLoaded = []
         helper.registerAllowedMethod("library", [String.class], { lib ->
             libsLoaded.add(lib)
         })
-
 
         stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertTrue(checkoutCalled)
