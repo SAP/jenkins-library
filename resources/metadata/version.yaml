@@ -1,5 +1,0 @@
-metadata:
-  name: version
-  description: Returns the version of the piper binary
-  longDescription: |
-    Writes the commit hash and the tag (if any) to stdout and exits with 0.
