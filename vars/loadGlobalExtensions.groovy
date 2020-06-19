@@ -8,27 +8,34 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** Directory where the extensions are cloned to*/
     'globalExtensionsDirectory',
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** Git url of the repository containing the extensions*/
     'globalExtensionsRepository',
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** Credentials required to clone the repository*/
     'globalExtensionsRepositoryCredentialsId',
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** Version which should be each, e.g. the tag name*/
     'globalExtensionsVersion'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
 
 @Field Set PARAMETER_KEYS = [
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** The step will reinitialize */
     'customDefaults',
-    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    /** */
     'customDefaultsFromFiles'
 ]
 
 /**
- *
+ * This step allows users to define extensions (https://sap.github.io/jenkins-library/extensibility/#1-extend-individual-stages) globally instead of in each repository.
+ * Instead of defining the extensions in the .pipeline folder the extensions are defined in another repository.
+ * You can also place a file called extension_configuration.yml in this repository.
+ * Configuration defined in this file will be treated as default values with a lower precedence then custom defaults defined in the project configuration.
+ * You can also define additional Jenkins libraries these extensions depend on using a yaml file called sharedLibraries.yml:
+ * Example:
+ * - name: my-extension-dependency
+ *   version: git-tag
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -75,5 +82,25 @@ void call(Map parameters = [:]) {
                 customDefaultsFromFiles: ['extension_configuration.yml'] + parameters.customDefaultsFromFiles
             ])
         }
+
+        def globalExtensionsLibraryConfig = "${configuration.globalExtensionsDirectory}/sharedLibraries.yml"
+
+        if(fileExists(globalExtensionsLibraryConfig)){
+            loadLibrariesFromFile(globalExtensionsLibraryConfig, "global")
+        }
     }
+}
+
+private loadLibrariesFromFile(String filename) {
+    List libs = readYaml file: filename
+    Set additionalLibraries = []
+    for (i = 0; i < libs.size(); i++) {
+        Map lib = libs[i]
+        String libName = libs[i].name
+        String branch = libs[i].version ?: 'master'
+        // FIXME: Check if library was already loaded (maybe via Jenkins API?)
+        additionalLibraries.add("${libName} | ${branch}")
+        library "${libName}@${branch}"
+    }
+    DebugReport.instance.additionalSharedLibraries.addAll(additionalLibraries)
 }
