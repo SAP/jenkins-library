@@ -9,18 +9,17 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS.plus([
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsDirectory',
-])
-
-@Field Set STEP_CONFIG_KEYS = [
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsRepository',
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsRepositoryCredentialsId',
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsVersion'
-]
+])
 
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set STEP_CONFIG_KEYS = []
+
+@Field Set PARAMETER_KEYS = []
 
 /**
  *
