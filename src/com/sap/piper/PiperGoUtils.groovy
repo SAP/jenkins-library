@@ -62,7 +62,7 @@ class PiperGoUtils implements Serializable {
             }
         }
         try {
-            def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version --ignoreCustomDefaults"
+            def piperVersion = steps.sh returnStdout: true, script: "./${piperExecutable} version"
             steps.echo "Piper go binary version: ${piperVersion}"
         } catch(AbortException ex) {
             steps.error "Cannot get piper go binary version: ${ex}"
