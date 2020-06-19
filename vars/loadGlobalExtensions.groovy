@@ -21,13 +21,14 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = []
 
 @Field Set PARAMETER_KEYS = [
-    /** The step will reinitialize */
+    /** This step will reinitialize the defaults. Make sure to pass the same customDefaults as to the step setupCommonPipelineEnvironment*/
     'customDefaults',
-    /** */
+    /** This step will reinitialize the defaults. Make sure to pass the same customDefaultsFromFiles as to the step setupCommonPipelineEnvironment*/
     'customDefaultsFromFiles'
 ]
 
 /**
+ * This step is part of the step setupCommonPipelineEnvironment and should not be used outside independently in a custom pipeline.
  * This step allows users to define extensions (https://sap.github.io/jenkins-library/extensibility/#1-extend-individual-stages) globally instead of in each repository.
  * Instead of defining the extensions in the .pipeline folder the extensions are defined in another repository.
  * You can also place a file called extension_configuration.yml in this repository.
