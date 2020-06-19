@@ -13,7 +13,6 @@ var GitCommit string
 // GitTag ...
 var GitTag string
 
-
 // VersionCommand Returns the version of the piper binary
 func VersionCommand() *cobra.Command {
 	const STEP_NAME = "version"
@@ -32,7 +31,6 @@ func VersionCommand() *cobra.Command {
 			version()
 		},
 	}
-
 
 	return createVersionCmd
 }
