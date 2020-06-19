@@ -30,37 +30,33 @@ class ContainerMap implements Serializable {
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
             Map stageToStepMapping = yamlContents.containerMaps as Map
+            Map stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
             stageToStepMapping.each { stageName, stepsList ->
-                containers[stageName] = getContainerForStage(script, stageName as String, stepsList as List, buildTool)
+                containers[stageName] = getContainerForStage(script, stageName as String, stepsList as List, stepToMetaDataMapping, buildTool)
             }
         } catch (Exception e) {
             script.error "Failed to parse container maps in '$yamlResourceName'. It is expected to contain " +
-                "a single entry 'containerMaps' in the root, which is a list of stage identifiers. " +
-                "Each stage shall contain a list of steps that are known to run in this stage. " +
-                "A step entry is either a string (the name of the step), or a list which contains the name " +
-                "of the step, and the path to the step metadata resource file (steps implemented in go). " +
+                "the entries 'containerMaps' and optionally 'stepMetadata' in the root." +
+                "containerMaps which is a map of stage identifiers to a list of executed steps. " +
+                "The optional 'stepMetadata' is a map of (go-implemented) step names to their YAML " +
+                "metadata resource file." +
                 "Error: ${e.getMessage()}"
         }
         script.echo "resulting containers: $containers"
         setMap(containers)
     }
 
-    static Map getContainerForStage(Script script, String stageName, List stepsList, String buildTool) {
+    static Map getContainerForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool) {
         Map containers = [:]
-        stepsList.each { stepEntry ->
-            String stepName
+        stepsList.each { stepName ->
             String imageName
-            if (stepEntry in String) {
-                stepName = stepEntry as String
-                imageName = getDockerImageNameForGroovyStep(script, stageName, stepName, buildTool)
-            } else if (stepEntry in Map) {
-                stepName = stepEntry.stepName as String
-                String stepMetadata = stepEntry.stepMetadata as String
-                imageName = getDockerImageNameForGoStep(script, stageName, stepName, stepMetadata, buildTool)
+            String stepMetadata = stepToMetaDataMapping[stepName]
+            if (stepMetadata) {
+                imageName = getDockerImageNameForGoStep(script, stageName, stepName as String, stepMetadata, buildTool)
             } else {
-                throw new RuntimeException("Entry '$stepEntry' in containerMaps has unexpected type")
+                imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
             }
-            if (stepName && imageName) {
+            if (imageName) {
                 containers[imageName] = stepName.toLowerCase()
             }
         }
