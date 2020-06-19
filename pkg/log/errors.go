@@ -3,6 +3,7 @@ package log
 // ErrorCategory defines the category of a pipeline error
 type ErrorCategory int
 
+// Error categories which allow categorizing failures
 const (
 	ErrorUndefined ErrorCategory = iota
 	ErrorBuild
