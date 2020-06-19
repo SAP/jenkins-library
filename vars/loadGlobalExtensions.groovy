@@ -68,7 +68,6 @@ void call(Map parameters = [:]) {
         if (fileExists(extensionConfigurationFilePath)) {
             writeFile file: ".pipeline/extension_configuration.yml", text: readFile(file: extensionConfigurationFilePath)
             DebugReport.instance.globalExtensionConfigurationFilePath = extensionConfigurationFilePath
-            parameters.customDefaultsFromFiles = [ extensionConfigurationFilePath ]
 
             prepareDefaultValues([
                 script: script,
