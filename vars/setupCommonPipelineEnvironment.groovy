@@ -80,7 +80,8 @@ void call(Map parameters = [:]) {
             customDefaults: parameters.customDefaults,
             customDefaultsFromFiles: customDefaultsFiles ])
 
-        loadGlobalExtensions script: script
+        loadGlobalExtensions script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultsFiles
+
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)

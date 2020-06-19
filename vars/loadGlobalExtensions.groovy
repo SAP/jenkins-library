@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DebugReport
 import com.sap.piper.GenerateDocumentation
 import groovy.transform.Field
 
@@ -19,7 +20,12 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set STEP_CONFIG_KEYS = []
 
-@Field Set PARAMETER_KEYS = []
+@Field Set PARAMETER_KEYS = [
+    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    'customDefaults',
+    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    'customDefaultsFromFiles'
+]
 
 /**
  *
@@ -33,8 +39,6 @@ void call(Map parameters = [:]) {
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -58,6 +62,19 @@ void call(Map parameters = [:]) {
             }
 
             checkout(gitParameters)
+        }
+
+        String extensionConfigurationFilePath = "${configuration.globalExtensionsDirectory}/extension_configuration.yml"
+        if (fileExists(extensionConfigurationFilePath)) {
+            writeFile file: ".pipeline/extension_configuration.yml", text: readFile(file: extensionConfigurationFilePath)
+            DebugReport.instance.globalExtensionConfigurationFilePath = extensionConfigurationFilePath
+            parameters.customDefaultsFromFiles = [ extensionConfigurationFilePath ]
+
+            prepareDefaultValues([
+                script: script,
+                customDefaults: parameters.customDefaults,
+                customDefaultsFromFiles: ['extension_configuration.yml'] + parameters.customDefaultsFromFiles
+            ])
         }
     }
 }
