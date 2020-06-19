@@ -30,6 +30,8 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/moby/sys/mount v0.1.0 // indirect
+	github.com/moby/term v0.0.0-20200611042045-63b9a826fb74 // indirect
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/piper-validation/fortify-client-go v0.0.0-20200206215926-532b5b150d22
@@ -47,3 +49,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200602104108-2bb8d6132df6 // indirect
 	gopkg.in/ini.v1 v1.57.0
 )
+
+replace github.com/docker/docker => github.com/docker/docker v17.12.0-ce-rc1.0.20200617084433-bd5788960a5f+incompatible
