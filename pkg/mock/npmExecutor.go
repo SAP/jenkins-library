@@ -5,20 +5,24 @@ import (
 	"github.com/SAP/jenkins-library/pkg/npm"
 )
 
+// NpmUtilsBundle for mocking
 type NpmUtilsBundle struct {
 	*FilesMock
 	ExecRunner *ExecMockRunner
 }
 
+// GetExecRunner return the execRunner mock
 func (u *NpmUtilsBundle) GetExecRunner() npm.ExecRunner {
 	return u.ExecRunner
 }
 
+// NewNpmUtilsBundle creates an instance of NpmUtilsBundle
 func NewNpmUtilsBundle() NpmUtilsBundle {
 	utils := NpmUtilsBundle{FilesMock: &FilesMock{}, ExecRunner: &ExecMockRunner{}}
 	return utils
 }
 
+// NpmConfig holds the config parameters needed for checking if the function is called with correct parameters
 type NpmConfig struct {
 	Install            bool
 	RunScripts         []string
@@ -26,20 +30,24 @@ type NpmConfig struct {
 	VirtualFrameBuffer bool
 }
 
+// NpmExecutor mocking struct
 type NpmExecutor struct {
 	Utils  NpmUtilsBundle
 	Config NpmConfig
 }
 
+// FindPackageJSONFiles mock implementation
 func (n *NpmExecutor) FindPackageJSONFiles() []string {
 	packages, _ := n.Utils.Glob("**/package.json")
 	return packages
 }
 
+// FindPackageJSONFilesWithScript mock implementation
 func (n *NpmExecutor) FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error) {
 	return packageJSONFiles, nil
 }
 
+// RunScriptsInAllPackages mock implementation
 func (n *NpmExecutor) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
 	if len(runScripts) != len(n.Config.RunScripts) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.RunScripts")
@@ -61,6 +69,7 @@ func (n *NpmExecutor) RunScriptsInAllPackages(runScripts []string, runOptions []
 	return nil
 }
 
+// InstallAllDependencies mock implementation
 func (n *NpmExecutor) InstallAllDependencies(packageJSONFiles []string) error {
 	allPackages := n.FindPackageJSONFiles()
 	if len(packageJSONFiles) != len(allPackages) {
@@ -78,6 +87,7 @@ func (n *NpmExecutor) InstallAllDependencies(packageJSONFiles []string) error {
 	return nil
 }
 
+// SetNpmRegistries mock implementation
 func (n *NpmExecutor) SetNpmRegistries() error {
 	return nil
 }
