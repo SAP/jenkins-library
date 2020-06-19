@@ -44,14 +44,20 @@ void call(Map parameters = [:]) {
         }
 
         dir(configuration.globalExtensionsDirectory){
-            Map gitParameters = [url: configuration.globalExtensionsRepository]
+            Map gitParameters = [
+                $class: 'GitSCM',
+                userRemoteConfigs: [[url: configuration.globalExtensionsRepository]]
+            ]
+
             if(configuration.globalExtensionsRepositoryCredentialsId){
-                gitParameters.credentialsId = configuration.globalExtensionsRepositoryCredentialsId
+                gitParameters.userRemoteConfigs[0].credentialsId = configuration.globalExtensionsRepositoryCredentialsId
             }
+
             if(configuration.globalExtensionsVersion){
-                gitParameters.branch = configuration.globalExtensionsVersion
+                gitParameters.branches = [[name: configuration.globalExtensionsVersion]]
             }
-            git gitParameters
+
+            checkout(gitParameters)
         }
     }
 }
