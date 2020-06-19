@@ -6,7 +6,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS.plus([
+@Field Set GENERAL_CONFIG_KEYS = [
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsDirectory',
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
@@ -15,7 +15,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'globalExtensionsRepositoryCredentialsId',
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
     'globalExtensionsVersion'
-])
+]
 
 @Field Set STEP_CONFIG_KEYS = []
 
