@@ -20,7 +20,7 @@ type lintUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
 	getExecRunner() execRunner
-	getGeneralPurposeConfig(configURL string) error
+	getGeneralPurposeConfig(configURL string)
 }
 
 type lintUtilsBundle struct {
@@ -45,30 +45,30 @@ func (u *lintUtilsBundle) getExecRunner() execRunner {
 	return u.execRunner
 }
 
-func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) error {
+func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 	response, err := u.client.SendRequest(http.MethodGet, configURL, nil, nil, nil)
 	if err != nil {
-		return err
+		log.Entry().Warnf("failed to download general purpose configuration: %v", err)
+		return
 	}
 
 	defer response.Body.Close()
 
 	content, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return fmt.Errorf("error reading %v: %w", response.Body, err)
+		log.Entry().Warnf("error reading %v: %w", response.Body, err)
+		return
 	}
 
 	err = u.FileWrite(filepath.Join(".pipeline", ".eslintrc.json"), content, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to write .eslintrc.json file to .pipeline/: %w", err)
+		log.Entry().Warnf("failed to write .eslintrc.json file to .pipeline/: %w", err)
 	}
-
-	return nil
 }
 
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
 	utils := newLintUtilsBundle()
-	npmExecutorOptions := npm.ExecutorOptions{ DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteLint(npmExecutor, utils, &config)
@@ -140,10 +140,8 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 		// install dependencies manually, since npx cannot resolve the dependencies required for general purpose
 		// ESLint config, e.g., TypeScript ESLint plugin
 		log.Entry().Info("Run ESLint with general purpose config")
-		err = utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
-		if err != nil {
-			return err
-		}
+		utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
+
 		// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
 		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
 		_ = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js")

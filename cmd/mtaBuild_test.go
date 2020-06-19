@@ -367,7 +367,7 @@ func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 }
 
 func newNpmExecutor(execRunner *mock.ExecMockRunner) *npm.Execute {
-	utils := newNpmMockUtilsBundle()
-	utils.execRunner = execRunner
+	utils := mock.NewNpmUtilsBundle()
+	utils.ExecRunner = execRunner
 	return &npm.Execute{Utils: &utils}
 }
