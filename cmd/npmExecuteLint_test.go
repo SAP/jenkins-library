@@ -32,12 +32,12 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 
 		config := npmExecuteLintOptions{}
 
-		npmExecutor := mock.NpmExecutor{Utils: npmUtils, Config: mock.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}}}
+		npmExecutor := npmExecutorMock{utils: npmUtils, config: npmConfig{runScripts: []string{"ci-lint"}, runOptions: []string{"--silent"}}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
 		assert.NoError(t, err)
@@ -51,8 +51,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
@@ -73,8 +73,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
@@ -94,8 +94,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
@@ -117,8 +117,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
@@ -141,8 +141,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := mock.NewNpmUtilsBundle()
-		npmUtils.ExecRunner = lintUtils.execRunner
+		npmUtils := newNpmUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
