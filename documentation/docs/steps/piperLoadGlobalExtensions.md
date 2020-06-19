@@ -7,4 +7,3 @@
 ## ${docGenConfiguration}
 
 ## ${docJenkinsPluginDependencies}
-
