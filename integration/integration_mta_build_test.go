@@ -47,7 +47,7 @@ curl -sL https://deb.nodesource.com/setup_12.x | bash -
 apt-get install -yqq nodejs
 mv mbt /usr/bin
 mkdir mym2
-/piperbin/piper mtaBuild --m2Path=mym2 >test-log.txt 2>&1
+/piperbin/piper mtaBuild --installArtifacts --m2Path=mym2 >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -178,7 +178,7 @@ apt-get -yqq update; apt-get -yqq install make
 curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
 mv mbt /usr/bin
-/piperbin/piper mtaBuild >test-log.txt 2>&1
+/piperbin/piper mtaBuild --installArtifacts >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
