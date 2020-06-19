@@ -38,7 +38,7 @@ general:
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
-  globalExtensionsDirectory: '.pipeline/tmp/global_extensions'
+  globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
     jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
     securityContext:

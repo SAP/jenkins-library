@@ -50,7 +50,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        echo configuration.toString()
         if(!configuration.globalExtensionsRepository){
             return
         }
