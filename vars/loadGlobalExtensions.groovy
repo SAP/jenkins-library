@@ -99,7 +99,6 @@ private loadLibrariesFromFile(String filename) {
         Map lib = libs[i]
         String libName = libs[i].name
         String branch = libs[i].version ?: 'master'
-        // FIXME: Check if library was already loaded (maybe via Jenkins API?)
         additionalLibraries.add("${libName} | ${branch}")
         library "${libName}@${branch}"
     }
