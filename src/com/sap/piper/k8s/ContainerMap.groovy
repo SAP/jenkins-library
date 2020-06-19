@@ -3,8 +3,7 @@ package com.sap.piper.k8s
 import com.sap.piper.API
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
-import com.sap.piper.PiperGoUtils
-import com.sap.piper.Utils
+import groovy.json.JsonOutput
 
 @API
 @Singleton
@@ -74,7 +73,7 @@ class ContainerMap implements Serializable {
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)
 
         Map config = [:]
-        script.withEnv(["PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+        script.withEnv(["PIPER_parametersJSON=${JsonOutput.toJson(stepParameters)}",
                         "STAGE_NAME=$stageName"]) {
             config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, defaultConfigArgs, customConfigArg)
         }
