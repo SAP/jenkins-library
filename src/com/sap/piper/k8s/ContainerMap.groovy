@@ -75,7 +75,7 @@ class ContainerMap implements Serializable {
 
             config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, defaultConfigArgs, customConfigArg)
         }
-        echo "Config for Go step '$stepName': ${config}"
+        script.echo "Config for Go step '$stepName': ${config}"
         return config.dockerImage
     }
 
