@@ -31,11 +31,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'nodeName',
     /**
-     * Defines the MTA version of the corresponding MTA id that MTA Extension Descriptor can be applied. If the parameter is not configured, an asterisk (*) is used as the version. This means that the MTA extension descriptor is valid for all versions of the MTA.
+     * Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.
      */
     'mtaVersion',
     /**
-     * Map which defines per node (name) the MTA extension descriptor (file path) mappings, e.g. `nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext']`. Usage of MTA Extension Descriptors is supported for transports in Cloud Foundry Environment only.
+     * Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext', …]`.
      */
     'nodeExtDescriptorMapping',
     /**
