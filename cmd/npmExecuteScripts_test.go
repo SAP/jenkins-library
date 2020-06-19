@@ -19,8 +19,8 @@ func (u *npmMockUtilsBundle) GetExecRunner() npm.ExecRunner {
 	return u.execRunner
 }
 
-// newNpmUtilsBundle creates an instance of npmMockUtilsBundle
-func newNpmUtilsBundle() npmMockUtilsBundle {
+// newNpmMockUtilsBundle creates an instance of npmMockUtilsBundle
+func newNpmMockUtilsBundle() npmMockUtilsBundle {
 	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
 	return utils
 }
@@ -98,7 +98,7 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call with install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
-		utils := newNpmUtilsBundle()
+		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
@@ -110,7 +110,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 	t.Run("Call without install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
-		utils := newNpmUtilsBundle()
+		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
@@ -122,7 +122,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 	t.Run("Call with virtualFrameBuffer", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, VirtualFrameBuffer: true}
-		utils := newNpmUtilsBundle()
+		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
@@ -137,7 +137,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 		options := npm.ExecutorOptions{SapNpmRegistry: config.SapNpmRegistry, DefaultNpmRegistry: config.DefaultNpmRegistry}
 
-		utils := newNpmUtilsBundle()
+		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
 		utils.AddFile("package-lock.json", []byte(""))
 

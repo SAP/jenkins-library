@@ -32,7 +32,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 
 		config := npmExecuteLintOptions{}
@@ -51,7 +51,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
@@ -73,7 +73,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
@@ -94,7 +94,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
@@ -117,7 +117,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
@@ -141,7 +141,7 @@ func TestNpmExecuteLint(t *testing.T) {
 		config.FailOnError = true
 		config.DefaultNpmRegistry = "foo.bar"
 
-		npmUtils := newNpmUtilsBundle()
+		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
 
