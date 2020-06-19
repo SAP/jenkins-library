@@ -23,6 +23,8 @@ type Config struct {
 	Stages         map[string]map[string]interface{} `json:"stages"`
 	Steps          map[string]map[string]interface{} `json:"steps"`
 	Hooks          map[string]*json.RawMessage       `json:"hooks,omitempty"`
+	defaults       PipelineDefaults
+	initialized    bool
 	openFile       func(s string) (io.ReadCloser, error)
 }
 
@@ -107,7 +109,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 	for _, stepAlias := range stepAliases {
 		if c.Steps[stepAlias.Name] != nil {
 			if stepAlias.Deprecated {
-				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step configuration used for step '%v'. Please switch to '%v'!", stepAlias.Name, stepName)
+				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: step configuration available for deprecated step '%v'. Please remove or move configuration to step '%v'!", stepAlias.Name, stepName)
 			}
 			for paramName, paramValue := range c.Steps[stepAlias.Name] {
 				if c.Steps[stepName] == nil {
@@ -121,18 +123,13 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 	}
 }
 
-// GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
-	var stepConfig StepConfig
-	var d PipelineDefaults
-
+// InitializeConfig prepares the config object, i.e. loading content, etc.
+func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool) error {
 	if configuration != nil {
 		if err := c.ReadConfig(configuration); err != nil {
-			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
+			return errors.Wrap(err, "failed to parse custom pipeline configuration")
 		}
 	}
-
-	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
 	// consider custom defaults defined in config.yml unless told otherwise
 	if ignoreCustomDefaults {
@@ -144,24 +141,42 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		for _, f := range c.CustomDefaults {
 			fc, err := c.openFile(f)
 			if err != nil {
-				return StepConfig{}, errors.Wrapf(err, "getting default '%v' failed", f)
+				return errors.Wrapf(err, "getting default '%v' failed", f)
 			}
 			defaults = append(defaults, fc)
 		}
 	}
 
-	if err := d.ReadPipelineDefaults(defaults); err != nil {
-		return StepConfig{}, errors.Wrap(err, "failed to read default configuration")
+	if err := c.defaults.ReadPipelineDefaults(defaults); err != nil {
+		return errors.Wrap(err, "failed to read default configuration")
 	}
+	c.initialized = true
+	return nil
+}
+
+// GetStepConfig provides merged step configuration using defaults, config, if available
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias) (StepConfig, error) {
+	var stepConfig StepConfig
+	var err error
+
+	if !c.initialized {
+		err = c.InitializeConfig(configuration, defaults, ignoreCustomDefaults)
+		if err != nil {
+			return StepConfig{}, err
+		}
+	}
+
+	c.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
 
 	// read defaults & merge general -> steps (-> general -> steps ...)
-	for _, def := range d.Defaults {
+	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
+		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {

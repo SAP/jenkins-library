@@ -82,7 +82,12 @@ func mtaBuild(config mtaBuildOptions,
 	log.Entry().Debugf("Launching mta build")
 	files := piperutils.Files{}
 	httpClient := piperhttp.Client{}
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &files, &httpClient)
+	e := command.Command{}
+
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
+
+	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -94,7 +99,8 @@ func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	e execRunner,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Downloader) error {
+	httpClient piperhttp.Downloader,
+	npmExecutor npm.Executor) error {
 
 	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
 	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
@@ -106,11 +112,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = npm.SetNpmRegistries(
-		&npm.RegistryOptions{
-			DefaultNpmRegistry: config.DefaultNpmRegistry,
-			SapNpmRegistry:     config.SapNpmRegistry,
-		}, e)
+	err = npmExecutor.SetNpmRegistries()
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -187,6 +189,23 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+
+	err = installMavenArtifacts(e, config)
+
+	return err
+}
+
+func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+	pomXMLExists, err := piperutils.FileExists("pom.xml")
+	if err != nil {
+		return err
+	}
+	if pomXMLExists {
+		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -319,7 +338,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	} else {
 
-		log.Entry().Debugf("Project settings file not provided via configuation.")
+		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
 	if len(config.GlobalSettingsFile) > 0 {
@@ -329,7 +348,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 		}
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuation.")
+		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
 	return nil
