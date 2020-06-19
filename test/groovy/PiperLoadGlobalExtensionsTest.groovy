@@ -15,7 +15,7 @@ import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertTrue
 
-class LoadGlobalExtensionsTest extends BasePiperTest {
+class PiperLoadGlobalExtensionsTest extends BasePiperTest {
 
     private Map checkoutParameters
     private boolean checkoutCalled = false
@@ -50,7 +50,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
 
     @Test
     void testNotConfigured() throws Exception {
-        stepRule.step.loadGlobalExtensions(script: nullScript)
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertFalse(checkoutCalled)
     }
 
@@ -63,7 +63,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
             ]
         ]
 
-        stepRule.step.loadGlobalExtensions(script: nullScript)
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertTrue(checkoutCalled)
         assertEquals('GitSCM', checkoutParameters.$class)
         assertEquals(1, checkoutParameters.userRemoteConfigs.size())
@@ -80,7 +80,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
             ]
         ]
 
-        stepRule.step.loadGlobalExtensions(script: nullScript)
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertTrue(checkoutCalled)
         assertEquals(1, checkoutParameters.branches.size())
         assertEquals([name: 'v35'], checkoutParameters.branches[0])
@@ -96,7 +96,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
             ]
         ]
 
-        stepRule.step.loadGlobalExtensions(script: nullScript)
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertTrue(checkoutCalled)
         assertEquals(1, checkoutParameters.userRemoteConfigs.size())
         assertEquals([url: 'https://my.git.example/foo/bar.git', credentialsId: 'my-credentials'], checkoutParameters.userRemoteConfigs[0])
@@ -118,7 +118,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
             prepareParameter = map
         })
 
-        stepRule.step.loadGlobalExtensions(script: nullScript, customDefaults: ['default.yml'], customDefaultsFromFiles: ['file1.yml'])
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript, customDefaults: ['default.yml'], customDefaultsFromFiles: ['file1.yml'])
         assertTrue(checkoutCalled)
 
         //File copied
@@ -152,7 +152,7 @@ class LoadGlobalExtensionsTest extends BasePiperTest {
         })
 
 
-        stepRule.step.loadGlobalExtensions(script: nullScript)
+        stepRule.step.piperLoadGlobalExtensions(script: nullScript)
         assertTrue(checkoutCalled)
         assertEquals(1, libsLoaded.size())
         assertEquals("my-extension-dependency@my-git-tag", libsLoaded[0].toString())
