@@ -14,7 +14,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'globalExtensionsRepository',
     /** Credentials required to clone the repository*/
     'globalExtensionsRepositoryCredentialsId',
-    /** Version which should be each, e.g. the tag name*/
+    /** Version of the extensions which should be used, e.g. the tag name*/
     'globalExtensionsVersion'
 ]
 
@@ -47,6 +47,7 @@ void call(Map parameters = [:]) {
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -92,12 +93,21 @@ void call(Map parameters = [:]) {
 }
 
 private loadLibrariesFromFile(String filename) {
-    List libs = readYaml file: filename
+    List libs
+    try {
+        libs = readYaml file: filename
+    }
+    catch (Exception ex){
+        error("Could not read extension libraries from ${filename}. The file has to contain a list of libraries where each entry should contain the name and the version of the library. (${ex.getMessage()})")
+    }
     Set additionalLibraries = []
     for (i = 0; i < libs.size(); i++) {
         Map lib = libs[i]
-        String libName = libs[i].name
-        String branch = libs[i].version ?: 'master'
+        String libName = lib.name
+        if(!libName){
+            error("Could not read extension libraries from ${filename}. Each library definition has to have the field name defined.")
+        }
+        String branch = lib.version ?: 'master'
         additionalLibraries.add("${libName} | ${branch}")
         library "${libName}@${branch}"
     }
