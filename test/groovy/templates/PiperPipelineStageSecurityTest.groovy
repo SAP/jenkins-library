@@ -30,9 +30,29 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
     @Before
     void init()  {
         binding.variables.env.STAGE_NAME = 'Security'
+
+        helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Security'))
             return body()
+        })
+
+        def parallelMap = [:]
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            parallelMap = map
+            parallelMap.each {key, value ->
+                if (key != 'failFast') {
+                    value()
+                }
+            }
+        })
+
+        helper.registerAllowedMethod('checkmarxExecuteScan', [Map.class], {m ->
+            stepsCalled.add('checkmarxExecuteScan')
+        })
+
+        helper.registerAllowedMethod('fortifyExecuteScan', [Map.class], {m ->
+            stepsCalled.add('fortifyExecuteScan')
         })
 
         helper.registerAllowedMethod('whitesourceExecuteScan', [Map.class], {m ->
@@ -61,5 +81,40 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('whitesourceExecuteScan'))
+        assertThat(stepsCalled, not(hasItems('checkmarxExecuteScan', 'fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageCheckmarx() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [checkmarxExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            checkmarxExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('checkmarxExecuteScan'))
+        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan', 'fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageFortify() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [fortifyExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            fortifyExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('fortifyExecuteScan'))
+        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan', 'checkmarxExecuteScan')))
     }
 }
