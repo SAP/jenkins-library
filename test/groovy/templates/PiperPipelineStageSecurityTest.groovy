@@ -81,7 +81,8 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('whitesourceExecuteScan'))
-        assertThat(stepsCalled, not(hasItems('checkmarxExecuteScan', 'fortifyExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
 
     @Test
@@ -98,7 +99,8 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('checkmarxExecuteScan'))
-        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan', 'fortifyExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
 
     @Test
@@ -115,6 +117,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('fortifyExecuteScan'))
-        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan', 'checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
     }
 }
