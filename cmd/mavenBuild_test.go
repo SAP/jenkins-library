@@ -25,7 +25,7 @@ func TestMavenBuild(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 
 		mockedUtils := mock.FilesMock{}
-		mockedUtils.Files = []string{"integration-tests/pom.xml"}
+		mockedUtils.AddFile("integration-tests/pom.xml", []byte{})
 
 		config := mavenBuildOptions{}
 

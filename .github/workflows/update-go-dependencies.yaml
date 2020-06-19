@@ -28,5 +28,6 @@ jobs:
       - name: Create Pull Request
         uses: SAP/project-piper-action@master
         with:
+          piper-version: master
           command: githubCreatePullRequest
           flags: --body="Automated update for Go dependencies by running `go get -u` and `go mod tidy`" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GO_DEPENDENCY_UPDATE_TOKEN }}

@@ -3,6 +3,7 @@ package checkmarx
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -52,6 +53,9 @@ func (sm *senderMock) UploadRequest(method, url, file, fieldName string, header 
 	sm.urlCalled = url
 	sm.header = header
 	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(sm.responseBody)))}, nil
+}
+func (sm *senderMock) Upload(_ piperHttp.UploadRequestData) (*http.Response, error) {
+	return &http.Response{}, fmt.Errorf("not implemented")
 }
 func (sm *senderMock) SetOptions(opts piperHttp.ClientOptions) {
 	sm.token = opts.Token

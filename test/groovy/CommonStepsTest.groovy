@@ -130,12 +130,19 @@ public class CommonStepsTest extends BasePiperTest{
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
-        'gctsDeploy', //implementing new golang pattern without fields
         'gctsRollback', //implementing new golang pattern without fields
+        'gctsCloneRepository', //implementing new golang pattern without fields
+        'fortifyExecuteScan', //implementing new golang pattern without fields
+        'gctsDeploy', //implementing new golang pattern without fields
+        'containerSaveImage', //implementing new golang pattern without fields
+        'detectExecuteScan' //implementing new golang pattern without fields
+
     ]
 
     @Test

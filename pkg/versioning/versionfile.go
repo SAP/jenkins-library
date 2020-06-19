@@ -60,3 +60,8 @@ func (v *Versionfile) SetVersion(version string) error {
 
 	return nil
 }
+
+// GetCoordinates returns the coordinates
+func (v *Versionfile) GetCoordinates() (Coordinates, error) {
+	return nil, nil
+}

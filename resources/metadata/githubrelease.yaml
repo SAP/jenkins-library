@@ -89,6 +89,14 @@ spec:
         - STEPS
         type: string
         mandatory: true
+      - name: preRelease
+        description: 'If set to `true` the release will be marked as Pre-release.'
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        type: bool
+        default: false
       - name: releaseBodyHeader
         description: Content which will appear for the release.
         scope:

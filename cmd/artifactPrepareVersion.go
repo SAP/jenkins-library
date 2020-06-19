@@ -34,7 +34,6 @@ type gitRepository interface {
 }
 
 type gitWorktree interface {
-	Add(string) (plumbing.Hash, error)
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 }
@@ -59,7 +58,6 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("artifactPrepareVersion failed")
 	}
-	log.Entry().Info("SUCCESS")
 }
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
@@ -160,6 +158,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	return nil
@@ -340,13 +339,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
-	_, err := worktree.Add(".")
-	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
-	}
-
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}

@@ -11,14 +11,26 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** */
-    'collectTelemetryData'
+    'collectTelemetryData',
+
+    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    'customDefaultsCredentialsId'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
 
 @Field Set PARAMETER_KEYS = [
-    /** Property file defining project specific settings.*/
-    'configFile'
+    /** Path to the pipeline configuration file defining project specific settings.*/
+    'configFile',
+    /** A list of file names which will be extracted from library resources and which serve as source for
+     * default values for the pipeline configuration. These are merged with and override built-in defaults, with
+     * a parameter supplied by the last resource file taking precedence over the same parameter supplied in an
+     * earlier resource file or built-in default.*/
+    'customDefaults',
+    /** A list of file paths or URLs which must point to YAML content. These work exactly like
+     * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
+     * take precedence over `customDefaults`.*/
+    'customDefaultsFromFiles'
 ]
 
 /**
@@ -35,19 +47,40 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+        String configFile = parameters.get('configFile')
+        loadConfigurationFromFile(script, configFile)
 
-        List customDefaults = ['default_pipeline_environment.yml'].plus(parameters.customDefaults?:[])
-        customDefaults.each {
+        // Copy custom defaults from library resources to include them in the 'pipelineConfigAndTests' stash
+        List customDefaultsResources = Utils.appendParameterToStringList(
+            ['default_pipeline_environment.yml'], parameters, 'customDefaults')
+        customDefaultsResources.each {
             cd ->
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
         }
 
+        List customDefaultsFiles = Utils.appendParameterToStringList(
+            [], parameters, 'customDefaultsFromFiles')
+
+        if (script.commonPipelineEnvironment.configuration.customDefaults) {
+            if (!script.commonPipelineEnvironment.configuration.customDefaults in List) {
+                // Align with Go side on supported parameter type.
+                error "You have defined the parameter 'customDefaults' in your project configuration " +
+                    "but it is of an unexpected type. Please make sure that it is a list of strings, i.e. " +
+                    "customDefaults = ['...']. See https://sap.github.io/jenkins-library/configuration/ for " +
+                    "more details."
+            }
+            customDefaultsFiles = Utils.appendParameterToStringList(
+                customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
+        }
+        String customDefaultsCredentialsId = script.commonPipelineEnvironment.configuration.general?.customDefaultsCredentialsId
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles, customDefaultsCredentialsId)
+
+        prepareDefaultValues([
+            script: script,
+            customDefaults: parameters.customDefaults,
+            customDefaultsFromFiles: customDefaultsFiles ])
+
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
-
-        String configFile = parameters.get('configFile')
-
-        loadConfigurationFromFile(script, configFile)
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -65,20 +98,61 @@ void call(Map parameters = [:]) {
     }
 }
 
-private loadConfigurationFromFile(script, String configFile) {
+private static loadConfigurationFromFile(script, String configFile) {
     if (!configFile) {
         String defaultYmlConfigFile = '.pipeline/config.yml'
         String defaultYamlConfigFile = '.pipeline/config.yaml'
-        if (fileExists(defaultYmlConfigFile)) {
+        if (script.fileExists(defaultYmlConfigFile)) {
             configFile = defaultYmlConfigFile
-        } else if (fileExists(defaultYamlConfigFile)) {
+        } else if (script.fileExists(defaultYamlConfigFile)) {
             configFile = defaultYamlConfigFile
         }
     }
 
     // A file passed to the function is not checked for existence in order to fail the pipeline.
     if (configFile) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
+        script.commonPipelineEnvironment.configuration = script.readYaml(file: configFile)
         script.commonPipelineEnvironment.configurationFile = configFile
     }
+}
+
+private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults, String credentialsId) {
+    List fileList = []
+    int urlCount = 0
+    for (int i = 0; i < customDefaults.size(); i++) {
+        // copy retrieved file to .pipeline/ to make sure they are in the pipelineConfigAndTests stash
+        if (!(customDefaults[i] in CharSequence) || customDefaults[i] == '') {
+            script.echo "WARNING: Ignoring invalid entry in custom defaults from files: '${customDefaults[i]}'"
+            continue
+        }
+        String fileName
+        if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
+            fileName = "custom_default_from_url_${urlCount}.yml"
+
+            Map httpRequestParameters = [
+                url: customDefaults[i],
+                validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
+            ]
+            if (credentialsId) {
+                httpRequestParameters.authentication = credentialsId
+            }
+            def response = script.httpRequest(httpRequestParameters)
+            if (response.status == 404) {
+                error "URL for remote custom defaults (${customDefaults[i]}) appears to be incorrect. " +
+                    "Server returned HTTP status code 404. " +
+                    "Please make sure that the path is correct and no authentication is required to retrieve the file."
+            }
+
+            script.writeFile file: ".pipeline/$fileName", text: response.content
+            urlCount++
+        } else if (script.fileExists(customDefaults[i])) {
+            fileName = customDefaults[i]
+            script.writeFile file: ".pipeline/$fileName", text: script.readFile(file: fileName)
+        } else {
+            script.echo "WARNING: Custom default entry not found: '${customDefaults[i]}', it will be ignored"
+            continue
+        }
+        fileList.add(fileName)
+    }
+    return fileList
 }

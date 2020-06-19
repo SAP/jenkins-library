@@ -1,8 +1,9 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.DefaultValueCache
-import com.sap.piper.MapUtils
 
 import groovy.transform.Field
+
+import static com.sap.piper.Prerequisites.checkScript
 
 @Field STEP_NAME = getClass().getName()
 
@@ -16,5 +17,6 @@ import groovy.transform.Field
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-    DefaultValueCache.prepare(this, parameters)
+    def script = checkScript(this, parameters)
+    DefaultValueCache.prepare(script, parameters)
 }
