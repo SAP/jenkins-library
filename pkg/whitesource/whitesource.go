@@ -188,7 +188,7 @@ func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Pr
 
 // GetProjectTokens returns the project tokens matching a given a slice of project names
 func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
-	projectTokens := []string{}
+	var projectTokens []string
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
@@ -327,13 +327,12 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
-	log.Entry().Info("WSResponse.Alerts:", wsResponse)
 
 	return wsResponse.Alerts, nil
 }
 
 func (s *System) sendRequest(req Request) ([]byte, error) {
-	responseBody := []byte{}
+	var responseBody []byte
 	if req.UserKey == "" {
 		req.UserKey = s.UserToken
 	}

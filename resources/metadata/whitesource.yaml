@@ -171,6 +171,15 @@ spec:
       - STAGES
       - STEPS
       default: ./wss-generated-file.config
+    - name: reportDirectoryName
+      type: string
+      description: Name of the directory to save vulnerability/risk reports to
+      mandatory: false
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "whitesource-reports"
     - name: vulnerabilityReportFileName
       type: string
       description: Name of the file the vulnerability report is written to.

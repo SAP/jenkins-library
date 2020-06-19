@@ -21,6 +21,7 @@ type whitesourceExecuteScanOptions struct {
 	Timeout                              string `json:"timeout,omitempty"`
 	AgentDownloadURL                     string `json:"agentDownloadUrl,omitempty"`
 	ConfigFilePath                       string `json:"configFilePath,omitempty"`
+	ReportDirectoryName                  string `json:"reportDirectoryName,omitempty"`
 	VulnerabilityReportFileName          string `json:"vulnerabilityReportFileName,omitempty"`
 	RiskReportFileName                   string `json:"riskReportFileName,omitempty"`
 	VulnerabilityReportFormat            string `json:"vulnerabilityReportFormat,omitempty"`
@@ -121,6 +122,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.Timeout, "timeout", `0`, "Timeout in seconds until a HTTP call is forcefully terminated.")
 	cmd.Flags().StringVar(&stepConfig.AgentDownloadURL, "agentDownloadUrl", `https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar`, "URL used to download the latest version of the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-generated-file.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
+	cmd.Flags().StringVar(&stepConfig.ReportDirectoryName, "reportDirectoryName", `whitesource-reports`, "Name of the directory to save vulnerability/risk reports to")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFileName, "vulnerabilityReportFileName", `${config.projectName}-vulnerability-report`, "Name of the file the vulnerability report is written to.")
 	cmd.Flags().StringVar(&stepConfig.RiskReportFileName, "riskReportFileName", `${config.projectName}-risk-report`, "Name of the file the PDF risk report is written to.")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFormat, "vulnerabilityReportFormat", `xlsx`, "Format of the file the vulnerability report is written to.")
@@ -141,7 +143,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportTitle, "vulnerabilityReportTitle", `WhiteSource Security Vulnerability Report`, "Title of vulnerability report written during the assessment phase.")
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution.")
-	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `5`, "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
+	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
 	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", ``, "Additional parameters passed to the Unified Agent command line.")
 
@@ -258,6 +260,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "configFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "reportDirectoryName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
