@@ -180,24 +180,15 @@ spec:
         - STAGES
         - STEPS
       default: "whitesource-reports"
-    - name: vulnerabilityReportFileName
-      type: string
-      description: Name of the file the vulnerability report is written to.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: "${config.projectName}-vulnerability-report"
-    - name: riskReportFileName
-      type: string
-      description: Name of the file the PDF risk report is written to.
+    - name: aggregateVersionWideReport
+      type: bool
+      description: 'This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion'
       mandatory: false
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: "${config.projectName}-risk-report"
+      default: false
     - name: vulnerabilityReportFormat
       type: string
       description: Format of the file the vulnerability report is written to.

@@ -3,6 +3,7 @@ module github.com/SAP/jenkins-library
 go 1.13
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize/v2 v2.2.0
 	github.com/GoogleContainerTools/container-diff v0.15.0
 	github.com/Jeffail/gabs/v2 v2.5.1
 	github.com/Masterminds/goutils v1.1.0 // indirect

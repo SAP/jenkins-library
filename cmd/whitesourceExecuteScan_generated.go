@@ -22,8 +22,7 @@ type whitesourceExecuteScanOptions struct {
 	AgentDownloadURL                     string `json:"agentDownloadUrl,omitempty"`
 	ConfigFilePath                       string `json:"configFilePath,omitempty"`
 	ReportDirectoryName                  string `json:"reportDirectoryName,omitempty"`
-	VulnerabilityReportFileName          string `json:"vulnerabilityReportFileName,omitempty"`
-	RiskReportFileName                   string `json:"riskReportFileName,omitempty"`
+	AggregateVersionWideReport           bool   `json:"aggregateVersionWideReport,omitempty"`
 	VulnerabilityReportFormat            string `json:"vulnerabilityReportFormat,omitempty"`
 	ParallelLimit                        string `json:"parallelLimit,omitempty"`
 	Reporting                            bool   `json:"reporting,omitempty"`
@@ -123,8 +122,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.AgentDownloadURL, "agentDownloadUrl", `https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar`, "URL used to download the latest version of the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-generated-file.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
 	cmd.Flags().StringVar(&stepConfig.ReportDirectoryName, "reportDirectoryName", `whitesource-reports`, "Name of the directory to save vulnerability/risk reports to")
-	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFileName, "vulnerabilityReportFileName", `${config.projectName}-vulnerability-report`, "Name of the file the vulnerability report is written to.")
-	cmd.Flags().StringVar(&stepConfig.RiskReportFileName, "riskReportFileName", `${config.projectName}-risk-report`, "Name of the file the PDF risk report is written to.")
+	cmd.Flags().BoolVar(&stepConfig.AggregateVersionWideReport, "aggregateVersionWideReport", false, "This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFormat, "vulnerabilityReportFormat", `xlsx`, "Format of the file the vulnerability report is written to.")
 	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", `15`, "Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`.")
@@ -275,18 +273,10 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "vulnerabilityReportFileName",
+						Name:        "aggregateVersionWideReport",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "riskReportFileName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

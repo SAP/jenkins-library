@@ -22,15 +22,29 @@ type Product struct {
 
 type Alert struct {
 	Vulnerability Vulnerability `json:"vulnerability"`
+	Library       Library    `json:"library,omitempty"`
+	Project	      string     `json:"project,omitempty"`
+	CreationDate  string     `json:"creation_date,omitempty"`
+}
+
+type Library struct {
+	Name     string `json:"name,omitempty"`
+	Filename string `json:"filename,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Project  string `json:"project,omitempty"`
 }
 
 type Vulnerability struct {
-	Name          string  `json:"name"`
-	Type          string  `json:"type"`
-	CVSS3Severity string  `json:"cvss3_severity,omitempty"`
-	CVSS3Score    float64 `json:"cvss3_score,omitempty"`
-	Score         float64 `json:"score,omitempty"`
-	PublishDate   string  `json:"publishDate,omitempty"`
+	Name          string     `json:"name,omitempty"`
+	Type          string     `json:"type,omitempty"`
+	Level	      string     `json:"level,omitempty"`
+	Description   string     `json:"description,omitempty"`
+	Severity      string     `json:"severity,omitempty"`
+	CVSS3Severity string     `json:"cvss3_severity,omitempty"`
+	CVSS3Score    float64    `json:"cvss3_score,omitempty"`
+	Score         float64    `json:"score,omitempty"`
+	FixResolutionText string `json:"fixResolutionText,omitempty"`
+	PublishDate   string     `json:"publishDate,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -64,8 +78,8 @@ type System struct {
 }
 
 // NewSystem constructs a new system instance
-func NewSystem(serverURL, orgToken, userToken string) System {
-	return System{
+func NewSystem(serverURL, orgToken, userToken string) *System {
+	return &System{
 		ServerURL:  serverURL,
 		OrgToken:   orgToken,
 		UserToken:  userToken,
@@ -129,12 +143,12 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return wsResponse.ProjectVitals, errors.Wrap(err, "WhiteSource request failed")
+		return nil, errors.Wrap(err, "WhiteSource request failed")
 	}
 
 	err = json.Unmarshal(respBody, &wsResponse)
 	if err != nil {
-		return wsResponse.ProjectVitals, errors.Wrap(err, "failed to parse WhiteSource response")
+		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
 	return wsResponse.ProjectVitals, nil
@@ -142,28 +156,38 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 // GetProjectToken returns the project token for a project with a given name
 func (s *System) GetProjectToken(productToken, projectName string) (string, error) {
+	var token string
 	project, err := s.GetProjectByName(productToken, projectName)
 	if err != nil {
 		return "", err
 	}
 
-	return project.Token, nil
+	// returns a nil token and no error if not found
+	if project !=  nil {
+		token = project.Token
+	}
+
+	return token, nil
 }
 
 // GetProjectByName returns the finds and returns a project by name
 func (s *System) GetProjectByName(productToken, projectName string) (*Project, error) {
+	var project *Project
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
 	}
 
-	for _, project := range projects {
-		if projectName == project.Name {
-			return &project, nil
+	for _, proj := range projects {
+		if projectName == proj.Name {
+			log.Entry().Info("Found project by name: ", proj)
+			project = &proj
+			break
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Failed to find a project with name: %s", projectName))
+	// returns a nil project and no error if no project exists with projectName
+	return project, nil
 }
 
 // GetProjectsByIDs: get all project tokens given a list of project ids
@@ -291,18 +315,21 @@ func (s *System) GetOrganizationProductVitals() ([]Product, error) {
 
 // GetProductByName
 func (s *System) GetProductByName(productName string) (*Product, error) {
+	var product Product
+
 	products, err := s.GetOrganizationProductVitals()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to getOrganizationProductVitals")
 	}
 
-	for _, product := range products {
-		if product.Name == productName {
-			return &product, nil
+	for _, prod := range products {
+		if prod.Name == productName {
+			product = prod
 		}
 	}
 
-	return nil, errors.New("Product could not be found")
+	// returns nil, nil if no product was found
+	return &product, nil
 }
 
 // GetProjectAlerts
@@ -329,6 +356,32 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	}
 
 	return wsResponse.Alerts, nil
+}
+
+// GetProjectLibraryLocations
+func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
+	wsResponse := struct {
+		Libraries []Library `json:"libraryLocations"`
+	}{
+		Libraries: []Library{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectLibraryLocations",
+		ProjectToken: projectToken,
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	err = json.Unmarshal(respBody, &wsResponse)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+
+	return wsResponse.Libraries, nil
 }
 
 func (s *System) sendRequest(req Request) ([]byte, error) {
