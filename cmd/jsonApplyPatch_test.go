@@ -79,4 +79,15 @@ func TestSchemaPatch(t *testing.T) {
 		assert.NoError(t, err)
 		assert.JSONEq(t, string(patchedSchema), string(patchedSchemaResult))
 	})
+
+	t.Run("file does not exist", func(t *testing.T) {
+		options := jsonApplyPatchOptions{
+			Input:  "schema.json",
+			Patch:  "patch.json",
+			Output: "output.json",
+		}
+		filesMock := mock.FilesMock{}
+		err := runJsonApplyPatch(&options, &filesMock)
+		assert.Error(t, err)
+	})
 }
