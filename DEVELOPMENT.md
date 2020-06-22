@@ -219,7 +219,7 @@ With the convenience function
 ```golang
 log.FatalError(err, "the error message")
 ```
-the category is attached to the `fatal` error and written into the file `errorDetails.json`. 
+the category is attached to the `fatal` error and written into the file `errorDetails.json`.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 ## Testing
