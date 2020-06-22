@@ -37,7 +37,7 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Creates a Git repository on an ABAP system",
 		Long:  `Creates a local Git repository on an ABAP system if it does not already exist.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -60,7 +60,7 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

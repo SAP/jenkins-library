@@ -41,7 +41,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -62,7 +62,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
