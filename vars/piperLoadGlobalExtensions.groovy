@@ -101,7 +101,7 @@ private loadLibrariesFromFile(String filename) {
         error("Could not read extension libraries from ${filename}. The file has to contain a list of libraries where each entry should contain the name and the version of the library. (${ex.getMessage()})")
     }
     Set additionalLibraries = []
-    for (i = 0; i < libs.size(); i++) {
+    for (int i = 0; i < libs.size(); i++) {
         Map lib = libs[i]
         String libName = lib.name
         if(!libName){
