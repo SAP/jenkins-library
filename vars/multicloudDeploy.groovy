@@ -82,7 +82,7 @@ void call(parameters = [:]) {
                         deployTool: deployTool
                     )
                 }
-                setDeployment(deployments, deployment, index)
+                deployments.put("Deployment ${index}", deployment)
                 index++
             }
         }
@@ -105,7 +105,7 @@ void call(parameters = [:]) {
                     )
 
                 }
-                setDeployment(deployments, deployment, index)
+                deployments.put("Deployment ${index}", deployment)
                 index++
             }
         }
@@ -114,24 +114,17 @@ void call(parameters = [:]) {
             error "Deployment skipped because no targets defined!"
         }
 
-        runDeployments(utils, config.parallelExecution, deployments)
-    }
-}
-
-void setDeployment(deployments, deployment, index) {
-    echo "Setting up deployments"
-    deployments["Deployment ${index}"] = {
-        deployment.run()
-    }
-}
-
-void runDeployments(utils, parallelExecution, deployments) {
-    echo "Executing deployments"
-    if (parallelExecution) {
-        echo "Executing deployments in parallel"
-        parallel deployments
-    } else {
-        echo "Executing deployments in sequence"
-        utils.runClosures(deployments)
+        echo "Executing deployments"
+        if (config.parallelExecution) {
+            echo "Executing deployments in parallel"
+            parallel deployments
+        } else {
+            echo "Executing deployments in sequence"
+            def closuresToRun = deployments.values().asList()
+            Collections.shuffle(closuresToRun) // Shuffle the list so no one tries to rely on the order of execution
+            for (int i = 0; i < closuresToRun.size(); i++) {
+                (closuresToRun[i] as Closure)()
+            }
+        }
     }
 }
