@@ -1,5 +1,6 @@
 import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +23,8 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Before
     void init() {
+        DownloadCacheUtils.metaClass.static.networkName = {return }
+        DownloadCacheUtils.metaClass.static.hostname = { return }
         helper.registerAllowedMethod("libraryResource", [String.class], { path ->
             File resource = new File(new File('resources'), path)
             if (resource.exists()) {
@@ -34,10 +37,20 @@ class DownloadCacheUtilsTest extends BasePiperTest {
         }
     }
 
+    @After
+    void after(){
+        DownloadCacheUtils.metaClass.static.networkName = {return }
+        DownloadCacheUtils.metaClass.static.hostname = { return }
+    }
+
     @Test
     void 'isEnabled should return true if dl cache is enabled'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
         boolean actual = DownloadCacheUtils.isEnabled(nullScript)
 
         assertTrue(actual)
@@ -45,7 +58,9 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'getDockerOptions should return docker network if configured'() {
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
         String expected = '--network=cx-network'
         String actual = DownloadCacheUtils.getDockerOptions(nullScript)
 
@@ -54,7 +69,9 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'getGlobalMavenSettingsForDownloadCache should write file'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
         boolean writeFileExecuted = false
 
         helper.registerAllowedMethod('writeFile', [Map.class]) { Map m ->
@@ -70,7 +87,9 @@ class DownloadCacheUtilsTest extends BasePiperTest {
     @Test
     void 'getGlobalMavenSettingsForDownloadCache should return filePath if file already exists'() {
         fileExistsRule.registerExistingFile('.pipeline/global_settings.xml')
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
         boolean writeFileExecuted = false
 
         helper.registerAllowedMethod('writeFile', [Map.class]) { Map m ->
@@ -99,8 +118,12 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'injectDownloadCacheInParameters should set docker options and global settings for maven'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
 
         Map expected = [
             dockerOptions: ['--network=cx-network'],
@@ -114,8 +137,12 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'injectDownloadCacheInParameters should set docker options, global settings and npm default registry for mta'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
 
         Map expected = [
             dockerOptions: ['--network=cx-network'],
@@ -130,8 +157,12 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'injectDownloadCacheInParameters should set docker options and default npm config for npm'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
 
         Map expected = [
             dockerOptions: ['--network=cx-network'],
@@ -145,8 +176,12 @@ class DownloadCacheUtilsTest extends BasePiperTest {
 
     @Test
     void 'injectDownloadCacheInParameters should append docker options'() {
-        nullScript.env.DL_CACHE_HOSTNAME = 'cx-downloadcache'
-        nullScript.env.DL_CACHE_NETWORK = 'cx-network'
+        DownloadCacheUtils.metaClass.static.hostname = {
+            return 'cx-downloadcache'
+        }
+        DownloadCacheUtils.metaClass.static.networkName = {
+            return 'cx-network'
+        }
 
         List expectedDockerOptions = ['--test', '--network=cx-network']
 

@@ -382,8 +382,7 @@ spec:
       default: "/download/currentStateFprDownload.html"
     - name: defaultVersioningModel
       type: string
-      description: "The default project versioning model used in case `projectVersion` parameter is empty for
-        creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`,
+      description: "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`,
         `'major-minor'`, `'semantic'`, `'full'`"
       scope:
         - PARAMETERS
