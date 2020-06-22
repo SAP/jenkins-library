@@ -204,6 +204,24 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 It has proven a good practice to bubble up errors until the runtime entry function  and only
 there exit via the logging framework (see also [logging](#logging)).
 
+### Error categories
+
+For errors, we have a convenience function to set a pre-defined category once an error occurs:
+
+```golang
+log.SetErrorCategory(log.ErrorCompliance)
+```
+
+Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
+
+With the convenience function
+
+```golang
+log.FatalError(err, "the error message")
+```
+the category is attached to the `fatal` error and written into the file `errorDetails.json`.
+Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
+
 ## Testing
 
 1. [Mocking](#mocking)

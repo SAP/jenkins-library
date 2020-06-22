@@ -18,6 +18,7 @@ type FilesMock struct {
 	files        map[string]*[]byte
 	removedFiles map[string]*[]byte
 	currentDir   string
+	Separator    string
 }
 
 func (f *FilesMock) init() {
@@ -27,25 +28,33 @@ func (f *FilesMock) init() {
 	if f.removedFiles == nil {
 		f.removedFiles = map[string]*[]byte{}
 	}
+	if f.Separator == "" {
+		f.Separator = string(os.PathSeparator)
+	}
 }
 
 func (f *FilesMock) toAbsPath(path string) string {
-	if !strings.HasPrefix(path, string(os.PathSeparator)) {
-		path = string(os.PathSeparator) + filepath.Join(f.currentDir, path)
+	if !strings.HasPrefix(path, f.Separator) {
+		path = f.Separator + filepath.Join(f.currentDir, path)
 	}
 	return path
 }
 
 // AddFile establishes the existence of a virtual file.
 func (f *FilesMock) AddFile(path string, contents []byte) {
-	f.init()
-	f.files[f.toAbsPath(path)] = &contents
+	f.associateContent(path, &contents)
 }
 
 // AddDir establishes the existence of a virtual directory.
 func (f *FilesMock) AddDir(path string) {
+	f.associateContent(path, &dirContent)
+}
+
+func (f *FilesMock) associateContent(path string, content *[]byte) {
 	f.init()
-	f.files[f.toAbsPath(path)] = &dirContent
+	path = strings.ReplaceAll(path, "/", f.Separator)
+	path = strings.ReplaceAll(path, "\\", f.Separator)
+	f.files[f.toAbsPath(path)] = content
 }
 
 // HasFile returns true if the virtual file system contains an entry for the given path.
@@ -69,7 +78,7 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 	}
 	content, exists := f.files[f.toAbsPath(path)]
 	if !exists {
-		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
+		return false, nil
 	}
 	return content != &dirContent, nil
 }
@@ -81,9 +90,9 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 	for entry, content := range f.files {
 		var dirComponents []string
 		if content == &dirContent {
-			dirComponents = strings.Split(entry, string(os.PathSeparator))
+			dirComponents = strings.Split(entry, f.Separator)
 		} else {
-			dirComponents = strings.Split(filepath.Dir(entry), string(os.PathSeparator))
+			dirComponents = strings.Split(filepath.Dir(entry), f.Separator)
 		}
 		if len(dirComponents) > 0 {
 			dir := ""
@@ -91,7 +100,7 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 				if i == 0 {
 					dir = component
 				} else {
-					dir = dir + string(os.PathSeparator) + component
+					dir = dir + f.Separator + component
 				}
 				if dir == path {
 					return true, nil
@@ -169,8 +178,8 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 		return matches, nil
 	}
 	for path := range f.files {
-		path = strings.TrimLeft(path, string(os.PathSeparator))
-		matched, _ := doublestar.Match(pattern, path)
+		path = strings.TrimLeft(path, f.Separator)
+		matched, _ := doublestar.PathMatch(pattern, path)
 		if matched {
 			matches = append(matches, path)
 		}
@@ -182,6 +191,7 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 
 // Getwd returns the rooted current virtual working directory
 func (f *FilesMock) Getwd() (string, error) {
+	f.init()
 	return f.toAbsPath(""), nil
 }
 
@@ -189,7 +199,7 @@ func (f *FilesMock) Getwd() (string, error) {
 // The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
 // The implementation does not support relative path components such as "..".
 func (f *FilesMock) Chdir(path string) error {
-	if path == "." || path == "."+string(os.PathSeparator) {
+	if path == "." || path == "."+f.Separator {
 		return nil
 	}
 
@@ -200,6 +210,6 @@ func (f *FilesMock) Chdir(path string) error {
 		return fmt.Errorf("failed to change current directory into '%s': %w", path, os.ErrNotExist)
 	}
 
-	f.currentDir = strings.TrimLeft(path, string(os.PathSeparator))
+	f.currentDir = strings.TrimLeft(path, f.Separator)
 	return nil
 }
