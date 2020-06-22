@@ -13,7 +13,7 @@ In the current state, the pipeline enables you to pull Software Components to sp
 
 ### 1. Jenkins Server
 
-Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/)
+Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
 
 ### 2. Jenkinsfile
 
@@ -25,7 +25,7 @@ Create a file named `Jenkinsfile` in your repository with the following content:
 abapEnvironmentPipeline script: this
 ```
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see [documentation](https://sap.github.io/jenkins-library/customjenkins/#shared-library))
+The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see [documentation](https://sap.github.io/jenkins-library/customjenkins/#shared-library)).
 
 ### 3. Manifest for Service Creation
 
@@ -63,7 +63,7 @@ atcobjects:
     - name: "/DMO/REPO"
 ```
 
-Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details.
 
 ### 6. Technical Pipeline Configuration
 
@@ -91,7 +91,7 @@ steps:
     deleteServiceKeys: true
 ```
 
-If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the steps `cloudFoundryDeleteService` as above.
+If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
 
 ## Extension
 
@@ -119,3 +119,7 @@ return this
 ```
 
 While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
+
+### Stage Names
+
+The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
