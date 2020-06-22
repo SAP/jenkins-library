@@ -19,12 +19,12 @@ func jsonApplyPatch(config jsonApplyPatchOptions, telemetryData *telemetry.Custo
 func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileUtils) error {
 	schema, err := fileUtils.FileRead(config.Input)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	patchFile, err := fileUtils.FileRead(config.Patch)
 	if err != nil {
-		return nil
+		return err
 	}
 	patcher, err := jsonpatch.DecodePatch(patchFile)
 	if err != nil {
