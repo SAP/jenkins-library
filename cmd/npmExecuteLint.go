@@ -123,11 +123,9 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 		for i, config := range eslintConfigs {
 			dir := filepath.Dir(config)
 			if dir == "." {
-				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
 				err = execRunner.RunExecutable("npx", "eslint", ".", "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
 			} else {
 				lintPattern := dir + "/**/*.js"
-				// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
 				err = execRunner.RunExecutable("npx", "eslint", lintPattern, "-f", "checkstyle", "-o", "./"+strconv.Itoa(i)+"_defaultlint.xml", "--ignore-pattern", "node_modules/", "--ignore-pattern", ".eslintrc.js")
 			}
 			if err != nil {
@@ -142,7 +140,7 @@ func runDefaultLint(npmExecutor npm.Executor, utils lintUtils, failOnError bool)
 		log.Entry().Info("Run ESLint with general purpose config")
 		utils.getGeneralPurposeConfig("https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
 
-		// Ignore possible errors when invoking ci-lint script to not fail the pipeline based on linting results
+		// Ignore possible errors when invoking ESLint to not fail the pipeline based on linting results
 		_ = execRunner.RunExecutable("npm", "install", "eslint@^7.0.0", "typescript@^3.7.4", "@typescript-eslint/parser@^3.0.0", "@typescript-eslint/eslint-plugin@^3.0.0")
 		_ = execRunner.RunExecutable("npx", "--no-install", "eslint", ".", "--ext", ".js,.jsx,.ts,.tsx", "-c", ".pipeline/.eslintrc.json", "-f", "checkstyle", "-o", "./defaultlint.xml", "--ignore-pattern", ".eslintrc.js")
 	}
