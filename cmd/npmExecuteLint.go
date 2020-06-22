@@ -56,7 +56,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 	content, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Entry().Warnf("error reading %v: %w", response.Body, err)
+		log.Entry().Warnf("error while reading the general purpose configuration: %v", err)
 		return
 	}
 
