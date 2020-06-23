@@ -69,9 +69,9 @@ class ContainerMap implements Serializable {
         script.echo "Getting docker image name for Go step '$stepName' in stage '$stageName'"
 
         String stepMetadataPath = "metadata/$stepMetadata"
+        script.piperExecuteBin.prepareMetadataResource(script, stepMetadataPath)
 
-        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool],
-            stepMetadataPath)
+        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool])
 
         String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)

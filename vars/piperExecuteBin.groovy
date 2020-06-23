@@ -25,7 +25,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
         prepareExecution(script, parameters)
-        Map stepParameters = prepareStepParameters(script, parameters, metadataFile)
+        prepareMetadataResource(script, metadataFile)
+        Map stepParameters = prepareStepParameters(parameters)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -71,7 +72,7 @@ static void prepareExecution(Script script, Map parameters = [:]) {
     script.commonPipelineEnvironment.writeToDisk(script)
 }
 
-static Map prepareStepParameters(Script script, Map parameters, String metadataFile) {
+static Map prepareStepParameters(Map parameters) {
     Map stepParameters = [:].plus(parameters)
 
     stepParameters.remove('script')
@@ -80,11 +81,13 @@ static Map prepareStepParameters(Script script, Map parameters, String metadataF
     stepParameters.remove('juStabUtils')
     stepParameters.remove('piperGoUtils')
 
-    script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
-
     // When converting to JSON and back again, entries which had a 'null' value will now have a value
     // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
     return MapUtils.pruneNulls(stepParameters)
+}
+
+static void prepareMetadataResource(Script script, String metadataFile) {
+    script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
