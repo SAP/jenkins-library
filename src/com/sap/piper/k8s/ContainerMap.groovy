@@ -21,16 +21,32 @@ class ContainerMap implements Serializable {
         containerMap = containersMap
     }
 
+    private static class PiperExecutionPreparator {
+        private final Script script
+        private boolean executionPrepared
+
+        PiperExecutionPreparator(Script script) {
+            this.script = script
+        }
+
+        void prepareExecution() {
+            if (!executionPrepared) {
+                script.piperExecuteBin.prepareExecution(script)
+                executionPrepared = true
+            }
+        }
+    }
+
     void initFromResource(Script script, String yamlResourceName, String buildTool) {
         Map containers = [:]
-        boolean[] piperExecutionPrepared = new boolean[1]
+        PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator(script)
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
             Map stageToStepMapping = yamlContents.containerMaps as Map
             Map stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
             stageToStepMapping.each { stageName, stepsList ->
                 containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List,
-                    stepToMetaDataMapping, buildTool, piperExecutionPrepared)
+                    stepToMetaDataMapping, buildTool, piperPreparator)
             }
         } catch (Exception e) {
             script.error "Failed to parse container maps in '$yamlResourceName'. It is expected to contain " +
@@ -43,7 +59,7 @@ class ContainerMap implements Serializable {
         setMap(containers)
     }
 
-    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool, boolean[] piperExecutionPrepared) {
+    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool, PiperExecutionPreparator piperPreparator) {
         Map containers = [:]
         stepsList.each { stepName ->
             String imageName = getDockerImageNameForStepInStage(script, stageName, stepName as String)
@@ -51,10 +67,7 @@ class ContainerMap implements Serializable {
             if (!imageName && stepMetadata) {
                 // Retrieve containers for Go steps only if none was found in the config. In this case,
                 // a container may still be defined as (conditional) default in the step metadata.
-                if (!piperExecutionPrepared[0]) {
-                    script.piperExecuteBin.prepareExecution(script)
-                    piperExecutionPrepared[0] = true
-                }
+                piperPreparator.prepareExecution()
                 imageName = getDockerImageNameForGoStep(script, stageName, stepMetadata, buildTool)
             }
             if (imageName) {
