@@ -126,6 +126,7 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'npmExecuteScripts', //implementing new golang pattern without fields
+        'npmExecuteLint', //implementing new golang pattern without fields
         'malwareExecuteScan', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecute', //implementing new golang pattern without fields
@@ -136,6 +137,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
+        'gctsCloneRepository', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields

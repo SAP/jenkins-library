@@ -1,0 +1,2 @@
+ID: com.sap.piper.tms.test.extension
+extends: com.sap.piper.tms.test
