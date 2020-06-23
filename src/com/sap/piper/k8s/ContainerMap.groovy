@@ -57,13 +57,13 @@ class ContainerMap implements Serializable {
     static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool, PiperExecutionPreparator piperPreparator) {
         Map containers = [:]
         stepsList.each { stepName ->
-            String imageName = getDockerImageNameForStepInStage(script, stageName, stepName as String)
+            String imageName
             String stepMetadata = stepToMetaDataMapping[stepName]
-            if (!imageName && stepMetadata) {
-                // Retrieve containers for Go steps only if none was found in the config. In this case,
-                // a container may still be defined as (conditional) default in the step metadata.
+            if (stepMetadata) {
                 piperPreparator.prepareExecution(script)
                 imageName = getDockerImageNameForGoStep(script, stageName, stepMetadata, buildTool)
+            } else {
+                imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String)
             }
             if (imageName) {
                 containers[imageName] = stepName.toLowerCase()
@@ -72,7 +72,7 @@ class ContainerMap implements Serializable {
         return containers
     }
 
-    static String getDockerImageNameForStepInStage(Script script, String stageName, String stepName) {
+    static String getDockerImageNameForGroovyStep(Script script, String stageName, String stepName) {
         Map configuration = script.commonPipelineEnvironment.getStepConfiguration(stepName, stageName)
 
         String dockerImage = configuration.dockerImage
