@@ -26,12 +26,14 @@ class ContainerMap implements Serializable {
     void initFromResource(Script script, String yamlResourceName, String buildTool) {
         script.echo "initFromResource(yamlResourceName: $yamlResourceName, buildTool: $buildTool)"
         Map containers = [:]
+        boolean[] piperExecutionPrepared = new boolean[1]
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
             Map stageToStepMapping = yamlContents.containerMaps as Map
             Map stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
             stageToStepMapping.each { stageName, stepsList ->
-                containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List, stepToMetaDataMapping, buildTool)
+                containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List,
+                    stepToMetaDataMapping, buildTool, piperExecutionPrepared)
             }
         } catch (Exception e) {
             script.error "Failed to parse container maps in '$yamlResourceName'. It is expected to contain " +
@@ -44,20 +46,18 @@ class ContainerMap implements Serializable {
         setMap(containers)
     }
 
-    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool) {
+    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping,
+                                     String buildTool, boolean[] piperExecutionPrepared) {
         Map containers = [:]
-        boolean piperExecutionPrepared = false
         stepsList.each { stepName ->
-            String imageName
+            String imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
             String stepMetadata = stepToMetaDataMapping[stepName]
-            if (stepMetadata) {
-                if (!piperExecutionPrepared) {
+            if (!imageName && stepMetadata) {
+                if (!piperExecutionPrepared[0]) {
                     script.piperExecuteBin.prepareExecution(script)
-                    piperExecutionPrepared = true
+                    piperExecutionPrepared[0] = true
                 }
                 imageName = getDockerImageNameForGoStep(script, stageName, stepName as String, stepMetadata, buildTool)
-            } else {
-                imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
             }
             if (imageName) {
                 containers[imageName] = stepName.toLowerCase()
@@ -66,12 +66,14 @@ class ContainerMap implements Serializable {
         return containers
     }
 
-    static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata, String buildTool) {
+    static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata,
+                                              String buildTool) {
         script.echo "Getting docker image name for Go step '$stepName' in stage '$stageName'"
 
         String stepMetadataPath = "metadata/$stepMetadata"
 
-        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool], stepMetadataPath)
+        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool],
+            stepMetadataPath)
 
         String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)
@@ -79,7 +81,8 @@ class ContainerMap implements Serializable {
         Map config = [:]
         script.withEnv(["PIPER_parametersJSON=${JsonOutput.toJson(stepParameters)}",
                         "STAGE_NAME=$stageName"]) {
-            config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, defaultConfigArgs, customConfigArg)
+            config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, defaultConfigArgs,
+                customConfigArg)
         }
         script.echo "Config for Go step '$stepName': ${config}"
         return config.dockerImage
