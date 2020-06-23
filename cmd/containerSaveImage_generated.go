@@ -45,6 +45,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 

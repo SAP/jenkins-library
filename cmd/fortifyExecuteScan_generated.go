@@ -152,6 +152,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.AuthToken)

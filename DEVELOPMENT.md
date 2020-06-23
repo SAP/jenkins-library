@@ -214,12 +214,12 @@ log.SetErrorCategory(log.ErrorCompliance)
 
 Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
 
-With the convenience function
+With writing a fatal error 
 
 ```golang
-log.FatalError(err, "the error message")
+log.Entry().WithError(err).Fatal("the error message")
 ```
-the category is attached to the `fatal` error and written into the file `errorDetails.json`.
+the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 ## Testing
