@@ -46,10 +46,15 @@ class ContainerMap implements Serializable {
 
     static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool) {
         Map containers = [:]
+        boolean piperExecutionPrepared = false
         stepsList.each { stepName ->
             String imageName
             String stepMetadata = stepToMetaDataMapping[stepName]
             if (stepMetadata) {
+                if (!piperExecutionPrepared) {
+                    script.piperExecuteBin.prepareExecution(script)
+                    piperExecutionPrepared = true
+                }
                 imageName = getDockerImageNameForGoStep(script, stageName, stepName as String, stepMetadata, buildTool)
             } else {
                 imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
@@ -66,7 +71,7 @@ class ContainerMap implements Serializable {
 
         String stepMetadataPath = "metadata/$stepMetadata"
 
-        Map stepParameters = script.piperExecuteBin.prepareExecutionAndGetStepParameters(script, ['buildTool': buildTool], stepMetadataPath)
+        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool], stepMetadataPath)
 
         String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)

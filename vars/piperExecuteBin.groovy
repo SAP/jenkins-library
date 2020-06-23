@@ -24,7 +24,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        Map stepParameters = prepareExecutionAndGetStepParameters(script, parameters, metadataFile)
+        prepareExecution(script, parameters)
+        Map stepParameters = prepareStepParameters(script, parameters, metadataFile)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -62,22 +63,22 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     }
 }
 
-static Map prepareExecutionAndGetStepParameters(Script script, Map parameters, String metadataFile) {
+static void prepareExecution(Script script, Map parameters = [:]) {
+    def utils = parameters.juStabUtils ?: new Utils()
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
+    piperGoUtils.unstashPiperBin()
+    utils.unstash('pipelineConfigAndTests')
+    script.commonPipelineEnvironment.writeToDisk(script)
+}
+
+static Map prepareStepParameters(Script script, Map parameters, String metadataFile) {
     Map stepParameters = [:].plus(parameters)
 
     stepParameters.remove('script')
     stepParameters.remove('jenkinsUtilsStub')
     stepParameters.remove('piperGoPath')
-
-    def utils = parameters.juStabUtils ?: new Utils()
     stepParameters.remove('juStabUtils')
-
-    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     stepParameters.remove('piperGoUtils')
-
-    piperGoUtils.unstashPiperBin()
-    utils.unstash('pipelineConfigAndTests')
-    script.commonPipelineEnvironment.writeToDisk(script)
 
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 
