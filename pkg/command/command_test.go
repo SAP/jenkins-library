@@ -165,6 +165,7 @@ func TestParseConsoleErrors(t *testing.T) {
 	}
 
 	for _, test := range tt {
+		log.SetErrorCategory(log.ErrorUndefined)
 		cmd.parseConsoleErrors(test.consoleLine)
 		assert.Equal(t, test.expectedCategory, log.GetErrorCategory(), test.consoleLine)
 	}
