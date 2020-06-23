@@ -73,7 +73,7 @@ class ContainerMap implements Serializable {
             dockerImage = configuration[configuration.mtaBuildTool]?.dockerImage
         }
 
-        return dockerImage ?: ''
+        return dockerImage
     }
 
     static String getDockerImageNameForGoStep(Script script, String stageName, String stepMetadata, String buildTool) {
