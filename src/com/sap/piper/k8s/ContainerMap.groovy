@@ -31,7 +31,7 @@ class ContainerMap implements Serializable {
             Map stageToStepMapping = yamlContents.containerMaps as Map
             Map stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
             stageToStepMapping.each { stageName, stepsList ->
-                containers[stageName] = getContainerForStage(script, stageName as String, stepsList as List, stepToMetaDataMapping, buildTool)
+                containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List, stepToMetaDataMapping, buildTool)
             }
         } catch (Exception e) {
             script.error "Failed to parse container maps in '$yamlResourceName'. It is expected to contain " +
@@ -44,7 +44,7 @@ class ContainerMap implements Serializable {
         setMap(containers)
     }
 
-    static Map getContainerForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool) {
+    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool) {
         Map containers = [:]
         stepsList.each { stepName ->
             String imageName
