@@ -47,9 +47,11 @@ class ContainerMap implements Serializable {
     static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool, boolean[] piperExecutionPrepared) {
         Map containers = [:]
         stepsList.each { stepName ->
-            String imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
+            String imageName = getDockerImageNameForStepInStage(script, stageName, stepName as String, buildTool)
             String stepMetadata = stepToMetaDataMapping[stepName]
             if (!imageName && stepMetadata) {
+                // Retrieve containers for Go steps only if none was found in the config. In this case,
+                // a container may still be defined as (conditional) default in the step metadata.
                 if (!piperExecutionPrepared[0]) {
                     script.piperExecuteBin.prepareExecution(script)
                     piperExecutionPrepared[0] = true
@@ -61,6 +63,19 @@ class ContainerMap implements Serializable {
             }
         }
         return containers
+    }
+
+    static String getDockerImageNameForStepInStage(Script script, String stageName, String stepName, String buildTool) {
+        script.echo "Getting docker image name for Groovy step '$stepName' in stage '$stageName'"
+        Map configuration = script.commonPipelineEnvironment.getStepConfiguration(stepName, stageName)
+
+        String dockerImage = configuration.dockerImage
+
+        if(!dockerImage && stepName == "mtaBuild"){
+            dockerImage = configuration[configuration.mtaBuildTool]?.dockerImage
+        }
+
+        return dockerImage ?: ''
     }
 
     static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata, String buildTool) {
@@ -82,18 +97,5 @@ class ContainerMap implements Serializable {
         }
         script.echo "Config for Go step '$stepName': ${config}"
         return config.dockerImage
-    }
-
-    static String getDockerImageNameForGroovyStep(Script script, String stageName, String stepName, String buildTool) {
-        script.echo "Getting docker image name for Groovy step '$stepName' in stage '$stageName'"
-        Map configuration = script.commonPipelineEnvironment.getStepConfiguration(stepName, stageName)
-
-        String dockerImage = configuration.dockerImage
-
-        if(!dockerImage && stepName == "mtaBuild"){
-            dockerImage = configuration[configuration.mtaBuildTool]?.dockerImage
-        }
-
-        return dockerImage ?: ''
     }
 }
