@@ -25,11 +25,12 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'Security')
 void call(Map parameters = [:]) {
-
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
     def stageName = parameters.stageName?:env.STAGE_NAME
+
+    def securityScanMap = [:]
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -41,60 +42,55 @@ void call(Map parameters = [:]) {
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
 
-    piperStageWrapper (script: script, stageName: stageName) {
-
-        def securityScanMap = [:]
-
-        if (config.checkmarxExecuteScan) {
-            securityScanMap['Checkmarx'] = {
-                node(config.nodeLabel) {
-                    try{
-                        durationMeasure(script: script, measurementName: 'checkmarx_duration') {
-                            checkmarxExecuteScan script: script
-                        }
-                    }finally{
-                        deleteDir()
+    if (config.checkmarxExecuteScan) {
+        securityScanMap['Checkmarx'] = {
+            node(config.nodeLabel) {
+                try{
+                    durationMeasure(script: script, measurementName: 'checkmarx_duration') {
+                        checkmarxExecuteScan script: script
                     }
+                }finally{
+                    deleteDir()
                 }
             }
         }
+    }
 
-        if (config.fortifyExecuteScan) {
-            securityScanMap['Fortify'] = {
-                node(config.nodeLabel) {
-                    try{
-                        durationMeasure(script: script, measurementName: 'fortify_duration') {
-                            fortifyExecuteScan script: script
-                        }
-                    }finally{
-                        deleteDir()
+    if (config.fortifyExecuteScan) {
+        securityScanMap['Fortify'] = {
+            node(config.nodeLabel) {
+                try{
+                    durationMeasure(script: script, measurementName: 'fortify_duration') {
+                        fortifyExecuteScan script: script
                     }
+                }finally{
+                    deleteDir()
                 }
             }
         }
+    }
 
-        if (config.whitesourceExecuteScan) {
-            securityScanMap['WhiteSource'] = {
-                node(config.nodeLabel) {
-                    try{
-                        durationMeasure(script: script, measurementName: 'whitesource_duration') {
-                            whitesourceExecuteScan script: script
-                        }
-                    }finally{
-                        deleteDir()
+    if (config.whitesourceExecuteScan) {
+        securityScanMap['WhiteSource'] = {
+            node(config.nodeLabel) {
+                try{
+                    durationMeasure(script: script, measurementName: 'whitesource_duration') {
+                        whitesourceExecuteScan script: script
                     }
+                }finally{
+                    deleteDir()
                 }
             }
         }
+    }
 
 
-        if (securityScanMap.size() > 0) {
-            piperStageWrapper (script: script, stageName: stageName) {
-                // telemetry reporting
-                utils.pushToSWA([step: STEP_NAME], config)
+    if (securityScanMap.size() > 0) {
+        piperStageWrapper (script: script, stageName: stageName) {
+            // telemetry reporting
+            utils.pushToSWA([step: STEP_NAME], config)
 
-                parallel securityScanMap.plus([failFast: false])
-            }
+            parallel securityScanMap.plus([failFast: false])
         }
     }
 }
