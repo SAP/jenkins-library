@@ -1,8 +1,6 @@
 package com.sap.piper.k8s
 
 import com.sap.piper.API
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
 import groovy.json.JsonOutput
 
 @API
