@@ -41,7 +41,6 @@ class ContainerMap implements Serializable {
                 "metadata resource file." +
                 "Error: ${e.getMessage()}"
         }
-        script.echo "resulting containers: $containers"
         setMap(containers)
     }
 
