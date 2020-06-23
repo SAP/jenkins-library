@@ -24,6 +24,8 @@ nav:
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
+        - 'ABAP Environment pipeline':
+            - 'Introduction': pipelines/abapEnvironment/introduction.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
@@ -82,6 +84,7 @@ nav:
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
