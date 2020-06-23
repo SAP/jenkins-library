@@ -44,8 +44,7 @@ class ContainerMap implements Serializable {
         setMap(containers)
     }
 
-    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping,
-                                     String buildTool, boolean[] piperExecutionPrepared) {
+    static Map getContainersForStage(Script script, String stageName, List stepsList, Map stepToMetaDataMapping, String buildTool, boolean[] piperExecutionPrepared) {
         Map containers = [:]
         stepsList.each { stepName ->
             String imageName = getDockerImageNameForGroovyStep(script, stageName, stepName as String, buildTool)
@@ -64,8 +63,7 @@ class ContainerMap implements Serializable {
         return containers
     }
 
-    static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata,
-                                              String buildTool) {
+    static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata, String buildTool) {
         script.echo "Getting docker image name for Go step '$stepName' in stage '$stageName'"
 
         String stepMetadataPath = "metadata/$stepMetadata"
