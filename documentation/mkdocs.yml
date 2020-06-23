@@ -82,6 +82,7 @@ nav:
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
