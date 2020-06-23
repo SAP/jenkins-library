@@ -43,8 +43,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	gopkg.in/ini.v1 v1.56.0
-	gopkg.in/yaml.v2 v2.2.8
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	google.golang.org/genproto v0.0.0-20200602104108-2bb8d6132df6 // indirect
 	gopkg.in/ini.v1 v1.57.0
