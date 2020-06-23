@@ -82,7 +82,8 @@ class ContainerMap implements Serializable {
 
     static String getDockerImageNameForGroovyStep(Script script, String stageName, String stepName, String buildTool) {
         script.echo "Getting docker image name for Groovy step '$stepName' in stage '$stageName'"
-        Map configuration = loadEffectiveStepConfigurationInStage(script, stageName, stepName)
+        Map configuration = script.commonPipelineEnvironment.getStepConfiguration(stepName, stageName)
+
         String dockerImage = configuration.dockerImage
 
         if(!dockerImage && stepName == "mtaBuild"){
@@ -90,23 +91,5 @@ class ContainerMap implements Serializable {
         }
 
         return dockerImage ?: ''
-    }
-
-    private static Map loadEffectiveStepConfigurationInStage(Script script, String stageName, String stepName) {
-        final Map stageConfiguration = loadEffectiveStageConfiguration(script, stageName)
-        final Map stepConfiguration = loadEffectiveStepConfiguration(script, stepName)
-        return ConfigurationMerger.merge(stageConfiguration, null, stepConfiguration)
-    }
-
-    private static Map loadEffectiveStepConfiguration(Script script, String stepName) {
-        Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-        Map defaultStepConfiguration = ConfigurationLoader.defaultStepConfiguration(script, stepName)
-        return ConfigurationMerger.merge(stepConfiguration, null, defaultStepConfiguration)
-    }
-
-    private static Map loadEffectiveStageConfiguration(Script script, String stageName) {
-        Map stageConfiguration = ConfigurationLoader.stageConfiguration(script, stageName)
-        Map defaultStageConfiguration = ConfigurationLoader.defaultStageConfiguration(script, stageName)
-        return ConfigurationMerger.merge(stageConfiguration, null, defaultStageConfiguration)
     }
 }
