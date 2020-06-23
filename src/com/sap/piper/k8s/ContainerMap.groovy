@@ -66,12 +66,11 @@ class ContainerMap implements Serializable {
     }
 
     static String getDockerImageNameForStepInStage(Script script, String stageName, String stepName, String buildTool) {
-        script.echo "Getting docker image name for Groovy step '$stepName' in stage '$stageName'"
         Map configuration = script.commonPipelineEnvironment.getStepConfiguration(stepName, stageName)
 
         String dockerImage = configuration.dockerImage
 
-        if(!dockerImage && stepName == "mtaBuild"){
+        if (!dockerImage && stepName == "mtaBuild") {
             dockerImage = configuration[configuration.mtaBuildTool]?.dockerImage
         }
 
@@ -79,8 +78,6 @@ class ContainerMap implements Serializable {
     }
 
     static String getDockerImageNameForGoStep(Script script, String stageName, String stepName, String stepMetadata, String buildTool) {
-        script.echo "Getting docker image name for Go step '$stepName' in stage '$stageName'"
-
         String stepMetadataPath = "metadata/$stepMetadata"
         script.piperExecuteBin.prepareMetadataResource(script, stepMetadataPath)
 
