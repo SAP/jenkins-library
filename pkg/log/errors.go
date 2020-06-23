@@ -30,6 +30,7 @@ func (e ErrorCategory) String() string {
 	}[e]
 }
 
+// ErrorCategoryByString returns the error category based on the category text
 func ErrorCategoryByString(category string) ErrorCategory {
 	switch category {
 	case "build":
