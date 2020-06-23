@@ -123,7 +123,7 @@ func TestFilesRelated(t *testing.T) {
 
 		setupFileMock(map[string][]byte{
 			"manifest.yml":     []byte("a: dummy"),
-			"replacements.yml": []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"),
+			"replacements.yml": []byte("a: x # A comment.\nc: d\n---\na: b\nzz: 1234\n"),
 		})
 
 		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
