@@ -67,6 +67,7 @@ nav:
         - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
         - malwareExecuteScan: steps/malwareExecuteScan.md
+        - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
@@ -74,12 +75,14 @@ nav:
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
-        - npmExecute: steps/npmExecute.md
+        - npmExecuteLint: steps/npmExecuteLint.md
+        - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
@@ -99,6 +102,7 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - npmExecute: steps/npmExecute.md
     - 'Command line tool': cli/index.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md

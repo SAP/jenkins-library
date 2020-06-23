@@ -77,6 +77,13 @@ func Entry() *logrus.Entry {
 	return logger
 }
 
+// FatalError provides an alternative to Entry().WithError(err).Fatal()
+// It supports error categorization and adds the error category as additional logging field
+// The error category can be set anywhere by just calling log.SetErrorCategory(category)
+func FatalError(err error, message string) {
+	Entry().WithError(err).WithField("category", GetErrorCategory()).Fatal(message)
+}
+
 // Writer returns an io.Writer into which a tool's output can be redirected.
 func Writer() io.Writer {
 	return &logrusWriter{logger: Entry()}

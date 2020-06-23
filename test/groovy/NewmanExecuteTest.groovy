@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.Matchers.startsWith
+import groovy.json.JsonSlurper
 
 import static org.junit.Assert.assertThat
 
@@ -19,6 +20,7 @@ import util.JenkinsShellCallRule
 import util.JenkinsDockerExecuteRule
 import util.Rules
 import org.junit.rules.ExpectedException
+import util.JenkinsCredentialsRule
 
 class NewmanExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -26,6 +28,7 @@ class NewmanExecuteTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsCredentialsRule jenkinsCredentialsRule = new JenkinsCredentialsRule(this)
 
     @Rule
     public RuleChain rules = Rules
@@ -34,6 +37,7 @@ class NewmanExecuteTest extends BasePiperTest {
         .around(thrown)
         .around(dockerExecuteRule)
         .around(shellRule)
+        .around(jenkinsCredentialsRule)
         .around(loggingRule)
         .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
 
@@ -160,6 +164,34 @@ class NewmanExecuteTest extends BasePiperTest {
         // asserts
         assertThat(shellRule.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html')))
         assertThat(shellRule.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html')))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testExecuteNewmanCfAppsWithSecrets() throws Exception {
+        def jsonResponse = '{ "system_env_json":{"VCAP_SERVICES":{"xsuaa":[{"credentials":{"clientid":"myclientid", "clientsecret":"myclientsecret"}}]}}, "authorization_endpoint": "myAuthEndPoint", "access_token": "myAccessToken", "resources":[{"guid":"myGuid", "links":{"self":{"href":"myAppUrl"}}}] }'
+        jenkinsCredentialsRule.withCredentials('credentialsId', 'myuser', 'topsecret')
+        helper.registerAllowedMethod('httpRequest', [Map.class] , {
+            return [content: jsonResponse, status: 200]
+        })
+        helper.registerAllowedMethod('readJSON', [Map.class] , {
+            return new JsonSlurper().parseText(jsonResponse)
+        })
+
+        stepRule.step.newmanExecute(
+            script: nullScript,
+            juStabUtils: utils,
+            newmanCollection: 'testCollection',
+            newmanEnvironment: 'testEnvironment',
+            newmanGlobals: 'testGlobals',
+            dockerImage: 'testImage',
+            testRepository: 'testRepo',
+            failOnError: false,
+            cloudFoundry: ["apiEndpoint": "http://fake.endpoint.com", "org":"myOrg", "space": "mySpace", "credentialsId": "credentialsId"],
+            cfAppsWithSecrets: ['app1', 'app2']
+        )
+        // asserts
+        assertThat(shellRule.shell, hasItem(endsWith('--env-var app1_clientid=myclientid --env-var app1_clientsecret=myclientsecret --env-var app2_clientid=myclientid --env-var app2_clientsecret=myclientsecret')))
         assertJobStatusSuccess()
     }
 }

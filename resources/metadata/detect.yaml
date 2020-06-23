@@ -11,7 +11,9 @@ spec:
       - name: checkmarx
         type: stash
     secrets:
-      - name: apiTokenCredentialsId
+      - name: detectTokenCredentialsId
+        aliases:
+          - name: apiTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
     params:
@@ -108,3 +110,10 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+  containers:
+    - name: openjdk
+      image: openjdk:11
+      workingDir: /root
+      options:
+        - name: -u
+          value: '0'

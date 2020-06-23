@@ -25,7 +25,7 @@ func (errReadCloser) Close() error {
 }
 
 func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
-	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default")), nil
+	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default\nstages:\n  stage1:\n    p1: p1_custom_default")), nil
 }
 
 func TestReadConfig(t *testing.T) {
@@ -114,7 +114,7 @@ steps:
 		defaults2 := `general:
   p2: p2_general_default
   px2: px2_general_default
-  p3: p3_general_default 
+  p3: p3_general_default
 `
 
 		paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
@@ -227,6 +227,7 @@ steps:
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
+		assert.Equal(t, "p1_custom_default", stepConfig.Config["p1"])
 
 	})
 
@@ -240,6 +241,7 @@ steps:
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, nil, stepConfig.Config["p0"])
+		assert.Equal(t, nil, stepConfig.Config["p1"])
 
 	})
 
