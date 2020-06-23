@@ -214,7 +214,7 @@ log.SetErrorCategory(log.ErrorCompliance)
 
 Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
 
-With writing a fatal error 
+With writing a fatal error
 
 ```golang
 log.Entry().WithError(err).Fatal("the error message")
