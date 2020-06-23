@@ -34,7 +34,7 @@ func ContainerSaveImageCommand() *cobra.Command {
 		Long: `This step allows you to save a container image, for example a Docker image into a tar file.
 
 It can be used no matter if a Docker daemon is available or not. It will also work inside a Kubernetes cluster without access to a daemon.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -56,7 +56,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

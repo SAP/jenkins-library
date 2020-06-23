@@ -32,7 +32,7 @@ func JsonApplyPatchCommand() *cobra.Command {
 		Short: "Patches a json with a patch file",
 		Long: `This steps patches a json file with patch file using the json patch standard.
 This step can, e.g., be used if there is a json schema which needs to be patched.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -54,7 +54,7 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

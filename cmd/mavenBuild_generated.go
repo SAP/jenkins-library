@@ -37,7 +37,7 @@ func MavenBuildCommand() *cobra.Command {
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -59,7 +59,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
