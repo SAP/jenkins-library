@@ -1,7 +1,6 @@
 package cloudfoundry
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
@@ -22,29 +21,6 @@ func (fInfo fileInfoMock) Mode() os.FileMode  { return 0444 }
 func (fInfo fileInfoMock) ModTime() time.Time { return time.Time{} }
 func (fInfo fileInfoMock) IsDir() bool        { return false }
 func (fInfo fileInfoMock) Sys() interface{}   { return nil }
-
-type fMock struct {
-	files   map[string][]byte
-	written map[string][]byte
-}
-
-func (f *fMock) FileRead(name string) ([]byte, error) {
-
-	result := f.files[name]
-
-	if result != nil {
-		return result, nil
-	}
-	return []byte{}, fmt.Errorf("open %s: no such file or directory", name)
-}
-
-func (f *fMock) FileWrite(name string, data []byte, mode os.FileMode) error {
-	if f.written == nil {
-		f.written = map[string][]byte{}
-	}
-	f.written[name] = data
-	return nil
-}
 
 func TestFilesRelated(t *testing.T) {
 
@@ -131,12 +107,12 @@ func TestFilesRelated(t *testing.T) {
 		reset()
 		defer reset()
 
-		_fileUtils = &fMock{
-			files: map[string][]byte{
-				"manifest.yml":     []byte("a: dummy"),
-				"replacements.yml": []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"),
-			},
-		}
+		fileMock = &mock.FilesMock{}
+
+		fileMock.AddFile("manifest.yml", []byte("a: dummy"))
+		fileMock.AddFile("replacements.yml", []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"))
+
+		_fileUtils = fileMock
 
 		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
 
@@ -151,35 +127,37 @@ func TestFilesRelated(t *testing.T) {
 			return map[string]interface{}{"called": true}, true, nil
 		}
 
-		fMock := &fMock{
-			files: map[string][]byte{
-				"manifest.yml": []byte("a: dummy\n---\n b: otherDummy\n"),
-				// here we have two yaml documents in one "file" ...
-				"replacements.yml": []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"),
-			},
-		}
-		_fileUtils = fMock
+		fileMock = &mock.FilesMock{}
+
+		fileMock.AddFile("manifest.yml", []byte("a: dummy\n---\n b: otherDummy\n"))
+		// here we have two yaml documents in one "file" ...
+		fileMock.AddFile("replacements.yml", []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"))
+
+		_fileUtils = fileMock
 
 		defer reset()
 
 		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
-			// ... the two yaml files results in two yaml documents, separated by '---'
-			assert.Equal(t, "called: true\n---\ncalled: true\n", string(fMock.written["manifest.yml"]))
+			content, err := fileMock.FileRead("manifest.yml")
+			if assert.NoError(t, err) {
+				// ... the two yaml files results in two yaml documents, separated by '---'
+				assert.Equal(t, "called: true\n---\ncalled: true\n", string(content))
+			}
 		}
 	})
 
 	t.Run("Handle single manifest", func(t *testing.T) {
 
-		fMock := &fMock{
-			files: map[string][]byte{
-				"manifest.yml": []byte("a: dummy\n"),
-				// here we have two yaml documents in one "file" ...
-				"replacements.yml": []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"),
-			},
-		}
-		_fileUtils = fMock
+		fileMock = &mock.FilesMock{}
+
+		fileMock.AddFile("manifest.yml", []byte("a: dummy\n"))
+		// here we have two yaml documents in one "file" ...
+		fileMock.AddFile("replacements.yml", []byte("a: b # A comment.\nc: d\n---\nzz: 1234\n"))
+
+		_fileUtils = fileMock
+
 		_traverse = func(_ interface{}, _replacements map[string]interface{}) (interface{}, bool, error) {
 			return map[string]interface{}{"called": true}, true, nil
 		}
@@ -189,8 +167,11 @@ func TestFilesRelated(t *testing.T) {
 		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
-			// we have a single yaml document (no '---' inbetween)
-			assert.Equal(t, "called: true\n", string(fMock.written["manifest.yml"]))
+			content, err := fileMock.FileRead("manifest.yml")
+			if assert.NoError(t, err) {
+				// we have a single yaml document (no '---' inbetween)
+				assert.Equal(t, "called: true\n", string(content))
+			}
 		}
 	})
 
@@ -220,14 +201,13 @@ func TestFilesRelated(t *testing.T) {
 
 	t.Run("Replacements from map has precedence over replacments from file", func(t *testing.T) {
 
-		fMock := &fMock{
-			files: map[string][]byte{
-				"manifest.yml": []byte("a: ((a))\nb: ((b))"),
-				// here we have two yaml documents in one "file" ...
-				"replacements.yml": []byte("a: aa # A comment.\nb: bb\n"),
-			},
-		}
-		_fileUtils = fMock
+		fileMock = &mock.FilesMock{}
+
+		fileMock.AddFile("manifest.yml", []byte("a: ((a))\nb: ((b))"))
+
+		fileMock.AddFile("replacements.yml", []byte("a: aa # A comment.\nb: bb\n"))
+
+		_fileUtils = fileMock
 
 		_traverse = traverse
 
@@ -236,7 +216,10 @@ func TestFilesRelated(t *testing.T) {
 		_, err := Substitute("manifest.yml", map[string]interface{}{"b": "xx"}, []string{"replacements.yml"})
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, "a: aa\nb: xx\n", string(fMock.written["manifest.yml"]))
+			content, err := fileMock.FileRead("manifest.yml")
+			if assert.NoError(t, err) {
+				assert.Equal(t, "a: aa\nb: xx\n", string(content))
+			}
 		}
 	})
 }
