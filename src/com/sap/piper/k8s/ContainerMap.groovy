@@ -81,7 +81,7 @@ class ContainerMap implements Serializable {
         String stepMetadataPath = "metadata/$stepMetadata"
         script.piperExecuteBin.prepareMetadataResource(script, stepMetadataPath)
 
-        Map stepParameters = script.piperExecuteBin.prepareStepParameters(script, ['buildTool': buildTool])
+        Map stepParameters = script.piperExecuteBin.prepareStepParameters(['buildTool': buildTool])
 
         String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)
