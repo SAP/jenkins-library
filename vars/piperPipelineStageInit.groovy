@@ -1,3 +1,4 @@
+import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
@@ -45,7 +46,7 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1) {
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
@@ -133,23 +134,17 @@ private void initStashConfiguration (script, config) {
 
 private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
-    def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+    Map url = parseUrl(gitUrl)
 
-    def protocol = urlMatcher[0][2]
-    def auth = urlMatcher[0][4]
-    def host = urlMatcher[0][5]
-    def port = urlMatcher[0][7]
-    def path = urlMatcher[0][9]
-
-    if (protocol in ['http', 'https']) {
-        script.commonPipelineEnvironment.setGitSshUrl("git@${host}:${path}")
+    if (url.protocol in ['http', 'https']) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${url.host}:${url.path}")
         script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
-    } else if (protocol in [ null, 'ssh', 'git']) {
+    } else if (url.protocol in [ null, 'ssh', 'git']) {
         script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${host}/${path}")
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${url.host}/${url.path}")
     }
 
-    List gitPathParts = path.replaceAll('.git', '').split('/')
+    List gitPathParts = url.path.replaceAll('.git', '').split('/')
     def gitFolder = 'N/A'
     def gitRepo = 'N/A'
     switch (gitPathParts.size()) {
@@ -168,6 +163,29 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
     }
     script.commonPipelineEnvironment.setGithubOrg(gitFolder)
     script.commonPipelineEnvironment.setGithubRepo(gitRepo)
+}
+
+/*
+ * Returns the parts of an url.
+ * Valid keys for the retured map are:
+ *   - protocol
+ *   - auth
+ *   - host
+ *   - port
+ *   - path
+ */
+@NonCPS
+/* private */ Map parseUrl(String url) {
+
+    def urlMatcher = url =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+
+    return [
+        protocol: urlMatcher[0][2],
+        auth: urlMatcher[0][4],
+        host: urlMatcher[0][5],
+        port: urlMatcher[0][7],
+        path: urlMatcher[0][9],
+    ]
 }
 
 private void setPullRequestStageStepActivation(script, config, List actions) {

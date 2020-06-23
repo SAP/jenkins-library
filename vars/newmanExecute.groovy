@@ -4,6 +4,8 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
+import com.sap.piper.integration.CloudFoundry
+
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
@@ -64,8 +66,42 @@ import groovy.transform.Field
      * Define an additional repository where the test implementation is located.
      * For protected repositories the `testRepository` needs to contain the ssh git url.
      */
-    'testRepository'
+    'testRepository',
+    /**
+     * Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
+     * to the newman command that overrides the environment json entries
+     * (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+     */
+    'cfAppsWithSecrets',
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Credentials to be used for deployment.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
+
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -86,7 +122,7 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .use()
 
         new Utils().pushToSWA([
@@ -114,6 +150,10 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
+            sh returnStatus: true, script: """
+                node --version
+                npm --version
+            """
             sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
@@ -124,8 +164,37 @@ void call(Map parameters = [:]) {
                         config: config.plus([newmanCollection: collection]),
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
+                def command_secrets = ''
+                if(config.cfAppsWithSecrets){
+                    CloudFoundry cfUtils = new CloudFoundry(script);
+                    config.cfAppsWithSecrets.each { appName ->
+                        def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
+                                                    config.cloudFoundry.org,
+                                                    config.cloudFoundry.space,
+                                                    config.cloudFoundry.credentialsId,
+                                                    appName,
+                                                    config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
+                        command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
+                        echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
+                    }
+                }
+
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                try {
+                    if (config.cfAppsWithSecrets && command_secrets){
+                        echo "PATH=\$PATH:~/.npm-global/bin newman ${command} **env/secrets**"
+                        sh """
+                            set +x
+                            PATH=\$PATH:~/.npm-global/bin newman ${command} ${command_secrets}
+                        """
+                    }
+                    else{
+                        sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                    }
+                }
+                catch (e) {
+                    error "[${STEP_NAME}] ERROR: The execution of the newman tests failed, see the log for details."
+                }
             }
         }
     }

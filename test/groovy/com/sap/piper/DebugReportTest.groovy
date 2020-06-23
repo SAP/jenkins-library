@@ -20,7 +20,7 @@ class DebugReportTest extends BasePiperTest {
         DebugReport.instance.initFromEnvironment(env)
 
         Assert.assertTrue(DebugReport.instance.environment.containsKey('build_details'))
-        Assert.assertEquals('custom', DebugReport.instance.environment.get('environment'))
+        Assert.assertEquals('Kubernetes', DebugReport.instance.environment.get('environment'))
 
         Set<String> buildDetails = DebugReport.instance.environment.build_details as Set<String>
         Assert.assertTrue(buildDetails.size() > 0)
@@ -43,12 +43,12 @@ class DebugReportTest extends BasePiperTest {
         DebugReport.instance.initFromEnvironment(createEnv())
         DebugReport.instance.setGitRepoInfo('GIT_URL' : 'git://url', 'GIT_LOCAL_BRANCH' : 'some-branch')
 
-        String debugReport = DebugReport.instance.generateReport(mockScript())
+        String debugReport = DebugReport.instance.generateReport(mockScript(), false)
 
         Assert.assertTrue(debugReport.contains('## Pipeline Environment'))
         Assert.assertTrue(debugReport.contains('## Local Extensions'))
         Assert.assertTrue(debugReport.contains('#### Environment\n' +
-            '`custom`'))
+            '`Kubernetes`'))
         Assert.assertFalse(debugReport.contains('Repository | Branch'))
         Assert.assertFalse(debugReport.contains('some-branch'))
     }
@@ -57,14 +57,13 @@ class DebugReportTest extends BasePiperTest {
     void testLogOutputConfidential() {
         DebugReport.instance.initFromEnvironment(createEnv())
         DebugReport.instance.setGitRepoInfo('GIT_URL' : 'git://url', 'GIT_LOCAL_BRANCH' : 'some-branch')
-        DebugReport.instance.shareConfidentialInformation = true
 
-        String debugReport = DebugReport.instance.generateReport(mockScript())
+        String debugReport = DebugReport.instance.generateReport(mockScript(), true)
 
         Assert.assertTrue(debugReport.contains('## Pipeline Environment'))
         Assert.assertTrue(debugReport.contains('## Local Extensions'))
         Assert.assertTrue(debugReport.contains('#### Environment\n' +
-            '`custom`'))
+            '`Kubernetes`'))
         Assert.assertTrue(debugReport.contains('Repository | Branch'))
         Assert.assertTrue(debugReport.contains('some-branch'))
     }

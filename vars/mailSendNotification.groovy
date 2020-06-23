@@ -240,7 +240,7 @@ def getDistinctRecipients(recipients){
             address = address.trim()
             if(address
                 && address.contains("@")
-                && !address.startsWith("noreply")
+                && !address.contains("noreply")
                 && !knownAddresses.contains(address)) {
                 knownAddresses.add(address)
             }

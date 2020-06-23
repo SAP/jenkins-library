@@ -25,7 +25,7 @@ func (errReadCloser) Close() error {
 }
 
 func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
-	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default")), nil
+	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default\nstages:\n  stage1:\n    p1: p1_custom_default")), nil
 }
 
 func TestReadConfig(t *testing.T) {
@@ -82,6 +82,8 @@ steps:
     px4: px4_step
     p5: p5_step
     dependentParameter: dependentValue
+  stepAlias:
+    p8: p8_stepAlias
 stages:
   stage1:
     p5: p5_stage
@@ -90,7 +92,7 @@ stages:
 `
 		filters := StepFilters{
 			General:    []string{"p0", "p1", "p2", "p3", "p4"},
-			Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5", "dependentParameter", "pd1", "dependentValue", "pd2"},
+			Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5", "p8", "dependentParameter", "pd1", "dependentValue", "pd2"},
 			Stages:     []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6"},
 			Parameters: []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"},
 			Env:        []string{"p0", "p1", "p2", "p3", "p4", "p5"},
@@ -112,7 +114,7 @@ steps:
 		defaults2 := `general:
   p2: p2_general_default
   px2: px2_general_default
-  p3: p3_general_default 
+  p3: p3_general_default
 `
 
 		paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
@@ -154,8 +156,14 @@ steps:
 				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "test_pe1"}},
 			},
 		}
+		secretMetadata := []StepSecrets{
+			{
+				Name: "sd1",
+				Type: "jenkins",
+			},
+		}
 
-		stepMeta := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: parameterMetadata}}}
+		stepMeta := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: parameterMetadata, Secrets: secretMetadata}}}
 
 		dir, err := ioutil.TempDir("", "")
 		if err != nil {
@@ -167,9 +175,10 @@ steps:
 
 		piperenv.SetParameter(filepath.Join(dir, "commonPipelineEnvironment"), "test_pe1", "pe1_val")
 
-		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, parameterMetadata, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1")
+		stepAliases := []Alias{{Name: "stepAlias"}}
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, false, filters, parameterMetadata, secretMetadata, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1", stepAliases)
 
-		assert.Equal(t, nil, err, "error occured but none expected")
+		assert.Equal(t, nil, err, "error occurred but none expected")
 
 		t.Run("Config", func(t *testing.T) {
 			expected := map[string]string{
@@ -181,6 +190,7 @@ steps:
 				"p5":  "p5_stage",
 				"p6":  "p6_param",
 				"p7":  "p7_flag",
+				"p8":  "p8_stepAlias",
 				"pd1": "pd1_dependent_default",
 				"pd2": "pd2_metadata_default",
 				"pe1": "pe1_val",
@@ -213,10 +223,25 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, StepFilters{General: []string{"p0"}}, nil, nil, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, false, StepFilters{General: []string{"p0"}}, nil, nil, nil, "stage1", "step1", []Alias{})
 
-		assert.NoError(t, err, "Error occured but no error expected")
+		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
+		assert.Equal(t, "p1_custom_default", stepConfig.Config["p1"])
+
+	})
+
+	t.Run("Don't consider custom defaults from config", func(t *testing.T) {
+		var c Config
+		testConfDefaults := "customDefaults:\n- testDefaults.yaml"
+
+		c.openFile = customDefaultsOpenFileMock
+
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, true, StepFilters{General: []string{"p0"}}, nil, nil, nil, "stage1", "step1", []Alias{})
+
+		assert.NoError(t, err, "Error occurred but no error expected")
+		assert.Equal(t, nil, stepConfig.Config["p0"])
+		assert.Equal(t, nil, stepConfig.Config["p1"])
 
 	})
 
@@ -226,9 +251,9 @@ steps:
 		stepParams := []StepParameters{StepParameters{Name: "p0", Scope: []string{"GENERAL"}, Type: "string", Default: "p0_step_default", Aliases: []Alias{{Name: "p0_alias"}}}}
 		testConf := "general:\n p1: p1_conf"
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{})
 
-		assert.NoError(t, err, "Error occured but no error expected")
+		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_step_default", stepConfig.Config["p0"])
 		assert.Equal(t, "p1_conf", stepConfig.Config["p1"])
 	})
@@ -236,16 +261,16 @@ steps:
 	t.Run("Failure case config", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
-		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, []StepParameters{}, nil, "stage1", "step1")
-		assert.EqualError(t, err, "failed to parse custom pipeline configuration: error unmarshalling \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		_, err := c.GetStepConfig(nil, "", myConfig, nil, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		assert.EqualError(t, err, "failed to parse custom pipeline configuration: format of configuration is invalid \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	t.Run("Failure case defaults", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
-		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, []StepParameters{}, nil, "stage1", "step1")
-		assert.EqualError(t, err, "failed to parse pipeline default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	//ToDo: test merging of env and parameters/flags
@@ -324,12 +349,29 @@ func TestApplyAliasConfig(t *testing.T) {
 				{Name: "p7_alias"},
 			},
 		},
+		{
+			Name: "p8",
+			Aliases: []Alias{
+				{Name: "p8_alias"},
+			},
+		},
+		{
+			Name: "p9",
+		},
+	}
+	s := []StepSecrets{
+		{
+			Name: "s1",
+			Aliases: []Alias{
+				{Name: "s1_alias"},
+			},
+		},
 	}
 
 	filters := StepFilters{
 		General: []string{"p1", "p2"},
 		Stages:  []string{"p4"},
-		Steps:   []string{"p6"},
+		Steps:   []string{"p6", "p8", "s1"},
 	}
 
 	c := Config{
@@ -354,10 +396,18 @@ func TestApplyAliasConfig(t *testing.T) {
 				"p6_alias":   "p6_step",
 				"p7":         "p7_step",
 			},
+			"stepAlias1": map[string]interface{}{
+				"p7":       "p7_stepAlias",
+				"p8_alias": "p8_stepAlias",
+				"p9":       "p9_stepAlias",
+				"s1_alias": "s1_stepAlias",
+			},
 		},
 	}
 
-	c.ApplyAliasConfig(p, filters, "stage1", "step1")
+	stepAliases := []Alias{{Name: "stepAlias1"}}
+
+	c.ApplyAliasConfig(p, s, filters, "stage1", "step1", stepAliases)
 
 	t.Run("Global", func(t *testing.T) {
 		assert.Nil(t, c.General["p0"])
@@ -370,10 +420,13 @@ func TestApplyAliasConfig(t *testing.T) {
 		assert.Equal(t, "p4_stage", c.Stages["stage1"]["p4"])
 	})
 
-	t.Run("Stage", func(t *testing.T) {
+	t.Run("Steps", func(t *testing.T) {
 		assert.Nil(t, c.General["p5"])
 		assert.Equal(t, "p6_step", c.Steps["step1"]["p6"])
 		assert.Equal(t, "p7_step", c.Steps["step1"]["p7"])
+		assert.Equal(t, "p8_stepAlias", c.Steps["step1"]["p8"])
+		assert.Equal(t, "p9_stepAlias", c.Steps["step1"]["p9"])
+		assert.Equal(t, "s1_stepAlias", c.Steps["step1"]["s1"])
 	})
 
 }
@@ -402,6 +455,73 @@ func TestGetDeepAliasValue(t *testing.T) {
 	for k, v := range tt {
 		assert.Equal(t, v.expected, getDeepAliasValue(c, v.key), fmt.Sprintf("wrong return value for run %v", k+1))
 	}
+}
+
+func TestCopyStepAliasConfig(t *testing.T) {
+	t.Run("Step config available", func(t *testing.T) {
+		c := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p1": "p1_step",
+					"p2": "p2_step",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+					"p3": "p3_stepAlias",
+				},
+				"stepAlias2": map[string]interface{}{
+					"p3": "p3_stepAlias2",
+					"p4": "p4_stepAlias2",
+				},
+			},
+		}
+
+		expected := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p1": "p1_step",
+					"p2": "p2_step",
+					"p3": "p3_stepAlias",
+					"p4": "p4_stepAlias2",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+					"p3": "p3_stepAlias",
+				},
+				"stepAlias2": map[string]interface{}{
+					"p3": "p3_stepAlias2",
+					"p4": "p4_stepAlias2",
+				},
+			},
+		}
+
+		c.copyStepAliasConfig("step1", []Alias{{Name: "stepAlias1"}, {Name: "stepAlias2"}})
+		assert.Equal(t, expected, c)
+	})
+
+	t.Run("Step config not available", func(t *testing.T) {
+		c := Config{
+			Steps: map[string]map[string]interface{}{
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+			},
+		}
+
+		expected := Config{
+			Steps: map[string]map[string]interface{}{
+				"step1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+				"stepAlias1": map[string]interface{}{
+					"p2": "p2_stepAlias",
+				},
+			},
+		}
+
+		c.copyStepAliasConfig("step1", []Alias{{Name: "stepAlias1"}})
+		assert.Equal(t, expected, c)
+	})
 }
 
 func TestGetJSON(t *testing.T) {

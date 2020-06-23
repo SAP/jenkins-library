@@ -1,220 +1,103 @@
-import com.sap.piper.ConfigurationHelper
-import com.sap.piper.GenerateDocumentation
+import com.sap.piper.JenkinsUtils
+import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
-
+import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
-
 import groovy.transform.Field
-import groovy.text.GStringTemplateEngine
-
 import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/sonar.yaml'
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Pull-Request voting only:
-     * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
-     * deprecated: only supported below SonarQube v7.2
-     */
-    'githubApiUrl',
-    /**
-     * Pull-Request voting only:
-     * The Github organization.
-     * @default: `commonPipelineEnvironment.getGithubOrg()`
-     */
-    'githubOrg',
-    /**
-     * Pull-Request voting only:
-     * The Github repository.
-     * @default: `commonPipelineEnvironment.getGithubRepo()`
-     */
-    'githubRepo',
-    /**
-     * Pull-Request voting only:
-     * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
-     * deprecated: only supported below SonarQube v7.2
-     * @possibleValues Jenkins credential id
-     */
-    'githubTokenCredentialsId',
-    /**
-     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [SonarQube docs](https://docs.sonarqube.org/latest/user-guide/user-token/)
-     * @possibleValues Jenkins credential id
-     */
-    'sonarTokenCredentialsId',
-    /**
-     * Print more detailed information into the log.
-     * @possibleValues `true`, `false`
-     */
-    'verbose'
-]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
-     */
-    'customTlsCertificateLinks',
-    /**
-     * Pull-Request voting only:
-     * Disables the pull-request decoration with inline comments.
-     * deprecated: only supported below SonarQube v7.2
-     * @possibleValues `true`, `false`
-     */
-    'disableInlineComments',
-    /**
-     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * see [dockerExecute](dockerExecute.md)
-     */
-    'dockerImage',
-    /**
-     * The name of the SonarQube instance defined in the Jenkins settings.
-     */
-    'instance',
-    /**
-     * Pull-Request voting only:
-     * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
-     * deprecated: only supported below SonarQube v7.2
-     * @possibleValues `true`, `false`
-     */
-    'legacyPRHandling',
-    /**
-     * A list of options which are passed to the `sonar-scanner`.
-     */
-    'options',
-    /**
-     * Organization that the project will be assigned to in SonarCloud.io.
-     */
-    'organization',
-    /**
-     * The project version that is reported to SonarQube.
-     * @default: major number of `commonPipelineEnvironment.getArtifactVersion()`
-     */
-    'projectVersion'
-])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
-
-/**
- * The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.
- */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def utils = parameters.juStabUtils ?: new Utils()
+        def stepParameters = [:].plus(parameters)
+
         def script = checkScript(this, parameters) ?: this
-        // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, GENERAL_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('projectVersion', script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0))
-            .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
-            .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
-            // check mandatory parameters
-            .withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
-            .withMandatoryProperty('githubOrg', null, { isPullRequest() })
-            .withMandatoryProperty('githubRepo', null, { isPullRequest() })
-            .use()
+        stepParameters.remove('script')
 
-        if(configuration.options instanceof String)
-            configuration.options = [].plus(configuration.options)
+        def utils = parameters.juStabUtils ?: new Utils()
+        stepParameters.remove('juStabUtils')
 
-        loadCertificates(configuration)
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        stepParameters.remove('jenkinsUtilsStub')
 
-        def worker = { config ->
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
+        script.commonPipelineEnvironment.writeToDisk(script)
+
+        writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
+
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+        ]) {
+            String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
+            String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
+            // get context configuration
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            echo "Config: ${config}"
+            // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            echo "StepConfig: ${stepConfig}"
+
+            // determine credentials to load
+            List credentials = []
+            List environment = []
+            if (config.sonarTokenCredentialsId)
+                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
+            if(isPullRequest()){
+                checkMandatoryParameter(stepConfig, "owner")
+                checkMandatoryParameter(stepConfig, "repository")
+                if(stepConfig.legacyPRHandling) {
+                    checkMandatoryParameter(config, "githubTokenCredentialsId")
+                    if (config.githubTokenCredentialsId)
+                        credentials.add(string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_githubToken'))
+                }
+                environment.add("PIPER_changeId=${env.CHANGE_ID}")
+                environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
+                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET }")
+            }
             try {
-                withSonarQubeEnv(config.instance) {
-
-                        loadSonarScanner(config)
-
-                        if(fileExists('.certificates/cacerts')){
-                            sh 'mv .certificates/cacerts .sonar-scanner/jre/lib/security/cacerts'
+                // load certificates into cacerts file
+                loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
+                // execute step
+                dockerExecute(
+                    script: script,
+                    dockerImage: config.dockerImage,
+                    dockerWorkspace: config.dockerWorkspace,
+                    dockerOptions: config.dockerOptions
+                ) {
+                    if(!fileExists('.git')) utils.unstash('git')
+                    piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                        withSonarQubeEnv(stepConfig.instance) {
+                            withCredentials(credentials) {
+                                withEnv(environment){
+                                    try {
+                                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                    } finally {
+                                        InfluxData.readFromDisk(script)
+                                    }
+                                }
+                            }
                         }
-
-                        if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                        if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                        // prefix options
-                        config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
-
-                        sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                        jenkinsUtils.handleStepResults(STEP_NAME, false, false)
+                    }
                 }
             } finally {
-                sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                def ignore = sh script: 'rm -rf .sonar-scanner .certificates', returnStatus: true
             }
         }
+    }
+}
 
-        if(configuration.sonarTokenCredentialsId){
-            def workerForSonarAuth = worker
-            worker = { config ->
-                withCredentials([string(
-                    credentialsId: config.sonarTokenCredentialsId,
-                    variable: 'SONAR_TOKEN'
-                )]){
-                    config.options.add("sonar.login=$SONAR_TOKEN")
-                    workerForSonarAuth(config)
-                }
-            }
-        }
-
-        if(isPullRequest()){
-            def workerForGithubAuth = worker
-            worker = { config ->
-                if(config.legacyPRHandling) {
-                    withCredentials([string(
-                        credentialsId: config.githubTokenCredentialsId,
-                        variable: 'GITHUB_TOKEN'
-                    )]){
-                        // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-                        config.options.add('sonar.analysis.mode=preview')
-                        config.options.add("sonar.github.oauth=$GITHUB_TOKEN")
-                        config.options.add("sonar.github.pullRequest=${env.CHANGE_ID}")
-                        config.options.add("sonar.github.repository=${config.githubOrg}/${config.githubRepo}")
-                        if(config.githubApiUrl) config.options.add("sonar.github.endpoint=${config.githubApiUrl}")
-                        if(config.disableInlineComments) config.options.add("sonar.github.disableInlineComments=${config.disableInlineComments}")
-                        workerForGithubAuth(config)
-                    }
-                } else {
-                    // see https://sonarcloud.io/documentation/analysis/pull-request/
-                    config.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
-                    config.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    config.options.add("sonar.pullrequest.branch=${env.CHANGE_BRANCH}")
-                    config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
-                    switch(config.pullRequestProvider){
-                        case 'GitHub':
-                            config.options.add("sonar.pullrequest.github.repository=${config.githubOrg}/${config.githubRepo}")
-                            break
-                        default: error "Pull-Request provider '${config.pullRequestProvider}' is not supported!"
-                    }
-                    workerForGithubAuth(config)
-                }
-            }
-        }
-
-        dockerExecute(
-            script: script,
-            dockerImage: configuration.dockerImage
-        ){
-            if(!script.fileExists('.git')) {
-                utils.unstash('git')
-            }
-            worker(configuration)
-        }
+private void checkMandatoryParameter(config, key){
+    if (!config[key]) {
+        throw new IllegalArgumentException( "ERROR - NO VALUE AVAILABLE FOR ${key}")
     }
 }
 
 private Boolean isPullRequest(){
     return env.CHANGE_ID
-}
-
-private void loadSonarScanner(config){
-    def filename = new File(config.sonarScannerDownloadUrl).getName()
-    def foldername = filename.replace('.zip', '').replace('cli-', '')
-
-    sh """
-        curl --remote-name --remote-header-name --location --silent --show-error ${config.sonarScannerDownloadUrl}
-        unzip -q ${filename}
-        mv ${foldername} .sonar-scanner
-    """
 }
 
 private void loadCertificates(Map config) {

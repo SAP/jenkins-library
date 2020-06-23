@@ -48,10 +48,12 @@ import groovy.transform.Field
      */
     'dockerName',
     /**
+     * Docker only:
      * Docker options to be set when starting the container (List or String).
      */
     'dockerOptions',
     /**
+     * Docker only:
      * Volumes that should be mounted into the container.
      */
     'dockerVolumeBind',
@@ -101,7 +103,14 @@ import groovy.transform.Field
      */
     'stashContent'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * @possibleValues `true`, `false`
+     */
+    'stashNoDefaultExcludes',
+])
 
 /**
  * Executes a closure inside a docker container with the specified docker image.
@@ -161,7 +170,8 @@ void call(Map parameters = [:], body) {
                         dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent
+                        stashContent: config.stashContent,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
@@ -177,6 +187,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
@@ -265,20 +276,20 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     ]
     def options = []
     if (dockerEnvVars) {
-        for (String k : dockerEnvVars.keySet()) {
-            options.add("--env ${k}=${dockerEnvVars[k].toString()}")
+        dockerEnvVars.each { String k, v ->
+            options.add("--env ${k}=${v.toString()}")
         }
     }
 
-    for (String envVar : specialEnvironments) {
+    specialEnvironments.each { String envVar ->
         if (dockerEnvVars == null || !dockerEnvVars.containsKey(envVar)) {
             options.add("--env ${envVar}")
         }
     }
 
     if (dockerVolumeBind) {
-        for (String k : dockerVolumeBind.keySet()) {
-            options.add("--volume ${k}:${dockerVolumeBind[k].toString()}")
+        dockerVolumeBind.each { String k, v ->
+            options.add("--volume ${k}:${v.toString()}")
         }
     }
 
@@ -287,7 +298,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
             dockerOptions = [dockerOptions]
         }
         if (dockerOptions instanceof List) {
-            for (String option : dockerOptions) {
+            dockerOptions.each { String option ->
                 options << escapeBlanks(option)
             }
         } else {

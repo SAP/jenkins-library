@@ -20,24 +20,33 @@ nav:
                 - 'Confirm Stage': stages/confirm.md
                 - 'Promote Stage': stages/promote.md
                 - 'Release Stage': stages/release.md
-        - 'SAP Cloud SDK pipeline': pipelines/cloud-sdk/introduction.md
+        - 'SAP Cloud SDK pipeline':
+            - 'Introduction': pipelines/cloud-sdk/introduction.md
+            - 'Build Tools': pipelines/cloud-sdk/build-tools.md
+            - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
+        - 'ABAP Environment pipeline':
+            - 'Introduction': pipelines/abapEnvironment/introduction.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced': scenarios/xsa-deploy/Readme.md
+        - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
-        - artifactSetVersion: steps/artifactSetVersion.md
+        - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
+        - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
         - cloudFoundryCreateService: steps/cloudFoundryCreateService.md
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
+        - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
@@ -47,6 +56,7 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
+        - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md
@@ -56,25 +66,34 @@ nav:
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
+        - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
+        - malwareExecuteScan: steps/malwareExecuteScan.md
+        - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
-        - npmExecute: steps/npmExecute.md
+        - nexusUpload: steps/nexusUpload.md
+        - npmExecuteLint: steps/npmExecuteLint.md
+        - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
+        - protecodeExecuteScan: steps/protecodeExecuteScan.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
         - sonarExecuteScan: steps/sonarExecuteScan.md
+        - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
@@ -83,6 +102,10 @@ nav:
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - xsDeploy: steps/xsDeploy.md
+    - 'Library Steps (deprecated)':
+        - artifactSetVersion: steps/artifactSetVersion.md
+        - npmExecute: steps/npmExecute.md
+    - 'Command line tool': cli/index.md
     - Resources:
         - 'Custom Jenkins Setup': customjenkins.md
 

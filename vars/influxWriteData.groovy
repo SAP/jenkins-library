@@ -1,3 +1,5 @@
+import com.sap.piper.JenkinsUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -41,6 +43,7 @@ import groovy.transform.Field
      * For example in multi branch pipelines, where every build is named after the branch built and thus you have different builds called 'master' that report different metrics.
      */
     'influxPrefix',
+    'sonarTokenCredentialsId',
     /**
      * Defines if a dedicated node/executor should be created in the pipeline run.
      * This is especially relevant when running the step in a declarative `POST` stage where by default no executor is available.
@@ -71,6 +74,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
         def script = checkScript(this, parameters)
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         if (script == null)
             script = this
 
@@ -118,29 +122,47 @@ InfluxDB data map tags: ${config.customDataMapTags}
         if(config.wrapInNode){
             node(''){
                 try{
-                    writeToInflux(config, script)
+                    writeToInflux(config, jenkinsUtils, script)
                 }finally{
                     deleteDir()
                 }
             }
         } else {
-            writeToInflux(config, script)
+            writeToInflux(config, jenkinsUtils, script)
         }
     }
 }
 
-private void writeToInflux(config, script){
+private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
     if (config.influxServer) {
+
+        def influxPluginVersion = jenkinsUtils.getPluginVersion('influxdb')
+
         try {
-            step([
-                $class: 'InfluxDbPublisher',
+            def credentialList = []
+            def influxParams = [
                 selectedTarget: config.influxServer,
                 customPrefix: config.influxPrefix,
                 customData: config.customData.size()>0 ? config.customData : null,
                 customDataTags: config.customDataTags.size()>0 ? config.customDataTags : null,
                 customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
                 customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
-            ])
+            ]
+            if(config.sonarTokenCredentialsId){
+                credentialList.add(string(
+                    credentialsId: config.sonarTokenCredentialsId,
+                    variable: 'SONAR_AUTH_TOKEN'
+                ))
+            }
+            withCredentials(credentialList){
+                if (!influxPluginVersion || influxPluginVersion.startsWith('1.')) {
+                    influxParams['$class'] = 'InfluxDbPublisher'
+                    step(influxParams)
+                } else {
+                    influxDbPublisher(influxParams)
+                }
+            }
+
         } catch (NullPointerException e){
             if(!e.getMessage()){
                 //TODO: catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released

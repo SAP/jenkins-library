@@ -1,0 +1,135 @@
+metadata:
+  name: mavenExecuteStaticCodeChecks
+  aliases:
+    - name: mavenExecute
+      deprecated: false
+  description: Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
+  longDescription: |
+    Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
+    SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
+    For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html
+    PMD is a source code analyzer. It finds common programming flaws like unused variables, empty catch blocks, unnecessary object creation, and so forth. It supports Java, JavaScript, Salesforce.com Apex and Visualforce, PLSQL, Apache Velocity, XML, XSL.
+    For more information please visit https://pmd.github.io/.
+    The plugins should be configured in the respective pom.xml.
+    For SpotBugs include- and exclude filters as well as maximum allowed violations are conifgurable via .pipeline/config.yml.
+    For PMD the failure priority and the max allowed violations are configurable via .pipeline/config.yml.
+
+spec:
+  inputs:
+    params:
+      - name: spotBugs
+        description: Parameter to turn off SpotBugs.
+        type: bool
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pmd
+        description: Parameter to turn off PMD.
+        type: bool
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: mavenModulesExcludes
+        description: Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.
+        type: '[]string'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: spotBugsExcludeFilterFile
+        description: Path to a filter file with bug definitions which should be excluded.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/excludeFilterFile
+      - name: spotBugsIncludeFilterFile
+        description: Path to a filter file with bug definitions which should be included.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/includeFilterFile
+      - name : spotBugsMaxAllowedViolations
+        description: The maximum number of failures allowed before execution fails.
+        type: int
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: spotBugs/maxAllowedViolations
+      - name: pmdFailurePriority
+        description: What priority level to fail the build on. PMD violations are assigned a priority from 1 (most severe) to 5 (least severe) according the the rule's priority. Violations at or less than this priority level are considered failures and will fail the build if failOnViolation=true and the count exceeds maxAllowedViolations. The other violations will be regarded as warnings and will be displayed in the build output if verbose=true. Setting a value of 5 will treat all violations as failures, which may cause the build to fail. Setting a value of 1 will treat all violations as warnings. Only values from 1 to 5 are valid.
+        type: int
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/failurePriority
+      - name: pmdMaxAllowedViolations
+        description: The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed.
+        type: int
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/maxAllowedViolations
+
+      # Global maven settings, should be added to all maven steps
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/m2Path
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
+
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

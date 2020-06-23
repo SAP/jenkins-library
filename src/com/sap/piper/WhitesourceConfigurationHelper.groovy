@@ -82,6 +82,16 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
+            case 'docker':
+                mapping += [
+                    [name: 'docker.scanImages', value: true, force: true],
+                    [name: 'docker.scanTarFiles', value: true, force: true],
+                    [name: 'docker.includes', value: /.*.tar/, force: true],
+                    [name: 'ignoreSourceFiles', value: true, force: true],
+                    [name: 'python.resolveGlobalPackages', value: true, force: true],
+                    [name: 'resolveAllDependencies', value: true, force: true],
+                    [name: 'updateType', value: 'OVERRIDE', force: true],
+                ]
             case 'dub':
                 mapping += [
                     [name: 'includes', value: '**/*.d **/*.di']
@@ -103,11 +113,11 @@ class WhitesourceConfigurationHelper implements Serializable {
         if (!moduleSpecificFile)
             moduleSpecificFile = [:]
 
-        mapping.each {
-            entry ->
-                def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
-                if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && (entry.force || moduleSpecificFile[entry.name] == null) && entry.value != 'null')
-                    moduleSpecificFile[entry.name] = entry.value.toString()
+        for(int i = 0; i < mapping.size(); i++) {
+            def entry = mapping.get(i)
+            def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
+            if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && (entry.force || moduleSpecificFile[entry.name] == null) && entry.value != 'null')
+                moduleSpecificFile[entry.name] = entry.value.toString()
         }
 
         def output = serializationClosure(moduleSpecificFile)

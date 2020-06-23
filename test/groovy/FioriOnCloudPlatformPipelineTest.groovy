@@ -1,6 +1,7 @@
 import util.CommandLineMatcher
 import util.JenkinsLockRule
 import util.JenkinsWithEnvRule
+import util.JenkinsWriteFileRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -53,6 +54,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
@@ -62,6 +64,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
+        .around(writeFileRule)
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
@@ -69,7 +72,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     @Before
     void setup() {
         //
-        // needed since we have dockerExecute inside mtaBuild
+        // needed since we have dockerExecute inside neoDeploy
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
         //
@@ -78,30 +81,19 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
             it ->
 
-            // called inside mtaBuild, this file contains build config
-            it == 'mta.yaml' ||
-
             // called inside neo deploy, this file gets deployed
             it == 'test.mtar'
         })
 
         helper.registerAllowedMethod("deleteDir",[], null)
 
-        //
-        // the properties below we read out of the yaml file
-        readYamlRule.registerYaml('mta.yaml', ('''
-                                       |ID : "test"
-                                       |PATH : "."
-                                       |''' as CharSequence).stripMargin())
-
-        //
-        // we need the path variable since we extend the path in the mtaBuild step. In order
-        // to be able to extend the path we have to have some initial value.
-        binding.setVariable('PATH', '/usr/bin')
-
         binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
+
+        helper.registerAllowedMethod('mtaBuild', [Map], {
+            m ->  m.script.commonPipelineEnvironment.mtarFilePath = 'test.mtar'
+        })
     }
 
     @Test
@@ -119,18 +111,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
-
-        //
-        // the mta build call:
-        assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('java -jar /opt/sap/mta/lib/mta.jar'),  // default mtaJarLocation
-                                        containsString('--mtar test.mtar'),
-                                        containsString('--build-target=NEO'),
-                                        containsString('build'))))
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
+            platform: 'NEO',
+        )
 
         //
         // the deployable is exchanged between the involved steps via this property:
+        // From the presence of this value we can conclude that mtaBuild has been called
+        // this value is set on the commonPipelineEnvironment in the corresponding mock.
         assertThat(nullScript.commonPipelineEnvironment.getMtarFilePath(), is(equalTo('test.mtar')))
 
         //

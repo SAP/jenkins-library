@@ -1,0 +1,91 @@
+metadata:
+  name: mavenExecute
+  description: This step allows to run maven commands
+  longDescription: |
+    This step runs a maven command based on the parameters provided to the step.
+spec:
+  inputs:
+    params:
+      - name: pomPath
+        type: string
+        description: Path to the pom file that should be used.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: goals
+        type: "[]string"
+        description: Maven goals that should be executed.
+        scope:
+          - PARAMETERS
+        mandatory: true
+      - name: defines
+        type: "[]string"
+        description: Additional properties in form of -Dkey=value.
+        scope:
+          - PARAMETERS
+        mandatory: false
+      - name: flags
+        type: "[]string"
+        description: Flags to provide when running mvn.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: false
+      - name: returnStdout
+        type: bool
+        description: Returns the output of the maven command for further processing.
+        scope:
+          - PARAMETERS
+        default: false
+
+      # Global maven settings, should be added to all maven steps
+      - name: projectSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as project settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: Path to the mvn settings file that should be used as global settings file.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/m2Path
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        mandatory: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never

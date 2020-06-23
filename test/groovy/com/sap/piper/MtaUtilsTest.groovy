@@ -18,7 +18,7 @@ import util.Rules
 
 class MtaUtilsTest extends BasePiperTest {
     private static srcPackageJson = 'test/resources/MtaUtils/package.json'
-    private static mtaTemplate = 'resources/template_mta.yml'
+    private static mtaTemplate = 'resources/template_mta.yaml'
     private static data
     private static String generatedFile
     private static String targetMtaDescriptor
@@ -68,6 +68,7 @@ class MtaUtilsTest extends BasePiperTest {
         assert data.version == '1.0.3'
         assert data.modules.name[0] == 'testAppName'
         assert data.modules.parameters.version[0] == '1.0.3-${timestamp}'
+        assert data.modules.parameters.name[0] == 'testAppName'
     }
 
     @Test

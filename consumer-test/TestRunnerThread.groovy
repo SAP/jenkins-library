@@ -64,6 +64,8 @@ class TestRunnerThread extends Thread {
             "-e CASC_JENKINS_CONFIG=/workspace/jenkins.yml " +
             "-e ${testCaseConfig.deployCredentialEnv.username} " +
             "-e ${testCaseConfig.deployCredentialEnv.password} " +
+            "-e LIBRARY_VERSION_UNDER_TEST=${libraryVersionUnderTest} " +
+            "-e REPOSITORY_UNDER_TEST=${repositoryUnderTest} " +
             "-e BRANCH_NAME=${testCaseConfig.referenceAppRepo.branch} ppiper/jenkinsfile-runner")
 
         println "*****[INFO] Test case '${uniqueName}' finished successfully.*****"
@@ -84,7 +86,7 @@ class TestRunnerThread extends Thread {
     private void setLibraryVersionInJenkinsfile() {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
-            "@Library(\"piper-library-os@${libraryVersionUnderTest}\") _\n" +
+            "@Library(\"piper-lib-os@${libraryVersionUnderTest}\") _\n" +
                 jenkinsfile.text
         jenkinsfile.write(manipulatedText)
     }

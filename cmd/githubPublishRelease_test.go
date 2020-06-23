@@ -29,6 +29,7 @@ type ghRCMock struct {
 	listOpts          *github.ListOptions
 	latestStatusCode  int
 	latestErr         error
+	preRelease        bool
 	uploadID          int64
 	uploadOpts        *github.UploadOptions
 	uploadOwner       string
@@ -52,6 +53,11 @@ func (g *ghRCMock) GetLatestRelease(ctx context.Context, owner string, repo stri
 	if g.latestStatusCode != 0 {
 		hc.StatusCode = g.latestStatusCode
 	}
+
+	if len(owner) == 0 {
+		return g.latestRelease, nil, g.latestErr
+	}
+
 	ghResp := github.Response{Response: &hc}
 	return g.latestRelease, &ghResp, g.latestErr
 }
@@ -102,6 +108,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			AddDeltaToLastRelease: true,
 			Commitish:             "master",
 			Owner:                 "TEST",
+			PreRelease:            true,
 			Repository:            "test",
 			ServerURL:             "https://github.com",
 			ReleaseBodyHeader:     "Header",
@@ -111,6 +118,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		assert.NoError(t, err, "Error occured but none expected.")
 
 		assert.Equal(t, "Header\n", ghRepoClient.release.GetBody())
+		assert.Equal(t, true, ghRepoClient.release.GetPrerelease())
 	})
 
 	t.Run("Success - subsequent releases & with body", func(t *testing.T) {
@@ -188,10 +196,27 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		ghRepoClient := ghRCMock{
 			latestErr: fmt.Errorf("Latest release error"),
 		}
-		myGithubPublishReleaseOptions := githubPublishReleaseOptions{}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.Equal(t, "Error occured when retrieving latest GitHub release.: Latest release error", fmt.Sprint(err))
+		assert.Equal(t, "Error occured when retrieving latest GitHub release (TEST/test): Latest release error", fmt.Sprint(err))
+	})
+
+	t.Run("Error - get release no response", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{
+			latestErr: fmt.Errorf("Latest release error, no response"),
+		}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "",
+			Repository: "test",
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+
+		assert.Equal(t, "Error occured when retrieving latest GitHub release (/test): Latest release error, no response", fmt.Sprint(err))
 	})
 
 	t.Run("Error - create release", func(t *testing.T) {

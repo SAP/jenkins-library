@@ -1,0 +1,57 @@
+metadata:
+  name: npmExecuteScripts
+  aliases:
+    - name: executeNpm
+  description: Execute npm run scripts on all npm packages in a project
+  longDescription: |
+    Execute npm run scripts in all package json files, if they implement the scripts.
+spec:
+  inputs:
+    params:
+      - name: install
+        type: bool
+        description: Run npm install or similar commands depending on the project structure.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: runScripts
+        type: '[]string'
+        description: List of additional run scripts to execute from package.json.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: defaultNpmRegistry
+        type: string
+        description: URL of the npm registry to use. Defaults to https://registry.npmjs.org/
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
+      - name: sapNpmRegistry
+        type: string
+        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: https://npm.sap.com
+        aliases:
+          - name: npm/sapNpmRegistry
+      - name: virtualFrameBuffer
+        type: bool
+        description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: node
+      image: node:12-buster-slim
+      imagePullPolicy: Never

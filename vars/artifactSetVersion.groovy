@@ -185,13 +185,30 @@ void call(Map parameters = [:], Closure body = null) {
 
             def gitConfig = []
 
-            if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
-            if(config.gitUserName)  gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            if(config.gitUserEMail) {
+                gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
+            } else {
+                // in case there is no user.email configured on project level we might still
+                // be able to work in case there is a configuration available on plain git level.
+                if(sh(returnStatus: true, script: 'git config user.email') != 0) {
+                    error 'No git user.email configured. Neither via project config nor on plain git level.'
+                }
+            }
+            if(config.gitUserName) {
+                gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            } else {
+                // in case there is no user.name configured on project level we might still
+                // be able to work in case there is a configuration available on plain git level.
+                if (sh(returnStatus: true, script: 'git config user.name') != 0) {
+                    error 'No git user.name configured. Neither via project config nor on plain git level.'
+                }
+            }
             gitConfig = gitConfig.join(' ')
 
             try {
                 sh """#!/bin/bash
-                    git add .
+                    set -e
+                    git add . --update
                     git ${gitConfig} commit -m 'update version ${newVersion}'
                     git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()

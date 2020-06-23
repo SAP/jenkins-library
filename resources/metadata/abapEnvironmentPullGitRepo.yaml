@@ -4,15 +4,20 @@ metadata:
   longDescription: |
     Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
     Please provide either of the following options:
-      * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
-      * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
-      * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+
+    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+
 spec:
   inputs:
     secrets:
-      - name: credentialsId
+      - name: abapCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: credentialsId
     params:
       - name: username
         type: string
@@ -22,6 +27,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        secret: true
       - name: password
         type: string
         description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
@@ -30,9 +36,10 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-      - name: repositoryName
-        type: string
-        description: Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
+        secret: true
+      - name: repositoryNames
+        type: '[]string'
+        description: Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
         scope:
         - PARAMETERS
         - STAGES
@@ -52,6 +59,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
@@ -61,6 +69,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/org
       - name: cfSpace
@@ -70,6 +79,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/space
       - name: cfServiceInstance
@@ -79,6 +89,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/serviceInstance
       - name: cfServiceKey
@@ -88,8 +99,11 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKeyName
   containers:
     - name: cf
       image: ppiper/cf-cli

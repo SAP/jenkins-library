@@ -55,9 +55,8 @@ This is a basic configuration example, which is also located in the sources of t
 steps:
   mtaBuild:
     buildTarget: 'NEO'
-    mtaJarLocation: '/opt/sap/mta.jar'
+    platform: 'neo'
   neoDeploy:
-    neoHome: '/opt/sap/neo-sdk/'
     neo:
       credentialsId: 'NEO_DEPLOY'
       account: 'your-account-id'
@@ -78,7 +77,6 @@ steps:
 | `account`           | The SAP Cloud Platform account to deploy to. |
 | `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `host`           |  The SAP Cloud Platform host to deploy to. |
-| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
 
 ### Parameters
 
