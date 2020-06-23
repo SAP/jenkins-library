@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
@@ -78,7 +79,7 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(stepsCalled, not(hasItems('cloudFoundryDeploy', 'neoDeploy', 'healthExecuteCheck', 'newmanExecute', 'uiVeri5ExecuteTests', 'gaugeExecuteTests')))
+        assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('uiVeri5ExecuteTests'), hasItem('gaugeExecuteTests'))))
 
     }
 

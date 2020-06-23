@@ -29,21 +29,39 @@ type githubCreatePullRequestOptions struct {
 
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
+	const STEP_NAME = "githubCreatePullRequest"
+
 	metadata := githubCreatePullRequestMetadata()
 	var stepConfig githubCreatePullRequestOptions
 	var startTime time.Time
 
 	var createGithubCreatePullRequestCmd = &cobra.Command{
-		Use:   "githubCreatePullRequest",
+		Use:   STEP_NAME,
 		Short: "Create a pull request on GitHub",
 		Long: `This step allows you to create a pull request on Github.
 
 It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
-			log.SetStepName("githubCreatePullRequest")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				return err
+			}
+			log.RegisterSecret(stepConfig.Token)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -54,9 +72,10 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			githubCreatePullRequest(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -68,11 +87,11 @@ func addGithubCreatePullRequestFlags(cmd *cobra.Command, stepConfig *githubCreat
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{}, "Login names of users to which the PR should be assigned to.")
 	cmd.Flags().StringVar(&stepConfig.Base, "base", os.Getenv("PIPER_base"), "The name of the branch you want the changes pulled into.")
 	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "The description text of the pull request in markdown format.")
-	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Head, "head", os.Getenv("PIPER_head"), "The name of the branch where your changes are implemented.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url for end-user access.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Title of the pull request.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to be added to the pull request.")

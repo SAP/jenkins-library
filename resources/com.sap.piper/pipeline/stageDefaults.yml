@@ -18,6 +18,7 @@ stages:
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
+          - 'cloudFoundry/space'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
@@ -31,6 +32,12 @@ stages:
           - 'testRepository'
   Security:
     stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'checkmarxCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
       whitesourceExecuteScan:
         configKeys:
           - 'userTokenCredentialsId'
@@ -49,6 +56,9 @@ stages:
         configKeys:
           - 'cfSpace'
           - 'cloudFoundry/space'
+      neoDeploy:
+        configKeys:
+          - 'neo/account'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'

@@ -96,7 +96,7 @@ func TestApplyDefaults(t *testing.T) {
 		client   Client
 		expected Client
 	}{
-		{client: Client{}, expected: Client{transportTimeout: 10 * time.Second, maxRequestDuration: 0, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
+		{client: Client{}, expected: Client{transportTimeout: 3 * time.Minute, maxRequestDuration: 0, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 		{client: Client{transportTimeout: 10, maxRequestDuration: 5}, expected: Client{transportTimeout: 10, maxRequestDuration: 5, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 	}
 
@@ -253,10 +253,9 @@ func TestTransportTimout(t *testing.T) {
 		// test
 		_, err := client.SendRequest(http.MethodGet, svr.URL, &buffer, nil, nil)
 		// assert
-		assert.EqualError(t, err,
-			fmt.Sprintf("error opening %v: Get %v: net/http: timeout awaiting response headers",
-				svr.URL, svr.URL),
-			"expected request to fail")
+		if assert.Error(t, err, "expected request to fail") {
+			assert.Contains(t, err.Error(), "timeout awaiting response headers")
+		}
 	})
 	t.Run("timeout is not hit on transport level", func(t *testing.T) {
 		// init

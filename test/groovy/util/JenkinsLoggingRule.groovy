@@ -8,6 +8,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
@@ -17,6 +18,7 @@ class JenkinsLoggingRule implements TestRule {
     final BasePipelineTest testInstance
 
     def expected = []
+    def notExpected = []
 
     String log = ""
 
@@ -26,6 +28,11 @@ class JenkinsLoggingRule implements TestRule {
 
     public JenkinsLoggingRule expect(String substring) {
         expected.add(substring)
+        return this
+    }
+
+    public JenkinsLoggingRule notExpect(String substring) {
+        notExpected.add(substring)
         return this
     }
 
@@ -61,6 +68,10 @@ class JenkinsLoggingRule implements TestRule {
                     expected.each { substring -> assertThat("Substring '${substring}' not contained in log.",
                                                             log,
                                                             containsString(substring)) }
+
+                    notExpected.each { substring -> assertThat("Substring '${substring}' is present in log.",
+                                                            log,
+                                                            not(containsString(substring))) }
 
                     if(caught != null) {
                         // do not swallow, so that other rules located farer away

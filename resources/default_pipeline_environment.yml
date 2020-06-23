@@ -6,6 +6,7 @@
 #Project Setup
 general:
   collectTelemetryData: true
+  logFormat: 'plain'
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
@@ -37,7 +38,9 @@ general:
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
+    jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
@@ -201,27 +204,6 @@ steps:
     dockerWorkspace: '/home/piper'
   debugReportArchive:
     shareConfidentialInformation: false
-  detectExecuteScan:
-    detect:
-      projectVersion: '1'
-      scanners:
-        - signature
-      scanPaths:
-        - '.'
-      scanProperties:
-        - '--blackduck.signature.scanner.memory=4096'
-        - '--blackduck.timeout=6000'
-        - '--blackduck.trust.cert=true'
-        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
-        - '--detect.report.timeout=4800'
-        - '--logging.level.com.synopsys.integration=DEBUG'
-    stashContent:
-      - 'buildDescriptor'
-      - 'checkmarx'
-    # buildTool specific settings
-    golang:
-      dockerImage: 'golang:1.12-stretch'
-      dockerWorkspace: ''
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -303,7 +285,7 @@ steps:
   kanikoExecute:
     containerBuildOptions: '--skip-tls-verify-pull'
     containerCommand: '/busybox/tail -f /dev/null'
-    containerPreparationCommand: 'rm /kaniko/.docker/config.json'
+    containerPreparationCommand: 'rm -f /kaniko/.docker/config.json'
     containerShell: '/busybox/sh'
     customTlsCertificateLinks: []
     dockerfile: Dockerfile
@@ -338,6 +320,9 @@ steps:
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
+  buildExecute:
+    npmInstall: true
+    npmRunScripts: []
   mtaBuild:
     buildTarget: 'NEO'
     mtaBuildTool: cloudMbt
@@ -524,12 +509,6 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
-  sonarExecuteScan:
-    dockerImage: 'node:lts-stretch'
-    instance: 'SonarCloud'
-    options: []
-    pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.3.0.2102-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
     keyFileCredentialsId: 'spinnaker-client-key'
@@ -575,6 +554,7 @@ steps:
       failIfStatusIsNotInDevelopment: true
   tmsUpload:
     namedUser: 'Piper-Pipeline'
+    mtaVersion: '*'
     stashContent:
       - 'buildResult'
   transportRequestCreate:
@@ -601,7 +581,6 @@ steps:
   #defaults for stage wrapper
   piperStageWrapper:
     projectExtensionsDirectory: '.pipeline/extensions/'
-    globalExtensionsDirectory: ''
     stageLocking: true
     nodeLabel: ''
     stashContent:

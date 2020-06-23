@@ -66,6 +66,9 @@ class KubernetesDeployTest extends BasePiperTest {
                 binding.setProperty('PIPER_containerRegistryPassword', null)
             }
         })
+
+        helper.registerAllowedMethod('fileExists', [String.class], {return true})
+        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
     }
 
     @Test

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -12,8 +14,8 @@ import (
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 	runDetect(config, &c)
 }
 
@@ -25,6 +27,7 @@ func runDetect(config detectExecuteScanOptions, command shellRunner) {
 	script := strings.Join(args, " ")
 
 	command.SetDir(".")
+	command.SetEnv([]string{"BLACKDUCK_SKIP_PHONE_HOME=true"})
 
 	err := command.RunShell("/bin/bash", script)
 	if err != nil {
@@ -49,21 +52,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
 
-	if sliceContains(config.Scanners, "signature") {
+	if sliceUtils.ContainsString(config.Scanners, "signature") {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if sliceContains(config.Scanners, "source") {
+	if sliceUtils.ContainsString(config.Scanners, "source") {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 	return args
-}
-
-func sliceContains(slice []string, find string) bool {
-	for _, elem := range slice {
-		if elem == find {
-			return true
-		}
-	}
-	return false
 }

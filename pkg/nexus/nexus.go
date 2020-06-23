@@ -18,17 +18,19 @@ type ArtifactDescription struct {
 // Upload combines information about an artifact and its sub-artifacts which are supposed to be uploaded together.
 // Call SetRepoURL(), SetArtifactsVersion(), SetArtifactID(), and add at least one artifact via AddArtifact().
 type Upload struct {
-	repoURL    string
-	groupID    string
-	version    string
-	artifactID string
-	artifacts  []ArtifactDescription
+	mavenRepoURL string
+	npmRepoURL   string
+	groupID      string
+	version      string
+	artifactID   string
+	artifacts    []ArtifactDescription
 }
 
 // Uploader provides an interface for configuring the target Nexus Repository and adding artifacts.
 type Uploader interface {
-	SetRepoURL(nexusURL, nexusVersion, repository string) error
-	GetRepoURL() string
+	SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error
+	GetMavenRepoURL() string
+	GetNpmRepoURL() string
 	SetInfo(groupID, artifactsID, version string) error
 	GetGroupID() string
 	GetArtifactsID() string
@@ -38,19 +40,59 @@ type Uploader interface {
 	Clear()
 }
 
-// SetRepoURL constructs the base URL to the Nexus repository. No parameter can be empty.
-func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, repository string) error {
-	repoURL, err := getBaseURL(nexusURL, nexusVersion, repository)
+// SetRepoURL constructs the base URL to the Nexus repository. mavenRepository or npmRepository may be empty.
+func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error {
+	mavenRepoURL, err := getBaseURL(nexusURL, nexusVersion, mavenRepository)
 	if err != nil {
 		return err
 	}
-	nexusUpload.repoURL = repoURL
+	nexusUpload.mavenRepoURL = mavenRepoURL
+	npmRepositoryURL, err := getBaseURL(nexusURL, nexusVersion, npmRepository)
+	if err != nil {
+		return err
+	}
+	nexusUpload.npmRepoURL = npmRepositoryURL
 	return nil
 }
 
-// GetRepoURL returns the base URL for the nexus repository.
-func (nexusUpload *Upload) GetRepoURL() string {
-	return nexusUpload.repoURL
+func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
+	if nexusURL == "" {
+		return "", errors.New("nexusURL must not be empty")
+	}
+	nexusURL = strings.ToLower(nexusURL)
+	var protocols = []string{"http://", "https://"}
+	for _, protocol := range protocols {
+		if strings.HasPrefix(nexusURL, protocol) {
+			nexusURL = strings.TrimPrefix(nexusURL, protocol)
+			break
+		}
+	}
+	if repository == "" {
+		return "", nil
+	}
+	baseURL := nexusURL
+	switch nexusVersion {
+	case "nexus2":
+		baseURL += "/content/repositories/"
+	case "nexus3":
+		baseURL += "/repository/"
+	default:
+		return "", fmt.Errorf("unsupported Nexus version '%s', must be 'nexus2' or 'nexus3'", nexusVersion)
+	}
+	baseURL += repository + "/"
+	// Replace any double slashes, as nexus does not like them
+	baseURL = strings.ReplaceAll(baseURL, "//", "/")
+	return baseURL, nil
+}
+
+// GetMavenRepoURL returns the base URL for the nexus-maven repository.
+func (nexusUpload *Upload) GetMavenRepoURL() string {
+	return nexusUpload.mavenRepoURL
+}
+
+// GetNpmRepoURL returns the base URL for the nexus-npm repository.
+func (nexusUpload *Upload) GetNpmRepoURL() string {
+	return nexusUpload.npmRepoURL
 }
 
 // ErrEmptyGroupID is returned from SetInfo, if groupID is empty.
@@ -143,30 +185,4 @@ func (nexusUpload *Upload) GetArtifacts() []ArtifactDescription {
 // Clear removes any contained artifact descriptions.
 func (nexusUpload *Upload) Clear() {
 	nexusUpload.artifacts = []ArtifactDescription{}
-}
-
-func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
-	if nexusURL == "" {
-		return "", errors.New("nexusURL must not be empty")
-	}
-	nexusURL = strings.ToLower(nexusURL)
-	if strings.HasPrefix(nexusURL, "http://") || strings.HasPrefix(nexusURL, "https://") {
-		return "", errors.New("nexusURL must not start with 'http://' or 'https://'")
-	}
-	if repository == "" {
-		return "", errors.New("repository must not be empty")
-	}
-	baseURL := nexusURL
-	switch nexusVersion {
-	case "nexus2":
-		baseURL += "/content/repositories/"
-	case "nexus3":
-		baseURL += "/repository/"
-	default:
-		return "", fmt.Errorf("unsupported Nexus version '%s', must be 'nexus2' or 'nexus3'", nexusVersion)
-	}
-	baseURL += repository + "/"
-	// Replace any double slashes, as nexus does not like them
-	baseURL = strings.ReplaceAll(baseURL, "//", "/")
-	return baseURL, nil
 }

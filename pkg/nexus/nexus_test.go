@@ -104,37 +104,36 @@ func TestGetBaseURL(t *testing.T) {
 func TestSetBaseURL(t *testing.T) {
 	t.Run("Test no host provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("", "nexus3", "maven-releases")
+		err := nexusUpload.SetRepoURL("", "nexus3", "maven-releases", "npm-repo")
 		assert.Error(t, err, "Expected SetRepoURL() to fail (no host)")
 	})
 	t.Run("Test host wrongly includes protocol http://", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("htTp://localhost:8081", "nexus3", "maven-releases")
-		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid host)")
+		err := nexusUpload.SetRepoURL("htTp://localhost:8081", "nexus3", "maven-releases", "npm-repo")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.mavenRepoURL)
+		}
 	})
 	t.Run("Test host wrongly includes protocol https://", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("htTpS://localhost:8081", "nexus3", "maven-releases")
-		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid host)")
+		err := nexusUpload.SetRepoURL("htTpS://localhost:8081", "nexus3", "maven-releases", "npm-repo")
+		if assert.NoError(t, err, "Expected SetRepoURL() to work") {
+			assert.Equal(t, "localhost:8081/repository/maven-releases/", nexusUpload.mavenRepoURL)
+		}
 	})
 	t.Run("Test invalid version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("localhost:8081", "3", "maven-releases")
+		err := nexusUpload.SetRepoURL("localhost:8081", "3", "maven-releases", "npm-repo")
 		assert.Error(t, err, "Expected SetRepoURL() to fail (invalid nexus version)")
-	})
-	t.Run("Test no repository provided", func(t *testing.T) {
-		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("localhost:8081", "nexus3", "")
-		assert.Error(t, err, "Expected SetRepoURL() to fail (no repository)")
 	})
 	t.Run("Test no nexus version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases")
+		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases", "npm-repo")
 		assert.Error(t, err, "Expected SetRepoURL() to fail (unsupported nexus version)")
 	})
 	t.Run("Test unsupported nexus version provided", func(t *testing.T) {
 		nexusUpload := Upload{}
-		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases")
+		err := nexusUpload.SetRepoURL("localhost:8081", "nexus1", "maven-releases", "npm-repo")
 		assert.Error(t, err, "Expected SetRepoURL() to fail (unsupported nexus version)")
 	})
 }

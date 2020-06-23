@@ -3,12 +3,12 @@ package command
 import (
 	"bytes"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"os/exec"
-	"sync"
-
-	"github.com/pkg/errors"
+	"strings"
 )
 
 // Command defines the information required for executing a call to any executable
@@ -59,6 +59,8 @@ func (c *Command) RunShell(shell, script string) error {
 	in.Write([]byte(script))
 	cmd.Stdin = &in
 
+	log.Entry().Infof("running shell script: %v %v", shell, script)
+
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running shell script failed with %v", shell)
 	}
@@ -78,12 +80,40 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 		cmd.Dir = c.dir
 	}
 
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
+
 	appendEnvironment(cmd, c.env)
 
 	if err := runCmd(cmd, _out, _err); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
+}
+
+// RunExecutableInBackground runs the specified executable with parameters in the background non blocking
+// !! While the cmd.Env is applied during command execution, it is NOT involved when the actual executable is resolved.
+//    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
+func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
+
+	_out, _err := prepareOut(c.stdout, c.stderr)
+
+	cmd := ExecCommand(executable, params...)
+
+	if len(c.dir) > 0 {
+		cmd.Dir = c.dir
+	}
+
+	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
+
+	appendEnvironment(cmd, c.env)
+
+	execution, err := startCmd(cmd, _out, _err)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
+	}
+
+	return execution, nil
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
@@ -113,44 +143,50 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
-func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
+func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*execution, error) {
 
 	stdout, stderr, err := cmdPipes(cmd)
 
 	if err != nil {
-		return errors.Wrap(err, "getting commmand pipes failed")
+		return nil, errors.Wrap(err, "getting command pipes failed")
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return errors.Wrap(err, "starting command failed")
+		return nil, errors.Wrap(err, "starting command failed")
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	var errStdout, errStderr error
+	execution := execution{cmd: cmd}
+	execution.wg.Add(2)
 
 	go func() {
-		_, errStdout = io.Copy(_out, stdout)
-		wg.Done()
+		_, execution.errCopyStdout = io.Copy(_out, stdout)
+		execution.wg.Done()
 	}()
 
 	go func() {
-		_, errStderr = io.Copy(_err, stderr)
-		wg.Done()
+		_, execution.errCopyStderr = io.Copy(_err, stderr)
+		execution.wg.Done()
 	}()
 
-	wg.Wait()
+	return &execution, nil
+}
 
-	err = cmd.Wait()
+func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
+
+	execution, err := startCmd(cmd, _out, _err)
+	if err != nil {
+		return err
+	}
+
+	err = execution.Wait()
+
+	if execution.errCopyStdout != nil || execution.errCopyStderr != nil {
+		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", execution.errCopyStdout, execution.errCopyStderr)
+	}
 
 	if err != nil {
 		return errors.Wrap(err, "cmd.Run() failed")
-	}
-
-	if errStdout != nil || errStderr != nil {
-		return fmt.Errorf("failed to capture stdout/stderr: '%v'/'%v'", errStdout, errStderr)
 	}
 
 	return nil

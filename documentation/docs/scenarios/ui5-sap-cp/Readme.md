@@ -55,7 +55,7 @@ This is a basic configuration example, which is also located in the sources of t
 steps:
   mtaBuild:
     buildTarget: 'NEO'
-    mtaJarLocation: '/opt/sap/mta.jar'
+    platform: 'neo'
   neoDeploy:
     neo:
       credentialsId: 'NEO_DEPLOY'

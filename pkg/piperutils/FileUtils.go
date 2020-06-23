@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,7 @@ type FileUtils interface {
 type Files struct {
 }
 
-// FileExists ...
+// FileExists returns true if the file system entry for the given path exists and is not a directory.
 func (f Files) FileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
 
@@ -38,9 +39,23 @@ func (f Files) FileExists(filename string) (bool, error) {
 	return !info.IsDir(), nil
 }
 
-// FileExists ...
+// FileExists returns true if the file system entry for the given path exists and is not a directory.
 func FileExists(filename string) (bool, error) {
 	return Files{}.FileExists(filename)
+}
+
+// DirExists returns true if the file system entry for the given path exists and is a directory.
+func (f Files) DirExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return info.IsDir(), nil
 }
 
 // Copy ...
@@ -156,17 +171,37 @@ func Copy(src, dst string) (int64, error) {
 	return Files{}.Copy(src, dst)
 }
 
-//FileRead ...
+// FileRead is a wrapper for ioutil.ReadFile().
 func (f Files) FileRead(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-// FileWrite ...
+// FileWrite is a wrapper for ioutil.WriteFile().
 func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(path, content, perm)
 }
 
-// MkdirAll ...
+// FileRemove is a wrapper for os.FileRemove().
+func (f Files) FileRemove(path string) error {
+	return os.Remove(path)
+}
+
+// MkdirAll is a wrapper for os.MkdirAll().
 func (f Files) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
+}
+
+// Glob is a wrapper for doublestar.Glob().
+func (f Files) Glob(pattern string) (matches []string, err error) {
+	return doublestar.Glob(pattern)
+}
+
+// Getwd is a wrapper for os.Getwd().
+func (f Files) Getwd() (string, error) {
+	return os.Getwd()
+}
+
+// Chdir is a wrapper for os.Chdir().
+func (f Files) Chdir(path string) error {
+	return os.Chdir(path)
 }
