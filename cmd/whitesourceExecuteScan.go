@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -45,7 +45,6 @@ func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData)
 		if err := runWhitesourceScan(&config, sys, telemetry, &c); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on executing whitesource scan")
 		}
-
 	}
 }
 
@@ -98,32 +97,38 @@ func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOp
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		pName, pVer := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
 		if config.ProjectName == "" {
+			log.Entry().Infof("Resolved project name '%s' from descriptor file", pName)
 			config.ProjectName = pName
 		}
 		if config.ProductVersion == "" {
+			log.Entry().Infof("Resolved project version '%s' from descriptor file", pVer)
 			config.ProductVersion = pVer
 		}
 	}
 
 	// Get product token if user did not specify one at runtime
 	if config.ProductToken == "" {
+		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
 		product, err := sys.GetProductByName(config.ProductName)
 		if err != nil {
 			return err
 		}
 		if product != nil {
+			log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 			config.ProductToken = product.Token
 		}
 	}
 
 	// Get project token  if user did not specify one at runtime
 	if config.ProjectToken == "" {
+		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
 		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
 		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 		if err != nil {
 			return err
 		}
 		if projectToken != "" {
+			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
 			config.ProjectToken = projectToken
 		}
 	}
@@ -307,10 +312,11 @@ func downloadAgent(config *ScanOptions, cmd *command.Command) error {
 	return nil
 }
 
-// autoGenerateWhitesourceConfig:
+// autoGenerateWhitesourceConfig
 // Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
 // Generated file name will be 'wss-generated-file.config'
 func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) error {
+	// TODO: Should we rely on -detect, or set the parameters manually?
 	if err := cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
 		return err
 	}
@@ -320,7 +326,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 		return err
 	}
 
-	// Don't aggregate modules
+	// Append aggregateModules=true parameter to config file (consolidates multi-module projects into one)
 	f, err := os.OpenFile(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -328,8 +334,20 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	defer f.Close()
 
 	// Append additional config parameters to prevent multiple projects being generated
-	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true"
+	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\n"
 	if _, err = f.WriteString(cfg); err != nil {
+		return err
+	}
+
+	// archiveExtractionDepth=0
+	if err := cmd.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
+		config.ConfigFilePath); err != nil {
+		return err
+	}
+
+	// includes=**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts
+	regex := `s/^[#]*\s*includes=.*/includes=**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts`
+	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
 	}
 	return nil
@@ -346,16 +364,17 @@ func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
 	versionWideLibraries := map[string][]whitesource.Library{} // maps project name to slice of libraries
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
+		projectName := strings.Split(project.Name, " - ")[0]
 		if projectVersion == config.ProductVersion {
 			libs, err := sys.GetProjectLibraryLocations(project.Token)
 			if err != nil {
 				return err
 			}
 			log.Entry().Infof("Found project: %s with %v libraries.", project.Name, len(libs))
-			versionWideLibraries[project.Name] = libs
+			versionWideLibraries[projectName] = libs
 		}
 	}
-	if err := newLibraryExcelReport(versionWideLibraries, config); err != nil {
+	if err := newLibraryCSVReport(versionWideLibraries, config); err != nil {
 		return err
 	}
 	return nil
@@ -370,11 +389,11 @@ func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error
 	}
 
 	var versionWideAlerts []whitesource.Alert // all alerts for a given project version
-	projectTokens := ``                       // holds all project tokens considered a part of the report for debugging
+	projectNames := ``                        // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.ProductVersion {
-			projectTokens += project.Token + "\n"
+			projectNames += project.Name + "\n"
 			alerts, err := sys.GetProjectAlerts(project.Token)
 			if err != nil {
 				return err
@@ -384,7 +403,7 @@ func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error
 		}
 	}
 
-	if err := ioutil.WriteFile("project-tokens-aggregated.txt", []byte(projectTokens), 0777); err != nil {
+	if err := ioutil.WriteFile("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
 		return err
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config); err != nil {
@@ -393,7 +412,7 @@ func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error
 	return nil
 }
 
-// outputs an slice of alerts to an axcdel file
+// outputs an slice of alerts to an excel file
 func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions) error {
 	file := excelize.NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
@@ -436,6 +455,12 @@ func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions
 	if err := streamWriter.Flush(); err != nil {
 		return err
 	}
+
+	utils := piperutils.Files{}
+	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+		return err
+	}
+
 	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
 	if err := file.SaveAs(fileName); err != nil {
 		return err
@@ -443,40 +468,25 @@ func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions
 	return nil
 }
 
-// outputs an slice of alerts to an axcdel file
-func newLibraryExcelReport(libraries map[string][]whitesource.Library, config *ScanOptions) error {
-	file := excelize.NewFile()
-	streamWriter, err := file.NewStreamWriter("Sheet1")
-	if err != nil {
-		return err
+// outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
+func newLibraryCSVReport(libraries map[string][]whitesource.Library, config *ScanOptions) error {
+	output := "Library Name, Project Name\n"
+	for projectName, libraries := range libraries {
+		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
+		for _, library := range libraries {
+			output += library.Name + ", " + projectName + "\n"
+		}
 	}
-	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
-	if err != nil {
-		return err
-	}
-	if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Name"}}); err != nil {
-		return err
-	}
-	if err := streamWriter.SetRow("B1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Project"}}); err != nil {
+
+	// Ensure reporting directory exists
+	utils := piperutils.Files{}
+	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return err
 	}
 
-	for projectName, libraries := range libraries {
-		for i, library := range libraries {
-			row := make([]interface{}, 2)
-			row[0] = library.Name
-			row[1] = projectName
-			cell, _ := excelize.CoordinatesToCellName(1, i+2)
-			if err := streamWriter.SetRow(cell, row); err != nil {
-				fmt.Println(err)
-			}
-		}
-	}
-	if err := streamWriter.Flush(); err != nil {
-		return err
-	}
-	fileName := fmt.Sprintf("%s/libraries-%s.xlsx", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
-	if err := file.SaveAs(fileName); err != nil {
+	// Write result to file
+	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
+	if err := ioutil.WriteFile(fileName, []byte(output), 0777); err != nil {
 		return err
 	}
 	return nil

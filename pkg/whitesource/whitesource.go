@@ -180,7 +180,6 @@ func (s *System) GetProjectByName(productToken, projectName string) (*Project, e
 
 	for _, proj := range projects {
 		if projectName == proj.Name {
-			log.Entry().Info("Found project by name: ", proj)
 			project = &proj
 			break
 		}
