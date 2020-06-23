@@ -222,7 +222,7 @@ func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err err
 	if lenData > 32767 && !bytes.Contains(data[0:lenData], []byte("\n")) {
 		// we will neglect long output
 		// no use cases known where this would be relevant
-		// current accepted implication: error pattern would not be wound
+		// current accepted implication: error pattern would not be found
 		// -> resulting in wrong error categorization
 		return lenData, nil, nil
 	}
