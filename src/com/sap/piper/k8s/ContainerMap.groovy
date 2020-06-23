@@ -22,14 +22,9 @@ class ContainerMap implements Serializable {
     }
 
     private static class PiperExecutionPreparator {
-        private final Script script
         private boolean executionPrepared
 
-        PiperExecutionPreparator(Script script) {
-            this.script = script
-        }
-
-        void prepareExecution() {
+        void prepareExecution(Script script) {
             if (!executionPrepared) {
                 script.piperExecuteBin.prepareExecution(script)
                 executionPrepared = true
@@ -39,7 +34,7 @@ class ContainerMap implements Serializable {
 
     void initFromResource(Script script, String yamlResourceName, String buildTool) {
         Map containers = [:]
-        PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator(script)
+        PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator()
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
             Map stageToStepMapping = yamlContents.containerMaps as Map
@@ -67,7 +62,7 @@ class ContainerMap implements Serializable {
             if (!imageName && stepMetadata) {
                 // Retrieve containers for Go steps only if none was found in the config. In this case,
                 // a container may still be defined as (conditional) default in the step metadata.
-                piperPreparator.prepareExecution()
+                piperPreparator.prepareExecution(script)
                 imageName = getDockerImageNameForGoStep(script, stageName, stepMetadata, buildTool)
             }
             if (imageName) {
