@@ -13,15 +13,34 @@ import (
 	"strings"
 )
 
-var _readFile = ioutil.ReadFile
+type fUtils interface {
+	FileRead(name string) ([]byte, error)
+	FileWrite(name string, data []byte, mode os.FileMode) error
+}
+
+type fileUtils struct{}
+
+func (s *fileUtils) FileRead(name string) ([]byte, error) {
+	return ioutil.ReadFile(name)
+}
+
+func (s *fileUtils) FileWrite(name string, data []byte, mode os.FileMode) error {
+	return ioutil.WriteFile(name, data, mode)
+}
+
+var _fileUtils fUtils
+
 var _stat = os.Stat
-var _writeFile = ioutil.WriteFile
 var _traverse = traverse
 
 // Substitute ...
 func Substitute(ymlFile string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
 
-	bIn, err := _readFile(ymlFile)
+	if _fileUtils == nil {
+		_fileUtils = &fileUtils{}
+	}
+
+	bIn, err := _fileUtils.FileRead(ymlFile)
 	if err != nil {
 		return false, err
 	}
@@ -72,7 +91,7 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 			return false, err
 		}
 
-		err = _writeFile(ymlFile, buf.Bytes(), fInfo.Mode())
+		err = _fileUtils.FileWrite(ymlFile, buf.Bytes(), fInfo.Mode())
 		if err != nil {
 			return false, err
 		}
@@ -199,7 +218,7 @@ func getReplacements(replacements map[string]interface{}, replacementsFiles []st
 	mReplacements := make(map[string]interface{})
 
 	for _, replacementsFile := range replacementsFiles {
-		bReplacements, err := _readFile(replacementsFile)
+		bReplacements, err := _fileUtils.FileRead(replacementsFile)
 		if err != nil {
 			return nil, err
 		}
