@@ -132,7 +132,7 @@ func TestGetManifestName(t *testing.T) {
 	manifest, err := ReadManifest("myManifest.yaml")
 
 	if assert.NoError(t, err) {
-		assert.Equal(t, "myManifest.yaml", manifest.GetName())
+		assert.Equal(t, "myManifest.yaml", manifest.GetFileName())
 	}
 }
 

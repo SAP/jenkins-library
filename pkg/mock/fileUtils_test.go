@@ -49,7 +49,7 @@ func TestFilesMockFileExists(t *testing.T) {
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.FileExists(path)
-		assert.EqualError(t, err, "'"+path+"': file does not exist")
+		assert.NoError(t, err)
 		assert.False(t, exists)
 	})
 }

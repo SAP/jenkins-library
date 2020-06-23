@@ -421,7 +421,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"install", "--user"}, runner.executions[2].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[3].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", "./**/tests/**/*:./**/setup.py", "./**/*"}, runner.executions[3].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, runner.executions[3].parameters)
 
 		assert.Equal(t, "sourceanalyzer", runner.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[4].parameters)
