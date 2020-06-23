@@ -75,7 +75,7 @@ func (f *FilesMock) HasRemovedFile(path string) bool {
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
-// and it was written via FileRead().
+// and it was written via FileWrite().
 func (f *FilesMock) HasWrittenFile(path string) bool {
 	_, exists := f.writtenFiles[f.toAbsPath(path)]
 	return exists
