@@ -77,10 +77,20 @@ func TestExecutableRun(t *testing.T) {
 		})
 
 		t.Run("success case - log parsing", func(t *testing.T) {
+			log.SetErrorCategory(log.ErrorUndefined)
 			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"command echo"}}}
 			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
 			assert.Equal(t, log.ErrorConfiguration, log.GetErrorCategory())
 		})
+
+		t.Run("success case - log parsing long line", func(t *testing.T) {
+			log.SetErrorCategory(log.ErrorUndefined)
+			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"aaaa"}}}
+			ex.RunExecutable("long", []string{"foo bar", "baz"}...)
+			assert.Equal(t, log.ErrorUndefined, log.GetErrorCategory())
+		})
+
+		log.SetErrorCategory(log.ErrorUndefined)
 	})
 }
 
@@ -169,6 +179,7 @@ func TestParseConsoleErrors(t *testing.T) {
 		cmd.parseConsoleErrors(test.consoleLine)
 		assert.Equal(t, test.expectedCategory, log.GetErrorCategory(), test.consoleLine)
 	}
+	log.SetErrorCategory(log.ErrorUndefined)
 }
 
 func TestCmdPipes(t *testing.T) {
@@ -236,6 +247,12 @@ func TestHelperProcess(*testing.T) {
 		for _, e := range os.Environ() {
 			fmt.Println(e)
 		}
+	case "long":
+		b := []byte("a")
+		size := 64000
+		b = bytes.Repeat(b, size)
+
+		fmt.Fprint(os.Stderr, b)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
 		os.Exit(2)

@@ -177,35 +177,15 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 		execution.wg.Add(2)
 
 		go func() {
-
 			defer execution.wg.Done()
 			defer pwOut.Close()
-
-			scanner := bufio.NewScanner(trOut)
-			for scanner.Scan() {
-				line := scanner.Text()
-				c.parseConsoleErrors(line)
-			}
-			if err := scanner.Err(); err != nil {
-				log.Entry().WithError(err).Info("failed to scan log file")
-			}
-
+			c.scanLog(trOut)
 		}()
 
 		go func() {
-
 			defer execution.wg.Done()
 			defer pwErr.Close()
-
-			scanner := bufio.NewScanner(trErr)
-			for scanner.Scan() {
-				line := scanner.Text()
-				c.parseConsoleErrors(line)
-			}
-			if err := scanner.Err(); err != nil {
-				log.Entry().WithError(err).Info("failed to scan log file")
-			}
-
+			c.scanLog(trErr)
 		}()
 	}
 
@@ -220,6 +200,43 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}()
 
 	return &execution, nil
+}
+
+func (c *Command) scanLog(in io.Reader) {
+	scanner := bufio.NewScanner(in)
+	scanner.Split(scanShortLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		c.parseConsoleErrors(line)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Entry().WithError(err).Info("failed to scan log file")
+	}
+}
+
+func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	lenData := len(data)
+	if atEOF && lenData == 0 {
+		return 0, nil, nil
+	}
+	if lenData > 32767 && !bytes.Contains(data, []byte("\n")) {
+		// we will neglect long output
+		// no use cases known where this would be relevant
+		// current accepted implication: error pattern would not be wound
+		// -> resulting in wrong error categorization
+		return lenData, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
+		// We have a full newline-terminated line with a size limit
+		// Size limit is required since otherwise scanner would stall
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }
 
 func (c *Command) parseConsoleErrors(logLine string) {
