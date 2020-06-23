@@ -354,8 +354,10 @@ private void unstashWorkspace(config, prefix) {
         echo "invalidate stash ${prefix}-${config.uniqueId}"
         stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
+        e.printStackTrace()
         echo "${e.getMessage()}"
     } catch (Throwable e) {
+        e.printStackTrace()
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
     }
