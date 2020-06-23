@@ -16,6 +16,7 @@ var dirContent []byte
 // FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files        map[string]*[]byte
+	writtenFiles map[string]*[]byte
 	removedFiles map[string]*[]byte
 	currentDir   string
 	Separator    string
@@ -27,6 +28,9 @@ func (f *FilesMock) init() {
 	}
 	if f.removedFiles == nil {
 		f.removedFiles = map[string]*[]byte{}
+	}
+	if f.writtenFiles == nil {
+		f.writtenFiles = map[string]*[]byte{}
 	}
 	if f.Separator == "" {
 		f.Separator = string(os.PathSeparator)
@@ -67,6 +71,13 @@ func (f *FilesMock) HasFile(path string) bool {
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
 	_, exists := f.removedFiles[f.toAbsPath(path)]
+	return exists
+}
+
+// HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
+// and it was written via FileRead().
+func (f *FilesMock) HasWrittenFile(path string) bool {
+	_, exists := f.writtenFiles[f.toAbsPath(path)]
 	return exists
 }
 
@@ -139,9 +150,11 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, _ os.FileMode) error {
+	f.init()
 	// NOTE: FilesMock could be extended to have a set of paths for which FileWrite should fail.
 	// This is why AddFile() exists separately, to differentiate the notion of setting up the mocking
 	// versus implementing the methods from Files.
+	f.writtenFiles[f.toAbsPath(path)] = &content
 	f.AddFile(path, content)
 	return nil
 }
