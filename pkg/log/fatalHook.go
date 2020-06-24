@@ -31,7 +31,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 
 	details["message"] = entry.Message
 	details["error"] = fmt.Sprint(details["error"])
-	details["category"] = fmt.Sprint(GetErrorCategory())
+	details["category"] = GetErrorCategory().String()
 	details["result"] = "failure"
 	details["correlationId"] = f.CorrelationID
 
