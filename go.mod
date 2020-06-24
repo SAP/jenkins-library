@@ -11,6 +11,8 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/bmatcuk/doublestar v1.3.1
 	github.com/containerd/containerd v1.3.4 // indirect
+	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
+	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.1.0

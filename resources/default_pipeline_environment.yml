@@ -38,6 +38,7 @@ general:
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
     jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
     securityContext:
@@ -553,6 +554,7 @@ steps:
       failIfStatusIsNotInDevelopment: true
   tmsUpload:
     namedUser: 'Piper-Pipeline'
+    mtaVersion: '*'
     stashContent:
       - 'buildResult'
   transportRequestCreate:
@@ -579,7 +581,6 @@ steps:
   #defaults for stage wrapper
   piperStageWrapper:
     projectExtensionsDirectory: '.pipeline/extensions/'
-    globalExtensionsDirectory: ''
     stageLocking: true
     nodeLabel: ''
     stashContent:
