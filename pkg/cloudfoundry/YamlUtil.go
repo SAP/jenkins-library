@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"gopkg.in/yaml.v2"
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
@@ -18,16 +18,6 @@ type fUtils interface {
 	FileWrite(name string, data []byte, mode os.FileMode) error
 }
 
-type fileUtils struct{}
-
-func (s *fileUtils) FileRead(name string) ([]byte, error) {
-	return ioutil.ReadFile(name)
-}
-
-func (s *fileUtils) FileWrite(name string, data []byte, mode os.FileMode) error {
-	return ioutil.WriteFile(name, data, mode)
-}
-
 var _fileUtils fUtils
 
 var _stat = os.Stat
@@ -37,7 +27,7 @@ var _traverse = traverse
 func Substitute(ymlFile string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
 
 	if _fileUtils == nil {
-		_fileUtils = &fileUtils{}
+		_fileUtils = piperutils.Files{}
 	}
 
 	bIn, err := _fileUtils.FileRead(ymlFile)

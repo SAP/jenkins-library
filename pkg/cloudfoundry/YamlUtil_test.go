@@ -2,6 +2,7 @@ package cloudfoundry
 
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -36,7 +37,7 @@ func TestFilesRelated(t *testing.T) {
 	defer func() {
 		_stat = oldStat
 		_traverse = oldTraverse
-		_fileUtils = &fileUtils{}
+		_fileUtils = &piperutils.Files{}
 	}()
 
 	setupFileMock := func(files map[string][]byte) {
