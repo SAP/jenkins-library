@@ -141,7 +141,7 @@ The Fortify step triggers a scan locally on your Jenkins within a docker contain
 and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
 
 DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and is therefore considered of BETA quality.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -152,6 +152,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.AuthToken)
@@ -164,7 +165,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
