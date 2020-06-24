@@ -93,10 +93,7 @@ func Execute() {
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		// in case we end up here we know that something in the PreRunE function went wrong
-		// and thus this indicates a configuration issue
-		log.SetErrorCategory(log.ErrorConfiguration)
-		log.FatalError(err, "configuration error")
+		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
 

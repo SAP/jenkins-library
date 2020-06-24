@@ -36,9 +36,6 @@ class MulticloudDeployTest extends BasePiperTest {
         .around(cloudFoundryDeployRule)
         .around(readMavenPomRule)
 
-   private Map neoDeployParameters = [:]
-   private Map cloudFoundryDeployParameters = [:]
-
     @Before
     void init() {
 
@@ -110,8 +107,7 @@ class MulticloudDeployTest extends BasePiperTest {
         thrown.expectMessage('Deployment skipped because no targets defined!')
 
         stepRule.step.multicloudDeploy(
-            script: nullScript,
-            stage: 'test'
+            script: nullScript
         )
     }
 
@@ -125,8 +121,7 @@ class MulticloudDeployTest extends BasePiperTest {
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
 
         stepRule.step.multicloudDeploy(
-            script: nullScript,
-            stage: 'test'
+            script: nullScript
         )
     }
 
@@ -138,7 +133,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         stepRule.step.multicloudDeploy(
             script: nullScript,
-            stage: 'test',
             source: 'file.mtar'
         )
 
@@ -162,7 +156,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         stepRule.step.multicloudDeploy(
             script: nullScript,
-            stage: 'test',
             neoTargets: [neoParam],
             source: 'file.mtar',
             enableZeroDowntimeDeployment: true
@@ -190,7 +183,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         stepRule.step.multicloudDeploy([
             script: nullScript,
-            stage: 'acceptance',
             cfTargets: [cloudFoundry]
         ])
 
@@ -209,7 +201,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         stepRule.step.multicloudDeploy([
             script: nullScript,
-            stage: 'acceptance',
             enableZeroDowntimeDeployment: true
         ])
 
@@ -225,8 +216,40 @@ class MulticloudDeployTest extends BasePiperTest {
 
         stepRule.step.multicloudDeploy([
             script: nullScript,
-            stage: 'acceptance',
             enableZeroDowntimeDeployment: true,
+            source: 'file.mtar'
+        ])
+
+        assert neoDeployRule.hasParameter('script', nullScript)
+        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
+        assert neoDeployRule.hasParameter('source', 'file.mtar')
+        assert neoDeployRule.hasParameter('neo', neo1)
+
+        assert neoDeployRule.hasParameter('script', nullScript)
+        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
+        assert neoDeployRule.hasParameter('source', 'file.mtar')
+        assert neoDeployRule.hasParameter('neo', neo2)
+
+        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
+        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
+        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
+        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
+        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
+
+        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
+        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
+        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
+        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
+        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
+    }
+
+    @Test
+    void multicloudParallelDeploymentTest() {
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            enableZeroDowntimeDeployment: true,
+            parallelExecution: true,
             source: 'file.mtar'
         ])
 
