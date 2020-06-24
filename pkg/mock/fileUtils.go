@@ -6,12 +6,28 @@ import (
 	"fmt"
 	"github.com/bmatcuk/doublestar"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 var dirContent []byte
+
+type fileInfoMock struct {
+	name  string
+	mode  os.FileMode
+	size  int64
+	isDir bool
+}
+
+func (fInfo fileInfoMock) Name() string       { return fInfo.name }
+func (fInfo fileInfoMock) Size() int64        { return fInfo.size }
+func (fInfo fileInfoMock) Mode() os.FileMode  { return fInfo.mode }
+func (fInfo fileInfoMock) ModTime() time.Time { return time.Time{} }
+func (fInfo fileInfoMock) IsDir() bool        { return fInfo.isDir }
+func (fInfo fileInfoMock) Sys() interface{}   { return nil }
 
 type fileProperties struct {
 	content *[]byte
@@ -248,4 +264,41 @@ func (f *FilesMock) Chdir(path string) error {
 
 	f.currentDir = strings.TrimLeft(path, f.Separator)
 	return nil
+}
+
+// Stat ...
+func (f *FilesMock) Stat(name string) (os.FileInfo, error) {
+
+	props, exists := f.files[f.toAbsPath(name)]
+
+	if !exists {
+
+		isDir, err := f.DirExists(f.toAbsPath(name))
+		if err != nil {
+			return nil, fmt.Errorf("Internal error inside mock: %w", err)
+		}
+		if !isDir {
+			return nil, &os.PathError{
+				Op:   "stat",
+				Path: name,
+				Err:  fmt.Errorf("no such file or directory"),
+			}
+		}
+
+		// we assume some default // in the free wild wia umask
+		var mode os.FileMode = 0755
+
+		props = &fileProperties{}
+		props.mode = &mode
+		props.content = &dirContent
+	}
+
+	return fileInfoMock{
+		// mock is inacurat here since we return the full path, not only the basename
+		// (e.g. 'dir/name.txt' vs name.txt). Can be improved ...
+		name:  path.Base(name),
+		mode:  *props.mode,
+		size:  int64(len(*props.content)),
+		isDir: props.content == &dirContent,
+	}, nil
 }
