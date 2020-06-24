@@ -93,7 +93,6 @@ spec:
         - --blackduck.signature.scanner.memory=4096
         - --blackduck.timeout=6000
         - --blackduck.trust.cert=true
-        - --detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR
         - --detect.report.timeout=4800
         - --logging.level.com.synopsys.integration=DEBUG
         scope:
@@ -106,6 +105,35 @@ spec:
           - name: detect/serverUrl
         type: string
         mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: groups
+        description: Users groups to be assigned for the Project
+        aliases:
+          - name: detect/groups
+        type: string
+        mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: failOn
+        description: Mark the current build as fail based the policy categories
+        aliases:
+          - name: detect/failOn
+        type: '[]string'
+        mandatory: false
+        default:
+        - BLOCKER
+        possibleValues:
+        - ALL
+        - BLOCKER
+        - CRITICAL
+        - MAJOR
+        - MINOR
+        - NONE
         scope:
         - PARAMETERS
         - STAGES
