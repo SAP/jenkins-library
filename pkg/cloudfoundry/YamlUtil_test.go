@@ -82,9 +82,7 @@ func TestFilesRelated(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			assert.True(t, updated)
-			// check below is not accurate since the file already exists before the expected write operation
-			// waiting for hasWrittenFile func.
-			assert.True(t, fileMock.HasFile("manifest.yml"))
+			assert.True(t, fileMock.HasWrittenFile("manifest.yml"))
 			assert.True(t, traverseCalled)
 		}
 	})
@@ -108,9 +106,7 @@ func TestFilesRelated(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			assert.False(t, updated)
-			// Below we should check for HasWrittenFile, but that is not available right not
-			// TODO: adjust when that method is available in the mock.
-			//assert.True(t, fileMock.HasFile("manifest.yml"))
+			assert.False(t, fileMock.HasWrittenFile("manifest.yml"))
 		}
 	})
 
