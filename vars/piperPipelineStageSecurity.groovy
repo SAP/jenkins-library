@@ -41,52 +41,52 @@ void call(Map parameters = [:]) {
         .addIfEmpty('fortifyExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.fortifyExecuteScan)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
-
-    if (config.checkmarxExecuteScan) {
-        securityScanMap['Checkmarx'] = {
-            node(config.nodeLabel) {
-                try{
-                    durationMeasure(script: script, measurementName: 'checkmarx_duration') {
-                        checkmarxExecuteScan script: script
+    
+    piperStageWrapper (script: script, stageName: stageName) {
+        
+        if (config.checkmarxExecuteScan) {
+            securityScanMap['Checkmarx'] = {
+                node(config.nodeLabel) {
+                    try{
+                        durationMeasure(script: script, measurementName: 'checkmarx_duration') {
+                            checkmarxExecuteScan script: script
+                        }
+                    }finally{
+                        deleteDir()
                     }
-                }finally{
-                    deleteDir()
                 }
             }
         }
-    }
 
-    if (config.fortifyExecuteScan) {
-        securityScanMap['Fortify'] = {
-            node(config.nodeLabel) {
-                try{
-                    durationMeasure(script: script, measurementName: 'fortify_duration') {
-                        fortifyExecuteScan script: script
+        if (config.fortifyExecuteScan) {
+            securityScanMap['Fortify'] = {
+                node(config.nodeLabel) {
+                    try{
+                        durationMeasure(script: script, measurementName: 'fortify_duration') {
+                            fortifyExecuteScan script: script
+                        }
+                    }finally{
+                        deleteDir()
                     }
-                }finally{
-                    deleteDir()
                 }
             }
         }
-    }
 
-    if (config.whitesourceExecuteScan) {
-        securityScanMap['WhiteSource'] = {
-            node(config.nodeLabel) {
-                try{
-                    durationMeasure(script: script, measurementName: 'whitesource_duration') {
-                        whitesourceExecuteScan script: script
+        if (config.whitesourceExecuteScan) {
+            securityScanMap['WhiteSource'] = {
+                node(config.nodeLabel) {
+                    try{
+                        durationMeasure(script: script, measurementName: 'whitesource_duration') {
+                            whitesourceExecuteScan script: script
+                        }
+                    }finally{
+                        deleteDir()
                     }
-                }finally{
-                    deleteDir()
                 }
             }
         }
-    }
 
-
-    if (securityScanMap.size() > 0) {
-        piperStageWrapper (script: script, stageName: stageName) {
+        if (securityScanMap.size() > 0) {
             // telemetry reporting
             utils.pushToSWA([step: STEP_NAME], config)
 
