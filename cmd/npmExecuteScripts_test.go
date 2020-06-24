@@ -99,8 +99,8 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call with install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"), 0644)
 
 		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
@@ -111,8 +111,8 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call without install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"), 0644)
 
 		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
@@ -123,8 +123,8 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Call with virtualFrameBuffer", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, VirtualFrameBuffer: true}
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"), 0644)
 
 		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, virtualFrameBuffer: config.VirtualFrameBuffer}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
@@ -138,8 +138,8 @@ func TestNpmExecuteScripts(t *testing.T) {
 		options := npm.ExecutorOptions{SapNpmRegistry: config.SapNpmRegistry, DefaultNpmRegistry: config.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
-		utils.AddFile("package-lock.json", []byte(""))
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"), 0644)
+		utils.AddFile("package-lock.json", []byte(""), 0644)
 
 		npmExecutor := npm.Execute{Utils: &utils, Options: options}
 

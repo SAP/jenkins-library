@@ -71,8 +71,8 @@ func TestSchemaPatch(t *testing.T) {
 			Output: "output.json",
 		}
 		filesMock := mock.FilesMock{}
-		filesMock.AddFile("schema.json", schema)
-		filesMock.AddFile("patch.json", patch)
+		filesMock.AddFile("schema.json", schema, 0644)
+		filesMock.AddFile("patch.json", patch, 0644)
 		err := runJsonApplyPatch(&options, &filesMock)
 		assert.NoError(t, err)
 		patchedSchemaResult, err := filesMock.FileRead("output.json")

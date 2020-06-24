@@ -127,8 +127,8 @@ func TestGetParameters(t *testing.T) {
 	})
 	t.Run("should resolve configured parameters and not download existing settings files", func(t *testing.T) {
 		utils := newMockUtils(false)
-		utils.AddFile(".pipeline/mavenGlobalSettings.xml", []byte("dummyContent"))
-		utils.AddFile(".pipeline/mavenProjectSettings.xml", []byte("dummyContent"))
+		utils.AddFile(".pipeline/mavenGlobalSettings.xml", []byte("dummyContent"), 0644)
+		utils.AddFile(".pipeline/mavenProjectSettings.xml", []byte("dummyContent"), 0644)
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
 		expectedParameters := []string{
 			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
@@ -162,8 +162,8 @@ func TestDownloadSettingsFromURL(t *testing.T) {
 func TestGetTestModulesExcludes(t *testing.T) {
 	t.Run("Should return excludes for unit- and integration-tests", func(t *testing.T) {
 		utils := newMockUtils(false)
-		utils.AddFile("unit-tests/pom.xml", []byte("dummyContent"))
-		utils.AddFile("integration-tests/pom.xml", []byte("dummyContent"))
+		utils.AddFile("unit-tests/pom.xml", []byte("dummyContent"), 0644)
+		utils.AddFile("integration-tests/pom.xml", []byte("dummyContent"), 0644)
 		expected := []string{"-pl", "!unit-tests", "-pl", "!integration-tests"}
 
 		modulesExcludes := getTestModulesExcludes(&utils)
@@ -205,9 +205,9 @@ func TestMavenInstall(t *testing.T) {
 
 	t.Run("Install files in a project", func(t *testing.T) {
 		utils := newMockUtils(false)
-		utils.AddFile("target/foo.jar", []byte("dummyContent"))
-		utils.AddFile("target/foo.war", []byte("dummyContent"))
-		utils.AddFile("pom.xml", []byte("<project></project>"))
+		utils.AddFile("target/foo.jar", []byte("dummyContent"), 0644)
+		utils.AddFile("target/foo.war", []byte("dummyContent"), 0644)
+		utils.AddFile("pom.xml", []byte("<project></project>"), 0644)
 
 		options := EvaluateOptions{}
 		execMockRunner := mock.ExecMockRunner{}

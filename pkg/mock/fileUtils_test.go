@@ -19,7 +19,7 @@ func TestFilesMockFileExists(t *testing.T) {
 	t.Run("file exists after AddFile()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		exists, err := files.FileExists(path)
 		assert.NoError(t, err)
 		assert.True(t, exists)
@@ -27,7 +27,7 @@ func TestFilesMockFileExists(t *testing.T) {
 	t.Run("path is a directory after AddDir()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddDir(path)
+		files.AddDir(path, 0755)
 		exists, err := files.FileExists(path)
 		assert.NoError(t, err)
 		assert.False(t, exists)
@@ -35,7 +35,7 @@ func TestFilesMockFileExists(t *testing.T) {
 	t.Run("file exists after changing current dir", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.FileExists("path")
@@ -45,7 +45,7 @@ func TestFilesMockFileExists(t *testing.T) {
 	t.Run("file does not exist after changing current dir", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.FileExists(path)
@@ -66,7 +66,7 @@ func TestFilesMockDirExists(t *testing.T) {
 	t.Run("dir exists after AddDir()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddDir(path)
+		files.AddDir(path, 0755)
 		exists, err := files.DirExists(path)
 		assert.NoError(t, err)
 		assert.True(t, exists)
@@ -74,7 +74,7 @@ func TestFilesMockDirExists(t *testing.T) {
 	t.Run("absolute dir exists after AddDir()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
-		files.AddDir(path)
+		files.AddDir(path, 0755)
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.DirExists(string(os.PathSeparator) + path)
@@ -84,7 +84,7 @@ func TestFilesMockDirExists(t *testing.T) {
 	t.Run("parent dirs exists after AddFile()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("path", "to", "some", "file")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		testDirs := []string{
 			"path",
 			filepath.Join("path", "to"),
@@ -99,7 +99,7 @@ func TestFilesMockDirExists(t *testing.T) {
 	t.Run("invalid sub-folders do not exist after AddFile()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("path", "to", "some", "file")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		testDirs := []string{
 			"to",
 			filepath.Join("to", "some"),
@@ -120,7 +120,7 @@ func TestFilesMockCopy(t *testing.T) {
 		files := FilesMock{}
 		src := filepath.Join("some", "file")
 		content := []byte("dummy content")
-		files.AddFile(src, content)
+		files.AddFile(src, content, 0644)
 		dst := filepath.Join("another", "file")
 		length, err := files.Copy(src, dst)
 		assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestFilesMockCopy(t *testing.T) {
 	t.Run("fail to copy folder", func(t *testing.T) {
 		files := FilesMock{}
 		src := filepath.Join("some", "file")
-		files.AddDir(src)
+		files.AddDir(src, 0755)
 		dst := filepath.Join("another", "file")
 		length, err := files.Copy(src, dst)
 		assert.EqualError(t, err, "cannot copy '"+src+"': file does not exist")
@@ -157,7 +157,7 @@ func TestFilesMockFileRemove(t *testing.T) {
 	t.Run("track removing a file", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "file")
-		files.AddFile(path, []byte("dummy content"))
+		files.AddFile(path, []byte("dummy content"), 0644)
 		assert.True(t, files.HasFile(path))
 		err := files.FileRemove(path)
 		assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestFilesMockGetwd(t *testing.T) {
 	t.Run("test sub folder", func(t *testing.T) {
 		files := FilesMock{}
 		dirChain := []string{"some", "deep", "folder"}
-		files.AddDir(filepath.Join(dirChain...))
+		files.AddDir(filepath.Join(dirChain...), 0755)
 		for _, element := range dirChain {
 			err := files.Chdir(element)
 			assert.NoError(t, err)
@@ -193,10 +193,10 @@ func TestFilesMockGlob(t *testing.T) {
 
 	files := FilesMock{}
 	content := []byte("dummy content")
-	files.AddFile(filepath.Join("dir", "foo.xml"), content)
-	files.AddFile(filepath.Join("dir", "another", "foo.xml"), content)
-	files.AddFile(filepath.Join("dir", "baz"), content)
-	files.AddFile(filepath.Join("baz.xml"), content)
+	files.AddFile(filepath.Join("dir", "foo.xml"), content, 0644)
+	files.AddFile(filepath.Join("dir", "another", "foo.xml"), content, 0644)
+	files.AddFile(filepath.Join("dir", "baz"), content, 0644)
+	files.AddFile(filepath.Join("baz.xml"), content, 0644)
 
 	t.Run("one match in root-dir", func(t *testing.T) {
 		matches, err := files.Glob("*.xml")

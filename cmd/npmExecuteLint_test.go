@@ -19,7 +19,7 @@ func (u *mockLintUtilsBundle) getExecRunner() execRunner {
 }
 
 func (u *mockLintUtilsBundle) getGeneralPurposeConfig(configURL string) {
-	u.AddFile(filepath.Join(".pipeline", ".eslintrc.json"), []byte(`abc`))
+	u.AddFile(filepath.Join(".pipeline", ".eslintrc.json"), []byte(`abc`), 0644)
 }
 
 func newLintMockUtilsBundle() mockLintUtilsBundle {
@@ -30,7 +30,7 @@ func newLintMockUtilsBundle() mockLintUtilsBundle {
 func TestNpmExecuteLint(t *testing.T) {
 	t.Run("Call with ci-lint script and one package.json", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
+		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"), 0644)
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
@@ -45,8 +45,8 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Call default with ESLint config from user", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)
 
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
@@ -66,9 +66,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Call default with two ESLint configs from user", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile(filepath.Join("src", ".eslintrc.json"), []byte("{\"name\": \"Test\" }"))
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile(filepath.Join("src", ".eslintrc.json"), []byte("{\"name\": \"Test\" }"), 0644)
 
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
@@ -89,7 +89,7 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Default without ESLint config", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
 
 		config := npmExecuteLintOptions{}
 		config.DefaultNpmRegistry = "foo.bar"
@@ -110,7 +110,7 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Call with ci-lint script and failOnError", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
+		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"), 0644)
 		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm run ci-lint --silent": errors.New("exit 1")}}
 
 		config := npmExecuteLintOptions{}
@@ -133,8 +133,8 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Call default with ESLint config from user and failOnError", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)
 		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"eslint . -f checkstyle -o ./0_defaultlint.xml --ignore-pattern node_modules/ --ignore-pattern .eslintrc.js": errors.New("exit 1")}}
 
 		config := npmExecuteLintOptions{}
@@ -156,11 +156,11 @@ func TestNpmExecuteLint(t *testing.T) {
 
 	t.Run("Find ESLint configs", func(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
-		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile("src/.eslintrc.json", []byte("{\"name\": \"Test\" }"))
-		lintUtils.AddFile("node_modules/.eslintrc.json", []byte("{\"name\": \"Test\" }")) // should be filtered out
-		lintUtils.AddFile(".pipeline/.eslintrc.json", []byte("{\"name\": \"Test\" }"))    // should be filtered out
+		lintUtils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile(".eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile("src/.eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)
+		lintUtils.AddFile("node_modules/.eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644) // should be filtered out
+		lintUtils.AddFile(".pipeline/.eslintrc.json", []byte("{\"name\": \"Test\" }"), 0644)    // should be filtered out
 
 		eslintConfigs := findEslintConfigs(&lintUtils)
 		if assert.Equal(t, 2, len(eslintConfigs)) {
