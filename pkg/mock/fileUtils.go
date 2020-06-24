@@ -22,7 +22,7 @@ type fileProperties struct {
 type FilesMock struct {
 	files        map[string]*fileProperties
 	writtenFiles []string
-	removedFiles map[string]*[]byte
+	removedFiles []string
 	currentDir   string
 	Separator    string
 }
@@ -30,9 +30,6 @@ type FilesMock struct {
 func (f *FilesMock) init() {
 	if f.files == nil {
 		f.files = map[string]*fileProperties{}
-	}
-	if f.removedFiles == nil {
-		f.removedFiles = map[string]*[]byte{}
 	}
 	if f.Separator == "" {
 		f.Separator = string(os.PathSeparator)
@@ -90,8 +87,7 @@ func (f *FilesMock) HasFile(path string) bool {
 // HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
-	_, exists := f.removedFiles[f.toAbsPath(path)]
-	return exists
+	return contains(f.removedFiles, f.toAbsPath(path))
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
@@ -194,12 +190,12 @@ func (f *FilesMock) FileRemove(path string) error {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	absPath := f.toAbsPath(path)
-	props, exists := f.files[absPath]
+	_, exists := f.files[absPath]
 	if !exists {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	delete(f.files, absPath)
-	f.removedFiles[absPath] = props.content
+	f.removedFiles = append(f.removedFiles, absPath)
 	return nil
 }
 
