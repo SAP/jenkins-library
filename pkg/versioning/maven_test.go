@@ -69,6 +69,38 @@ func TestMavenGetVersion(t *testing.T) {
 
 }
 
+func TestMavenGetVersionWithSnapshot(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		runner := mavenMockRunner{
+			stdout: "1.2.3-SNAPSHOT",
+		}
+		mvn := &Maven{
+			runner:  &runner,
+			options: maven.EvaluateOptions{PomPath: "path/to/pom.xml", M2Path: "path/to/m2"},
+		}
+		version, err := mvn.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "1.2.3", version)
+		assert.Equal(t, "project.version", runner.expression)
+		assert.Equal(t, "path/to/pom.xml", runner.opts.PomPath)
+		assert.Equal(t, "path/to/m2", runner.opts.M2Path)
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		runner := mavenMockRunner{
+			stdout:              "1.2.3",
+			evaluateErrorString: "maven eval failed",
+		}
+		mvn := &Maven{
+			runner: &runner,
+		}
+		version, err := mvn.GetVersion()
+		assert.EqualError(t, err, "Maven - getting version failed: maven eval failed")
+		assert.Equal(t, "", version)
+	})
+
+}
+
 func TestMavenSetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		runner := mavenMockRunner{

@@ -3,6 +3,7 @@ package versioning
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -115,8 +116,7 @@ func (m *Maven) GetVersion() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "Maven - getting version failed")
 	}
-	//ToDo: how to deal with SNAPSHOT replacement?
-	return version, nil
+	return strings.TrimSuffix(version, "-SNAPSHOT"), nil
 }
 
 // SetVersion updates the version of the artifact
