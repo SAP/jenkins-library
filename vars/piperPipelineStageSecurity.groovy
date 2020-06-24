@@ -41,9 +41,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('fortifyExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.fortifyExecuteScan)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
-    
     piperStageWrapper (script: script, stageName: stageName) {
-        
         if (config.checkmarxExecuteScan) {
             securityScanMap['Checkmarx'] = {
                 node(config.nodeLabel) {
