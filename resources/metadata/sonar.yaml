@@ -28,8 +28,9 @@ spec:
         scope:
           - PARAMETERS
         secret: true
-        secretRef:
+        resourceRef:
           - name: sonarTokenCredentialsId
+            type: secret
         aliases:
           - name: sonarToken
       - name: organization
@@ -139,8 +140,9 @@ spec:
         scope:
           - PARAMETERS
         secret: true
-        secretRef:
+        resourceRef:
           - name: githubTokenCredentialsId
+            type: secret
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2"

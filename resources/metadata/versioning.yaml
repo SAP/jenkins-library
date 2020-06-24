@@ -172,9 +172,10 @@ spec:
         - STAGES
         - STEPS
         secret: true
-        secretRef:
+        resourceRef:
           - name: gitHttpsCredentialsId
-          - param: password
+            type: secret
+            param: password
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -215,9 +216,10 @@ spec:
         - STAGES
         - STEPS
         secret: true
-        secretRef:
+        resourceRef:
           - name: gitHttpsCredentialsId
-          - param: username
+            type: secret
+            param: username
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
