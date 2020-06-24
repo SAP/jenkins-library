@@ -48,6 +48,7 @@ type StepParameters struct {
 	Description     string              `json:"description"`
 	LongDescription string              `json:"longDescription,omitempty"`
 	ResourceRef     []ResourceReference `json:"resourceRef,omitempty"`
+	SecretRef       []SecretReference   `json:"secretRef,omitempty"`
 	Scope           []string            `json:"scope"`
 	Type            string              `json:"type"`
 	Mandatory       bool                `json:"mandatory,omitempty"`
@@ -62,6 +63,12 @@ type StepParameters struct {
 type ResourceReference struct {
 	Name  string `json:"name"`
 	Param string `json:"param"`
+}
+
+// SecretReference defines the reference to a step secret
+type SecretReference struct {
+	Name  string `json:"name"`
+	Param string `json:"param,omitempty"`
 }
 
 // Alias defines a step input parameter alias
