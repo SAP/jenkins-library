@@ -64,7 +64,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 * ` + "`" + `yourRegistry` + "`" + ` will be retrieved from ` + "`" + `containerRegistryUrl` + "`" + `
 * ` + "`" + `yourImageName` + "`" + `, ` + "`" + `yourImageTag` + "`" + ` will be retrieved from ` + "`" + `image` + "`" + `
 * ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'` + "`" + ``,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -75,6 +75,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
@@ -89,7 +90,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

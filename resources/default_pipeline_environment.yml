@@ -340,7 +340,11 @@ steps:
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
-
+  multicloudDeploy:
+    cfTargets: []
+    neoTargets: []
+    enableZeroDowntimeDeployment: false
+    parallelExecution: false
   newmanExecute:
     dockerImage: 'node:lts-stretch'
     failOnError: true

@@ -33,7 +33,7 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Clones a Git repository",
 		Long:  `Clones a Git repository from a remote repository to a local repository on an ABAP system. To be able to execute this step, the corresponding local repository has to exist on the local ABAP system.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -44,6 +44,7 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -56,7 +57,7 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
