@@ -168,7 +168,7 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	props, exists := f.files[f.toAbsPath(path)]
 
 	if !exists {
-		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
+		return nil, fmt.Errorf("could not read '%s'", path)
 	}
 
 	// check if trying to open a directory for reading
