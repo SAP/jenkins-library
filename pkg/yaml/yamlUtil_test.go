@@ -1,4 +1,4 @@
-package cloudfoundry
+package yaml
 
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"

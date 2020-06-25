@@ -1,4 +1,4 @@
-package cloudfoundry
+package yaml
 
 import (
 	"bytes"
