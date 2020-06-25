@@ -107,11 +107,9 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
-
 	if f.files == nil {
 		return false, nil
 	}
-
 	props, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return false, nil
@@ -124,14 +122,12 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 func (f *FilesMock) DirExists(path string) (bool, error) {
 	path = f.toAbsPath(path)
 	for entry, props := range f.files {
-
 		var dirComponents []string
 		if props.content == &dirContent {
 			dirComponents = strings.Split(entry, f.Separator)
 		} else {
 			dirComponents = strings.Split(filepath.Dir(entry), f.Separator)
 		}
-
 		if len(dirComponents) > 0 {
 			dir := ""
 			for i, component := range dirComponents {
@@ -156,7 +152,6 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	if !exists || props.content == &dirContent {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
-
 	f.AddFileWithMode(dst, *props.content, *props.mode)
 	return int64(len(*props.content)), nil
 }
@@ -166,11 +161,9 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
 	props, exists := f.files[f.toAbsPath(path)]
-
 	if !exists {
 		return nil, fmt.Errorf("could not read '%s'", path)
 	}
-
 	// check if trying to open a directory for reading
 	if props.content == &dirContent {
 		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
