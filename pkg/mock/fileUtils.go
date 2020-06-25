@@ -16,9 +16,14 @@ var dirContent []byte
 const keyContent = "content"
 const keyMode = "mode"
 
-// FilesMock implements the functions from piperutils.Files with an in-memory file system.
+type fileProperties struct {
+	content *[]byte
+	mode    *os.FileMode
+}
+
+//FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
-	files        map[string]map[string]interface{}
+	files        map[string]*fileProperties
 	writtenFiles map[string]*[]byte
 	removedFiles map[string]*[]byte
 	currentDir   string
@@ -27,7 +32,7 @@ type FilesMock struct {
 
 func (f *FilesMock) init() {
 	if f.files == nil {
-		f.files = map[string]map[string]interface{}{}
+		f.files = map[string]*fileProperties{}
 	}
 	if f.removedFiles == nil {
 		f.removedFiles = map[string]*[]byte{}
@@ -46,37 +51,6 @@ func getFileProperties(files map[string]map[string]interface{}, name string) (ma
 		return props, nil
 	}
 	return nil, fmt.Errorf("File '%s' not found", name)
-}
-
-func getMode(files map[string]map[string]interface{}, name string) (*os.FileMode, error) {
-
-	props, err := getFileProperties(files, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if c, ok := props[keyMode]; ok {
-		if mode, ok := c.(*os.FileMode); ok {
-			return mode, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Cannot provide mode for file '%s' No file mode has been provided or wrong type", name)
-}
-
-func getContent(files map[string]map[string]interface{}, name string) (*[]byte, error) {
-
-	props, err := getFileProperties(files, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if c, ok := props[keyContent]; ok {
-		if content, ok := c.(*[]byte); ok {
-			return content, nil
-		}
-	}
-	return nil, fmt.Errorf("Cannot provide content for file '%s' No file content has been provided or wrong type", name)
 }
 
 func (f *FilesMock) toAbsPath(path string) string {
@@ -113,13 +87,12 @@ func (f *FilesMock) associateContent(path string, content *[]byte, mode *os.File
 	path = strings.ReplaceAll(path, "/", f.Separator)
 	path = strings.ReplaceAll(path, "\\", f.Separator)
 	path = f.toAbsPath(path)
-	var properties map[string]interface{}
 	if _, ok := f.files[path]; !ok {
-		properties = map[string]interface{}{}
-		f.files[path] = properties
+		f.files[path] = &fileProperties{}
 	}
-	f.files[path][keyContent] = content
-	f.files[path][keyMode] = mode
+	props := f.files[path]
+	props.content = content
+	props.mode = mode
 }
 
 // HasFile returns true if the virtual file system contains an entry for the given path.
@@ -145,21 +118,11 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
-	if f.files == nil {
-		return false, nil
-	}
 	props, exists := f.files[f.toAbsPath(path)]
-
-	if !exists || props == nil {
+	if !exists {
 		return false, nil
 	}
-
-	c, err := getContent(f.files, f.toAbsPath(path))
-
-	if err != nil {
-		return false, err
-	}
-	return exists && c != &dirContent, nil
+	return props.content != &dirContent, nil
 }
 
 // DirExists returns true, if the given path is a previously added directory, or a parent directory for any of the
@@ -168,14 +131,8 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 	path = f.toAbsPath(path)
 	for entry, props := range f.files {
 
-		var content *[]byte
-		if props != nil {
-			if c, ok := props[keyContent].(*[]byte); ok {
-				content = c
-			}
-		}
 		var dirComponents []string
-		if content == &dirContent {
+		if props.content == &dirContent {
 			dirComponents = strings.Split(entry, f.Separator)
 		} else {
 			dirComponents = strings.Split(filepath.Dir(entry), f.Separator)
@@ -201,36 +158,32 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 // Copy checks if content has been associated with the given src path, and if so copies it under the given path dst.
 func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	f.init()
-	content, err := getContent(f.files, f.toAbsPath(src))
-	if err != nil {
+	props, exists := f.files[f.toAbsPath(src)]
+	if !exists || props.content == &dirContent {
 		return 0, fmt.Errorf("cannot copy '%s': file does not exist", src)
 	}
 
-	if content == &dirContent {
-		return 0, fmt.Errorf("cannot copy '%s': file does not exist", src)
-	}
-
-	mode, err := getMode(f.files, f.toAbsPath(src))
-	if err != nil {
-		return 0, err
-	}
-	f.AddFileWithMode(dst, *content, *mode)
-	return int64(len(*content)), nil
+	f.AddFileWithMode(dst, *props.content, *props.mode)
+	return int64(len(*props.content)), nil
 }
 
 // FileRead returns the content previously associated with the given path via AddFile(), or an error if no
 // content has been associated.
 func (f *FilesMock) FileRead(path string) ([]byte, error) {
 	f.init()
-	content, err := getContent(f.files, f.toAbsPath(path))
-	if err != nil {
-		return nil, fmt.Errorf("could not read '%s'", path)
-	}
-	// check if trying to open a directory for reading
-	if content == &dirContent {
+	props, exists := f.files[f.toAbsPath(path)]
+
+	if !exists {
 		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
 	}
-	return *content, nil
+
+	fmt.Printf("FILES: %v\n", f.files)
+
+	// check if trying to open a directory for reading
+	if props.content == &dirContent {
+		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
+	}
+	return *props.content, nil
 }
 
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
