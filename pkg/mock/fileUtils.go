@@ -45,14 +45,6 @@ func (f *FilesMock) init() {
 	}
 }
 
-func getFileProperties(files map[string]map[string]interface{}, name string) (map[string]interface{}, error) {
-
-	if props, ok := files[name]; ok {
-		return props, nil
-	}
-	return nil, fmt.Errorf("File '%s' not found", name)
-}
-
 func (f *FilesMock) toAbsPath(path string) string {
 	if !strings.HasPrefix(path, f.Separator) {
 		path = f.Separator + filepath.Join(f.currentDir, path)
