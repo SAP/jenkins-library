@@ -22,9 +22,11 @@ type detectExecuteScanOptions struct {
 	ScanPaths      []string `json:"scanPaths,omitempty"`
 	ScanProperties []string `json:"scanProperties,omitempty"`
 	ServerURL      string   `json:"serverUrl,omitempty"`
+	Groups         string   `json:"groups,omitempty"`
+	FailOn         []string `json:"failOn,omitempty"`
 }
 
-// DetectExecuteScanCommand Executes Synopsis Detect scan
+// DetectExecuteScanCommand Executes Synopsys Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "detectExecuteScan"
 
@@ -34,8 +36,8 @@ func DetectExecuteScanCommand() *cobra.Command {
 
 	var createDetectExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Executes Synopsis Detect scan",
-		Long:  `This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.`,
+		Short: "Executes Synopsys Detect scan",
+		Long:  `This step executes [Synopsys Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -86,8 +88,10 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "Version of the Synopsis Detect (formerly BlackDuck) project.")
 	cmd.Flags().StringSliceVar(&stepConfig.Scanners, "scanners", []string{`signature`}, "List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--blackduck.timeout=6000`, `--blackduck.trust.cert=true`, `--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR`, `--detect.report.timeout=4800`, `--logging.level.com.synopsys.integration=DEBUG`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--blackduck.timeout=6000`, `--blackduck.trust.cert=true`, `--detect.report.timeout=4800`, `--logging.level.com.synopsys.integration=DEBUG`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server url to the Synopsis Detect (formerly BlackDuck) Server.")
+	cmd.Flags().StringVar(&stepConfig.Groups, "groups", os.Getenv("PIPER_groups"), "Users groups to be assigned for the Project")
+	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based the policy categories")
 
 	cmd.MarkFlagRequired("apiToken")
 	cmd.MarkFlagRequired("projectName")
@@ -167,6 +171,22 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
+					},
+					{
+						Name:        "groups",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/groups"}},
+					},
+					{
+						Name:        "failOn",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 					},
 				},
 			},

@@ -1,8 +1,8 @@
 metadata:
   name: detectExecuteScan
-  description: Executes Synopsis Detect scan
+  description: Executes Synopsys Detect scan
   longDescription: |
-    This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.
+    This step executes [Synopsys Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.
 spec:
   inputs:
     resources:

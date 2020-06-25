@@ -46,10 +46,10 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
 	args = append(args, fmt.Sprintf("--detect.project.name=%v", config.ProjectName))
 	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", config.ProjectVersion))
-	args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", config.failOn))
+	args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", config.FailOn))
 
 	if len(config.groups) > 0
-		args = append(args, fmt.Sprintf("--detect.project.user.groups=%v", config.groups)) 
+		args = append(args, fmt.Sprintf("--detect.project.user.groups=%v", config.Groups)) 
 
 	codeLocation := config.CodeLocation
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
