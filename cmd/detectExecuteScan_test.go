@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestRunDetect(t *testing.T) {
 
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
+		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.policy.check.fail.on.severities= --detect.code.location.name="
 		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
@@ -25,7 +26,7 @@ func TestRunDetect(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.policy.check.fail.on.severities= --detect.code.location.name=": fmt.Errorf("Test Error")}}
 		runDetect(detectExecuteScanOptions{}, &s)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
@@ -46,8 +47,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ProjectName:    "testName",
 				ProjectVersion: "1.0",
 				CodeLocation:   "",
+				FailOn:         "BLOCKER",
 				Scanners:       []string{"signature"},
 				ScanPaths:      []string{"path1", "path2"},
+				Groups:         "",
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -57,6 +60,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--blackduck.api.token=apiToken",
 				"--detect.project.name=testName",
 				"--detect.project.version.name=1.0",
+				"--detect.policy.check.fail.on.severities=BLOCKER",
 				"--detect.code.location.name=testName/1.0",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 			},
@@ -69,8 +73,10 @@ func TestAddDetectArgs(t *testing.T) {
 				ProjectName:    "testName",
 				ProjectVersion: "1.0",
 				CodeLocation:   "testLocation",
+				FailOn:         "BLOCKER,CRITICAL,MAJOR",
 				Scanners:       []string{"source"},
 				ScanPaths:      []string{"path1", "path2"},
+				Groups:         "testGroup",
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -78,6 +84,8 @@ func TestAddDetectArgs(t *testing.T) {
 				"--blackduck.api.token=apiToken",
 				"--detect.project.name=testName",
 				"--detect.project.version.name=1.0",
+				"--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR",
+				"--detect.project.user.groups=testGroup",
 				"--detect.code.location.name=testLocation",
 				"--detect.source.path=path1",
 			},

@@ -122,10 +122,10 @@ spec:
         - STAGES
         - STEPS
       - name: failOn
-        description: Mark the current build as fail based the policy categories
+        description: Mark the current build as fail based the policy categories. A comma seperated list can be provided to fail on multiple categories, for eg. 'BLOCKER,CRITICAL,MAJOR'
         aliases:
           - name: detect/failOn
-        type: '[]string'
+        type: string
         mandatory: false
         default:
         - BLOCKER
