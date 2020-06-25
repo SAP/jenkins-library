@@ -81,8 +81,8 @@ class DefaultValueCache implements Serializable {
                     "that the response body only contains valid YAML. " +
                     "If you use a file from a GitHub repository, make sure you've used the 'raw' link, " +
                     "for example https://my.github.local/raw/someorg/shared-config/master/backend-service.yml\n" +
-                    "File path: ${configFileName}\n" +
-                    "Content: ${steps.readFile file: configFileName}\n" +
+                    "File path: .pipeline/${configFileName}\n" +
+                    "Content: ${steps.readFile file: ".pipeline/${configFileName}"}\n" +
                     "Exeption message: ${e.getMessage()}\n" +
                     "Exception stacktrace: ${Arrays.toString(e.getStackTrace())}"
             }
