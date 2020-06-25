@@ -48,7 +48,7 @@ Mandatory:
 Please provide either of the following options:
 * If you chose to create a single Service the Service Instance Name, Service Plan and Service Broker of the Service to be created have to be available. You can set the optional ` + "`" + `cfCreateServiceConfig` + "`" + ` flag to configure the Service creation with your respective JSON configuration. The JSON configuration can either be an in-line JSON string or the path a dedicated JSON configuration file containing the JSON configuration. If you chose a dedicated config file, you must store the file in the same folder as your ` + "`" + `Jenkinsfile` + "`" + ` that starts the Pipeline in order for the Pipeline to be able to find the file. Most favourable SCM is Git. If you want the service to be created from a particular broker you can set the optional ` + "`" + `cfServiceBroker` + "`" + `flag. You can set user provided tags for the Service creation using a flat list as the value for the optional ` + "`" + `cfServiceTags` + "`" + ` flag. The optional ` + "`" + `cfServiceBroker` + "`" + ` flag can be used when the service name is ambiguous.
 * For creating one or multiple Cloud Foundry Services at once with the Cloud Foundry Create-Service-Push Plugin using the optional ` + "`" + `serviceManifest` + "`" + ` flag. If you chose to set this flag, the Create-Service-Push Plugin will be used for all Service creations in this step and you will need to provide a ` + "`" + `serviceManifest.yml` + "`" + ` file. In that case, above described flags and options will not be used for the Service creations, since you chose to use the Create-Service-Push Plugin. Please see below examples for more information on how to make use of the plugin with the appropriate step configuation. Additionally the Plugin provides the option to make use of variable substitution for the Service creations. You can find further information regarding the functionality of the Cloud Foundry Create-Service-Push Plugin in the respective documentation: [Cloud Foundry Create-Service-Push Plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin)`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -59,6 +59,7 @@ Please provide either of the following options:
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -71,7 +72,7 @@ Please provide either of the following options:
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

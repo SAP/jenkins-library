@@ -109,7 +109,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		}
 	})
 	t.Run("Create service: variable substitution with manifest file", func(t *testing.T) {
-		var manifestVariablesFile = "file.test"
+		var manifestVariablesFiles = []string{"file.test", "file2.test"}
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:          "https://api.endpoint.com",
 			CfOrg:                  "testOrg",
@@ -117,12 +117,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			Username:               "testUser",
 			Password:               "testPassword",
 			ServiceManifest:        "testManifest",
-			ManifestVariablesFiles: manifestVariablesFile,
+			ManifestVariablesFiles: manifestVariablesFiles,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, &execRunner)
 		if error == nil {
 			assert.Equal(t, "cf", execRunner.Calls[6].Exec)
-			assert.Equal(t, []string{"create-service-push", "--no-push", "--service-manifest", "testManifest", "--vars-file", "file.test"}, execRunner.Calls[6].Params)
+			assert.Equal(t, []string{"create-service-push", "--no-push", "--service-manifest", "testManifest", "--vars-file", "file.test", "--vars-file", "file2.test"}, execRunner.Calls[6].Params)
 		}
 	})
 }
