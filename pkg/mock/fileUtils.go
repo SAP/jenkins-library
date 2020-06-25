@@ -174,8 +174,6 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
 	}
 
-	fmt.Printf("FILES: %v\n", f.files)
-
 	// check if trying to open a directory for reading
 	if props.content == &dirContent {
 		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
