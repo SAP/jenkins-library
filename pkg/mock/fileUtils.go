@@ -13,9 +13,6 @@ import (
 
 var dirContent []byte
 
-const keyContent = "content"
-const keyMode = "mode"
-
 type fileProperties struct {
 	content *[]byte
 	mode    *os.FileMode
