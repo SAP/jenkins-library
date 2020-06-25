@@ -47,4 +47,5 @@ require (
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	google.golang.org/genproto v0.0.0-20200602104108-2bb8d6132df6 // indirect
 	gopkg.in/ini.v1 v1.57.0
+	gopkg.in/yaml.v2 v2.3.0
 )
