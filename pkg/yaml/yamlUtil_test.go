@@ -189,7 +189,7 @@ func TestFilesRelated(t *testing.T) {
 
 		_, err := Substitute("manifestDoesNotExist.yml", map[string]interface{}{}, []string{"replacements.yml"})
 
-		if assert.EqualError(t, err, "could not read 'manifestDoesNotExist.yml'") {
+		if assert.EqualError(t, err, "could not read 'manifestDoesNotExist.yml': invalid argument") {
 			assert.False(t, traverseCalled)
 		}
 	})
@@ -205,7 +205,7 @@ func TestFilesRelated(t *testing.T) {
 
 		_, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacementsDoesNotExist.yml"})
 
-		if assert.EqualError(t, err, "could not read 'replacementsDoesNotExist.yml'") {
+		if assert.EqualError(t, err, "could not read 'replacementsDoesNotExist.yml': invalid argument") {
 			assert.True(t, fileMock.HasFile("manifest.yml"))
 			assert.False(t, traverseCalled)
 		}
