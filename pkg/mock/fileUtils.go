@@ -118,6 +118,11 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
+
+	if f.files == nil {
+		return false, nil
+	}
+
 	props, exists := f.files[f.toAbsPath(path)]
 	if !exists {
 		return false, nil
