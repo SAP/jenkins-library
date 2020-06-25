@@ -86,13 +86,25 @@ func (f *FilesMock) toAbsPath(path string) string {
 	return path
 }
 
-// AddFile establishes the existence of a virtual file.
-func (f *FilesMock) AddFile(path string, contents []byte, mode os.FileMode) {
+// AddFile establishes the existence of a virtual file. The file is
+// added with mode 644
+func (f *FilesMock) AddFile(path string, contents []byte) {
+	f.AddFileWithMode(path, contents, 0644)
+}
+
+// AddFileWithMode establishes the existence of a virtual file.
+func (f *FilesMock) AddFileWithMode(path string, contents []byte, mode os.FileMode) {
 	f.associateContent(path, &contents, &mode)
 }
 
-// AddDir establishes the existence of a virtual directory.
-func (f *FilesMock) AddDir(path string, mode os.FileMode) {
+// AddDir establishes the existence of a virtual directory. The directory
+// is add with default mode 755
+func (f *FilesMock) AddDir(path string) {
+	f.AddDirWithMode(path, 0755)
+}
+
+// AddDirWithMode establishes the existence of a virtual directory.
+func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 	f.associateContent(path, &dirContent, &mode)
 }
 
@@ -202,7 +214,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	f.AddFile(dst, *content, *mode)
+	f.AddFileWithMode(dst, *content, *mode)
 	return int64(len(*content)), nil
 }
 
@@ -228,7 +240,7 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	// This is why AddFile() exists separately, to differentiate the notion of setting up the mocking
 	// versus implementing the methods from Files.
 	f.writtenFiles[f.toAbsPath(path)] = &content
-	f.AddFile(path, content, mode)
+	f.AddFileWithMode(path, content, mode)
 	return nil
 }
 
@@ -253,7 +265,7 @@ func (f *FilesMock) MkdirAll(path string, mode os.FileMode) error {
 	// NOTE: FilesMock could be extended to have a set of paths for which MkdirAll should fail.
 	// This is why AddDir() exists separately, to differentiate the notion of setting up the mocking
 	// versus implementing the methods from Files.
-	f.AddDir(path, mode)
+	f.AddDirWithMode(path, mode)
 	return nil
 }
 

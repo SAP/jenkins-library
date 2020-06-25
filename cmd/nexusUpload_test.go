@@ -141,7 +141,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	t.Parallel()
 	t.Run("Uploading MTA project without groupId parameter fails", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", testMtaYml, 0644)
+		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -154,8 +154,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project without artifactId parameter works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", testMtaYml, 0644)
-		utils.AddFile("test.mtar", []byte("contentsOfMtar"), 0644)
+		utils.AddFile("mta.yaml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -180,7 +180,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project fails due to garbage YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", []byte("garbage"), 0644)
+		utils.AddFile("mta.yaml", []byte("garbage"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -193,7 +193,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project fails due invalid version in YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", []byte(testMtaYmlNoVersion), 0644)
+		utils.AddFile("mta.yaml", []byte(testMtaYmlNoVersion))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -206,7 +206,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yaml project fails due to missing mtar file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", testMtaYml, 0644)
+		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -227,8 +227,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yaml", testMtaYml, 0644)
-		utils.AddFile("test.mtar", []byte("contentsOfMtar"), 0644)
+		utils.AddFile("mta.yaml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -250,8 +250,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.AddFile("mta.yml", testMtaYml, 0644)
-		utils.AddFile("test.mtar", []byte("contentsOfMtar"), 0644)
+		utils.AddFile("mta.yml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -357,7 +357,7 @@ func TestUploadArtifacts(t *testing.T) {
 func TestUploadNpmProjects(t *testing.T) {
 	t.Run("Test uploading simple npm project", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, false, true)
-		utils.AddFile("package.json", testPackageJson, 0644)
+		utils.AddFile("package.json", testPackageJson)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.User = "admin"
@@ -391,7 +391,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -413,8 +413,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
-		utils.AddDir("target", 0755)
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddDir("target")
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -429,8 +429,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
-		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"), 0644)
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -456,8 +456,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "<empty>")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
-		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"), 0644)
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -481,7 +481,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.GroupID = "awesome.group"
@@ -506,8 +506,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.groupId", "awesome.group")
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
-		utils.AddFile("pom.xml", testPomXml, 0644)
-		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"), 0644)
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -553,15 +553,15 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("performance-tests/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("performance-tests/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("performance-tests/pom.xml", "project.packaging", "")
-		utils.AddFile("pom.xml", testPomXml, 0644)
-		utils.AddFile(filepath.Join("application", "pom.xml"), testPomXml, 0644)
-		utils.AddFile("application/target/final-artifact.war", []byte("contentsOfJar"), 0644)
-		utils.AddFile("application/target/final-artifact-classes.jar", []byte("contentsOfClassesJar"), 0644)
-		utils.AddFile("integration-tests/pom.xml", testPomXml, 0644)
-		utils.AddFile("integration-tests/target/final-artifact-integration-tests.jar", []byte("contentsOfJar"), 0644)
-		utils.AddFile("unit-tests/pom.xml", testPomXml, 0644)
-		utils.AddFile("unit-tests/target/final-artifact-unit-tests.jar", []byte("contentsOfJar"), 0644)
-		utils.AddFile("performance-tests/pom.xml", testPomXml, 0644)
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("application", "pom.xml"), testPomXml)
+		utils.AddFile("application/target/final-artifact.war", []byte("contentsOfJar"))
+		utils.AddFile("application/target/final-artifact-classes.jar", []byte("contentsOfClassesJar"))
+		utils.AddFile("integration-tests/pom.xml", testPomXml)
+		utils.AddFile("integration-tests/target/final-artifact-integration-tests.jar", []byte("contentsOfJar"))
+		utils.AddFile("unit-tests/pom.xml", testPomXml)
+		utils.AddFile("unit-tests/target/final-artifact-unit-tests.jar", []byte("contentsOfJar"))
+		utils.AddFile("performance-tests/pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -623,7 +623,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.AddFile("pom.xml", testPomXml, 0644)
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.User = "admin"

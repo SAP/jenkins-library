@@ -24,7 +24,7 @@ func newNpmMockUtilsBundle() npmMockUtilsBundle {
 func TestNpm(t *testing.T) {
 	t.Run("find package.json files with one package.json", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"), 0644)
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 
 		options := ExecutorOptions{}
 
@@ -40,9 +40,9 @@ func TestNpm(t *testing.T) {
 
 	t.Run("find package.json files with two package.json and filtered package.json", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{}"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"), 0644)
-		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}"), 0644) // is filtered out
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))
+		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
 		options := ExecutorOptions{}
 
 		exec := &Execute{
@@ -57,9 +57,9 @@ func TestNpm(t *testing.T) {
 
 	t.Run("find package.json files with script", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{ \"name\": \"test\" }"), 0644)
-		utils.AddFile(filepath.Join("test", "package.json"), []byte("{ \"scripts\": { \"test\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{ \"name\": \"test\" }"))
+		utils.AddFile(filepath.Join("test", "package.json"), []byte("{ \"scripts\": { \"test\": \"exit 0\" } }"))
 
 		options := ExecutorOptions{}
 
@@ -77,8 +77,8 @@ func TestNpm(t *testing.T) {
 
 	t.Run("Install deps for package.json with package-lock.json", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile("package-lock.json", []byte("{}"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("package-lock.json", []byte("{}"))
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -98,7 +98,7 @@ func TestNpm(t *testing.T) {
 
 	t.Run("Install deps for package.json without package-lock.json", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -118,8 +118,8 @@ func TestNpm(t *testing.T) {
 
 	t.Run("Install deps for package.json with yarn.lock", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile("yarn.lock", []byte("{}"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("yarn.lock", []byte("{}"))
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -139,10 +139,10 @@ func TestNpm(t *testing.T) {
 
 	t.Run("Install all deps", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile("package-lock.json", []byte("{}"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("package-lock.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -163,9 +163,9 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check if yarn.lock and package-lock exist", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile("yarn.lock", []byte("{}"), 0644)
-		utils.AddFile("package-lock.json", []byte("{}"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("yarn.lock", []byte("{}"))
+		utils.AddFile("package-lock.json", []byte("{}"))
 
 		options := ExecutorOptions{}
 
@@ -183,7 +183,7 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check that yarn.lock and package-lock do not exist", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
 		options := ExecutorOptions{}
 		options.SapNpmRegistry = "foo.sap"
@@ -202,7 +202,7 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check Execute script", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
 		options := ExecutorOptions{}
 
@@ -221,8 +221,8 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check Execute all scripts", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 
 		options := ExecutorOptions{}
 		runScripts := []string{"ci-lint", "ci-build"}
@@ -243,8 +243,8 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check set npm registry", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "https://example.org/npm"
@@ -265,8 +265,8 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check set npm registry", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"), 0644)
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get @sap:registry": "undefined"}}
 		options := ExecutorOptions{}
 		options.SapNpmRegistry = "https://example.sap/npm"
@@ -287,7 +287,7 @@ func TestNpm(t *testing.T) {
 
 	t.Run("Call run-scripts with virtual frame buffer", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"), 0644)
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"))
 
 		options := ExecutorOptions{}
 
