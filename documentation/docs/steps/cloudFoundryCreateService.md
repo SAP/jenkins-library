@@ -4,14 +4,8 @@
 
 ## Prerequisites
 
-* This step is for creating one or multiple Services in Cloud Foundry.
-* Cloud Foundry API endpoint, Organization, Space and user are available
-* If you chose to create a single Service the Service Instance Name, Plan Broker of the Service to be created have to be available
+* You have a user for the SAP Cloud Platform Cloud Foundry Environment
 * Credentials have been configured in Jenkins with a dedicated Id
-* You can set the optional `cfCreateServiceConfig` flag to configure the Service creation with your respective JSON configuration. The JSON configuration can either be an in-line JSON string or the path a dedicated JSON configuration file containing the JSON configuration. If you chose a dedicated config file, you must store the file in the same folder as your `Jenkinsfile` that starts the Pipeline in order for the Pipeline to be able to find the file. Most favourable SCM is Git.
-* If you want the service to be created from a particular broker you can set the optional `cfServiceBroker`flag.
-* You can set user provided tags for the Service creation using a flat list as the value for the optional `cfServiceTags` flag.
-* Also you can create one or multiple Cloud Foundry Services at once with the Cloud Foundry Create-Service-Push Plugin using the optional `serviceManifest` flag. If you chose to set this flag, the Create-Service-Push Plugin will be used for all Service creations in this step and you will need to provide a `serviceManifest.yml` file. In that case, above described flags and options will not be used for the Service creations, since you chose to use the Create-Service-Push Plugin. Please see below examples for more information on how to make use of the plugin with the appropriate step configuation. Additionally the Plugin provides the option to make use of variable substitution for the Service creations. You can find further information regarding the functionality of the Cloud Foundry Create-Service-Push Plugin in the respective documentation: [Cloud Foundry Create-Service-Push Plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin)
 
 ## ${docGenParameters}
 
@@ -79,23 +73,23 @@ The following example shows the option to create multiple Services in Cloud Foun
 
 It requires a dedicated YAML file, e.g. `manifest.yml`, that contains all the information for creating the services, including their names, service plan and the service broker.
 
-Such a `manifest.yml` file needs to have the following structure:
+Such a `manifest.yml` file needs to have the following structure, e.g. for creating three mongoDB Services with the Service Plan v4.0-dev:
 
 ```yaml
 
 ---
 create-services:
-- name:   "testService1"
-  broker: "testBroker"
-  plan:   "testPlan"
+- name:   "testDatabase1"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 
-- name:   "testService2"
-  broker: "testBroker"
-  plan:   "testPlan"
+- name:   "testDatabase2"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 
-- name:   "testService2"
-  broker: "testBroker"
-  plan:   "testPlan"
+- name:   "testDatabase3"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 ```
 
 The path of the `manifest.yml` config file needs to be passed as a parameter in the `serviceManifest` flag.
@@ -116,7 +110,7 @@ cloudFoundryCreateService(
 
 * ### Multiple Service Creation in Cloud Foundry example with manifest file and variable substitution in Jenkinsfile
 
-Additionally the Cloud Foundry Create-Service-Push Plugin offers the option to make use of variable substitution. This enables you to rename variables in the `manifest.yml` dynamically. It can be done either via providing the file path to a dedicated YAML file containing the information regarding the variable  substitution values in the `manifestVariablesFiles` flag or via providing a String List in the `manifestVariables` flag. Either ways can be achieved as seen in below examples.
+Additionally the Cloud Foundry Create-Service-Push Plugin offers the option to make use of variable substitution. This enables you to rename variables in the `manifest.yml` dynamically. It can be done either via providing the file path to a dedicated YAML file containing the information regarding the variable  substitution values in the `manifestVariablesFiles` flag or via providing a String List in the `manifestVariables` flag. Either ways can be achieved as seen in below examples for creating MongoDB instances.
 
 For both ways you need to adapt the `manifest.yml` file to be relevant for variable substitution. This can be done according to below example:
 
@@ -125,16 +119,16 @@ For both ways you need to adapt the `manifest.yml` file to be relevant for varia
 ---
 create-services:
 - name:   ((name1))
-  broker: "testBroker"
-  plan:   "testPlan"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 
 - name:   ((name2))
-  broker: "testBroker"
-  plan:   "testPlan"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 
 - name:   ((name3))
-  broker: "testBroker"
-  plan:   "testPlan"
+  broker: "mongodb"
+  plan:   "v4.0-dev"
 ```
 
 If you chose to have a dedicated file for the variable substitution values, it needs to have the following structure of the `vars.yml` file:

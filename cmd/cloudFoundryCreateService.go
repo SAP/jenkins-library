@@ -73,9 +73,6 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 		for _, s := range varPart {
 			cfCreateServiceScript = append(cfCreateServiceScript, s)
 		}
-		if len(varPart) >= 0 || config.ManifestVariablesFiles != "" {
-			//cfCreateServiceScript = append(cfCreateServiceScript, "--push-as-subprocess")
-		}
 	}
 	fmt.Print(cfCreateServiceScript)
 	err = c.RunExecutable("cf", cfCreateServiceScript...)
