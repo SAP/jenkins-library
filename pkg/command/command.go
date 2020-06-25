@@ -1,22 +1,25 @@
 package command
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // Command defines the information required for executing a call to any executable
 type Command struct {
-	dir    string
-	stdout io.Writer
-	stderr io.Writer
-	env    []string
+	ErrorCategoryMapping map[string][]string
+	dir                  string
+	stdout               io.Writer
+	stderr               io.Writer
+	env                  []string
 }
 
 // SetDir sets the working directory for the execution
@@ -45,7 +48,7 @@ var ExecCommand = exec.Command
 // RunShell runs the specified command on the shell
 func (c *Command) RunShell(shell, script string) error {
 
-	_out, _err := prepareOut(c.stdout, c.stderr)
+	c.prepareOut()
 
 	cmd := ExecCommand(shell)
 
@@ -61,7 +64,7 @@ func (c *Command) RunShell(shell, script string) error {
 
 	log.Entry().Infof("running shell script: %v %v", shell, script)
 
-	if err := runCmd(cmd, _out, _err); err != nil {
+	if err := c.runCmd(cmd); err != nil {
 		return errors.Wrapf(err, "running shell script failed with %v", shell)
 	}
 	return nil
@@ -72,7 +75,7 @@ func (c *Command) RunShell(shell, script string) error {
 //    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
-	_out, _err := prepareOut(c.stdout, c.stderr)
+	c.prepareOut()
 
 	cmd := ExecCommand(executable, params...)
 
@@ -84,7 +87,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	appendEnvironment(cmd, c.env)
 
-	if err := runCmd(cmd, _out, _err); err != nil {
+	if err := c.runCmd(cmd); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
@@ -95,7 +98,7 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 //    Thus the executable needs to be on the PATH of the current process and it is not sufficient to alter the PATH on cmd.Env.
 func (c *Command) RunExecutableInBackground(executable string, params ...string) (Execution, error) {
 
-	_out, _err := prepareOut(c.stdout, c.stderr)
+	c.prepareOut()
 
 	cmd := ExecCommand(executable, params...)
 
@@ -107,7 +110,7 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 
 	appendEnvironment(cmd, c.env)
 
-	execution, err := startCmd(cmd, _out, _err)
+	execution, err := c.startCmd(cmd)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
@@ -143,7 +146,7 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 	}
 }
 
-func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*execution, error) {
+func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 
 	stdout, stderr, err := cmdPipes(cmd)
 
@@ -159,22 +162,97 @@ func startCmd(cmd *exec.Cmd, _out, _err io.Writer) (*execution, error) {
 	execution := execution{cmd: cmd}
 	execution.wg.Add(2)
 
+	srcOut := stdout
+	srcErr := stderr
+
+	if c.ErrorCategoryMapping != nil {
+		prOut, pwOut := io.Pipe()
+		trOut := io.TeeReader(stdout, pwOut)
+		srcOut = prOut
+
+		prErr, pwErr := io.Pipe()
+		trErr := io.TeeReader(stderr, pwErr)
+		srcErr = prErr
+
+		execution.wg.Add(2)
+
+		go func() {
+			defer execution.wg.Done()
+			defer pwOut.Close()
+			c.scanLog(trOut)
+		}()
+
+		go func() {
+			defer execution.wg.Done()
+			defer pwErr.Close()
+			c.scanLog(trErr)
+		}()
+	}
+
 	go func() {
-		_, execution.errCopyStdout = io.Copy(_out, stdout)
+		_, execution.errCopyStdout = io.Copy(c.stdout, srcOut)
 		execution.wg.Done()
 	}()
 
 	go func() {
-		_, execution.errCopyStderr = io.Copy(_err, stderr)
+		_, execution.errCopyStderr = io.Copy(c.stderr, srcErr)
 		execution.wg.Done()
 	}()
 
 	return &execution, nil
 }
 
-func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
+func (c *Command) scanLog(in io.Reader) {
+	scanner := bufio.NewScanner(in)
+	scanner.Split(scanShortLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		c.parseConsoleErrors(line)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Entry().WithError(err).Info("failed to scan log file")
+	}
+}
 
-	execution, err := startCmd(cmd, _out, _err)
+func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	lenData := len(data)
+	if atEOF && lenData == 0 {
+		return 0, nil, nil
+	}
+	if lenData > 32767 && !bytes.Contains(data[0:lenData], []byte("\n")) {
+		// we will neglect long output
+		// no use cases known where this would be relevant
+		// current accepted implication: error pattern would not be found
+		// -> resulting in wrong error categorization
+		return lenData, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
+		// We have a full newline-terminated line with a size limit
+		// Size limit is required since otherwise scanner would stall
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+func (c *Command) parseConsoleErrors(logLine string) {
+	for category, categoryErrors := range c.ErrorCategoryMapping {
+		for _, errorPart := range categoryErrors {
+			if strings.Contains(logLine, errorPart) {
+				log.SetErrorCategory(log.ErrorCategoryByString(category))
+				return
+			}
+		}
+	}
+}
+
+func (c *Command) runCmd(cmd *exec.Cmd) error {
+
+	execution, err := c.startCmd(cmd)
 	if err != nil {
 		return err
 	}
@@ -192,20 +270,18 @@ func runCmd(cmd *exec.Cmd, _out, _err io.Writer) error {
 	return nil
 }
 
-func prepareOut(stdout, stderr io.Writer) (io.Writer, io.Writer) {
+func (c *Command) prepareOut() {
 
 	//ToDo: check use of multiwriter instead to always write into os.Stdout and os.Stdin?
 	//stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
 	//stderr := io.MultiWriter(os.Stderr, &stderrBuf)
 
-	if stdout == nil {
-		stdout = os.Stdout
+	if c.stdout == nil {
+		c.stdout = os.Stdout
 	}
-	if stderr == nil {
-		stderr = os.Stderr
+	if c.stderr == nil {
+		c.stderr = os.Stderr
 	}
-
-	return stdout, stderr
 }
 
 func cmdPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
