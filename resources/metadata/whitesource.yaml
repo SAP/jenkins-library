@@ -372,6 +372,15 @@ spec:
       - STAGES
       - STEPS
       default: -1
+    - name: includes
+      type: string
+      description: Space separated list of file path patterns to include in the scan
+      mandatory: false
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: '**\/*.java **\/*.jar **\/*.py **\/*.go **\/*.js **\/*.ts'
     - name: productToken
       type: string
       description: Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.

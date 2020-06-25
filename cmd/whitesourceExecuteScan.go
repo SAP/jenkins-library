@@ -345,8 +345,8 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 		return err
 	}
 
-	// includes=**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts
-	regex := `s/^[#]*\s*includes=.*/includes=**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts/`
+	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
+	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
 	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
 	}
