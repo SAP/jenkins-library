@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData) {
@@ -64,8 +65,14 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 		var varPart []string
 		cfCreateServiceScript = []string{"create-service-push", "--no-push", "--service-manifest", config.ServiceManifest}
 
-		if config.ManifestVariablesFiles != "" {
-			cfCreateServiceScript = append(cfCreateServiceScript, "--vars-file", config.ManifestVariablesFiles)
+		if len(config.ManifestVariablesFiles) >= 0 {
+			for _, v := range config.ManifestVariablesFiles {
+				if fileExists(v) {
+					cfCreateServiceScript = append(cfCreateServiceScript, "--vars-file", v)
+				} else {
+					return fmt.Errorf("Failed to append Manifest Variables File: %w", errors.New(v+" is not a file"))
+				}
+			}
 		}
 		if len(config.ManifestVariables) >= 0 {
 			varPart, err = varOptions(config.ManifestVariables)

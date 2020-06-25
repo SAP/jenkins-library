@@ -147,7 +147,7 @@ spec:
         aliases:
           - name: cloudFoundry/manifestVariables
       - name: manifestVariablesFiles
-        type: string
+        type: '[]string'
         description: Defines the manifest variables Yaml files to be used to replace variable references in manifest. This parameter is optional and will default to `manifest-variables.yml`. This can be used to set variable files like it is provided by `cf push --vars-file <file>`. If the manifest is present and so are all variable files, a variable substitution will be triggered that uses the `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the Cloud Foundry standard in `https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution`
         scope:
         - PARAMETERS
