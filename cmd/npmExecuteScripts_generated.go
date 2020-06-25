@@ -18,6 +18,7 @@ type npmExecuteScriptsOptions struct {
 	RunScripts         []string `json:"runScripts,omitempty"`
 	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
 	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
+	VirtualFrameBuffer bool     `json:"virtualFrameBuffer,omitempty"`
 }
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
@@ -32,7 +33,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Execute npm run scripts on all npm packages in a project",
 		Long:  `Execute npm run scripts in all package json files, if they implement the scripts.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -43,6 +44,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
@@ -53,7 +55,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -78,6 +80,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", `https://npm.sap.com`, "The default npm registry URL to be used as the remote mirror for the SAP npm packages.")
+	cmd.Flags().BoolVar(&stepConfig.VirtualFrameBuffer, "virtualFrameBuffer", false, "(Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.")
 
 }
 
@@ -110,16 +113,24 @@ func npmExecuteScriptsMetadata() config.StepData {
 					{
 						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
 						Name:        "sapNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
+					},
+					{
+						Name:        "virtualFrameBuffer",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

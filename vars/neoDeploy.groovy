@@ -73,6 +73,14 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
+     * The deployment mode which should be used. Available options are:
+     * *`'mta'` - default,
+     * *`'warParams'` - deploying WAR file and passing all the deployment parameters via the function call,
+     * *`'warPropertiesFile'` - deploying WAR file and putting all the deployment parameters in a .properties file.
+     * @possibleValues 'mta', 'warParams', 'warPropertiesFile'
+     */
+    'deployMode',
+    /**
      * @see dockerExecute
      */
     'dockerEnvVars',
@@ -95,14 +103,6 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /**
-     * The deployment mode which should be used. Available options are:
-     * *`'mta'` - default,
-     * *`'warParams'` - deploying WAR file and passing all the deployment parameters via the function call,
-     * *`'warPropertiesFile'` - deploying WAR file and putting all the deployment parameters in a .properties file.
-     * @possibleValues 'mta', 'warParams', 'warPropertiesFile'
-     */
-    'deployMode',
     /**
      * Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
      * @possibleValues 'deploy', 'rolling-update'

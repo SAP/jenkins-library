@@ -141,7 +141,7 @@ The Fortify step triggers a scan locally on your Jenkins within a docker contain
 and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
 
 DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and is therefore considered of BETA quality.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -152,6 +152,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.AuthToken)
@@ -164,7 +165,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -224,7 +225,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint for FPR downloads")
-	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
+	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `buildTool: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
