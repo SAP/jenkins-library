@@ -204,12 +204,12 @@ func (f *FilesMock) FileRemove(path string) error {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	absPath := f.toAbsPath(path)
-	_, exists := f.files[absPath]
+	props, exists := f.files[absPath]
 	if !exists {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	delete(f.files, absPath)
-	f.removedFiles[absPath] = nil
+	f.removedFiles[absPath] = props.content
 	return nil
 }
 
