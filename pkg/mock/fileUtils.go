@@ -160,7 +160,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	f.init()
 	props, exists := f.files[f.toAbsPath(src)]
 	if !exists || props.content == &dirContent {
-		return 0, fmt.Errorf("cannot copy '%s': file does not exist", src)
+		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
 
 	f.AddFileWithMode(dst, *props.content, *props.mode)
