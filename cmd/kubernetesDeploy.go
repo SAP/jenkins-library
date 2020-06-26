@@ -16,7 +16,16 @@ import (
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			"config": {
+				"Error: unknown flag",
+				"Invalid value: \"\": field is immutable",
+				"Error: path * not found",
+				"Error: UPGRADE FAILED: query: failed to query with labels:",
+			},
+		},
+	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Writer())
 	runKubernetesDeploy(config, &c, log.Writer())
