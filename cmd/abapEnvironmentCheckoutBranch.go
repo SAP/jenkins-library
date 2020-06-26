@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"net/http/cookiejar"
-	"time"
-
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -15,28 +11,28 @@ func abapEnvironmentCheckoutBranch(config abapEnvironmentCheckoutBranchOptions, 
 	c := command.Command{}
 
 	// get abap communication arrangement information
-	connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c)
-	if errorGetInfo != nil {
-		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
-	}
+	// connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c) // interace needs to be implemented First
+	// if errorGetInfo != nil {
+	// 	log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
+	// }
 
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+	// // reroute command output to logging framework
+	// c.Stdout(log.Writer())
+	// c.Stderr(log.Writer())
 
-	// Configuring the HTTP Client and CookieJar
-	client := piperhttp.Client{}
-	cookieJar, errorCookieJar := cookiejar.New(nil)
-	if errorCookieJar != nil {
-		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		MaxRequestDuration: 180 * time.Second,
-		CookieJar:          cookieJar,
-		Username:           connectionDetails.User,
-		Password:           connectionDetails.Password,
-	}
-	client.SetOptions(clientOptions)
+	// // Configuring the HTTP Client and CookieJar
+	// client := piperhttp.Client{}
+	// cookieJar, errorCookieJar := cookiejar.New(nil)
+	// if errorCookieJar != nil {
+	// 	log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
+	// }
+	// clientOptions := piperhttp.ClientOptions{
+	// 	MaxRequestDuration: 180 * time.Second,
+	// 	CookieJar:          cookieJar,
+	// 	Username:           connectionDetails.User,
+	// 	Password:           connectionDetails.Password,
+	// }
+	// client.SetOptions(clientOptions)
 
 	// pollIntervall := 10 * time.Second
 	// log.Entry().Infof("Start pulling %v repositories", len(config.RepositoryNames))
