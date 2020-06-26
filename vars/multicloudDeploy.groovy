@@ -1,7 +1,6 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
 import com.sap.piper.DeploymentType
-import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
@@ -12,12 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    /** Defines the targets to deploy on cloudFoundry.*/
-    'cfTargets',
-    /** Defines the targets to deploy on neo.*/
-    'neoTargets'
-]
+@Field Set GENERAL_CONFIG_KEYS = []
 
 @Field Set STEP_CONFIG_KEYS = []
 
@@ -28,6 +22,11 @@ import static com.sap.piper.Prerequisites.checkScript
     'parallelExecution',
     /** The source file to deploy to SAP Cloud Platform.*/
     'source',
+    /** Defines the targets to deploy on Cloud Foundry.*/
+    'cfTargets',
+    /** Defines the targets to deploy on neo.*/
+    'neoTargets',
+    /** Defines Cloud Foundry service instances to create as part of the deployment.*/
     'cfCreateServices'
 ])
 
@@ -54,28 +53,28 @@ void call(parameters = [:]) {
             .withMandatoryProperty('source', null, { config.neoTargets })
 
         utils.pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'enableZeroDowntimeDeployment',
-            stepParam1: config.enableZeroDowntimeDeployment
+            stepParam1   : config.enableZeroDowntimeDeployment
         ], config)
 
         def index = 1
         def deployments = [:]
 
-        if(parameters.cfCreateServices){
+        if (parameters.cfCreateServices) {
             def createServices = [:]
             for (int i = 0; i < parameters.cfCreateServices.size(); i++) {
                 Map createServicesConfig = parameters.cfCreateServices[i]
-                createServices["Service Creation ${i+1 > 1 ? i+1 : ''}"] = {
+                createServices["Service Creation ${i + 1 > 1 ? i + 1 : ''}"] = {
                     cloudFoundryCreateService(
                         script: script,
                         cloudFoundry: [
-                            apiEndpoint: createServicesConfig.apiEndpoint,
-                            credentialsId: createServicesConfig.credentialsId,
-                            serviceManifest: createServicesConfig.serviceManifest,
+                            apiEndpoint           : createServicesConfig.apiEndpoint,
+                            credentialsId         : createServicesConfig.credentialsId,
+                            serviceManifest       : createServicesConfig.serviceManifest,
                             manifestVariablesFiles: createServicesConfig.manifestVariablesFiles,
-                            org: createServicesConfig.org,
-                            space: createServicesConfig.space
+                            org                   : createServicesConfig.org,
+                            space                 : createServicesConfig.space
                         ]
                     )
                 }
@@ -119,7 +118,7 @@ void call(parameters = [:]) {
 
                 Closure deployment = {
 
-                    neoDeploy (
+                    neoDeploy(
                         script: script,
                         warAction: deploymentType,
                         source: config.source,

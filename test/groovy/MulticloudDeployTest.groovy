@@ -276,4 +276,15 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
+    @Test
+    void multicloudCfCreateServices() {
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests']],
+            source: 'file.mtar'
+        ])
+
+
+    }
+
 }
