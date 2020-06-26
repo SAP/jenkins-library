@@ -1,7 +1,7 @@
 metadata:
     name: abapEnvironmentCheckoutBranch
-    description: TEST
-    longDescription: Checkout branch TBD
+    description: Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system
+    longDescription: Switches between branches of a git repository (Software Component) on a SAP Cloud Platform ABAP Environment system.
 spec:
     inputs:
       secrets:
