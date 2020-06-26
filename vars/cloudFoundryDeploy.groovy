@@ -62,6 +62,10 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'manifestVariables',
         /**
+         * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
+         */
+        'mtaExtensionDescriptor',
+        /**
          * Cloud Foundry target organization.
          * @parentConfigKey cloudFoundry
          */
