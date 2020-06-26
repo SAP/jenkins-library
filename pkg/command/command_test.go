@@ -52,7 +52,7 @@ func TestShellRun(t *testing.T) {
 
 func TestExecutableRun(t *testing.T) {
 
-	t.Run("test shell", func(t *testing.T) {
+	t.Run("test executable", func(t *testing.T) {
 		ExecCommand = helperCommand
 		defer func() { ExecCommand = exec.Command }()
 		stdout := new(bytes.Buffer)
@@ -61,6 +61,8 @@ func TestExecutableRun(t *testing.T) {
 		t.Run("success case", func(t *testing.T) {
 			ex := Command{stdout: stdout, stderr: stderr}
 			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
+
+			assert.Equal(t, 0, ex.GetExitCode())
 
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
