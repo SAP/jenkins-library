@@ -61,6 +61,27 @@ void call(parameters = [:]) {
         def index = 1
         def deployments = [:]
 
+        if(parameters.cfCreateServices){
+            def createServices = [:]
+            for (int i = 0; i < parameters.cfCreateServices.size(); i++) {
+                Map createServicesConfig = parameters.cfCreateServices[i]
+                createServices["Service Creation ${i+1 > 1 ? i+1 : ''}"] = {
+                    cloudFoundryCreateService(
+                        script: script,
+                        cloudFoundry: [
+                            apiEndpoint: createServicesConfig.apiEndpoint,
+                            credentialsId: createServicesConfig.credentialsId,
+                            serviceManifest: createServicesConfig.serviceManifest,
+                            manifestVariablesFiles: createServicesConfig.manifestVariablesFiles,
+                            org: createServicesConfig.org,
+                            space: createServicesConfig.space
+                        ]
+                    )
+                }
+            }
+            runClosures createServices, script
+        }
+
         if (config.cfTargets) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
