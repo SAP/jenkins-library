@@ -27,7 +27,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Executes the deployments in parallel.*/
     'parallelExecution',
     /** The source file to deploy to SAP Cloud Platform.*/
-    'source'
+    'source',
+    'cfCreateServices'
 ])
 
 /**
