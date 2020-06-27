@@ -1069,4 +1069,48 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     }
 
+    @Test
+    void testMtaExtensionDescriptor() {
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace'
+            ],
+            mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("-e globalMtaDescriptor.mtaext")))
+    }
+
+    @Test
+    void testTargetMtaExtensionDescriptor() {
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext'
+            ],
+            mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("-e targetMtaDescriptor.mtaext")))
+    }
 }
