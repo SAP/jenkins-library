@@ -1110,7 +1110,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
             deployType: 'blue-green',
             mtaPath: 'target/test.mtar'
         ])
-
         assertThat(shellRule.shell, hasItem(containsString("-e targetMtaDescriptor.mtaext")))
     }
 }
