@@ -274,6 +274,7 @@ def findMtar(){
 }
 
 def deployMta(config) {
+    if (config?.cloudFoundry?.mtaExtensionDescriptor) config.mtaExtensionDescriptor = config.cloudFoundry.mtaExtensionDescriptor
     if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
