@@ -22,9 +22,9 @@ type Product struct {
 
 type Alert struct {
 	Vulnerability Vulnerability `json:"vulnerability"`
-	Library       Library    `json:"library,omitempty"`
-	Project	      string     `json:"project,omitempty"`
-	CreationDate  string     `json:"creation_date,omitempty"`
+	Library       Library       `json:"library,omitempty"`
+	Project       string        `json:"project,omitempty"`
+	CreationDate  string        `json:"creation_date,omitempty"`
 }
 
 type Library struct {
@@ -35,16 +35,16 @@ type Library struct {
 }
 
 type Vulnerability struct {
-	Name          string     `json:"name,omitempty"`
-	Type          string     `json:"type,omitempty"`
-	Level	      string     `json:"level,omitempty"`
-	Description   string     `json:"description,omitempty"`
-	Severity      string     `json:"severity,omitempty"`
-	CVSS3Severity string     `json:"cvss3_severity,omitempty"`
-	CVSS3Score    float64    `json:"cvss3_score,omitempty"`
-	Score         float64    `json:"score,omitempty"`
-	FixResolutionText string `json:"fixResolutionText,omitempty"`
-	PublishDate   string     `json:"publishDate,omitempty"`
+	Name              string  `json:"name,omitempty"`
+	Type              string  `json:"type,omitempty"`
+	Level             string  `json:"level,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	Severity          string  `json:"severity,omitempty"`
+	CVSS3Severity     string  `json:"cvss3_severity,omitempty"`
+	CVSS3Score        float64 `json:"cvss3_score,omitempty"`
+	Score             float64 `json:"score,omitempty"`
+	FixResolutionText string  `json:"fixResolutionText,omitempty"`
+	PublishDate       string  `json:"publishDate,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -66,7 +66,6 @@ type Request struct {
 	ProductName  string `json:"productName,omitempty"`
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
-	Format       string `jdon:"format,omitempty"`
 }
 
 // System defines a WhiteSource system including respective tokens (e.g. org token, user token)
@@ -163,7 +162,7 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 	}
 
 	// returns a nil token and no error if not found
-	if project !=  nil {
+	if project != nil {
 		token = project.Token
 	}
 
@@ -273,7 +272,16 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 
 // GetProjectVulnerabilityReport
 func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-	req := Request{
+
+	req := struct {
+		RequestType  string `json:"requestType,omitempty"`
+		UserKey      string `json:"userKey,omitempty"`
+		ProductToken string `json:"productToken,omitempty"`
+		ProductName  string `json:"productName,omitempty"`
+		ProjectToken string `json:"projectToken,omitempty"`
+		OrgToken     string `json:"orgToken,omitempty"`
+		Format       string `jdon:"format,omitempty"`
+	}{
 		RequestType:  "getProjectVulnerabilityReport",
 		ProjectToken: projectToken,
 		Format:       format,
