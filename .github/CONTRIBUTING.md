@@ -26,7 +26,19 @@ Generally speaking, you should fork this repository, make changes in your own fo
 ### Working with forks
 
 * [Configure this repository as a remote for your own fork](https://help.github.com/articles/configuring-a-remote-for-a-fork/), and
+
+```shell
+git remote add upstream git@github.com:sap/jenkins-library.git
+git remote -v
+```
+
 * [Sync your fork with this repository](https://help.github.com/articles/syncing-a-fork/) before beginning to work on a new pull-request.
+
+```shell
+git fetch --all
+git merge upstream/master
+git push
+```
 
 ### Tests
 
@@ -34,6 +46,11 @@ All pipeline library coding _must_ come with automated unit tests.
 
 Besides that, we have an integration test suite, which is not triggered during normal pull request builds. However, integration tests are mandatory before a change can be merged. It is the duty of a team member of the SAP/jenkins-library project to execute these tests.
 To trigger the integration test suite, the `HEAD` commit of the branch associated with the pull request must be pushed under the branch pattern `it/.*` (recommended naming convention: `it/<Number of the pull request>`). As a result, the status `integration-tests` is updated in the pull request.
+
+```shell
+git checkout -B it/<Number of the pull request>
+git push -u upstream it/<Number of the pull request>
+```
 
 ### Documentation
 
