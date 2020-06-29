@@ -97,6 +97,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			{{- range $key, $value := .StepSecrets }}
