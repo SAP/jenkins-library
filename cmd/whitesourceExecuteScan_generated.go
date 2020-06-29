@@ -74,7 +74,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
     create your own ones to adequately support your scenario. To do so please modify ` + "`" + `dockerImage` + "`" + ` and ` + "`" + `dockerWorkspace` + "`" + ` parameters.
     The step expects an environment containing the programming language related compiler/interpreter as well as the related build tool. For a list
     of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -95,7 +95,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
