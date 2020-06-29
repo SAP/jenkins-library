@@ -66,6 +66,7 @@ type Request struct {
 	ProductName  string `json:"productName,omitempty"`
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
+	Format       string `json:"format,omitempty"`
 }
 
 // System defines a WhiteSource system including respective tokens (e.g. org token, user token)
@@ -273,15 +274,7 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 // GetProjectVulnerabilityReport
 func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
 
-	req := struct {
-		RequestType  string `json:"requestType,omitempty"`
-		UserKey      string `json:"userKey,omitempty"`
-		ProductToken string `json:"productToken,omitempty"`
-		ProductName  string `json:"productName,omitempty"`
-		ProjectToken string `json:"projectToken,omitempty"`
-		OrgToken     string `json:"orgToken,omitempty"`
-		Format       string `jdon:"format,omitempty"`
-	}{
+	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
 		ProjectToken: projectToken,
 		Format:       format,
