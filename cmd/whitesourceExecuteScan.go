@@ -243,13 +243,39 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	return nil
 }
 
+// pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
+func pollProjectStatus(config *ScanOptions, sys *System) error {
+	currentTime := time.Now()
+	for {
+		project, err := sys.GetProjectVitals(config.ProjectToken)
+		if err != nil {
+			return err
+		}
+
+		// Make sure the project was updated in whitesource backend before downloading any reports
+		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
+		if currentTime.Sub(lastUpdatedTime) < 10 * time.Second {
+			//done polling
+			break
+		}
+		log.Entry().Info("time since project was last updated > 10 seconds, polling status...")
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
+
 // downloadReports downloads a project's risk and vulnerability reports
 func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+
+	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
+	if err := pollProjectStatus(config, sys); err != nil {
 		return nil, err
 	}
 
+	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+		return nil, err
+	}
 	vulnPath, err := downloadVulnerabilityReport(config, sys)
 	if err != nil {
 		return nil, err

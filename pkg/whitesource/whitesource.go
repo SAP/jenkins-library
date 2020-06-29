@@ -47,6 +47,7 @@ type Vulnerability struct {
 	PublishDate       string  `json:"publishDate,omitempty"`
 }
 
+
 // Project defines a WhiteSource project with name and token
 type Project struct {
 	ID             int64  `json:"id"`
@@ -168,6 +169,32 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 	}
 
 	return token, nil
+}
+
+// GetProjectVitals returns project meta info given a project token
+func (s *System) GetProjectVitals(projectToken string) (*Project, error) {
+	wsResponse := struct {
+		ProjectVitals []Project `json:"projectVitals"`
+	}{
+		ProjectVitals: []Project{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectVitals",
+		ProjectToken: projectToken,
+	}
+
+	respBody, err := s.sendRequest(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	err = json.Unmarshal(respBody, &wsResponse)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+
+	return &wsResponse.ProjectVitals[0], nil
 }
 
 // GetProjectByName returns the finds and returns a project by name
