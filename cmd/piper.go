@@ -84,6 +84,7 @@ func Execute() {
 	rootCmd.AddCommand(NexusUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
@@ -95,7 +96,8 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		// in case we end up here we know that something in the PreRunE function went wrong
 		// and thus this indicates a configuration issue
-		log.Entry().WithError(err).WithField("category", "config").Fatal("configuration error")
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.FatalError(err, "configuration error")
 	}
 }
 
