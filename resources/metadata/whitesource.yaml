@@ -374,13 +374,22 @@ spec:
       default: -1
     - name: includes
       type: string
-      description: Space separated list of file path patterns to include in the scan
+      description: Space separated list of file path patterns to include in the scan, slashes must be escaped for sed
       mandatory: false
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: '**\/*.java **\/*.jar **\/*.py **\/*.go **\/*.js **\/*.ts'
+      default: '**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts'
+    - name: excludes
+      type: string
+      description: Space separated list of file path patterns to exclude in the scan
+      mandatory: false
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: 'tests/**/*.py **/src/test/**/*.java'
     - name: productToken
       type: string
       description: Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.

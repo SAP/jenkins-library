@@ -334,7 +334,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	defer f.Close()
 
 	// Append additional config parameters to prevent multiple projects being generated
-	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\n"
+	cfg := fmt.Sprintf("gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\nexcludes=%s", config.Excludes)
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
@@ -350,6 +350,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
 	}
+
 	return nil
 }
 
