@@ -85,6 +85,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 

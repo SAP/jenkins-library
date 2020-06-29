@@ -254,7 +254,7 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 
 		// Make sure the project was updated in whitesource backend before downloading any reports
 		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
-		if currentTime.Sub(lastUpdatedTime) < 10 * time.Second {
+		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {
 			//done polling
 			break
 		}
