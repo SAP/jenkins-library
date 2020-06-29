@@ -30,6 +30,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'cfCreateServices'
 ])
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'parallelTestExecution']
+
 /**
  * Deploys an application to multiple platforms (Cloud Foundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
  */
@@ -44,7 +46,7 @@ void call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
 
         Map config = configHelper.use()
@@ -140,8 +142,10 @@ void call(parameters = [:]) {
     }
 }
 
-def runClosures(config, toRun, label = "") {
-    echo "Executing $label, value of config.parallelExecution is: ${config.parallelExecution}"
+def runClosures(config, toRun, label = "closures") {
+    echo "Executing $label"
+    echo "dbg>> ${config.toString()}"
+    echo "dbg>> ${config}"
     if (config.parallelExecution) {
         echo "Executing $label in parallel"
         parallel deployments

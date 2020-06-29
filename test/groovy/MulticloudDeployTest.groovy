@@ -278,6 +278,7 @@ class MulticloudDeployTest extends BasePiperTest {
 
     @Test
     void multicloudCfCreateServices() {
+        nullScript.commonPipelineEnvironment.configuration.general['features'] = [parallelTestExecution: true]
         stepRule.step.multicloudDeploy([
             script: nullScript,
             cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests']],
