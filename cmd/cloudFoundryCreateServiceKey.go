@@ -53,7 +53,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	}
 }
 
-func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c execRunner) error {
+func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) error {
 
 	log.Entry().Info("Creating Service Key")
 

@@ -31,7 +31,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	runKubernetesDeploy(config, &c, log.Writer())
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		runHelmDeploy(config, command, stdout)
 	} else {
@@ -39,7 +39,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, std
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
+func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -147,7 +147,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command execRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)

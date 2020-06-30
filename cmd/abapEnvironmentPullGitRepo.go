@@ -158,7 +158,7 @@ func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, 
 	return status, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c execRunner) (connectionDetailsHTTP, error) {
+func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
 
 	var connectionDetails connectionDetailsHTTP
 	var error error
@@ -185,7 +185,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	return connectionDetails, error
 }
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (serviceKey, error) {
+func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
 
 	var abapServiceKey serviceKey
 
