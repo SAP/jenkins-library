@@ -182,6 +182,28 @@ func TestParseConsoleErrors(t *testing.T) {
 	log.SetErrorCategory(log.ErrorUndefined)
 }
 
+func TestMatchPattern(t *testing.T) {
+	tt := []struct {
+		text     string
+		pattern  string
+		expected bool
+	}{
+		{text: "", pattern: "", expected: true},
+		{text: "simple test", pattern: "", expected: false},
+		{text: "simple test", pattern: "no", expected: false},
+		{text: "simple test", pattern: "simple", expected: true},
+		{text: "simple test", pattern: "test", expected: true},
+		{text: "advanced pattern test", pattern: "advanced * test", expected: true},
+		{text: "advanced pattern failed", pattern: "advanced * test", expected: false},
+		{text: "advanced pattern with multiple placeholders", pattern: "advanced * with * placeholders", expected: true},
+		{text: "advanced pattern lacking multiple placeholders", pattern: "advanced * with * placeholders", expected: false},
+	}
+
+	for _, test := range tt {
+		assert.Equalf(t, test.expected, matchPattern(test.text, test.pattern), test.text)
+	}
+}
+
 func TestCmdPipes(t *testing.T) {
 	cmd := helperCommand("echo", "foo bar", "baz")
 	defer func() { ExecCommand = exec.Command }()
