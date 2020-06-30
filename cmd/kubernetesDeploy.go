@@ -102,6 +102,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
 		log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
 	}
+	// make sure that secret is hidden in log output
+	log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {
