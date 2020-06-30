@@ -12,12 +12,12 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-/** Defines the targets to deploy on Cloud Foundry.*/
-'cfTargets',
-/** Defines the targets to deploy on neo.*/
-'neoTargets',
-/** Executes the deployments in parallel.*/
-'parallelExecution'
+    /** Defines the targets to deploy on Cloud Foundry.*/
+    'cfTargets',
+    /** Defines the targets to deploy on neo.*/
+    'neoTargets',
+    /** Executes the deployments in parallel.*/
+    'parallelExecution'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []

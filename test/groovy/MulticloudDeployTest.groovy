@@ -1,17 +1,9 @@
-import com.sap.piper.JenkinsUtils
-import com.sap.piper.Utils
-
-import hudson.AbortException
-
-import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
 import util.*
-
 
 class MulticloudDeployTest extends BasePiperTest {
 
