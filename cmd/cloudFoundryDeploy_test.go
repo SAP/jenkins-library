@@ -778,7 +778,6 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"api", "https://examples.sap.com/cf"}},
 						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
 						mock.ExecCall{Exec: "cf", Params: []string{
 							"bg-deploy",
@@ -950,7 +949,6 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, s.Calls, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"api", "https://examples.sap.com/cf"}},
 						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
 						mock.ExecCall{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
 

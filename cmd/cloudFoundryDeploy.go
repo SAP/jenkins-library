@@ -290,7 +290,7 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 		return nil
 	}
 
-	return cfDeploy(config, nil, deployStatement, additionalEnvironment, stopOldAppIfRunning, command)
+	return cfDeploy(config, deployStatement, additionalEnvironment, stopOldAppIfRunning, command)
 }
 
 func getManifest(name string) (cloudfoundry.Manifest, error) {
@@ -595,15 +595,6 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command e
 		}
 	}
 
-	cfAPIParams := []string{
-		"api",
-		config.APIEndpoint,
-	}
-
-	if len(config.APIParameters) > 0 {
-		cfAPIParams = append(cfAPIParams, strings.Split(config.APIParameters, " ")...)
-	}
-
 	cfDeployParams := []string{
 		deployCommand,
 		mtarFilePath,
@@ -629,7 +620,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command e
 		}
 	}
 
-	return cfDeploy(config, cfAPIParams, cfDeployParams, nil, nil, command)
+	return cfDeploy(config, cfDeployParams, nil, nil, command)
 }
 
 // would make sense to have that method in some kind of helper instead having it here
@@ -645,7 +636,7 @@ func contains(collection []string, key string) bool {
 
 func cfDeploy(
 	config *cloudFoundryDeployOptions,
-	cfAPIParams, cfDeployParams []string,
+	cfDeployParams []string,
 	additionalEnvironment []string,
 	postDeployAction func(command execRunner) error,
 	command execRunner) error {
@@ -664,19 +655,13 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
-	if cfAPIParams != nil {
-		err = command.RunExecutable("cf", cfAPIParams...)
-		if err != nil {
-			log.Entry().WithError(err).Errorf("Command '%s' failed.", cfAPIParams)
-		}
-	}
-
 	err = _cfLogin(cloudfoundry.LoginOptions{
 		CfAPIEndpoint: config.APIEndpoint,
 		CfOrg:         config.Org,
 		CfSpace:       config.Space,
 		Username:      config.Username,
 		Password:      config.Password,
+		// TODO: set additional cf api and cf login params when corresponding PR has been merged
 	})
 
 	if err == nil {
