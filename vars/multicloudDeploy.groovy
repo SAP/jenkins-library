@@ -20,9 +20,9 @@ import static com.sap.piper.Prerequisites.checkScript
     'parallelExecution'
 ]
 
-@Field Set STEP_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 
-@Field Set PARAMETER_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
     /** The source file to deploy to SAP Cloud Platform.*/
