@@ -271,6 +271,9 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 	}
 
 	if err != nil {
+		// provide fallback to ensure a non 0 exit code in case of an error
+		c.exitCode = 1
+		// try to identify the detailed error code
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
 				c.exitCode = status.ExitStatus()
