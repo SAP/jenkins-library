@@ -87,6 +87,14 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+      - name: loginParameters
+        type: bool
+        description: "Addition command line options for cf login command. No escaping/quoting is performed. Not recommanded for productive environments."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
       - name: manifest
         type: string
         description: "Defines the manifest to be used for deployment to Cloud Foundry."
