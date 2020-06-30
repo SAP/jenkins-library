@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ type Command struct {
 	stdout               io.Writer
 	stderr               io.Writer
 	env                  []string
+	exitCode             int
 }
 
 // SetDir sets the working directory for the execution
@@ -117,6 +119,11 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	}
 
 	return execution, nil
+}
+
+// GetExitCode allows to retrieve the exit code of a command execution
+func (c *Command) GetExitCode() int {
+	return c.exitCode
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
@@ -242,12 +249,25 @@ func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err err
 func (c *Command) parseConsoleErrors(logLine string) {
 	for category, categoryErrors := range c.ErrorCategoryMapping {
 		for _, errorPart := range categoryErrors {
-			if strings.Contains(logLine, errorPart) {
+			if matchPattern(logLine, errorPart) {
 				log.SetErrorCategory(log.ErrorCategoryByString(category))
 				return
 			}
 		}
 	}
+}
+
+func matchPattern(text, pattern string) bool {
+	if len(pattern) == 0 && len(text) != 0 {
+		return false
+	}
+	parts := strings.Split(pattern, "*")
+	for _, part := range parts {
+		if !strings.Contains(text, part) {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *Command) runCmd(cmd *exec.Cmd) error {
@@ -264,9 +284,17 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 	}
 
 	if err != nil {
+		// provide fallback to ensure a non 0 exit code in case of an error
+		c.exitCode = 1
+		// try to identify the detailed error code
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+				c.exitCode = status.ExitStatus()
+			}
+		}
 		return errors.Wrap(err, "cmd.Run() failed")
 	}
-
+	c.exitCode = 0
 	return nil
 }
 
