@@ -57,6 +57,29 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
 		}
 	})
+
+	t.Run("CF Login check: with additional API options", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
+			CfAPIOpts: []string{"--skip-ssl-validation"},
+		}
+		loggedIn, err := LoginCheck(cfconfig)
+		if assert.NoError(t, err) {
+			assert.True(t, loggedIn)
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{
+					Exec: "cf",
+					Params: []string{
+						"api",
+						"https://api.endpoint.com",
+						"--skip-ssl-validation",
+					}}}, m.Calls)
+		}
+	})
 }
 
 func TestCloudFoundryLogin(t *testing.T) {
