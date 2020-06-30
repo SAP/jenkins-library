@@ -95,7 +95,7 @@ func (j *JSONfile) GetCoordinates() (Coordinates, error) {
 
 	artifact := &JSONDescriptor{
 		ArtifactID: projectName,
-		Version: projectVersion,
+		Version:    projectVersion,
 	}
 	return artifact, nil
 }

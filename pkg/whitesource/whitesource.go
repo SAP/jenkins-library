@@ -20,6 +20,7 @@ type Product struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
+// Alert
 type Alert struct {
 	Vulnerability Vulnerability `json:"vulnerability"`
 	Library       Library       `json:"library,omitempty"`
@@ -27,6 +28,7 @@ type Alert struct {
 	CreationDate  string        `json:"creation_date,omitempty"`
 }
 
+// Library
 type Library struct {
 	Name     string `json:"name,omitempty"`
 	Filename string `json:"filename,omitempty"`
@@ -34,6 +36,7 @@ type Library struct {
 	Project  string `json:"project,omitempty"`
 }
 
+// Vulnerability
 type Vulnerability struct {
 	Name              string  `json:"name,omitempty"`
 	Type              string  `json:"type,omitempty"`
@@ -46,7 +49,6 @@ type Vulnerability struct {
 	FixResolutionText string  `json:"fixResolutionText,omitempty"`
 	PublishDate       string  `json:"publishDate,omitempty"`
 }
-
 
 // Project defines a WhiteSource project with name and token
 type Project struct {
@@ -238,7 +240,7 @@ func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Pr
 
 // GetProjectTokens returns the project tokens matching a given a slice of project names
 func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
-	var projectTokens []string
+	projectTokens := []string{}
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
