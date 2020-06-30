@@ -11,15 +11,16 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /** Executes the deployments in parallel.*/
+    'parallelExecution'
+]
 
 @Field Set STEP_CONFIG_KEYS = []
 
 @Field Set PARAMETER_KEYS = GENERAL_CONFIG_KEYS.plus([
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
-    /** Executes the deployments in parallel.*/
-    'parallelExecution',
     /** The source file to deploy to SAP Cloud Platform.*/
     'source',
     /** Defines the targets to deploy on Cloud Foundry.*/
@@ -30,7 +31,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'cfCreateServices'
 ])
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'parallelTestExecution']
+@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
 
 /**
  * Deploys an application to multiple platforms (Cloud Foundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
@@ -149,7 +150,7 @@ def runClosures(config, toRun, label = "closures") {
     echo "dbg>> ${config}"
     if (config.parallelExecution) {
         echo "Executing $label in parallel"
-        parallel deployments
+        parallel toRun
     } else {
         echo "Executing $label in sequence"
         def closuresToRun = toRun.values().asList()

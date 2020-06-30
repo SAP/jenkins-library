@@ -95,6 +95,9 @@ class MulticloudDeployTest extends BasePiperTest {
                 ]
             ]
         ]
+
+        helper.registerAllowedMethod('echo', [CharSequence.class], {s -> println(s)})
+
     }
 
     @Test
@@ -277,15 +280,51 @@ class MulticloudDeployTest extends BasePiperTest {
     }
 
     @Test
-    void multicloudCfCreateServices() {
+    void 'cfCreateServices with parallelTestExecution defined in compatible parameter - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
         nullScript.commonPipelineEnvironment.configuration.general['features'] = [parallelTestExecution: true]
+
         stepRule.step.multicloudDeploy([
             script: nullScript,
-            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests']],
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
             source: 'file.mtar'
         ])
 
+        assert closureRun != null
+    }
 
+    @Test
+    void 'cfCreateServices with parallelExecution defined - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
+        nullScript.commonPipelineEnvironment.configuration.general = [parallelExecution: true]
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
+            source: 'file.mtar'
+        ])
+
+        assert closureRun != null
     }
 
 }
