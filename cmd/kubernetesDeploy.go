@@ -16,7 +16,16 @@ import (
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			"config": {
+				"Error: unknown flag",
+				"Invalid value: \"\": field is immutable",
+				"Error: path * not found",
+				"Error: UPGRADE FAILED: query: failed to query with labels:",
+			},
+		},
+	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Writer())
 	runKubernetesDeploy(config, &c, log.Writer())
@@ -93,6 +102,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
 		log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
 	}
+	// make sure that secret is hidden in log output
+	log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {

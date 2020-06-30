@@ -249,12 +249,25 @@ func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err err
 func (c *Command) parseConsoleErrors(logLine string) {
 	for category, categoryErrors := range c.ErrorCategoryMapping {
 		for _, errorPart := range categoryErrors {
-			if strings.Contains(logLine, errorPart) {
+			if matchPattern(logLine, errorPart) {
 				log.SetErrorCategory(log.ErrorCategoryByString(category))
 				return
 			}
 		}
 	}
+}
+
+func matchPattern(text, pattern string) bool {
+	if len(pattern) == 0 && len(text) != 0 {
+		return false
+	}
+	parts := strings.Split(pattern, "*")
+	for _, part := range parts {
+		if !strings.Contains(text, part) {
+			return false
+		}
+	}
+	return true
 }
 
 func (c *Command) runCmd(cmd *exec.Cmd) error {
