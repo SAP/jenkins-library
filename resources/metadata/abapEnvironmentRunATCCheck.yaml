@@ -71,7 +71,9 @@ spec:
         - GENERAL
         mandatory: false
         aliases:
+          - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
       - name: cfSpace
         type: string
         description: CF Space
