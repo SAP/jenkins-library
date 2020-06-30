@@ -1,10 +1,9 @@
 # Infrastructure
 
-Project "Piper" SAP implements tooling for continuous delivery.
-Besides SAP specific Jenkins library steps and out-of-the-box pipelines, it offers also documentation and tooling to start the corresponding  Jenkins server with all the configuration required to run the project "Piper" pipelines.
+Besides SAP specific Jenkins library steps and out-of-the-box pipelines, project "Piper" offers also documentation and tooling to start the corresponding Jenkins server with all the configuration required to run project "Piper" pipelines.
 
 The core of the Jenkins infrastructure tooling is a set of [Docker images][docker-images].
-There is a main Docker image containing a preconfigured  Jenkins and several tooling images used in the specific project "Piper" steps.
+There is a main Docker image containing a preconfigured Jenkins and several tooling images used in the specific project "Piper" steps.
 
 The document and the linked resources explain the various ways of starting such a Jenkins server based on these Docker images.
 
@@ -16,9 +15,9 @@ As it would be cumbersome to start the Docker image manually with all required p
 
 ### Setting up a Jenkins master
 
-For the following steps you will need a server are an other machine which has Docker installed and configured.
+For the following steps you will need a server are another machine which has Docker installed and configured.
 
-To get started, initialize Cx Server by using this `docker run` command:
+To get started, initialize the Cx Server by using this `docker run` command:
 
 ```sh
 docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
@@ -47,7 +46,7 @@ To add an agent to the Jenkins master, please make sure to fulfil the following 
 - Docker installed on this server
 
 The connection between the master and the agents will be established via ssh.
-As the Jenkins master runs in a Docker container, the ssh setup steps, such as creating and storing a private/public key pair or maintaining the konwn host file has to be done inside this container.
+As the Jenkins master runs in a Docker container, the ssh setup steps, such as creating and storing a private/public key pair or maintaining the konwn hosts file has to be done inside this container.
 
 To execute these steps inside the container, execute the following command on the server where the Jenkins master is running:
 
@@ -55,7 +54,7 @@ To execute these steps inside the container, execute the following command on th
 docker exec -it cx-jenkins-master bash
 ```
 
-Inside the container make sure to be able to access the server where the Jenkins agent should run by running the following command. As user you should use a user which is able to execute `docker` commands, i.e. starting a docker container.
+Inside the container make sure to be able to access the server where the Jenkins agent should be started by running the following command. As user you should use a user which is able to execute `docker` commands, i.e. starting a docker container.
 
 ```bash
 ssh <docker-user>@<host/ip>
@@ -63,9 +62,9 @@ ssh <docker-user>@<host/ip>
 
 To be able to access the agent via ssh with the command above you might need to generate a new ssh key with `ssh-keygen`, store it in the `.ssh` folder and register the public key on the agent server.
 You might also need to add server’s fingerprint to the list of known hosts.
-For more information arround establishing an ssh connection please consult the [ssh documentation][ssh-documentation].
+For more information around establishing a ssh connection please consult the [ssh documentation][ssh-documentation].
 
-To setup the a new Jenkins agent, open "Manage Jenkins" > "Manage Nodes" > "New Nodes" and create a new "Permanent Agent"
+To setup a new Jenkins agent, open "Manage Jenkins" > "Manage Nodes" > "New Nodes" and create a new "Permanent Agent"
 
 Please define `/var/jenkins_home` as "Remote root directory".
 The launch method has to be "Launch agent via execution of command on the master" and the command should be:
