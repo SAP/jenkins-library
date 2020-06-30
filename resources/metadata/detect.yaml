@@ -128,7 +128,7 @@ spec:
         type: string
         mandatory: false
         default:
-        - BLOCKER
+          BLOCKER
         possibleValues:
         - ALL
         - BLOCKER

@@ -93,7 +93,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--blackduck.timeout=6000`, `--blackduck.trust.cert=true`, `--detect.report.timeout=4800`, `--logging.level.com.synopsys.integration=DEBUG`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server url to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringVar(&stepConfig.Groups, "groups", os.Getenv("PIPER_groups"), "Users groups to be assigned for the Project")
-	cmd.Flags().StringVar(&stepConfig.FailOn, "failOn", `[BLOCKER]`, "Mark the current build as fail based the policy categories. A comma seperated list can be provided to fail on multiple categories, for eg. 'BLOCKER,CRITICAL,MAJOR'")
+	cmd.Flags().StringVar(&stepConfig.FailOn, "failOn", `BLOCKER`, "Mark the current build as fail based the policy categories. A comma seperated list can be provided to fail on multiple categories, for eg. 'BLOCKER,CRITICAL,MAJOR'")
 
 	cmd.MarkFlagRequired("apiToken")
 	cmd.MarkFlagRequired("projectName")
