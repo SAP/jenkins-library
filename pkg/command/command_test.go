@@ -52,7 +52,7 @@ func TestShellRun(t *testing.T) {
 
 func TestExecutableRun(t *testing.T) {
 
-	t.Run("test shell", func(t *testing.T) {
+	t.Run("test executable", func(t *testing.T) {
 		ExecCommand = helperCommand
 		defer func() { ExecCommand = exec.Command }()
 		stdout := new(bytes.Buffer)
@@ -61,6 +61,8 @@ func TestExecutableRun(t *testing.T) {
 		t.Run("success case", func(t *testing.T) {
 			ex := Command{stdout: stdout, stderr: stderr}
 			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
+
+			assert.Equal(t, 0, ex.GetExitCode())
 
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
@@ -180,6 +182,28 @@ func TestParseConsoleErrors(t *testing.T) {
 		assert.Equal(t, test.expectedCategory, log.GetErrorCategory(), test.consoleLine)
 	}
 	log.SetErrorCategory(log.ErrorUndefined)
+}
+
+func TestMatchPattern(t *testing.T) {
+	tt := []struct {
+		text     string
+		pattern  string
+		expected bool
+	}{
+		{text: "", pattern: "", expected: true},
+		{text: "simple test", pattern: "", expected: false},
+		{text: "simple test", pattern: "no", expected: false},
+		{text: "simple test", pattern: "simple", expected: true},
+		{text: "simple test", pattern: "test", expected: true},
+		{text: "advanced pattern test", pattern: "advanced * test", expected: true},
+		{text: "advanced pattern failed", pattern: "advanced * test", expected: false},
+		{text: "advanced pattern with multiple placeholders", pattern: "advanced * with * placeholders", expected: true},
+		{text: "advanced pattern lacking multiple placeholders", pattern: "advanced * with * placeholders", expected: false},
+	}
+
+	for _, test := range tt {
+		assert.Equalf(t, test.expected, matchPattern(test.text, test.pattern), test.text)
+	}
 }
 
 func TestCmdPipes(t *testing.T) {
