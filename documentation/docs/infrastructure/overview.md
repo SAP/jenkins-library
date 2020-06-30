@@ -78,7 +78,7 @@ The following picture shows an example configuration.
 ## Kubernetes (Experimental)
 
 Hosting Jenkins master and agents means that we bind the required resources to the purpose of executing builds.
-There are good chances that, these resources stay idle for the most part of the day, i.e. if we have high peak loads.
+There are good chances that, these resources stay idle for the most part of the day, i.e. if you have high peak loads.
 Autoscaling of the infrastructure solves such a problem.
 Instead of reserving the resources proactively, the pipeline creates the Jenkins agents dynamically on a Kubernetes cluster during the execution.
 Once the agent completes the dedicated task, it is deleted and the resources are freed.
