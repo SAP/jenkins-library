@@ -100,11 +100,29 @@ func traverse(node interface{}, replacements map[string]interface{}) (interface{
 		return t, false, nil
 	case map[string]interface{}:
 		return handleMap(t, replacements)
+	case map[interface{}]interface{}:
+		m, err := keysToString(t)
+		if err != nil {
+			return nil, false, err
+		}
+		return handleMap(m, replacements)
 	case []interface{}:
 		return handleSlice(t, replacements)
 	default:
 		return nil, false, fmt.Errorf("Unkown type received: '%v' (%v)", reflect.TypeOf(node), node)
 	}
+}
+
+func keysToString(m map[interface{}]interface{}) (map[string]interface{}, error) {
+	result := map[string]interface{}{}
+	for key, val := range m {
+		if k, ok := key.(string); ok {
+			result[k] = val
+		} else {
+			return nil, fmt.Errorf("Cannot downcast'%v' to string. Type: %v)", reflect.TypeOf(key), key)
+		}
+	}
+	return result, nil
 }
 
 func handleString(value string, replacements map[string]interface{}) (interface{}, bool, error) {
