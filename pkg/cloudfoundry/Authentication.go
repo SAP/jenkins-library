@@ -71,14 +71,14 @@ func Login(options LoginOptions) error {
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
 
-		var cfLoginScript = []string{
+		var cfLoginScript = append([]string{
 			"login",
 			"-a", options.CfAPIEndpoint,
 			"-o", options.CfOrg,
 			"-s", options.CfSpace,
 			"-u", options.Username,
 			"-p", options.Password,
-		}
+		}, options.CfLoginOpts...)
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
@@ -115,4 +115,5 @@ type LoginOptions struct {
 	Username      string
 	Password      string
 	CfAPIOpts     []string
+	CfLoginOpts   []string
 }

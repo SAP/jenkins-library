@@ -158,6 +158,50 @@ func TestCloudFoundryLogin(t *testing.T) {
 			}, m.Calls)
 		}
 	})
+
+	t.Run("CF Login: with additional login options", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.StdoutReturn = map[string]string{"cf api:*": "Not logged in"}
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+			CfLoginOpts: []string{
+				// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
+				"--skip-ssl-validation",
+				"--origin", "ldap",
+			},
+			CfAPIOpts: []string{
+				"--skip-ssl-validation",
+			},
+		}
+		err := Login(cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"api",
+					"https://api.endpoint.com",
+					"--skip-ssl-validation",
+				}},
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"login",
+					"-a", "https://api.endpoint.com",
+					"-o", "testOrg",
+					"-s", "testSpace",
+					"-u", "testUser",
+					"-p", "testPassword",
+					"--skip-ssl-validation",
+					"--origin", "ldap",
+				}},
+			}, m.Calls)
+		}
+	})
+
 }
 
 func TestCloudFoundryLogout(t *testing.T) {
