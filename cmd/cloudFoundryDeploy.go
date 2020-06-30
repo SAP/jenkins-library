@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/yaml"
+	"github.com/elliotchance/orderedmap"
 	"github.com/pkg/errors"
 	"io"
 	"os"
@@ -397,7 +398,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 
 		} else {
 
-			manifestVariables, err := crazyConvert(toParameterMap(config.ManifestVariables))
+			manifestVariables, err := toStringInterfaceMap(toParameterMap(config.ManifestVariables))
 			if err != nil {
 				return "", []string{}, []string{}, err
 			}
@@ -424,16 +425,16 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 	return "blue-green-deploy", deployOptions, smokeTest, nil
 }
 
-func toParameterMap(parameters []string) (map[string]string, error) {
+func toParameterMap(parameters []string) (*orderedmap.OrderedMap, error) {
 
-	parameterMap := map[string]string{}
+	parameterMap := orderedmap.NewOrderedMap()
 
 	for _, p := range parameters {
 		keyVal := strings.Split(p, "=")
 		if len(keyVal) != 2 {
 			return nil, fmt.Errorf("Invalid parameter provided (expected format <key>=<val>: '%s'", p)
 		}
-		parameterMap[keyVal[0]] = keyVal[1]
+		parameterMap.Set(keyVal[0], keyVal[1])
 	}
 	return parameterMap, nil
 }
@@ -480,13 +481,22 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 	return "push", deployOptions, []string{}, nil
 }
 
-func crazyConvert(in map[string]string, err error) (map[string]interface{}, error) {
+func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]interface{}, error) {
 
 	out := map[string]interface{}{}
 
 	if err == nil {
-		for key, val := range in {
-			out[key] = val
+		for _, key := range in.Keys() {
+			if k, ok := key.(string); ok {
+				val, exists := in.Get(key)
+				if exists {
+					out[k] = val
+				} else {
+					return map[string]interface{}{}, fmt.Errorf("No entry found for '%v'", key)
+				}
+			} else {
+				return map[string]interface{}{}, fmt.Errorf("Cannot cast key '%v' to string", key)
+			}
 		}
 	}
 
@@ -501,8 +511,13 @@ func getVarOptions(vars []string) ([]string, error) {
 
 	varsResult := []string{}
 
-	for key, val := range varsMap {
-		varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, quoteAndBashEscape(val)))
+	for _, key := range varsMap.Keys() {
+		val, _ := varsMap.Get(key)
+		if v, ok := val.(string); ok {
+			varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, quoteAndBashEscape(v)))
+		} else {
+			return []string{}, fmt.Errorf("Cannot cast '%v' to string", val)
+		}
 	}
 	return varsResult, nil
 }
