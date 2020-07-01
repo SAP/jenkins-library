@@ -4,6 +4,7 @@ import com.sap.piper.DeploymentType
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.k8s.ContainerMap
 
 import groovy.transform.Field
 
