@@ -5,8 +5,6 @@ nav:
     - 'Configuration': configuration.md
     - 'Infrastructure':
         - 'Overview': infrastucture/overview.md
-        - 'CX Server': infrastucture/cxserver.md
-        - 'Kubernetes': infrastucture/kubernetes.md
         - 'Custom Jenkins Setup': infrastucture/customjenkins.md
     - 'Pipelines':
         - 'General purpose pipeline':
