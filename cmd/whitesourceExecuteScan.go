@@ -258,7 +258,7 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 		// Make sure the project was updated in whitesource backend before downloading any reports
 		layout := "2006-01-02 15:04:05 +0000"
 		lastUpdatedTime, err := time.Parse(layout, project.LastUpdateDate) // parse string to time.Time
-		if currentTime.Sub(lastUpdatedTime) < 10*time.Second { // if currentTime - projectLastUpdated < 10s
+		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {             // if currentTime - projectLastUpdated < 10s
 			break // done polling
 		}
 		log.Entry().Info("Project still not updated in WS backend, waiting 10s and trying again...")
@@ -268,7 +268,6 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
-// returns slice of Path types for piper reporting
 func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 
