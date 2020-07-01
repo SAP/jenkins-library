@@ -61,6 +61,7 @@ func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
 	sentryHook.Event.Message = entry.Message
 	errValue := ""
 	sentryHook.tags["correlationId"] = sentryHook.correlationID
+	sentryHook.tags["category"] = GetErrorCategory().String()
 	for k, v := range entry.Data {
 		if k == "stepName" || k == "category" {
 			sentryHook.tags[k] = fmt.Sprint(v)
