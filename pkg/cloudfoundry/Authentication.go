@@ -23,7 +23,7 @@ func LoginCheck(options LoginOptions) (bool, error) {
 	}
 
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
-	var cfCheckLoginScript = []string{"api", options.CfAPIEndpoint}
+	var cfCheckLoginScript = append([]string{"api", options.CfAPIEndpoint}, options.CfAPIOpts...)
 
 	var cfLoginBytes bytes.Buffer
 	c.Stdout(&cfLoginBytes)
@@ -71,7 +71,14 @@ func Login(options LoginOptions) error {
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
 
-		var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
+		var cfLoginScript = append([]string{
+			"login",
+			"-a", options.CfAPIEndpoint,
+			"-o", options.CfOrg,
+			"-s", options.CfSpace,
+			"-u", options.Username,
+			"-p", options.Password,
+		}, options.CfLoginOpts...)
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
@@ -107,4 +114,6 @@ type LoginOptions struct {
 	CfSpace       string
 	Username      string
 	Password      string
+	CfAPIOpts     []string
+	CfLoginOpts   []string
 }
