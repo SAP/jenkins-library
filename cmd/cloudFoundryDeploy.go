@@ -174,11 +174,13 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRun
 		if err != nil {
 			return errors.Wrapf(err, "Cannot prepare cf native deployment. DeployType '%s'", deployType)
 		}
-	} else {
+	} else if deployType == "standard" {
 		deployCommand, deployOptions, smokeTestScript, err = prepareCfPushCfNativeDeploy(config)
 		if err != nil {
 			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", deployType)
 		}
+	} else {
+		return fmt.Errorf("Invalid deploy type received: '%s'. Supported values: %v", deployType, []string{"blue-green", "standard"})
 	}
 
 	if len(config.AppName) == 0 {
