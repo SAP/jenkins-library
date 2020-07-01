@@ -77,9 +77,9 @@ void call(parameters = [:]) {
         def index = 1
         def deployments = [:]
 
-        if (parameters.cfCreateServices) {
+        if (config.cfCreateServices) {
             def createServices = [:]
-            for (int i = 0; i < parameters.cfCreateServices.size(); i++) {
+            for (int i = 0; i < config.cfCreateServices.size(); i++) {
                 Map createServicesConfig = parameters.cfCreateServices[i]
                 createServices["Service Creation ${i + 1}"] = {
                     cloudFoundryCreateService(
