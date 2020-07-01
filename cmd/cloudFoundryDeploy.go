@@ -311,40 +311,36 @@ func getAppNameOrFail(config *cloudFoundryDeployOptions, manifestFile string) (s
 	if err != nil {
 		return "", err
 	}
-	if fileExists {
-		m, err := _getManifest(manifestFile)
+	if !fileExists {
+		return "", fmt.Errorf("Manifest file '%s' not found", manifestFile)
+	}
+	m, err := _getManifest(manifestFile)
+	if err != nil {
+		return "", err
+	}
+	apps, err := m.GetApplications()
+	if err != nil {
+		return "", err
+	}
+	if len(apps) > 0 {
+		namePropertyExists, err := m.ApplicationHasProperty(0, "name")
 		if err != nil {
 			return "", err
 		}
-		apps, err := m.GetApplications()
-		if err != nil {
-			return "", err
-		}
-		if len(apps) > 0 {
-			namePropertyExists, err := m.ApplicationHasProperty(0, "name")
+		if namePropertyExists {
+			appName, err := m.GetApplicationProperty(0, "name")
 			if err != nil {
 				return "", err
 			}
-			if namePropertyExists {
-				appName, err := m.GetApplicationProperty(0, "name")
-				if err != nil {
-					return "", err
-				}
-				if name, ok := appName.(string); ok {
-					if len(name) > 0 {
-						return name, nil
-					}
+			if name, ok := appName.(string); ok {
+				if len(name) > 0 {
+					return name, nil
 				}
 			}
 		}
-
-		return "", fmt.Errorf("No appName available in manifest '%s'", manifestFile)
-
-	} else {
-		return "", fmt.Errorf("Manifest file '%s' not found", manifestFile)
 	}
 
-	return "", fmt.Errorf("Cannot resolve app name")
+	return "", fmt.Errorf("No appName available in manifest '%s'", manifestFile)
 }
 
 func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
