@@ -88,7 +88,7 @@ class MulticloudDeployTest extends BasePiperTest {
             ]
         ]
 
-        helper.registerAllowedMethod('echo', [CharSequence.class], {s -> println(s)})
+        helper.registerAllowedMethod('echo', [CharSequence.class], {})
 
     }
 
