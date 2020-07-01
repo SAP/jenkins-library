@@ -156,12 +156,7 @@ type deployConfig struct {
 
 func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRunner) error {
 
-	manifestFile := config.Manifest
-	if len(manifestFile) == 0 {
-		manifestFile = "manifest.yml"
-	}
-
-	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config, manifestFile)
+	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
 	if err != nil {
 		return err
@@ -190,7 +185,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRun
 		// Basically we try to retrieve the app name from the manifest here since it is not provided from the config
 		// Later on we don't use the app name retrieved here since we can use it from the manifest.
 		// Here we simply fail early when the app name is not provided and also not contained in the manifest.
-		appName, err = getAppNameOrFail(config, manifestFile)
+		appName, err = getAppNameOrFail(config)
 		if err != nil {
 			return err
 		}
@@ -198,7 +193,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRun
 
 	log.Entry().Infof("CF native deployment ('%s') with:", config.DeployType)
 	log.Entry().Infof("cfAppName='%s'", appName)
-	log.Entry().Infof("cfManifest='%s'", manifestFile)
+	log.Entry().Infof("cfManifest='%s'", config.Manifest)
 	log.Entry().Infof("cfManifestVariables: '%v'", config.ManifestVariables)
 	log.Entry().Infof("cfManifestVariablesFiles: '%v'", config.ManifestVariablesFiles)
 	log.Entry().Infof("cfdeployDockerImage: '%s'", config.DeployDockerImage)
@@ -223,7 +218,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRun
 		DeployCommand:   deployCommand,
 		DeployOptions:   deployOptions,
 		AppName:         config.AppName,
-		ManifestFile:    manifestFile,
+		ManifestFile:    config.Manifest,
 		SmokeTestScript: smokeTestScript,
 	}
 
@@ -312,23 +307,25 @@ func getManifest(name string) (cloudfoundry.Manifest, error) {
 	return cloudfoundry.ReadManifest(name)
 }
 
-func getAppNameOrFail(config *cloudFoundryDeployOptions, manifestFile string) (string, error) {
+func getAppNameOrFail(config *cloudFoundryDeployOptions) (string, error) {
 
 	if len(config.AppName) > 0 {
 		return config.AppName, nil
 	}
-
 	if config.DeployType == "blue-green" {
 		return "", fmt.Errorf("Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)")
 	}
-	fileExists, err := fileUtils.FileExists(manifestFile)
+	if len(config.Manifest) == 0 {
+		return "", fmt.Errorf("Manifest file not provided in configuration. Cannot retrieve app name")
+	}
+	fileExists, err := fileUtils.FileExists(config.Manifest)
 	if err != nil {
 		return "", err
 	}
 	if !fileExists {
-		return "", fmt.Errorf("Manifest file '%s' not found", manifestFile)
+		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", config.Manifest)
 	}
-	m, err := _getManifest(manifestFile)
+	m, err := _getManifest(config.Manifest)
 	if err != nil {
 		return "", err
 	}
@@ -354,7 +351,7 @@ func getAppNameOrFail(config *cloudFoundryDeployOptions, manifestFile string) (s
 		}
 	}
 
-	return "", fmt.Errorf("No appName available in manifest '%s'", manifestFile)
+	return "", fmt.Errorf("No appName available in manifest '%s'", config.Manifest)
 }
 
 func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
@@ -561,8 +558,12 @@ func quoteAndBashEscape(s string) string {
 	return strings.ReplaceAll(s, "'", escapedSingleQuote)
 }
 
-func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions, manifestFile string) (string, error) {
+func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
 
+	manifestFile := config.Manifest
+	if len(manifestFile) == 0 {
+		manifestFile = "manifest.yml"
+	}
 	var manifestFileExists bool
 	var err error
 
