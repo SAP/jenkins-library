@@ -146,7 +146,7 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - image: devxci/mbtci:1.0.14
+    - image: devxci/mbtci:1.0.14.1
       imagePullPolicy: Always
       conditions:
         - conditionRef: strings-equal

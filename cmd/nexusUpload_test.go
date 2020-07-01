@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
@@ -46,7 +47,7 @@ func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 	return m.cpe[path]
 }
 
-func (m *mockUtilsBundle) getExecRunner() execRunner {
+func (m *mockUtilsBundle) getExecRunner() command.ExecRunner {
 	return &m.execRunner
 }
 

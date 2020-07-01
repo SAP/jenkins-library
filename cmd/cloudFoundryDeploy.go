@@ -55,7 +55,7 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 	}
 }
 
-func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command execRunner) error {
+func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner) error {
 
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
@@ -113,7 +113,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 	return nil
 }
 
-func handleMTADeployment(config *cloudFoundryDeployOptions, command execRunner) error {
+func handleMTADeployment(config *cloudFoundryDeployOptions, command command.ExecRunner) error {
 
 	mtarFilePath := config.MtaPath
 
@@ -154,7 +154,7 @@ type deployConfig struct {
 	SmokeTestScript []string
 }
 
-func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRunner) error {
+func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command.ExecRunner) error {
 
 	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config)
 
@@ -230,7 +230,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRun
 	return deployCfNative(myDeployConfig, config, additionalEnvironment, command)
 }
 
-func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions, additionalEnvironment []string, command execRunner) error {
+func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions, additionalEnvironment []string, cmd command.ExecRunner) error {
 
 	deployStatement := []string{
 		deployConfig.DeployCommand,
@@ -267,7 +267,7 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 		})...)
 	}
 
-	stopOldAppIfRunning := func(command execRunner) error {
+	stopOldAppIfRunning := func(_cmd command.ExecRunner) error {
 
 		if config.KeepOldInstance && config.DeployType == "blue-green" {
 			oldAppName := deployConfig.AppName + "-old"
@@ -275,15 +275,15 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 
 			var buff bytes.Buffer
 
-			oldOut := command.Stdout
+			oldOut := _cmd.Stdout
 			_ = oldOut
-			command.Stdout(&buff)
+			_cmd.Stdout(&buff)
 
 			defer func() {
-				command.Stdout(log.Writer())
+				_cmd.Stdout(log.Writer())
 			}()
 
-			err := command.RunExecutable("cf", "stop", oldAppName)
+			err := _cmd.RunExecutable("cf", "stop", oldAppName)
 
 			if err != nil {
 
@@ -302,7 +302,7 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 		return nil
 	}
 
-	return cfDeploy(config, deployStatement, additionalEnvironment, stopOldAppIfRunning, command)
+	return cfDeploy(config, deployStatement, additionalEnvironment, stopOldAppIfRunning, cmd)
 }
 
 func getManifest(name string) (cloudfoundry.Manifest, error) {
@@ -604,7 +604,7 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 	return config.DeployType, nil
 }
 
-func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command execRunner) error {
+func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command command.ExecRunner) error {
 
 	deployCommand := "deploy"
 	deployParams := []string{}
@@ -666,8 +666,8 @@ func cfDeploy(
 	config *cloudFoundryDeployOptions,
 	cfDeployParams []string,
 	additionalEnvironment []string,
-	postDeployAction func(command execRunner) error,
-	command execRunner) error {
+	postDeployAction func(command command.ExecRunner) error,
+	command command.ExecRunner) error {
 
 	const cfLogFile = "cf.log"
 	var err error
