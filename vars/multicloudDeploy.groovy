@@ -20,15 +20,16 @@ import static com.sap.piper.Prerequisites.checkScript
     'parallelExecution'
 ]
 
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /** Defines Cloud Foundry service instances to create as part of the deployment.*/
+    'cfCreateServices'
+])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
     /** The source file to deploy to SAP Cloud Platform.*/
-    'source',
-    /** Defines Cloud Foundry service instances to create as part of the deployment.*/
-    'cfCreateServices'
+    'source'
 ])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
@@ -48,6 +49,7 @@ void call(parameters = [:]) {
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
 
