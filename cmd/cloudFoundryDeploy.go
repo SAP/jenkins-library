@@ -689,7 +689,8 @@ func cfDeploy(
 		CfSpace:       config.Space,
 		Username:      config.Username,
 		Password:      config.Password,
-		// TODO: set additional cf api and cf login params when corresponding PR has been merged
+		CfAPIOpts:     strings.Split(" ", config.APIParameters),
+		CfLoginOpts:   strings.Split(" ", config.LoginParameters),
 	})
 
 	if err == nil {
