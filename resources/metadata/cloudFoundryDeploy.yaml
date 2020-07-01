@@ -89,7 +89,7 @@ spec:
         - STEPS
         mandatory: false
       - name: loginParameters
-        type: bool
+        type: string
         description: "Addition command line options for cf login command. No escaping/quoting is performed. Not recommanded for productive environments."
         scope:
         - PARAMETERS
