@@ -4,8 +4,8 @@ nav:
     - 'Getting Started With Project "Piper"' : guidedtour.md
     - 'Configuration': configuration.md
     - 'Infrastructure':
-        - 'Overview': infrastucture/overview.md
-        - 'Custom Jenkins Setup': infrastucture/customjenkins.md
+        - 'Overview': infrastructure/overview.md
+        - 'Custom Jenkins Setup': infrastructure/customjenkins.md
     - 'Pipelines':
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
