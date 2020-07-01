@@ -1,10 +1,10 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
 import com.sap.piper.DeploymentType
-import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.k8s.ContainerMap
 
 import groovy.transform.Field
 
@@ -13,22 +13,36 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Defines the targets to deploy on cloudFoundry.*/
+    /** Defines the targets to deploy on Cloud Foundry.*/
     'cfTargets',
     /** Defines the targets to deploy on neo.*/
-    'neoTargets'
+    'neoTargets',
+    /** Executes the deployments in parallel.*/
+    'parallelExecution'
 ]
 
-@Field Set STEP_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Defines Cloud Foundry service instances to create as part of the deployment.
+     * This is a _list_ of _objects_ with the following properties each:
+     * - apiEndpoint
+     * - credentialsId
+     * - serviceManifest
+     * - manifestVariablesFiles
+     * - org
+     * - space
+     */
+    'cfCreateServices'
+])
 
-@Field Set PARAMETER_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
-    /** Executes the deployments in parallel.*/
-    'parallelExecution',
     /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
+
+@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
 
 /**
  * Deploys an application to multiple platforms (Cloud Foundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
@@ -45,7 +59,9 @@ void call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
 
         Map config = configHelper.use()
@@ -54,13 +70,34 @@ void call(parameters = [:]) {
             .withMandatoryProperty('source', null, { config.neoTargets })
 
         utils.pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'enableZeroDowntimeDeployment',
-            stepParam1: config.enableZeroDowntimeDeployment
+            stepParam1   : config.enableZeroDowntimeDeployment
         ], config)
 
         def index = 1
         def deployments = [:]
+
+        if (config.cfCreateServices) {
+            def createServices = [:]
+            for (int i = 0; i < config.cfCreateServices.size(); i++) {
+                Map createServicesConfig = config.cfCreateServices[i]
+                createServices["Service Creation ${i + 1}"] = {
+                    cloudFoundryCreateService(
+                        script: script,
+                        cloudFoundry: [
+                            apiEndpoint           : createServicesConfig.apiEndpoint,
+                            credentialsId         : createServicesConfig.credentialsId,
+                            serviceManifest       : createServicesConfig.serviceManifest,
+                            manifestVariablesFiles: createServicesConfig.manifestVariablesFiles,
+                            org                   : createServicesConfig.org,
+                            space                 : createServicesConfig.space
+                        ]
+                    )
+                }
+            }
+            runClosures(config, createServices, "cloudFoundryCreateService")
+        }
 
         if (config.cfTargets) {
 
@@ -123,7 +160,7 @@ void call(parameters = [:]) {
 
                 Closure deployment = {
 
-                    neoDeploy (
+                    neoDeploy(
                         script: script,
                         warAction: deploymentType,
                         source: config.source,
@@ -140,17 +177,21 @@ void call(parameters = [:]) {
             error "Deployment skipped because no targets defined!"
         }
 
-        echo "Executing deployments"
-        if (config.parallelExecution) {
-            echo "Executing deployments in parallel"
-            parallel deployments
-        } else {
-            echo "Executing deployments in sequence"
-            def closuresToRun = deployments.values().asList()
-            Collections.shuffle(closuresToRun) // Shuffle the list so no one tries to rely on the order of execution
-            for (int i = 0; i < closuresToRun.size(); i++) {
-                (closuresToRun[i] as Closure)()
-            }
+        runClosures(config, deployments, "deployments")
+
+    }
+}
+
+def runClosures(Map config, Map toRun, String label = "closures") {
+    echo "Executing $label"
+    if (config.parallelExecution) {
+        echo "Executing $label in parallel"
+        parallel toRun
+    } else {
+        echo "Executing $label in sequence"
+        def closuresToRun = toRun.values().asList()
+        for (int i = 0; i < closuresToRun.size(); i++) {
+            (closuresToRun[i] as Closure)()
         }
     }
 }

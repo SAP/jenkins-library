@@ -1,9 +1,3 @@
-import com.sap.piper.JenkinsUtils
-import com.sap.piper.Utils
-
-import hudson.AbortException
-
-import org.junit.Assert
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
 import org.junit.Before
@@ -14,13 +8,13 @@ import org.junit.rules.RuleChain
 
 import util.*
 
-
 class MulticloudDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsMockStepRule neoDeployRule = new JenkinsMockStepRule(this, 'neoDeploy')
     private JenkinsMockStepRule cloudFoundryDeployRule = new JenkinsMockStepRule(this, 'cloudFoundryDeploy')
+    private JenkinsMockStepRule cloudFoundryCreateServiceRule = new JenkinsMockStepRule(this, 'cloudFoundryCreateService')
     private JenkinsReadMavenPomRule readMavenPomRule = new JenkinsReadMavenPomRule(this, 'test/resources/deploy')
 
     private Map neo1 = [:]
@@ -39,6 +33,7 @@ class MulticloudDeployTest extends BasePiperTest {
         .around(stepRule)
         .around(neoDeployRule)
         .around(cloudFoundryDeployRule)
+        .around(cloudFoundryCreateServiceRule)
         .around(readMavenPomRule)
 
     @Before
@@ -115,6 +110,9 @@ class MulticloudDeployTest extends BasePiperTest {
                 ]
             ]
         ]
+
+        helper.registerAllowedMethod('echo', [CharSequence.class], {})
+
     }
 
     @Test
@@ -294,6 +292,72 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
+    }
+
+    @Test
+    void 'cfCreateServices calls cloudFoundryCreateService step with correct parameters'() {
+        stepRule.step.multicloudDeploy([
+            script          : nullScript,
+            cfCreateServices: [[apiEndpoint: 'http://mycf.org', serviceManifest: 'services-manifest.yml', manifestVariablesFiles: 'vars.yml', space: 'PerformanceTests', org: 'MyOrg', credentialsId: 'MyCred']],
+            source          : 'file.mtar'
+        ])
+
+        assert cloudFoundryCreateServiceRule.hasParameter('cloudFoundry', [
+            serviceManifest       : 'services-manifest.yml',
+            space                 : 'PerformanceTests',
+            org                   : 'MyOrg',
+            credentialsId         : 'MyCred',
+            apiEndpoint           : 'http://mycf.org',
+            manifestVariablesFiles: 'vars.yml'
+        ])
+    }
+
+    @Test
+    void 'cfCreateServices with parallelTestExecution defined in compatible parameter - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
+        nullScript.commonPipelineEnvironment.configuration.general['features'] = [parallelTestExecution: true]
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
+            source: 'file.mtar'
+        ])
+
+        assert closureRun != null
+    }
+
+    @Test
+    void 'cfCreateServices with parallelExecution defined - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
+        nullScript.commonPipelineEnvironment.configuration.general = [parallelExecution: true]
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
+            source: 'file.mtar'
+        ])
+
+        assert closureRun != null
     }
 
     @Test
