@@ -108,7 +108,6 @@ void call(parameters = [:]) {
                     }
                 } else {
                     deployments.put("Deployment ${index}", deployment)
-
                 }
                 index++
             }
