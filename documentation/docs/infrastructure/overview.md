@@ -113,8 +113,8 @@ If you choose to go this path, follow the [Custom Jenkins Setup guide][resources
 **Note:** This option is not supported for SAP Cloud SDK projects.
 
 [devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
-[docker-images]: https://hub.docker.com/u/ppiper
-[resources-custom-jenkins]:          infrastructure/customjenkins.md
+[docker-images]:                     https://hub.docker.com/u/ppiper
+[resources-custom-jenkins]:          customjenkins.md
 [build-agents]:                      https://wiki.jenkins.io/display/jenkins/distributed+builds
 [ssh-documentation]:                 https://www.openssh.com/manual.html
 [jenkins-helm]:                      https://github.com/helm/charts/tree/master/stable/jenkins
