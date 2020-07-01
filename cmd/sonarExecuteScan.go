@@ -70,7 +70,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = "true"
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
 	if len(config.Host) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
 	}
@@ -202,7 +202,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
-func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) error {
+func loadCertificates(certificateString string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
