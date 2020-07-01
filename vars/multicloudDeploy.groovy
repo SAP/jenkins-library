@@ -41,6 +41,7 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
+        def stageName = parameters.stage ?: env.STAGE_NAME
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -66,11 +67,19 @@ void call(parameters = [:]) {
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
             def deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
 
+            // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+            // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && deploymentType == "blue-green"
+
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
                 def target = config.cfTargets[i]
 
                 Closure deployment = {
+                    Utils deploymentUtils = new Utils()
+                    if (runInIsolatedWorkspace) {
+                        deploymentUtils.unstashStageFiles(script, stageName)
+                    }
 
                     cloudFoundryDeploy(
                         script: script,
@@ -81,8 +90,25 @@ void call(parameters = [:]) {
                         mtaPath: script.commonPipelineEnvironment.mtarFilePath,
                         deployTool: deployTool
                     )
+                    if (runInIsolatedWorkspace) {
+                        deploymentUtils.stashStageFiles(script, stageName)
+                    }
                 }
-                deployments.put("Deployment ${index}", deployment)
+                if (runInIsolatedWorkspace){
+                    deployments["Deployment ${index}"] = {
+                        if (env.POD_NAME) {
+                            dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+                                deployment.call()
+                            }
+                        } else {
+                            node(env.NODE_NAME) {
+                                deployment.call()
+                            }
+                        }
+                    }
+                } else {
+                    deployments.put("Deployment ${index}", deployment)
+                }
                 index++
             }
         }

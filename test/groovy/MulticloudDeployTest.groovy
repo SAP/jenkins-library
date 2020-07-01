@@ -4,6 +4,8 @@ import com.sap.piper.Utils
 import hudson.AbortException
 
 import org.junit.Assert
+import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,6 +27,9 @@ class MulticloudDeployTest extends BasePiperTest {
     private Map neo2 = [:]
     private Map cloudFoundry1 = [:]
     private Map cloudFoundry2 = [:]
+    private boolean executedOnKubernetes = false
+    private boolean executedOnNode = false
+    private boolean executedInParallel = false
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -38,6 +43,21 @@ class MulticloudDeployTest extends BasePiperTest {
 
     @Before
     void init() {
+        helper.registerAllowedMethod("deleteDir", [], null)
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {params, body ->
+            executedOnKubernetes = true
+            body()
+        })
+        helper.registerAllowedMethod('node', [String.class, Closure.class], {s, body ->
+            executedOnNode = true
+            body()
+        })
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            map.each {key, value ->
+                value()
+            }
+            executedInParallel = true
+        })
 
         neo1 = [
                   host: 'test.deploy.host1.com',
@@ -276,4 +296,50 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
+    @Test
+    void multicloudParallelOnK8sTest() {
+        binding.variables.env.POD_NAME = "name"
+
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            enableZeroDowntimeDeployment: true,
+            parallelExecution           : true,
+            source                      : 'file.mtar'
+        ])
+
+        assertTrue(executedInParallel)
+        assertTrue(executedOnKubernetes)
+        assertFalse(executedOnNode)
+
+    }
+
+    @Test
+    void multicloudParallelOnNodeTest() {
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            enableZeroDowntimeDeployment: true,
+            parallelExecution           : true,
+            source                      : 'file.mtar'
+        ])
+
+        assertTrue(executedInParallel)
+        assertTrue(executedOnNode)
+        assertFalse(executedOnKubernetes)
+
+    }
+
+    @Test
+    void multicloudParallelCfStandardDeployTest() {
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            enableZeroDowntimeDeployment: false,
+            parallelExecution           : true,
+            source                      : 'file.mtar'
+        ])
+
+        assertTrue(executedInParallel)
+        assertFalse(executedOnNode)
+        assertFalse(executedOnKubernetes)
+
+    }
 }
