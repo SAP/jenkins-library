@@ -26,7 +26,7 @@ type cloudFoundryDeployOptions struct {
 	DockerPassword           string   `json:"dockerPassword,omitempty"`
 	DockerUsername           string   `json:"dockerUsername,omitempty"`
 	KeepOldInstance          bool     `json:"keepOldInstance,omitempty"`
-	LoginParameters          bool     `json:"loginParameters,omitempty"`
+	LoginParameters          string   `json:"loginParameters,omitempty"`
 	Manifest                 string   `json:"manifest,omitempty"`
 	ManifestVariables        []string `json:"manifestVariables,omitempty"`
 	ManifestVariablesFiles   []string `json:"manifestVariablesFiles,omitempty"`
@@ -160,7 +160,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "dockerPassword")
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "dockerUserName")
 	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.")
-	cmd.Flags().BoolVar(&stepConfig.LoginParameters, "loginParameters", false, "Addition command line options for cf login command. No escaping/quoting is performed. Not recommanded for productive environments.")
+	cmd.Flags().StringVar(&stepConfig.LoginParameters, "loginParameters", os.Getenv("PIPER_loginParameters"), "Addition command line options for cf login command. No escaping/quoting is performed. Not recommanded for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", os.Getenv("PIPER_manifest"), "Defines the manifest to be used for deployment to Cloud Foundry.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a list of variables as key-value Map objects used for variable substitution within the file given by manifest. Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided by 'cf push --var key=value'. The order of the maps of variables given in the list is relevant in case there are conflicting variable names and value between maps contained within the list. In case of conflicts, the last specified map in the list will win. Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended to stick to one entry per map, and rather declare more maps within the list. The reason is that if a map in the list contains more than one key-value entry, and the entries are conflicting, the conflict resolution behavior is undefined (since map entries have no sequence). Note: variables defined via 'manifestVariables' always win over conflicting variables defined via any file given by 'manifestVariablesFiles' - no matter what is declared before. This is the same behavior as can be observed when using 'cf push --var' in combination with 'cf push --vars-file'.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
@@ -175,7 +175,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 
 	cmd.MarkFlagRequired("apiEndpoint")
-	cmd.MarkFlagRequired("deployType")
+	cmd.MarkFlagRequired("deployTool")
 	cmd.MarkFlagRequired("org")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("space")
@@ -237,7 +237,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -245,7 +245,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -276,7 +276,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name:        "loginParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
