@@ -136,7 +136,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-      - name: mtarPath
+      - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
         scope:

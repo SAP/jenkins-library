@@ -115,7 +115,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 
 func handleMTADeployment(config *cloudFoundryDeployOptions, command execRunner) error {
 
-	mtarFilePath := config.MtarPath
+	mtarFilePath := config.MtaPath
 
 	if len(mtarFilePath) == 0 {
 

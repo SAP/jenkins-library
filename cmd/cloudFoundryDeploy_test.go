@@ -759,7 +759,7 @@ func TestCfDeployment(t *testing.T) {
 
 		config.DeployTool = "mtaDeployPlugin"
 		config.DeployType = "blue-green"
-		config.MtarPath = "target/test.mtar"
+		config.MtaPath = "target/test.mtar"
 
 		defer func() {
 			filesMock.FileRemove("target/test.mtar")
@@ -957,8 +957,8 @@ func TestCfDeployment(t *testing.T) {
 		})
 
 		t.Run("mta config file from project config does not exist", func(t *testing.T) {
-			defer func() { config.MtarPath = "" }()
-			config.MtarPath = "my.mtar"
+			defer func() { config.MtaPath = "" }()
+			config.MtaPath = "my.mtar"
 			s := mock.ExecMockRunner{}
 			err := runCloudFoundryDeploy(&config, nil, nil, &s)
 			assert.EqualError(t, err, "mtar file 'my.mtar' retrieved from configuration does not exist")
