@@ -61,7 +61,7 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("golang", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
 	})
 
 	t.Run("maven", func(t *testing.T) {
