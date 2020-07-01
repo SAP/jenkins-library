@@ -60,17 +60,22 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
 
+	var deployTriggered bool
 	var err error
 
 	if config.DeployTool == "mtaDeployPlugin" {
+		deployTriggered = true
 		err = handleMTADeployment(config, command)
 	} else if config.DeployTool == "cf_native" {
+		deployTriggered = true
 		err = handleCFNativeDeployment(config, command)
 	} else {
 		log.Entry().Warningf("Found unsupported deployTool ('%s'). Skipping deployment. Supported deploy tools: 'mtaDeployPlugin', 'cf_native'", config.DeployTool)
 	}
 
-	prepareInflux(err == nil, config, influxData)
+	if deployTriggered {
+		prepareInflux(err == nil, config, influxData)
+	}
 
 	return err
 }
