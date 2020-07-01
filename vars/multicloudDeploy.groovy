@@ -80,7 +80,7 @@ void call(parameters = [:]) {
             def createServices = [:]
             for (int i = 0; i < parameters.cfCreateServices.size(); i++) {
                 Map createServicesConfig = parameters.cfCreateServices[i]
-                createServices["Service Creation ${i + 1 > 1 ? i + 1 : ''}"] = {
+                createServices["Service Creation ${i + 1}"] = {
                     cloudFoundryCreateService(
                         script: script,
                         cloudFoundry: [
