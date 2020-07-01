@@ -10,7 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-var c = command.Command{}
+var c command.ExecRunner = &command.Command{}
 
 //LoginCheck checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
