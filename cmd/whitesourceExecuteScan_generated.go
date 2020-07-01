@@ -145,7 +145,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
-	cmd.Flags().StringVar(&stepConfig.Includes, "includes", `**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts`, "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed")
+	cmd.Flags().StringVar(&stepConfig.Includes, "includes", `**/src/main/**/*.java **/*.py **/*.go **/*.js **/*.ts`, "Space separated list of file path patterns to include in the scan")
 	cmd.Flags().StringVar(&stepConfig.Excludes, "excludes", `tests/**/*.py **/src/test/**/*.java`, "Space separated list of file path patterns to exclude in the scan")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
 	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", ``, "Additional parameters passed to the Unified Agent command line.")

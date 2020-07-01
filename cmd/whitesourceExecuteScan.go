@@ -33,7 +33,7 @@ func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData)
 		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
 	}
 
-	// Generate a vulnerability report for all projects with version = config.ProjectVersion
+	// Generate a vulnerability report for all projects with version = config.ProjectVersion. Does not run a scan
 	if config.AggregateVersionWideReport {
 		if err := aggregateVersionWideLibraries(sys, &config); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide libraries")
@@ -166,6 +166,9 @@ func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
 // Executes a scan with the Whitesource Unified Agent
 // returns stdout buffer of the unified agent for token extraction in case of multi-module gradle project
 func executeUAScan(config *ScanOptions, cmd *command.Command) error {
+	log.Entry().Info("Starting whitesource sca with parameters: ", "java", "-jar", config.AgentFileName,
+		"-d", ".", "-c", config.ConfigFilePath, "-apiKey", config.OrgToken, "-userKey", config.UserToken,
+		"-project", config.ProjectName, "-product", config.ProductName, "-productVersion", config.ProductVersion)
 	return cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
@@ -253,18 +256,19 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 		}
 
 		// Make sure the project was updated in whitesource backend before downloading any reports
-		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
-		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {
-			//done polling
-			break
+		layout := "2006-01-02 15:04:05 +0000"
+		lastUpdatedTime, err := time.Parse(layout, project.LastUpdateDate) // parse string to time.Time
+		if currentTime.Sub(lastUpdatedTime) < 10*time.Second { // if currentTime - projectLastUpdated < 10s
+			break // done polling
 		}
-		log.Entry().Info("time since project was last updated > 10 seconds, polling status...")
-		time.Sleep(5 * time.Second)
+		log.Entry().Info("Project still not updated in WS backend, waiting 10s and trying again...")
+		time.Sleep(10 * time.Second)
 	}
 	return nil
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
+// returns slice of Path types for piper reporting
 func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 
@@ -359,19 +363,26 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	}
 	defer f.Close()
 
-	// Append additional config parameters to prevent multiple projects being generated
-	cfg := fmt.Sprintf("gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\nexcludes=%s", config.Excludes)
+	// Append additional config parameters to prevent multiple projects being generated when project is multi-module
+	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2"
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
 
-	// archiveExtractionDepth=0
+	// sets the "excludes" file patterns
+	cfg = fmt.Sprintf("excludes=%s", config.Excludes)
+	if _, err = f.WriteString(cfg); err != nil {
+		return err
+	}
+
+	// sets archiveExtractionDepth=0
 	if err := cmd.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
 		config.ConfigFilePath); err != nil {
 		return err
 	}
 
-	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
+	// sets the "includes" file patterns
+	config.Includes = strings.Replace(config.Includes, `/`, `\/`, -1) // escape the slashes for sed
 	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
 	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err

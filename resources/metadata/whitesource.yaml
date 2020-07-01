@@ -374,13 +374,13 @@ spec:
       default: -1
     - name: includes
       type: string
-      description: Space separated list of file path patterns to include in the scan, slashes must be escaped for sed
+      description: Space separated list of file path patterns to include in the scan
       mandatory: false
       scope:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: '**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts'
+      default: '**/src/main/**/*.java **/*.py **/*.go **/*.js **/*.ts'
     - name: excludes
       type: string
       description: Space separated list of file path patterns to exclude in the scan
