@@ -3,6 +3,7 @@ module github.com/SAP/jenkins-library
 go 1.13
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize/v2 v2.2.0
 	github.com/GoogleContainerTools/container-diff v0.15.0
 	github.com/Jeffail/gabs/v2 v2.5.1
 	github.com/Masterminds/goutils v1.1.0 // indirect
@@ -42,6 +43,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.5.1
 	go.mongodb.org/mongo-driver v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
+	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
