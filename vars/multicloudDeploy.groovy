@@ -80,7 +80,7 @@ void call(parameters = [:]) {
         if (config.cfCreateServices) {
             def createServices = [:]
             for (int i = 0; i < config.cfCreateServices.size(); i++) {
-                Map createServicesConfig = parameters.cfCreateServices[i]
+                Map createServicesConfig = config.cfCreateServices[i]
                 createServices["Service Creation ${i + 1}"] = {
                     cloudFoundryCreateService(
                         script: script,
