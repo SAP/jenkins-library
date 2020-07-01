@@ -61,7 +61,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
+        mandatory: false
+        default: "standard"
       - name: dockerPassword
         type: string
         description: "dockerPassword"

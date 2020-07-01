@@ -72,6 +72,7 @@ func TestCfDeployment(t *testing.T) {
 		SmokeTestStatusCode: 200,            // default
 		Manifest:            "manifest.yml", //default
 		MtaDeployParameters: "-f",           // default
+		DeployType:          "standard",     // default
 	}
 
 	config := defaultConfig
