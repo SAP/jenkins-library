@@ -29,7 +29,6 @@ class MulticloudDeployTest extends BasePiperTest {
     private Map cloudFoundry2 = [:]
     private boolean executedOnKubernetes = false
     private boolean executedOnNode = false
-    private boolean executedUnstash = false
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -52,7 +51,7 @@ class MulticloudDeployTest extends BasePiperTest {
             executedOnNode = true
             body()
         })
-        
+
         neo1 = [
                   host: 'test.deploy.host1.com',
                   account: 'trialuser1',
