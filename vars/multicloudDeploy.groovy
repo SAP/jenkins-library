@@ -21,7 +21,16 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /** Defines Cloud Foundry service instances to create as part of the deployment.*/
+    /**
+     * Defines Cloud Foundry service instances to create as part of the deployment.
+     * This is a _list_ of _objects_ with the following properties each:
+     * - apiEndpoint
+     * - credentialsId
+     * - serviceManifest
+     * - manifestVariablesFiles
+     * - org
+     * - space
+     */
     'cfCreateServices'
 ])
 
