@@ -11,6 +11,7 @@ class MulticloudDeployTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsMockStepRule neoDeployRule = new JenkinsMockStepRule(this, 'neoDeploy')
     private JenkinsMockStepRule cloudFoundryDeployRule = new JenkinsMockStepRule(this, 'cloudFoundryDeploy')
+    private JenkinsMockStepRule cloudFoundryCreateServiceRule = new JenkinsMockStepRule(this, 'cloudFoundryCreateService')
     private JenkinsReadMavenPomRule readMavenPomRule = new JenkinsReadMavenPomRule(this, 'test/resources/deploy')
 
     private Map neo1 = [:]
@@ -26,6 +27,7 @@ class MulticloudDeployTest extends BasePiperTest {
         .around(stepRule)
         .around(neoDeployRule)
         .around(cloudFoundryDeployRule)
+        .around(cloudFoundryCreateServiceRule)
         .around(readMavenPomRule)
 
     @Before
@@ -269,6 +271,24 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
+    }
+
+    @Test
+    void 'cfCreateServices calls cloudFoundryCreateService step with correct parameters'() {
+        stepRule.step.multicloudDeploy([
+            script          : nullScript,
+            cfCreateServices: [[apiEndpoint: 'http://mycf.org', serviceManifest: 'services-manifest.yml', manifestVariablesFiles: 'vars.yml', space: 'PerformanceTests', org: 'MyOrg', credentialsId: 'MyCred']],
+            source          : 'file.mtar'
+        ])
+
+        assert cloudFoundryCreateServiceRule.hasParameter('cloudFoundry', [
+            serviceManifest       : 'services-manifest.yml',
+            space                 : 'PerformanceTests',
+            org                   : 'MyOrg',
+            credentialsId         : 'MyCred',
+            apiEndpoint           : 'http://mycf.org',
+            manifestVariablesFiles: 'vars.yml'
+        ])
     }
 
     @Test
