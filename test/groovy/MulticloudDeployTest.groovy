@@ -29,6 +29,7 @@ class MulticloudDeployTest extends BasePiperTest {
     private Map cloudFoundry2 = [:]
     private boolean executedOnKubernetes = false
     private boolean executedOnNode = false
+    private boolean executedInParallel = false
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -50,6 +51,12 @@ class MulticloudDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('node', [String.class, Closure.class], {s, body ->
             executedOnNode = true
             body()
+        })
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            map.each {key, value ->
+                value()
+            }
+            executedInParallel = true
         })
 
         neo1 = [
@@ -300,20 +307,9 @@ class MulticloudDeployTest extends BasePiperTest {
             source                      : 'file.mtar'
         ])
 
+        assertTrue(executedInParallel)
         assertTrue(executedOnKubernetes)
         assertFalse(executedOnNode)
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
 
     }
 
@@ -326,20 +322,10 @@ class MulticloudDeployTest extends BasePiperTest {
             source                      : 'file.mtar'
         ])
 
+        assertTrue(executedInParallel)
         assertTrue(executedOnNode)
         assertFalse(executedOnKubernetes)
 
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -351,19 +337,9 @@ class MulticloudDeployTest extends BasePiperTest {
             source                      : 'file.mtar'
         ])
 
+        assertTrue(executedInParallel)
         assertFalse(executedOnNode)
         assertFalse(executedOnKubernetes)
 
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
-        assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 }

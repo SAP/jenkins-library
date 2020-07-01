@@ -66,11 +66,10 @@ void call(parameters = [:]) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
             def deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
-            Boolean runInIsolatedWorkspace = false
 
-            if (config.cfTargets.size() > 1 && deploymentType == "blue-green") {
-                runInIsolatedWorkspace = true
-            }
+            // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+            // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && deploymentType == "blue-green"
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
@@ -107,11 +106,11 @@ void call(parameters = [:]) {
                             }
                         }
                     }
-                    index++
                 } else {
                     deployments.put("Deployment ${index}", deployment)
-                    index++
+
                 }
+                index++
             }
         }
 
