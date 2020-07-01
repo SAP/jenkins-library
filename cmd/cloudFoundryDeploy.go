@@ -157,6 +157,9 @@ type deployConfig struct {
 func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command execRunner) error {
 
 	manifestFile := config.Manifest
+	if len(manifestFile) == 0 {
+		manifestFile = "manifest.yml"
+	}
 
 	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config, manifestFile)
 
