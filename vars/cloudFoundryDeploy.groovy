@@ -283,24 +283,24 @@ def deployMta(config) {
     //if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
     String mtaExtensionDescriptorParam = ''
     println("starting deployMTA iwth config: ${config}")
-    println("config.mtaExtensionDescriptor: ${config.mtaExtensionDescriptor}")
-    if (config.mtaExtensionDescriptor) {
-        if (!fileExists(config.mtaExtensionDescriptor)) {
-        error "The mta descriptor has defined an extension file ${config.mtaExtensionDescriptor}. But the file is not available."
+    println("config.cloudFoundry.mtaExtensionDescriptor: ${config.cloudFoundry.mtaExtensionDescriptor}")
+    if (config.cloudFoundry.mtaExtensionDescriptor) {
+        if (!fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
+        error "The mta descriptor has defined an extension file ${config.cloudFoundry.mtaExtensionDescriptor}. But the file is not available."
         }
 
-        if (config.mtaExtensionCredentials) {
-            echo "Modifying ${config.mtaExtensionDescriptor}. Adding credential values from Jenkins."
-            sh "cp ${config.mtaExtensionDescriptor} ${config.mtaExtensionDescriptor}.original"
+        if (config.cloudFoundry.mtaExtensionCredentials) {
+            echo "Modifying ${config.cloudFoundry.mtaExtensionDescriptor}. Adding credential values from Jenkins."
+            sh "cp ${config.cloudFoundry.mtaExtensionDescriptor} ${config.cloudFoundry.mtaExtensionDescriptor}.original"
 
-            Map mtaExtensionCredentials = config.mtaExtensionCredentials
+            Map mtaExtensionCredentials = config.cloudFoundry.mtaExtensionCredentials
 
             String fileContent = ''
 
             try {
-                fileContent = readFile config.mtaExtensionDescriptor
+                fileContent = readFile config.cloudFoundry.mtaExtensionDescriptor
             } catch (Exception e) {
-                error("Unable to read mta extension file ${config.mtaExtensionDescriptor}. If this should not happen, please open an issue at https://github.com/sap/cloud-s4-sdk-pipeline/issues and describe your project setup.")
+                error("Unable to read mta extension file ${config.cloudFoundry.mtaExtensionDescriptor}. If this should not happen, please open an issue at https://github.com/sap/cloud-s4-sdk-pipeline/issues and describe your project setup.")
             }
 
             mtaExtensionCredentials.each { key, credentialsId ->
@@ -310,13 +310,13 @@ def deployMta(config) {
             }
 
             try {
-                writeFile file: config.mtaExtensionDescriptor, text: fileContent
+                writeFile file: config.cloudFoundry.mtaExtensionDescriptor, text: fileContent
             } catch (Exception e) {
-                error("Unable to write credentials values to the mta extension file ${config.mtaExtensionDescriptor}\n. \n Please refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please open an issue at https://github.com/sap/cloud-s4-sdk-pipeline/issues and describe your project setup.")
+                error("Unable to write credentials values to the mta extension file ${config.cloudFoundry.mtaExtensionDescriptor}\n. \n Please refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please open an issue at https://github.com/sap/cloud-s4-sdk-pipeline/issues and describe your project setup.")
             }
         }
 
-        if (!config.mtaExtensionDescriptor.startsWith('-e ')) mtaExtensionDescriptorParam = "-e ${config.mtaExtensionDescriptor}"
+        if (!config.cloudFoundry.mtaExtensionDescriptor.startsWith('-e ')) mtaExtensionDescriptorParam = "-e ${config.cloudFoundry.mtaExtensionDescriptor}"
     }
 
     def deployCommand = 'deploy'
@@ -333,13 +333,13 @@ def deployMta(config) {
     echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${mtaExtensionDescriptorParam} ${config.mtaDeployParameters}"
     deploy(apiStatement, deployStatement, config, null)
 
-    if (config.mtaExtensionCredentials && config.mtaExtensionDescriptor && fileExists(config.mtaExtensionDescriptor)) {
-        echo "Thats ${config.mtaExtensionDescriptor}.original:"
-        sh "cat ${config.mtaExtensionDescriptor}.original"
-        echo "Thats ${config.mtaExtensionDescriptor}:"
-        sh "cat ${config.mtaExtensionDescriptor}"
+    if (config.cloudFoundry.mtaExtensionCredentials && config.cloudFoundry.mtaExtensionDescriptor && fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
+        echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor}.original:"
+        sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}.original"
+        echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor}:"
+        sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}"
         echo "File will be moved now"
-        sh "mv --force ${config.mtaExtensionDescriptor}.original ${config.mtaExtensionDescriptor} || echo 'The file ${config.mtaExtensionDescriptor}.original couldnot be renamed. \n" + " Kindly refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please create an issue at https://github.com/SAP/cloud-s4-sdk-pipeline/issues'"
+        sh "mv --force ${config.cloudFoundry.mtaExtensionDescriptor}.original ${config.cloudFoundry.mtaExtensionDescriptor} || echo 'The file ${config.cloudFoundry.mtaExtensionDescriptor}.original couldnot be renamed. \n" + " Kindly refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please create an issue at https://github.com/SAP/cloud-s4-sdk-pipeline/issues'"
 
     }
 }
