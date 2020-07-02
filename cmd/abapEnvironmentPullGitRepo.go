@@ -167,16 +167,14 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	if config.Host != "" {
 		// Host, User and Password are directly provided
 		matchedkey, error := regexp.MatchString("[hH][tT][tT][pP][sS]://*", config.Host)
-		if error == nil {
-			if matchedkey {
-				connectionDetails.URL = config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-			} else {
-				connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-			}
-		} else {
+		if error != nil {
 			return connectionDetails, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
 		}
-
+		if matchedkey {
+			connectionDetails.URL = config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		} else {
+			connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		}
 		connectionDetails.User = config.Username
 		connectionDetails.Password = config.Password
 	} else {
