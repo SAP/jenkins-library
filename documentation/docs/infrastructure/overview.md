@@ -41,9 +41,9 @@ With more and more qualities checked automatically in the pipeline, more and mor
 This section shows how to scale the pipeline by adding [Jenkins build agents][build-agents].
 
 However, before setting up agents please consider also other ways to scale the build infrastructure.
-It might be an option to have only one huge master per project or team.
+It might be an option to have only one Jenkins master with lots of resources (cpu cores, memory) per project or team.
 This has the advantage of bringing more configuration flexibility and isolation for the individual teams but has the disadvantage that parts of the configuration have to be maintained twice.
-Furthermore, having agents and thus network communication between the build servers increases that risk of failures.
+Furthermore, having agents and thus network communication between the build servers increases the risk of failures.
 
 To add an agent to the Jenkins master, please make sure to fulfil the following requirements similar to the ones for the Jenkins master:
 
@@ -91,7 +91,7 @@ Project "Piper" supports running the pipeline as well as individual steps in a K
 Please note that this feature is currently only experimental.
 
 To setup the Jenkins master in Kubernetes you can use helm.
-The documentation to Install Jenkins using helm can be found [here][jenkins-helm].
+The documentation to install Jenkins using helm can be found [here][jenkins-helm].
 
 To use the Jenkins image provided by project Piper, pass `ppiper/jenkins-master` as a value for the `Master.Image` command line argument while deploying Jenkins to Kubernetes.
 
