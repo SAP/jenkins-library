@@ -282,7 +282,7 @@ def deployMta(config) {
     //if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     //if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
     String mtaExtensionDescriptorParam = ''
-
+    println("starting deployMTA")
     if (config.mtaExtensionDescriptor) {
         if (!fileExists(config.mtaExtensionDescriptor)) {
         error "The mta descriptor has defined an extension file ${config.mtaExtensionDescriptor}. But the file is not available."

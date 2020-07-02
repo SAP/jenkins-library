@@ -111,7 +111,7 @@ void call(parameters = [:]) {
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
                 def target = config.cfTargets[i]
-
+                echo "Thats the cfTargetConfig: ${target}"
                 Closure deployment = {
                     Utils deploymentUtils = new Utils()
                     if (runInIsolatedWorkspace) {
