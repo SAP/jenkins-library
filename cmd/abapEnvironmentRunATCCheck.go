@@ -249,10 +249,10 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 		} else {
 			details.URL = "https://" + config.Host
 		}
-		return details, err
 	} else {
 		return details, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
 	}
+	return details, err
 }
 
 func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
