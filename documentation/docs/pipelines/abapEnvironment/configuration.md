@@ -1,6 +1,6 @@
 # Configuration
 
-In this section, you can learn how to configure a (GitHub) repository to run an ABAP Environment Pipeline.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline.
 
 ## 1. Prerequisites
 
