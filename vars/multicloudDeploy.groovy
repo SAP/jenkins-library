@@ -32,12 +32,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * - org
      * - space
      */
-    'cfCreateServices'
+    'cfCreateServices',
+    /** Defines the deployment type.*/
+    'enableZeroDowntimeDeployment',
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** Defines the deployment type.*/
-    'enableZeroDowntimeDeployment',
     /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
