@@ -273,7 +273,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			p["containerName"] = container.Name
 			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = envVarsAsStringSlice(container.EnvVars)
+			p["dockerEnvVars"] = envVarsAsMap(container.EnvVars)
 			p["dockerImage"] = container.Image
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
@@ -291,7 +291,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
+		root["sidecarEnvVars"] = envVarsAsMap(m.Spec.Sidecars[0].EnvVars)
 		root["sidecarImage"] = m.Spec.Sidecars[0].Image
 		root["sidecarName"] = m.Spec.Sidecars[0].Name
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
@@ -369,10 +369,10 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func envVarsAsStringSlice(envVars []EnvVar) []string {
-	e := []string{}
+func envVarsAsMap(envVars []EnvVar) map[string]string {
+	e := map[string]string{}
 	for _, v := range envVars {
-		e = append(e, fmt.Sprintf("%v=%v", v.Name, v.Value))
+		e[v.Name] = v.Value
 	}
 	return e
 }
