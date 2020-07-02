@@ -66,9 +66,6 @@ void call(parameters = [:]) {
 
         Map config = configHelper.use()
 
-        echo config.toString()
-        echo stageName
-
         configHelper
             .withMandatoryProperty('source', null, { config.neoTargets })
 
