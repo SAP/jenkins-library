@@ -19,7 +19,7 @@ import (
 type lintUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
-	getExecRunner() execRunner
+	getExecRunner() command.ExecRunner
 	getGeneralPurposeConfig(configURL string)
 }
 
@@ -36,7 +36,7 @@ func newLintUtilsBundle() *lintUtilsBundle {
 	}
 }
 
-func (u *lintUtilsBundle) getExecRunner() execRunner {
+func (u *lintUtilsBundle) getExecRunner() command.ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
