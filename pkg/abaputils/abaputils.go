@@ -82,7 +82,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
 // If no oData service URL is set, the MANAGE_GIT_REPOSITORY OData service will be used
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.Command, oDataURL string, cfLoginOption bool) (ConnectionDetailsHTTP, error) {
+func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.Command, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
@@ -102,7 +102,7 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, cfLoginOption)
+		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, cfLogoutOption)
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}

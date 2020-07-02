@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
 
@@ -170,8 +171,9 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 		}
 
 		execRunner := mock.ExecMockRunner{}
+		var c = command.Command{}
 
-		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
+		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
 		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
 		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
 	})
@@ -192,9 +194,10 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		//execRunner := mock.ExecMockRunner{}
+		var c = command.Command{}
 
-		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
@@ -209,9 +212,10 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		//execRunner := mock.ExecMockRunner{}
+		var c = command.Command{}
 
-		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
