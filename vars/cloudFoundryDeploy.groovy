@@ -62,10 +62,6 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'manifestVariables',
         /**
-         * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
-         */
-        'mtaExtensionDescriptor',
-        /**
          * Cloud Foundry target organization.
          * @parentConfigKey cloudFoundry
          */
@@ -117,6 +113,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'mtaDeployParameters',
     /**
+     * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
+     */
+    'mtaExtensionDescriptor',
+    /**
      * Defines the path to *.mtar for deployment with the mtaDeployPlugin.
      */
     'mtaPath',
@@ -152,17 +152,19 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [
-    apiEndpoint: 'cfApiEndpoint',
-    appName:'cfAppName',
-    credentialsId: 'cfCredentialsId',
-    manifest: 'cfManifest',
-    manifestVariablesFiles: 'cfManifestVariablesFiles',
-    manifestVariables: 'cfManifestVariables',
-    org: 'cfOrg',
-    space: 'cfSpace',
-    mtaExtensionDescriptor: 'mtaExtensionDescriptor'
-]]
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    cloudFoundry: [
+        apiEndpoint: 'cfApiEndpoint',
+        appName:'cfAppName',
+        credentialsId: 'cfCredentialsId',
+        manifest: 'cfManifest',
+        manifestVariablesFiles: 'cfManifestVariablesFiles',
+        manifestVariables: 'cfManifestVariables',
+        org: 'cfOrg',
+        space: 'cfSpace',
+    ],
+    mtaExtensionDescriptor: 'cloudFoundry/mtaExtensionDescriptor'
+]
 
 /**
  * Deploys an application to a test or production space within Cloud Foundry.
@@ -280,7 +282,6 @@ def findMtar(){
 }
 
 def deployMta(config) {
-    if (config?.cloudFoundry?.mtaExtensionDescriptor) config.mtaExtensionDescriptor = config.cloudFoundry.mtaExtensionDescriptor
     if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
