@@ -35,12 +35,11 @@ import static com.sap.piper.Prerequisites.checkScript
     'cfCreateServices',
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
-])
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
 
