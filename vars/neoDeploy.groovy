@@ -217,7 +217,7 @@ void call(parameters = [:]) {
 
 private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
-    String logFolder = 'logs/neo'
+    String logFolder = "logs/neo/${UUID.randomUUID()}"
 
     try {
         sh "mkdir -p ${logFolder}"
