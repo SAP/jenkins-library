@@ -80,32 +80,33 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 	return abapServiceKey, nil
 }
 
-// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information for scenario 0510 of SAP CP ABAP Environment
-// Therefore the MANAGE_GIT_REPOSITORY OData service is used
-func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c command.Command, cfLoginOption bool) (ConnectionDetailsHTTP, error) {
-
-	oDataServiceSapCom0510 := "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
-	pullAction := "Pull"
+// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
+// If no oData service URL is set, the MANAGE_GIT_REPOSITORY OData service will be used
+func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.Command, oDataURL string, cfLoginOption bool) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
-	if config.Host != "" {
+	if oDataURL == "" {
+		oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+	}
+
+	if options.Host != "" {
 		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + config.Host + oDataServiceSapCom0510 + pullAction //"/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = config.Username
-		connectionDetails.Password = config.Password
+		connectionDetails.URL = "https://" + options.Host + oDataURL
+		connectionDetails.User = options.Username
+		connectionDetails.Password = options.Password
 	} else {
-		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKeyName == "" {
+		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(config, cfLoginOption)
+		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, cfLoginOption)
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
-		connectionDetails.URL = abapServiceKey.URL + oDataServiceSapCom0510 + pullAction // "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		connectionDetails.URL = abapServiceKey.URL + oDataURL
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
@@ -116,7 +117,7 @@ func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c comman
  *	Structs for the A4C_A2G_GHA service *
  ****************************************/
 
-// SoftwareComponentEntity struct for the root entity SoftwareComponent A4C_A2G_GHA_SC
+// SoftwareComponentEntity struct for the root entity SoftwareComponent A4C_A2G_GHA_SC - not yet exposed -
 type SoftwareComponentEntity struct {
 	Metadata            AbapMetadata `json:"__metadata"`
 	Namespace           string       `json:"namepsace"`
