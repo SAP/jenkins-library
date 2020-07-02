@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -14,17 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// AbapEnvironmentCommunicationArrangement Interface for all ABAP related piper steps
-type AbapEnvironmentCommunicationArrangement interface {
-	GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c command.Command) ConnectionDetailsHTTP
-	ReadServiceKeyAbapEnvironment(config AbapEnvironmentOptions, cfLogoutOption bool) (ServiceKey, error)
-}
-
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
 // Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 // the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
-func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOption bool) (ServiceKey, error) {
-	var abapServiceKey ServiceKey
+func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOption bool) (AbapServiceKey, error) {
+	var abapServiceKey AbapServiceKey
 	var err error
 
 	//Logging into Cloud Foundry
@@ -60,7 +52,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 		}
 
 		json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-		if abapServiceKey == (ServiceKey{}) {
+		if abapServiceKey == (AbapServiceKey{}) {
 			return abapServiceKey, errors.New("Parsing the service key failed")
 		}
 
@@ -90,7 +82,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information for scenario 0510 of SAP CP ABAP Environment
 // Therefore the MANAGE_GIT_REPOSITORY OData service is used
-func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c command.Command) (ConnectionDetailsHTTP, error) {
+func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c command.Command, cfLoginOption bool) (ConnectionDetailsHTTP, error) {
 
 	oDataServiceSapCom0510 := "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/"
 	pullAction := "Pull"
@@ -109,7 +101,7 @@ func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c comman
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(config, true) // TODO
+		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(config, cfLoginOption)
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
@@ -120,55 +112,85 @@ func GetAbapCommunicationArrangementInfo(config AbapEnvironmentOptions, c comman
 	return connectionDetails, error
 }
 
-// ConvertTime converts the abap system time from format /Date(1585576807000+0000)/ into a unix UTC time
-func ConvertTime(logTimeStamp string) time.Time {
-	// The ABAP Environment system returns the date in the following format: /Date(1585576807000+0000)/
-	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, error := strconv.ParseInt(seconds, 10, 64)
-	if error != nil {
-		return time.Unix(0, 0).UTC()
-	}
-	t := time.Unix(n, 0).UTC()
-	return t
-}
+/****************************************
+ *	Structs for the A4C_A2G_GHA service *
+ ****************************************/
 
-// SoftwareComponentEntity struct to pull ABAP software components
+// SoftwareComponentEntity struct for the root entity SoftwareComponent A4C_A2G_GHA_SC
 type SoftwareComponentEntity struct {
-	Metadata       AbapMetadata `json:"__metadata"`
-	UUID           string       `json:"uuid"`
-	Name           string       `json:"sc_name"`
-	Namespace      string       `json:"namepsace"`
-	Status         string       `json:"status"`
-	StatusDescr    string       `json:"status_descr"`
-	ToExecutionLog AbapLogs     `json:"to_Execution_log"`
-	ToTransportLog AbapLogs     `json:"to_Transport_log"`
+	Metadata            AbapMetadata `json:"__metadata"`
+	Namespace           string       `json:"namepsace"`
+	Name                string       `json:"sc_name"`
+	Description         string       `json:"descr"`
+	Type                string       `json:"sc_type"`
+	TypeDescription     string       `json:"sc_type_descr"`
+	LastImportID        string       `json:"imp_id"`
+	ActiveBranch        string       `json:"active_branch"`
+	AvailableOnInstance bool         `json:"avail_on_inst"`
+	NewVersionAvailable bool         `json:"new_vers_avail"`
+	CreatedBy           string       `json:"created_by"`
+	CreatedAt           string       `json:"created_at"`
+	ChangedBy           string       `json:"changed_by"`
+	ChangedAt           string       `json:"changed_at"`
+	RelativeChangedAt   string       `json:"relative_changed_at"`
+	ToImport            PullEntity   `json:"to_Import"`
+	ToBranch            BranchEntity `json:"to_Branch"`
 }
 
-// BranchEntity struct to switch branches of a ABAP software component
+// PullEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
+type PullEntity struct {
+	Metadata          AbapMetadata `json:"__metadata"`
+	UUID              string       `json:"uuid"`
+	Namespace         string       `json:"namepsace"`
+	ScName            string       `json:"sc_name"`
+	ImportType        string       `json:"import_type"`
+	BranchName        string       `json:"branch_name"`
+	StartedByUser     string       `json:"user_name"`
+	Status            string       `json:"status"`
+	StatusDescription string       `json:"status_descr"`
+	CommitID          string       `json:"commit_id"`
+	StartTime         string       `json:"start_time"`
+	ChangeTime        string       `json:"change_time"`
+	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
+	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
+}
+
+// BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
 type BranchEntity struct {
-	Metadata     AbapMetadata `json:"__metadata"`
-	ScName       string       `json:"sc_name"`
-	Namespace    string       `json:"namepsace"`
-	BranchName   string       `json:"branch_name"`
-	ParentBranch string       `json:"derived_from"`
+	Metadata      AbapMetadata `json:"__metadata"`
+	ScName        string       `json:"sc_name"`
+	Namespace     string       `json:"namepsace"`
+	BranchName    string       `json:"branch_name"`
+	ParentBranch  string       `json:"derived_from"`
+	CreatedBy     string       `json:"created_by"`
+	CreatedOn     string       `json:"created_on"`
+	IsActive      bool         `json:"is_active"`
+	CommitID      string       `json:"commit_id"`
+	CommitMessage string       `json:"commit_message"`
+	LastCommitBy  string       `json:"last_commit_by"`
+	LastCommitOn  string       `json:"last_commit_on"`
 }
 
-// AbapMetadata struct
-type AbapMetadata struct {
-	URI string `json:"uri"`
-}
-
-// AbapLogs struct
+// AbapLogs struct for LogResults
 type AbapLogs struct {
 	Results []LogResults `json:"results"`
 }
 
-// LogResults struct
+// LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
 type LogResults struct {
 	Index       string `json:"index_no"`
 	Type        string `json:"type"`
 	Description string `json:"descr"`
 	Timestamp   string `json:"timestamp"`
+}
+
+/********************************
+ *	Structs for ABAP in general *
+ ********************************/
+
+// AbapMetadata struct
+type AbapMetadata struct {
+	URI string `json:"uri"`
 }
 
 // ConnectionDetailsHTTP struct
@@ -203,75 +225,31 @@ type AbapEnvironmentOptions struct {
 	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
 
-// ServiceKey struct to parse CF Service Key
-type ServiceKey struct {
-	Abap     AbapConnection `json:"abap"`
-	Binding  AbapBinding    `json:"binding"`
-	Systemid string         `json:"systemid"`
-	URL      string         `json:"url"`
+// AbapServiceKey struct
+type AbapServiceKey struct {
+	SapCloudService    string         `json:"sap.cloud.service"`
+	URL                string         `json:"url"`
+	SystemID           string         `json:"systemid"`
+	Abap               AbapConnection `json:"abap"`
+	Binding            AbapBinding    `json:"binding"`
+	PreserveHostHeader bool           `json:"preserve_host_header"`
 }
 
 // AbapConnection contains information about the ABAP connection for the ABAP endpoint
 type AbapConnection struct {
-	CommunicationArrangementID string `json:"communication_arrangement_id"`
-	CommunicationScenarioID    string `json:"communication_scenario_id"`
-	CommunicationSystemID      string `json:"communication_system_id"`
-	Password                   string `json:"password"`
-	Username                   string `json:"username"`
+	Username                         string `json:"username"`
+	Password                         string `json:"password"`
+	CommunicationScenarioID          string `json:"communication_scenario_id"`
+	CommunicationArrangementID       string `json:"communication_arrangement_id"`
+	CommunicationSystemID            string `json:"communication_system_id"`
+	CommunicationInboundUserID       string `json:"communication_inbound_user_id"`
+	CommunicationInboundUserAuthMode string `json:"communication_inbound_user_auth_mode"`
 }
 
 // AbapBinding contains information about service binding in Cloud Foundry
 type AbapBinding struct {
-	Env     string `json:"env"`
 	ID      string `json:"id"`
 	Type    string `json:"type"`
 	Version string `json:"version"`
+	Env     string `json:"env"`
 }
-
-/* // ServiceKeyOptions for reading CF Service Key
-type ServiceKeyOptions struct {
-	Username          string
-	Password          string
-	CfAPIEndpoint     string
-	CfOrg             string
-	CfSpace           string
-	CfServiceInstance string
-	CfServiceKey      string
-} */
-
-/* // ReadCfServiceKey does ...
-func ReadCfServiceKey(config AbapEnvironmentOptions, c command.Command) (ServiceKey, error) { //  not needed
-
-	var abapServiceKey ServiceKey
-
-	c.Stderr(log.Writer())
-
-	// Logging into the Cloud Foundry via CF CLI
-	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
-	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
-	errorRunExecutable := c.RunExecutable("cf", cfLoginSlice...)
-	if errorRunExecutable != nil {
-		log.Entry().Error("Login at cloud foundry failed.")
-		return abapServiceKey, errorRunExecutable
-	}
-
-	// Reading the Service Key via CF CLI
-	var serviceKeyBytes bytes.Buffer
-	c.Stdout(&serviceKeyBytes)
-	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKeyName}
-	errorRunExecutable = c.RunExecutable("cf", cfReadServiceKeySlice...)
-	var serviceKeyJSON string
-	if len(serviceKeyBytes.String()) > 0 {
-		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-		serviceKeyJSON = strings.Join(lines[2:], "")
-	}
-	if errorRunExecutable != nil {
-		return abapServiceKey, errorRunExecutable
-	}
-	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKeyName", config.CfServiceKeyName).Info("Read service key for service instance")
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-	if abapServiceKey == (ServiceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
-	}
-	return abapServiceKey, errorRunExecutable
-} */

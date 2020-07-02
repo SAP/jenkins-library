@@ -2,7 +2,6 @@ package abaputils
 
 import (
 	"testing"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 		}
 
 		//when
-		var abapKey ServiceKey
+		var abapKey AbapServiceKey
 		abapKey, _ = ReadServiceKeyAbapEnvironment(cfconfig, true)
 
 		//then
@@ -67,20 +66,5 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 		//assert.Error(t, err)
-	})
-}
-
-func TestAbapConvertTime(t *testing.T) {
-	t.Run("ConvertTime", func(t *testing.T) {
-
-		//given
-		var inputTime = "/Date(19900320083014+0000)/"
-
-		//when
-		var timeAfterConvertion time.Time
-		timeAfterConvertion = ConvertTime(inputTime)
-
-		//then
-		assert.Equal(t, "", timeAfterConvertion)
 	})
 }
