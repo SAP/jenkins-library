@@ -372,7 +372,7 @@ spec:
       - STAGES
       - STEPS
       default: -1
-    - name: includes
+    - name: include
       type: string
       description: Space separated list of file path patterns to include in the scan
       mandatory: false
@@ -381,7 +381,7 @@ spec:
         - STAGES
         - STEPS
       default: '**/src/main/**/*.java **/*.py **/*.go **/*.js **/*.ts'
-    - name: excludes
+    - name: exclude
       type: string
       description: Space separated list of file path patterns to exclude in the scan
       mandatory: false
