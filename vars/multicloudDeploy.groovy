@@ -102,7 +102,7 @@ void call(parameters = [:]) {
         if (config.cfTargets) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
-            def deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
+            def deployTool = script.commonPipelineEnvironment.getBuildTool()=='mta' ? 'mtaDeployPlugin' : 'cf_native'
 
             // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
             // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
