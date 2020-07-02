@@ -62,7 +62,7 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
 
-func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, runner execRunner, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
+func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, runner command.ExecRunner, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
 	telemetryData.Custom1Label = "buildTool"
 	telemetryData.Custom1 = config.BuildTool
