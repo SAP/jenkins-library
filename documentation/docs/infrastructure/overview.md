@@ -15,7 +15,7 @@ As it would be cumbersome to start the Docker image manually with all required p
 
 ### Setting up a Jenkins master
 
-For the following steps you will need a server are another machine which has Docker installed and configured.
+For the following steps you will need a server or another machine which has Docker installed and configured.
 
 To get started, initialize the Cx Server by using this `docker run` command:
 
@@ -83,12 +83,12 @@ Autoscaling of the infrastructure solves such a problem.
 Instead of reserving the resources proactively, the pipeline creates the Jenkins agents dynamically on a Kubernetes cluster during the execution.
 Once the agent completes the dedicated task, it is deleted and the resources are freed.
 Project "Piper" supports running the pipeline as well as individual steps in a Kubernetes Cluster.
-Please note that this  feature currently only experimental.
+Please note that this feature is currently only experimental.
 
 To setup the Jenkins master in Kubernetes you can use helm.
 The documentation to Install Jenkins using helm can be found [here][jenkins-helm].
 
-To use the Jenkins image provided by project Piper, pass `ppiper/jenkins-master` as a value for the Master.Image command line argument while deploying Jenkins to Kubernetes.
+To use the Jenkins image provided by project Piper, pass `ppiper/jenkins-master` as a value for the `Master.Image` command line argument while deploying Jenkins to Kubernetes.
 
 The successfully completed deployment consists of a Jenkins pod with port 80 and 50000 exposed for HTTP and internal JNLP traffic respectively.
 The deployment also creates two services each to listen to incoming HTTP traffic on port 80 and the internal JNLP traffic on port 50000.
