@@ -647,7 +647,7 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod("sh", [String],
             { cmd ->
-                if (cmd == 'cat logs/neo/*')
+                if (cmd.toString().contains('cat logs/neo/'))
                     throw new AbortException('Cannot provide logs.')
                 if (cmd.toString().contains('neo.sh deploy-mta'))
                     throw new AbortException('Something went wrong during neo deployment.')

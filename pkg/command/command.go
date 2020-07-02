@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -20,6 +21,27 @@ type Command struct {
 	stdout               io.Writer
 	stderr               io.Writer
 	env                  []string
+	exitCode             int
+}
+
+type runner interface {
+	SetDir(d string)
+	SetEnv(e []string)
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+}
+
+// ExecRunner mock for intercepting calls to executables
+type ExecRunner interface {
+	runner
+	RunExecutable(e string, p ...string) error
+	RunExecutableInBackground(executable string, params ...string) (Execution, error)
+}
+
+// ShellRunner mock for intercepting shell calls
+type ShellRunner interface {
+	runner
+	RunShell(s string, c string) error
 }
 
 // SetDir sets the working directory for the execution
@@ -117,6 +139,11 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	}
 
 	return execution, nil
+}
+
+// GetExitCode allows to retrieve the exit code of a command execution
+func (c *Command) GetExitCode() int {
+	return c.exitCode
 }
 
 func appendEnvironment(cmd *exec.Cmd, env []string) {
@@ -277,9 +304,17 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 	}
 
 	if err != nil {
+		// provide fallback to ensure a non 0 exit code in case of an error
+		c.exitCode = 1
+		// try to identify the detailed error code
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+				c.exitCode = status.ExitStatus()
+			}
+		}
 		return errors.Wrap(err, "cmd.Run() failed")
 	}
-
+	c.exitCode = 0
 	return nil
 }
 
