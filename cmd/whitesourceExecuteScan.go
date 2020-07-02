@@ -368,8 +368,8 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 		return err
 	}
 
-	// sets the "excludes" file patterns
-	cfg = fmt.Sprintf("excludes=%s", config.Excludes)
+	// sets the "exclude" file patterns
+	cfg = fmt.Sprintf("excludes=%s", config.Exclude)
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
@@ -381,8 +381,8 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	}
 
 	// sets the "includes" file patterns
-	config.Includes = strings.Replace(config.Includes, `/`, `\/`, -1) // escape the slashes for sed
-	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
+	config.Include = strings.Replace(config.Include, `/`, `\/`, -1) // escape the slashes for sed
+	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Include)
 	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
 	}
