@@ -14,17 +14,15 @@ import (
 )
 
 type cloudFoundryCreateServiceKeyOptions struct {
-	CfAPIEndpoint string `json:"cfApiEndpoint,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	CfOrg string `json:"cfOrg,omitempty"`
-	CfSpace string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName string `json:"cfServiceKeyName,omitempty"`
+	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	CfOrg              string `json:"cfOrg,omitempty"`
+	CfSpace            string `json:"cfSpace,omitempty"`
+	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
 	CfServiceKeyConfig string `json:"cfServiceKeyConfig,omitempty"`
 }
-
-
 
 // CloudFoundryCreateServiceKeyCommand cloudFoundryCreateServiceKey
 func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
@@ -37,7 +35,7 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 	var createCloudFoundryCreateServiceKeyCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "cloudFoundryCreateServiceKey",
-		Long: `Create CloudFoundryServiceKey`,
+		Long:  `Create CloudFoundryServiceKey`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -112,68 +110,68 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "cfApiEndpoint",
+						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/apiEndpoint"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:      "username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "cfOrg",
+						Name:        "cfOrg",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/org"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
-						Name:      "cfSpace",
+						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/space"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:      "cfServiceInstance",
+						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/serviceInstance"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
-						Name:      "cfServiceKeyName",
+						Name:        "cfServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/serviceKey"},{Name: "cloudFoundry/serviceKeyName"},{Name: "cfServiceKey"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 					{
-						Name:      "cfServiceKeyConfig",
+						Name:        "cfServiceKeyConfig",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"}},
 					},
 				},
 			},
