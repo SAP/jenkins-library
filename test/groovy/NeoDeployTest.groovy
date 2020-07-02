@@ -356,7 +356,8 @@ class NeoDeployTest extends BasePiperTest {
             allOf(
                 containsString('ERROR - NO VALUE AVAILABLE FOR:'),
                 containsString('neo/host'),
-                containsString('neo/account')))
+                containsString('neo/account'),
+                containsString('source')))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
