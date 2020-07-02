@@ -34,6 +34,8 @@ create-services:
 
 The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
 
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/) for more details.
+
 ## 4. Configuration for the Communication
 
 The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
@@ -44,6 +46,8 @@ The communication to the ABAP system is done using a Communication Arrangement. 
   "type": "basic"
 }
 ```
+
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/) for more details.
 
 ## 5. Configuration for ATC
 
