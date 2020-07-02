@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -689,8 +690,8 @@ func cfDeploy(
 		CfSpace:       config.Space,
 		Username:      config.Username,
 		Password:      config.Password,
-		CfAPIOpts:     strings.Split(" ", config.APIParameters),
-		CfLoginOpts:   strings.Split(" ", config.LoginParameters),
+		CfAPIOpts:     splitAtWhitespace(config.APIParameters),
+		CfLoginOpts:   splitAtWhitespace(config.LoginParameters),
 	})
 
 	if err == nil {
@@ -811,4 +812,11 @@ func handleCfCliLog(logFile string) error {
 	log.Entry().Info("### END OF CF CLI TRACE OUTPUT ###")
 
 	return err
+}
+
+func splitAtWhitespace(s string) []string {
+	if len(strings.TrimSpace(s)) == 0 {
+		return []string{}
+	}
+	return regexp.MustCompile("\\s+").Split(s, -1)
 }

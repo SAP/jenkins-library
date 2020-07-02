@@ -83,6 +83,8 @@ func TestCfDeployment(t *testing.T) {
 		CfSpace:       "mySpace",
 		Username:      "me",
 		Password:      "******",
+		CfAPIOpts:     []string{},
+		CfLoginOpts:   []string{},
 	}
 
 	var loginOpts cloudfoundry.LoginOptions
@@ -118,7 +120,7 @@ func TestCfDeployment(t *testing.T) {
 	}
 
 	withLoginAndLogout := func(t *testing.T, asserts func(t *testing.T)) {
-		assert.Equal(t, loginOpts, successfulLogin)
+		assert.Equal(t, successfulLogin, loginOpts)
 		asserts(t)
 		assert.True(t, logoutCalled)
 	}
