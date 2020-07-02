@@ -12,7 +12,7 @@ import (
 
 func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData) {
 
-	c := command.Command{}
+	var c command.ExecRunner = &command.Command{}
 
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
@@ -29,7 +29,7 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 
 	err = cloudfoundry.Login(loginOptions)
 	if err == nil {
-		err = runCloudFoundryCreateService(&config, telemetryData, &c)
+		err = runCloudFoundryCreateService(&config, telemetryData, c)
 	}
 	if err != nil {
 		logouterr = cloudfoundry.Logout()
@@ -45,7 +45,7 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 	log.Entry().Info("Service creation completed successfully")
 }
 
-func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, c execRunner) error {
+func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) error {
 	var err error
 	log.Entry().Info("Creating Cloud Foundry Service")
 
