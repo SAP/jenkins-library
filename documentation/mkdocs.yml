@@ -6,7 +6,8 @@ nav:
     - 'Pipelines':
         - 'ABAP Environment pipeline':
           - 'Introduction': pipelines/abapEnvironment/introduction.md
-        - 'General purpose pipeline':
+          - 'Configuration': pipelines/abapEnvironment/configuration.md
+          - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
             - 'Examples': stages/examples.md
             - 'Stages':
