@@ -7,22 +7,22 @@ nav:
         - 'ABAP Environment pipeline':
           - 'Introduction': pipelines/abapEnvironment/introduction.md
           - 'Configuration': pipelines/abapEnvironment/configuration.md
-          - 'General purpose pipeline':
-            - 'Introduction': stages/introduction.md
-            - 'Examples': stages/examples.md
-            - 'Stages':
-                - 'Init Stage': stages/init.md
-                - 'Pull-Request Voting Stage': stages/prvoting.md
-                - 'Build Stage': stages/build.md
-                - 'Additional Unit Test Stage': stages/additionalunittests.md
-                - 'Integration Stage': stages/integration.md
-                - 'Acceptance Stage': stages/acceptance.md
-                - 'Security Stage': stages/security.md
-                - 'Performance Stage': stages/performance.md
-                - 'Compliance': stages/compliance.md
-                - 'Confirm Stage': stages/confirm.md
-                - 'Promote Stage': stages/promote.md
-                - 'Release Stage': stages/release.md
+        - 'General purpose pipeline':
+          - 'Introduction': stages/introduction.md
+          - 'Examples': stages/examples.md
+          - 'Stages':
+              - 'Init Stage': stages/init.md
+              - 'Pull-Request Voting Stage': stages/prvoting.md
+              - 'Build Stage': stages/build.md
+              - 'Additional Unit Test Stage': stages/additionalunittests.md
+              - 'Integration Stage': stages/integration.md
+              - 'Acceptance Stage': stages/acceptance.md
+              - 'Security Stage': stages/security.md
+              - 'Performance Stage': stages/performance.md
+              - 'Compliance': stages/compliance.md
+              - 'Confirm Stage': stages/confirm.md
+              - 'Promote Stage': stages/promote.md
+              - 'Release Stage': stages/release.md
         - 'SAP Cloud SDK pipeline':
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
