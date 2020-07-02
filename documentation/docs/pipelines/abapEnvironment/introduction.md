@@ -39,5 +39,3 @@ In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The 
 ## Post
 
 At the end of every pipeline (successful or unsuccessful), the system is deprovisioned using the step cloudFoundryDeleteService.
-
-
