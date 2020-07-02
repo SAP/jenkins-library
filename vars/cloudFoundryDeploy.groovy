@@ -220,7 +220,7 @@ void call(Map parameters = [:]) {
             stepParam3: parameters?.script == null
         ], config)
 
-        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}"
+        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, mtaExtensionCredentials=${config.cloudFoundry.mtaExtensionCredentials}"
 
         //make sure that all relevant descriptors, are available in workspace
         utils.unstashAll(config.stashContent)
@@ -282,7 +282,8 @@ def deployMta(config) {
     //if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     //if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
     String mtaExtensionDescriptorParam = ''
-    println("starting deployMTA")
+    println("starting deployMTA iwth config: ${config}")
+    println("config.mtaExtensionDescriptor: ${config.mtaExtensionDescriptor}")
     if (config.mtaExtensionDescriptor) {
         if (!fileExists(config.mtaExtensionDescriptor)) {
         error "The mta descriptor has defined an extension file ${config.mtaExtensionDescriptor}. But the file is not available."
@@ -329,7 +330,7 @@ def deployMta(config) {
     def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${mtaExtensionDescriptorParam}"
     def apiStatement = "cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}"
 
-    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
+    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${mtaExtensionDescriptorParam} ${config.mtaDeployParameters}"
     deploy(apiStatement, deployStatement, config, null)
 
     if (config.mtaExtensionCredentials && config.mtaExtensionDescriptor && fileExists(config.mtaExtensionDescriptor)) {
