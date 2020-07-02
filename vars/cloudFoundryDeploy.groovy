@@ -340,7 +340,8 @@ def deployMta(config) {
         sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}"
         echo "File will be moved now"
         sh "mv --force ${config.cloudFoundry.mtaExtensionDescriptor}.original ${config.cloudFoundry.mtaExtensionDescriptor} || echo 'The file ${config.cloudFoundry.mtaExtensionDescriptor}.original couldnot be renamed. \n" + " Kindly refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please create an issue at https://github.com/SAP/cloud-s4-sdk-pipeline/issues'"
-
+        echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor} after mv:"
+        sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}"
     }
 }
 
