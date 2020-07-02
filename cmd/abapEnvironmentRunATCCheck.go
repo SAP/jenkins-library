@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -241,8 +242,17 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	}
 	details.User = config.Username
 	details.Password = config.Password
-	details.URL = config.Host
-	return details, err
+	matchedkey, err := regexp.MatchString("[hH][tT][tT][pP][sS]://*", config.Host)
+	if err == nil {
+		if matchedkey {
+			details.URL = config.Host
+		} else {
+			details.URL = "https://" + config.Host
+		}
+		return details, err
+	} else {
+		return details, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
+	}
 }
 
 func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
