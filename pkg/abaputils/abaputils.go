@@ -185,6 +185,22 @@ type LogResults struct {
 	Timestamp   string `json:"timestamp"`
 }
 
+/*******************************
+ *	Structs for specific steps *
+ *******************************/
+
+// AbapEnvironmentPullGitRepoOptions struct for the PullGitRepo step
+type AbapEnvironmentPullGitRepoOptions struct {
+	AbapEnvOptions  AbapEnvironmentOptions
+	RepositoryNames []string `json:"repositoryNames,omitempty"`
+}
+
+// AbapEnvironmentRunATCCheckOptions struct for the RunATCCheck step
+type AbapEnvironmentRunATCCheckOptions struct {
+	AbapEnvOptions AbapEnvironmentOptions
+	AtcConfig      string `json:"atcConfig,omitempty"`
+}
+
 /********************************
  *	Structs for ABAP in general *
  ********************************/

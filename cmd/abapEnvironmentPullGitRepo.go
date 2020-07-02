@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -19,11 +20,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
+func abapEnvironmentPullGitRepo(options abaputils.AbapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	c := command.Command{}
-	connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c)
+	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
@@ -43,8 +44,8 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	client.SetOptions(clientOptions)
 	pollIntervall := 10 * time.Second
 
-	log.Entry().Infof("Start pulling %v repositories", len(config.RepositoryNames))
-	for _, repositoryName := range config.RepositoryNames {
+	log.Entry().Infof("Start pulling %v repositories", len(options.RepositoryNames))
+	for _, repositoryName := range options.RepositoryNames {
 
 		log.Entry().Info("-------------------------")
 		log.Entry().Info("Start pulling " + repositoryName)
@@ -72,7 +73,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 	return nil
 }
 
-func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
+func triggerPull(repositoryName string, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -103,7 +104,7 @@ func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsH
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Info("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
-	var body abapEntity
+	var body abaputils.PullEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
@@ -111,7 +112,7 @@ func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsH
 	}
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
-	if reflect.DeepEqual(abapEntity{}, body) {
+	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
@@ -122,7 +123,7 @@ func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsH
 	return uriConnectionDetails, nil
 }
 
-func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+func pollEntity(repositoryName string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
@@ -136,18 +137,18 @@ func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, 
 		defer resp.Body.Close()
 
 		// Parse response
-		var body abapEntity
+		var body abaputils.PullEntity
 		bodyText, _ := ioutil.ReadAll(resp.Body)
 		var abapResp map[string]*json.RawMessage
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["d"], &body)
-		if reflect.DeepEqual(abapEntity{}, body) {
+		if reflect.DeepEqual(abaputils.PullEntity{}, body) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}
 		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
+		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
 		if body.Status != "R" {
 			printLogs(body)
 			break
@@ -158,7 +159,7 @@ func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, 
 	return status, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
+/* func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
 
 	var connectionDetails connectionDetailsHTTP
 	var error error
@@ -183,9 +184,9 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
 	return connectionDetails, error
-}
+} */
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
+/* func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
 
 	var abapServiceKey serviceKey
 
@@ -219,9 +220,9 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRu
 		return abapServiceKey, errors.New("Parsing the service key failed")
 	}
 	return abapServiceKey, errorRunExecutable
-}
+} */
 
-func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func getHTTPResponse(requestType string, connectionDetails abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	header := make(map[string][]string)
 	header["Content-Type"] = []string{"application/json"}
@@ -232,7 +233,7 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 	return req, err
 }
 
-func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) error {
+func handleHTTPError(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
@@ -240,7 +241,7 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 
 		// Include the error message of the ABAP Environment system, if available
-		var abapErrorResponse abapError
+		var abapErrorResponse abaputils.AbapError
 		bodyText, readError := ioutil.ReadAll(resp.Body)
 		if readError != nil {
 			return readError
@@ -248,7 +249,7 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 		var abapResp map[string]*json.RawMessage
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (abapError{}) != abapErrorResponse {
+		if (abaputils.AbapError{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
 			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
 			err = errors.Wrap(abapError, err.Error())
@@ -258,7 +259,7 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 	return err
 }
 
-func printLogs(entity abapEntity) {
+func printLogs(entity abaputils.PullEntity) {
 
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
@@ -298,7 +299,7 @@ func convertTime(logTimeStamp string) time.Time {
 	return t
 }
 
-type abapEntity struct {
+/* type abapEntity struct {
 	Metadata       abapMetadata `json:"__metadata"`
 	UUID           string       `json:"uuid"`
 	ScName         string       `json:"sc_name"`
@@ -365,4 +366,4 @@ type abapError struct {
 type abapErrorMessage struct {
 	Lang  string `json:"lang"`
 	Value string `json:"value"`
-}
+} */

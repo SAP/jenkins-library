@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
+func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	t.Run("CF ReadServiceKeyAbapEnvironment", func(t *testing.T) {
 
 		//given
-		cfconfig := AbapEnvironmentOptions{
+		options := AbapEnvironmentOptions{
 			Username:          "testUser",
 			Password:          "testPassword",
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -23,7 +23,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 
 		//when
 		var abapKey AbapServiceKey
-		abapKey, _ = ReadServiceKeyAbapEnvironment(cfconfig, true)
+		abapKey, _ = ReadServiceKeyAbapEnvironment(options, true)
 
 		//then
 		assert.Equal(t, "", abapKey.Abap.Password)
@@ -35,7 +35,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.Binding.Type)
 		assert.Equal(t, "", abapKey.Binding.ID)
 		assert.Equal(t, "", abapKey.Binding.Version)
-		assert.Equal(t, "", abapKey.Systemid)
+		assert.Equal(t, "", abapKey.SystemID)
 		assert.Equal(t, "", abapKey.URL)
 		//assert.Error(t, err)
 	})
@@ -45,7 +45,7 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("GetAbapCommunicationArrangementInfo", func(t *testing.T) {
 
 		//given
-		cfconfig := AbapEnvironmentOptions{
+		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
 			CfOrg:             "testOrg",
@@ -58,7 +58,7 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var c = command.Command{}
-		connectionDetails, _ = GetAbapCommunicationArrangementInfo(cfconfig, c)
+		connectionDetails, _ = GetAbapCommunicationArrangementInfo(options, c, "", false)
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)

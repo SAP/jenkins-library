@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
 
@@ -38,7 +39,7 @@ func TestTriggerPull(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -73,7 +74,7 @@ func TestTriggerPull(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -107,7 +108,7 @@ func TestPollEntity(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
@@ -138,7 +139,7 @@ func TestPollEntity(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
@@ -154,7 +155,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 
 	t.Run("Test cf cli command: success case", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -164,40 +165,53 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
+
 		execRunner := mock.ExecMockRunner{}
 
-		getAbapCommunicationArrangementInfo(config, &execRunner)
+		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
 		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
 		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
+
 		execRunner := mock.ExecMockRunner{}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
 
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
+
 		execRunner := mock.ExecMockRunner{}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, &execRunner, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
