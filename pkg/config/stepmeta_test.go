@@ -230,6 +230,9 @@ func TestGetContextParameterFilters(t *testing.T) {
 					{Name: "testSecret1", Type: "jenkins"},
 					{Name: "testSecret2", Type: "jenkins"},
 				},
+				Resources: []StepResources{
+					{Name: "buildDescriptor", Type: "stash"},
+				},
 			},
 		},
 	}
@@ -255,14 +258,14 @@ func TestGetContextParameterFilters(t *testing.T) {
 		},
 	}
 
-	t.Run("Secrets", func(t *testing.T) {
+	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"testSecret1", "testSecret2"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Containers", func(t *testing.T) {

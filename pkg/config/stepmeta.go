@@ -198,16 +198,19 @@ func (m *StepData) GetParameterFilters() StepFilters {
 // GetContextParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetContextParameterFilters() StepFilters {
 	var filters StepFilters
+	contextFilters := []string{}
 	for _, secret := range m.Spec.Inputs.Secrets {
-		filters.All = append(filters.All, secret.Name)
-		filters.General = append(filters.General, secret.Name)
-		filters.Steps = append(filters.Steps, secret.Name)
-		filters.Stages = append(filters.Stages, secret.Name)
-		filters.Parameters = append(filters.Parameters, secret.Name)
-		filters.Env = append(filters.Env, secret.Name)
+		contextFilters = append(contextFilters, secret.Name)
 	}
 
-	containerFilters := []string{}
+	if len(m.Spec.Inputs.Resources) > 0 {
+		for _, res := range m.Spec.Inputs.Resources {
+			if res.Type == "stash" {
+				contextFilters = append(contextFilters, "stashContent")
+				break
+			}
+		}
+	}
 	if len(m.Spec.Containers) > 0 {
 		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
@@ -219,19 +222,21 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 			}
 		}
 		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
-		containerFilters = append(containerFilters, parameterKeys...)
+		contextFilters = append(contextFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
-		containerFilters = append(containerFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
+		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
-	if len(containerFilters) > 0 {
-		filters.All = append(filters.All, containerFilters...)
-		filters.General = append(filters.General, containerFilters...)
-		filters.Steps = append(filters.Steps, containerFilters...)
-		filters.Stages = append(filters.Stages, containerFilters...)
-		filters.Parameters = append(filters.Parameters, containerFilters...)
+	if len(contextFilters) > 0 {
+		filters.All = append(filters.All, contextFilters...)
+		filters.General = append(filters.General, contextFilters...)
+		filters.Steps = append(filters.Steps, contextFilters...)
+		filters.Stages = append(filters.Stages, contextFilters...)
+		filters.Parameters = append(filters.Parameters, contextFilters...)
+		filters.Env = append(filters.Env, contextFilters...)
+
 	}
 	return filters
 }
