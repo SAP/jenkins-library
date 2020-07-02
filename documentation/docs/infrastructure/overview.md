@@ -40,6 +40,11 @@ For more information on the Cx Server and how to customize your Jenkins, have a 
 With more and more qualities checked automatically in the pipeline, more and more resources are required to handle the workload.
 This section shows how to scale the pipeline by adding [Jenkins build agents][build-agents].
 
+However, before setting up agents please consider also other ways to scale the build infrastructure.
+It might be an option to have only one huge master per project or team.
+This has the advantage of bringing more configuration flexibility and isolation for the individual teams but has the disadvantage that parts of the configuration have to be maintained twice.
+Furthermore, having agents and thus network communication between the build servers increases that risk of failures.
+
 To add an agent to the Jenkins master, please make sure to fulfil the following requirements similar to the ones for the Jenkins master:
 
 - Access to a new server which runs on Linux
