@@ -147,6 +147,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
 
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/my/image:latest'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is([]))
 
         assertThat(artifacts[0], allOf(hasEntry('artifacts', '1234.pdf'), hasEntry('allowEmptyArchive', false)))
     }
@@ -315,7 +316,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
-        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1")
+        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1, please see log file for more details.")
 
         stepRule.step.piperExecuteBin(
             [
@@ -358,5 +359,23 @@ class PiperExecuteBinTest extends BasePiperTest {
         }
         assertThat(unstableCalled, is(true))
 
+    }
+
+    @Test
+    void testProperStashHandling() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"dockerImage":"test","stashContent":["buildDescriptor"]}')
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            []
+        )
+
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests"]))
     }
 }

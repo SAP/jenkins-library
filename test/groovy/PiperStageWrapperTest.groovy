@@ -163,7 +163,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Test
     void testGlobalOverwritingExtension() {
         helper.registerAllowedMethod('fileExists', [String.class], {s ->
-            return (s == 'test_global_overwriting.groovy')
+            return (s == '.pipeline/tmp/global_extensions/test_global_overwriting.groovy')
         })
 
         helper.registerAllowedMethod('load', [String.class], {
@@ -254,7 +254,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Test
     void testStageCrashesInExtension() {
         helper.registerAllowedMethod('fileExists', [String.class], { path ->
-            return (path == 'test_crashing_extension.groovy')
+            return (path == '.pipeline/tmp/global_extensions/test_crashing_extension.groovy')
         })
 
         helper.registerAllowedMethod('load', [String.class], {
@@ -280,7 +280,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         }
 
         assertThat(executed, is(true))
-        assertThat(loggingRule.log, containsString('[piperStageWrapper] Found global interceptor \'test_crashing_extension.groovy\' for test_crashing_extension.'))
+        assertThat(loggingRule.log, containsString('[piperStageWrapper] Found global interceptor \'.pipeline/tmp/global_extensions/test_crashing_extension.groovy\' for test_crashing_extension.'))
         assertThat(DebugReport.instance.failedBuild.step, is('test_crashing_extension(extended)'))
         assertThat(DebugReport.instance.failedBuild.fatal, is('true'))
         assertThat(DebugReport.instance.failedBuild.reason, is(caught))

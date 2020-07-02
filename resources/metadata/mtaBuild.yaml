@@ -14,7 +14,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: NEO
         possibleValues:
           - CF
           - NEO
@@ -48,7 +48,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: /opt/sap/mta/lib/mta.jar
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
@@ -58,6 +58,8 @@ spec:
         - STEPS
         mandatory: false
         default:
+        aliases:
+          - name: extension
       - name: platform
         type: string
         description: "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed."
@@ -66,7 +68,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
-        default:
+        default: CF
         possibleValues:
           - CF
           - NEO
@@ -84,11 +86,20 @@ spec:
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
+      - name: sapNpmRegistry
+        type: string
+        description: "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: https://npm.sap.com
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
@@ -107,6 +118,25 @@ spec:
         - STEPS
         mandatory: false
         default:
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description: If enabled, for npm packages this step will install all depedencies including dev dependencies. For maven it will install all artifacts to the local maven repository.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -116,6 +146,16 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - name: mta
-      image: devxci/mbtci
+    - image: devxci/mbtci:1.0.14.1
       imagePullPolicy: Always
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: cloudMbt
+    - image: ppiper/mta-archive-builder:v1
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: mtaBuildTool
+              value: classic

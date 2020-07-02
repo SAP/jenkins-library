@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"strings"
+
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,7 +19,7 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	runDetect(config, &c)
 }
 
-func runDetect(config detectExecuteScanOptions, command shellRunner) {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
@@ -26,6 +27,7 @@ func runDetect(config detectExecuteScanOptions, command shellRunner) {
 	script := strings.Join(args, " ")
 
 	command.SetDir(".")
+	command.SetEnv([]string{"BLACKDUCK_SKIP_PHONE_HOME=true"})
 
 	err := command.RunShell("/bin/bash", script)
 	if err != nil {

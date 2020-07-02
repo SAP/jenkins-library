@@ -23,7 +23,7 @@ The following table gives an overview over the features available per build tool
 
 | Feature                    | Maven | npm | MTA Maven | MTA npm |
 |----------------------------|-------|-----|-----------|---------|
-| Automatic Versioning       | x     |     | x         | x       |
+| Automatic Versioning       | x     | x   | x         | x       |
 | Build                      | x     | x   | x         | x       |
 | Backend Integration Tests  | x     | x   | x         | x       |
 | Frontend Integration Tests | x     | x   | x         | x       |
@@ -137,8 +137,6 @@ More details on the execution behavior of ESLint and the usage of configuration 
 Note, if it is necessary to disable the default linting behavior, it is possible to, e.g., define a script `"ci-lint" : "exit 0"` in your `package.json`.
 
 We recommend the use of a custom defined `ci-lint` script in your `package.json` to address project specific linting requirements.
-
-Note, the parameters defined for the Lint stage in `.pipeline/config.yml` only apply in case SAPUI5 components are checked by the pipeline and are ignored otherwise.
 
 #### End-to-End Tests
 

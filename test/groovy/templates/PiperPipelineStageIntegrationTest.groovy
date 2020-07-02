@@ -13,6 +13,9 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
+    private List stepsCalled = []
+    private Map stepParameters = [:]
+
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -26,16 +29,38 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             return body()
         })
+
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+            stepsCalled.add('npmExecuteScripts')
+            stepParameters.npmExecuteScripts = m
+        })
+
+        helper.registerAllowedMethod('testsPublishResults', [Map.class], {m ->
+            stepsCalled.add('testsPublishResults')
+            stepParameters.testsPublishResults = m
+        })
+
+        helper.registerAllowedMethod('withEnv', [List.class, Closure.class], {env, body ->
+            body()
+        })
     }
 
     @Test
     void testStageDefault() {
-
         jsr.step.piperPipelineStageIntegration(
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(jlr.log, containsString('No default stage implementation is provided for this stage.'))
+        assertThat(stepsCalled, not(anyOf(hasItem('npmExecuteScripts'), hasItem('testsPublishResults'))))
+    }
 
+    @Test
+    void testAcceptanceStageNpmExecuteScripts() {
+        jsr.step.piperPipelineStageIntegration(
+            script: nullScript,
+            juStabUtils: utils,
+            npmExecuteScripts: true
+        )
+        assertThat(stepsCalled, hasItems('npmExecuteScripts', 'testsPublishResults'))
     }
 }

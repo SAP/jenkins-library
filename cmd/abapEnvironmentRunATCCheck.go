@@ -123,7 +123,7 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details connectionD
 		resp, err = runATC("POST", details, body, client)
 	}
 	if err != nil {
-		return resp, fmt.Errorf("Triggering ATC result failed: %w", err)
+		return resp, fmt.Errorf("Triggering ATC run failed: %w", err)
 	}
 	return resp, nil
 }

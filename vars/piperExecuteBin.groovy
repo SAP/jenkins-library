@@ -11,7 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
+void call(Map parameters = [:], String stepName, String metadataFile, List credentialInfo, boolean failOnMissingReports = false, boolean failOnMissingLinks = false, boolean failOnError = false) {
 
     handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
     if (failOnError) {
@@ -20,26 +20,15 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
 
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
 
-        def stepParameters = [:].plus(parameters)
-
-        def script = checkScript(this, parameters) ?: this
-        stepParameters.remove('script')
-
-        def utils = parameters.juStabUtils ?: new Utils()
-        stepParameters.remove('juStabUtils')
-
+        Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        stepParameters.remove('jenkinsUtilsStub')
+        def utils = parameters.juStabUtils ?: new Utils()
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
-        script.commonPipelineEnvironment.writeToDisk(script)
+        String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
-
-        // When converting to JSON and back again, entries which had a 'null' value will now have a value
-        // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
-        stepParameters = MapUtils.pruneNulls(stepParameters)
+        prepareExecution(script, utils, parameters)
+        prepareMetadataResource(script, metadataFile)
+        Map stepParameters = prepareStepParameters(parameters)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -52,13 +41,30 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Context Config: ${config}"
+            Map config
+            handleErrorDetails(stepName) {
+                config = getStepContextConfig(script, piperGoPath, metadataFile, defaultConfigArgs, customConfigArg)
+                echo "Context Config: ${config}"
+            }
+
+            // prepare stashes
+            // first eliminate empty stahes
+            config.stashContent = utils.unstashAll(config.stashContent)
+            // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
+            if (config.stashContent?.size() > 0) {
+                config.stashContent.add('pipelineConfigAndTests')
+            }
+
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -66,6 +72,35 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             }
         }
     }
+}
+
+static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
+    piperGoUtils.unstashPiperBin()
+    utils.unstash('pipelineConfigAndTests')
+    script.commonPipelineEnvironment.writeToDisk(script)
+}
+
+static Map prepareStepParameters(Map parameters) {
+    Map stepParameters = [:].plus(parameters)
+
+    stepParameters.remove('script')
+    stepParameters.remove('jenkinsUtilsStub')
+    stepParameters.remove('piperGoPath')
+    stepParameters.remove('juStabUtils')
+    stepParameters.remove('piperGoUtils')
+
+    // When converting to JSON and back again, entries which had a 'null' value will now have a value
+    // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+    return MapUtils.pruneNulls(stepParameters)
+}
+
+static void prepareMetadataResource(Script script, String metadataFile) {
+    script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
+}
+
+static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
+    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
 
 static String getCustomDefaultConfigs() {
@@ -81,7 +116,7 @@ static String getCustomDefaultConfigs() {
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
@@ -97,13 +132,9 @@ static String getCustomConfigArg(def script) {
 
 void dockerWrapper(script, config, body) {
     if (config.dockerImage) {
-        dockerExecute(
-            script: script,
-            dockerImage: config.dockerImage,
-            dockerWorkspace: config.dockerWorkspace,
-            dockerOptions: config.dockerOptions,
-            //ToDo: add additional dockerExecute parameters
-        ) {
+        Map dockerExecuteParameters = [:].plus(config)
+        dockerExecuteParameters.script = script
+        dockerExecute(dockerExecuteParameters) {
             body()
         }
     } else {
@@ -164,6 +195,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }
