@@ -90,7 +90,7 @@ You can extract the binary using Docker means to your local filesystem:
 
 ```sh
 docker create --name piper piper:latest
-docker cp piper:/piper .
+docker cp piper:/build/piper .
 docker rm piper
 ```
 
@@ -203,6 +203,24 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 
 It has proven a good practice to bubble up errors until the runtime entry function  and only
 there exit via the logging framework (see also [logging](#logging)).
+
+### Error categories
+
+For errors, we have a convenience function to set a pre-defined category once an error occurs:
+
+```golang
+log.SetErrorCategory(log.ErrorCompliance)
+```
+
+Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
+
+With writing a fatal error
+
+```golang
+log.Entry().WithError(err).Fatal("the error message")
+```
+the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
+Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 ## Testing
 

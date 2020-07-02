@@ -12,9 +12,12 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: credentialsId
+      - name: abapCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: credentialsId
     params:
       - name: username
         type: string
@@ -57,6 +60,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
@@ -66,6 +70,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/org
       - name: cfSpace
@@ -75,6 +80,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/space
       - name: cfServiceInstance
@@ -84,17 +90,21 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/serviceInstance
-      - name: cfServiceKey
+      - name: cfServiceKeyName
         type: string
         description: Cloud Foundry Service Key
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         aliases:
           - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
   containers:
     - name: cf
       image: ppiper/cf-cli

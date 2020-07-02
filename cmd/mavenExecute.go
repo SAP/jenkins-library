@@ -19,7 +19,7 @@ func mavenExecute(config mavenExecuteOptions, _ *telemetry.CustomData) {
 	}
 }
 
-func runMavenExecute(config mavenExecuteOptions, runner execRunner) error {
+func runMavenExecute(config mavenExecuteOptions, runner command.ExecRunner) error {
 	options := maven.ExecuteOptions{
 		PomPath:                     config.PomPath,
 		ProjectSettingsFile:         config.ProjectSettingsFile,

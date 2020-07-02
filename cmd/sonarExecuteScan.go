@@ -41,8 +41,14 @@ var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
 
-func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
-	runner := command.Command{}
+func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
+	runner := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			"infrastructure": {
+				"Caused by: java.net.SocketTimeoutException: timeout",
+			},
+		},
+	}
 	// reroute command output to logging framework
 	runner.Stdout(log.Writer())
 	runner.Stderr(log.Writer())
@@ -57,12 +63,14 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData) {
 		options:     []string{},
 	}
 
+	influx.step_data.fields.sonar = "false"
 	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
+	influx.step_data.fields.sonar = "true"
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
 	if len(config.Host) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
 	}
@@ -77,12 +85,15 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
 	}
 	if err := handlePullRequest(config); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
 	if err := loadSonarScanner(config.SonarScannerDownloadURL, client); err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
 	if err := loadCertificates(config.CustomTLSCertificateLinks, client, runner); err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
 
@@ -110,7 +121,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	} else {
 		// write links JSON
 		links := []StepResults.Path{
-			StepResults.Path{
+			{
 				Target: taskReport.DashboardURL,
 				Name:   "Sonar Web UI",
 			},
@@ -191,7 +202,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
-func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) error {
+func loadCertificates(certificateString string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {

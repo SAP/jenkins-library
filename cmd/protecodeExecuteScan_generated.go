@@ -95,7 +95,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 
 !!! hint "Auditing findings (Triaging)"
     Triaging is now supported by the Protecode backend and also Piper does consider this information during the analysis of the scan results though product versions are not supported by Protecode. Therefore please make sure that the ` + "`" + `fileName` + "`" + ` you are providing does either contain a stable version or that it does not contain one at all. By ensuring that you are able to triage CVEs globally on the upload file's name without affecting any other artifacts scanned in the same Protecode group and as such triaged vulnerabilities will be considered during the next scan and will not fail the build anymore.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -106,6 +106,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -118,7 +119,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -131,6 +132,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			protecodeExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -139,17 +141,17 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 }
 
 func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.ExcludeCVEs, "excludeCVEs", "[]", "DEPRECATED: Do use triaging within the Protecode UI instead")
+	cmd.Flags().StringVar(&stepConfig.ExcludeCVEs, "excludeCVEs", `[]`, "DEPRECATED: Do use triaging within the Protecode UI instead")
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&stepConfig.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
-	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", "binary", "Decides which parts are removed from the Protecode backend after the scan")
+	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", `binary`, "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
 	cmd.Flags().BoolVar(&stepConfig.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 	cmd.Flags().BoolVar(&stepConfig.AddSideBarLink, "addSideBarLink", true, "Whether to create a side bar link pointing to the report produced by Protecode or not")
-	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", "60", "The timeout to wait for the scan to finish")
+	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", `60`, "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
-	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", "protecode_report.pdf", "The file name of the report to be created")
+	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", `protecode_report.pdf`, "The file name of the report to be created")
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
