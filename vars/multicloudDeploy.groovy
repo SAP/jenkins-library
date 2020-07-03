@@ -66,9 +66,6 @@ void call(parameters = [:]) {
 
         Map config = configHelper.use()
 
-        configHelper
-            .withMandatoryProperty('source', null, { config.neoTargets })
-
         utils.pushToSWA([
             step         : STEP_NAME,
             stepParamKey1: 'enableZeroDowntimeDeployment',
