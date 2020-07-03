@@ -222,20 +222,21 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        // validate cf appname
+        // validate cf app name
         if (config.cloudFoundry.appName) {
             String appName = config.cloudFoundry.appName.toString()
             boolean isValidCfAppName = appName.matches("^[a-zA-Z0-9]*\$")
 
-            if (appName.contains("_")) {
-                error("Your application name $appName containes a '_' (underscore) which is not allowed, only letters and numbers can be used.\n" +
-                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
-            } else if (!isValidCfAppName) {
-                echo "Your application name contains non-alphanumeric characters that may lead to errors in the future, as they are not supported by CloudFoundry. \n" +
+            if (!isValidCfAppName) {
+                echo "WARNING: Your application name $appName contains non-alphanumeric characters which may lead to errors in the future, as they are not supported by CloudFoundry.\n" +
                     "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings"
 
-                addBadge(icon: "warning.gif", text: "Your application name contains non-alphanumeric characters that may lead to errors in the future, as they are not supported by CloudFoundry. \n" +
-                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings")
+                // Underscore in the app name will lead to errors because cf uses the appname as part of the url which may not contain underscores
+                if (appName.contains("_")) {
+                    error("Your application name $appName contains a '_' (underscore) which is not allowed, only letters and numbers can be used. " +
+                        "Please change the name to fit this requirement.\n" +
+                        "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+                }
             }
         }
 

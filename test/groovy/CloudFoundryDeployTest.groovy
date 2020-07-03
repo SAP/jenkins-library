@@ -1,4 +1,5 @@
 import com.sap.piper.JenkinsUtils
+import hudson.AbortException
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -1067,6 +1068,38 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 'cf login ', '--some-login-opt value',
                 'cf bg-deploy', '--some-deploy-opt mta-value'])))
 
+    }
+
+    @Test(expected = AbortException.class)
+    void 'appName with underscores should throw an error'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                appName: 'my_invalid_app_name'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'target/test.mtar'
+        ])
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars should work'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                appName: 'myValidAppName123'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'target/test.mtar'
+        ])
     }
 
 }
