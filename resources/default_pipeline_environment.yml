@@ -164,7 +164,7 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     apiParameters: ''
     loginParameters: ''
-    deployTool: 'cf_native'
+    deployTool: ''
     deployType: 'standard'
     keepOldInstance: false
     cfNativeDeployParameters: ''

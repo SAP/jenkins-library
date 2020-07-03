@@ -12,11 +12,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-     /**
-     * Defines the tool which is used for building the artifact.
-     * @possibleValues `dub`, `docker`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
-     */
-    'buildTool',
     'cloudFoundry',
         /**
          * Cloud Foundry API endpoint.
@@ -216,7 +211,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
-        
+
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'deployTool',
