@@ -91,10 +91,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [
                 camSystemRole: 'testRole',
-                cfCredentialsId: 'myCreds'
+                cfCredentialsId: 'test_cfCredentialsId'
             ],
             stages: [
                 acceptance: [
+                    cfAppName: 'testAppName',
                     cfOrg: 'testOrg',
                     cfSpace: 'testSpace',
                     deployUser: 'testUser',
@@ -104,17 +105,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 cloudFoundryDeploy: []
             ]
         ]
-
+        nullScript.commonPipelineEnvironment.setBuildTool('mta')
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: '',
+            mtaPath: 'target/test.mtar',
             stageName: 'acceptance',
         ])
         // asserts
-        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds'))
-        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=mtaDeployPlugin, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=test_cfCredentialsId, mtaExtensionCredentials=null'))
     }
 
     @Test
@@ -1067,6 +1068,89 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 'cf login ', '--some-login-opt value',
                 'cf bg-deploy', '--some-deploy-opt mta-value'])))
 
+    }
+
+    @Test
+    void testMtaExtensionCredentials() {
+        fileExistsRule.existingFiles.addAll(
+            'mtaext.mtaext',
+        )
+        credentialsRule.withCredentials("mtaExtCredTest","token")
+
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            if (file == 'mtaext.mtaext') {
+                return '<%= testCred %>'
+            }
+            return ''
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            cloudFoundry:  [
+                mtaExtensionDescriptor: "mtaext.mtaext",
+                mtaExtensionCredentials: [
+                    testCred: 'mtaExtCredTest'
+                ],
+            ],
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString('cp mtaext.mtaext mtaext.mtaext.original')))
+        assertThat(shellRule.shell, hasItem(containsString('mv --force mtaext.mtaext.original mtaext.mtaext')))
+        assertThat(writeFileRule.files['mtaext.mtaext'], containsString('token'))
+    }
+
+    @Test
+    void testMtaExtensionDescriptorNotFound() {
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryDeploy] The mta extension descriptor file mtaext.mtaext does not exist at the configured location.')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            cloudFoundry:  [
+                mtaExtensionDescriptor: "mtaext.mtaext",
+            ],
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar'
+        ])
+    }
+
+    @Test
+    void testMtaExtensionDescriptorReadFails() {
+        fileExistsRule.existingFiles.addAll(
+            'mtaext.mtaext',
+        )
+
+        thrown.expect(Exception)
+        thrown.expectMessage('[cloudFoundryDeploy] Unable to read mta extension file mtaext.mtaext.')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            cloudFoundry:  [
+                mtaExtensionDescriptor: "mtaext.mtaext",
+                mtaExtensionCredentials: [
+                    testCred: 'mtaExtCredTest'
+                ],
+            ],
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar'
+        ])
     }
 
 }

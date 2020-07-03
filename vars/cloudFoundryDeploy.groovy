@@ -83,6 +83,7 @@ import static com.sap.piper.Prerequisites.checkScript
         'space',
     /**
      * Defines the tool which should be used for deployment.
+     * If it is not set it will be inferred automatically based on the buildTool, i.e., for MTA projects `mtaDeployPlugin` will be used and `cf_native` for other types of projects.
      * @possibleValues 'cf_native', 'mtaDeployPlugin'
      */
     'deployTool',
@@ -282,11 +283,10 @@ def findMtar(){
 
 def deployMta(config) {
     String mtaExtensionDescriptorParam = ''
-    println("starting deployMTA iwth config: ${config}")
-    println("config.cloudFoundry.mtaExtensionDescriptor: ${config.cloudFoundry.mtaExtensionDescriptor}")
+    
     if (config.cloudFoundry.mtaExtensionDescriptor) {
         if (!fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
-            error "The mta extension descriptor file ${config.cloudFoundry.mtaExtensionDescriptor} does not exist at the configured location."
+            error "[${STEP_NAME}] The mta extension descriptor file ${config.cloudFoundry.mtaExtensionDescriptor} does not exist at the configured location."
         }
 
         mtaExtensionDescriptorParam = "-e ${config.cloudFoundry.mtaExtensionDescriptor}"
@@ -312,14 +312,7 @@ def deployMta(config) {
         deploy(apiStatement, deployStatement, config, null)
     } finally {
         if (config.cloudFoundry.mtaExtensionCredentials && config.cloudFoundry.mtaExtensionDescriptor && fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
-            echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor}.original:"
-            sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}.original"
-            echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor}:"
-            sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}"
-            echo "File will be moved now"
-            sh "mv --force ${config.cloudFoundry.mtaExtensionDescriptor}.original ${config.cloudFoundry.mtaExtensionDescriptor} || echo 'The file ${config.cloudFoundry.mtaExtensionDescriptor}.original could not be renamed. \n" + " Kindly refer to the manual at https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment. \nIf this should not happen, please create an issue at https://github.com/SAP/cloud-s4-sdk-pipeline/issues'"
-            echo "Thats ${config.cloudFoundry.mtaExtensionDescriptor} after mv:"
-            sh "cat ${config.cloudFoundry.mtaExtensionDescriptor}"
+            sh "mv --force ${config.cloudFoundry.mtaExtensionDescriptor}.original ${config.cloudFoundry.mtaExtensionDescriptor} || echo 'The file ${config.cloudFoundry.mtaExtensionDescriptor}.original could not be renamed."
         }
     }
 }
@@ -344,11 +337,7 @@ private void handleMtaExtensionCredentials(Map<?, ?> config) {
         }
     }
 
-    try {
-        writeFile file: config.cloudFoundry.mtaExtensionDescriptor, text: fileContent
-    } catch (Exception e) {
-        error("[${STEP_NAME}] Unable to write credentials values to the mta extension file ${config.cloudFoundry.mtaExtensionDescriptor}. (${e.getMessage()})")
-    }
+    writeFile file: config.cloudFoundry.mtaExtensionDescriptor, text: fileContent
 }
 
 private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
