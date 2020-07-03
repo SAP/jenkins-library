@@ -222,7 +222,7 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        // validate cf app name
+        // validate cf app name to avoid a failing deployment due to invalid chars
         if (config.cloudFoundry.appName) {
             String appName = config.cloudFoundry.appName.toString()
             boolean isValidCfAppName = appName.matches("^[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]\$")
@@ -233,13 +233,13 @@ void call(Map parameters = [:]) {
 
                 // Underscore in the app name will lead to errors because cf uses the appname as part of the url which may not contain underscores
                 if (appName.contains("_")) {
-                    error("Your application name $appName contains a '_' (underscore) which is not allowed, only letters and numbers can be used. " +
+                    error("Your application name $appName contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. " +
                         "Please change the name to fit this requirement.\n" +
                         "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
                 }
 
                 if (appName.startsWith("-") || appName.endsWith("-")) {
-                    error("Your application name $appName contains a starts or ends with a '-' (dash) which is not allowed, only letters and numbers can be used. " +
+                    error("Your application name $appName contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. " +
                         "Please change the name to fit this requirement.\n" +
                         "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
                 }
