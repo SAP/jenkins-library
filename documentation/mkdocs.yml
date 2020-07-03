@@ -1,8 +1,11 @@
 site_name: 'Project "Piper": Continuous Delivery for the SAP Ecosystem'
 nav:
-    - Home: index.md
+    - 'Home': index.md
     - 'Getting Started With Project "Piper"' : guidedtour.md
-    - Configuration: configuration.md
+    - 'Configuration': configuration.md
+    - 'Infrastructure':
+        - 'Overview': infrastructure/overview.md
+        - 'Custom Jenkins Setup': infrastructure/customjenkins.md
     - 'Pipelines':
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
@@ -106,8 +109,6 @@ nav:
         - artifactSetVersion: steps/artifactSetVersion.md
         - npmExecute: steps/npmExecute.md
     - 'Command line tool': cli/index.md
-    - Resources:
-        - 'Custom Jenkins Setup': customjenkins.md
 
 theme:
     name: 'material'
