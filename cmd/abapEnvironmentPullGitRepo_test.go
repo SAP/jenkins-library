@@ -169,11 +169,13 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		execRunner := &mock.ExecMockRunner{}
 
-		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
+		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
 		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
-		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
+		//assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
+		assert.Equal(t, []string{"api", "https://api.endpoint.com"}, execRunner.Calls[0].Params, "Wrong parameters")
+
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
@@ -183,18 +185,18 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
+			//CfServiceKeyName:  "testServiceKey",
+			Username: "testUser",
+			Password: "testPassword",
 		}
 
 		options := abaputils.AbapEnvironmentPullGitRepoOptions{
 			AbapEnvOptions: config,
 		}
 
-		//execRunner := mock.ExecMockRunner{}
+		execRunner := &mock.ExecMockRunner{}
 
-		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
@@ -209,9 +211,9 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 
-		//execRunner := mock.ExecMockRunner{}
+		execRunner := &mock.ExecMockRunner{}
 
-		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 

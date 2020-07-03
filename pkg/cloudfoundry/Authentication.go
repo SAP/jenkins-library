@@ -15,7 +15,7 @@ var c command.ExecRunner = &command.Command{}
 //LoginCheck checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
 //If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
-func LoginCheck(options LoginOptions) (bool, error) {
+func LoginCheck(options LoginOptions, c command.ExecRunner) (bool, error) {
 	var err error
 
 	if options.CfAPIEndpoint == "" {
@@ -52,7 +52,7 @@ func LoginCheck(options LoginOptions) (bool, error) {
 
 //Login logs user in to Cloud Foundry via cf cli.
 //Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
-func Login(options LoginOptions) error {
+func Login(options LoginOptions, c command.ExecRunner) error {
 
 	var err error
 
@@ -62,7 +62,7 @@ func Login(options LoginOptions) error {
 
 	var loggedIn bool
 
-	loggedIn, err = LoginCheck(options)
+	loggedIn, err = LoginCheck(options, c)
 
 	if loggedIn == true {
 		return err

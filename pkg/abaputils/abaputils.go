@@ -15,7 +15,7 @@ import (
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
 // Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 // the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
-func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOption bool) (AbapServiceKey, error) {
+func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
 	var abapServiceKey AbapServiceKey
 	var err error
 
@@ -28,11 +28,8 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 		Password:      options.Password,
 	}
 
-	err = cloudfoundry.Login(config)
+	err = cloudfoundry.Login(config, c)
 	var serviceKeyBytes bytes.Buffer
-
-	// Command
-	var c = &command.Command{}
 
 	c.Stdout(&serviceKeyBytes)
 	if err == nil {
@@ -82,7 +79,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
 // If no oData service URL is set, the MANAGE_GIT_REPOSITORY OData service will be used
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
+func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
@@ -102,7 +99,7 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataUR
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, cfLogoutOption)
+		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c, cfLogoutOption)
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}

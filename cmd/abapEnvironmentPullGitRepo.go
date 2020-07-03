@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -32,10 +33,11 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	//copier.Copy(&employee, &user)
+	//var c = command.Command{}
+	var c command.ExecRunner = &command.Command{}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, "", false)
+	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "", false)
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}

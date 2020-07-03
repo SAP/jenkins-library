@@ -3,6 +3,7 @@ package abaputils
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +23,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 
 		//when
 		var abapKey AbapServiceKey
-		abapKey, _ = ReadServiceKeyAbapEnvironment(options, true)
+		abapKey, _ = ReadServiceKeyAbapEnvironment(options, &command.Command{}, true)
 
 		//then
 		assert.Equal(t, "", abapKey.Abap.Password)
@@ -56,7 +57,7 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 
 		//when
 		var connectionDetails ConnectionDetailsHTTP
-		connectionDetails, _ = GetAbapCommunicationArrangementInfo(options, "", false)
+		connectionDetails, _ = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "", false)
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
