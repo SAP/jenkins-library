@@ -215,9 +215,11 @@ void call(Map parameters = [:]) {
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
 
         Map config = configHelper.use()
-
+        println("Thats the build Tool: ${config.buildTool}")
+        println("Thats the deploy Tool: ${config.deployTool}")
+        println("That will be the result: ${config.buildTool=='mta' ? 'mtaDeployPlugin' : 'cf_native'}")
         if (!config.deployTool) {
-            configHelper.mixin(['deployTool': config.buildTool == 'mta' ? 'mtaDeployPlugin' : 'cf_native'])
+            configHelper.mixin(['deployTool': config.buildTool=='mta' ? 'mtaDeployPlugin' : 'cf_native'])
         }
 
         config = configHelper
@@ -225,7 +227,7 @@ void call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('deployTool')
             .use()
-
+        println("Thats the deploy Tool again: ${config.deployTool}")
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'deployTool',
