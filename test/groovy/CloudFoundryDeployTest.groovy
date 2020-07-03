@@ -115,7 +115,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             stageName: 'acceptance',
         ])
         // asserts
-        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=mtaDeployPlugin, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=test_cfCredentialsId, mtaExtensionCredentials=null'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=mtaDeployPlugin, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=test_cfCredentialsId'))
     }
 
     @Test
@@ -1086,19 +1086,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
-            cloudFoundry:  [
-                mtaExtensionDescriptor: "mtaext.mtaext",
-                mtaExtensionCredentials: [
-                    testCred: 'mtaExtCredTest'
-                ],
-            ],
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
+            mtaExtensionCredentials: [
+                testCred: 'mtaExtCredTest'
+            ]
         ])
 
         assertThat(shellRule.shell, hasItem(containsString('cp mtaext.mtaext mtaext.mtaext.original')))
@@ -1113,16 +1111,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
-            cloudFoundry:  [
-                mtaExtensionDescriptor: "mtaext.mtaext",
-            ],
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext"
         ])
     }
 
@@ -1137,19 +1133,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
-            cloudFoundry:  [
-                mtaExtensionDescriptor: "mtaext.mtaext",
-                mtaExtensionCredentials: [
-                    testCred: 'mtaExtCredTest'
-                ],
-            ],
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
+            mtaExtensionCredentials: [
+                testCred: 'mtaExtCredTest'
+            ],
         ])
     }
 

@@ -62,11 +62,6 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'manifestVariables',
         /**
-         * Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`.
-         * This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`
-         */
-        'mtaExtensionCredentials',
-        /**
          * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
          */
         'mtaExtensionDescriptor',
@@ -122,6 +117,11 @@ import static com.sap.piper.Prerequisites.checkScript
      * Additional parameters passed to mta deployment command.
      */
     'mtaDeployParameters',
+    /**
+     * Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`.
+     * This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`
+     */
+    'mtaExtensionCredentials',
     /**
      * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
      */
@@ -283,14 +283,14 @@ def findMtar(){
 def deployMta(config) {
     String mtaExtensionDescriptorParam = ''
 
-    if (config.cloudFoundry.mtaExtensionDescriptor) {
-        if (!fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
-            error "[${STEP_NAME}] The mta extension descriptor file ${config.cloudFoundry.mtaExtensionDescriptor} does not exist at the configured location."
+    if (config.mtaExtensionDescriptor) {
+        if (!fileExists(config.mtaExtensionDescriptor)) {
+            error "[${STEP_NAME}] The mta extension descriptor file ${config.mtaExtensionDescriptor} does not exist at the configured location."
         }
 
-        mtaExtensionDescriptorParam = "-e ${config.cloudFoundry.mtaExtensionDescriptor}"
+        mtaExtensionDescriptorParam = "-e ${config.mtaExtensionDescriptor}"
 
-        if (config.cloudFoundry.mtaExtensionCredentials) {
+        if (config.mtaExtensionCredentials) {
             handleMtaExtensionCredentials(config)
         }
     }
@@ -310,24 +310,24 @@ def deployMta(config) {
     try {
         deploy(apiStatement, deployStatement, config, null)
     } finally {
-        if (config.cloudFoundry.mtaExtensionCredentials && config.cloudFoundry.mtaExtensionDescriptor && fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
-            sh "mv --force ${config.cloudFoundry.mtaExtensionDescriptor}.original ${config.cloudFoundry.mtaExtensionDescriptor} || echo 'The file ${config.cloudFoundry.mtaExtensionDescriptor}.original could not be renamed."
+        if (config.mtaExtensionCredentials && config.mtaExtensionDescriptor && fileExists(config.mtaExtensionDescriptor)) {
+            sh "mv --force ${config.mtaExtensionDescriptor}.original ${config.mtaExtensionDescriptor} || echo 'The file ${config.mtaExtensionDescriptor}.original could not be renamed.'"
         }
     }
 }
 
 private void handleMtaExtensionCredentials(Map<?, ?> config) {
-    echo "[${STEP_NAME}] Modifying ${config.cloudFoundry.mtaExtensionDescriptor}. Adding credential values from Jenkins."
-    sh "cp ${config.cloudFoundry.mtaExtensionDescriptor} ${config.cloudFoundry.mtaExtensionDescriptor}.original"
+    echo "[${STEP_NAME}] Modifying ${config.mtaExtensionDescriptor}. Adding credential values from Jenkins."
+    sh "cp ${config.mtaExtensionDescriptor} ${config.mtaExtensionDescriptor}.original"
 
-    Map mtaExtensionCredentials = config.cloudFoundry.mtaExtensionCredentials
+    Map mtaExtensionCredentials = config.mtaExtensionCredentials
 
     String fileContent = ''
 
     try {
-        fileContent = readFile config.cloudFoundry.mtaExtensionDescriptor
+        fileContent = readFile config.mtaExtensionDescriptor
     } catch (Exception e) {
-        error("[${STEP_NAME}] Unable to read mta extension file ${config.cloudFoundry.mtaExtensionDescriptor}. (${e.getMessage()})")
+        error("[${STEP_NAME}] Unable to read mta extension file ${config.mtaExtensionDescriptor}. (${e.getMessage()})")
     }
 
     mtaExtensionCredentials.each { key, credentialsId ->
@@ -336,7 +336,7 @@ private void handleMtaExtensionCredentials(Map<?, ?> config) {
         }
     }
 
-    writeFile file: config.cloudFoundry.mtaExtensionDescriptor, text: fileContent
+    writeFile file: config.mtaExtensionDescriptor, text: fileContent
 }
 
 private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
