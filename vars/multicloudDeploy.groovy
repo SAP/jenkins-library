@@ -102,16 +102,17 @@ void call(parameters = [:]) {
         if (config.cfTargets) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
-            //def deployTool = script.commonPipelineEnvironment.getBuildTool()=='mta' ? 'mtaDeployPlugin' : 'cf_native'
-
-            // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
-            // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
-            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && deploymentType == "blue-green"
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
                 def target = config.cfTargets[i]
-                echo "Thats the cfTargetConfig: ${target}"
+
+                // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+                // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+                Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || (target.mtaExtensionCredentials && config.parallelExecution))
+
+                if (target.mtaExtensionCredentials) runInIsolatedWorkspace = true
+
                 Closure deployment = {
                     Utils deploymentUtils = new Utils()
                     if (runInIsolatedWorkspace) {
@@ -125,7 +126,6 @@ void call(parameters = [:]) {
                         deployType: deploymentType,
                         cloudFoundry: target,
                         mtaPath: script.commonPipelineEnvironment.mtarFilePath,
-                        //deployTool: deployTool
                     )
                     if (runInIsolatedWorkspace) {
                         deploymentUtils.stashStageFiles(script, stageName)
