@@ -203,31 +203,20 @@ void call(Map parameters = [:]) {
 
         final script = checkScript(this, parameters) ?: this
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('deployTool', script.commonPipelineEnvironment.getBuildTool()=='mta' ? 'mtaDeployPlugin' : 'cf_native')
+            .dependingOn('deployTool').mixin('dockerImage')
+            .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
-            .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
-
-        Map config = configHelper.use()
-        println("Thats the build Tool: ${config.buildTool}")
-        println("Thats the deploy Tool: ${config.deployTool}")
-        println("That will be the result: ${config.buildTool=='mta' ? 'mtaDeployPlugin' : 'cf_native'}")
-        if (!config.deployTool) {
-            configHelper.mixin(['deployTool': config.buildTool=='mta' ? 'mtaDeployPlugin' : 'cf_native'])
-        }
-
-        config = configHelper
-            .dependingOn('deployTool').mixin('dockerImage')
-            .dependingOn('deployTool').mixin('dockerWorkspace')
-            .withMandatoryProperty('deployTool')
             .use()
-        println("Thats the deploy Tool again: ${config.deployTool}")
+        
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'deployTool',
