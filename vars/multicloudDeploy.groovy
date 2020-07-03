@@ -124,6 +124,8 @@ void call(parameters = [:]) {
                         jenkinsUtilsStub: jenkinsUtils,
                         deployType: deploymentType,
                         cloudFoundry: target,
+                        mtaExtensionDescriptor: target.mtaExtensionDescriptor,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials,
                         mtaPath: script.commonPipelineEnvironment.mtarFilePath,
                     )
                     if (runInIsolatedWorkspace) {
