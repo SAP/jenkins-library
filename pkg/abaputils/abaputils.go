@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -16,7 +17,9 @@ import (
 // Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 // the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
+
 	var abapServiceKey AbapServiceKey
+	var serviceKeyBytes bytes.Buffer
 	var err error
 
 	//Logging into Cloud Foundry
@@ -29,7 +32,6 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	}
 
 	err = cloudfoundry.Login(config, c)
-	var serviceKeyBytes bytes.Buffer
 
 	c.Stdout(&serviceKeyBytes)
 	if err == nil {
@@ -89,8 +91,17 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 	}
 
 	if options.Host != "" {
-		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + options.Host + oDataURL
+		// Host, User and Password are directly provided -> check for host prefix (double https)
+		match, err := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, options.Host)
+		if err != nil {
+			return connectionDetails, errors.Wrap(err, "Host prefix validation failed")
+		}
+
+		if match {
+			connectionDetails.URL = options.Host + oDataURL
+		} else {
+			connectionDetails.URL = "https://" + options.Host + oDataURL
+		}
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
 	} else {

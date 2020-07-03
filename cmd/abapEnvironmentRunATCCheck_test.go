@@ -11,7 +11,7 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
-	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
+	t.Run("0", func(t *testing.T) {
 		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
