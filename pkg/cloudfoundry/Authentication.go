@@ -10,7 +10,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-var c command.ExecRunner = &command.Command{}
+// ExecRunner ...
+var ExecRunner command.ExecRunner = &command.Command{}
 
 //LoginCheck checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
@@ -26,11 +27,11 @@ func LoginCheck(options LoginOptions) (bool, error) {
 	var cfCheckLoginScript = append([]string{"api", options.CfAPIEndpoint}, options.CfAPIOpts...)
 
 	var cfLoginBytes bytes.Buffer
-	c.Stdout(&cfLoginBytes)
+	ExecRunner.Stdout(&cfLoginBytes)
 
 	var result string
 
-	err = c.RunExecutable("cf", cfCheckLoginScript...)
+	err = ExecRunner.RunExecutable("cf", cfCheckLoginScript...)
 
 	if err != nil {
 		return false, fmt.Errorf("Failed to check if logged in: %w", err)
@@ -82,7 +83,7 @@ func Login(options LoginOptions) error {
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-		err = c.RunExecutable("cf", cfLoginScript...)
+		err = ExecRunner.RunExecutable("cf", cfLoginScript...)
 	}
 
 	if err != nil {
@@ -99,7 +100,7 @@ func Logout() error {
 
 	log.Entry().Info("Logging out of Cloud Foundry")
 
-	err := c.RunExecutable("cf", cfLogoutScript)
+	err := ExecRunner.RunExecutable("cf", cfLogoutScript)
 	if err != nil {
 		return fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
 	}

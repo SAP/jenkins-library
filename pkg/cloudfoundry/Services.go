@@ -27,14 +27,14 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 
 	err = Login(config)
 	var serviceKeyBytes bytes.Buffer
-	c.Stdout(&serviceKeyBytes)
+	ExecRunner.Stdout(&serviceKeyBytes)
 	if err == nil {
 		//Reading Service Key
 		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKey).Info("Read service key for service instance")
 
 		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKey}
 
-		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
+		err = ExecRunner.RunExecutable("cf", cfReadServiceKeyScript...)
 	}
 	if err == nil {
 		var serviceKeyJSON string
