@@ -1,5 +1,4 @@
 import com.sap.piper.BashUtils
-import com.sap.piper.BuildTool
 import com.sap.piper.CfManifestUtils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
@@ -223,7 +222,7 @@ void call(Map parameters = [:]) {
             stepParam3: parameters?.script == null
         ], config)
 
-        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, mtaExtensionCredentials=${config.cloudFoundry.mtaExtensionCredentials}"
+        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}"
 
         //make sure that all relevant descriptors, are available in workspace
         utils.unstashAll(config.stashContent)
@@ -283,7 +282,7 @@ def findMtar(){
 
 def deployMta(config) {
     String mtaExtensionDescriptorParam = ''
-    
+
     if (config.cloudFoundry.mtaExtensionDescriptor) {
         if (!fileExists(config.cloudFoundry.mtaExtensionDescriptor)) {
             error "[${STEP_NAME}] The mta extension descriptor file ${config.cloudFoundry.mtaExtensionDescriptor} does not exist at the configured location."
