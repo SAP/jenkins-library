@@ -17,14 +17,14 @@ func TestHostConfig(t *testing.T) {
 			Password: "testPassword",
 			Host:     "https://api.endpoint.com",
 		}
-
 		options := abaputils.AbapEnvironmentRunATCCheckOptions{
 			AbapEnvOptions: config,
 		}
+
 		execRunner := &mock.ExecMockRunner{}
 		var con abaputils.ConnectionDetailsHTTP
 		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
-		//con, error := checkHost(config, con)
+
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
 			assert.Equal(t, "testPassword", con.Password)
@@ -45,9 +45,9 @@ func TestHostConfig(t *testing.T) {
 		options := abaputils.AbapEnvironmentRunATCCheckOptions{
 			AbapEnvOptions: config,
 		}
+
 		execRunner := &mock.ExecMockRunner{}
 
-		//var con abaputils.ConnectionDetailsHTTP
 		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
@@ -58,6 +58,7 @@ func TestHostConfig(t *testing.T) {
 		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
+
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
 		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -81,7 +82,6 @@ func TestHostConfig(t *testing.T) {
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})
-
 }
 
 func TestATCTrigger(t *testing.T) {

@@ -181,13 +181,13 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
 		config := abaputils.AbapEnvironmentOptions{
+			//CfServiceKeyName:  "testServiceKey", this parameter will be missing
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
-			//CfServiceKeyName:  "testServiceKey",
-			Username: "testUser",
-			Password: "testPassword",
+			Username:          "testUser",
+			Password:          "testPassword",
 		}
 
 		options := abaputils.AbapEnvironmentPullGitRepoOptions{

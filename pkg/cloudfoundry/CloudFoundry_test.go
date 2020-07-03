@@ -26,7 +26,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 
 	t.Run("CF Login check: missing endpoint parameter", func(t *testing.T) {
 		cfconfig := LoginOptions{}
-		loggedIn, err := LoginCheck(cfconfig)
+		loggedIn, err := LoginCheck(cfconfig, c)
 		assert.False(t, loggedIn)
 		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
 	})
@@ -39,7 +39,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
-		loggedIn, err := LoginCheck(cfconfig)
+		loggedIn, err := LoginCheck(cfconfig, c)
 		assert.False(t, loggedIn)
 		assert.Error(t, err)
 		assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
@@ -52,7 +52,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
-		loggedIn, err := LoginCheck(cfconfig)
+		loggedIn, err := LoginCheck(cfconfig, c)
 		if assert.NoError(t, err) {
 			assert.True(t, loggedIn)
 			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
@@ -68,7 +68,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 			// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
 			CfAPIOpts: []string{"--skip-ssl-validation"},
 		}
-		loggedIn, err := LoginCheck(cfconfig)
+		loggedIn, err := LoginCheck(cfconfig, c)
 		if assert.NoError(t, err) {
 			assert.True(t, loggedIn)
 			assert.Equal(t, []mock.ExecCall{
@@ -97,7 +97,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 		defer loginMockCleanup(m)
 
 		cfconfig := LoginOptions{}
-		err := Login(cfconfig)
+		err := Login(cfconfig, c)
 		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
 	})
 	t.Run("CF Login: failure", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 			Password:      "testPassword",
 		}
 
-		err := Login(cfconfig)
+		err := Login(cfconfig, c)
 		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: wrong password or account does not exist") {
 			assert.Equal(t, []mock.ExecCall{
 				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
@@ -144,7 +144,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 			Username:      "testUser",
 			Password:      "testPassword",
 		}
-		err := Login(cfconfig)
+		err := Login(cfconfig, c)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
 				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
@@ -181,7 +181,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 				"--skip-ssl-validation",
 			},
 		}
-		err := Login(cfconfig)
+		err := Login(cfconfig, c)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
 				mock.ExecCall{Exec: "cf", Params: []string{
@@ -215,31 +215,3 @@ func TestCloudFoundryLogout(t *testing.T) {
 		}
 	})
 }
-
-// func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
-// 	t.Run("CF ReadServiceKeyAbapEnvironment", func(t *testing.T) {
-// 		cfconfig := ServiceKeyOptions{
-// 			CfAPIEndpoint:     "https://api.endpoint.com",
-// 			CfSpace:           "testSpace",
-// 			CfOrg:             "testOrg",
-// 			CfServiceInstance: "testInstance",
-// 			CfServiceKey:      "testKey",
-// 			Username:          "testUser",
-// 			Password:          "testPassword",
-// 		}
-// 		var abapKey ServiceKey
-// 		abapKey, err := ReadServiceKeyAbapEnvironment(cfconfig, true)
-// 		assert.Equal(t, "", abapKey.Abap.Password)
-// 		assert.Equal(t, "", abapKey.Abap.Username)
-// 		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)
-// 		assert.Equal(t, "", abapKey.Abap.CommunicationScenarioID)
-// 		assert.Equal(t, "", abapKey.Abap.CommunicationSystemID)
-// 		assert.Equal(t, "", abapKey.Binding.Env)
-// 		assert.Equal(t, "", abapKey.Binding.Type)
-// 		assert.Equal(t, "", abapKey.Binding.ID)
-// 		assert.Equal(t, "", abapKey.Binding.Version)
-// 		assert.Equal(t, "", abapKey.Systemid)
-// 		assert.Equal(t, "", abapKey.URL)
-// 		assert.Error(t, err)
-// 	})
-// }
