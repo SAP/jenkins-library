@@ -328,6 +328,7 @@ steps:
     deployMode: 'mta'
     warAction: 'deploy'
     extensions: []
+    mavenDeploymentModule: '.'
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
