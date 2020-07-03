@@ -129,6 +129,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        default: "-f"
       - name: mtaExtensionDescriptor
         type: string
         description: "Defines additional extension descriptor file for deployment with the mtaDeployPlugin"
