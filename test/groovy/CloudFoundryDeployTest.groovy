@@ -1086,6 +1086,23 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
     }
 
+
+    @Test(expected = AbortException.class)
+    void 'appName with alpha-numeric chars and leading dash should print a warning'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                appName: '-my-Valid-AppName123'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'target/test.mtar'
+        ])
+    }
+
     @Test
     void 'appName with alpha-numeric chars should work'() {
         stepRule.step.cloudFoundryDeploy([
@@ -1096,6 +1113,22 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 org: 'testOrg',
                 space: 'testSpace',
                 appName: 'myValidAppName123'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'target/test.mtar'
+        ])
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars and dash should work'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                appName: 'my-Valid-AppName123'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
             mtaPath: 'target/test.mtar'
