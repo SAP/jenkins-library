@@ -194,7 +194,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -212,7 +211,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -238,13 +236,11 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -271,13 +267,11 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
