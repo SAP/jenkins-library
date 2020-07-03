@@ -32,12 +32,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * - org
      * - space
      */
-    'cfCreateServices'
+    'cfCreateServices',
+    /** Defines the deployment type.*/
+    'enableZeroDowntimeDeployment',
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** Defines the deployment type.*/
-    'enableZeroDowntimeDeployment',
     /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
@@ -60,14 +60,11 @@ void call(parameters = [:]) {
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
 
         Map config = configHelper.use()
-
-        configHelper
-            .withMandatoryProperty('source', null, { config.neoTargets })
 
         utils.pushToSWA([
             step         : STEP_NAME,
