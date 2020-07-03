@@ -22,9 +22,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-//func abapEnvironmentRunATCCheck(options abaputils.AbapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
 func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
 
+	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
 	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
@@ -221,39 +221,6 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }
-
-/* func checkHost(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP) (abaputils.ConnectionDetailsHTTP, error) {
-
-	var err error
-
-	if config.Host == "" {
-		options := abaputils.AbapEnvironmentOptions{
-			CfAPIEndpoint:     config.CfAPIEndpoint,
-			CfOrg:             config.CfOrg,
-			CfSpace:           config.CfSpace,
-			Username:          config.Username,
-			Password:          config.Password,
-			CfServiceInstance: config.CfServiceInstance,
-			CfServiceKeyName:  config.CfServiceKeyName,
-		}
-		if options.CfServiceInstance == "" || options.CfOrg == "" || options.CfAPIEndpoint == "" || options.CfSpace == "" || options.CfServiceKeyName == "" {
-			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		}
-		var abapServiceKey abaputils.AbapServiceKey
-		abapServiceKey, err = abaputils.GetAbapCommunicationArrangementInfo(options, c, "", false)
-		if err != nil {
-			return details, fmt.Errorf("Reading Service Key failed: %w", err)
-		}
-		details.User = abaputils.AbapServiceKey.Abap.Username
-		details.Password = abaputils.AbapServiceKey.Abap.Password
-		details.URL = abaputils.AbapServiceKey.URL
-		return details, err
-	}
-	details.User = config.Username
-	details.Password = config.Password
-	details.URL = config.Host
-	return details, err
-} */
 
 func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
 

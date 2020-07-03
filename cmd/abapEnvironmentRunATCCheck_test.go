@@ -11,7 +11,7 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
-	t.Run("0", func(t *testing.T) {
+	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
 		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
@@ -28,7 +28,7 @@ func TestHostConfig(t *testing.T) {
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
 			assert.Equal(t, "testPassword", con.Password)
-			assert.Equal(t, "https://api.endpoint.com", con.URL)
+			assert.Equal(t, "https://api.endpoint.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL) // to be discussed --> does the ATC step need the OData Service or only the root URL?
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})

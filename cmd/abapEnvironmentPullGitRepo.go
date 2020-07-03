@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-//func abapEnvironmentPullGitRepo(options abaputils.AbapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 
+	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
 	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
@@ -33,7 +33,6 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	//var c = command.Command{}
 	var c command.ExecRunner = &command.Command{}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
@@ -172,69 +171,6 @@ func pollEntity(repositoryName string, connectionDetails abaputils.ConnectionDet
 	return status, nil
 }
 
-/* func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
-
-	var connectionDetails connectionDetailsHTTP
-	var error error
-
-	if config.Host != "" {
-		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = config.Username
-		connectionDetails.Password = config.Password
-	} else {
-		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKeyName == "" {
-			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-			return connectionDetails, err
-		}
-		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = readCfServiceKey(config, c)
-		if error != nil {
-			return connectionDetails, errors.Wrap(error, "Read service key failed")
-		}
-		connectionDetails.URL = abapServiceKey.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = abapServiceKey.Abap.Username
-		connectionDetails.Password = abapServiceKey.Abap.Password
-	}
-	return connectionDetails, error
-} */
-
-/* func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
-
-	var abapServiceKey serviceKey
-
-	c.Stderr(log.Writer())
-
-	// Logging into the Cloud Foundry via CF CLI
-	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
-	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
-	errorRunExecutable := c.RunExecutable("cf", cfLoginSlice...)
-	if errorRunExecutable != nil {
-		log.Entry().Error("Login at cloud foundry failed.")
-		return abapServiceKey, errorRunExecutable
-	}
-
-	// Reading the Service Key via CF CLI
-	var serviceKeyBytes bytes.Buffer
-	c.Stdout(&serviceKeyBytes)
-	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKeyName}
-	errorRunExecutable = c.RunExecutable("cf", cfReadServiceKeySlice...)
-	var serviceKeyJSON string
-	if len(serviceKeyBytes.String()) > 0 {
-		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-		serviceKeyJSON = strings.Join(lines[2:], "")
-	}
-	if errorRunExecutable != nil {
-		return abapServiceKey, errorRunExecutable
-	}
-	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKeyName", config.CfServiceKeyName).Info("Read service key for service instance")
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-	if abapServiceKey == (serviceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
-	}
-	return abapServiceKey, errorRunExecutable
-} */
-
 func getHTTPResponse(requestType string, connectionDetails abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	header := make(map[string][]string)
@@ -311,72 +247,3 @@ func convertTime(logTimeStamp string) time.Time {
 	t := time.Unix(n, 0).UTC()
 	return t
 }
-
-/* type abapEntity struct {
-	Metadata       abapMetadata `json:"__metadata"`
-	UUID           string       `json:"uuid"`
-	ScName         string       `json:"sc_name"`
-	Namespace      string       `json:"namepsace"`
-	Status         string       `json:"status"`
-	StatusDescr    string       `json:"status_descr"`
-	ToExecutionLog abapLogs     `json:"to_Execution_log"`
-	ToTransportLog abapLogs     `json:"to_Transport_log"`
-}
-
-type abapMetadata struct {
-	URI string `json:"uri"`
-}
-
-type abapLogs struct {
-	Results []logResults `json:"results"`
-}
-
-type logResults struct {
-	Index       string `json:"index_no"`
-	Type        string `json:"type"`
-	Description string `json:"descr"`
-	Timestamp   string `json:"timestamp"`
-}
-
-type serviceKey struct {
-	Abap     abapConenction `json:"abap"`
-	Binding  abapBinding    `json:"binding"`
-	Systemid string         `json:"systemid"`
-	URL      string         `json:"url"`
-}
-
-type deferred struct {
-	URI string `json:"uri"`
-}
-
-type abapConenction struct {
-	CommunicationArrangementID string `json:"communication_arrangement_id"`
-	CommunicationScenarioID    string `json:"communication_scenario_id"`
-	CommunicationSystemID      string `json:"communication_system_id"`
-	Password                   string `json:"password"`
-	Username                   string `json:"username"`
-}
-
-type abapBinding struct {
-	Env     string `json:"env"`
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Version string `json:"version"`
-}
-
-type connectionDetailsHTTP struct {
-	User       string `json:"user"`
-	Password   string `json:"password"`
-	URL        string `json:"url"`
-	XCsrfToken string `json:"xcsrftoken"`
-}
-
-type abapError struct {
-	Code    string           `json:"code"`
-	Message abapErrorMessage `json:"message"`
-}
-
-type abapErrorMessage struct {
-	Lang  string `json:"lang"`
-	Value string `json:"value"`
-} */
