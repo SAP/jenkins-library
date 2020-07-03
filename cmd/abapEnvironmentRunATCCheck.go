@@ -22,7 +22,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentRunATCCheck(options abaputils.AbapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+//func abapEnvironmentRunATCCheck(options abaputils.AbapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
+	subOptions.CfServiceInstance = options.CfServiceInstance
+	subOptions.CfServiceKeyName = options.CfServiceKeyName
+	subOptions.CfOrg = options.CfOrg
+	subOptions.Host = options.Host
+	subOptions.Password = options.Password
+	subOptions.Username = options.Username
 
 	var c = command.Command{}
 	var err error
@@ -41,7 +52,7 @@ func abapEnvironmentRunATCCheck(options abaputils.AbapEnvironmentRunATCCheckOpti
 	var abapEndpoint string
 	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
-		details, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
+		details, err = abaputils.GetAbapCommunicationArrangementInfo(subOptions, "", false) // options.AbapEnvOptions
 	}
 	var resp *http.Response
 	//Fetch Xcrsf-Token
@@ -92,7 +103,7 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	return nil
 }
 
-func triggerATCrun(config abaputils.AbapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
+func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
 	var atcConfigyamlFile []byte
 	filelocation, err := filepath.Glob(config.AtcConfig)
 	//Parse YAML ATC run configuration as body for ATC run trigger

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,8 +22,7 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		var con abaputils.ConnectionDetailsHTTP
-		var c = command.Command{}
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
 		//con, error := checkHost(config, con)
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
@@ -46,16 +44,15 @@ func TestHostConfig(t *testing.T) {
 		options := abaputils.AbapEnvironmentRunATCCheckOptions{
 			AbapEnvOptions: config,
 		}
-		var c = command.Command{}
 		//var con abaputils.ConnectionDetailsHTTP
-		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
+		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
 		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
+		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
@@ -72,8 +69,7 @@ func TestHostConfig(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 		var con abaputils.ConnectionDetailsHTTP
-		var c = command.Command{}
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, c, "", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "", false)
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)

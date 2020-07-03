@@ -82,7 +82,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, cfLogoutOptio
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
 // If no oData service URL is set, the MANAGE_GIT_REPOSITORY OData service will be used
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.Command, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
+func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
@@ -205,6 +205,29 @@ type AbapEnvironmentRunATCCheckOptions struct {
  *	Structs for ABAP in general *
  ********************************/
 
+//AbapEnvironmentOptions struct
+type AbapEnvironmentOptions struct {
+	Username          string `json:"username,omitempty"`
+	Password          string `json:"password,omitempty"`
+	Host              string `json:"host,omitempty"`
+	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
+	CfOrg             string `json:"cfOrg,omitempty"`
+	CfSpace           string `json:"cfSpace,omitempty"`
+	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+}
+
+// type AbapEnvironmentOptions interface {
+// 	Username
+// 	Password
+// 	Host
+// 	CfAPIEndpoint
+// 	CfOrg
+// 	CfSpace
+// 	CfServiceInstance
+// 	CfServiceKeyName
+// }
+
 // AbapMetadata struct
 type AbapMetadata struct {
 	URI string `json:"uri"`
@@ -228,18 +251,6 @@ type AbapError struct {
 type AbapErrorMessage struct {
 	Lang  string `json:"lang"`
 	Value string `json:"value"`
-}
-
-// AbapEnvironmentOptions struct
-type AbapEnvironmentOptions struct {
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Host              string `json:"host,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
 
 // AbapServiceKey struct

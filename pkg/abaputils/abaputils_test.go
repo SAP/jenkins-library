@@ -3,7 +3,6 @@ package abaputils
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,8 +56,7 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 
 		//when
 		var connectionDetails ConnectionDetailsHTTP
-		var c = command.Command{}
-		connectionDetails, _ = GetAbapCommunicationArrangementInfo(options, c, "", false)
+		connectionDetails, _ = GetAbapCommunicationArrangementInfo(options, "", false)
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
