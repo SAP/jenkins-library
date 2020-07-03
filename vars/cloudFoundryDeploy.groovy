@@ -222,6 +222,23 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
+        // validate cf appname
+        if (config.cloudFoundry.appName) {
+            String appName = config.cloudFoundry.appName.toString()
+            boolean isValidCfAppName = appName.matches("^[a-zA-Z0-9]*\$")
+
+            if (appName.contains("_")) {
+                error("Your application name $appName containes a '_' (underscore) which is not allowed, only letters and numbers can be used.\n" +
+                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+            } else if (!isValidCfAppName) {
+                echo "Your application name contains non-alphanumeric characters that may lead to errors in the future, as they are not supported by CloudFoundry. \n" +
+                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings"
+
+                addBadge(icon: "warning.gif", text: "Your application name contains non-alphanumeric characters that may lead to errors in the future, as they are not supported by CloudFoundry. \n" +
+                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings")
+            }
+        }
+
         boolean deployTriggered = false
         boolean deploySuccess = true
         try {
