@@ -107,8 +107,10 @@ void call(parameters = [:]) {
 
                 def target = config.cfTargets[i]
 
-                // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+                // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
                 // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+                // It is also required in case parallel execution is chosen and mtaExtensionCredentials are specified,
+                // since the credentials need to be written to the mtaExtensionDescriptor file.
                 Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || (target.mtaExtensionCredentials && config.parallelExecution))
 
                 if (target.mtaExtensionCredentials) runInIsolatedWorkspace = true
