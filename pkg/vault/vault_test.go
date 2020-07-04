@@ -3,10 +3,8 @@ package vault
 import (
 	"testing"
 
-	"github.com/hashicorp/vault/api"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
-
+	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 )
 
