@@ -46,6 +46,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
 	}
 
+	updateProjectPreset(sys, project.ID, config.Preset, config.SourceEncoding)
 	uploadAndScan(config, sys, project, workspace, influx)
 }
 
@@ -105,6 +106,9 @@ func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 }
 
 func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) {
+	// Update scanSettings preset before scanning in case the user has changed it
+
+
 	zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
 	if sourceCodeUploaded {
@@ -348,24 +352,27 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	return insecure
 }
 
+func updateProjectPreset(sys checkmarx.System, projectID int, presetValue, engineConfiguration string) {
+	if len(presetValue) > 0 {
+		ok, preset := loadPreset(sys, presetValue)
+		if ok {
+			configurationUpdated := sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+			if configurationUpdated {
+				log.Entry().Debugf("Configuration of project %v updated", projectID)
+			} else {
+				log.Entry().Fatalf("Updating configuration of project %v failed", projectID)
+			}
+		} else {
+			log.Entry().Fatalf("Preset %v not found, creation of project %v failed", presetValue, projectID)
+		}
+	} else {
+		log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectID)
+	}
+}
 func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) checkmarx.Project {
 	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
 	if ok {
-		if len(presetValue) > 0 {
-			ok, preset := loadPreset(sys, presetValue)
-			if ok {
-				configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, engineConfiguration)
-				if configurationUpdated {
-					log.Entry().Debugf("Configuration of project %v updated", projectName)
-				} else {
-					log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
-				}
-			} else {
-				log.Entry().Fatalf("Preset %v not found, creation of project %v failed", presetValue, projectName)
-			}
-		} else {
-			log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectName)
-		}
+		updateProjectPreset(sys, projectCreateResult.ID, presetValue, engineConfiguration)
 		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
 		if len(projects) > 0 {
 			log.Entry().Debugf("New Project %v created", projectName)
