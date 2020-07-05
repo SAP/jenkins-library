@@ -108,7 +108,6 @@ func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) {
 	// Update scanSettings preset before scanning in case the user has changed it
 
-
 	zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
 	if sourceCodeUploaded {
