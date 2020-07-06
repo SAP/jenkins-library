@@ -81,5 +81,5 @@ spec:
     options:
     - name: -u
       value: '0'
-    - name: --entrypoint"
+    - name: --entrypoint
       value: "''"
