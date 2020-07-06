@@ -95,7 +95,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ],
             stages: [
                 acceptance: [
-                    cfAppName: 'testAppName',
                     cfOrg: 'testOrg',
                     cfSpace: 'testSpace',
                     deployUser: 'testUser',
@@ -110,7 +109,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool: '',
             mtaPath: 'target/test.mtar',
             stageName: 'acceptance',
         ])
@@ -978,6 +976,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 space: 'testSpace',
                 manifest: 'test.yml',
                 ],
+            deployTool: 'cf_native',
             cfCredentialsId: 'test_cfCredentialsId',
             verbose: true
         ])
@@ -1005,6 +1004,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 space: 'testSpace',
                 manifest: 'test.yml',
                 ],
+            deployTool: 'cf_native',
             cfCredentialsId: 'test_cfCredentialsId',
             verbose: true
         ])
