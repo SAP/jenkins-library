@@ -110,8 +110,6 @@ void call(parameters = [:]) {
                 // credentials are inserted in the mtaExtensionDescriptor file.
                 Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || (target.mtaExtensionCredentials && config.parallelExecution))
 
-                if (target.mtaExtensionCredentials) runInIsolatedWorkspace = true
-
                 Closure deployment = {
                     Utils deploymentUtils = new Utils()
                     if (runInIsolatedWorkspace) {
