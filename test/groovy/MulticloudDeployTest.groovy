@@ -8,6 +8,7 @@ import org.junit.rules.RuleChain
 
 import util.*
 
+
 class MulticloudDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
@@ -67,19 +68,22 @@ class MulticloudDeployTest extends BasePiperTest {
               ]
 
         cloudFoundry1 = [
+                           apiEndpoint: 'apiEndpoint1',
                            appName:'testAppName1',
+                           credentialsId: 'cfCredentialsId1',
                            manifest: 'test.yml',
+                           mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext',
                            org: 'testOrg1',
-                           space: 'testSpace1',
-                           credentialsId: 'cfCredentialsId1'
+                           space: 'testSpace1'
                        ]
 
         cloudFoundry2 = [
+                            apiEndpoint: 'apiEndpoint2',
                             appName:'testAppName2',
+                            credentialsId: 'cfCredentialsId2',
                             manifest: 'test.yml',
                             org: 'testOrg2',
-                            space: 'testSpace2',
-                            credentialsId: 'cfCredentialsId2'
+                            space: 'testSpace2'
                         ]
 
         nullScript.commonPipelineEnvironment.configuration = [
@@ -100,6 +104,15 @@ class MulticloudDeployTest extends BasePiperTest {
             ],
             steps: [
                 cloudFoundryDeploy: [
+                    cloudFoundry : [
+                        apiEndpoint: 'globalApiEndpoint',
+                        appName:'globalAppName',
+                        credentialsId: 'globalCredentialsId',
+                        mtaExtensionDescriptor: 'globalTargetMtaDescriptor.mtaext',
+                        org: 'globalOrg',
+                        space: 'globalSpace'
+                    ],
+                    mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
                     deployTool: 'cf_native',
                     deployType: 'blue-green',
                     keepOldInstance: true,
@@ -228,10 +241,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert neoDeployRule.hasParameter('warAction', 'rolling-update')
         assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo1)
-
-        assert neoDeployRule.hasParameter('script', nullScript)
-        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
-        assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo2)
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
@@ -239,12 +248,7 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -261,10 +265,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert neoDeployRule.hasParameter('warAction', 'rolling-update')
         assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo1)
-
-        assert neoDeployRule.hasParameter('script', nullScript)
-        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
-        assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo2)
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
@@ -272,12 +272,7 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
