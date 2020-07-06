@@ -207,7 +207,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -225,7 +224,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -247,7 +245,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
@@ -271,7 +268,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
@@ -369,21 +365,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         assertTrue(executedInParallel)
         assertTrue(executedOnNode)
-        assertFalse(executedOnKubernetes)
-
-    }
-
-    @Test
-    void multicloudParallelCfStandardDeployTest() {
-        stepRule.step.multicloudDeploy([
-            script                      : nullScript,
-            enableZeroDowntimeDeployment: false,
-            parallelExecution           : true,
-            source                      : 'file.mtar'
-        ])
-
-        assertTrue(executedInParallel)
-        assertFalse(executedOnNode)
         assertFalse(executedOnKubernetes)
 
     }
