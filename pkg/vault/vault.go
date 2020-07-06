@@ -14,12 +14,12 @@ type Client struct {
 	lClient logicalClient
 }
 
-//logicalClient interface for mocking
+// logicalClient interface for mocking
 type logicalClient interface {
 	Read(string) (*api.Secret, error)
 }
 
-//NewClient instantiates a Client and sets the specified token
+// NewClient instantiates a Client and sets the specified token
 func NewClient(config *api.Config, token string) (Client, error) {
 	if config == nil {
 		config = api.DefaultConfig()
@@ -33,7 +33,7 @@ func NewClient(config *api.Config, token string) (Client, error) {
 	return Client{client.Logical()}, nil
 }
 
-//GetSecret uses the given path to fetch a secret from vault
+// GetSecret uses the given path to fetch a secret from vault
 func (v Client) GetSecret(path string) (*api.Secret, error) {
 	path = sanitizePath(path)
 	c := v.lClient
@@ -46,8 +46,8 @@ func (v Client) GetSecret(path string) (*api.Secret, error) {
 	return secret, nil
 }
 
-//GetKvSecret reads secret from the KV engine.
-//It Automatically transforms the logical path to the HTTP API Path for the corresponding KV Engine version
+// GetKvSecret reads secret from the KV engine.
+// It Automatically transforms the logical path to the HTTP API Path for the corresponding KV Engine version
 func (v Client) GetKvSecret(path string) (map[string]string, error) {
 	path = sanitizePath(path)
 	mountpath, version, err := v.getKvInfo(path)

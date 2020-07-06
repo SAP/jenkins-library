@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-//VaultClientMock implements the functions from vault.logicalClient with an in-memory secret store
+// VaultClientMock implements the functions from vault.logicalClient with an in-memory secret store
 type VaultClientMock struct {
 	store     map[string]*api.Secret
 	kvVersion int
@@ -24,7 +24,7 @@ func (v *VaultClientMock) init() {
 	}
 }
 
-//SetKvEngineVersion allows to toggle the version of the virtual KV Engine
+// SetKvEngineVersion allows to toggle the version of the virtual KV Engine
 func (v *VaultClientMock) SetKvEngineVersion(version int) {
 	if version != 1 && version != 2 {
 		v.kvVersion = 2
@@ -32,7 +32,7 @@ func (v *VaultClientMock) SetKvEngineVersion(version int) {
 	v.kvVersion = version
 }
 
-//AddSecret establishes a virtual secret which then can be retrieved by the client
+// AddSecret establishes a virtual secret which then can be retrieved by the client
 func (v *VaultClientMock) AddSecret(path string, secret *api.Secret) {
 	v.init()
 	if secret == nil {
@@ -44,18 +44,23 @@ func (v *VaultClientMock) AddSecret(path string, secret *api.Secret) {
 func (v *VaultClientMock) Read(path string) (*api.Secret, error) {
 	v.init()
 	if strings.HasPrefix(path, "sys/internal/ui/mounts/") {
+		pathComponents := strings.Split(strings.TrimPrefix(path, "sys/internal/ui/mounts/"), "/")
+		mountpath := "/"
+		if len(pathComponents) > 1 {
+			mountpath = pathComponents[0]
+		}
 		switch v.kvVersion {
 		case 1:
 			// in older versions of vault the options field was not present
 			return &api.Secret{
 				Data: map[string]interface{}{
-					"path": "secret",
+					"path": mountpath,
 				},
 			}, nil
 		default:
 			return &api.Secret{
 				Data: map[string]interface{}{
-					"path": "secret",
+					"path": mountpath,
 					"options": map[string]interface{}{
 						"version": strconv.Itoa(v.kvVersion),
 					},

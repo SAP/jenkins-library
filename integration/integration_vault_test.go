@@ -26,10 +26,10 @@ func TestGetVaultSecret(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			AlwaysPullImage: true,
-			Image:           "vault",
+			Image:           "vault:1.4.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
-			WaitingFor:      wait.ForLog("Vault server started!").WithStartupTimeout(15 * time.Second)},
+			WaitingFor:      wait.ForLog("Vault server started!").WithStartupTimeout(20 * time.Second)},
 
 		Started: true,
 	}
@@ -44,27 +44,33 @@ func TestGetVaultSecret(t *testing.T) {
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 	config := &api.Config{Address: host}
 	// setup vault for testing
-	setupVault(t, config, testToken)
+	secretData := SecretData{
+		"key1": "value1",
+		"key2": "value2",
+	}
+	setupVault(t, config, testToken, secretData)
 
 	client, err := vault.NewClient(config, testToken)
 	assert.NoError(t, err)
 	secret, err := client.GetKvSecret("secret/test")
 	assert.NoError(t, err)
-	assert.Equal(t, "test", secret["test"])
+	assert.Equal(t, "value1", secret["key1"])
+	assert.Equal(t, "value2", secret["key2"])
 
 	secret, err = client.GetKvSecret("kv/test")
 	assert.NoError(t, err)
-	assert.Equal(t, "test", secret["test"])
+	assert.Equal(t, "value1", secret["key1"])
+	assert.Equal(t, "value2", secret["key2"])
 
 }
 
-func setupVault(t *testing.T, config *api.Config, token string) {
+func setupVault(t *testing.T, config *api.Config, token string, secret SecretData) {
 	t.Helper()
 	client, err := api.NewClient(config)
 	assert.NoError(t, err)
 	client.SetToken(token)
 
-	_, err = client.Logical().Write("secret/data/test", SecretData{"data": SecretData{"test": "test"}})
+	_, err = client.Logical().Write("secret/data/test", SecretData{"data": secret})
 	assert.NoError(t, err)
 
 	// enabling KV engine 1
@@ -77,8 +83,7 @@ func setupVault(t *testing.T, config *api.Config, token string) {
 	})
 	assert.NoError(t, err)
 
-	_, err = client.Logical().Write("kv/test", SecretData{
-		"test": "test",
-	})
+	_, err = client.Logical().Write("kv/test", secret)
 	assert.NoError(t, err)
+
 }
