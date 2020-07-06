@@ -130,20 +130,6 @@ class MulticloudDeployTest extends BasePiperTest {
     }
 
     @Test
-    void errorNoSourceForNeoDeploymentTest() {
-
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = [neo1]
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
-
-        stepRule.step.multicloudDeploy(
-            script: nullScript
-        )
-    }
-
-    @Test
     void neoDeploymentTest() {
 
         nullScript.commonPipelineEnvironment.configuration.general.neoTargets = [neo1]
