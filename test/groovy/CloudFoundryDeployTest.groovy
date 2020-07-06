@@ -1079,7 +1079,12 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('readFile', [String], {file ->
             if (file == 'mtaext.mtaext') {
-                return '<%= testCred %>'
+                return '_schema-version: \'3.1\'\n' +
+                    'ID: test.ext\n' +
+                    'extends: test\n' +
+                    '\n' +
+                    'parameters:\n' +
+                    '  test-credentials: "<%= testCred %>"'
             }
             return ''
         })
@@ -1101,7 +1106,12 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString('cp mtaext.mtaext mtaext.mtaext.original')))
         assertThat(shellRule.shell, hasItem(containsString('mv --force mtaext.mtaext.original mtaext.mtaext')))
-        assertThat(writeFileRule.files['mtaext.mtaext'], containsString('token'))
+        assertThat(writeFileRule.files['mtaext.mtaext'], is('_schema-version: \'3.1\'\n' +
+            'ID: test.ext\n' +
+            'extends: test\n' +
+            '\n' +
+            'parameters:\n' +
+            '  test-credentials: "token"'))
     }
 
     @Test
