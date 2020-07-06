@@ -246,7 +246,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
         assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-
     }
 
     @Test

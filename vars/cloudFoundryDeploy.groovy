@@ -11,10 +11,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Defines the tool used for the build.
-     * @possibleValues `docker`, `kaniko`, `maven`, `mta`, `npm`
-     */
     'buildTool',
     'cloudFoundry',
         /**
