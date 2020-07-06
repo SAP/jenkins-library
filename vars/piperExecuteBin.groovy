@@ -53,6 +53,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
             if (config.stashContent?.size() > 0) {
                 config.stashContent.add('pipelineConfigAndTests')
+                config.stashContent.add('piper-bin')
             }
 
             if (parameters.stashNoDefaultExcludes) {
@@ -63,6 +64,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
+                    script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
                         sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
@@ -78,7 +80,6 @@ static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
-    script.commonPipelineEnvironment.writeToDisk(script)
 }
 
 static Map prepareStepParameters(Map parameters) {
