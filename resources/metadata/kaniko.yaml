@@ -15,7 +15,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: --skip-tls-verify-pull
+      default: 
+        - --skip-tls-verify-pull
     - name: containerBuildOptions
       type: string
       description: Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.

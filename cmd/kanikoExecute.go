@@ -18,9 +18,13 @@ import (
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{
-		//ToDo: add error category mapping base on real life data
-		//ErrorCategoryMapping: map[string][]string{},
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorConfiguration.String(): []string{
+				"unsupported status code 401",
+			},
+		},
 	}
+
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -40,6 +44,8 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
 		log.Entry().Warning("Parameter containerBuildOptions is deprecated, please use buildOptions instead.")
+		telemetryData.Custom1Label = "ContainerBuildOptions"
+		telemetryData.Custom1 = config.ContainerBuildOptions
 	}
 
 	// prepare kaniko container for running with proper Docker config.json and custom certificates
