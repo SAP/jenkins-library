@@ -1097,7 +1097,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void 'appName with alpha-numeric chars and leading dash should throw an error'() {
-        String expected = "Your application name -my-Valid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String expected = "Your application name -my-Invalid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
         String actual = ""
         helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
 
@@ -1108,7 +1108,29 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cloudFoundry: [
                 org: 'irrelevant',
                 space: 'irrelevant',
-                appName: '-my-Valid-AppName123'
+                appName: '-my-Invalid-AppName123'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars and trailing dash should throw an error'() {
+        String expected = "Your application name my-Invalid-AppName123- contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: 'my-Invalid-AppName123-'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
             mtaPath: 'irrelevant'
