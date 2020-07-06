@@ -1103,7 +1103,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 space: 'testSpace',
                 mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext'
             ],
-            mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
             mtaDeployParameters: '--some-deploy-opt mta-value',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
