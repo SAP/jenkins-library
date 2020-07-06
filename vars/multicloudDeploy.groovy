@@ -99,11 +99,12 @@ void call(parameters = [:]) {
         if (config.cfTargets) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
-            def deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
 
-            // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+            // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
             // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
-            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && deploymentType == "blue-green"
+            // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
+            // credentials are inserted in the mtaExtensionDescriptor file.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
@@ -121,8 +122,9 @@ void call(parameters = [:]) {
                         jenkinsUtilsStub: jenkinsUtils,
                         deployType: deploymentType,
                         cloudFoundry: target,
+                        mtaExtensionDescriptor: target.mtaExtensionDescriptor,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials,
                         mtaPath: script.commonPipelineEnvironment.mtarFilePath,
-                        deployTool: deployTool
                     )
                     if (runInIsolatedWorkspace) {
                         deploymentUtils.stashStageFiles(script, stageName)
