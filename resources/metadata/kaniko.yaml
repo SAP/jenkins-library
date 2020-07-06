@@ -15,7 +15,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: 
+      default:
         - --skip-tls-verify-pull
     - name: containerBuildOptions
       type: string
