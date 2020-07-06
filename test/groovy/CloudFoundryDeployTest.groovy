@@ -1094,7 +1094,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertEquals(expected, actual)
     }
 
-
     @Test
     void 'appName with alpha-numeric chars and leading dash should throw an error'() {
         String expected = "Your application name -my-Invalid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
@@ -1175,4 +1174,45 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertTrue(loggingRule.log.contains("cfAppName=my-Valid-AppName123"))
     }
 
+    @Test
+    void testMtaExtensionDescriptor() {
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace'
+            ],
+            mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("-e globalMtaDescriptor.mtaext")))
+    }
+
+    @Test
+    void testTargetMtaExtensionDescriptor() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext'
+            ],
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+        assertThat(shellRule.shell, hasItem(containsString("-e targetMtaDescriptor.mtaext")))
+    }
 }
