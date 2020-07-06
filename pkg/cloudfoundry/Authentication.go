@@ -12,10 +12,15 @@ import (
 
 var c command.ExecRunner = &command.Command{}
 
-//LoginCheck checks if user is logged in to Cloud Foundry.
+// LoginCheck ...
+func LoginCheck(options LoginOptions) (bool, error) {
+	return LoginCheckWithEnv(options, []string{})
+}
+
+//LoginCheckWithEnv checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
 //If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
-func LoginCheck(options LoginOptions) (bool, error) {
+func LoginCheckWithEnv(options LoginOptions, env []string) (bool, error) {
 	var err error
 
 	if options.CfAPIEndpoint == "" {
@@ -26,6 +31,19 @@ func LoginCheck(options LoginOptions) (bool, error) {
 	var cfCheckLoginScript = append([]string{"api", options.CfAPIEndpoint}, options.CfAPIOpts...)
 
 	var cfLoginBytes bytes.Buffer
+
+	var oldEnv []string
+	if len(env) > 0 {
+		oldEnv = []string{} // c.GetEnv()
+		c.SetEnv(env)
+	}
+	defer func() {
+		if len(oldEnv) > 0 {
+			// TODO prepare for resetting to old env
+			//c.SetEnv(oldEnv)
+		}
+	}()
+
 	c.Stdout(&cfLoginBytes)
 
 	var result string
@@ -53,6 +71,11 @@ func LoginCheck(options LoginOptions) (bool, error) {
 //Login logs user in to Cloud Foundry via cf cli.
 //Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
 func Login(options LoginOptions) error {
+	return LoginWitEnv(options, []string{})
+}
+
+// LoginWitEnv ...
+func LoginWitEnv(options LoginOptions, env []string) error {
 
 	var err error
 
@@ -81,6 +104,18 @@ func Login(options LoginOptions) error {
 		}, options.CfLoginOpts...)
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
+
+		var oldEnv []string
+		if len(env) > 0 {
+			oldEnv = []string{} // c.GetEnv()
+			c.SetEnv(env)
+		}
+		defer func() {
+			if len(oldEnv) > 0 {
+				// TODO prepare for resetting to old env
+				//c.SetEnv(oldEnv)
+			}
+		}()
 
 		err = c.RunExecutable("cf", cfLoginScript...)
 	}
