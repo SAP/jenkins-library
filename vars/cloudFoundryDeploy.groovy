@@ -11,6 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    'buildTool',
     'cloudFoundry',
         /**
          * Cloud Foundry API endpoint.
@@ -73,6 +74,7 @@ import static com.sap.piper.Prerequisites.checkScript
         'space',
     /**
      * Defines the tool which should be used for deployment.
+     * If it is not set it will be inferred automatically based on the buildTool, i.e., for MTA projects `mtaDeployPlugin` will be used and `cf_native` for other types of projects.
      * @possibleValues 'cf_native', 'mtaDeployPlugin'
      */
     'deployTool',
@@ -112,6 +114,11 @@ import static com.sap.piper.Prerequisites.checkScript
      * Additional parameters passed to mta deployment command.
      */
     'mtaDeployParameters',
+    /**
+     * Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`.
+     * This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`
+     */
+    'mtaExtensionCredentials',
     /**
      * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
      */
@@ -206,6 +213,8 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
+            .dependingOn('buildTool').mixin('deployTool')
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
@@ -306,8 +315,19 @@ def findMtar(){
 }
 
 def deployMta(config) {
-    if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
-    if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
+    String mtaExtensionDescriptorParam = ''
+
+    if (config.mtaExtensionDescriptor) {
+        if (!fileExists(config.mtaExtensionDescriptor)) {
+            error "[${STEP_NAME}] The mta extension descriptor file ${config.mtaExtensionDescriptor} does not exist at the configured location."
+        }
+
+        mtaExtensionDescriptorParam = "-e ${config.mtaExtensionDescriptor}"
+
+        if (config.mtaExtensionCredentials) {
+            handleMtaExtensionCredentials(config)
+        }
+    }
 
     def deployCommand = 'deploy'
     if (config.deployType == 'blue-green') {
@@ -317,11 +337,40 @@ def deployMta(config) {
         }
     }
 
-    def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"
+    def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${mtaExtensionDescriptorParam}"
     def apiStatement = "cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}"
 
-    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-    deploy(apiStatement, deployStatement, config, null)
+    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${mtaExtensionDescriptorParam} ${config.mtaDeployParameters}"
+    try {
+        deploy(apiStatement, deployStatement, config, null)
+    } finally {
+        if (config.mtaExtensionCredentials && config.mtaExtensionDescriptor && fileExists(config.mtaExtensionDescriptor)) {
+            sh "mv --force ${config.mtaExtensionDescriptor}.original ${config.mtaExtensionDescriptor} || echo 'The file ${config.mtaExtensionDescriptor}.original could not be renamed.'"
+        }
+    }
+}
+
+private void handleMtaExtensionCredentials(Map<?, ?> config) {
+    echo "[${STEP_NAME}] Modifying ${config.mtaExtensionDescriptor}. Adding credential values from Jenkins."
+    sh "cp ${config.mtaExtensionDescriptor} ${config.mtaExtensionDescriptor}.original"
+
+    Map mtaExtensionCredentials = config.mtaExtensionCredentials
+
+    String fileContent = ''
+
+    try {
+        fileContent = readFile config.mtaExtensionDescriptor
+    } catch (Exception e) {
+        error("[${STEP_NAME}] Unable to read mta extension file ${config.mtaExtensionDescriptor}. (${e.getMessage()})")
+    }
+
+    mtaExtensionCredentials.each { key, credentialsId ->
+        withCredentials([string(credentialsId: credentialsId, variable: 'mtaExtensionCredential')]) {
+            fileContent = fileContent.replace('<%= ' + key.toString() + ' %>', mtaExtensionCredential.toString())
+        }
+    }
+
+    writeFile file: config.mtaExtensionDescriptor, text: fileContent
 }
 
 private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
