@@ -100,15 +100,15 @@ void call(parameters = [:]) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
 
+            // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
+            // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+            // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
+            // credentials are inserted in the mtaExtensionDescriptor file.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
+
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
                 def target = config.cfTargets[i]
-
-                // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
-                // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
-                // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
-                // credentials are inserted in the mtaExtensionDescriptor file.
-                Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || (target.mtaExtensionCredentials && config.parallelExecution))
 
                 Closure deployment = {
                     Utils deploymentUtils = new Utils()
