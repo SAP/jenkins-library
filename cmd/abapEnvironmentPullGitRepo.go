@@ -166,7 +166,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 
 	if config.Host != "" {
 		// Host, User and Password are directly provided
-		matchedkey, error := regexp.MatchString("[hH][tT][tT][pP][sS]://*", config.Host)
+		matchedkey, error := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, config.Host)
 		if error != nil {
 			return connectionDetails, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
 		}

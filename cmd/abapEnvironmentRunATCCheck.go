@@ -242,7 +242,7 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	}
 	details.User = config.Username
 	details.Password = config.Password
-	matchedkey, err := regexp.MatchString("[hH][tT][tT][pP][sS]://*", config.Host)
+	matchedkey, err := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, config.Host)
 	if err != nil {
 		return details, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
 	}
