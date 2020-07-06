@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.stringContainsInOrder
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
@@ -1070,37 +1071,50 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     }
 
-    @Test(expected = AbortException.class)
+    @Test
     void 'appName with underscores should throw an error'() {
+        String expected = "Your application name my_invalid_app_name contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\n" +
+            "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cloudFoundry: [
-                org: 'testOrg',
-                space: 'testSpace',
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'my_invalid_app_name'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'irrelevant'
         ])
+
+        assertEquals(expected, actual)
     }
 
 
-    @Test(expected = AbortException.class)
-    void 'appName with alpha-numeric chars and leading dash should print a warning'() {
+    @Test
+    void 'appName with alpha-numeric chars and leading dash should throw an error'() {
+        String expected = "Your application name -my-Valid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cloudFoundry: [
-                org: 'testOrg',
-                space: 'testSpace',
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: '-my-Valid-AppName123'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'irrelevant'
         ])
+
+        assertEquals(expected, actual)
     }
 
     @Test
@@ -1110,13 +1124,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cloudFoundry: [
-                org: 'testOrg',
-                space: 'testSpace',
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'myValidAppName123'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'irrelevant'
         ])
+
+        assertTrue(loggingRule.log.contains("cfAppName=myValidAppName123"))
     }
 
     @Test
@@ -1126,13 +1142,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             cloudFoundry: [
-                org: 'testOrg',
-                space: 'testSpace',
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'my-Valid-AppName123'
             ],
             cfCredentialsId: 'test_cfCredentialsId',
-            mtaPath: 'target/test.mtar'
+            mtaPath: 'irrelevant'
         ])
+
+        assertTrue(loggingRule.log.contains("cfAppName=my-Valid-AppName123"))
     }
 
 }
