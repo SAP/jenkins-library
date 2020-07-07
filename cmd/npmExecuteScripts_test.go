@@ -61,7 +61,7 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 		}
 	}
 
-	if len(runOptions) != len(n.config.runOptions){
+	if len(runOptions) != len(n.config.runOptions) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
 	}
 
