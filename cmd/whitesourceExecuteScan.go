@@ -363,13 +363,14 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	defer f.Close()
 
 	// Append additional config parameters to prevent multiple projects being generated when project is multi-module
-	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2"
+	cfg := "gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\n"
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
 
 	// sets the "exclude" file patterns
-	cfg = fmt.Sprintf("excludes=%s", config.Exclude)
+	log.Entry().Info("Setting excludes to: ", config.Exclude)
+	cfg = fmt.Sprintf(`excludes="%s"`, config.Exclude)
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
@@ -382,6 +383,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 
 	// sets the "includes" file patterns
 	config.Include = strings.Replace(config.Include, `/`, `\/`, -1) // escape the slashes for sed
+	log.Entry().Info("Setting includes to: ", config.Include)
 	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Include)
 	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
