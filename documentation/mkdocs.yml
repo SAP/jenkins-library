@@ -1,9 +1,15 @@
 site_name: 'Project "Piper": Continuous Delivery for the SAP Ecosystem'
 nav:
-    - Home: index.md
+    - 'Home': index.md
     - 'Getting Started With Project "Piper"' : guidedtour.md
-    - Configuration: configuration.md
+    - 'Configuration': configuration.md
+    - 'Infrastructure':
+        - 'Overview': infrastructure/overview.md
+        - 'Custom Jenkins Setup': infrastructure/customjenkins.md
     - 'Pipelines':
+        - 'ABAP Environment pipeline':
+            - 'Introduction': pipelines/abapEnvironment/introduction.md
+            - 'Configuration': pipelines/abapEnvironment/configuration.md
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
             - 'Examples': stages/examples.md
@@ -24,8 +30,6 @@ nav:
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
-        - 'ABAP Environment pipeline':
-            - 'Introduction': pipelines/abapEnvironment/introduction.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
@@ -106,8 +110,6 @@ nav:
         - artifactSetVersion: steps/artifactSetVersion.md
         - npmExecute: steps/npmExecute.md
     - 'Command line tool': cli/index.md
-    - Resources:
-        - 'Custom Jenkins Setup': customjenkins.md
 
 theme:
     name: 'material'
