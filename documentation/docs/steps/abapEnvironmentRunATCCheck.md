@@ -52,7 +52,7 @@ abapEnvironmentRunATCCheck(
     cfOrg : 'cfOrg',
     cfSpace: 'cfSpace',
     cfServiceInstance: 'myServiceInstance',
-    cfSserviceKeyName: 'myServiceKey',
+    cfServiceKeyName: 'myServiceKey',
     abapCredentialsId: 'cfCredentialsId',
     atcConfig: 'atcconfig.yml',
     script: this,
