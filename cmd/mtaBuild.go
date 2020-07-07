@@ -97,7 +97,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner,
+	e command.ExecRunner,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader,
 	npmExecutor npm.Executor) error {
@@ -190,12 +190,22 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
-	err = installMavenArtifacts(e, config)
-
+	if config.InstallArtifacts {
+		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
+		err = installMavenArtifacts(e, config)
+		if err != nil {
+			return err
+		}
+		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
+		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
-func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
@@ -220,7 +230,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e execRunner) error {
+func addNpmBinToPath(e command.ExecRunner) error {
 	dir, _ := os.Getwd()
 	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")

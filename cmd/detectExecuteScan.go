@@ -19,7 +19,7 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	runDetect(config, &c)
 }
 
-func runDetect(config detectExecuteScanOptions, command shellRunner) {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}

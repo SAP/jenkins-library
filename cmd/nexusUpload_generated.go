@@ -55,7 +55,7 @@ It will use your gitignore file to exclude the mached files from publishing.
 Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".
 
 If an image for mavenExecute is configured, and npm packages are to be published, the image must have npm installed.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -66,6 +66,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.User)
@@ -78,7 +79,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {

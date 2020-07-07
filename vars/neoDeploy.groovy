@@ -73,6 +73,14 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
+     * The deployment mode which should be used. Available options are:
+     * *`'mta'` - default,
+     * *`'warParams'` - deploying WAR file and passing all the deployment parameters via the function call,
+     * *`'warPropertiesFile'` - deploying WAR file and putting all the deployment parameters in a .properties file.
+     * @possibleValues 'mta', 'warParams', 'warPropertiesFile'
+     */
+    'deployMode',
+    /**
      * @see dockerExecute
      */
     'dockerEnvVars',
@@ -89,20 +97,18 @@ import static com.sap.piper.Prerequisites.checkScript
       */
     'extensions',
     /**
-     * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
+     * The path to the archive for deployment to SAP CP. If not provided the following defaults are used based on the deployMode:
+     * *`'mta'` - The `mtarFilePath` from common pipeline environment is used instead.
+     * *`'warParams'` and `'warPropertiesFile'` - The following template will be used "<mavenDeploymentModule>/target/<artifactId>.<packaging>"
      */
-    'source'
+    'source',
+    /**
+     * Path to the maven module which contains the deployment artifact.
+     */
+    'mavenDeploymentModule'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /**
-     * The deployment mode which should be used. Available options are:
-     * *`'mta'` - default,
-     * *`'warParams'` - deploying WAR file and passing all the deployment parameters via the function call,
-     * *`'warPropertiesFile'` - deploying WAR file and putting all the deployment parameters in a .properties file.
-     * @possibleValues 'mta', 'warParams', 'warPropertiesFile'
-     */
-    'deployMode',
     /**
      * Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
      * @possibleValues 'deploy', 'rolling-update'
@@ -127,7 +133,6 @@ void call(parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .collectValidationFailures()
             .withPropertyInValues('deployMode', DeployMode.stringValues())
@@ -139,7 +144,11 @@ void call(parameters = [:]) {
         def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS },
             isNotWarPropertiesDeployMode = {deployMode != DeployMode.WAR_PROPERTIES_FILE}
 
-        configHelper
+        if(!configuration.source){
+            configHelper.mixin([source: getDefaultSource(script, configuration, deployMode)])
+        }
+
+        configuration = configHelper
             .withMandatoryProperty('source')
             .withMandatoryProperty('neo/credentialsId')
             .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
@@ -147,9 +156,6 @@ void call(parameters = [:]) {
             .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
             .withMandatoryProperty('neo/host', null, isNotWarPropertiesDeployMode)
             .withMandatoryProperty('neo/account', null, isNotWarPropertiesDeployMode)
-            //
-            // call 'use()' a second time in order to get the collected validation failures
-            // since the map did not change, it is not required to replace the previous configuration map.
             .use()
 
         Set extensionFileNames
@@ -217,7 +223,7 @@ void call(parameters = [:]) {
 
 private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
-    String logFolder = 'logs/neo'
+    String logFolder = "logs/neo/${UUID.randomUUID()}"
 
     try {
         sh "mkdir -p ${logFolder}"
@@ -286,4 +292,22 @@ private assertPasswordRules(String password) {
             "Please consult the documentation for the neo command line tool for more information: " +
             "https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/8900b22376f84c609ee9baf5bf67130a.html")
     }
+}
+
+private getDefaultSource(Script script, Map configuration, DeployMode deployMode){
+    if(deployMode == DeployMode.MTA) {
+        return script.commonPipelineEnvironment.getMtarFilePath()
+    }
+
+    String pomFile = "${configuration.mavenDeploymentModule}/pom.xml"
+
+    if(!fileExists(pomFile)){
+        error("The configured mavenDeploymentModule (${configuration.mavenDeploymentModule}) does not contain a pom file.")
+    }
+
+    def pom = readMavenPom file: pomFile
+
+    String source = "${configuration.mavenDeploymentModule}/target/${pom.artifactId}.${pom.packaging}"
+
+    return source
 }

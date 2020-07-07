@@ -138,8 +138,6 @@ Note, if it is necessary to disable the default linting behavior, it is possible
 
 We recommend the use of a custom defined `ci-lint` script in your `package.json` to address project specific linting requirements.
 
-Note, the parameters defined for the Lint stage in `.pipeline/config.yml` only apply in case SAPUI5 components are checked by the pipeline and are ignored otherwise.
-
 #### End-to-End Tests
 
 This stage is only executed if you configured it in the file `.pipeline/config.yml`.
