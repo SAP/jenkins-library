@@ -193,7 +193,7 @@ type System interface {
 	GetResults(scanID int) ResultsStatistics
 	GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail)
 	GetScans(projectID int) (bool, []ScanStatus)
-	ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (bool, Scan)
+	ScanProject(projectID int, isIncremental, isPublic, forceScan bool, filterPattern string) (bool, Scan)
 	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool
 	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool
 	UploadProjectSourceCode(projectID int, zipFile string) bool
@@ -525,14 +525,14 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 }
 
 // ScanProject triggers a scan on the project addressed by projectID
-func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (bool, Scan) {
+func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, forceScan bool, filterPattern  string) (bool, Scan) {
 	scan := Scan{}
 	jsonData := map[string]interface{}{
 		"projectId":     projectID,
 		"isIncremental": false,
 		"isPublic":      true,
 		"forceScan":     true,
-		"comment":       "Scan From Golang Script",
+		"comment":       fmt.Sprintf("Scan From Golang Script using FILTER_PATTERN=%s", filterPattern),
 	}
 
 	jsonValue, _ := json.Marshal(jsonData)

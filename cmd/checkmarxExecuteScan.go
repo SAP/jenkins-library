@@ -134,7 +134,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 }
 
 func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) {
-	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans)
+	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans, config.FilterPattern)
 	if projectIsScanning {
 		log.Entry().Debugf("Scanning project %v ", project.Name)
 		pollScanStatus(sys, scan)
@@ -369,9 +369,8 @@ func updateProjectPreset(sys checkmarx.System, projectID int, presetValue, engin
 	}
 }
 func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) checkmarx.Project {
-	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
+	ok, _ := sys.CreateProject(projectName, teamID)
 	if ok {
-		updateProjectPreset(sys, projectCreateResult.ID, presetValue, engineConfiguration)
 		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
 		if len(projects) > 0 {
 			log.Entry().Debugf("New Project %v created", projectName)
