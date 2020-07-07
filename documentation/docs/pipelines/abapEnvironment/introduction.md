@@ -1,125 +1,41 @@
 # ABAP Environment Pipeline
 
+![ABAP Environment Pipeline](../../images/abapPipelineOverview.png)
+
 The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP Cloud Platform ABAP Environment, also known as Steampunk.
-In the current state, the pipeline enables you to pull Software Components to specifc systems and perform ATC checks. The following steps are performed:
+In the current state, the pipeline enables you to pull Software Components to specifc systems and perform ATC checks. The following stages and steps are part of the pipeline:
 
-* Create an instance of the SAP Cloud Platform ABAP Environment service
-* Configure the Communication Arrangement SAP_COM_0510
-* Pull Git repositories / Software Components to the instance
-* Run ATC Checks
-* Delete the SAP Cloud ABAP Environment system
+| Stage                    | Steps |
+|--------------------------|-------|
+| Init                     | -     |
+| Prepare System           | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)|
+| Clone Repositories       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)|
+| ATC                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)|
+| Post                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
-## Configuration
+Below you can find more details about the different stages. [Here](configuration.md) you can find more information about how to configure your pipeline.
 
-### 1. Jenkins Server
+## Init
 
-Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
+In this stage, the pipeline is initialized. Nothing to see here.
 
-### 2. Jenkinsfile
+## Prepare System
 
-Create a file named `Jenkinsfile` in your repository with the following content:
+In this stage, the ABAP Environment system is created. This is done with the cloudFoundryCreateService step. As some parts of the system configuration is done after the Cloud Foundry instance was created, the following workaround is currently necessary:
 
-```
-@Library('piper-lib-os') _
+An authorized user has to manually confirm that the ABAP Environment system is ready. This is the case when the email has been received by the initially provided administrator (as configured in the file `manifest.yml` - as described in [configuration](configuration.md)).
 
-abapEnvironmentPipeline script: this
-```
+After the confirmation, the Communication Arrangement SAP_COM_0510 (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see [documentation](https://sap.github.io/jenkins-library/customjenkins/#shared-library)).
+## Clone Repositories
 
-### 3. Manifest for Service Creation
+In this stage, the Software Components / Git repositories are pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
+The step can receive a list of Software Components / repositories and pulls them successively.
 
-Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP Environment System in the beginning (and delete it in the end). This file describes the ABAP instance, which will be created:
+## ATC
 
-```yaml
----
-create-services:
-- name:   "abapEnvironmentPipeline"
-  broker: "abap"
-  plan:   "16_abap_64_db"
-  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
-```
+In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive Software Components or packages (configured in YML file - as described in [configuration](configuration.md)). The results are returned in the checkstlye format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](configuration.md)).
 
-The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
+## Post
 
-### 4. Configuration for the Communication
-
-The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
-
-```json
-{
-  "scenario_id": "SAP_COM_0510",
-  "type": "basic"
-}
-```
-
-### 5. Configuration for ATC
-
-Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
-
-```yml
-atcobjects:
-  softwarecomponent:
-    - name: "/DMO/REPO"
-```
-
-Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details.
-
-### 6. Technical Pipeline Configuration
-
-Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
-
-```yml
-general:
-  cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
-  cfOrg: 'your-cf-org'
-  cfSpace: 'yourSpace'
-  cfCredentialsId: 'cfAuthentification'
-  cfServiceInstance: 'abapEnvironmentPipeline'
-  cfServiceKeyName: 'jenkins_sap_com_0510'
-stages:
-  Prepare System:
-    cfServiceManifest: 'manifest.yml'
-    stashContent: ''
-    cfServiceKeyConfig: 'sap_com_0510.json'
-  Clone Repositories:
-    repositoryNames: ['/DMO/REPO']
-  ATC:
-    atcConfig: 'atcConfig.yml'
-steps:
-  cloudFoundryDeleteService:
-    deleteServiceKeys: true
-```
-
-If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
-
-## Extension
-
-You can extend each stage of this pipeline following the [documentation](../../extensibility.md).
-
-For example, this can be used to display ATC results utilizing the checkstyle format with the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) ([GitHub Project](https://github.com/jenkinsci/warnings-ng-plugin)).
-To achieve this, create a file `.pipeline/extensions/ATC.groovy` with the following content:
-
-```groovy
-void call(Map params) {
-  //access stage name
-  echo "Start - Extension for stage: ${params.stageName}"
-
-  //access config
-  echo "Current stage config: ${params.config}"
-
-  //execute original stage as defined in the template
-  params.originalStage()
-
-  recordIssues tools: [checkStyle(pattern: '**/ATCResults.xml')], qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
-
-  echo "End - Extension for stage: ${params.stageName}"
-}
-return this
-```
-
-While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
-
-### Stage Names
-
-The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
+At the end of every pipeline (successful or unsuccessful), the system is deprovisioned using the step cloudFoundryDeleteService.
