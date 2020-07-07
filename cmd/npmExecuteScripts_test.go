@@ -30,6 +30,7 @@ type npmConfig struct {
 	install            bool
 	runScripts         []string
 	runOptions         []string
+	scriptOptions      []string
 	virtualFrameBuffer bool
 }
 
@@ -51,7 +52,7 @@ func (n *npmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []stri
 }
 
 // RunScriptsInAllPackages mock implementation
-func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
+func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error {
 	if len(runScripts) != len(n.config.runScripts) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
 	}
@@ -64,6 +65,7 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 	if len(runOptions) != 0 {
 		return fmt.Errorf("RunScriptsInAllPackages was unexpectedly called with a list of runOptions")
 	}
+
 
 	if virtualFrameBuffer != n.config.virtualFrameBuffer {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of virtualFrameBuffer than config.virtualFrameBuffer")
