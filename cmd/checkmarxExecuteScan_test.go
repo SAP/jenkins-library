@@ -94,7 +94,7 @@ func (sys *systemMock) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
 func (sys *systemMock) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "Step 1 of 25", Step: "Scan something"}
 }
-func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool, filterPattern string) (bool, checkmarx.Scan) {
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
@@ -172,7 +172,7 @@ func (sys *systemMockForExistingProject) GetScans(projectID int) (bool, []checkm
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
-func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool, filterPattern string) (bool, checkmarx.Scan) {
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV

@@ -358,7 +358,7 @@ func TestScanProject(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result, scan := sys.ScanProject(10745, false, false, false)
+		result, scan := sys.ScanProject(10745, false, false, false, "**/*.js,**/*.ts,!**/node_modules")
 
 		assert.Equal(t, true, result, "ScanProject call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/sast/scans", myTestClient.urlCalled, "Called url incorrect")
