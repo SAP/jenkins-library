@@ -1,6 +1,7 @@
 package com.sap.piper.k8s
 
 import com.sap.piper.API
+import com.sap.piper.Utils
 import groovy.json.JsonOutput
 
 @API
@@ -23,18 +24,22 @@ class ContainerMap implements Serializable {
 
     private static class PiperExecutionPreparator {
         private boolean executionPrepared
+        private utils
 
+        public PiperExecutionPreparator(utils){
+            this.utils = utils
+        }
         void prepareExecution(Script script) {
             if (!executionPrepared) {
-                script.piperExecuteBin.prepareExecution(script)
+                script.piperExecuteBin.prepareExecution(script, utils)
                 executionPrepared = true
             }
         }
     }
 
-    void initFromResource(Script script, String yamlResourceName, String buildTool) {
+    void initFromResource(Script script, String yamlResourceName, String buildTool, utils = new Utils()) {
         Map containers = [:]
-        PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator()
+        PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator(utils)
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
             Map stageToStepMapping = yamlContents.containerMaps as Map
