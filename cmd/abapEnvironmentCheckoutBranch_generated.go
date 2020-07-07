@@ -23,10 +23,10 @@ type abapEnvironmentCheckoutBranchOptions struct {
 	CfOrg             string `json:"cfOrg,omitempty"`
 	CfSpace           string `json:"cfSpace,omitempty"`
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKey      string `json:"cfServiceKey,omitempty"`
+	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
 
-// AbapEnvironmentCheckoutBranchCommand TEST
+// AbapEnvironmentCheckoutBranchCommand Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentCheckoutBranch"
 
@@ -36,9 +36,9 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 
 	var createAbapEnvironmentCheckoutBranchCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TEST",
-		Long:  `Checkout branch TBD`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		Short: "Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system",
+		Long:  `Switches between branches of a git repository (Software Component) on a SAP Cloud Platform ABAP Environment system.`,
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -49,6 +49,7 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -61,7 +62,7 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -91,7 +92,7 @@ func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapE
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKey, "cfServiceKey", os.Getenv("PIPER_cfServiceKey"), "Cloud Foundry Service Key")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -182,7 +183,7 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
-						Name:        "cfServiceKey",
+						Name:        "cfServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
