@@ -86,10 +86,6 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
-	if oDataURL == "" {
-		oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-	}
-
 	if options.Host != "" {
 		// Host, User and Password are directly provided -> check for host prefix (double https)
 		match, err := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, options.Host)
@@ -124,27 +120,6 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 /****************************************
  *	Structs for the A4C_A2G_GHA service *
  ****************************************/
-
-// SoftwareComponentEntity struct for the root entity SoftwareComponent A4C_A2G_GHA_SC - not yet exposed -
-type SoftwareComponentEntity struct {
-	Metadata            AbapMetadata `json:"__metadata"`
-	Namespace           string       `json:"namepsace"`
-	Name                string       `json:"sc_name"`
-	Description         string       `json:"descr"`
-	Type                string       `json:"sc_type"`
-	TypeDescription     string       `json:"sc_type_descr"`
-	LastImportID        string       `json:"imp_id"`
-	ActiveBranch        string       `json:"active_branch"`
-	AvailableOnInstance bool         `json:"avail_on_inst"`
-	NewVersionAvailable bool         `json:"new_vers_avail"`
-	CreatedBy           string       `json:"created_by"`
-	CreatedAt           string       `json:"created_at"`
-	ChangedBy           string       `json:"changed_by"`
-	ChangedAt           string       `json:"changed_at"`
-	RelativeChangedAt   string       `json:"relative_changed_at"`
-	ToImport            PullEntity   `json:"to_Import"`
-	ToBranch            BranchEntity `json:"to_Branch"`
-}
 
 // PullEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
 type PullEntity struct {
@@ -224,17 +199,6 @@ type AbapEnvironmentOptions struct {
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
-
-// type AbapEnvironmentOptions interface {
-// 	Username
-// 	Password
-// 	Host
-// 	CfAPIEndpoint
-// 	CfOrg
-// 	CfSpace
-// 	CfServiceInstance
-// 	CfServiceKeyName
-// }
 
 // AbapMetadata struct
 type AbapMetadata struct {

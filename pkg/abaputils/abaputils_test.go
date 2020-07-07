@@ -39,6 +39,39 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.URL)
 		//assert.Error(t, err)
 	})
+
+	t.Run("CF ReadServiceKeyAbapEnvironment Fails", func(t *testing.T) {
+
+		//given
+		options := AbapEnvironmentOptions{
+			Username:          "testUser",
+			Password:          "testPassword",
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfSpace:           "testSpace",
+			CfOrg:             "testOrg",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testKey",
+		}
+
+		//when
+		//var abapKey AbapServiceKey
+		var err error
+		_, err = ReadServiceKeyAbapEnvironment(options, &command.Command{}, true)
+
+		//then
+		// assert.Equal(t, "", abapKey.Abap.Password)
+		// assert.Equal(t, "", abapKey.Abap.Username)
+		// assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)
+		// assert.Equal(t, "", abapKey.Abap.CommunicationScenarioID)
+		// assert.Equal(t, "", abapKey.Abap.CommunicationSystemID)
+		// assert.Equal(t, "", abapKey.Binding.Env)
+		// assert.Equal(t, "", abapKey.Binding.Type)
+		// assert.Equal(t, "", abapKey.Binding.ID)
+		// assert.Equal(t, "", abapKey.Binding.Version)
+		// assert.Equal(t, "", abapKey.SystemID)
+		// assert.Equal(t, "", abapKey.URL)
+		assert.Error(t, err)
+	})
 }
 
 func TestGetAbapCommunicationInfo(t *testing.T) {

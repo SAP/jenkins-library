@@ -23,7 +23,7 @@ func TestHostConfig(t *testing.T) {
 
 		execRunner := &mock.ExecMockRunner{}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
 
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
@@ -48,14 +48,14 @@ func TestHostConfig(t *testing.T) {
 
 		execRunner := &mock.ExecMockRunner{}
 
-		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
+		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
 		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
+		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 
@@ -74,7 +74,7 @@ func TestHostConfig(t *testing.T) {
 		}
 		execRunner := &mock.ExecMockRunner{}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)
