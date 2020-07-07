@@ -93,7 +93,7 @@ spec:
           - GENERAL
           aliases:
             - name: cloudFoundry/serviceInstance
-        - name: cfServiceKey
+        - name: cfServiceKeyName
           type: string
           description: Cloud Foundry Service Key
           scope:
