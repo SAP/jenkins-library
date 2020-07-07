@@ -40,14 +40,12 @@ class ContainerMap implements Serializable {
     void initFromResource(Script script, String yamlResourceName, String buildTool, utils = new Utils()) {
         Map containers = [:]
         PiperExecutionPreparator piperPreparator = new PiperExecutionPreparator(utils)
+        Map stageToStepMapping
+        Map stepToMetaDataMapping
         try {
             Map yamlContents = script.readYaml(text: script.libraryResource(yamlResourceName))
-            Map stageToStepMapping = yamlContents.containerMaps as Map
-            Map stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
-            stageToStepMapping.each { stageName, stepsList ->
-                containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List,
-                    stepToMetaDataMapping, buildTool, piperPreparator)
-            }
+            stageToStepMapping = yamlContents.containerMaps as Map
+            stepToMetaDataMapping = yamlContents.stepMetadata as Map ?: [:]
         } catch (Exception e) {
             script.error "Failed to parse container maps in '$yamlResourceName'. It is expected to contain " +
                 "the entries 'containerMaps' and optionally 'stepMetadata' in the root." +
@@ -55,6 +53,10 @@ class ContainerMap implements Serializable {
                 "The optional 'stepMetadata' is a map of (go-implemented) step names to their YAML " +
                 "metadata resource file." +
                 "Error: ${e.getMessage()}"
+        }
+        stageToStepMapping.each { stageName, stepsList ->
+            containers[stageName] = getContainersForStage(script, stageName as String, stepsList as List,
+                stepToMetaDataMapping, buildTool, piperPreparator)
         }
         setMap(containers)
     }
