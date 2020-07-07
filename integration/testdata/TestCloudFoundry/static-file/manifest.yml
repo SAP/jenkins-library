@@ -1,0 +1,5 @@
+applications:
+  - name: cf-deploy-it-static-file
+    path: deployment/
+    buildpack: staticfile_buildpack
+    memory: 16M

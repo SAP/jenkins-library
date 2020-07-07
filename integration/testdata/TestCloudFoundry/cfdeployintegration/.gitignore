@@ -1,0 +1,16 @@
+**/credentials.*
+application/target/
+/s4hana_pipeline
+**/*.log
+**/*.trc
+**/.settings/
+**/.project
+**/.classpath
+**/.idea
+**/*.iml
+**/.vscode
+**/node_modules
+**/.DS_Store
+.pipeline/commonPipelineEnvironment
+.pipeline/influx
+.cf
