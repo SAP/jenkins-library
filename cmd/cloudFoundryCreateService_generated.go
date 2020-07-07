@@ -219,7 +219,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceManifest"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceManifest"}, {Name: "cfServiceManifest"}},
 					},
 					{
 						Name:        "manifestVariables",
@@ -227,7 +227,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariables"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariables"}, {Name: "cfManifestVariables"}},
 					},
 					{
 						Name:        "manifestVariablesFiles",
@@ -235,7 +235,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}, {Name: "cfManifestVariablesFiles"}},
 					},
 				},
 			},
