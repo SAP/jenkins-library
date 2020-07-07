@@ -5,14 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"strings"
 )
 
 //ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
 //Depending on user/developer requirements if he wants to perform further Cloud Foundry actions the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
-func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
+func (cf *CFUtils) ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption bool) (ServiceKey, error) {
+
+	_c := cf.Exec
+
+	if _c == nil {
+		_c = &command.Command{}
+	}
+
 	var abapServiceKey ServiceKey
 	var err error
 
@@ -25,16 +32,16 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 		Password:      options.Password,
 	}
 
-	err = Login(config)
+	err = cf.Login(config)
 	var serviceKeyBytes bytes.Buffer
-	c.Stdout(&serviceKeyBytes)
+	_c.Stdout(&serviceKeyBytes)
 	if err == nil {
 		//Reading Service Key
 		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKey).Info("Read service key for service instance")
 
 		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKey}
 
-		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
+		err = _c.RunExecutable("cf", cfReadServiceKeyScript...)
 	}
 	if err == nil {
 		var serviceKeyJSON string
@@ -54,7 +61,7 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 	if err != nil {
 		if cfLogoutOption == true {
 			var logoutErr error
-			logoutErr = Logout()
+			logoutErr = cf.Logout()
 			if logoutErr != nil {
 				return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
 			}
@@ -65,7 +72,7 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 	//Logging out of CF
 	if cfLogoutOption == true {
 		var logoutErr error
-		logoutErr = Logout()
+		logoutErr = cf.Logout()
 		if logoutErr != nil {
 			return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
 		}
