@@ -38,13 +38,7 @@ chmod +x ./cx-server
 
 For more information on the Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
 
-### On your own: Custom Jenkins Setup
-
-If you use your own Jenkins installation, you need to care for the configuration that is specific to project "Piper".
-This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
-If you choose to go this path, follow the [Custom Jenkins Setup guide][resources-custom-jenkins].
-
-**Note:** This option is not supported for SAP Cloud SDK projects.
+For alternative approaches to setup a Jenkins build sever which fits the needs of the project "Piper" pipelines and steps please read the [Infrastructure Overview][resources-infrastructure].
 
 ## (Optional) Sample Application
 
@@ -206,8 +200,8 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
 [guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
-[resources-custom-jenkins]:          customjenkins.md
 [resources-configuration]:           configuration.md
+[resources-infrastructure]:          infrastructure/overview.md
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
 

@@ -82,7 +82,12 @@ func mtaBuild(config mtaBuildOptions,
 	log.Entry().Debugf("Launching mta build")
 	files := piperutils.Files{}
 	httpClient := piperhttp.Client{}
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &files, &httpClient)
+	e := command.Command{}
+
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
+
+	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -92,9 +97,10 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner,
+	e command.ExecRunner,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Downloader) error {
+	httpClient piperhttp.Downloader,
+	npmExecutor npm.Executor) error {
 
 	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
 	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
@@ -106,11 +112,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = npm.SetNpmRegistries(
-		&npm.RegistryOptions{
-			DefaultNpmRegistry: config.DefaultNpmRegistry,
-			SapNpmRegistry:     config.SapNpmRegistry,
-		}, e)
+	err = npmExecutor.SetNpmRegistries()
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -188,12 +190,22 @@ func runMtaBuild(config mtaBuildOptions,
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
-	err = installMavenArtifacts(e, config)
-
+	if config.InstallArtifacts {
+		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
+		err = installMavenArtifacts(e, config)
+		if err != nil {
+			return err
+		}
+		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
+		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
-func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
@@ -218,7 +230,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e execRunner) error {
+func addNpmBinToPath(e command.ExecRunner) error {
 	dir, _ := os.Getwd()
 	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")

@@ -129,6 +129,14 @@ spec:
         mandatory: false
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description: If enabled, for npm packages this step will install all depedencies including dev dependencies. For maven it will install all artifacts to the local maven repository.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -138,7 +146,7 @@ spec:
             fields:
               - name: mtarFilePath
   containers:
-    - image: devxci/mbtci:1.0.14
+    - image: devxci/mbtci:1.0.14.1
       imagePullPolicy: Always
       conditions:
         - conditionRef: strings-equal

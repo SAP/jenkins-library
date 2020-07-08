@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestVersionCommand(t *testing.T) {
+func TestNpmExecuteLintCommand(t *testing.T) {
 
-	testCmd := VersionCommand()
+	testCmd := NpmExecuteLintCommand()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "version", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "npmExecuteLint", testCmd.Use, "command name incorrect")
 
 }

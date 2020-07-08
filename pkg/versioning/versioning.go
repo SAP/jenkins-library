@@ -71,16 +71,26 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			path:         buildDescriptorFilePath,
 			versionField: "version",
 		}
+	case "gradle":
+		if len(buildDescriptorFilePath) == 0 {
+			buildDescriptorFilePath = "build.gradle"
+		}
+		artifact = &Gradle{}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt", "go.mod"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
 		}
-		artifact = &Versionfile{
-			path: buildDescriptorFilePath,
+
+		switch buildDescriptorFilePath {
+		case "go.mod":
+			artifact = &GoMod{path: buildDescriptorFilePath}
+			break
+		default:
+			artifact = &Versionfile{path: buildDescriptorFilePath}
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {
