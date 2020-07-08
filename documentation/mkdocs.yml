@@ -1,9 +1,15 @@
 site_name: 'Project "Piper": Continuous Delivery for the SAP Ecosystem'
 nav:
-    - Home: index.md
+    - 'Home': index.md
     - 'Getting Started With Project "Piper"' : guidedtour.md
-    - Configuration: configuration.md
+    - 'Configuration': configuration.md
+    - 'Infrastructure':
+        - 'Overview': infrastructure/overview.md
+        - 'Custom Jenkins Setup': infrastructure/customjenkins.md
     - 'Pipelines':
+        - 'ABAP Environment pipeline':
+            - 'Introduction': pipelines/abapEnvironment/introduction.md
+            - 'Configuration': pipelines/abapEnvironment/configuration.md
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
             - 'Examples': stages/examples.md
@@ -34,6 +40,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
+        - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
@@ -53,6 +60,7 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
+        - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md
@@ -65,6 +73,7 @@ nav:
         - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
         - malwareExecuteScan: steps/malwareExecuteScan.md
+        - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
@@ -72,12 +81,14 @@ nav:
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
-        - npmExecute: steps/npmExecute.md
+        - npmExecuteLint: steps/npmExecuteLint.md
+        - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperLoadGlobalExtensions: steps/piperLoadGlobalExtensions.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - protecodeExecuteScan: steps/protecodeExecuteScan.md
@@ -97,9 +108,8 @@ nav:
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - npmExecute: steps/npmExecute.md
     - 'Command line tool': cli/index.md
-    - Resources:
-        - 'Custom Jenkins Setup': customjenkins.md
 
 theme:
     name: 'material'

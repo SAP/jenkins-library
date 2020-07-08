@@ -22,7 +22,7 @@ type abapEnvironmentPullGitRepoOptions struct {
 	CfOrg             string   `json:"cfOrg,omitempty"`
 	CfSpace           string   `json:"cfSpace,omitempty"`
 	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKey      string   `json:"cfServiceKey,omitempty"`
+	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
 }
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
@@ -42,7 +42,7 @@ Please provide either of the following options:
 * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -53,6 +53,7 @@ Please provide either of the following options:
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -65,7 +66,7 @@ Please provide either of the following options:
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -77,6 +78,7 @@ Please provide either of the following options:
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentPullGitRepo(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -93,7 +95,7 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKey, "cfServiceKey", os.Getenv("PIPER_cfServiceKey"), "Cloud Foundry Service Key")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -137,7 +139,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -145,7 +147,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
@@ -153,7 +155,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfOrg",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
@@ -161,7 +163,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
@@ -169,18 +171,18 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 					{
 						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
-						Name:        "cfServiceKey",
+						Name:        "cfServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 				},
 			},

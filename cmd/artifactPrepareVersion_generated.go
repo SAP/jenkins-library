@@ -37,8 +37,9 @@ type artifactPrepareVersionOptions struct {
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
-	artifactVersion string
-	git             struct {
+	artifactVersion         string
+	originalArtifactVersion string
+	git                     struct {
 		commitID      string
 		commitMessage string
 	}
@@ -51,6 +52,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		value    string
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
+		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
 		{category: "git", name: "commitMessage", value: p.git.commitMessage},
 	}
@@ -100,7 +102,7 @@ Depending on the build tool used and thus the allowed versioning format the ` + 
 * Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
 * You need to ensure that your CI/CD system can push back to your SCM (via providing ssh or HTTP(s) credentials)
 
-**This pattern is the default** behavior (` + "`" + `versioningType: cloud` + "`" + `) since this is suitable for for most cloud deliveries.
+**This pattern is the default** behavior (` + "`" + `versioningType: cloud` + "`" + `) since this is suitable for most cloud deliveries.
 
 It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which has a slighly different behavior than described above:
 
@@ -143,7 +145,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 #### ` + "`" + `yaml` + "`" + ` file containing the version
 
 Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -154,6 +156,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Password)
@@ -166,7 +169,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -179,6 +182,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			artifactPrepareVersion(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -188,7 +192,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrepareVersionOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.")
-	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", "Project Piper", "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
+	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", os.Getenv("PIPER_customVersioningScheme"), "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`).")
@@ -200,11 +204,11 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Maven only - Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().BoolVar(&stepConfig.ShortCommitID, "shortCommitId", false, "Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).")
-	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", "build_", "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
+	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", `build_`, "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
 	cmd.Flags().BoolVar(&stepConfig.UnixTimestamp, "unixTimestamp", false, "Defines if the Unix timestamp number should be used as build number instead of the standard date format.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
-	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", "cloud", "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)")
+	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor, but not generate a new version)")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -214,7 +218,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "artifactPrepareVersion",
-			Aliases: []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "mavenExecute", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
+			Aliases: []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -301,7 +305,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "gitHttpsCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -341,7 +345,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 					},
 					{
 						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "gitHttpsCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,

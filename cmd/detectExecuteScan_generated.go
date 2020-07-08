@@ -36,7 +36,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Executes Synopsis Detect scan",
 		Long:  `This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -47,6 +47,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.APIToken)
@@ -58,7 +59,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -70,6 +71,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			detectExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -82,9 +84,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.CodeLocation, "codeLocation", os.Getenv("PIPER_codeLocation"), "An override for the name Detect will use for the scan file it creates.")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "Name of the Synopsis Detect (formerly BlackDuck) project.")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "Version of the Synopsis Detect (formerly BlackDuck) project.")
-	cmd.Flags().StringSliceVar(&stepConfig.Scanners, "scanners", []string{"signature"}, "List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{"."}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{"--blackduck.signature.scanner.memory=4096", "--blackduck.timeout=6000", "--blackduck.trust.cert=true", "--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR", "--detect.report.timeout=4800", "--logging.level.com.synopsys.integration=DEBUG"}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
+	cmd.Flags().StringSliceVar(&stepConfig.Scanners, "scanners", []string{`signature`}, "List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--blackduck.timeout=6000`, `--blackduck.trust.cert=true`, `--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR`, `--detect.report.timeout=4800`, `--logging.level.com.synopsys.integration=DEBUG`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server url to the Synopsis Detect (formerly BlackDuck) Server.")
 
 	cmd.MarkFlagRequired("apiToken")

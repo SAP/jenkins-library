@@ -96,7 +96,7 @@ func TestApplyDefaults(t *testing.T) {
 		client   Client
 		expected Client
 	}{
-		{client: Client{}, expected: Client{transportTimeout: 10 * time.Second, maxRequestDuration: 0, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
+		{client: Client{}, expected: Client{transportTimeout: 3 * time.Minute, maxRequestDuration: 0, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 		{client: Client{transportTimeout: 10, maxRequestDuration: 5}, expected: Client{transportTimeout: 10, maxRequestDuration: 5, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 	}
 

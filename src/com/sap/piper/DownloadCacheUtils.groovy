@@ -3,7 +3,7 @@ package com.sap.piper
 
 class DownloadCacheUtils {
 
-    static Map injectDownloadCacheInMavenParameters(Script script, Map parameters) {
+    static Map injectDownloadCacheInParameters(Script script, Map parameters, BuildTool buildTool) {
         if (DownloadCacheUtils.isEnabled(script)) {
 
             if (!parameters.dockerOptions) {
@@ -18,35 +18,45 @@ class DownloadCacheUtils {
             }
             parameters.dockerOptions.add(DownloadCacheUtils.getDockerOptions(script))
 
-            if (parameters.globalSettingsFile) {
-                throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
+            if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
+                if (parameters.globalSettingsFile) {
+                    throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
+                }
+
+                parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
             }
 
-            parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
+            if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
+                parameters['defaultNpmRegistry'] = DownloadCacheUtils.getNpmRegistryUri(script)
+            }
         }
 
         return parameters
+    }
+
+    static String networkName() {
+        return System.getenv('DL_CACHE_NETWORK')
+    }
+
+    static String hostname() {
+        return System.getenv('DL_CACHE_HOSTNAME')
     }
 
     static boolean isEnabled(Script script) {
         if (script.env.ON_K8S) {
             return false
         }
-        script.node('master') {
-            String network = script.env.DL_CACHE_NETWORK
-            String host = script.env.DL_CACHE_HOSTNAME
-            return (network.asBoolean() && host.asBoolean())
-        }
+
+        return (networkName() && hostname())
     }
 
     static String getDockerOptions(Script script) {
-        script.node('master') {
-            String dockerNetwork = script.env.DL_CACHE_NETWORK
-            if (!dockerNetwork) {
-                return ''
-            }
-            return "--network=$dockerNetwork"
+
+        String dockerNetwork = networkName()
+        if (!dockerNetwork) {
+            return ''
         }
+        return "--network=$dockerNetwork"
     }
 
     static String getGlobalMavenSettingsForDownloadCache(Script script) {
@@ -55,10 +65,7 @@ class DownloadCacheUtils {
             return globalSettingsFilePath
         }
 
-        String hostname = ''
-        script.node('master') {
-            hostname = script.env.DL_CACHE_HOSTNAME // set by cx-server
-        }
+        String hostname = hostname()
 
         if (!hostname) {
             return ''
@@ -76,9 +83,12 @@ class DownloadCacheUtils {
     }
 
     static String getNpmRegistryUri(Script script) {
-        script.node('master') {
-            return "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
+        String hostname = hostname()
+
+        if (!hostname) {
+            return ''
         }
-        return ""
+        String npmRegistry = "http://${hostname}:8081/repository/npm-proxy/"
+        return npmRegistry
     }
 }

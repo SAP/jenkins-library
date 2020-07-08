@@ -46,14 +46,15 @@ public class CommonStepsTest extends BasePiperTest{
     public void scriptReferenceNotHandedOverTest() {
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
+            'abapEnvironmentPipeline',
+            'buildSetResult',
             'commonPipelineEnvironment',
             'handlePipelineStepErrors',
             'pipelineExecute',
-            'piperPipeline',
             'piperExecuteBin',
+            'piperPipeline',
             'prepareDefaultValues',
-            'setupCommonPipelineEnvironment',
-            'buildSetResult'
+            'setupCommonPipelineEnvironment'
         ]
 
         List steps = getSteps().stream()
@@ -104,6 +105,7 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'abapEnvironmentPipeline', // special step (infrasturcture)
         'artifactPrepareVersion',
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
@@ -126,15 +128,24 @@ public class CommonStepsTest extends BasePiperTest{
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'npmExecuteScripts', //implementing new golang pattern without fields
+        'npmExecuteLint', //implementing new golang pattern without fields
         'malwareExecuteScan', //implementing new golang pattern without fields
         'mavenBuild', //implementing new golang pattern without fields
         'mavenExecute', //implementing new golang pattern without fields
         'mavenExecuteStaticCodeChecks', //implementing new golang pattern without fields
+        'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
         'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
+        'gctsCloneRepository', //implementing new golang pattern without fields
+        'fortifyExecuteScan', //implementing new golang pattern without fields
+        'gctsDeploy', //implementing new golang pattern without fields
+        'containerSaveImage', //implementing new golang pattern without fields
+        'detectExecuteScan' //implementing new golang pattern without fields
+
     ]
 
     @Test
@@ -192,6 +203,7 @@ public class CommonStepsTest extends BasePiperTest{
     public void stepsWithWrongFieldNameTest() {
 
         def whitelist = [
+            'abapEnvironmentPipeline',
             'commonPipelineEnvironment',
             'piperPipeline',
             'piperExecuteBin',

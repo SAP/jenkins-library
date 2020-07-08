@@ -27,6 +27,10 @@ class JenkinsMaterializeLogTest extends BasePiperTest {
 		}
 	}
 
+	class AnnotatedLargeTextMock {
+		void writeLogTo(i, out) {}
+	}
+
 	@Rule
 	public RuleChain ruleChain = Rules
 	.getCommonRules(this)
@@ -40,7 +44,7 @@ class JenkinsMaterializeLogTest extends BasePiperTest {
 	void testMaterializeLog() {
 		def map = [script: nullScript, jenkinsUtilsStub: new JenkinsUtilsMock()]
 		def body = { name -> def msg = "hello " + name }
-		binding.setVariable('currentBuild', [result: 'UNSTABLE', rawBuild: [getLogInputStream: {return new StringBufferInputStream("this is the input")}]])
+		binding.setVariable('currentBuild', [result: 'UNSTABLE', rawBuild: [getLogText: { return new AnnotatedLargeTextMock() } ]])
 		binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
 		stepRule.step.jenkinsMaterializeLog(map, body)
 	}

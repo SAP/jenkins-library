@@ -53,7 +53,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	}
 }
 
-func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c execRunner) error {
+func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) error {
 
 	log.Entry().Info("Creating Service Key")
 
@@ -64,7 +64,6 @@ func runCloudFoundryCreateServiceKey(config *cloudFoundryCreateServiceKeyOptions
 	} else {
 		cfCreateServiceKeyScript = []string{"create-service-key", config.CfServiceInstance, config.CfServiceKeyName, "-c", config.CfServiceKeyConfig}
 	}
-
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
 		return fmt.Errorf("Failed to Create Service Key: %w", err)

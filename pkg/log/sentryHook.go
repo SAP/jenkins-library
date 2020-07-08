@@ -41,7 +41,7 @@ func NewSentryHook(sentryDsn, correlationID string) SentryHook {
 		Entry().Warnf("cannot initialize sentry: %v", err)
 	}
 	h := SentryHook{
-		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel},
+		levels:        []logrus.Level{logrus.PanicLevel, logrus.FatalLevel},
 		Hub:           sentry.CurrentHub(),
 		tags:          make(map[string]string),
 		Event:         sentry.NewEvent(),
@@ -61,6 +61,7 @@ func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
 	sentryHook.Event.Message = entry.Message
 	errValue := ""
 	sentryHook.tags["correlationId"] = sentryHook.correlationID
+	sentryHook.tags["category"] = GetErrorCategory().String()
 	for k, v := range entry.Data {
 		if k == "stepName" || k == "category" {
 			sentryHook.tags[k] = fmt.Sprint(v)

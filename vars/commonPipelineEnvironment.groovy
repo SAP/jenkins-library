@@ -8,6 +8,10 @@ class commonPipelineEnvironment implements Serializable {
 
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
+    def originalArtifactVersion
+
+    //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
+    String buildTool
 
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
@@ -31,11 +35,13 @@ class commonPipelineEnvironment implements Serializable {
     Map configuration = [:]
     Map containerProperties = [:]
     Map defaultConfiguration = [:]
+
     // Location of the file from where the configuration was parsed. See setupCommonPipelineEnvironment.groovy
     // Useful for making sure that the piper binary uses the same file when called from Jenkins.
     String configurationFile = ''
 
-    String mtarFilePath
+    String mtarFilePath = ""
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -51,6 +57,9 @@ class commonPipelineEnvironment implements Serializable {
     def reset() {
         appContainerProperties = [:]
         artifactVersion = null
+        originalArtifactVersion = null
+
+        buildTool = null
 
         configuration = [:]
         containerProperties = [:]
@@ -161,6 +170,7 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
         [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],

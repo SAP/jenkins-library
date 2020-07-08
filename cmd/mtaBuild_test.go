@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
@@ -35,6 +36,7 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide default npm registry", func(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
+		e.StdoutReturn = map[string]string{"npm config get registry": "undefined"}
 
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
 
@@ -42,13 +44,40 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		npmExecutor := newNpmExecutor(&e)
+		npmExecutor.Options = npm.ExecutorOptions{DefaultNpmRegistry: options.DefaultNpmRegistry}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, npmExecutor)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 2) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", e.Calls[0].Exec)
-			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[1].Exec)
+			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[1].Params)
+		}
+	})
+
+	t.Run("Provide SAP npm registry", func(t *testing.T) {
+
+		e := mock.ExecMockRunner{}
+		e.StdoutReturn = map[string]string{"npm config get @sap:registry": "undefined"}
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
+
+		existingFiles := make(map[string]string)
+		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
+		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+		npmExecutor := newNpmExecutor(&e)
+		npmExecutor.Options = npm.ExecutorOptions{SapNpmRegistry: options.SapNpmRegistry}
+
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, npmExecutor)
+
+		assert.Nil(t, err)
+
+		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
+			assert.Equal(t, "npm", e.Calls[2].Exec)
+			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, e.Calls[2].Params)
 		}
 	})
 
@@ -60,7 +89,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.NotNil(t, err)
 
@@ -79,7 +108,7 @@ func TestMarBuild(t *testing.T) {
 
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Nil(t, err)
 
@@ -118,7 +147,7 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Empty(t, fileUtils.writtenFiles)
 	})
@@ -134,7 +163,7 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "already there with-${timestamp}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		_ = runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.NotEmpty(t, fileUtils.writtenFiles["mta.yaml"])
 	})
@@ -143,7 +172,7 @@ func TestMarBuild(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName.mtar"}
 
 		cpe.mtarFilePath = ""
 
@@ -151,13 +180,13 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
@@ -176,13 +205,13 @@ func TestMarBuild(t *testing.T) {
 		existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 	})
 
@@ -190,19 +219,19 @@ func TestMarBuild(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName.mtar"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "java", e.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "java", e.Calls[2].Exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
 		}
 	})
 
@@ -212,19 +241,19 @@ func TestMarBuild(t *testing.T) {
 
 		cpe.mtarFilePath = ""
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar"}
 
 		existingFiles := make(map[string]string)
 		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
 		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
 
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 1) {
-			assert.Equal(t, "mbt", e.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[0].Params)
+		if assert.Len(t, e.Calls, 3) {
+			assert.Equal(t, "mbt", e.Calls[2].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[2].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -263,7 +292,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 			assert.Nil(t, err)
 
@@ -282,7 +311,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient)
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
 
 			assert.Nil(t, err)
 
@@ -335,4 +364,10 @@ func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.Fi
 
 func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
+}
+
+func newNpmExecutor(execRunner *mock.ExecMockRunner) *npm.Execute {
+	utils := newNpmMockUtilsBundle()
+	utils.execRunner = execRunner
+	return &npm.Execute{Utils: &utils}
 }
