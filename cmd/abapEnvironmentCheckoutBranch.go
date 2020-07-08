@@ -49,7 +49,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-	//pollIntervall := 10 * time.Second
+	pollIntervall := 10 * time.Second
 
 	log.Entry().Infof("Start to switch branch %v on repository %v ", options.BranchName, options.RepositoryName)
 	log.Entry().Info("--------------------------------")
@@ -63,22 +63,21 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
+	status, errorPollEntity := pollEntity(options.RepositoryName, uriConnectionDetails, &client, pollIntervall)
 	if errorPollEntity != nil {
-		log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+		log.Entry().WithError(errorPollEntity).Fatal("Status of checkout action on repository" + options.RepositoryName + " failed on the ABAP System")
 	}
 	if status == "E" {
-		log.Entry().Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+		log.Entry().Fatal("Checkout of branch " + options.BranchName + " failed on the ABAP System")
 	}
 
-	log.Entry().Info(repositoryName + " was pulled successfully")
-
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("All repositories were pulled successfully")
+	log.Entry().Info("--------------------------------")
+	log.Entry().Infof("Checkout of branch %v on repository %v was successful", options.BranchName, options.RepositoryName)
+	log.Entry().Info("--------------------------------")
 	return nil
 }
 
-func triggerCheckout(repositoryName string, targetBranchName string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
+func triggerCheckout(repositoryName string, branchName string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := checkoutConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -91,7 +90,7 @@ func triggerCheckout(repositoryName string, targetBranchName string, checkoutCon
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
@@ -99,17 +98,19 @@ func triggerCheckout(repositoryName string, targetBranchName string, checkoutCon
 	if repositoryName == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	if targetBranchName == "" {
+	if branchName == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'branchName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
+
+	// Setup JSON body and fire the POST request
+	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"},{"branch_name":"` + branchName + `"}`)
 	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
+		err = handleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Info("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Info("Triggered checkout of branch")
 
 	// Parse Response
 	var body abaputils.PullEntity
@@ -120,9 +121,10 @@ func triggerCheckout(repositoryName string, targetBranchName string, checkoutCon
 	}
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
+
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-		err := errors.New("Request to ABAP System not successful")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("branchName", branchName).Error("Could not switch to specified branch")
+		err := errors.New("Request to ABAP System failed")
 		return uriConnectionDetails, err
 	}
 
