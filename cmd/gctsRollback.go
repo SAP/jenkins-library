@@ -34,7 +34,7 @@ func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomDat
 	}
 }
 
-func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {

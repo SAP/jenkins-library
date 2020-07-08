@@ -37,7 +37,7 @@ func GctsRollbackCommand() *cobra.Command {
 		Long: `This step performs a rollback of commit(s) in a local ABAP system repository. If a <commit> parameter is specified, it will be used as the target commit for the rollback.
 If no <commit> parameter is specified and the remote repository domain is 'github.com', the last commit with status 'success' will be used for the rollback. Otherwise,
 gctsRollback will rollback to the previously active commit in the local repository.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -48,6 +48,7 @@ gctsRollback will rollback to the previously active commit in the local reposito
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -61,7 +62,7 @@ gctsRollback will rollback to the previously active commit in the local reposito
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
