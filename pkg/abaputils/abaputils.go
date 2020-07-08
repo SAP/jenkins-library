@@ -13,72 +13,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
-// Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
-// the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
-func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
-
-	var abapServiceKey AbapServiceKey
-	var serviceKeyBytes bytes.Buffer
-	var err error
-
-	//Logging into Cloud Foundry
-	config := cloudfoundry.LoginOptions{
-		CfAPIEndpoint: options.CfAPIEndpoint,
-		CfOrg:         options.CfOrg,
-		CfSpace:       options.CfSpace,
-		Username:      options.Username,
-		Password:      options.Password,
-	}
-
-	err = cloudfoundry.Login(config, c)
-
-	c.Stdout(&serviceKeyBytes)
-	if err == nil {
-		// Reading Service Key
-		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKeyName).Info("Read service key for service instance")
-
-		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKeyName}
-
-		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
-	}
-	if err == nil {
-		var serviceKeyJSON string
-
-		if len(serviceKeyBytes.String()) > 0 {
-			var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-			serviceKeyJSON = strings.Join(lines[2:], "")
-		}
-
-		json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-		if abapServiceKey == (AbapServiceKey{}) {
-			return abapServiceKey, errors.New("Parsing the service key failed")
-		}
-
-		log.Entry().Info("Service Key read successfully")
-	}
-	if err != nil {
-		if cfLogoutOption == true {
-			var logoutErr error
-			logoutErr = cloudfoundry.Logout()
-			if logoutErr != nil {
-				return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-			}
-		}
-		return abapServiceKey, fmt.Errorf("Reading Service Key failed: %w", err)
-	}
-
-	// Logging out of CF
-	if cfLogoutOption == true {
-		var logoutErr error
-		logoutErr = cloudfoundry.Logout()
-		if logoutErr != nil {
-			return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-		}
-	}
-	return abapServiceKey, nil
-}
-
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
 func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
 
@@ -113,6 +47,73 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
 	return connectionDetails, error
+}
+
+// ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
+// Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
+// the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
+func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
+
+	var abapServiceKey AbapServiceKey
+	var serviceKeyBytes bytes.Buffer
+	var err error
+
+	//Logging into Cloud Foundry
+	config := cloudfoundry.LoginOptions{
+		CfAPIEndpoint: options.CfAPIEndpoint,
+		CfOrg:         options.CfOrg,
+		CfSpace:       options.CfSpace,
+		Username:      options.Username,
+		Password:      options.Password,
+	}
+
+	err = cloudfoundry.Login(config, c)
+
+	c.Stdout(&serviceKeyBytes)
+	if err == nil {
+		// Reading Service Key
+		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKeyName).Info("Read service key for service instance")
+
+		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKeyName}
+
+		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
+
+	}
+	if err == nil {
+		var serviceKeyJSON string
+
+		if len(serviceKeyBytes.String()) > 0 {
+			var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
+			serviceKeyJSON = strings.Join(lines[2:], "")
+		}
+
+		json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
+		if abapServiceKey == (AbapServiceKey{}) {
+			return abapServiceKey, errors.New("Parsing the service key failed")
+		}
+
+		log.Entry().Info("Service Key read successfully")
+	}
+	if err != nil {
+		if cfLogoutOption == true {
+			var logoutErr error
+			logoutErr = cloudfoundry.Logout()
+			if logoutErr != nil {
+				return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
+			}
+		}
+		return abapServiceKey, fmt.Errorf("Reading Service Key failed: %w", err)
+	}
+
+	// Logging out of CF
+	if cfLogoutOption {
+		var logoutErr error
+		logoutErr = cloudfoundry.Logout()
+		if logoutErr != nil {
+			return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
+		}
+	}
+	return abapServiceKey, nil
 }
 
 /****************************************
