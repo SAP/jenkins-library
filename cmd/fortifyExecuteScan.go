@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"io/ioutil"
 	"math"
@@ -13,9 +12,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/google/go-github/v28/github"
 	"github.com/google/uuid"
 
@@ -78,6 +79,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
 		return fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
+	}
+
+	if config.AuthEntityIDs != "" {
+		ensureAuthEntitiesExist(projectVersion.ID, sys, &config)
 	}
 
 	if len(config.PullRequestName) > 0 {
@@ -821,4 +826,40 @@ func getSeparator() string {
 		return ";"
 	}
 	return ":"
+}
+
+func ensureAuthEntitiesExist(projectVersionId int64, sys fortify.System, config *fortifyExecuteScanOptions) {
+	entityList, err := sys.GetAuthEntityOfProjectVersion(projectVersionId)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Failed to fetch auth entities for project version %v", projectVersionId)
+	}
+
+	// For each ensureId in config.AuthEntityIDs, ensure that it exists in the current project version's collection of auth entities.
+	for _, ensureIdStr := range strings.Split(config.AuthEntityIDs, ",") {
+		found := false
+		ensureIdStr = strings.TrimSpace(ensureIdStr)
+		ensureId, err := strconv.Atoi(ensureIdStr)
+
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Failed to convert entity ID to int: %s", ensureIdStr)
+		}
+
+		for _, entity := range entityList {
+			if entity.ID == int64(ensureId) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			newEntity := &models.AuthenticationEntity{
+				ID:     int64(ensureId),
+				IsLdap: true,
+			}
+			err := sys.UpdateCollectionAuthEntityOfProjectVersion(projectVersionId, []*models.AuthenticationEntity{newEntity})
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Failed to update collection of auth entities for project %v, entity ID: %v", projectVersionId, newEntity.ID)
+			}
+		}
+	}
 }

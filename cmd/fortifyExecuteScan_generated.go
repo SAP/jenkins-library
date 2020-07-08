@@ -20,6 +20,7 @@ type fortifyExecuteScanOptions struct {
 	GithubToken                     string   `json:"githubToken,omitempty"`
 	AutoCreate                      bool     `json:"autoCreate,omitempty"`
 	ModulePath                      string   `json:"modulePath,omitempty"`
+	AuthEntityIDs                   string   `json:"authEntityIds,omitempty"`
 	PythonRequirementsFile          string   `json:"pythonRequirementsFile,omitempty"`
 	AutodetectClasspath             bool     `json:"autodetectClasspath,omitempty"`
 	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty"`
@@ -191,6 +192,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
+	cmd.Flags().StringVar(&stepConfig.AuthEntityIDs, "authEntityIds", ``, "Comma separated list of AuthEntity IDs to attach to the project for access")
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsFile, "pythonRequirementsFile", os.Getenv("PIPER_pythonRequirementsFile"), "The requirements file used in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().BoolVar(&stepConfig.AutodetectClasspath, "autodetectClasspath", true, "Whether the classpath is automatically determined via build tool i.e. maven or pip or not at all")
 	cmd.Flags().StringVar(&stepConfig.MustAuditIssueGroups, "mustAuditIssueGroups", `Corporate Security Requirements, Audit All`, "Comma separated list of issue groups that must be audited completely")
@@ -275,6 +277,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "modulePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "authEntityIds",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

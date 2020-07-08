@@ -62,6 +62,8 @@ type System interface {
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
+	GetAuthEntityOfProjectVersion(id int64) ([]*models.AuthenticationEntity, error)
+	UpdateCollectionAuthEntityOfProjectVersion(id int64, data []*models.AuthenticationEntity) error
 }
 
 // SystemInstance is the specific instance
@@ -363,7 +365,7 @@ func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int
 	return nil
 }
 
-func (sys *SystemInstance) getAuthEntityOfProjectVersion(id int64) ([]*models.AuthenticationEntity, error) {
+func (sys *SystemInstance) GetAuthEntityOfProjectVersion(id int64) ([]*models.AuthenticationEntity, error) {
 	embed := "roles"
 	params := &auth_entity_of_project_version_controller.ListAuthEntityOfProjectVersionParams{Embed: &embed, ParentID: id}
 	params.WithTimeout(sys.timeout)
@@ -374,7 +376,7 @@ func (sys *SystemInstance) getAuthEntityOfProjectVersion(id int64) ([]*models.Au
 	return result.GetPayload().Data, nil
 }
 
-func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, data []*models.AuthenticationEntity) error {
+func (sys *SystemInstance) UpdateCollectionAuthEntityOfProjectVersion(id int64, data []*models.AuthenticationEntity) error {
 	params := &auth_entity_of_project_version_controller.UpdateCollectionAuthEntityOfProjectVersionParams{ParentID: id, Data: data}
 	params.WithTimeout(sys.timeout)
 	_, err := sys.client.AuthEntityOfProjectVersionController.UpdateCollectionAuthEntityOfProjectVersion(params, sys)
@@ -386,11 +388,11 @@ func (sys *SystemInstance) updateCollectionAuthEntityOfProjectVersion(id int64, 
 
 // ProjectVersionCopyPermissions copies the authentication entity of the project version addressed by sourceID to the one of targetID
 func (sys *SystemInstance) ProjectVersionCopyPermissions(sourceID, targetID int64) error {
-	result, err := sys.getAuthEntityOfProjectVersion(sourceID)
+	result, err := sys.GetAuthEntityOfProjectVersion(sourceID)
 	if err != nil {
 		return err
 	}
-	err = sys.updateCollectionAuthEntityOfProjectVersion(targetID, result)
+	err = sys.UpdateCollectionAuthEntityOfProjectVersion(targetID, result)
 	if err != nil {
 		return err
 	}

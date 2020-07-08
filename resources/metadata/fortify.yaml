@@ -65,6 +65,14 @@ spec:
         - STAGES
         - STEPS
       default: './'
+    - name: authEntityIds
+      type: string
+      description: "Comma separated list of AuthEntity IDs to attach to the project for access"
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: ''
     - name: pythonRequirementsFile
       type: string
       description: "The requirements file used in `buildTool: 'pip'` to populate
