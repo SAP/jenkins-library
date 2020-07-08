@@ -94,7 +94,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
-	// Trigger the branch checkout
+	// Initial checks
 	if repositoryName == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
@@ -103,7 +103,10 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	}
 
 	// Setup JSON body and fire the POST request
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"},{"branch_name":"` + branchName + `"}`)
+
+	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
+	checkoutConnectionDetails.URL = checkoutConnectionDetails.URL + `/checkout_branch?branch_name='` + branchName + `'&sc_name='` + repositoryName + `'`
+	jsonBody := []byte(``)
 	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
 	if err != nil {
 		err = handleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
