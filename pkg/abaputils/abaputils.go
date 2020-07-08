@@ -154,7 +154,7 @@ type BranchEntity struct {
 	LastCommitOn  string       `json:"last_commit_on"`
 }
 
-// AbapLogs struct for LogResults
+// AbapLogs struct for ABAP logs
 type AbapLogs struct {
 	Results []LogResults `json:"results"`
 }
@@ -171,13 +171,13 @@ type LogResults struct {
  *	Structs for specific steps *
  *******************************/
 
-// AbapEnvironmentPullGitRepoOptions struct for the PullGitRepo step
+// AbapEnvironmentPullGitRepoOptions struct for the PullGitRepo piper step
 type AbapEnvironmentPullGitRepoOptions struct {
 	AbapEnvOptions  AbapEnvironmentOptions
 	RepositoryNames []string `json:"repositoryNames,omitempty"`
 }
 
-// AbapEnvironmentRunATCCheckOptions struct for the RunATCCheck step
+// AbapEnvironmentRunATCCheckOptions struct for the RunATCCheck piper step
 type AbapEnvironmentRunATCCheckOptions struct {
 	AbapEnvOptions AbapEnvironmentOptions
 	AtcConfig      string `json:"atcConfig,omitempty"`
@@ -187,7 +187,7 @@ type AbapEnvironmentRunATCCheckOptions struct {
  *	Structs for ABAP in general *
  ********************************/
 
-//AbapEnvironmentOptions struct
+//AbapEnvironmentOptions contains cloud foundry fields and the host parameter for connections to ABAP Environment instances
 type AbapEnvironmentOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
@@ -199,12 +199,12 @@ type AbapEnvironmentOptions struct {
 	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
 
-// AbapMetadata struct
+// AbapMetadata contains the URI of metadata files
 type AbapMetadata struct {
 	URI string `json:"uri"`
 }
 
-// ConnectionDetailsHTTP struct
+// ConnectionDetailsHTTP contains fields for HTTP connections including the XCSRF token
 type ConnectionDetailsHTTP struct {
 	User       string `json:"user"`
 	Password   string `json:"password"`
@@ -212,19 +212,19 @@ type ConnectionDetailsHTTP struct {
 	XCsrfToken string `json:"xcsrftoken"`
 }
 
-// AbapError struct
+// AbapError contains the error code and the error message for ABAP errors
 type AbapError struct {
 	Code    string           `json:"code"`
 	Message AbapErrorMessage `json:"message"`
 }
 
-// AbapErrorMessage struct
+// AbapErrorMessage contains the lanuage and value fields for ABAP errors
 type AbapErrorMessage struct {
 	Lang  string `json:"lang"`
 	Value string `json:"value"`
 }
 
-// AbapServiceKey struct
+// AbapServiceKey contains information about an ABAP service key
 type AbapServiceKey struct {
 	SapCloudService    string         `json:"sap.cloud.service"`
 	URL                string         `json:"url"`
