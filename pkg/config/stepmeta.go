@@ -65,6 +65,7 @@ type ResourceReference struct {
 	Name    string  `json:"name"`
 	Type    string  `json:"type,omitempty"`
 	Param   string  `json:"param,omitempty"`
+	Path    string  `json:"path,omitempty"`
 	Aliases []Alias `json:"aliases,omitempty"`
 }
 
@@ -382,6 +383,17 @@ func getParameterValue(path, name string, res ResourceReference, param StepParam
 		return val
 	}
 	return nil
+}
+
+// GetReferences returns all ResourceReferences of the given type
+func (m *StepParameters) GetReferences(refType string) []ResourceReference {
+	refs := []ResourceReference{}
+	for _, ref := range m.ResourceRef {
+		if refType == ref.Type {
+			refs = append(refs, ref)
+		}
+	}
+	return refs
 }
 
 // EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute

@@ -22,7 +22,7 @@ func TestGetKV2Secret(t *testing.T) {
 
 	t.Run("Test missing secret", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
-		client := Client{vaultMock}
+		client := Client{lClient: vaultMock}
 		setupMockKvV2(vaultMock)
 		vaultMock.On("Read", "secret/data/notexist").Return(nil, nil)
 		secret, err := client.GetKvSecret("secret/notexist")
@@ -37,7 +37,7 @@ func TestGetKV2Secret(t *testing.T) {
 		t.Run("Getting secret from KV engine (v2)", func(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
-			client := Client{vaultMock}
+			client := Client{lClient: vaultMock}
 			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1"}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.NoError(t, err, "Expect GetKvSecret to succeed")
@@ -48,7 +48,7 @@ func TestGetKV2Secret(t *testing.T) {
 		t.Run("error is thrown when 'data' field can't be parsed", func(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
-			client := Client{vaultMock}
+			client := Client{lClient: vaultMock}
 			vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1", "key2": 5}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.Error(t, err, "Excpected to fail since value is wrong data type")
@@ -59,7 +59,7 @@ func TestGetKV2Secret(t *testing.T) {
 		t.Run("error is thrown when data field is missing", func(t *testing.T) {
 			vaultMock := &mocks.VaultMock{}
 			setupMockKvV2(vaultMock)
-			client := Client{vaultMock}
+			client := Client{lClient: vaultMock}
 			vaultMock.On("Read", secretAPIPath).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
 			secret, err := client.GetKvSecret(secretName)
 			assert.Error(t, err, "Expected to fail since 'data' field is missing")
@@ -76,7 +76,7 @@ func TestGetKV1Secret(t *testing.T) {
 	t.Run("Test missing secret", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		setupMockKvV1(vaultMock)
-		client := Client{vaultMock}
+		client := Client{lClient: vaultMock}
 
 		vaultMock.On("Read", mock.AnythingOfType("string")).Return(nil, nil)
 		secret, err := client.GetKvSecret("secret/notexist")
@@ -87,7 +87,7 @@ func TestGetKV1Secret(t *testing.T) {
 	t.Run("Test parsing KV1 secrets", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		setupMockKvV1(vaultMock)
-		client := Client{vaultMock}
+		client := Client{lClient: vaultMock}
 
 		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
 		secret, err := client.GetKvSecret(secretName)
@@ -99,7 +99,7 @@ func TestGetKV1Secret(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		setupMockKvV1(vaultMock)
 		vaultMock.On("Read", secretName).Return(kv1Secret(SecretData{"key1": 5}), nil)
-		client := Client{vaultMock}
+		client := Client{lClient: vaultMock}
 
 		secret, err := client.GetKvSecret(secretName)
 		assert.Error(t, err)
@@ -110,7 +110,7 @@ func TestGetKV1Secret(t *testing.T) {
 
 func TestUnknownKvVersion(t *testing.T) {
 	vaultMock := &mocks.VaultMock{}
-	client := Client{vaultMock}
+	client := Client{lClient: vaultMock}
 
 	vaultMock.On("Read", "sys/internal/ui/mounts/secret/secret").Return(&api.Secret{
 		Data: map[string]interface{}{
