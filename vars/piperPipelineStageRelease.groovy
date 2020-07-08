@@ -53,15 +53,21 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        if (config.cloudFoundryDeploy) {
-            durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
-                cloudFoundryDeploy script: script
-            }
-        }
+        echo "dbg>> config ${config.toString()}"
 
-        if (config.neoDeploy) {
-            durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
-                neoDeploy script: script
+        if (config.multicloudDeploy) {
+            echo "dbg>> multicloudDeploy"
+        } else {
+            if (config.cloudFoundryDeploy) {
+                durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
+                    cloudFoundryDeploy script: script
+                }
+            }
+
+            if (config.neoDeploy) {
+                durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
+                    neoDeploy script: script
+                }
             }
         }
 
