@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ type mockLintUtilsBundle struct {
 	execRunner *mock.ExecMockRunner
 }
 
-func (u *mockLintUtilsBundle) getExecRunner() execRunner {
+func (u *mockLintUtilsBundle) getExecRunner() command.ExecRunner {
 	return u.execRunner
 }
 
@@ -34,8 +35,11 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
 
-		config := npmExecuteLintOptions{}
+		config := npmExecuteLintOptions{
+			FailOnError: true,
+		}
 
 		npmExecutor := npmExecutorMock{utils: npmUtils, config: npmConfig{runScripts: []string{"ci-lint"}, runOptions: []string{"--silent"}}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)

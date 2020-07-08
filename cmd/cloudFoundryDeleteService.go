@@ -52,7 +52,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	}
 }
 
-func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c execRunner) error {
+func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
 
 	log.Entry().Info("Deleting inherent Service Keys")
 
@@ -92,7 +92,7 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c e
 	return nil
 }
 
-func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) error {
+func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
 	var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
 
 	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
@@ -106,7 +106,7 @@ func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c execRunner) e
 	return nil
 }
 
-func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
+func cloudFoundryDeleteServiceFunction(service string, c command.ExecRunner) error {
 	var cfdeleteServiceScript = []string{"delete-service", service, "-f"}
 
 	log.Entry().WithField("cfService", service).Info("Deleting the requested Service")
@@ -120,7 +120,7 @@ func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
 	return nil
 }
 
-func cloudFoundryLogout(c execRunner) error {
+func cloudFoundryLogout(c command.ExecRunner) error {
 	var cfLogoutScript = "logout"
 
 	log.Entry().Info("Logging out of Cloud Foundry")

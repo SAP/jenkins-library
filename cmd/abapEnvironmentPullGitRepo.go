@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -158,14 +159,22 @@ func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, 
 	return status, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c execRunner) (connectionDetailsHTTP, error) {
+func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
 
 	var connectionDetails connectionDetailsHTTP
 	var error error
 
 	if config.Host != "" {
 		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		matchedkey, error := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, config.Host)
+		if error != nil {
+			return connectionDetails, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
+		}
+		if matchedkey {
+			connectionDetails.URL = config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		} else {
+			connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		}
 		connectionDetails.User = config.Username
 		connectionDetails.Password = config.Password
 	} else {
@@ -185,7 +194,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	return connectionDetails, error
 }
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (serviceKey, error) {
+func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
 
 	var abapServiceKey serviceKey
 

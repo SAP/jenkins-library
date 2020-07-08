@@ -52,6 +52,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint
