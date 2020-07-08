@@ -6,7 +6,7 @@ In this section, you can learn how to create a configuration in a (GitHub) repos
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
 * Create a git repository on a host reachable by the Jenkinsserver (e.g. GitHub.com). The pipeline will be configured in this repository.
-* A Cloud Foundry Organisation & Space with the necessary entitlements are available
+* A Cloud Foundry Organization & Space with the necessary entitlements are available
 * A Cloud Foundry User & Password with the required authorizations in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store
 
 ## 2. Jenkinsfile
