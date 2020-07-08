@@ -29,6 +29,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateStageDocumentation(defaultStageName = 'Release')
 void call(Map parameters = [:]) {
 
+    echo "dbg>> hello"
+
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
