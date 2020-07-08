@@ -59,6 +59,13 @@ void call(Map parameters = [:]) {
 
         if (config.multicloudDeploy) {
             echo "dbg>> multicloudDeploy"
+            //todo use config of cf and neo steps if avilable?
+
+            multicloudDeploy(
+                script: script,
+                enableZeroDowntimeDeployment: true,
+                stage: stageName
+            )
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
