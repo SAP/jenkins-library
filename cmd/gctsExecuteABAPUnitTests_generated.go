@@ -33,7 +33,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Runs ABAP unit tests for all packages of the specified repository",
 		Long:  `This step will execute every unit test associated with a package belonging to the specified local repository on an ABAP system.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -44,6 +44,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Username)
@@ -56,7 +57,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -68,6 +69,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			gctsExecuteABAPUnitTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
