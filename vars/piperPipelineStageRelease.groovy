@@ -41,6 +41,7 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('multicloudDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.multicloudDeploy)
         .addIfEmpty('cloudFoundryDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cloudFoundryDeploy)
         .addIfEmpty('githubPublishRelease', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.githubPublishRelease)
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
