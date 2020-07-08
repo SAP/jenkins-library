@@ -3,8 +3,11 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -347,4 +350,42 @@ func (c *Client) applyDefaults() {
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
+}
+
+// ParseHTTPResponseBodyXML parses a XML http respone into a given interface
+func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
+	if resp == nil {
+		return errors.Errorf("cannot parse HTTP response with value <nil>")
+	}
+
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	if readErr != nil {
+		return errors.Wrap(readErr, "HTTP response body could not be read")
+	}
+
+	marshalErr := xml.Unmarshal(bodyText, &response)
+	if marshalErr != nil {
+		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as XML: %v", string(bodyText))
+	}
+
+	return nil
+}
+
+// ParseHTTPResponseBodyJSON parses a JSON http respone into a given interface
+func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
+	if resp == nil {
+		return errors.Errorf("cannot parse HTTP response with value <nil>")
+	}
+
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read")
+	}
+
+	marshalErr := json.Unmarshal(bodyText, &response)
+	if marshalErr != nil {
+		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+	}
+
+	return nil
 }

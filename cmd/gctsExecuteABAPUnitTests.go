@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 
@@ -145,7 +143,7 @@ func executeTestsForPackage(config *gctsExecuteABAPUnitTestsOptions, client pipe
 	}
 
 	var response runResult
-	parsingErr := parseHTTPResponseBodyXML(resp, &response)
+	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &response)
 	if parsingErr != nil {
 		log.Entry().Warning(parsingErr)
 	}
@@ -218,7 +216,7 @@ func getPackageList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	}
 
 	var response objectsResponseBody
-	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
 	if parsingErr != nil {
 		return []string{}, errors.Errorf("%v", parsingErr)
 	}
@@ -233,41 +231,41 @@ func getPackageList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	return repoObjects, nil
 }
 
-func parseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
-	if resp == nil {
-		return errors.Errorf("cannot parse HTTP response with value <nil>")
-	}
+// func piperhttp.(resp *http.Response, response interface{}) error {
+// 	if resp == nil {
+// 		return errors.Errorf("cannot parse HTTP response with value <nil>")
+// 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return errors.Wrap(readErr, "could not read HTTP response body")
-	}
+// 	bodyText, readErr := ioutil.ReadAll(resp.Body)
+// 	if readErr != nil {
+// 		return errors.Wrap(readErr, "could not read HTTP response body")
+// 	}
 
-	marshalErr := xml.Unmarshal(bodyText, &response)
-	if marshalErr != nil {
-		return errors.Wrap(marshalErr, "cannot parse HTTP response as JSON")
-	}
+// 	marshalErr := xml.Unmarshal(bodyText, &response)
+// 	if marshalErr != nil {
+// 		return errors.Wrap(marshalErr, "cannot parse HTTP response as JSON")
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func parseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
-	if resp == nil {
-		return errors.Errorf("cannot parse HTTP response with value <nil>")
-	}
+// func parseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
+// 	if resp == nil {
+// 		return errors.Errorf("cannot parse HTTP response with value <nil>")
+// 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read")
-	}
+// 	bodyText, readErr := ioutil.ReadAll(resp.Body)
+// 	if readErr != nil {
+// 		return errors.Wrapf(readErr, "HTTP response body could not be read")
+// 	}
 
-	marshalErr := json.Unmarshal(bodyText, &response)
-	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
-	}
+// 	marshalErr := json.Unmarshal(bodyText, &response)
+// 	if marshalErr != nil {
+// 		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 type gctsException struct {
 	Message     string `json:"message"`
