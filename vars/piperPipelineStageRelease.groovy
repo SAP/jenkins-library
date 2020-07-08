@@ -19,6 +19,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
+    'multicloudDeploy',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
