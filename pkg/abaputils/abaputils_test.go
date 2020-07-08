@@ -10,7 +10,7 @@ import (
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	t.Run("ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
 
-		//given
+		//given .
 		options := AbapEnvironmentOptions{
 			Username:          "testUser",
 			Password:          "testPassword",
