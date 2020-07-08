@@ -80,7 +80,6 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 }
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
-// If no oData service URL is set, the MANAGE_GIT_REPOSITORY OData service will be used
 func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
@@ -92,7 +91,6 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 		if err != nil {
 			return connectionDetails, errors.Wrap(err, "Host prefix validation failed")
 		}
-
 		if match {
 			connectionDetails.URL = options.Host + oDataURL
 		} else {
