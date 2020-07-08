@@ -178,6 +178,40 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 
 	})
 
+	// t.Run("Test host prefix: with https", func(t *testing.T) {
+
+	// 	config := abapEnvironmentPullGitRepoOptions{
+	// 		Host:     "test.host.com",
+	// 		Username: "testUser",
+	// 		Password: "testPassword",
+	// 	}
+	// 	execRunner := mock.ExecMockRunner{}
+
+	// 	con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
+	// 	if err == nil {
+	// 		assert.Equal(t, "testUser", con.User)
+	// 		assert.Equal(t, "testPassword", con.Password)
+	// 		assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
+	// 	}
+	// })
+
+	// t.Run("Test host prefix: with https", func(t *testing.T) {
+
+	// 	config := abapEnvironmentPullGitRepoOptions{
+	// 		Host:     "https://test.host.com",
+	// 		Username: "testUser",
+	// 		Password: "testPassword",
+	// 	}
+	// 	execRunner := mock.ExecMockRunner{}
+
+	// 	con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
+	// 	if err == nil {
+	// 		assert.Equal(t, "testUser", con.User)
+	// 		assert.Equal(t, "testPassword", con.Password)
+	// 		assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
+	// 	}
+	// })
+
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
 		config := abaputils.AbapEnvironmentOptions{

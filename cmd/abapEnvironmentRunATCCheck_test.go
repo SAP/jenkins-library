@@ -32,6 +32,27 @@ func TestHostConfig(t *testing.T) {
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})
+	// t.Run("Check Host: ABAP Endpoint without HTTPS prefix", func(t *testing.T) {
+	// 	config := abaputils.AbapEnvironmentOptions{
+	// 		Username: "testUser",
+	// 		Password: "testPassword",
+	// 		Host:     "https://api.endpoint.com",
+	// 	}
+	// 	options := abaputils.AbapEnvironmentRunATCCheckOptions{
+	// 		AbapEnvOptions: config,
+	// 	}
+
+	// 	execRunner := &mock.ExecMockRunner{}
+	// 	var con abaputils.ConnectionDetailsHTTP
+	// 	con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+
+	// 	if error == nil {
+	// 		assert.Equal(t, "testUser", con.User)
+	// 		assert.Equal(t, "testPassword", con.Password)
+	// 		assert.Equal(t, "https://api.endpoint.com", con.URL)
+	// 		assert.Equal(t, "", con.XCsrfToken)
+	// 	}
+	// })
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
 		//Testing without CfOrg parameter
 		config := abaputils.AbapEnvironmentOptions{
@@ -224,7 +245,6 @@ func TestParseATCResult(t *testing.T) {
 			_ = os.Chdir(oldCWD)
 			_ = os.RemoveAll(dir)
 		}()
-
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 			<file name="testFile">
@@ -239,7 +259,6 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-
 		err = parseATCResult(body)
 		assert.Equal(t, nil, err)
 	})
