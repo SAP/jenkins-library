@@ -127,7 +127,7 @@ func createParameterOverview(stepData *config.StepData) string {
 		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, param.Name, ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, contextParamFilters.All, stepData))
 	}
 
-	table += "\n\n"
+	table += "\n"
 
 	return table
 }
@@ -141,24 +141,24 @@ func parameterFurtherInfo(paramName string, contextParams []string, stepData *co
 	}
 
 	if paramName == "script" {
-		return "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen) reference to Jenkins main pipeline script"
+		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) reference to Jenkins main pipeline script"
 	}
 
 	// handle Jenkins-specific parameters
 	if contains(contextParams, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
-				return "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
+				return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
 			}
 		}
-		return "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)"
+		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)"
 	}
 
 	// handle Secrets
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		if paramName == param.Name {
 			if param.Secret {
-				secretInfo := "![Secret](https://img.shields.io/badge/-Secret-yellowgreen) pass via ENV or Jenkins credentials"
+				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
 				for _, res := range param.ResourceRef {
 					if res.Type == "secret" {
 						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, res.Name)
@@ -269,17 +269,13 @@ func aliasList(aliases []config.Alias) string {
 	default:
 		aList := make([]string, len(aliases))
 		for i, alias := range aliases {
-			aList[i] = fmt.Sprintf("- %v", alias.Name)
+			aList[i] = fmt.Sprintf("- `%v`", alias.Name)
 			if alias.Deprecated {
 				aList[i] += " (**deprecated**)"
 			}
 		}
 		return strings.Join(aList, "<br />")
 	}
-}
-
-func renderDefaults() {
-
 }
 
 func renderSlice(slice []interface{}) string {

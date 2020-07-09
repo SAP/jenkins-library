@@ -12,8 +12,161 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestReadAndAdjustTemplate(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		tmpl, _ := configOpenDocTemplateFileMock("testStep.md")
+		content := readAndAdjustTemplate(tmpl)
+
+		cases := []struct {
+			x, y string
+		}{
+			{"{{docGenStepName .}}", "${docGenStepName}"},
+			{"{{docGenConfiguration .}}", "${docGenConfiguration}"},
+			{"{{docGenParameters .}}", "${docGenParameters}"},
+			{"{{docGenDescription .}}", "${docGenDescription}"},
+			{"", "${docJenkinsPluginDependencies}"},
+		}
+		for _, c := range cases {
+			if len(c.x) > 0 {
+				assert.Contains(t, content, c.x)
+			}
+			if len(c.y) > 0 {
+				assert.NotContains(t, content, c.y)
+			}
+		}
+	})
+}
+
+func TestCreateParameterOverview(t *testing.T) {
+	stepData := config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "testStash", Type: "stash"},
+				},
+				Parameters: []config.StepParameters{
+					{Name: "param1"},
+					{Name: "stashContent", Default: "testStash"},
+				},
+			},
+		},
+	}
+
+	expected := `| Name | Mandatory | Additional information |
+| ---- | --------- | ---------------------- |
+| [param1](#param1) | no |  |
+| [stashContent](#stashContent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
+
+`
+
+	assert.Equal(t, expected, createParameterOverview(&stepData))
+}
+
+func TestParameterFurtherInfo(t *testing.T) {
+	tt := []struct {
+		paramName     string
+		contextParams []string
+		stepData      *config.StepData
+		contains      string
+		notContains   []string
+	}{
+		{paramName: "verbose", contextParams: []string{}, stepData: nil, contains: "activates debug output"},
+		{paramName: "script", contextParams: []string{}, stepData: nil, contains: "reference to Jenkins main pipeline script"},
+		{paramName: "contextTest", contextParams: []string{"contextTest"}, stepData: &config.StepData{}, contains: "Jenkins only", notContains: []string{"pipeline script", "id of credentials"}},
+		{paramName: "noop", contextParams: []string{}, stepData: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{}}}}, contains: ""},
+		{
+			paramName:     "testCredentialId",
+			contextParams: []string{"testCredentialId"},
+			stepData: &config.StepData{
+				Spec: config.StepSpec{
+					Inputs: config.StepInputs{
+						Secrets: []config.StepSecrets{{Name: "testCredentialId", Type: "jenkins"}},
+					},
+				},
+			},
+			contains: "id of credentials",
+		},
+		{
+			paramName: "testSecret",
+			stepData: &config.StepData{
+				Spec: config.StepSpec{
+					Inputs: config.StepInputs{
+						Parameters: []config.StepParameters{
+							{Name: "testSecret", Secret: true, ResourceRef: []config.ResourceReference{{Name: "mytestSecret", Type: "secret"}}},
+						},
+					},
+				},
+			},
+			contains: "credentials ([`mytestSecret`](#mytestSecret))",
+		},
+		{
+			paramName: "testSecret",
+			stepData: &config.StepData{
+				Spec: config.StepSpec{
+					Inputs: config.StepInputs{
+						Parameters: []config.StepParameters{
+							{Name: "testSecret"},
+						},
+					},
+				},
+			},
+			contains: "",
+		},
+	}
+
+	for _, test := range tt {
+		res := parameterFurtherInfo(test.paramName, test.contextParams, test.stepData)
+		if len(test.contains) == 0 {
+			assert.Equal(t, test.contains, res)
+		} else {
+			assert.Contains(t, res, test.contains)
+		}
+		for _, notThere := range test.notContains {
+			assert.NotContains(t, res, notThere)
+		}
+	}
+}
+
+func TestCreateParameterDetails(t *testing.T) {
+	stepData := config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+					{
+						Name:            "param1",
+						Aliases:         []config.Alias{{Name: "param1Alias"}, {Name: "paramAliasDeprecated", Deprecated: true}},
+						Mandatory:       true,
+						Default:         "param1Default",
+						LongDescription: "long description",
+						PossibleValues:  []interface{}{"val1", "val2"},
+						Scope:           []string{"STEPS"},
+						Secret:          true,
+						Type:            "string",
+					},
+				},
+			},
+		},
+	}
+
+	res := createParameterDetails(&stepData)
+
+	assert.Contains(t, res, "#### param1")
+	assert.Contains(t, res, "long description")
+	assert.Contains(t, res, "`param1Alias`")
+	assert.Contains(t, res, "`paramAliasDeprecated` (**deprecated**)")
+	assert.Contains(t, res, "string")
+	assert.Contains(t, res, "param1Default")
+	assert.Contains(t, res, "val1")
+	assert.Contains(t, res, "val2")
+	assert.Contains(t, res, "no")
+	assert.Contains(t, res, "**yes**")
+	assert.Contains(t, res, "steps")
+}
+
 func TestConsolidateConditionalParameters(t *testing.T) {
-	stepData = config.StepData{
+	stepData := config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
@@ -52,7 +205,7 @@ func TestConsolidateConditionalParameters(t *testing.T) {
 }
 
 func TestConsolidateContextParameters(t *testing.T) {
-	stepData = config.StepData{
+	stepData := config.StepData{
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
@@ -216,96 +369,6 @@ func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, e
 	}
 }
 
-var stepData config.StepData = config.StepData{
-	Spec: config.StepSpec{
-		Inputs: config.StepInputs{
-			Parameters: []config.StepParameters{
-				{Name: "param0", Scope: []string{"GENERAL"}, Type: "string", Default: "default0",
-					Conditions: []config.Condition{
-						{Params: []config.Param{
-							{"name0a", "val0a"},
-							{"name0b", "val0b"},
-						},
-						}},
-				},
-				{Name: "param1", Scope: []string{"GENERAL"}, Type: "string", Default: "default1",
-					Conditions: []config.Condition{
-						{Params: []config.Param{
-							{"name1a", "val1a"},
-						},
-						}},
-				},
-				{Name: "param1", Scope: []string{"GENERAL"}, Type: "string", Default: "default1",
-					Conditions: []config.Condition{
-						{Params: []config.Param{
-							{"name1b", "val1b"},
-						},
-						}},
-				},
-			},
-			Resources: []config.StepResources{
-				{Name: "resource0", Type: "stash", Description: "val0"},
-				{Name: "resource1", Type: "stash", Description: "val1"},
-				{Name: "resource2", Type: "stash", Description: "val2"},
-			},
-		},
-		Containers: []config.Container{
-			{Name: "container0", Image: "image", WorkingDir: "workingdir", Shell: "shell",
-				EnvVars: []config.EnvVar{
-					{"envar.name0", "envar.value0"},
-				},
-			},
-			{Name: "container1", Image: "image", WorkingDir: "workingdir",
-				EnvVars: []config.EnvVar{
-					{"envar.name1", "envar.value1"},
-				},
-			},
-			{Name: "container2a", Command: []string{"command"}, ImagePullPolicy: "pullpolicy", Image: "image", WorkingDir: "workingdir",
-				EnvVars: []config.EnvVar{
-					{"envar.name2a", "envar.value2a"}},
-				Conditions: []config.Condition{
-					{Params: []config.Param{
-						{"param_name2a", "param_value2a"},
-					}},
-				},
-			},
-			{Name: "container2b", Image: "image", WorkingDir: "workingdir",
-				EnvVars: []config.EnvVar{
-					{"envar.name2b", "envar.value2b"},
-				},
-				Conditions: []config.Condition{
-					{Params: []config.Param{
-						{"param.name2b", "param.value2b"},
-					}},
-				},
-				//VolumeMounts: []config.VolumeMount{
-				//	{"mp.2b", "mn.2b"},
-				//},
-				Options: []config.Option{
-					{"option.name2b", "option.value2b"},
-				},
-			},
-		},
-		Sidecars: []config.Container{
-			{Name: "sidecar0", Command: []string{"command"}, ImagePullPolicy: "pullpolicy", Image: "image", WorkingDir: "workingdir", ReadyCommand: "readycommand",
-				EnvVars: []config.EnvVar{
-					{"envar.name3", "envar.value3"}},
-				Conditions: []config.Condition{
-					{Params: []config.Param{
-						{"param.name0", "param.value0"},
-					}},
-				},
-				//VolumeMounts: []config.VolumeMount{
-				//	{"mp.3b", "mn.3b"},
-				//},
-				Options: []config.Option{
-					{"option.name3b", "option.value3b"},
-				},
-			},
-		},
-	},
-}
-
 var resultDocumentContent string
 
 func docFileWriterMock(docTemplateFilePath string, data []byte, perm os.FileMode) error {
@@ -317,57 +380,6 @@ func docFileWriterMock(docTemplateFilePath string, data []byte, perm os.FileMode
 	default:
 		return fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
 	}
-}
-
-func TestGenerateStepDocumentationSuccess(t *testing.T) {
-	var stepData config.StepData
-	contentMetaData, _ := configMetaDataMock("test.yaml")
-	stepData.ReadPipelineStepData(contentMetaData)
-
-	generateStepDocumentation(stepData, DocuHelperData{true, "", configOpenDocTemplateFileMock, docFileWriterMock})
-
-	t.Run("Docu Generation Success", func(t *testing.T) {
-		assert.Equal(t, expectedResultDocument, resultDocumentContent)
-	})
-}
-
-func TestGenerateStepDocumentationError(t *testing.T) {
-	var stepData config.StepData
-	contentMetaData, _ := configMetaDataMock("test.yaml")
-	stepData.ReadPipelineStepData(contentMetaData)
-
-	err := generateStepDocumentation(stepData, DocuHelperData{true, "Dummy", configOpenDocTemplateFileMock, docFileWriterMock})
-
-	t.Run("Docu Generation Success", func(t *testing.T) {
-		assert.Error(t, err, fmt.Sprintf("Error occured: %v\n", err))
-	})
-}
-
-func TestReadAndAdjustTemplate(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		tmpl, _ := configOpenDocTemplateFileMock("testStep.md")
-		content := readAndAdjustTemplate(tmpl)
-
-		cases := []struct {
-			x, y string
-		}{
-			{"{{docGenStepName .}}", "${docGenStepName}"},
-			{"{{docGenConfiguration .}}", "${docGenConfiguration}"},
-			{"{{docGenParameters .}}", "${docGenParameters}"},
-			{"{{docGenDescription .}}", "${docGenDescription}"},
-			{"", "${docJenkinsPluginDependencies}"},
-		}
-		for _, c := range cases {
-			if len(c.x) > 0 {
-				assert.Contains(t, content, c.x)
-			}
-			if len(c.y) > 0 {
-				assert.NotContains(t, content, c.y)
-			}
-		}
-	})
 }
 
 func TestSortStepParameters(t *testing.T) {

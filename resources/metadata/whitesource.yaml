@@ -529,14 +529,6 @@ spec:
       params:
       - name: scanType
         value: maven
-  - image: null
-    workingDir: null
-    env: []
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: scanType
-        value: mta
   - image: node:lts-stretch
     workingDir: /home/node
     env: []
