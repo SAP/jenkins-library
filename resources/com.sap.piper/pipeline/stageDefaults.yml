@@ -52,6 +52,10 @@ stages:
           - 'dockerRegistryUrl'
   Release:
     stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
