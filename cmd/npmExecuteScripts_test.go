@@ -66,7 +66,6 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
 	}
 
-
 	if virtualFrameBuffer != n.config.virtualFrameBuffer {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of virtualFrameBuffer than config.virtualFrameBuffer")
 	}

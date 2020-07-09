@@ -295,7 +295,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil,true)
+		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true)
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
