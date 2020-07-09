@@ -62,6 +62,10 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 		}
 	}
 
+	if len(scriptOptions) != len(n.config.scriptOptions) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.scriptOptions")
+	}
+
 	if len(runOptions) != len(n.config.runOptions) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
 	}
@@ -97,6 +101,18 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 }
 
 func TestNpmExecuteScripts(t *testing.T) {
+	t.Run("Call with scriptOptions", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, scriptOptions: config.ScriptOptions}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Call with install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := newNpmMockUtilsBundle()
