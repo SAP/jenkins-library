@@ -51,6 +51,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scriptOptions
+        type: '[]string'
+        description: Options are passed to all runScripts calls separated by a '--'. './piper npmExecuteScripts --runScripts ci-e2e --scriptOptions '--tag1' will correspond to 'npm run ci-e2e -- --tag1'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: node
       image: node:12-buster-slim
