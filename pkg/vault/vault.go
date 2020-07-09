@@ -6,16 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	pathutils "path"
-
 	"github.com/hashicorp/vault/api"
 )
 
 // Client handles communication with Vault
 type Client struct {
-	lClient   logicalClient
-	rootPath  string
-	namespace string
+	lClient logicalClient
 }
 
 // logicalClient interface for mocking
@@ -23,7 +19,7 @@ type logicalClient interface {
 	Read(string) (*api.Secret, error)
 }
 
-// NewClient instantiates a Client and sets the specified token and namespace
+// NewClient instantiates a Client and sets the specified token
 func NewClient(config *api.Config, token, namespace string) (Client, error) {
 	if config == nil {
 		config = api.DefaultConfig()
@@ -36,14 +32,14 @@ func NewClient(config *api.Config, token, namespace string) (Client, error) {
 	if namespace != "" {
 		client.SetNamespace(namespace)
 	}
+
 	client.SetToken(token)
-	return Client{lClient: client.Logical()}, nil
+	return Client{client.Logical()}, nil
 }
 
 // GetSecret uses the given path to fetch a secret from vault
 func (v Client) GetSecret(path string) (*api.Secret, error) {
 	path = sanitizePath(path)
-	path = pathutils.Join(v.rootPath, path)
 	c := v.lClient
 
 	secret, err := c.Read(path)
@@ -101,13 +97,6 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 	return secretData, nil
 }
 
-// BindRootPath allows binding all future operations to given root path.
-// The root path then will be added in front of every future path.
-// To unset the root path pass "" as path.
-func (v *Client) BindRootPath(path string) {
-	v.rootPath = sanitizePath(path)
-}
-
 func addPrefixToKvPath(p, mountPath, apiPrefix string) string {
 	switch {
 	case p == mountPath, p == strings.TrimSuffix(mountPath, "/"):
@@ -119,10 +108,6 @@ func addPrefixToKvPath(p, mountPath, apiPrefix string) string {
 }
 
 func (v *Client) getKvInfo(path string) (string, int, error) {
-	// rootPath should not be used during preflight checks
-	defer v.BindRootPath(v.rootPath)
-	v.BindRootPath("")
-
 	secret, err := v.GetSecret("sys/internal/ui/mounts/" + path)
 	if err != nil {
 		return "", 0, err
