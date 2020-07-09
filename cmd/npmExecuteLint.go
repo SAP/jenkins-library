@@ -2,18 +2,19 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/npm"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 type lintUtils interface {
@@ -62,7 +63,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 	err = u.FileWrite(filepath.Join(".pipeline", ".eslintrc.json"), content, os.ModePerm)
 	if err != nil {
-		log.Entry().Warnf("failed to write .eslintrc.json file to .pipeline/: %w", err)
+		log.Entry().Warnf("failed to write .eslintrc.json file to .pipeline/: %v", err)
 	}
 }
 
