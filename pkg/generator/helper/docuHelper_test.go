@@ -12,6 +12,110 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestConsolidateConditionalParameters(t *testing.T) {
+	stepData = config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+					{Name: "dep1", Default: "val1"},
+					{Name: "test1", Default: "def1", Conditions: []config.Condition{
+						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
+					}},
+					{Name: "test1", Default: "def2", Conditions: []config.Condition{
+						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
+					}},
+				},
+			},
+		},
+	}
+
+	consolidateConditionalParameters(&stepData)
+
+	expected := config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+					{Name: "dep1", Default: "val1"},
+					{Name: "test1", Default: []conditionDefault{
+						{key: "dep1", value: "val1", def: "def1"},
+						{key: "dep1", value: "val2", def: "def2"},
+						{key: "dep2", value: "val1", def: "def1"},
+						{key: "dep2", value: "val2", def: "def2"},
+					}},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, expected, stepData)
+
+}
+
+func TestConsolidateContextParameters(t *testing.T) {
+	stepData = config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+					{Name: "stashContent"},
+					{Name: "dockerImage"},
+					{Name: "containerName"},
+					{Name: "dockerName"},
+				},
+				Resources: []config.StepResources{
+					{Name: "stashAlways", Type: "stash"},
+					{Name: "stash1", Type: "stash", Conditions: []config.Condition{
+						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
+					}},
+					{Name: "stash2", Type: "stash", Conditions: []config.Condition{
+						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
+					}},
+				},
+			},
+			Containers: []config.Container{
+				{Name: "IMAGE1", Image: "image1", Conditions: []config.Condition{
+					{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
+				}},
+				{Name: "IMAGE2", Image: "image2", Conditions: []config.Condition{
+					{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
+				}},
+			},
+		},
+	}
+
+	consolidateContextDefaults(&stepData)
+
+	expected := []config.StepParameters{
+		{Name: "stashContent", Default: []interface{}{
+			"stashAlways",
+			conditionDefault{key: "dep1", value: "val1", def: "stash1"},
+			conditionDefault{key: "dep1", value: "val2", def: "stash2"},
+			conditionDefault{key: "dep2", value: "val1", def: "stash1"},
+			conditionDefault{key: "dep2", value: "val2", def: "stash2"},
+		}},
+		{Name: "dockerImage", Default: []conditionDefault{
+			{key: "dep1", value: "val1", def: "image1"},
+			{key: "dep1", value: "val2", def: "image2"},
+			{key: "dep2", value: "val1", def: "image1"},
+			{key: "dep2", value: "val2", def: "image2"},
+		}},
+		{Name: "containerName", Default: []conditionDefault{
+			{key: "dep1", value: "val1", def: "IMAGE1"},
+			{key: "dep1", value: "val2", def: "IMAGE2"},
+			{key: "dep2", value: "val1", def: "IMAGE1"},
+			{key: "dep2", value: "val2", def: "IMAGE2"},
+		}},
+		{Name: "dockerName", Default: []conditionDefault{
+			{key: "dep1", value: "val1", def: "IMAGE1"},
+			{key: "dep1", value: "val2", def: "IMAGE2"},
+			{key: "dep2", value: "val1", def: "IMAGE1"},
+			{key: "dep2", value: "val2", def: "IMAGE2"},
+		}},
+	}
+
+	assert.Equal(t, expected, stepData.Spec.Inputs.Parameters)
+
+}
+
 var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test description\n\n\t\n\t" +
 	"## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t" +
 	"## Parameters\n\n| name | mandatory | default | possible values |\n" +
@@ -266,199 +370,41 @@ func TestReadAndAdjustTemplate(t *testing.T) {
 	})
 }
 
-func TestAddDefaultContainerContent(t *testing.T) {
+func TestSortStepParameters(t *testing.T) {
+	stepData := config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+					{Name: "ab1", Mandatory: false},
+					{Name: "ab3", Mandatory: true},
+					{Name: "ab5", Mandatory: false},
+					{Name: "ab6", Mandatory: true},
+					{Name: "ab4", Mandatory: false},
+					{Name: "ab2", Mandatory: true},
+				},
+			},
+		},
+	}
 
-	t.Run("Success Case", func(t *testing.T) {
+	t.Run("ignore mandatory", func(t *testing.T) {
+		sortStepParameters(&stepData, false)
 
-		var m map[string]string = make(map[string]string)
-		addDefaultContainerContent(&stepData, m)
-
-		cases := []struct {
-			x, want string
-		}{
-			{"containerCommand", "`command`"},
-			{"containerName", "`container0`, `container1``container2a`<br>`container2b`<br>"},
-			{"containerShell", "`shell`"},
-			{"dockerEnvVars", "`[envar.name0=envar.value0]`, `[envar.name1=envar.value1]`param_name2a=`param_value2a`: `[envar.name2a=envar.value2a]`<br>param.name2b=`param.value2b`: `[envar.name2b=envar.value2b]`<br>"},
-			{"dockerImage", "`image`, `image`param_name2a=`param_value2a`: `image`<br>param.name2b=`param.value2b`: `image`<br>"},
-			{"dockerName", "`container0`, `container1``container2a`<br>`container2b`<br>"},
-			{"dockerPullImage", "true"},
-			{"dockerOptions", "option.name2b option.value2b"},
-			{"dockerWorkspace", "`workingdir`, `workingdir`param_name2a=`param_value2a`: `workingdir`<br>param.name2b=`param.value2b`: `workingdir`<br>"},
-		}
-		//assert.Equal(t, len(cases), len(m))
-		for _, c := range cases {
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v: %v != %v", c.x, m[c.x], c.want))
-		}
+		assert.Equal(t, "ab1", stepData.Spec.Inputs.Parameters[0].Name)
+		assert.Equal(t, "ab2", stepData.Spec.Inputs.Parameters[1].Name)
+		assert.Equal(t, "ab3", stepData.Spec.Inputs.Parameters[2].Name)
+		assert.Equal(t, "ab4", stepData.Spec.Inputs.Parameters[3].Name)
+		assert.Equal(t, "ab5", stepData.Spec.Inputs.Parameters[4].Name)
+		assert.Equal(t, "ab6", stepData.Spec.Inputs.Parameters[5].Name)
 	})
-}
-func TestAddDefaultSidecarContent(t *testing.T) {
 
-	t.Run("Success Case", func(t *testing.T) {
+	t.Run("consider mandatory", func(t *testing.T) {
+		sortStepParameters(&stepData, true)
 
-		var m map[string]string = make(map[string]string)
-		addDefaultSidecarContent(&stepData, m)
-
-		cases := []struct {
-			x, want string
-		}{
-			{"sidecarCommand", "command"},
-			{"sidecarEnvVars", "envar.name3=envar.value3"},
-			{"sidecarImage", "`image`"},
-			{"sidecarName", "`sidecar0`"},
-			{"sidecarPullImage", "true"},
-			{"sidecarReadyCommand", "readycommand"},
-			{"sidecarOptions", "option.name3b option.value3b"},
-			{"sidecarWorkspace", "workingdir"},
-		}
-		assert.Equal(t, len(cases), len(m))
-		for _, c := range cases {
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.Equal(t, c.want, m[c.x], fmt.Sprintf("%v:%v", c.x, m[c.x]))
-		}
-	})
-}
-
-func TestAddStashContent(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		var m map[string]string = make(map[string]string)
-		addStashContent(&stepData, m)
-
-		cases := []struct {
-			x, want string
-		}{
-			{"stashContent", "resource0, resource1, resource2"},
-		}
-		assert.Equal(t, len(cases), len(m))
-		for _, c := range cases {
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
-		}
-	})
-}
-
-func TestGetDocuContextDefaults(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		m := getDocuContextDefaults(&stepData)
-
-		cases := []struct {
-			x, want string
-		}{
-			{"stashContent", "resource0, resource1, resource2"},
-			{"sidecarCommand", "command"},
-			{"sidecarEnvVars", "envar.name3=envar.value3"},
-			{"sidecarImage", "image"},
-			{"sidecarName", "sidecar0"},
-			{"sidecarPullImage", "true"},
-			{"sidecarReadyCommand", "readycommand"},
-			{"sidecarOptions", "option.name3b option.value3b"},
-			{"sidecarWorkspace", "workingdir"},
-			{"containerCommand", "command"},
-			{"containerName", "`container0`, `container1``container2a`<br>`container2b`<br>"},
-			{"containerShell", "shell"},
-			{"dockerEnvVars", "`[envar.name0=envar.value0]`, `[envar.name1=envar.value1]`param_name2a=`param_value2a`: `[envar.name2a=envar.value2a]`<br>param.name2b=`param.value2b`: `[envar.name2b=envar.value2b]`<br>"},
-			{"dockerImage", "`image`, `image`param_name2a=`param_value2a`: `image`<br>param.name2b=`param.value2b`: `image`"},
-			{"dockerName", "`container0`, `container1``container2a`<br>`container2b`<br>"},
-			{"dockerPullImage", "true"},
-			{"dockerOptions", "option.name2b option.value2b"},
-			{"dockerWorkspace", "`workingdir`, `workingdir`param_name2a=`param_value2a`: `workingdir`<br>param.name2b=`param.value2b`: `workingdir`<br>"},
-		}
-		assert.Equal(t, len(cases), len(m))
-		for _, c := range cases {
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v: %v != %v", c.x, m[c.x], c.want))
-		}
-	})
-}
-
-func TestAddNewParameterWithCondition(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		var m map[string]string = make(map[string]string)
-
-		cases := []struct {
-			x, want string
-			i       int
-		}{
-			{"param0", "name0a=`val0a`: `default0` name0b=`val0b`: `default0`", 0},
-			{"param1", "name1a=`val1a`: `default1`", 1},
-		}
-		for _, c := range cases {
-
-			addNewParameterWithCondition(stepData.Spec.Inputs.Parameters[c.i], m)
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v", m[c.x]))
-		}
-	})
-}
-
-func TestAddExistingParameterWithCondition(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		var m map[string]string = make(map[string]string)
-		addNewParameterWithCondition(stepData.Spec.Inputs.Parameters[1], m)
-
-		cases := []struct {
-			x, want string
-		}{
-			{"param1", "name1a=`val1a`: `default1` <br>name1b=`val1b`: `default1` "},
-		}
-		for _, c := range cases {
-
-			addExistingParameterWithCondition(stepData.Spec.Inputs.Parameters[2], m)
-			assert.Contains(t, m, c.x)
-			assert.True(t, len(m[c.x]) > 0)
-			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v", m[c.x]))
-		}
-	})
-}
-
-func TestRenderPossibleValues(t *testing.T) {
-	t.Run("none", func(t *testing.T) {
-		// init
-		var in []interface{}
-		// test
-		out := possibleValuesToString(in)
-		// assert
-		assert.Empty(t, out)
-	})
-	t.Run("one", func(t *testing.T) {
-		// init
-		var in []interface{}
-		in = append(in, "fu")
-		// test
-		out := possibleValuesToString(in)
-		// assert
-		assert.Equal(t, "`fu`", out)
-	})
-	t.Run("many", func(t *testing.T) {
-		// init
-		var in []interface{}
-		in = append(in, "fu", "fara")
-		// test
-		out := possibleValuesToString(in)
-		// assert
-		assert.Equal(t, "`fu`, `fara`", out)
-	})
-	t.Run("boolean", func(t *testing.T) {
-		// init
-		var in []interface{}
-		in = append(in, false, true)
-		// test
-		out := possibleValuesToString(in)
-		// assert
-		assert.Equal(t, "`false`, `true`", out)
+		assert.Equal(t, "ab2", stepData.Spec.Inputs.Parameters[0].Name)
+		assert.Equal(t, "ab3", stepData.Spec.Inputs.Parameters[1].Name)
+		assert.Equal(t, "ab6", stepData.Spec.Inputs.Parameters[2].Name)
+		assert.Equal(t, "ab1", stepData.Spec.Inputs.Parameters[3].Name)
+		assert.Equal(t, "ab4", stepData.Spec.Inputs.Parameters[4].Name)
+		assert.Equal(t, "ab5", stepData.Spec.Inputs.Parameters[5].Name)
 	})
 }

@@ -229,7 +229,7 @@ spec:
       - STEPS
       default: https://saas.whitesourcesoftware.com/api
     - name: buildDescriptorExcludeList
-      type: string
+      type: '[]string'
       description: List of build descriptors and therefore modules to exclude from the scan and assessment activities.
       mandatory: false
       scope:

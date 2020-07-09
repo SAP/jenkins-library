@@ -212,7 +212,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		}
 	}
 	if len(m.Spec.Containers) > 0 {
-		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
+		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
@@ -273,12 +273,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			p["containerName"] = container.Name
 			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = envVarsAsMap(container.EnvVars)
+			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
 			p["dockerImage"] = container.Image
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = optionsAsStringSlice(container.Options)
+			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
 			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
 
 			// Ready command not relevant for main runtime container so far
@@ -291,13 +291,13 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = envVarsAsMap(m.Spec.Sidecars[0].EnvVars)
+		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
 		root["sidecarImage"] = m.Spec.Sidecars[0].Image
 		root["sidecarName"] = m.Spec.Sidecars[0].Name
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
 		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
 		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = optionsAsStringSlice(m.Spec.Sidecars[0].Options)
+		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
 		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
 	}
 
@@ -369,7 +369,8 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func envVarsAsMap(envVars []EnvVar) map[string]string {
+// converts container EnvVars into a map as required by dockerExecute
+func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 	e := map[string]string{}
 	for _, v := range envVars {
 		e[v.Name] = v.Value
@@ -377,7 +378,8 @@ func envVarsAsMap(envVars []EnvVar) map[string]string {
 	return e
 }
 
-func optionsAsStringSlice(options []Option) []string {
+// converts container options into a string slice as required by dockerExecute
+func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
 		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
