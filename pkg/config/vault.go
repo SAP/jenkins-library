@@ -15,7 +15,10 @@ func getVaultClientFromConfig(config StepConfig) (*vault.Client, error) {
 		return nil, nil
 	}
 
-	client, err := vault.NewClient(&api.Config{Address: address}, token)
+	// namespaces are only available in vault enterprise so using them should be optional
+	namespace := config.Config["vaultNamespace"].(string)
+
+	client, err := vault.NewClient(&api.Config{Address: address}, token, namespace)
 	if err != nil {
 		return nil, err
 	}

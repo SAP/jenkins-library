@@ -23,8 +23,8 @@ type logicalClient interface {
 	Read(string) (*api.Secret, error)
 }
 
-// NewClient instantiates a Client and sets the specified token
-func NewClient(config *api.Config, token string) (Client, error) {
+// NewClient instantiates a Client and sets the specified token and namespace
+func NewClient(config *api.Config, token, namespace string) (Client, error) {
 	if config == nil {
 		config = api.DefaultConfig()
 	}
@@ -33,6 +33,9 @@ func NewClient(config *api.Config, token string) (Client, error) {
 		return Client{}, err
 	}
 
+	if namespace != "" {
+		client.SetNamespace(namespace)
+	}
 	client.SetToken(token)
 	return Client{lClient: client.Logical()}, nil
 }
@@ -103,12 +106,6 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 // To unset the root path pass "" as path.
 func (v *Client) BindRootPath(path string) {
 	v.rootPath = sanitizePath(path)
-}
-
-// BindNamespace allows binding a namespace to all future operations to the given namespace.
-// To unset the namespace simply pass "" as namespace.
-func (v *Client) BindNamespace(namespace string) {
-	v.namespace = namespace
 }
 
 func addPrefixToKvPath(p, mountPath, apiPrefix string) string {
