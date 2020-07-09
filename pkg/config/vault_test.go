@@ -66,6 +66,36 @@ func TestVaultConfigLoad(t *testing.T) {
 		assert.NotNil(t, config)
 		assert.Len(t, config, 0)
 	})
+
+	t.Run("Search over multiple references", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"testBasePath": "team1",
+		}}
+		stepParams := []StepParameters{
+			stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA"),
+			stepParam(secretName, "testBasePath", "vaultSecret", "pipelineB"),
+		}
+		vaultData := map[string]string{secretName: "value1"}
+		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
+		vaultMock.On("GetKvSecret", "team1/pipelineB").Return(vaultData, nil)
+		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
+		assert.NoError(t, err)
+		assert.NotNil(t, config)
+		assert.Equal(t, "value1", config[secretName])
+	})
+
+	t.Run("No BasePath is configured", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{}}
+		stepParams := []StepParameters{stepParam(secretName, "", "vaultSecret", "pipelineA")}
+		vaultData := map[string]string{secretName: "value1"}
+		vaultMock.On("GetKvSecret", "pipelineA").Return(vaultData, nil)
+		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
+		assert.NoError(t, err)
+		assert.NotNil(t, config)
+		assert.Equal(t, "value1", config[secretName])
+	})
 }
 
 func stepParam(name, refName, refType, refPath string) StepParameters {
