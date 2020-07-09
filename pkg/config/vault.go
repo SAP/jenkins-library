@@ -14,11 +14,10 @@ type vaultClient interface {
 
 func getVaultClientFromConfig(config StepConfig) (vaultClient, error) {
 	address, addressOk := config.Config["vaultAddress"].(string)
-	basePath, basePathOk := config.Config["vaultRootPath"].(string)
 	token, tokenOk := config.Config["vaultToken"].(string)
 
 	// if vault isn't used it's not an error
-	if !addressOk || address == "" || !basePathOk || basePath == "" || !tokenOk || token == "" {
+	if !addressOk || !tokenOk {
 		return nil, nil
 	}
 
@@ -44,12 +43,10 @@ func getVaultConfig(client vaultClient, config StepConfig, params []StepParamete
 		for _, ref := range param.GetReferences("vaultSecret") {
 			// it should be possible to configure the root path were the secret is stored
 			basePath := ""
-			if ref.Name != "" {
-				var ok bool
-				p, ok := config.Config[ref.Name].(string)
-				if ok {
-					basePath = p
-				}
+			var ok bool
+			p, ok := config.Config[ref.Name].(string)
+			if ok {
+				basePath = p
 			}
 
 			secret, err := client.GetKvSecret(path.Join(basePath, ref.Path))
