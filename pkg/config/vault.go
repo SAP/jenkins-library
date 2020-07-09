@@ -43,7 +43,15 @@ func getVaultConfig(client vaultClient, config StepConfig, params []StepParamete
 		}
 		for _, ref := range param.GetReferences("vaultSecret") {
 			// it should be possible to configure the root path were the secret is stored
-			basePath := config.Config[ref.Name].(string)
+			basePath := ""
+			if ref.Name != "" {
+				var ok bool
+				p, ok := config.Config[ref.Name].(string)
+				if ok {
+					basePath = p
+				}
+			}
+
 			secret, err := client.GetKvSecret(path.Join(basePath, ref.Path))
 			if err != nil {
 				return nil, err
