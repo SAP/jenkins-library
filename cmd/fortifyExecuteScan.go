@@ -62,16 +62,28 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
-	if err != nil {
-		return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
+
+	fortifyProjectName := config.ProjectName
+	fortifyProjectVersion := config.PullRequestName
+	if len(fortifyProjectName) == 0 || len(fortifyProjectVersion) == 0 {
+		artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
+		if err != nil {
+			return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
+		}
+		gav, err := artifact.GetCoordinates()
+		if err != nil {
+			return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
+		}
+		log.Entry().Debugf("determined project coordinates %v", gav)
+		projName, projVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
+		if len(fortifyProjectName) == 0 {
+			fortifyProjectName = projName
+		}
+		if len(fortifyProjectVersion) == 0 {
+			fortifyProjectVersion = projVersion
+		}
 	}
-	gav, err := artifact.GetCoordinates()
-	if err != nil {
-		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
-	}
-	log.Entry().Debugf("determined project coordinates %v", gav)
-	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
+
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
@@ -598,17 +610,46 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 		}
 
 		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
-
+		log.Entry().Info("Calling populatePipTranslate!")
 		config.Translate, err = populatePipTranslate(&config, classpath)
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
-
+		log.Entry().Infof("config.Translate = %s", config.Translate)
+	}
+	if config.BuildTool == "npm" {
+		config.Translate, err = populateNPMTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
+		}
+		log.Entry().Infof("config.Translate = %s", config.Translate)
 	}
 
 	translateProject(&config, command, buildID, classpath)
 
 	scanProject(&config, command, buildID, buildLabel, buildProject)
+}
+
+func populateNPMTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+
+	separator := getSeparator()
+
+	//translateList[0]["pythonPath"] = classpath + separator +
+	//	getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
+	translateList[0]["src"] = getSuppliedOrDefaultListAsString(
+		config.Src, []string{"./src/**/*.js", "./src/**/*.ts"}, ":")
+	translateList[0]["exclude"] = getSuppliedOrDefaultListAsString(
+		config.Exclude, []string{"./**/tests/**/*", "./**/setup.py", "./*.test.js"}, separator)
+
+	translateJSON, err := json.Marshal(translateList)
+	log.Entry().Info("translateJSON: ", translateJSON)
+	return string(translateJSON), err
 }
 
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
@@ -629,7 +670,7 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 		config.Exclude, []string{"./**/tests/**/*", "./**/setup.py"}, separator)
 
 	translateJSON, err := json.Marshal(translateList)
-
+	log.Entry().Info("translateJSON: ", translateJSON)
 	return string(translateJSON), err
 }
 
@@ -702,6 +743,11 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, b
 	}
 	if len(buildProject) > 0 {
 		scanOptions = append(scanOptions, "-build-project", buildProject)
+	}
+	if config.BuildTool == "npm" {
+		scanOptions = append(scanOptions, "-Dcom.fortify.sca.Phase0HigherOrder.Languages=javascript,typescript")
+
+
 	}
 	scanOptions = append(scanOptions, "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr")
 
