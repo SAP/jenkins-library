@@ -318,6 +318,28 @@ func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	}
 }
 
+// ApplyContainerConditions evaluates conditions in step yaml container definitions
+func ApplyContainerConditions(containers []Container, stepConfig *StepConfig) {
+	for _, container := range containers {
+		if len(container.Conditions) > 0 {
+			for _, param := range container.Conditions[0].Params {
+				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
+					var containerConf map[string]interface{}
+					if stepConfig.Config[param.Value] != nil {
+						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
+						for key, value := range containerConf {
+							if stepConfig.Config[key] == nil {
+								stepConfig.Config[key] = value
+							}
+						}
+						delete(stepConfig.Config, param.Value)
+					}
+				}
+			}
+		}
+	}
+}
+
 func filterMap(data map[string]interface{}, filter []string) map[string]interface{} {
 	result := map[string]interface{}{}
 
