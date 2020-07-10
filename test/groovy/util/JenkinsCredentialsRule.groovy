@@ -78,7 +78,7 @@ class JenkinsCredentialsRule implements TestRule {
                         def creds = credentials.get(credsId)
 
                         def tokenVariable, usernameVariable, passwordVariable, prepare, destruct
-                        if (credentialsBindingType == "usernamePassword") {
+                        if (credentialsBindingType == "usernamePassword" || '$class: "UsernamePasswordMultiBinding"') {
                             passwordVariable = cred.passwordVariable
                             usernameVariable = cred.usernameVariable
                             preparations.add({
