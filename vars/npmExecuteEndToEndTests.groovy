@@ -28,10 +28,12 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'runScript'])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
-/**
- *
- */
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
+
+/**
+ * Executes end to end tests by running the npm script configured via the `runScript` property.
+ */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -40,9 +42,9 @@ void call(Map parameters = [:]) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -60,7 +62,8 @@ void call(Map parameters = [:]) {
         npmParameters.dockerOptions = ['--shm-size 512MB']
 
         if (!config.appUrls) {
-            error "[${STEP_NAME}] The execution failed, since no appUrls are defined. Please provide appUrls as a list of maps."
+            error "[${STEP_NAME}] The execution failed, since no appUrls are defined. Please provide appUrls as a list of maps.\n"
+
         }
         if (!(config.appUrls instanceof List)) {
             error "[${STEP_NAME}] The execution failed, since appUrls is not a list. Please provide appUrls as a list of maps."
@@ -118,20 +121,6 @@ void call(Map parameters = [:]) {
             }
             index++
         }
-        runClosures(e2ETests, config)
-    }
-}
-
-def runClosures(Map toRun, Map config) {
-    echo "Executing tests"
-    if (config.parallelExecution) {
-        echo "Executing tests in parallel"
-        parallel toRun
-    } else {
-        echo "Executing tests in sequence"
-        def closuresToRun = toRun.values().asList()
-        for (int i = 0; i < closuresToRun.size(); i++) {
-            (closuresToRun[i] as Closure)()
-        }
+        runClosures(e2ETests, config.parallelExecution, "end to end tests", script)
     }
 }
