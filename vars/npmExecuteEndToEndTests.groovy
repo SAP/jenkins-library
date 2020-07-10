@@ -99,7 +99,7 @@ void call(Map parameters = [:]) {
                     }
 
                 } catch (Exception e) {
-                   error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
+                    error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
                 } finally {
                     //TODO: Implement Report handling
                     utils.stashStageFiles(script, parameters.stage)
@@ -135,4 +135,3 @@ def runClosures(Map toRun, Map config) {
         }
     }
 }
-
