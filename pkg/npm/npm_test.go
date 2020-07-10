@@ -210,11 +210,11 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"})
+		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint", "--silent", "--", "--tag", "tag1"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -231,7 +231,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages(runScripts, nil, false)
+		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 6, len(utils.execRunner.Calls)) {
@@ -295,7 +295,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, true)
+		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true)
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
