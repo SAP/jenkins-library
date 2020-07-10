@@ -231,42 +231,6 @@ func getPackageList(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	return repoObjects, nil
 }
 
-// func piperhttp.(resp *http.Response, response interface{}) error {
-// 	if resp == nil {
-// 		return errors.Errorf("cannot parse HTTP response with value <nil>")
-// 	}
-
-// 	bodyText, readErr := ioutil.ReadAll(resp.Body)
-// 	if readErr != nil {
-// 		return errors.Wrap(readErr, "could not read HTTP response body")
-// 	}
-
-// 	marshalErr := xml.Unmarshal(bodyText, &response)
-// 	if marshalErr != nil {
-// 		return errors.Wrap(marshalErr, "cannot parse HTTP response as JSON")
-// 	}
-
-// 	return nil
-// }
-
-// func parseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
-// 	if resp == nil {
-// 		return errors.Errorf("cannot parse HTTP response with value <nil>")
-// 	}
-
-// 	bodyText, readErr := ioutil.ReadAll(resp.Body)
-// 	if readErr != nil {
-// 		return errors.Wrapf(readErr, "HTTP response body could not be read")
-// 	}
-
-// 	marshalErr := json.Unmarshal(bodyText, &response)
-// 	if marshalErr != nil {
-// 		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
-// 	}
-
-// 	return nil
-// }
-
 type gctsException struct {
 	Message     string `json:"message"`
 	Description string `json:"description"`
