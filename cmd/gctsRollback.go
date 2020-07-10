@@ -125,7 +125,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 	// deployErr := command.RunExecutable("./piper", deployParams...)
 	// httpClient := &piperhttp.Client{}
-	deployErr := deployCommit(&deployOptions, nil, nil, httpClient)
+	deployErr := deployCommit(&deployOptions, telemetryData, httpClient)
 
 	if deployErr != nil {
 		return errors.Wrap(deployErr, "rollback commit failed")
