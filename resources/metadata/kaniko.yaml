@@ -52,9 +52,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      default:
-      - http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt
-      - http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt
     - name: dockerConfigJSON
       type: string
       description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
