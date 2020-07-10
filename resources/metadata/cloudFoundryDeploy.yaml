@@ -30,9 +30,25 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+      - name: cfHome
+        type: string
+        description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
       - name: cfNativeDeployParameters
         type: string
         description: "Additional parameters passed to cf native deployment command"
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+      - name: cfPluginHome
+        type: string
+        description: "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
         scope:
         - PARAMETERS
         - STAGES
