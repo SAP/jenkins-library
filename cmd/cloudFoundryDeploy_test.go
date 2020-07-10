@@ -239,6 +239,8 @@ func TestCfDeployment(t *testing.T) {
 		defer prepareDefaultManifestMocking("manifest.yml", []string{"testAppName"})()
 
 		config.DeployTool = "cf_native"
+		config.CfHome = "/home/me1"
+		config.CfPluginHome = "/home/me2"
 
 		s := mock.ExecMockRunner{}
 
@@ -257,8 +259,8 @@ func TestCfDeployment(t *testing.T) {
 			})
 
 			t.Run("check environment variables", func(t *testing.T) {
-				assert.Contains(t, s.Env, "CF_HOME=/home/me")        // REVISIT: cross check if that variable should point to the user home dir
-				assert.Contains(t, s.Env, "CF_PLUGIN_HOME=/home/me") // REVISIT: cross check if that variable should point to the user home dir
+				assert.Contains(t, s.Env, "CF_HOME=/home/me1")
+				assert.Contains(t, s.Env, "CF_PLUGIN_HOME=/home/me2")
 				assert.Contains(t, s.Env, "STATUS_CODE=200")
 			})
 		}

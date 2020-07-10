@@ -202,15 +202,16 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	log.Entry().Infof("cfdeployDockerImage: '%s'", config.DeployDockerImage)
 	log.Entry().Infof("smokeTestScript: '%s'", config.SmokeTestScript)
 
-	pwd, err := fileUtils.Getwd()
-	if err != nil {
-		return err
+	additionalEnvironment := []string{
+		"STATUS_CODE=" + strconv.FormatInt(int64(config.SmokeTestStatusCode), 10),
 	}
 
-	additionalEnvironment := []string{
-		"CF_HOME=" + pwd,        // REVISIT: is it OK to set CF_HOME to the current working dir
-		"CF_PLUGIN_HOME=" + pwd, // REVISIT: is it OK to set CF_PLUGIN to the current working dir
-		"STATUS_CODE=" + strconv.FormatInt(int64(config.SmokeTestStatusCode), 10),
+	if len(config.CfHome) > 0 {
+		additionalEnvironment = append(additionalEnvironment, "CF_HOME="+config.CfHome)
+	}
+
+	if len(config.CfPluginHome) >= 0 {
+		additionalEnvironment = append(additionalEnvironment, "CF_PLUGIN_HOME="+config.CfPluginHome)
 	}
 
 	if len(config.DockerPassword) > 0 {
