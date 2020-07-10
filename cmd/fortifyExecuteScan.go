@@ -176,13 +176,14 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
-
-		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
-		if err != nil {
-			return err
-		}
-		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
+		dest := fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, config.ProjectName, config.PullRequestName, "txt")
+		ioutil.WriteFile(dest, resultURL, 0700)
+		log.Entry().Info("Wrote project URL to file: %s", dest)
+		//data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		//if err != nil {
+		//	return err
+		//}
+		//ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
 	}
 
 	// Perform audit compliance checks
@@ -199,7 +200,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	influx.fortify_data.fields.projectName = fortifyProjectName
 	influx.fortify_data.fields.projectVersion = fortifyProjectVersion
 	influx.fortify_data.fields.violations = fmt.Sprintf("%v", numberOfViolations)
-	if numberOfViolations > 0 {
+	if numberOfViolations > 0 && config.ConsiderSuspicious {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
 	return nil
@@ -383,6 +384,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 			return []byte{}, fmt.Errorf("Failed to fetch Q-Gate report generation status: %w", err)
 		}
 		status = report.Status
+		log.Entry().Info("Polling for status: ", status, report)
 	}
 	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, projectVersion.ID)
 	if err != nil {
@@ -586,7 +588,8 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 	}
 
 	classpath := ""
-	if config.BuildTool == "maven" {
+	switch config.BuildTool {
+	case "maven":
 		if config.AutodetectClasspath {
 			classpath = autoresolveMavenClasspath(config, classpathFileName, command)
 		}
@@ -594,8 +597,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
-	}
-	if config.BuildTool == "pip" {
+	case "pip":
 		if config.AutodetectClasspath {
 			separator := getSeparator()
 			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
@@ -615,16 +617,18 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
-		log.Entry().Infof("config.Translate = %s", config.Translate)
-	}
-	if config.BuildTool == "npm" {
+	case "npm":
 		config.Translate, err = populateNPMTranslate(&config, classpath)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
+			log.Entry().WithError(err).Warnf("failed to populate npm translate ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
-		log.Entry().Infof("config.Translate = %s", config.Translate)
+	default:
+		config.Translate, err = populateDefaultTranslate(&config, classpath)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to populate default translate ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
+		}
+		break
 	}
-
 	translateProject(&config, command, buildID, classpath)
 
 	scanProject(&config, command, buildID, buildLabel, buildProject)
@@ -637,18 +641,17 @@ func populateNPMTranslate(config *fortifyExecuteScanOptions, classpath string) (
 
 	var translateList []map[string]interface{}
 	translateList = append(translateList, make(map[string]interface{}))
+	translateList[0]["classpath"] = classpath
 
-	separator := getSeparator()
+	log.Entry().Info("Setting npm translate classpath = ", classpath)
 
-	//translateList[0]["pythonPath"] = classpath + separator +
-	//	getSuppliedOrDefaultListAsString(config.PythonAdditionalPath, []string{}, separator)
-	translateList[0]["src"] = getSuppliedOrDefaultListAsString(
-		config.Src, []string{"./src/**/*.js", "./src/**/*.ts"}, ":")
-	translateList[0]["exclude"] = getSuppliedOrDefaultListAsString(
-		config.Exclude, []string{"./**/tests/**/*", "./**/setup.py", "./*.test.js"}, separator)
+	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
+		[]string{"src/**/*.py"})
+
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"tests/**", "**/tests/**"})
 
 	translateJSON, err := json.Marshal(translateList)
-	log.Entry().Info("translateJSON: ", translateJSON)
+
 	return string(translateJSON), err
 }
 
@@ -684,7 +687,26 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/src/main/resources/**/*", "**/src/main/java/**/*.java"})
+
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{})
+
+	translateJSON, err := json.Marshal(translateList)
+
+	return string(translateJSON), err
+}
+
+func populateDefaultTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
+	if len(config.Translate) > 0 {
+		return config.Translate, nil
+	}
+
+	var translateList []map[string]interface{}
+	translateList = append(translateList, make(map[string]interface{}))
+	translateList[0]["classpath"] = classpath
+
+	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
+		[]string{"**/src/main/resources/**/*", "**/src/main/java/**/*.java"})
 
 	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{})
 
@@ -701,6 +723,7 @@ func translateProject(config *fortifyExecuteScanOptions, command fortifyExecRunn
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
 		}
+		log.Entry().Info("Handling singleTranslate with translate map: ",  translate)
 		handleSingleTranslate(config, command, buildID, translate)
 	}
 }
@@ -832,15 +855,19 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["djangoTemplatDirs"]) > 0 {
 			options = append(options, "-django-template-dirs", t["djangoTemplatDirs"])
 		}
-
-	default:
-		return options
+	case "npm":
+		options = append(options, "-Dcom.fortify.sca.hoa.Enable=true", ``)
+		options = append(options, "-Dcom.fortify.sca.Phase0HigherOrder.Languages=javascript,typescript", ``)
+		options = append(options, "-Dcom.fortify.sca.EnableDOMModeling=true", ``)
 	}
 
 	if len(t["exclude"]) > 0 {
 		options = append(options, "-exclude", t["exclude"])
 	}
-	return append(options, strings.Split(t["src"], ":")...)
+
+	log.Entry().Info("Splitting src:", t)
+	options = append(options, strings.Split(t["src"], ":")...)
+	return options
 }
 
 func getSuppliedOrDefaultList(suppliedList, defaultList []string) []string {
