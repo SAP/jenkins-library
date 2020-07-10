@@ -8,45 +8,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadServiceKeyAbapEnvironment(t *testing.T) {
-	t.Run("ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
+func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
+	t.Run("CF GetAbapCommunicationArrangementInfo - Error - parameters missing", func(t *testing.T) {
 
-		//given .
+		//given
 		options := AbapEnvironmentOptions{
-			Username:          "testUser",
-			Password:          "testPassword",
-			CfAPIEndpoint:     "https://api.endpoint.com",
+			//CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
 			CfOrg:             "testOrg",
 			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			CfServiceKeyName:  "testServiceKeyName",
 		}
 
 		//when
-		var abapKey AbapServiceKey
+		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{}, true)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "", false)
 
 		//then
-		assert.Equal(t, "", abapKey.Abap.Password)
-		assert.Equal(t, "", abapKey.Abap.Username)
-		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)
-		assert.Equal(t, "", abapKey.Abap.CommunicationScenarioID)
-		assert.Equal(t, "", abapKey.Abap.CommunicationSystemID)
+		assert.Equal(t, "", connectionDetails.URL)
+		assert.Equal(t, "", connectionDetails.User)
+		assert.Equal(t, "", connectionDetails.Password)
+		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.Equal(t, "", abapKey.Binding.Env)
-		assert.Equal(t, "", abapKey.Binding.Type)
-		assert.Equal(t, "", abapKey.Binding.ID)
-		assert.Equal(t, "", abapKey.Binding.Version)
-		assert.Equal(t, "", abapKey.SystemID)
-		assert.Equal(t, "", abapKey.URL)
-
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		assert.Error(t, err)
 	})
-}
-
-func TestGetAbapCommunicationInfo(t *testing.T) {
-	t.Run("GetAbapCommunicationArrangementInfo - Error reading service Key", func(t *testing.T) {
+	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
 
 		//given
 		options := AbapEnvironmentOptions{
@@ -72,7 +62,6 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 
 		assert.Error(t, err)
 	})
-
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
 		//given
@@ -111,7 +100,8 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
-
+}
+func TestHostGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
 		//given
@@ -146,7 +136,6 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
-
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success - w/o https", func(t *testing.T) {
 
 		//given
@@ -180,5 +169,41 @@ func TestGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
 		assert.NoError(t, err)
+	})
+}
+func TestReadServiceKeyAbapEnvironment(t *testing.T) {
+	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
+
+		//given .
+		options := AbapEnvironmentOptions{
+			Username:          "testUser",
+			Password:          "testPassword",
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfSpace:           "testSpace",
+			CfOrg:             "testOrg",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testKey",
+		}
+
+		//when
+		var abapKey AbapServiceKey
+		var err error
+		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{}, true)
+
+		//then
+		assert.Equal(t, "", abapKey.Abap.Password)
+		assert.Equal(t, "", abapKey.Abap.Username)
+		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)
+		assert.Equal(t, "", abapKey.Abap.CommunicationScenarioID)
+		assert.Equal(t, "", abapKey.Abap.CommunicationSystemID)
+
+		assert.Equal(t, "", abapKey.Binding.Env)
+		assert.Equal(t, "", abapKey.Binding.Type)
+		assert.Equal(t, "", abapKey.Binding.ID)
+		assert.Equal(t, "", abapKey.Binding.Version)
+		assert.Equal(t, "", abapKey.SystemID)
+		assert.Equal(t, "", abapKey.URL)
+
+		assert.Error(t, err)
 	})
 }
