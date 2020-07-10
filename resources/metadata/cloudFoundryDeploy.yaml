@@ -14,6 +14,7 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        default: "https://api.cf.eu10.hana.ondemand.com"
       - name: apiParameters
         type: string
         description: "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments."
