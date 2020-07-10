@@ -138,6 +138,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        aliases:
+          - name: cfManifestVariables
+          - name: cloudFoundry/manifestVariables
       - name: manifestVariablesFiles
         type: "[]string"
         description: "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win."
