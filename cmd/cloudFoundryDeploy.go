@@ -206,14 +206,6 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 		"STATUS_CODE=" + strconv.FormatInt(int64(config.SmokeTestStatusCode), 10),
 	}
 
-	if len(config.CfHome) > 0 {
-		additionalEnvironment = append(additionalEnvironment, "CF_HOME="+config.CfHome)
-	}
-
-	if len(config.CfPluginHome) >= 0 {
-		additionalEnvironment = append(additionalEnvironment, "CF_PLUGIN_HOME="+config.CfPluginHome)
-	}
-
 	if len(config.DockerPassword) > 0 {
 		additionalEnvironment = append(additionalEnvironment, "CF_DOCKER_PASSWORD="+config.DockerPassword)
 	}
@@ -679,6 +671,14 @@ func cfDeploy(
 		additionalEnvironment = []string{}
 	}
 	additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+
+	if len(config.CfHome) > 0 {
+		additionalEnvironment = append(additionalEnvironment, "CF_HOME="+config.CfHome)
+	}
+
+	if len(config.CfPluginHome) > 0 {
+		additionalEnvironment = append(additionalEnvironment, "CF_PLUGIN_HOME="+config.CfPluginHome)
+	}
 
 	log.Entry().Infof("Using additional environment variables: %s", additionalEnvironment)
 
