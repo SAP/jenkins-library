@@ -80,7 +80,7 @@ void call(Map parameters = [:]) {
                 error "[${STEP_NAME}] No url property was defined for the following element in appUrls: ${appUrl}"
             }
             if (appUrl.credentialId) {
-                credentials.add([$class: 'UsernamePasswordMultiBinding', credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'])
+                credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
             }
 
             Closure e2eTest = {
