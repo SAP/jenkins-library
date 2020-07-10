@@ -224,6 +224,9 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cfSpace
+          - name: cloudFoundry/space
         mandatory: true
         secret: false
       - name: username
