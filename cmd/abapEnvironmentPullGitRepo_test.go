@@ -171,6 +171,40 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
 	})
 
+	t.Run("Test host prefix: with https", func(t *testing.T) {
+
+		config := abapEnvironmentPullGitRepoOptions{
+			Host:     "test.host.com",
+			Username: "testUser",
+			Password: "testPassword",
+		}
+		execRunner := mock.ExecMockRunner{}
+
+		con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
+		if err == nil {
+			assert.Equal(t, "testUser", con.User)
+			assert.Equal(t, "testPassword", con.Password)
+			assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
+		}
+	})
+
+	t.Run("Test host prefix: with https", func(t *testing.T) {
+
+		config := abapEnvironmentPullGitRepoOptions{
+			Host:     "https://test.host.com",
+			Username: "testUser",
+			Password: "testPassword",
+		}
+		execRunner := mock.ExecMockRunner{}
+
+		con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
+		if err == nil {
+			assert.Equal(t, "testUser", con.User)
+			assert.Equal(t, "testPassword", con.Password)
+			assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
+		}
+	})
+
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
 		config := abapEnvironmentPullGitRepoOptions{
