@@ -63,7 +63,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 	err = u.FileWrite(filepath.Join(".pipeline", ".eslintrc.json"), content, os.ModePerm)
 	if err != nil {
-		log.Entry().Warnf("failed to write .eslintrc.json file to .pipeline/: %w", err)
+		log.Entry().Warnf("failed to write .eslintrc.json file to .pipeline/: %v", err)
 	}
 }
 

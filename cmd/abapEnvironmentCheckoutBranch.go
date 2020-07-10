@@ -31,7 +31,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	var c command.ExecRunner = &command.Command{}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "", false)
+	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
@@ -102,11 +102,11 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'branchName'")
 	}
 
-	// Setup JSON body and fire the POST request
-
 	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
 	checkoutConnectionDetails.URL = checkoutConnectionDetails.URL + `/checkout_branch?branch_name='` + branchName + `'&sc_name='` + repositoryName + `'`
 	jsonBody := []byte(``)
+
+	// no JSON body needed
 	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
 	if err != nil {
 		err = handleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
