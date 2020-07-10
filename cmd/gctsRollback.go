@@ -61,13 +61,11 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		return errors.Wrap(err, "could not parse remote repository URL as valid URL")
 	}
 
-	// var deployParams []string
 	var deployOptions gctsDeployOptions
 
 	if config.Commit != "" {
 		log.Entry().Infof("rolling back to specified commit %v", config.Commit)
 
-		// deployParams = []string{"gsctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", config.Commit}
 		deployOptions = gctsDeployOptions{
 			Username:   config.Username,
 			Password:   config.Password,
@@ -90,7 +88,6 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 			return errors.Wrap(err, "could not determine successfull commit")
 		}
 
-		// deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", successCommit}
 		deployOptions = gctsDeployOptions{
 			Username:   config.Username,
 			Password:   config.Password,
@@ -108,7 +105,6 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		if repoHistory.Result[0].FromCommit != "" {
 
 			log.Entry().WithField("repository", config.Repository).Infof("rolling back to last active commit %v", repoHistory.Result[0].FromCommit)
-			// deployParams = []string{"gctsDeploy", "--username", config.Username, "--password", config.Password, "--host", config.Host, "--client", config.Client, "--repository", config.Repository, "--commit", repoHistory.Result[0].FromCommit}
 			deployOptions = gctsDeployOptions{
 				Username:   config.Username,
 				Password:   config.Password,
@@ -123,8 +119,6 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		}
 	}
 
-	// deployErr := command.RunExecutable("./piper", deployParams...)
-	// httpClient := &piperhttp.Client{}
 	deployErr := deployCommit(&deployOptions, telemetryData, httpClient)
 
 	if deployErr != nil {
