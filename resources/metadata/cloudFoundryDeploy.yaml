@@ -150,6 +150,9 @@ spec:
         - STEPS
         default: "manifest-variables.yml"
         mandatory: false
+        aliases:
+          - name: cfManifestVariablesFiles
+          - name: cloudFoundry/manifestVariablesFiles
       - name: mtaDeployParameters
         type: string
         description: "Additional parameters passed to mta deployment command"
