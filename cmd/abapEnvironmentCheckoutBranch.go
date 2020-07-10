@@ -32,7 +32,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	var c command.ExecRunner = &command.Command{}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/", false)
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
@@ -52,7 +52,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	client.SetOptions(clientOptions)
 	pollIntervall := 10 * time.Second
 
-	log.Entry().Infof("Start to switch branch %v on repository %v ", options.BranchName, options.RepositoryName)
+	log.Entry().Infof("Starting to switch branch to branch '%v' on repository '%v'", options.BranchName, options.RepositoryName)
 	log.Entry().Info("--------------------------------")
 	log.Entry().Info("Start checkout branch: " + options.BranchName)
 	log.Entry().Info("--------------------------------")
@@ -91,7 +91,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system successful")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system was successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
@@ -106,6 +106,8 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	// the request looks like: POST/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/checkout_branch?branch_name='newBranch'&sc_name=/DMO/GIT_REPOSITORY'
 	checkoutConnectionDetails.URL = checkoutConnectionDetails.URL + `/checkout_branch?branch_name='` + branchName + `'&sc_name='` + repositoryName + `'`
 	jsonBody := []byte(``)
+
+	//fmt.Println(checkoutConnectionDetails.URL)
 
 	// no JSON body needed
 	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
