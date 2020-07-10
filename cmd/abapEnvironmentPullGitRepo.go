@@ -29,6 +29,7 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	subOptions.CfServiceInstance = options.CfServiceInstance
 	subOptions.CfServiceKeyName = options.CfServiceKeyName
 	subOptions.CfOrg = options.CfOrg
+	subOptions.CfSpace = options.CfSpace
 	subOptions.Host = options.Host
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
