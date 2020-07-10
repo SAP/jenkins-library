@@ -15,6 +15,9 @@ spec:
         - STEPS
         mandatory: true
         default: "https://api.cf.eu10.hana.ondemand.com"
+        aliases:
+          - name: cfApiEndpoint
+          - name: cloudFoundry/apiEndpoint
       - name: apiParameters
         type: string
         description: "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments."
