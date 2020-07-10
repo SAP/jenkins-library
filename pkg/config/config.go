@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/http"
@@ -98,6 +99,12 @@ func getDeepAliasValue(configMap map[string]interface{}, key string) interface{}
 	parts := strings.Split(key, "/")
 	if len(parts) > 1 {
 		if configMap[parts[0]] == nil {
+			return nil
+		}
+
+		paramValueType := reflect.ValueOf(configMap[parts[0]])
+		if paramValueType.Kind() != reflect.Map {
+			log.Entry().Debugf("Ignoring alias '%v' as '%v' is not pointing to a map.", key, parts[0])
 			return nil
 		}
 		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "/"))

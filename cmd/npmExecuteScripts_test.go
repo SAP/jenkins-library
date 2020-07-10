@@ -30,6 +30,7 @@ type npmConfig struct {
 	install            bool
 	runScripts         []string
 	runOptions         []string
+	scriptOptions      []string
 	virtualFrameBuffer bool
 }
 
@@ -51,7 +52,7 @@ func (n *npmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []stri
 }
 
 // RunScriptsInAllPackages mock implementation
-func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
+func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error {
 	if len(runScripts) != len(n.config.runScripts) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
 	}
@@ -61,8 +62,12 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 		}
 	}
 
-	if len(runOptions) != 0 {
-		return fmt.Errorf("RunScriptsInAllPackages was unexpectedly called with a list of runOptions")
+	if len(scriptOptions) != len(n.config.scriptOptions) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.scriptOptions")
+	}
+
+	if len(runOptions) != len(n.config.runOptions) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
 	}
 
 	if virtualFrameBuffer != n.config.virtualFrameBuffer {
@@ -96,6 +101,18 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 }
 
 func TestNpmExecuteScripts(t *testing.T) {
+	t.Run("Call with scriptOptions", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, scriptOptions: config.ScriptOptions}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Call with install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := newNpmMockUtilsBundle()
