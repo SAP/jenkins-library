@@ -36,7 +36,6 @@ steps:
   gctsExecuteABAPUnitTests:
     host: "https://abap.server.com:port"
     client: "000"
-    username: "ABAPUsername"
-    password: "ABAPPassword"
+    abapCredentialsId: 'ABAPUserPasswordCredentialsId'
     repository: "myrepo"
 ```
