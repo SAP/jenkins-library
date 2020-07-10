@@ -34,6 +34,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        aliases:
+          - name: cfAppName
+          - name: cloudFoundry/appName
       - name: cfHome
         type: string
         description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
