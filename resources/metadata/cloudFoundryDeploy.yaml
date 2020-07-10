@@ -185,6 +185,9 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cfOrg
+          - name: cloudFoundry/org
         mandatory: true
         secret: false
       - name: password
