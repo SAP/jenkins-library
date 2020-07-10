@@ -62,28 +62,16 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-
-	fortifyProjectName := config.ProjectName
-	fortifyProjectVersion := config.PullRequestName
-	if len(fortifyProjectName) == 0 || len(fortifyProjectVersion) == 0 {
-		artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
-		if err != nil {
-			return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
-		}
-		gav, err := artifact.GetCoordinates()
-		if err != nil {
-			return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
-		}
-		log.Entry().Debugf("determined project coordinates %v", gav)
-		projName, projVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
-		if len(fortifyProjectName) == 0 {
-			fortifyProjectName = projName
-		}
-		if len(fortifyProjectVersion) == 0 {
-			fortifyProjectVersion = projVersion
-		}
+	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
+	if err != nil {
+		return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-
+	gav, err := artifact.GetCoordinates()
+	if err != nil {
+		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
+	}
+	log.Entry().Debugf("determined project coordinates %v", gav)
+	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.DefaultVersioningModel, gav)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
@@ -178,12 +166,12 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
 		dest := fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, config.ProjectName, config.PullRequestName, "txt")
 		ioutil.WriteFile(dest, resultURL, 0700)
-		log.Entry().Info("Wrote project URL to file: %s", dest)
-		//data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
-		//if err != nil {
-		//	return err
-		//}
-		//ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
+		log.Entry().Info("Wrote project URL to file: ", dest)
+		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
+		if err != nil {
+			return err
+		}
+		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, config.ReportType), data, 0700)
 	}
 
 	// Perform audit compliance checks
@@ -200,7 +188,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	influx.fortify_data.fields.projectName = fortifyProjectName
 	influx.fortify_data.fields.projectVersion = fortifyProjectVersion
 	influx.fortify_data.fields.violations = fmt.Sprintf("%v", numberOfViolations)
-	if numberOfViolations > 0 && config.ConsiderSuspicious {
+	if numberOfViolations > 0 {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
 	return nil
@@ -723,7 +711,7 @@ func translateProject(config *fortifyExecuteScanOptions, command fortifyExecRunn
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
 		}
-		log.Entry().Info("Handling singleTranslate with translate map: ",  translate)
+		log.Entry().Info("Handling singleTranslate with translate map: ", translate)
 		handleSingleTranslate(config, command, buildID, translate)
 	}
 }
@@ -769,7 +757,6 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, b
 	}
 	if config.BuildTool == "npm" {
 		scanOptions = append(scanOptions, "-Dcom.fortify.sca.Phase0HigherOrder.Languages=javascript,typescript")
-
 
 	}
 	scanOptions = append(scanOptions, "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr")
