@@ -231,7 +231,8 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		}
 		var abapServiceKey cloudfoundry.ServiceKey
-		abapServiceKey, err = cloudfoundry.ReadServiceKeyAbapEnvironment(cfconfig, true)
+		cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+		abapServiceKey, err = cf.ReadServiceKeyAbapEnvironment(cfconfig, true)
 		if err != nil {
 			return details, fmt.Errorf("Reading Service Key failed: %w", err)
 		}
