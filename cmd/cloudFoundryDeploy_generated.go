@@ -152,7 +152,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 }
 
 func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDeployOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", os.Getenv("PIPER_apiEndpoint"), "Cloud Foundry API endpoint")
+	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.APIParameters, "apiParameters", os.Getenv("PIPER_apiParameters"), "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
@@ -202,7 +202,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
 						Name:        "apiParameters",
