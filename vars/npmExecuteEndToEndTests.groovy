@@ -95,7 +95,7 @@ void call(Map parameters = [:]) {
                     withCredentials(credentials) {
                         if (appUrl.parameters) {
                             if (appUrl.parameters instanceof List) {
-                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}", appUrl.parameters])
+                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters)
                             } else {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
@@ -123,6 +123,6 @@ void call(Map parameters = [:]) {
             }
             index++
         }
-        runClosures(e2ETests, config.parallelExecution, script, "end to end tests")
+        runClosures(script, e2ETests, config.parallelExecution, "end to end tests")
     }
 }

@@ -140,13 +140,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
             stage: "myStage",
             runScript: "ci-e2e"
         )
-
-        assert npmExecuteScriptsRule.hasParameter('script', nullScript)
-        assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
-        assert npmExecuteScriptsRule.hasParameter('install', false)
-        assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
-        assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
-        assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}", appUrl.parameters])
     }
 
     @Test
@@ -237,7 +230,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
         assert npmExecuteScriptsRule.hasParameter('install', false)
         assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
         assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
-        assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}", appUrl.parameters])
+        assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"] + appUrl.parameters)
     }
 
     @Test

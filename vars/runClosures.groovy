@@ -1,4 +1,4 @@
-void call(Map closures, Boolean parallelExecution, script, String label = "closures") {
+void call(script, Map closures, Boolean parallelExecution, String label = "closures") {
     handlePipelineStepErrors(stepName: 'runClosures', stepParameters: [script: script]) {
         echo "Executing $label"
         if (parallelExecution) {

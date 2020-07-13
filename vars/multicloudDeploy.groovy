@@ -93,7 +93,7 @@ void call(parameters = [:]) {
                     )
                 }
             }
-            runClosures(createServices, config.parallelExecution, script, "cloudFoundryCreateService")
+            runClosures(script, createServices, config.parallelExecution, "cloudFoundryCreateService")
         }
 
         if (config.cfTargets) {
@@ -176,6 +176,6 @@ void call(parameters = [:]) {
             error "Deployment skipped because no targets defined!"
         }
 
-        runClosures(deployments, config.parallelExecution, script, "deployments")
+        runClosures(script, deployments, config.parallelExecution, "deployments")
     }
 }
