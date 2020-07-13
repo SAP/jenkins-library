@@ -87,12 +87,11 @@ func docGenDescription(stepData *config.StepData) string {
 	description += "Description\n\n" + stepData.Metadata.LongDescription + "\n\n"
 
 	description += "## Usage\n\n"
-	description += "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). <br / >Calling the step can be done either via the Jenkins library step or on the command line.\n\n"
+	description += "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the command line.\n\n"
 	description += "### Jenkins pipelines\n\n```groovy\n"
-	description += fmt.Sprintf("%v script: this <optional: parameters>\n```\n", stepData.Metadata.Name)
+	description += fmt.Sprintf("%v script: this\n```\n", stepData.Metadata.Name)
 	description += "### Command line\n\n```\n"
-	description += fmt.Sprintf("piper %v <optional: parameters/flags>\n```\n\n", stepData.Metadata.Name)
-	description += "### Command line\n\n```\n"
+	description += fmt.Sprintf("piper %v\n```\n\n", stepData.Metadata.Name)
 	description += stepOutputs(stepData)
 	return description
 }
@@ -120,13 +119,14 @@ func stepOutputs(stepData *config.StepData) string {
 		if res.Type == "influx" {
 			stepOutput += fmt.Sprintf("| %v | ", res.Name)
 			for _, param := range res.Parameters {
-				stepOutput += fmt.Sprintf("%v<br /><ul>", param["name"])
-				fields, _ := param["fields"].([]map[string]interface{})
+				stepOutput += fmt.Sprintf("measurement `%v`<br /><ul>", param["name"])
+				fields, _ := param["fields"].([]interface{})
 				for _, field := range fields {
-					stepOutput += fmt.Sprintf("<li>%v</li>", field["name"])
+					fieldMap, _ := field.(map[string]interface{})
+					stepOutput += fmt.Sprintf("<li>%v</li>", fieldMap["name"])
 				}
 			}
-			stepOutput += "</ul> |/n"
+			stepOutput += "</ul> |\n"
 		}
 
 	}
