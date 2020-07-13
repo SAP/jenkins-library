@@ -288,15 +288,6 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: ''
-  kanikoExecute:
-    containerBuildOptions: '--skip-tls-verify-pull'
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerPreparationCommand: 'rm -f /kaniko/.docker/config.json'
-    containerShell: '/busybox/sh'
-    customTlsCertificateLinks: []
-    dockerfile: Dockerfile
-    dockerImage: 'gcr.io/kaniko-project/executor:debug'
-    dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
       'node:lts-stretch':
