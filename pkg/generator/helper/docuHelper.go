@@ -92,7 +92,47 @@ func docGenDescription(stepData *config.StepData) string {
 	description += fmt.Sprintf("%v script: this <optional: parameters>\n```\n", stepData.Metadata.Name)
 	description += "### Command line\n\n```\n"
 	description += fmt.Sprintf("piper %v <optional: parameters/flags>\n```\n\n", stepData.Metadata.Name)
+	description += "### Command line\n\n```\n"
+	description += stepOutputs(stepData)
 	return description
+}
+
+func stepOutputs(stepData *config.StepData) string {
+	if len(stepData.Spec.Outputs.Resources) == 0 {
+		return ""
+	}
+
+	stepOutput := "\n## Step outputs\n\n"
+	stepOutput += "| output type | details |\n"
+	stepOutput += "| ----------- | ------- |\n"
+
+	for _, res := range stepData.Spec.Outputs.Resources {
+		//handle commonPipelineEnvironment output
+		if res.Type == "piperEnvironment" {
+			stepOutput += fmt.Sprintf("| %v | <ul>", res.Name)
+			for _, param := range res.Parameters {
+				stepOutput += fmt.Sprintf("<li>%v</li>", param["name"])
+			}
+			stepOutput += "</ul> |/n"
+		}
+
+		//handle Influx output
+		if res.Type == "influx" {
+			stepOutput += fmt.Sprintf("| %v | ", res.Name)
+			for _, param := range res.Parameters {
+				stepOutput += fmt.Sprintf("%v<br /><ul>", param["name"])
+				fields, _ := param["fields"].([]map[string]interface{})
+				for _, field := range fields {
+					stepOutput += fmt.Sprintf("<li>%v</li>", field["name"])
+				}
+			}
+			stepOutput += "</ul> |/n"
+		}
+
+	}
+
+	return stepOutput
+
 }
 
 // Replaces the docGenParameters placeholder with the content from the yaml
@@ -203,7 +243,7 @@ func createParameterDetails(stepData *config.StepData) string {
 		}
 		details += fmt.Sprintf("| Secret | %v |\n", ifThenElse(param.Secret, "**yes**", "no"))
 		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(param.Scope))
-		details += resourceReferenceDetails(param.ResourceRef)
+		details += fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(param.ResourceRef))
 
 		details += "\n\n"
 	}
@@ -278,14 +318,6 @@ func aliasList(aliases []config.Alias) string {
 	}
 }
 
-func renderSlice(slice []interface{}) string {
-	var s string
-	for _, def := range slice {
-		s += fmt.Sprintf("- `%v`<br />", fmt.Sprint(def))
-	}
-	return s
-}
-
 func possibleValueList(possibleValues []interface{}) string {
 	if len(possibleValues) == 0 {
 		return ""
@@ -300,6 +332,7 @@ func possibleValueList(possibleValues []interface{}) string {
 
 func scopeDetails(scope []string) string {
 	scopeDetails := "<ul>"
+	scopeDetails += fmt.Sprintf("<li>- [%v] parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "X", " "))
 	scopeDetails += fmt.Sprintf("<li>- [%v] general</li>", ifThenElse(contains(scope, "GENERAL"), "X", " "))
 	scopeDetails += fmt.Sprintf("<li>- [%v] steps</li>", ifThenElse(contains(scope, "STEPS"), "X", " "))
 	scopeDetails += fmt.Sprintf("<li>- [%v] stages</li>", ifThenElse(contains(scope, "STAGES"), "X", " "))
@@ -308,7 +341,32 @@ func scopeDetails(scope []string) string {
 }
 
 func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
+
+	if len(resourceRef) == 0 {
+		return "none"
+	}
+
 	resourceDetails := ""
+	for _, resource := range resourceRef {
+		if resource.Name == "commonPipelineEnvironment" {
+			resourceDetails += "_commonPipelineEnvironment_:<br />"
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
+			continue
+		}
+
+		if resource.Type == "secret" {
+			resourceDetails += "Jenkins credential id:<br />"
+			for i, alias := range resource.Aliases {
+				if i == 0 {
+					resourceDetails += "&nbsp;&nbsp;aliases:<br />"
+				}
+				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;- `%v`%v<br />", alias.Name, ifThenElse(alias.Deprecated, " (**Deprecated**)", ""))
+			}
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: `%v`<br />", resource.Name)
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
+			continue
+		}
+	}
 
 	return resourceDetails
 }
@@ -484,22 +542,25 @@ func consolidateContextDefaults(stepData *config.StepData) {
 
 func setDefaultAndPossisbleValues(stepData *config.StepData) {
 	for k, param := range stepData.Spec.Inputs.Parameters {
+
+		//fill default id not set
 		if param.Default == nil {
 			switch param.Type {
 			case "bool":
 				param.Default = false
-				param.PossibleValues = append(param.PossibleValues, true, false)
 			case "int":
 				param.Default = 0
 			}
-		} else {
-			switch param.Type {
-			case "bool":
-				if param.PossibleValues == nil {
-					param.PossibleValues = []interface{}{true, false}
-				}
+		}
+
+		//add possible values where known for certain types
+		switch param.Type {
+		case "bool":
+			if param.PossibleValues == nil {
+				param.PossibleValues = []interface{}{true, false}
 			}
 		}
+
 		stepData.Spec.Inputs.Parameters[k] = param
 	}
 }
