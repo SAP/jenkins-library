@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"bytes"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
 	})
 
-	t.Run("CF Login check: success case", func(t *testing.T) {
+	t.Run("CF Login check: success case, not already logged in", func(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
@@ -53,6 +54,32 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, loggedIn)
 			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login check: stdout stream not altered after function call", func(t *testing.T) {
+
+		// Inside LoginCheck(./.) we alter the stdout stream in order to be able to
+		// parse the stdout response of the cf cli.
+		// With that test we ensure that the stream is restored properly
+
+		defer loginMockCleanup(m)
+
+		var b bytes.Buffer
+		m.Stdout(&b)
+		b.Write([]byte("abc"))
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+		}
+		cf := CFUtils{Exec: m}
+		_, err := cf.LoginCheck(cfconfig)
+
+		if assert.NoError(t, err)  {
+			// in case stdout would have been altered we would now write into the
+			// wrong stream
+			m.GetStdout().Write([]byte("def"))
+			assert.Equal(t, "abcdef", b.String())
 		}
 	})
 

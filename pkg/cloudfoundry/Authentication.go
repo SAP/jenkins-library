@@ -29,18 +29,9 @@ func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
 	var cfCheckLoginScript = append([]string{"api", options.CfAPIEndpoint}, options.CfAPIOpts...)
 
+	oldStdout := _c.GetStdout()
 	defer func() {
-		// We set it back to what is set from the generated stub. Of course this is not
-		// fully accurate in case we create our own instance above (nothing handed in via
-		// the receiver).
-		// Would be better to remember the old stdout and set back to this.
-		// But command.Command does not allow to get the currently set
-		// stdout handler.
-		// Reason for changing the output stream here: we need to parse the output
-		// of the command issued here in order to check if we are already logged in.
-		// This is expected to change soon to a boolean variable where we remember the
-		// login state.
-		_c.Stdout(log.Writer())
+		_c.Stdout(oldStdout)
 	}()
 
 	var cfLoginBytes bytes.Buffer
