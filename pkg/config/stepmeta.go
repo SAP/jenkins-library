@@ -369,7 +369,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-// converts container EnvVars into a map as required by dockerExecute
+// EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute
 func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 	e := map[string]string{}
 	for _, v := range envVars {
