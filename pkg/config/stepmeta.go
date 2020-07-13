@@ -62,11 +62,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string  `json:"name"`
-	Type    string  `json:"type,omitempty"`
-	Param   string  `json:"param,omitempty"`
-	Path    string  `json:"path,omitempty"`
-	Aliases []Alias `json:"aliases,omitempty"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type,omitempty"`
+	Param   string   `json:"param,omitempty"`
+	Paths   []string `json:"path,omitempty"`
+	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -369,7 +369,6 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 
 	return resourceParams
 }
-
 func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
 	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
 		if param.Type != "string" {
@@ -385,15 +384,14 @@ func getParameterValue(path, name string, res ResourceReference, param StepParam
 	return nil
 }
 
-// GetReferences returns all ResourceReferences of the given type
-func (m *StepParameters) GetReferences(refType string) []ResourceReference {
-	refs := []ResourceReference{}
+// GetReference returns the ResourceReference of the given type
+func (m *StepParameters) GetReference(refType string) *ResourceReference {
 	for _, ref := range m.ResourceRef {
 		if refType == ref.Type {
-			refs = append(refs, ref)
+			return &ref
 		}
 	}
-	return refs
+	return nil
 }
 
 // EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute

@@ -14,9 +14,9 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Load secret from vault", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"testBasePath": "team1",
+			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
@@ -29,10 +29,10 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secrets are not overwritten", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"testBasePath": "team1",
-			secretName:     "preset value",
+			"vaultBasePath": "team1",
+			secretName:      "preset value",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
 		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
@@ -45,9 +45,9 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Error is passed through", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"testBasePath": "team1",
+			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, fmt.Errorf("test"))
 		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
 		assert.Nil(t, config)
@@ -57,9 +57,9 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secret doesn't exist", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"testBasePath": "team1",
+			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
 		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
 		assert.NoError(t, err)
@@ -70,11 +70,11 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Search over multiple references", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"testBasePath": "team1",
+			"vaultBasePath": "team1",
 		}}
 		stepParams := []StepParameters{
-			stepParam(secretName, "testBasePath", "vaultSecret", "pipelineA"),
-			stepParam(secretName, "testBasePath", "vaultSecret", "pipelineB"),
+			stepParam(secretName, "vaultSecret", "pipelineA"),
+			stepParam(secretName, "vaultSecret", "pipelineB"),
 		}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
@@ -88,7 +88,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("No BasePath is configured", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
-		stepParams := []StepParameters{stepParam(secretName, "", "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "pipelineA").Return(vaultData, nil)
 		config, err := getVaultConfig(vaultMock, stepConfig, stepParams)
@@ -98,14 +98,13 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 }
 
-func stepParam(name, refName, refType, refPath string) StepParameters {
+func stepParam(name, refType, refPath string) StepParameters {
 	return StepParameters{
 		Name: name,
 		ResourceRef: []ResourceReference{
 			ResourceReference{
-				Name: refName,
-				Type: refType,
-				Path: refPath,
+				Type:  refType,
+				Paths: []string{refPath},
 			},
 		},
 	}
