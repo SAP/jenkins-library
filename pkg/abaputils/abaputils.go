@@ -20,15 +20,16 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 	var error error
 
 	if options.Host != "" {
-		// Host, User and Password are directly provided -> check for host prefix (double https)
-		match, err := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, options.Host)
+		// Host, User and Password are directly provided -> check for host schema (double https)
+		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
-			return connectionDetails, errors.Wrap(err, "Host prefix validation failed")
+			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed")
 		}
+		var hostOdataURL = options.Host + oDataURL
 		if match {
-			connectionDetails.URL = options.Host + oDataURL
+			connectionDetails.URL = hostOdataURL
 		} else {
-			connectionDetails.URL = "https://" + options.Host + oDataURL
+			connectionDetails.URL = "https://" + hostOdataURL
 		}
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
