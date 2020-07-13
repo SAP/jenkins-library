@@ -86,8 +86,16 @@ func (m *ExecMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
 }
 
+func (m *ExecMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
 func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
+}
+
+func (m *ExecMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) SetDir(d string) {
@@ -183,6 +191,14 @@ func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand
 
 func (m *ShellMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
+}
+
+func (m *ShellMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
+func (m *ShellMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) Stderr(err io.Writer) {
