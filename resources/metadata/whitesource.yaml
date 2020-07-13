@@ -149,28 +149,28 @@ spec:
       description: Timeout in seconds until a HTTP call is forcefully terminated.
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 0
     - name: agentDownloadUrl
       type: string
       description: URL used to download the latest version of the WhiteSource Unified Agent.
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
     - name: configFilePath
       type: string
       description: Explicit path to the WhiteSource Unified Agent configuration file.
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./wss-generated-file.config
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: ./wss-unified-agent.config
     - name: reportDirectoryName
       type: string
       description: Name of the directory to save vulnerability/risk reports to

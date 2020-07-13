@@ -121,8 +121,13 @@ func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOp
 
 	// Get project token  if user did not specify one at runtime
 	if config.ProjectToken == "" {
-		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+		version := config.ProductVersion
+		if strings.Contains(config.ProductVersion, "-") {
+			version = strings.Split(config.ProductVersion, "-")[0]
+		}
+		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, version)
+		log.Entry().Infof("Attempting to resolve project token for project '%s'..", fullProjName)
+
 		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 		if err != nil {
 			return err
@@ -150,9 +155,9 @@ func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
 
 		// Auto generate a config file based on the working directory's contents.
 		// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-		if err := autoGenerateWhitesourceConfig(config, cmd); err != nil {
-			return err
-		}
+		// if err := autoGenerateWhitesourceConfig(config, cmd); err != nil {
+		// 	return err
+		// }
 
 		// Execute whitesource scan with unified agent jar file
 		if err := executeUAScan(config, cmd); err != nil {
@@ -254,6 +259,9 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 		if err != nil {
 			return err
 		}
+		if project == nil {
+			continue
+		}
 
 		// Make sure the project was updated in whitesource backend before downloading any reports
 		layout := "2006-01-02 15:04:05 +0000"
@@ -346,9 +354,9 @@ func downloadAgent(config *ScanOptions, cmd *command.Command) error {
 // Generated file name will be 'wss-generated-file.config'
 func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) error {
 	// TODO: Should we rely on -detect, or set the parameters manually?
-	if err := cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
-		return err
-	}
+	// if err := cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
+	// 	return err
+	// }
 
 	// Rename generated config file to config.ConfigFilePath parameter
 	if err := os.Rename("wss-generated-file.config", config.ConfigFilePath); err != nil {

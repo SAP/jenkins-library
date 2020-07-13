@@ -196,6 +196,10 @@ func (s *System) GetProjectVitals(projectToken string) (*Project, error) {
 		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
+	if len(wsResponse.ProjectVitals) == 0 {
+		return nil, nil
+	}
+
 	return &wsResponse.ProjectVitals[0], nil
 }
 
