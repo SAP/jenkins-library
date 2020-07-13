@@ -378,7 +378,7 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 	return e
 }
 
-// converts container options into a string slice as required by dockerExecute
+// OptionsAsStringSlice converts container options into a string slice as required by dockerExecute
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
