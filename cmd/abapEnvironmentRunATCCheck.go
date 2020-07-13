@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -230,7 +231,8 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		}
 		var abapServiceKey cloudfoundry.ServiceKey
-		abapServiceKey, err = cloudfoundry.ReadServiceKeyAbapEnvironment(cfconfig, true)
+		cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+		abapServiceKey, err = cf.ReadServiceKeyAbapEnvironment(cfconfig, true)
 		if err != nil {
 			return details, fmt.Errorf("Reading Service Key failed: %w", err)
 		}
@@ -241,7 +243,15 @@ func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetai
 	}
 	details.User = config.Username
 	details.Password = config.Password
-	details.URL = config.Host
+	matchedkey, err := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, config.Host)
+	if err != nil {
+		return details, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
+	}
+	if matchedkey {
+		details.URL = config.Host
+	} else {
+		details.URL = "https://" + config.Host
+	}
 	return details, err
 }
 

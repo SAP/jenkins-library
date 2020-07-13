@@ -26,5 +26,5 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.VirtualFrameBuffer)
+	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer)
 }

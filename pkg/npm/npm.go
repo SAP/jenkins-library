@@ -23,7 +23,7 @@ type Execute struct {
 type Executor interface {
 	FindPackageJSONFiles() []string
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
-	RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error
+	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
 }
@@ -128,7 +128,7 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
-func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
+func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error {
 	packageJSONFiles := exec.FindPackageJSONFiles()
 	execRunner := exec.Utils.GetExecRunner()
 
@@ -153,7 +153,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 		}
 
 		for _, packageJSON := range packagesWithScript {
-			err = exec.executeScript(packageJSON, script, runOptions)
+			err = exec.executeScript(packageJSON, script, runOptions, scriptOptions)
 			if err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 	return nil
 }
 
-func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string) error {
+func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string, scriptOptions []string) error {
 	execRunner := exec.Utils.GetExecRunner()
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
@@ -186,6 +186,11 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 	npmRunArgs := []string{"run", script}
 	if len(runOptions) > 0 {
 		npmRunArgs = append(npmRunArgs, runOptions...)
+	}
+
+	if len(scriptOptions) > 0 {
+		npmRunArgs = append(npmRunArgs, "--")
+		npmRunArgs = append(npmRunArgs, scriptOptions...)
 	}
 
 	err = execRunner.RunExecutable("npm", npmRunArgs...)
