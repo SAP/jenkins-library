@@ -43,6 +43,11 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             stepParameters.healthExecuteCheck = m
         })
 
+        helper.registerAllowedMethod('multicloudDeploy', [Map.class], {m ->
+            stepsCalled.add('multicloudDeploy')
+            stepParameters.multicloudDeploy = m
+        })
+
         helper.registerAllowedMethod('cloudFoundryDeploy', [Map.class], {m ->
             stepsCalled.add('cloudFoundryDeploy')
             stepParameters.cloudFoundryDeploy = m
@@ -67,6 +72,19 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             juStabUtils: utils
         )
         assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'))))
+    }
+
+    @Test
+    void testReleaseStageMultiCloud() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            multicloudDeploy: true,
+            healthExecuteCheck: true
+        )
+
+        assertThat(stepsCalled, hasItems('multicloudDeploy', 'healthExecuteCheck'))
     }
 
     @Test
