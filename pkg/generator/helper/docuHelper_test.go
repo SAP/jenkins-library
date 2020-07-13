@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 
@@ -36,6 +35,78 @@ func TestReadAndAdjustTemplate(t *testing.T) {
 				assert.NotContains(t, content, c.y)
 			}
 		}
+	})
+}
+
+func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, error) {
+	meta1 := `# ${docGenStepName}
+
+	## ${docGenDescription}
+	
+	## Prerequisites
+	
+	none
+
+	## ${docJenkinsPluginDependencies}
+	
+	## ${docGenParameters}
+	
+	## ${docGenConfiguration}
+	
+	## Side effects
+	
+	none
+	
+	## Exceptions
+	
+	none
+	
+	## Example
+
+	none
+`
+	switch docTemplateFilePath {
+	case "testStep.md":
+		return ioutil.NopCloser(strings.NewReader(meta1)), nil
+	default:
+		return ioutil.NopCloser(strings.NewReader("")), fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
+	}
+}
+
+func TestStepOutputs(t *testing.T) {
+	t.Run("no resources", func(t *testing.T) {
+		stepData := config.StepData{Spec: config.StepSpec{Outputs: config.StepOutputs{Resources: []config.StepResources{}}}}
+		result := stepOutputs(&stepData)
+		assert.Equal(t, "", result)
+	})
+
+	t.Run("with resources", func(t *testing.T) {
+		stepData := config.StepData{Spec: config.StepSpec{Outputs: config.StepOutputs{Resources: []config.StepResources{
+			{Name: "commonPipelineEnvironment", Type: "piperEnvironment", Parameters: []map[string]interface{}{{"name": "param1"}, {"name": "param2"}}},
+			{
+				Name: "influxName",
+				Type: "influx",
+				Parameters: []map[string]interface{}{
+					{"name": "influx1", "fields": []map[string]interface{}{
+						{"name": "1_1"},
+						{"name": "1_2"},
+					}},
+					{"name": "influx2", "fields": []map[string]interface{}{
+						{"name": "2_1"},
+						{"name": "2_2"},
+					}},
+				},
+			},
+		}}}}
+		result := stepOutputs(&stepData)
+		assert.Contains(t, result, "## Step outputs")
+		assert.Contains(t, result, "| influxName |")
+		assert.Contains(t, result, "influx1<br /><ul>")
+		assert.Contains(t, result, "influx2<br /><ul>")
+		assert.Contains(t, result, "<li>1_1</li>")
+		assert.Contains(t, result, "<li>1_2</li>")
+		assert.Contains(t, result, "<li>2_1</li>")
+		assert.Contains(t, result, "<li>2_2</li>")
 	})
 }
 
@@ -165,6 +236,153 @@ func TestCreateParameterDetails(t *testing.T) {
 	assert.Contains(t, res, "steps")
 }
 
+func TestFormatDefault(t *testing.T) {
+	tt := []struct {
+		param         config.StepParameters
+		jenkinsParams []string
+		expected      string
+		contains      []string
+	}{
+		{param: config.StepParameters{Name: "test1"}, jenkinsParams: []string{}, expected: "`$PIPER_test1` (if set)"},
+		{param: config.StepParameters{Name: "jenkins1"}, jenkinsParams: []string{"jenkins1"}, expected: ""},
+		{
+			param:         config.StepParameters{Name: "test1", Default: []conditionDefault{{key: "key1", value: "val1", def: "def1"}, {key: "key2", value: "val2", def: "def2"}}},
+			jenkinsParams: []string{},
+			contains:      []string{"key1=`val1`: `def1`", "key2=`val2`: `def2`"},
+		},
+		{
+			param:         config.StepParameters{Name: "test1", Default: []interface{}{conditionDefault{key: "key1", value: "val1", def: "def1"}, "def2"}},
+			jenkinsParams: []string{},
+			contains:      []string{"key1=`val1`: `def1`", "- `def2`"},
+		},
+		{
+			param:         config.StepParameters{Name: "test1", Default: map[string]string{"key1": "def1", "key2": "def2"}},
+			jenkinsParams: []string{},
+			contains:      []string{"`key1`: `def1`", "`key2`: `def2`"},
+		},
+		{param: config.StepParameters{Name: "test1", Default: ""}, jenkinsParams: []string{}, expected: "`''`"},
+		{param: config.StepParameters{Name: "test1", Default: "def1"}, jenkinsParams: []string{}, expected: "`def1`"},
+		{param: config.StepParameters{Name: "test1", Default: 1}, jenkinsParams: []string{}, expected: "`1`"},
+	}
+
+	for _, test := range tt {
+		if len(test.contains) > 0 {
+			res := formatDefault(test.param, test.jenkinsParams)
+			for _, check := range test.contains {
+				assert.Contains(t, res, check)
+			}
+
+		} else {
+			assert.Equal(t, test.expected, formatDefault(test.param, test.jenkinsParams))
+		}
+
+	}
+}
+
+func TestAliasList(t *testing.T) {
+	tt := []struct {
+		aliases  []config.Alias
+		expected string
+		contains []string
+	}{
+		{aliases: []config.Alias{}, expected: "-"},
+		{aliases: []config.Alias{{Name: "alias1"}}, expected: "`alias1`"},
+		{aliases: []config.Alias{{Name: "alias1", Deprecated: true}}, expected: "`alias1` (**deprecated**)"},
+		{aliases: []config.Alias{{Name: "alias1"}, {Name: "alias2", Deprecated: true}}, contains: []string{"- `alias1`", "- `alias2` (**deprecated**)"}},
+	}
+
+	for _, test := range tt {
+		if len(test.contains) > 0 {
+			res := aliasList(test.aliases)
+			for _, check := range test.contains {
+				assert.Contains(t, res, check)
+			}
+		} else {
+			assert.Equal(t, test.expected, aliasList(test.aliases))
+		}
+	}
+}
+
+func TestPossibleValueList(t *testing.T) {
+	tt := []struct {
+		possibleValues []interface{}
+		expected       string
+		contains       []string
+	}{
+		{possibleValues: []interface{}{}, expected: ""},
+		{possibleValues: []interface{}{"poss1", 0}, contains: []string{"- `poss1`", "- `0`"}},
+	}
+
+	for _, test := range tt {
+		if len(test.contains) > 0 {
+			res := possibleValueList(test.possibleValues)
+			for _, check := range test.contains {
+				assert.Contains(t, res, check)
+			}
+		} else {
+			assert.Equal(t, test.expected, possibleValueList(test.possibleValues))
+		}
+	}
+}
+
+func TestScopeDetails(t *testing.T) {
+	tt := []struct {
+		scope    []string
+		contains []string
+	}{
+		{scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, contains: []string{"<li>- [X] parameter</li>", "<li>- [X] general</li>", "<li>- [X] steps</li>", "<li>- [X] stages</li>"}},
+		{scope: []string{}, contains: []string{"<li>- [ ] parameter</li>", "<li>- [ ] general</li>", "<li>- [ ] steps</li>", "<li>- [ ] stages</li>"}},
+	}
+
+	for _, test := range tt {
+		res := scopeDetails(test.scope)
+
+		for _, c := range test.contains {
+			assert.Contains(t, res, c)
+		}
+	}
+
+}
+
+func TestResourceReferenceDetails(t *testing.T) {
+	tt := []struct {
+		resourceRef []config.ResourceReference
+		expected    string
+		contains    []string
+	}{
+		{resourceRef: []config.ResourceReference{}, expected: "none"},
+		{
+			resourceRef: []config.ResourceReference{
+				{Name: "commonPipelineEnvironment", Aliases: []config.Alias{}, Type: "", Param: "testParam"},
+			},
+			expected: "_commonPipelineEnvironment_:<br />&nbsp;&nbsp;reference to: `testParam`<br />",
+		},
+		{
+			resourceRef: []config.ResourceReference{
+				{Name: "testCredentialId", Aliases: []config.Alias{}, Type: "secret", Param: "password"},
+			},
+			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: `testCredentialId`<br />&nbsp;&nbsp;reference to: `password`<br />",
+		},
+		{
+			resourceRef: []config.ResourceReference{
+				{Name: "testCredentialId", Aliases: []config.Alias{{Name: "alias1"}, {Name: "alias2", Deprecated: true}}, Type: "secret", Param: "password"},
+			},
+			contains: []string{"&nbsp;&nbsp;aliases:<br />", "&nbsp;&nbsp;- `alias1`<br />", "&nbsp;&nbsp;- `alias2` (**Deprecated**)<br />"},
+		},
+	}
+
+	for _, test := range tt {
+		if len(test.contains) > 0 {
+			res := resourceReferenceDetails(test.resourceRef)
+			for _, check := range test.contains {
+				assert.Contains(t, res, check)
+			}
+		} else {
+			assert.Equal(t, test.expected, resourceReferenceDetails(test.resourceRef))
+		}
+	}
+}
+
 func TestConsolidateConditionalParameters(t *testing.T) {
 	stepData := config.StepData{
 		Spec: config.StepSpec{
@@ -269,117 +487,20 @@ func TestConsolidateContextParameters(t *testing.T) {
 
 }
 
-var expectedResultDocument string = "# testStep\n\n\t## Description\n\nLong Test description\n\n\t\n\t" +
-	"## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t" +
-	"## Parameters\n\n| name | mandatory | default | possible values |\n" +
-	"| ---- | --------- | ------- | --------------- |\n" +
-	"| `param0` | No | `val0` |  |\n" +
-	"| `param1` | No |  |  |\n" +
-	"| `param2` | Yes |  |  |\n" +
-	"| `script` | Yes |  |  |\n" +
-	"| `verbose` | No | `false` | `true`, `false` |\n\n" +
-	" * `param0`: param0 description\n" +
-	" * `param1`: param1 description\n" +
-	" * `param2`: param1 description\n" +
-	" * `script`: The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` for retrieving, e.g. configuration parameters.\n" +
-	" * `verbose`: verbose output\n\n\t\n\t" +
-	"## Step Configuration\n\nWe recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n" +
-	"In following sections of the config.yml the configuration is possible:\n\n" +
-	"| parameter | general | step/stage |\n" +
-	"| --------- | ------- | ---------- |\n" +
-	"| `param0` | X |  |\n" +
-	"| `param1` |  |  |\n" +
-	"| `param2` |  |  |\n" +
-	"| `verbose` | X |  |\n\n\t\n\t" +
-	"## Side effects\n\t\n\tnone\n\t\n\t" +
-	"## Exceptions\n\t\n\tnone\n\t\n\t" +
-	"## Example\n\n\tnone\n"
-
-func configMetaDataMock(name string) (io.ReadCloser, error) {
-	meta1 := `metadata:
-  name: testStep
-  description: Test description
-  longDescription: |
-    Long Test description
-spec:
-  inputs:
-    params:
-      - name: param0
-        type: string
-        description: param0 description
-        default: val0
-        scope:
-        - GENERAL
-        - PARAMETERS
-        mandatory: true
-      - name: param1
-        type: string
-        description: param1 description
-        scope:
-        - PARAMETERS
-      - name: param2
-        type: string
-        description: param1 description
-        scope:
-        - PARAMETERS
-        mandatory: true
-`
-	var r string
-	switch name {
-	case "test.yaml":
-		r = meta1
-	default:
-		r = ""
+func TestSetDefaultAndPossisbleValues(t *testing.T) {
+	stepData := config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{Parameters: []config.StepParameters{
+				{Name: "boolean", Type: "bool"},
+				{Name: "integer", Type: "int"},
+			}},
+		},
 	}
-	return ioutil.NopCloser(strings.NewReader(r)), nil
-}
+	setDefaultAndPossisbleValues(&stepData)
+	assert.Equal(t, false, stepData.Spec.Inputs.Parameters[0].Default)
+	assert.Equal(t, 0, stepData.Spec.Inputs.Parameters[1].Default)
+	assert.Equal(t, []interface{}{true, false}, stepData.Spec.Inputs.Parameters[0].PossibleValues)
 
-func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, error) {
-	meta1 := `# ${docGenStepName}
-
-	## ${docGenDescription}
-	
-	## Prerequisites
-	
-	none
-
-	## ${docJenkinsPluginDependencies}
-	
-	## ${docGenParameters}
-	
-	## ${docGenConfiguration}
-	
-	## Side effects
-	
-	none
-	
-	## Exceptions
-	
-	none
-	
-	## Example
-
-	none
-`
-	switch docTemplateFilePath {
-	case "testStep.md":
-		return ioutil.NopCloser(strings.NewReader(meta1)), nil
-	default:
-		return ioutil.NopCloser(strings.NewReader("")), fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
-	}
-}
-
-var resultDocumentContent string
-
-func docFileWriterMock(docTemplateFilePath string, data []byte, perm os.FileMode) error {
-
-	resultDocumentContent = string(data)
-	switch docTemplateFilePath {
-	case "testStep.md":
-		return nil
-	default:
-		return fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
-	}
 }
 
 func TestSortStepParameters(t *testing.T) {
