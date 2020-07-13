@@ -123,6 +123,6 @@ void call(Map parameters = [:]) {
             }
             index++
         }
-        runClosures(e2ETests, config.parallelExecution, "end to end tests", script)
+        runClosures(e2ETests, config.parallelExecution, script, "end to end tests")
     }
 }
