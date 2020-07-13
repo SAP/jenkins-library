@@ -9,6 +9,8 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
+    /** Can perform both to cloud foundry and neo targets. Preferred over cloudFoundryDeploy and neoDeploy, if configured. */
+    'multicloudDeploy',
     /** For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org. */
     'cloudFoundryDeploy',
     /** Performs health check in order to prove that deployment was successful. */
@@ -19,7 +21,6 @@ import static com.sap.piper.Prerequisites.checkScript
     'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
-    'multicloudDeploy',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -29,8 +30,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'Release')
 void call(Map parameters = [:]) {
-
-    echo "dbg>> hello"
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
@@ -55,17 +54,11 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        echo "dbg>> config ${config.toString()}"
-
+        // Prefer the newer multiCloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
-            echo "dbg>> multicloudDeploy"
-            //todo use config of cf and neo steps if avilable?
-
-            multicloudDeploy(
-                script: script,
-                enableZeroDowntimeDeployment: true,
-                stage: stageName
-            )
+            durationMeasure(script: script, measurementName: 'deploy_release_multicloud_duration') {
+                multicloudDeploy(script: script, stage: stageName)
+            }
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
