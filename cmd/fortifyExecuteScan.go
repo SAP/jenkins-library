@@ -832,7 +832,8 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		if len(t["sourcepath"]) > 0 {
 			options = append(options, "-sourcepath", t["sourcepath"])
 		}
-
+	case "gradle":
+		options = append(options, "-gradle", `gradle assemble`)
 	case "pip":
 		if len(t["autoClasspath"]) > 0 {
 			options = append(options, "-python-path", t["autoClasspath"])
@@ -852,9 +853,7 @@ func appendToOptions(config *fortifyExecuteScanOptions, options []string, t map[
 		options = append(options, "-exclude", t["exclude"])
 	}
 
-	log.Entry().Info("Splitting src:", t)
-	options = append(options, strings.Split(t["src"], ":")...)
-	return options
+	return append(options, strings.Split(t["src"], ":")...)
 }
 
 func getSuppliedOrDefaultList(suppliedList, defaultList []string) []string {
@@ -895,17 +894,17 @@ func ensureAuthEntitiesExist(projectVersionId int64, sys fortify.System, config 
 	}
 
 	// For each ensureId in config.AuthEntityIDs, ensure that it exists in the current project version's collection of auth entities.
-	for _, ensureIdStr := range strings.Split(config.AuthEntityIDs, ",") {
+	for _, ensureIDStr := range strings.Split(config.AuthEntityIDs, ",") {
 		found := false
-		ensureIdStr = strings.TrimSpace(ensureIdStr)
-		ensureId, err := strconv.Atoi(ensureIdStr)
+		ensureIDStr = strings.TrimSpace(ensureIDStr)
+		ensureID, err := strconv.Atoi(ensureIDStr)
 
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("Failed to convert entity ID to int: %s", ensureIdStr)
+			log.Entry().WithError(err).Fatalf("Failed to convert entity ID to int: %s", ensureIDStr)
 		}
 
 		for _, entity := range entityList {
-			if entity.ID == int64(ensureId) {
+			if entity.ID == int64(ensureID) {
 				found = true
 				break
 			}
@@ -913,7 +912,7 @@ func ensureAuthEntitiesExist(projectVersionId int64, sys fortify.System, config 
 
 		if !found {
 			newEntity := &models.AuthenticationEntity{
-				ID:     int64(ensureId),
+				ID:     int64(ensureID),
 				IsLdap: true,
 			}
 			err := sys.UpdateCollectionAuthEntityOfProjectVersion(projectVersionId, []*models.AuthenticationEntity{newEntity})
