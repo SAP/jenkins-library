@@ -91,12 +91,7 @@ func docGenDescription(stepData *config.StepData) string {
 	description += "### Jenkins pipelines\n\n```groovy\n"
 	description += fmt.Sprintf("%v script: this\n```\n", stepData.Metadata.Name)
 	description += "### Command line\n\n```\n"
-<<<<<<< HEAD
 	description += fmt.Sprintf("piper %v\n```\n\n", stepData.Metadata.Name)
-=======
-	description += fmt.Sprintf("piper %v <optional: parameters/flags>\n```\n\n", stepData.Metadata.Name)
-	description += "### Command line\n\n```\n"
->>>>>>> 82f9f1efcd5c2737ee81118bd315bd3a12655e1a
 	description += stepOutputs(stepData)
 	return description
 }
