@@ -9,7 +9,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    /** Can perform both to cloud foundry and neo targets. Preferred over cloudFoundryDeploy and neoDeploy, if configured. */
+    /** Can perform both deployments to cloud foundry and neo targets. Preferred over cloudFoundryDeploy and neoDeploy, if configured. */
     'multicloudDeploy',
     /** For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org. */
     'cloudFoundryDeploy',
@@ -69,18 +69,18 @@ void call(Map parameters = [:]) {
 
         // Prefer the newer multicloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
-            durationMeasure(script: script, measurementName: 'deploy_release_multicloud_duration') {
+            durationMeasure(script: script, measurementName: 'deploy_test_multicloud_duration') {
                 multicloudDeploy(script: script, stage: stageName)
             }
         } else {
             if (config.cloudFoundryDeploy) {
-                durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
+                durationMeasure(script: script, measurementName: 'deploy_test_cf_duration') {
                     cloudFoundryDeploy script: script
                 }
             }
 
             if (config.neoDeploy) {
-                durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
+                durationMeasure(script: script, measurementName: 'deploy_test_neo_duration') {
                     neoDeploy script: script
                 }
             }
