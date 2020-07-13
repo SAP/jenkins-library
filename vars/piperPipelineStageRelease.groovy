@@ -54,7 +54,7 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        // Prefer the newer multiCloudDeploy step if it is configured as it is more capable
+        // Prefer the newer multicloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_release_multicloud_duration') {
                 multicloudDeploy(script: script, stage: stageName)
