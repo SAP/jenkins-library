@@ -99,7 +99,7 @@ func TestStepOutputs(t *testing.T) {
 			},
 		}}}}
 		result := stepOutputs(&stepData)
-		assert.Contains(t, result, "## Step outputs")
+		assert.Contains(t, result, "## Outputs")
 		assert.Contains(t, result, "| influxName |")
 		assert.Contains(t, result, "measurement `influx1`<br /><ul>")
 		assert.Contains(t, result, "measurement `influx2`<br /><ul>")
