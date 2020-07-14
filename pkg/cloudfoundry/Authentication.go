@@ -10,13 +10,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-var c command.ExecRunner = &command.Command{}
-
 //LoginCheck checks if user is logged in to Cloud Foundry.
 //If user is not logged in 'cf api' command will return string that contains 'User is not logged in' only if user is not logged in.
 //If the returned string doesn't contain the substring 'User is not logged in' we know he is logged in.
-func LoginCheck(options LoginOptions, c command.ExecRunner) (bool, error) {
+func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
 	var err error
+
+	_c := cf.Exec
+
+	if _c == nil {
+		_c = &command.Command{}
+	}
 
 	if options.CfAPIEndpoint == "" {
 		return false, errors.New("Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
@@ -25,12 +29,26 @@ func LoginCheck(options LoginOptions, c command.ExecRunner) (bool, error) {
 	//Check if logged in --> Cf api command responds with "not logged in" if positive
 	var cfCheckLoginScript = append([]string{"api", options.CfAPIEndpoint}, options.CfAPIOpts...)
 
+	defer func() {
+		// We set it back to what is set from the generated stub. Of course this is not
+		// fully accurate in case we create our own instance above (nothing handed in via
+		// the receiver).
+		// Would be better to remember the old stdout and set back to this.
+		// But command.Command does not allow to get the currently set
+		// stdout handler.
+		// Reason for changing the output stream here: we need to parse the output
+		// of the command issued here in order to check if we are already logged in.
+		// This is expected to change soon to a boolean variable where we remember the
+		// login state.
+		_c.Stdout(log.Writer())
+	}()
+
 	var cfLoginBytes bytes.Buffer
-	c.Stdout(&cfLoginBytes)
+	_c.Stdout(&cfLoginBytes)
 
 	var result string
 
-	err = c.RunExecutable("cf", cfCheckLoginScript...)
+	err = _c.RunExecutable("cf", cfCheckLoginScript...)
 
 	if err != nil {
 		return false, fmt.Errorf("Failed to check if logged in: %w", err)
@@ -52,9 +70,14 @@ func LoginCheck(options LoginOptions, c command.ExecRunner) (bool, error) {
 
 //Login logs user in to Cloud Foundry via cf cli.
 //Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
-func Login(options LoginOptions, c command.ExecRunner) error {
-
+func (cf *CFUtils) Login(options LoginOptions) error {
 	var err error
+
+	_c := cf.Exec
+
+	if _c == nil {
+		_c = &command.Command{}
+	}
 
 	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
@@ -62,7 +85,7 @@ func Login(options LoginOptions, c command.ExecRunner) error {
 
 	var loggedIn bool
 
-	loggedIn, err = LoginCheck(options, c)
+	loggedIn, err = cf.LoginCheck(options)
 
 	if loggedIn == true {
 		return err
@@ -82,7 +105,7 @@ func Login(options LoginOptions, c command.ExecRunner) error {
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-		err = c.RunExecutable("cf", cfLoginScript...)
+		err = _c.RunExecutable("cf", cfLoginScript...)
 	}
 
 	if err != nil {
@@ -94,12 +117,19 @@ func Login(options LoginOptions, c command.ExecRunner) error {
 
 //Logout logs User out of Cloud Foundry
 //Logout can be perforned via 'cf logout' command regardless if user is logged in or not
-func Logout() error {
+func (cf *CFUtils) Logout() error {
+
+	_c := cf.Exec
+
+	if _c == nil {
+		_c = &command.Command{}
+	}
+
 	var cfLogoutScript = "logout"
 
 	log.Entry().Info("Logging out of Cloud Foundry")
 
-	err := c.RunExecutable("cf", cfLogoutScript)
+	err := _c.RunExecutable("cf", cfLogoutScript)
 	if err != nil {
 		return fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
 	}
@@ -116,4 +146,14 @@ type LoginOptions struct {
 	Password      string
 	CfAPIOpts     []string
 	CfLoginOpts   []string
+}
+
+// CFUtils ...
+type CFUtils struct {
+	// In order to avoid clashes between parallel workflows requiring cf login/logout
+	// this instance of command.ExecRunner can be configured accordingly by settings the
+	// environment variables CF_HOME to distict directories.
+	// In order to ensure plugins installed to the cf cli are found environment variables
+	// CF_PLUGIN_HOME can be set accordingly.
+	Exec command.ExecRunner
 }

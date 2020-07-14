@@ -1,11 +1,8 @@
 package abaputils
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -23,7 +20,7 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 		// Host, User and Password are directly provided -> check for host schema (double https)
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
-			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed")
+			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
 		}
 		var hostOdataURL = options.Host + oDataURL
 		if match {
@@ -56,64 +53,35 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
 
 	var abapServiceKey AbapServiceKey
-	var serviceKeyBytes bytes.Buffer
+	var serviceKeyJSON string
 	var err error
 
-	//Logging into Cloud Foundry
-	config := cloudfoundry.LoginOptions{
-		CfAPIEndpoint: options.CfAPIEndpoint,
-		CfOrg:         options.CfOrg,
-		CfSpace:       options.CfSpace,
-		Username:      options.Username,
-		Password:      options.Password,
+	cfconfig := cloudfoundry.ServiceKeyOptions{
+		CfAPIEndpoint:     options.CfAPIEndpoint,
+		CfOrg:             options.CfOrg,
+		CfSpace:           options.CfSpace,
+		CfServiceInstance: options.CfServiceInstance,
+		CfServiceKeyName:  options.CfServiceKeyName,
+		Username:          options.Username,
+		Password:          options.Password,
 	}
 
-	err = cloudfoundry.Login(config, c)
+	cf := cloudfoundry.CFUtils{Exec: c}
 
-	c.Stdout(&serviceKeyBytes)
-	if err == nil {
-		// Reading Service Key
-		log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKeyName).Info("Read service key for service instance")
+	serviceKeyJSON, err = cf.ReadServiceKey(cfconfig)
 
-		cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKeyName}
-
-		err = c.RunExecutable("cf", cfReadServiceKeyScript...)
-
-	}
-	if err == nil {
-		var serviceKeyJSON string
-
-		if len(serviceKeyBytes.String()) > 0 {
-			var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-			serviceKeyJSON = strings.Join(lines[2:], "")
-		}
-
-		json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-		if abapServiceKey == (AbapServiceKey{}) {
-			return abapServiceKey, errors.New("Parsing the service key failed")
-		}
-
-		log.Entry().Info("Service Key read successfully")
-	}
 	if err != nil {
-		if cfLogoutOption == true {
-			var logoutErr error
-			logoutErr = cloudfoundry.Logout()
-			if logoutErr != nil {
-				return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-			}
-		}
-		return abapServiceKey, fmt.Errorf("Reading Service Key failed: %w", err)
+		// Executing cfReadServiceKeyScript failed
+		return abapServiceKey, err
 	}
 
-	// Logging out of CF
-	if cfLogoutOption {
-		var logoutErr error
-		logoutErr = cloudfoundry.Logout()
-		if logoutErr != nil {
-			return abapServiceKey, fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-		}
+	// parse
+	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
+	if abapServiceKey == (AbapServiceKey{}) {
+		return abapServiceKey, errors.New("Parsing the service key failed")
 	}
+
+	log.Entry().Info("Service Key read successfully")
 	return abapServiceKey, nil
 }
 
