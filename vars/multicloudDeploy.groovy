@@ -55,7 +55,7 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
-        def stageName = parameters.stage ?: env.STAGE_NAME
+        def stageName = parameters.stageName ?: env.STAGE_NAME
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
