@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -272,4 +274,197 @@ func TestTransportTimout(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 	})
+}
+
+func TestParseHTTPResponseBodyJSON(t *testing.T) {
+
+	type myJSONStruct struct {
+		FullName string `json:"full_name"`
+		Name     string `json:"name"`
+		Owner    struct {
+			Login string `json:"login"`
+		} `json:"owner"`
+	}
+
+	t.Run("parse JSON successfull", func(t *testing.T) {
+
+		json := `{"name":"Test Name","full_name":"test full name","owner":{"login": "octocat"}}`
+		// create a new reader with that JSON
+		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check correct parsing", func(t *testing.T) {
+				assert.Equal(t, myJSONStruct(myJSONStruct{FullName: "test full name", Name: "Test Name", Owner: struct {
+					Login string "json:\"login\""
+				}{Login: "octocat"}}), response)
+			})
+
+		}
+	})
+
+	t.Run("http response is nil", func(t *testing.T) {
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(nil, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "cannot parse HTTP response with value <nil>")
+		})
+
+	})
+
+	t.Run("wrong JSON formatting", func(t *testing.T) {
+
+		json := `{"name":"Test Name","full_name":"test full name";"owner":{"login": "octocat"}}`
+		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+		println(response.FullName)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be parsed as JSON: {\"name\":\"Test Name\",\"full_name\":\"test full name\";\"owner\":{\"login\": \"octocat\"}}: invalid character ';' after object key:value pair")
+		})
+
+	})
+
+	t.Run("IO read error", func(t *testing.T) {
+
+		mockReadCloser := mockReadCloser{}
+		// if Read is called, it will return error
+		mockReadCloser.On("Read", mock.AnythingOfType("[]uint8")).Return(0, fmt.Errorf("error reading"))
+		// if Close is called, it will return error
+		mockReadCloser.On("Close").Return(fmt.Errorf("error closing"))
+
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       &mockReadCloser,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be read: error reading")
+		})
+
+	})
+
+}
+
+func TestParseHTTPResponseBodyXML(t *testing.T) {
+
+	type myXMLStruct struct {
+		XMLName xml.Name `xml:"service"`
+		Text    string   `xml:",chardata"`
+		App     string   `xml:"app,attr"`
+		Atom    string   `xml:"atom,attr"`
+	}
+
+	t.Run("parse XML successfull", func(t *testing.T) {
+
+		myXML := `
+		<?xml version="1.0" encoding="utf-8"?>
+		<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
+		`
+		// create a new reader with that xml
+		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check correct parsing", func(t *testing.T) {
+				// assert.Equal(t, "<?xml version=\"1.0\" encoding=\"utf-8\"?><app:service xmlns:app=\"http://www.w3.org/2007/app\" xmlns:atom=\"http://www.w3.org/2005/Atom\"/>", response)
+				assert.Equal(t, myXMLStruct(myXMLStruct{XMLName: xml.Name{Space: "http://www.w3.org/2007/app", Local: "service"}, Text: "", App: "http://www.w3.org/2007/app", Atom: "http://www.w3.org/2005/Atom"}), response)
+			})
+
+		}
+	})
+
+	t.Run("http response is nil", func(t *testing.T) {
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(nil, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "cannot parse HTTP response with value <nil>")
+		})
+
+	})
+
+	t.Run("wrong XML formatting", func(t *testing.T) {
+
+		myXML := `
+		<?xml version="1.0" encoding="utf-8"?>
+		<app:service xmlns:app=http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
+		`
+		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be parsed as XML: \n\t\t<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\t\t<app:service xmlns:app=http://www.w3.org/2007/app\" xmlns:atom=\"http://www.w3.org/2005/Atom\"/>\n\t\t: XML syntax error on line 3: unquoted or missing attribute value in element")
+		})
+
+	})
+
+	t.Run("IO read error", func(t *testing.T) {
+
+		mockReadCloser := mockReadCloser{}
+		// if Read is called, it will return error
+		mockReadCloser.On("Read", mock.AnythingOfType("[]uint8")).Return(0, fmt.Errorf("error reading"))
+		// if Close is called, it will return error
+		mockReadCloser.On("Close").Return(fmt.Errorf("error closing"))
+
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       &mockReadCloser,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be read: error reading")
+		})
+
+	})
+
+}
+
+type mockReadCloser struct {
+	mock.Mock
+}
+
+func (m *mockReadCloser) Read(p []byte) (n int, err error) {
+	args := m.Called(p)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *mockReadCloser) Close() error {
+	args := m.Called()
+	return args.Error(0)
 }
