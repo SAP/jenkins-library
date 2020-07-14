@@ -101,7 +101,7 @@ func stepOutputs(stepData *config.StepData) string {
 		return ""
 	}
 
-	stepOutput := "\n## Step outputs\n\n"
+	stepOutput := "\n## Outputs\n\n"
 	stepOutput += "| output type | details |\n"
 	stepOutput += "| ----------- | ------- |\n"
 
