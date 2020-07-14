@@ -206,7 +206,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
     }
 
     @Test
@@ -243,7 +242,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
@@ -266,7 +264,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
