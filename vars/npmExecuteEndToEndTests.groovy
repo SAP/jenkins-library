@@ -106,7 +106,17 @@ void call(Map parameters = [:]) {
                 } catch (Exception e) {
                     error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
                 } finally {
-                    //TODO: Implement Report handling
+                    List cucumberFiles = findFiles(glob: "**/e2e/*.json")
+                    List junitFiles = findFiles(glob: "**/e2e/*.xml")
+
+                    if(cucumberFiles.size()>0) {
+                        testsPublishResults script: script, cucumber: [active: true, archive: true]
+                    } else if(junitFiles.size()>0){
+                        testsPublishResults script: script, junit: [active: true, archive: true]
+                    } else {
+                        echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
+                    }
+
                     utils.stashStageFiles(script, parameters.stage)
                 }
             }

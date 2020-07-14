@@ -53,6 +53,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
             }
             executedInParallel = true
         })
+        helper.registerAllowedMethod('findFiles', [Map.class], {return []})
 
         credentialsRule.reset()
             .withCredentials('testCred', 'test_cf', '********')
