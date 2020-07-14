@@ -543,6 +543,11 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+    cucumber:
+      pattern: '**/e2e/*.json'
+      allowEmptyResults: true
+      archive: false
+      active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
   tmsUpload:
