@@ -293,9 +293,9 @@ void call(Map parameters = [:]) {
 
 private void handleMTADeployment(Map config, script) {
     // set default mtar path
-    config = ConfigurationHelper.newInstance(this, config)
-        .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
-        .use()
+    if(!config.mtaPath) {
+        config.mtaPath = script.commonPipelineEnvironment.mtarFilePath ?: findMtar()
+    }
 
     dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
         deployMta(config)

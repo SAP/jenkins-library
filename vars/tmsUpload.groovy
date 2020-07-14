@@ -78,6 +78,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            .addIfEmpty('mtaPath', script.commonPipelineEnvironment.mtarFilePath)
             //mandatory parameters
             .withMandatoryProperty('mtaPath')
             .withMandatoryProperty('nodeName')
