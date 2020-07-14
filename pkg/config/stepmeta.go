@@ -369,6 +369,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 
 	return resourceParams
 }
+
 func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
 	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
 		if param.Type != "string" {

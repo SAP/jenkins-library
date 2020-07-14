@@ -32,8 +32,7 @@ func getVaultClientFromConfig(config StepConfig) (vaultClient, error) {
 	return &client, nil
 }
 
-func getVaultConfig(client vaultClient, config StepConfig, params []StepParameters) (map[string]interface{}, error) {
-	vaultConfig := map[string]interface{}{}
+func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) error {
 	for _, param := range params {
 
 		// we don't overwrite secrets that have already been set in any way
@@ -55,7 +54,7 @@ func getVaultConfig(client vaultClient, config StepConfig, params []StepParamete
 
 			secret, err := client.GetKvSecret(path.Join(basePath, vaultPath))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if secret == nil {
 				continue
@@ -63,10 +62,10 @@ func getVaultConfig(client vaultClient, config StepConfig, params []StepParamete
 
 			field := secret[param.Name]
 			if field != "" {
-				vaultConfig[param.Name] = field
+				config.Config[param.Name] = field
 				break
 			}
 		}
 	}
-	return vaultConfig, nil
+	return nil
 }
