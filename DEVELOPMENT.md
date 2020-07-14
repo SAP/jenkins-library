@@ -97,7 +97,7 @@ docker rm piper
 ## Generating step framework
 
 The steps are generated based on the yaml files in `resources/metadata/` with the following command
-`go run pkg/generator/step-metadata.go`.
+`go generate ./...` from the root of the project.
 
 The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
 Where the Tekton format was not sufficient some extenstions have been made.

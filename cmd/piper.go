@@ -1,5 +1,7 @@
 package cmd
 
+//go:generate go run ../pkg/generator/step-metadata.go --metadataDir=../resources/metadata/ --targetDir=../cmd/
+
 import (
 	"encoding/json"
 	"fmt"
