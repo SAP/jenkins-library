@@ -12,7 +12,11 @@ import (
 
 func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData) {
 
-	var c command.ExecRunner = &command.Command{}
+	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+
+	var c = cf.Exec
+
+	//var c command.ExecRunner = &command.Command{}
 
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
@@ -27,18 +31,18 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 		Password:      config.Password,
 	}
 
-	err = cloudfoundry.Login(loginOptions)
+	err = cf.Login(loginOptions)
 	if err == nil {
 		err = runCloudFoundryCreateService(&config, telemetryData, c)
 	}
 	if err != nil {
-		logouterr = cloudfoundry.Logout()
+		logouterr = cf.Logout()
 		if logouterr != nil {
 			log.Entry().WithError(logouterr).Fatal("step execution failed")
 		}
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
-	logouterr = cloudfoundry.Logout()
+	logouterr = cf.Logout()
 	if logouterr != nil {
 		log.Entry().WithError(logouterr).Fatal("step execution failed")
 	}
