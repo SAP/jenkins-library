@@ -2,11 +2,13 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/ghodss/yaml"
@@ -360,7 +362,16 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
 				if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
-					resourceParams[param.Name] = val
+					if param.Type != "string" {
+						var unmarshalledValue interface{}
+						err := json.Unmarshal([]byte(val), &unmarshalledValue)
+						if err != nil {
+							log.Entry().Debugf("Failed to unmarshal: %v", val)
+						}
+						resourceParams[param.Name] = unmarshalledValue
+					} else {
+						resourceParams[param.Name] = val
+					}
 				}
 			}
 		}
