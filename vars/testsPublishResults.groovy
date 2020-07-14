@@ -88,7 +88,7 @@ void call(Map parameters = [:]) {
 }
 
 def publishJUnitReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -104,7 +104,7 @@ def publishJUnitReport(Map settings = [:]) {
 }
 
 def publishJacocoReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -118,7 +118,7 @@ def publishJacocoReport(Map settings = [:]) {
 }
 
 def publishCoberturaReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -138,7 +138,7 @@ def publishCoberturaReport(Map settings = [:]) {
 
 // publish Performance Report using "Jenkins Performance Plugin" https://wiki.jenkins.io/display/JENKINS/Performance+Plugin
 def publishJMeterReport(Map settings = [:]){
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
 
         perfReport(
@@ -163,7 +163,7 @@ def publishJMeterReport(Map settings = [:]){
 }
 
 def publishCucumberReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
