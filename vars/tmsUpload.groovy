@@ -23,7 +23,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'stashContent',
     /**
-     * Defines the path to *.mtar for the upload to the Transport Management Service.
+     * Defines the path to *.mtar for the upload to the Transport Management Service. If not specified, it will use the mtar file created in mtaBuild.
      */
     'mtaPath',
     /**

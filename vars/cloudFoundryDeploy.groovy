@@ -124,7 +124,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'mtaExtensionDescriptor',
     /**
-     * Defines the path to *.mtar for deployment with the mtaDeployPlugin.
+     * Defines the path to *.mtar for deployment with the mtaDeployPlugin. If not specified, it will use the mta file created in mtaBuild or search for an mtar file in the workspace.
      */
     'mtaPath',
     /**
