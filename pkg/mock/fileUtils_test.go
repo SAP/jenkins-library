@@ -264,41 +264,27 @@ func TestStat(t *testing.T) {
 		info, err := files.Stat("tmp/dummy.txt")
 
 		if assert.NoError(t, err) {
-			t.Run("name", func(t *testing.T) {
-				// only the base name is returned.
-				assert.Equal(t, "dummy.txt", info.Name())
-			})
-			t.Run("dir", func(t *testing.T) {
-				assert.False(t, info.IsDir())
-			})
-			t.Run("mode", func(t *testing.T) {
-				// if not specified otherwise the 644 file mode is used.
-				assert.Equal(t, othersCanRead, info.Mode())
-			})
+			// only the base name is returned.
+			assert.Equal(t, "dummy.txt", info.Name())
+			assert.False(t, info.IsDir())
+			// if not specified otherwise the 644 file mode is used.
+			assert.Equal(t, othersCanRead, info.Mode())
 		}
 	})
 
 	t.Run("check implicit dir", func(t *testing.T) {
 		info, err := files.Stat("tmp")
 		if assert.NoError(t, err) {
-			t.Run("dir", func(t *testing.T) {
-				assert.True(t, info.IsDir())
-			})
-			t.Run("mode", func(t *testing.T) {
-				assert.Equal(t, othersCanReadAndExecute, info.Mode())
-			})
+			assert.True(t, info.IsDir())
+			assert.Equal(t, othersCanReadAndExecute, info.Mode())
 		}
 	})
 
 	t.Run("check explicit dir", func(t *testing.T) {
 		info, err := files.Stat("bin")
 		if assert.NoError(t, err) {
-			t.Run("dir", func(t *testing.T) {
-				assert.True(t, info.IsDir())
-			})
-			t.Run("mode", func(t *testing.T) {
-				assert.Equal(t, onlyMe, info.Mode())
-			})
+			assert.True(t, info.IsDir())
+			assert.Equal(t, onlyMe, info.Mode())
 		}
 	})
 }
