@@ -294,8 +294,6 @@ func (f *FilesMock) Stat(name string) (os.FileInfo, error) {
 	}
 
 	return fileInfoMock{
-		// mock is inacurat here since we return the full path, not only the basename
-		// (e.g. 'dir/name.txt' vs name.txt). Can be improved ...
 		name:  path.Base(name),
 		mode:  *props.mode,
 		size:  int64(len(*props.content)),
