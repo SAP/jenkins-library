@@ -42,6 +42,8 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath = ""
 
+    def abapRepositoryNames = []
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -55,6 +57,9 @@ class commonPipelineEnvironment implements Serializable {
     String changeDocumentId
 
     def reset() {
+
+        abapRepositoryNames = []
+
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
@@ -177,6 +182,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
     ]
 
     void writeToDisk(script) {
