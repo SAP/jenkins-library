@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -158,18 +159,26 @@ func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, 
 	return status, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c execRunner) (connectionDetailsHTTP, error) {
+func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
 
 	var connectionDetails connectionDetailsHTTP
 	var error error
 
 	if config.Host != "" {
 		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		matchedkey, error := regexp.MatchString(`^[hH][tT][tT][pP][sS]:\/\/.*`, config.Host)
+		if error != nil {
+			return connectionDetails, errors.New("Error occured while parsing the host parameter. Please check if this parameter has been seet correctly")
+		}
+		if matchedkey {
+			connectionDetails.URL = config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		} else {
+			connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		}
 		connectionDetails.User = config.Username
 		connectionDetails.Password = config.Password
 	} else {
-		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "" {
+		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 			return connectionDetails, err
 		}
@@ -185,7 +194,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	return connectionDetails, error
 }
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (serviceKey, error) {
+func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
 
 	var abapServiceKey serviceKey
 
@@ -203,7 +212,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	// Reading the Service Key via CF CLI
 	var serviceKeyBytes bytes.Buffer
 	c.Stdout(&serviceKeyBytes)
-	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKey}
+	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKeyName}
 	errorRunExecutable = c.RunExecutable("cf", cfReadServiceKeySlice...)
 	var serviceKeyJSON string
 	if len(serviceKeyBytes.String()) > 0 {
@@ -213,7 +222,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	if errorRunExecutable != nil {
 		return abapServiceKey, errorRunExecutable
 	}
-	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Read service key for service instance")
+	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKeyName", config.CfServiceKeyName).Info("Read service key for service instance")
 	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (serviceKey{}) {
 		return abapServiceKey, errors.New("Parsing the service key failed")

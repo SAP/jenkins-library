@@ -1,36 +1,107 @@
 package cloudfoundry
 
 import (
-	"testing"
-
+	"fmt"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
+func loginMockCleanup(m *mock.ExecMockRunner) {
+	m.ShouldFailOnCommand = map[string]error{}
+	m.StdoutReturn = map[string]string{}
+	m.Calls = []mock.ExecCall{}
+}
+
 func TestCloudFoundryLoginCheck(t *testing.T) {
-	t.Run("CF Login check: missing parameter", func(t *testing.T) {
+
+	m := &mock.ExecMockRunner{}
+
+	t.Run("CF Login check: missing endpoint parameter", func(t *testing.T) {
 		cfconfig := LoginOptions{}
-		loggedIn, err := LoginCheck(cfconfig)
-		assert.Equal(t, false, loggedIn)
+		cf := CFUtils{Exec: m}
+		loggedIn, err := cf.LoginCheck(cfconfig)
+		assert.False(t, loggedIn)
 		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
 	})
 
 	t.Run("CF Login check: failure case", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.ShouldFailOnCommand = map[string]error{"cf api.*": fmt.Errorf("Cannot perform login check")}
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
-		loggedIn, err := LoginCheck(cfconfig)
-		assert.Equal(t, false, loggedIn)
+		cf := CFUtils{Exec: m}
+		loggedIn, err := cf.LoginCheck(cfconfig)
+		assert.False(t, loggedIn)
 		assert.Error(t, err)
+		assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
+	})
+
+	t.Run("CF Login check: success case", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+		}
+		cf := CFUtils{Exec: m}
+		loggedIn, err := cf.LoginCheck(cfconfig)
+		if assert.NoError(t, err) {
+			assert.True(t, loggedIn)
+			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login check: with additional API options", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
+			CfAPIOpts: []string{"--skip-ssl-validation"},
+		}
+
+		cf := CFUtils{Exec: m}
+		loggedIn, err := cf.LoginCheck(cfconfig)
+		if assert.NoError(t, err) {
+			assert.True(t, loggedIn)
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{
+					Exec: "cf",
+					Params: []string{
+						"api",
+						"https://api.endpoint.com",
+						"--skip-ssl-validation",
+					}}}, m.Calls)
+		}
 	})
 }
 
 func TestCloudFoundryLogin(t *testing.T) {
+
+	m := &mock.ExecMockRunner{}
+
 	t.Run("CF Login: missing parameter", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
 		cfconfig := LoginOptions{}
-		err := Login(cfconfig)
+		cf := CFUtils{Exec: m}
+		err := cf.Login(cfconfig)
 		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
 	})
 	t.Run("CF Login: failure", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.StdoutReturn = map[string]string{"cf api .*": "Not logged in"}
+		m.ShouldFailOnCommand = map[string]error{"cf login .*": fmt.Errorf("wrong password or account does not exist")}
+
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 			CfSpace:       "testSpace",
@@ -38,14 +109,104 @@ func TestCloudFoundryLogin(t *testing.T) {
 			Username:      "testUser",
 			Password:      "testPassword",
 		}
-		err := Login(cfconfig)
-		assert.Error(t, err)
+
+		cf := CFUtils{Exec: m}
+		err := cf.Login(cfconfig)
+		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: wrong password or account does not exist") {
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"login",
+					"-a", "https://api.endpoint.com",
+					"-o", "testOrg",
+					"-s", "testSpace",
+					"-u", "testUser",
+					"-p", "testPassword",
+				}},
+			}, m.Calls)
+		}
 	})
+
+	t.Run("CF Login: success", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.StdoutReturn = map[string]string{"cf api:*": "Not logged in"}
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+		}
+		cf := CFUtils{Exec: m}
+		err := cf.Login(cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"login",
+					"-a", "https://api.endpoint.com",
+					"-o", "testOrg",
+					"-s", "testSpace",
+					"-u", "testUser",
+					"-p", "testPassword",
+				}},
+			}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login: with additional login options", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.StdoutReturn = map[string]string{"cf api:*": "Not logged in"}
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+			CfLoginOpts: []string{
+				// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
+				"--skip-ssl-validation",
+				"--origin", "ldap",
+			},
+			CfAPIOpts: []string{
+				"--skip-ssl-validation",
+			},
+		}
+		cf := CFUtils{Exec: m}
+		err := cf.Login(cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"api",
+					"https://api.endpoint.com",
+					"--skip-ssl-validation",
+				}},
+				mock.ExecCall{Exec: "cf", Params: []string{
+					"login",
+					"-a", "https://api.endpoint.com",
+					"-o", "testOrg",
+					"-s", "testSpace",
+					"-u", "testUser",
+					"-p", "testPassword",
+					"--skip-ssl-validation",
+					"--origin", "ldap",
+				}},
+			}, m.Calls)
+		}
+	})
+
 }
 
 func TestCloudFoundryLogout(t *testing.T) {
 	t.Run("CF Logout", func(t *testing.T) {
-		err := Logout()
+		cf := CFUtils{Exec: &mock.ExecMockRunner{}}
+		err := cf.Logout()
 		if err == nil {
 			assert.Equal(t, nil, err)
 		} else {
@@ -66,7 +227,8 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 			Password:          "testPassword",
 		}
 		var abapKey ServiceKey
-		abapKey, err := ReadServiceKeyAbapEnvironment(cfconfig, true)
+		cf := CFUtils{Exec: &command.Command{}}
+		abapKey, err := cf.ReadServiceKeyAbapEnvironment(cfconfig, true)
 		assert.Equal(t, "", abapKey.Abap.Password)
 		assert.Equal(t, "", abapKey.Abap.Username)
 		assert.Equal(t, "", abapKey.Abap.CommunicationArrangementID)

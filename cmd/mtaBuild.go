@@ -97,7 +97,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner,
+	e command.ExecRunner,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader,
 	npmExecutor npm.Executor) error {
@@ -205,7 +205,7 @@ func runMtaBuild(config mtaBuildOptions,
 	return err
 }
 
-func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
@@ -230,7 +230,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e execRunner) error {
+func addNpmBinToPath(e command.ExecRunner) error {
 	dir, _ := os.Getwd()
 	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")

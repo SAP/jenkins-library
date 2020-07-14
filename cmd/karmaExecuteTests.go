@@ -17,7 +17,7 @@ func karmaExecuteTests(config karmaExecuteTestsOptions, telemetryData *telemetry
 	runKarma(config, &c)
 }
 
-func runKarma(config karmaExecuteTestsOptions, command execRunner) {
+func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 	installCommandTokens := tokenize(config.InstallCommand)
 	command.SetDir(config.ModulePath)
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)

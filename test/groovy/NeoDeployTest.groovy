@@ -40,6 +40,7 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -55,7 +56,7 @@ class NeoDeployTest extends BasePiperTest {
         .around(stepRule)
         .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
-        .around(new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties']))
+        .around(fileExistsRule)
 
 
     private static warArchiveName = 'warArchive.war'
@@ -371,13 +372,12 @@ class NeoDeployTest extends BasePiperTest {
         // using this deploy mode 'account' and 'host' are provided by the properties file
         thrown.expectMessage(
             allOf(
-                containsString('ERROR - NO VALUE AVAILABLE FOR source'),
                 not(containsString('neo/host')),
                 not(containsString('neo/account'))))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile', source: warArchiveName)
     }
 
     @Test
@@ -387,7 +387,6 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage(
             allOf(
                 containsString('ERROR - NO VALUE AVAILABLE FOR:'),
-                containsString('source'),
                 containsString('neo/application'),
                 containsString('neo/runtime'),
                 containsString('neo/runtimeVersion'),
@@ -396,7 +395,7 @@ class NeoDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams')
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams', source: warArchiveName)
     }
 
     @Test
@@ -647,7 +646,7 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod("sh", [String],
             { cmd ->
-                if (cmd == 'cat logs/neo/*')
+                if (cmd.toString().contains('cat logs/neo/'))
                     throw new AbortException('Cannot provide logs.')
                 if (cmd.toString().contains('neo.sh deploy-mta'))
                     throw new AbortException('Something went wrong during neo deployment.')
@@ -673,5 +672,41 @@ class NeoDeployTest extends BasePiperTest {
                         propertiesFile: warPropertiesFileName],
                   deployMode: "$deployProps.deployMode",
                   source: archiveName)
+    }
+
+    @Test
+    public void DefaultMavenDeploymentModuleNoPomTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage(containsString('does not contain a pom file'))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+    }
+
+    @Test
+    public void DefaultMavenDeploymentModuleTest() {
+
+        helper.registerAllowedMethod('readMavenPom', [Map], { return [artifactId:'artifact', packaging: 'war'] })
+
+        fileExistsRule.registerExistingFile('./pom.xml')
+        fileExistsRule.registerExistingFile('./target/artifact.war')
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+        stepRule.step.neoDeploy([
+            script: nullScript,
+            deployMode: 'warParams',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                host: 'host',
+                account: 'account'
+            ]
+        ])
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher().hasProlog("neo.sh deploy")
+                .hasSingleQuotedOption('source', './target/artifact.war'))
     }
 }
