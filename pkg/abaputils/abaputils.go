@@ -11,7 +11,7 @@ import (
 )
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string, cfLogoutOption bool) (ConnectionDetailsHTTP, error) {
+func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string) (ConnectionDetailsHTTP, error) {
 
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
@@ -36,7 +36,7 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c, cfLogoutOption)
+		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c)
 		if error != nil {
 			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
@@ -49,8 +49,7 @@ func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c comma
 
 // ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
 // Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
-// the cfLogoutOption parameters gives the option to logout after reading ABAP communication arrangement or not.
-func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner, cfLogoutOption bool) (AbapServiceKey, error) {
+func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (AbapServiceKey, error) {
 
 	var abapServiceKey AbapServiceKey
 	var serviceKeyJSON string

@@ -23,36 +23,15 @@ func TestHostConfig(t *testing.T) {
 
 		execRunner := &mock.ExecMockRunner{}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
 			assert.Equal(t, "testPassword", con.Password)
-			assert.Equal(t, "https://api.endpoint.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL) // to be discussed --> does the ATC step need the OData Service or only the root URL?
+			assert.Equal(t, "https://api.endpoint.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})
-	// t.Run("Check Host: ABAP Endpoint without HTTPS prefix", func(t *testing.T) {
-	// 	config := abaputils.AbapEnvironmentOptions{
-	// 		Username: "testUser",
-	// 		Password: "testPassword",
-	// 		Host:     "https://api.endpoint.com",
-	// 	}
-	// 	options := abaputils.AbapEnvironmentRunATCCheckOptions{
-	// 		AbapEnvOptions: config,
-	// 	}
-
-	// 	execRunner := &mock.ExecMockRunner{}
-	// 	var con abaputils.ConnectionDetailsHTTP
-	// 	con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
-
-	// 	if error == nil {
-	// 		assert.Equal(t, "testUser", con.User)
-	// 		assert.Equal(t, "testPassword", con.Password)
-	// 		assert.Equal(t, "https://api.endpoint.com", con.URL)
-	// 		assert.Equal(t, "", con.XCsrfToken)
-	// 	}
-	// })
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
 		//Testing without CfOrg parameter
 		config := abaputils.AbapEnvironmentOptions{
@@ -69,14 +48,14 @@ func TestHostConfig(t *testing.T) {
 
 		execRunner := &mock.ExecMockRunner{}
 
-		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
 		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 
@@ -95,7 +74,7 @@ func TestHostConfig(t *testing.T) {
 		}
 		execRunner := &mock.ExecMockRunner{}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", false)
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)

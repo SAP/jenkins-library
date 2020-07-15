@@ -25,7 +25,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "", false)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "")
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
@@ -52,7 +52,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "", false)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "")
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
@@ -90,7 +90,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL, false)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
 
 		//then
 		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
@@ -126,7 +126,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL, false)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
 
 		//then
 		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
@@ -160,7 +160,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL, false)
+		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
 
 		//then
 		assert.Equal(t, "https://"+testURL+oDataURL, connectionDetails.URL)
@@ -188,7 +188,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		//when
 		var abapKey AbapServiceKey
 		var err error
-		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{}, true)
+		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{})
 
 		//then
 		assert.Equal(t, "", abapKey.Abap.Password)
