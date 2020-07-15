@@ -154,6 +154,7 @@ steps:
 				Name:        "pe1",
 				Scope:       []string{"STEPS"},
 				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "test_pe1"}},
+				Type:        "string",
 			},
 		}
 		secretMetadata := []StepSecrets{
