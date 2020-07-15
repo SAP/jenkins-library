@@ -123,8 +123,7 @@ void call(parameters = [:]) {
                         deployType: deploymentType,
                         cloudFoundry: target,
                         mtaExtensionDescriptor: target.mtaExtensionDescriptor,
-                        mtaExtensionCredentials: target.mtaExtensionCredentials,
-                        mtaPath: script.commonPipelineEnvironment.mtarFilePath,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials
                     )
                     if (runInIsolatedWorkspace) {
                         deploymentUtils.stashStageFiles(script, stageName)
