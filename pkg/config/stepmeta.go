@@ -361,7 +361,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams = getParameterValue(path, name, res, param)
+				resourceParams[param.Name] = getParameterValue(path, name, res, param)
 			}
 		}
 	}
@@ -369,22 +369,20 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func getParameterValue(path, name string, res ResourceReference, param StepParameters) map[string]interface{} {
-	resourceParams := map[string]interface{}{}
+func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
 	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
 		log.Entry().Info("Type: ", param.Type)
-		if param.Type == "[]string" {
+		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
 			if err != nil {
 				log.Entry().Debugf("Failed to unmarshal: %v", val)
 			}
-			resourceParams[param.Name] = unmarshalledValue
-		} else {
-			resourceParams[param.Name] = val
+			return unmarshalledValue
 		}
+		return val
 	}
-	return resourceParams
+	return nil
 }
 
 func envVarsAsMap(envVars []EnvVar) map[string]string {
