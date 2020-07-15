@@ -1,9 +1,5 @@
-import com.sap.piper.JenkinsUtils
-import com.sap.piper.Utils
-
-import hudson.AbortException
-
-import org.junit.Assert
+import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -19,12 +15,16 @@ class MulticloudDeployTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsMockStepRule neoDeployRule = new JenkinsMockStepRule(this, 'neoDeploy')
     private JenkinsMockStepRule cloudFoundryDeployRule = new JenkinsMockStepRule(this, 'cloudFoundryDeploy')
+    private JenkinsMockStepRule cloudFoundryCreateServiceRule = new JenkinsMockStepRule(this, 'cloudFoundryCreateService')
     private JenkinsReadMavenPomRule readMavenPomRule = new JenkinsReadMavenPomRule(this, 'test/resources/deploy')
 
     private Map neo1 = [:]
     private Map neo2 = [:]
     private Map cloudFoundry1 = [:]
     private Map cloudFoundry2 = [:]
+    private boolean executedOnKubernetes = false
+    private boolean executedOnNode = false
+    private boolean executedInParallel = false
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -34,10 +34,26 @@ class MulticloudDeployTest extends BasePiperTest {
         .around(stepRule)
         .around(neoDeployRule)
         .around(cloudFoundryDeployRule)
+        .around(cloudFoundryCreateServiceRule)
         .around(readMavenPomRule)
 
     @Before
     void init() {
+        helper.registerAllowedMethod("deleteDir", [], null)
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {params, body ->
+            executedOnKubernetes = true
+            body()
+        })
+        helper.registerAllowedMethod('node', [String.class, Closure.class], {s, body ->
+            executedOnNode = true
+            body()
+        })
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            map.each {key, value ->
+                value()
+            }
+            executedInParallel = true
+        })
 
         neo1 = [
                   host: 'test.deploy.host1.com',
@@ -52,19 +68,22 @@ class MulticloudDeployTest extends BasePiperTest {
               ]
 
         cloudFoundry1 = [
+                           apiEndpoint: 'apiEndpoint1',
                            appName:'testAppName1',
+                           credentialsId: 'cfCredentialsId1',
                            manifest: 'test.yml',
+                           mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext',
                            org: 'testOrg1',
-                           space: 'testSpace1',
-                           credentialsId: 'cfCredentialsId1'
+                           space: 'testSpace1'
                        ]
 
         cloudFoundry2 = [
+                            apiEndpoint: 'apiEndpoint2',
                             appName:'testAppName2',
+                            credentialsId: 'cfCredentialsId2',
                             manifest: 'test.yml',
                             org: 'testOrg2',
-                            space: 'testSpace2',
-                            credentialsId: 'cfCredentialsId2'
+                            space: 'testSpace2'
                         ]
 
         nullScript.commonPipelineEnvironment.configuration = [
@@ -85,6 +104,15 @@ class MulticloudDeployTest extends BasePiperTest {
             ],
             steps: [
                 cloudFoundryDeploy: [
+                    cloudFoundry : [
+                        apiEndpoint: 'globalApiEndpoint',
+                        appName:'globalAppName',
+                        credentialsId: 'globalCredentialsId',
+                        mtaExtensionDescriptor: 'globalTargetMtaDescriptor.mtaext',
+                        org: 'globalOrg',
+                        space: 'globalSpace'
+                    ],
+                    mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
                     deployTool: 'cf_native',
                     deployType: 'blue-green',
                     keepOldInstance: true,
@@ -95,6 +123,9 @@ class MulticloudDeployTest extends BasePiperTest {
                 ]
             ]
         ]
+
+        helper.registerAllowedMethod('echo', [CharSequence.class], {})
+
     }
 
     @Test
@@ -105,20 +136,6 @@ class MulticloudDeployTest extends BasePiperTest {
 
         thrown.expect(Exception)
         thrown.expectMessage('Deployment skipped because no targets defined!')
-
-        stepRule.step.multicloudDeploy(
-            script: nullScript
-        )
-    }
-
-    @Test
-    void errorNoSourceForNeoDeploymentTest() {
-
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = [neo1]
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
 
         stepRule.step.multicloudDeploy(
             script: nullScript
@@ -189,8 +206,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -207,8 +222,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -224,23 +237,12 @@ class MulticloudDeployTest extends BasePiperTest {
         assert neoDeployRule.hasParameter('warAction', 'rolling-update')
         assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo1)
-
-        assert neoDeployRule.hasParameter('script', nullScript)
-        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
-        assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo2)
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
     @Test
@@ -257,23 +259,109 @@ class MulticloudDeployTest extends BasePiperTest {
         assert neoDeployRule.hasParameter('warAction', 'rolling-update')
         assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo1)
-
-        assert neoDeployRule.hasParameter('script', nullScript)
-        assert neoDeployRule.hasParameter('warAction', 'rolling-update')
-        assert neoDeployRule.hasParameter('source', 'file.mtar')
         assert neoDeployRule.hasParameter('neo', neo2)
 
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
-
-        assert cloudFoundryDeployRule.hasParameter('script', nullScript)
-        assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
-        assert cloudFoundryDeployRule.hasParameter('deployTool', 'cf_native')
     }
 
+    @Test
+    void 'cfCreateServices calls cloudFoundryCreateService step with correct parameters'() {
+        stepRule.step.multicloudDeploy([
+            script          : nullScript,
+            cfCreateServices: [[apiEndpoint: 'http://mycf.org', serviceManifest: 'services-manifest.yml', manifestVariablesFiles: 'vars.yml', space: 'PerformanceTests', org: 'MyOrg', credentialsId: 'MyCred']],
+            source          : 'file.mtar'
+        ])
+
+        assert cloudFoundryCreateServiceRule.hasParameter('cloudFoundry', [
+            serviceManifest       : 'services-manifest.yml',
+            space                 : 'PerformanceTests',
+            org                   : 'MyOrg',
+            credentialsId         : 'MyCred',
+            apiEndpoint           : 'http://mycf.org',
+            manifestVariablesFiles: 'vars.yml'
+        ])
+    }
+
+    @Test
+    void 'cfCreateServices with parallelTestExecution defined in compatible parameter - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
+        nullScript.commonPipelineEnvironment.configuration.general['features'] = [parallelTestExecution: true]
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
+            source: 'file.mtar'
+        ])
+
+        assert closureRun != null
+    }
+
+    @Test
+    void 'cfCreateServices with parallelExecution defined - must run in parallel'() {
+        def closureRun = null
+
+        helper.registerAllowedMethod('error', [String.class], { s->
+            if (s == "Deployment skipped because no targets defined!") {
+                // This error is ok because in this test we're not interested in the deployment
+            } else {
+                throw new RuntimeException("Unexpected error in test with message: ${s}")
+            }
+        })
+        helper.registerAllowedMethod('parallel', [Map.class], {m -> closureRun = m})
+
+        nullScript.commonPipelineEnvironment.configuration.general = [parallelExecution: true]
+
+        stepRule.step.multicloudDeploy([
+            script: nullScript,
+            cfCreateServices: [[serviceManifest: 'services-manifest.yml', space: 'PerformanceTests', org: 'foo', credentialsId: 'foo']],
+            source: 'file.mtar'
+        ])
+
+        assert closureRun != null
+    }
+
+    @Test
+    void multicloudParallelOnK8sTest() {
+        binding.variables.env.POD_NAME = "name"
+
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            enableZeroDowntimeDeployment: true,
+            parallelExecution           : true,
+            source                      : 'file.mtar'
+        ])
+
+        assertTrue(executedInParallel)
+        assertTrue(executedOnKubernetes)
+        assertFalse(executedOnNode)
+
+    }
+
+    @Test
+    void multicloudParallelOnNodeTest() {
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            enableZeroDowntimeDeployment: true,
+            parallelExecution           : true,
+            source                      : 'file.mtar'
+        ])
+
+        assertTrue(executedInParallel)
+        assertTrue(executedOnNode)
+        assertFalse(executedOnKubernetes)
+
+    }
 }

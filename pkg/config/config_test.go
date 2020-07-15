@@ -154,6 +154,7 @@ steps:
 				Name:        "pe1",
 				Scope:       []string{"STEPS"},
 				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "test_pe1"}},
+				Type:        "string",
 			},
 		}
 		secretMetadata := []StepSecrets{
@@ -256,6 +257,21 @@ steps:
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_step_default", stepConfig.Config["p0"])
 		assert.Equal(t, "p1_conf", stepConfig.Config["p1"])
+	})
+
+	t.Run("Ignore alias if wrong type", func(t *testing.T) {
+		var c Config
+
+		stepParams := []StepParameters{
+			StepParameters{Name: "p0", Scope: []string{"GENERAL"}, Type: "bool", Aliases: []Alias{}},
+			StepParameters{Name: "p1", Scope: []string{"GENERAL"}, Type: "string", Aliases: []Alias{{Name: "p0/subParam"}}}}
+		testConf := "general:\n p0: true"
+
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{{}})
+
+		assert.NoError(t, err, "Error occurred but no error expected")
+		assert.Equal(t, true, stepConfig.Config["p0"])
+		assert.Equal(t, nil, stepConfig.Config["p1"])
 	})
 
 	t.Run("Failure case config", func(t *testing.T) {

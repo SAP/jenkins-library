@@ -2,11 +2,13 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/ghodss/yaml"
@@ -198,16 +200,19 @@ func (m *StepData) GetParameterFilters() StepFilters {
 // GetContextParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetContextParameterFilters() StepFilters {
 	var filters StepFilters
+	contextFilters := []string{}
 	for _, secret := range m.Spec.Inputs.Secrets {
-		filters.All = append(filters.All, secret.Name)
-		filters.General = append(filters.General, secret.Name)
-		filters.Steps = append(filters.Steps, secret.Name)
-		filters.Stages = append(filters.Stages, secret.Name)
-		filters.Parameters = append(filters.Parameters, secret.Name)
-		filters.Env = append(filters.Env, secret.Name)
+		contextFilters = append(contextFilters, secret.Name)
 	}
 
-	containerFilters := []string{}
+	if len(m.Spec.Inputs.Resources) > 0 {
+		for _, res := range m.Spec.Inputs.Resources {
+			if res.Type == "stash" {
+				contextFilters = append(contextFilters, "stashContent")
+				break
+			}
+		}
+	}
 	if len(m.Spec.Containers) > 0 {
 		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
@@ -219,19 +224,21 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 			}
 		}
 		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
-		containerFilters = append(containerFilters, parameterKeys...)
+		contextFilters = append(contextFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
-		containerFilters = append(containerFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
+		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
-	if len(containerFilters) > 0 {
-		filters.All = append(filters.All, containerFilters...)
-		filters.General = append(filters.General, containerFilters...)
-		filters.Steps = append(filters.Steps, containerFilters...)
-		filters.Stages = append(filters.Stages, containerFilters...)
-		filters.Parameters = append(filters.Parameters, containerFilters...)
+	if len(contextFilters) > 0 {
+		filters.All = append(filters.All, contextFilters...)
+		filters.General = append(filters.General, contextFilters...)
+		filters.Steps = append(filters.Steps, contextFilters...)
+		filters.Stages = append(filters.Stages, contextFilters...)
+		filters.Parameters = append(filters.Parameters, contextFilters...)
+		filters.Env = append(filters.Env, contextFilters...)
+
 	}
 	return filters
 }
@@ -268,7 +275,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			p["containerName"] = container.Name
 			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = envVarsAsStringSlice(container.EnvVars)
+			p["dockerEnvVars"] = envVarsAsMap(container.EnvVars)
 			p["dockerImage"] = container.Image
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
@@ -286,7 +293,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
+		root["sidecarEnvVars"] = envVarsAsMap(m.Spec.Sidecars[0].EnvVars)
 		root["sidecarImage"] = m.Spec.Sidecars[0].Image
 		root["sidecarName"] = m.Spec.Sidecars[0].Name
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
@@ -354,9 +361,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
-					resourceParams[param.Name] = val
-				}
+				resourceParams = getParameterValue(path, name, res, param)
 			}
 		}
 	}
@@ -364,10 +369,27 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func envVarsAsStringSlice(envVars []EnvVar) []string {
-	e := []string{}
+func getParameterValue(path, name string, res ResourceReference, param StepParameters) map[string]interface{} {
+	resourceParams := map[string]interface{}{}
+	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
+		if param.Type != "string" {
+			var unmarshalledValue interface{}
+			err := json.Unmarshal([]byte(val), &unmarshalledValue)
+			if err != nil {
+				log.Entry().Debugf("Failed to unmarshal: %v", val)
+			}
+			resourceParams[param.Name] = unmarshalledValue
+		} else {
+			resourceParams[param.Name] = val
+		}
+	}
+	return resourceParams
+}
+
+func envVarsAsMap(envVars []EnvVar) map[string]string {
+	e := map[string]string{}
 	for _, v := range envVars {
-		e = append(e, fmt.Sprintf("%v=%v", v.Name, v.Value))
+		e[v.Name] = v.Value
 	}
 	return e
 }

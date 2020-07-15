@@ -22,9 +22,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
 
         Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        def utils = parameters.juStabUtils ?: new Utils()
+
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        prepareExecution(script, parameters)
+        prepareExecution(script, utils, parameters)
         prepareMetadataResource(script, metadataFile)
         Map stepParameters = prepareStepParameters(parameters)
 
@@ -45,6 +47,15 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 echo "Context Config: ${config}"
             }
 
+            // prepare stashes
+            // first eliminate empty stahes
+            config.stashContent = utils.unstashAll(config.stashContent)
+            // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
+            if (config.stashContent?.size() > 0) {
+                config.stashContent.add('pipelineConfigAndTests')
+                config.stashContent.add('piper-bin')
+            }
+
             if (parameters.stashNoDefaultExcludes) {
                 // Merge this parameter which is only relevant in Jenkins context
                 // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
@@ -53,6 +64,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
 
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
+                    script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
                         sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                     }
@@ -64,12 +76,10 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     }
 }
 
-static void prepareExecution(Script script, Map parameters = [:]) {
-    def utils = parameters.juStabUtils ?: new Utils()
+static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
-    script.commonPipelineEnvironment.writeToDisk(script)
 }
 
 static Map prepareStepParameters(Map parameters) {
@@ -123,14 +133,9 @@ static String getCustomConfigArg(def script) {
 
 void dockerWrapper(script, config, body) {
     if (config.dockerImage) {
-        dockerExecute(
-            script: script,
-            dockerImage: config.dockerImage,
-            dockerWorkspace: config.dockerWorkspace,
-            dockerOptions: config.dockerOptions,
-            stashNoDefaultExcludes : config.stashNoDefaultExcludes,
-            //ToDo: add additional dockerExecute parameters
-        ) {
+        Map dockerExecuteParameters = [:].plus(config)
+        dockerExecuteParameters.script = script
+        dockerExecute(dockerExecuteParameters) {
             body()
         }
     } else {

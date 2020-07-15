@@ -6,12 +6,28 @@ import (
 	"fmt"
 	"github.com/bmatcuk/doublestar"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 var dirContent []byte
+
+type fileInfoMock struct {
+	name  string
+	mode  os.FileMode
+	size  int64
+	isDir bool
+}
+
+func (fInfo fileInfoMock) Name() string       { return fInfo.name }
+func (fInfo fileInfoMock) Size() int64        { return fInfo.size }
+func (fInfo fileInfoMock) Mode() os.FileMode  { return fInfo.mode }
+func (fInfo fileInfoMock) ModTime() time.Time { return time.Time{} }
+func (fInfo fileInfoMock) IsDir() bool        { return fInfo.isDir }
+func (fInfo fileInfoMock) Sys() interface{}   { return nil }
 
 type fileProperties struct {
 	content *[]byte
@@ -21,8 +37,8 @@ type fileProperties struct {
 //FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files        map[string]*fileProperties
-	writtenFiles map[string]*[]byte
-	removedFiles map[string]*[]byte
+	writtenFiles []string
+	removedFiles []string
 	currentDir   string
 	Separator    string
 }
@@ -30,12 +46,6 @@ type FilesMock struct {
 func (f *FilesMock) init() {
 	if f.files == nil {
 		f.files = map[string]*fileProperties{}
-	}
-	if f.removedFiles == nil {
-		f.removedFiles = map[string]*[]byte{}
-	}
-	if f.writtenFiles == nil {
-		f.writtenFiles = map[string]*[]byte{}
 	}
 	if f.Separator == "" {
 		f.Separator = string(os.PathSeparator)
@@ -93,15 +103,22 @@ func (f *FilesMock) HasFile(path string) bool {
 // HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
-	_, exists := f.removedFiles[f.toAbsPath(path)]
-	return exists
+	return contains(f.removedFiles, f.toAbsPath(path))
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was written via FileWrite().
 func (f *FilesMock) HasWrittenFile(path string) bool {
-	_, exists := f.writtenFiles[f.toAbsPath(path)]
-	return exists
+	return contains(f.writtenFiles, f.toAbsPath(path))
+}
+
+func contains(collection []string, name string) bool {
+	for _, entry := range collection {
+		if entry == name {
+			return true
+		}
+	}
+	return false
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
@@ -177,7 +194,7 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	// NOTE: FilesMock could be extended to have a set of paths for which FileWrite should fail.
 	// This is why AddFile() exists separately, to differentiate the notion of setting up the mocking
 	// versus implementing the methods from Files.
-	f.writtenFiles[f.toAbsPath(path)] = &content
+	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
 }
@@ -189,12 +206,12 @@ func (f *FilesMock) FileRemove(path string) error {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	absPath := f.toAbsPath(path)
-	props, exists := f.files[absPath]
+	_, exists := f.files[absPath]
 	if !exists {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	delete(f.files, absPath)
-	f.removedFiles[absPath] = props.content
+	f.removedFiles = append(f.removedFiles, absPath)
 	return nil
 }
 
@@ -248,4 +265,39 @@ func (f *FilesMock) Chdir(path string) error {
 
 	f.currentDir = strings.TrimLeft(path, f.Separator)
 	return nil
+}
+
+// Stat ...
+func (f *FilesMock) Stat(name string) (os.FileInfo, error) {
+
+	props, exists := f.files[f.toAbsPath(name)]
+
+	if !exists {
+
+		isDir, err := f.DirExists(f.toAbsPath(name))
+		if err != nil {
+			return nil, fmt.Errorf("Internal error inside mock: %w", err)
+		}
+		if !isDir {
+			return nil, &os.PathError{
+				Op:   "stat",
+				Path: name,
+				Err:  fmt.Errorf("no such file or directory"),
+			}
+		}
+
+		// we assume some default // in the free wild wia umask
+		var mode os.FileMode = 0755
+
+		props = &fileProperties{}
+		props.mode = &mode
+		props.content = &dirContent
+	}
+
+	return fileInfoMock{
+		name:  path.Base(name),
+		mode:  *props.mode,
+		size:  int64(len(*props.content)),
+		isDir: props.content == &dirContent,
+	}, nil
 }
