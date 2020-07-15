@@ -371,7 +371,6 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 
 func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
 	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
-		log.Entry().Info("Type: ", param.Type)
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
