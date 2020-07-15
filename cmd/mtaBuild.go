@@ -196,8 +196,11 @@ func runMtaBuild(config mtaBuildOptions,
 		if err != nil {
 			return err
 		}
+
+		var packageJSONFiles []string
+		packageJSONFiles, err = npmExecutor.FindPackageJSONFiles(nil)
 		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
-		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
 		if err != nil {
 			return err
 		}

@@ -17,7 +17,10 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
-	packageJSONFiles := npmExecutor.FindPackageJSONFiles()
+	packageJSONFiles, err := npmExecutor.FindPackageJSONFiles(config.BuildDescriptorExcludeList)
+	if err != nil {
+		return err
+	}
 
 	if config.Install {
 		err := npmExecutor.InstallAllDependencies(packageJSONFiles)
@@ -26,5 +29,5 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer)
+	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList)
 }

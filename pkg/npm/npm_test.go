@@ -33,9 +33,11 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles := exec.FindPackageJSONFiles()
+		packageJSONFiles, err := exec.FindPackageJSONFiles(nil)
 
-		assert.Equal(t, []string{"package.json"}, packageJSONFiles)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"package.json"}, packageJSONFiles)
+		}
 	})
 
 	t.Run("find package.json files with two package.json and filtered package.json", func(t *testing.T) {
@@ -43,6 +45,9 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{}"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))
 		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
+		utils.AddFile(filepath.Join("gen", "package.json"), []byte("{}"))          // is filtered out
+		utils.AddFile(filepath.Join("filter", "package.json"), []byte("{}"))       // is filtered out
+		utils.AddFile(filepath.Join("filterPath", "package.json"), []byte("{}"))   // is filtered out
 		options := ExecutorOptions{}
 
 		exec := &Execute{
@@ -50,9 +55,11 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles := exec.FindPackageJSONFiles()
+		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath/package.json"})
 
-		assert.Equal(t, []string{"package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
+		}
 	})
 
 	t.Run("find package.json files with script", func(t *testing.T) {
@@ -231,7 +238,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false)
+		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 6, len(utils.execRunner.Calls)) {
@@ -295,7 +302,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true)
+		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil)
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
