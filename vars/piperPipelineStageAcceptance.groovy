@@ -117,7 +117,8 @@ void call(Map parameters = [:]) {
         }
 
         if (publishResults) {
-            testsPublishResults publishMap, stageName: stageName
+            publishMap.stageName = stageName
+            testsPublishResults publishMap
         }
     }
 }
