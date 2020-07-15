@@ -534,9 +534,25 @@ func TestGetResourceParameters(t *testing.T) {
 		{
 			in: StepData{
 				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
-					{Name: "param3", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam3"}}, Type: "[]string"},
+					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
+					{Name: "param3", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonList"}}, Type: "[]string"},
 				}}}},
-			expected: map[string]interface{}{"param3": []interface{}{"value1", "value2"}},
+			expected: map[string]interface{}{"param2": "val2", "param3": []interface{}{"value1", "value2"}},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValue"}}, Type: "map[string]interface{}"},
+				}}}},
+			expected: map[string]interface{}{"param4": map[string]interface{}{"key": "value"}},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam1"}}, Type: "noString"},
+					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValue"}}, Type: "string"},
+				}}}},
+			expected: map[string]interface{}{"param1": interface{}(nil), "param4": "{\"key\":\"value\"}"},
 		},
 	}
 
@@ -555,7 +571,8 @@ func TestGetResourceParameters(t *testing.T) {
 
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "envparam3"), []byte("[\"value1\",\"value2\"]"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList"), []byte("[\"value1\",\"value2\"]"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue"), []byte("{\"key\":\"value\"}"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
