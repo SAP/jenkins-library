@@ -28,11 +28,23 @@ type cfFileUtil interface {
 }
 
 var _now = time.Now
-var _cfLogin = cloudfoundry.Login
-var _cfLogout = cloudfoundry.Logout
+var _cfLogin = cfLogin
+var _cfLogout = cfLogout
 var _getManifest = getManifest
 var _substitute = yaml.Substitute
 var fileUtils cfFileUtil = piperutils.Files{}
+
+// for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
+func cfLogin(c command.ExecRunner, options cloudfoundry.LoginOptions) error {
+	cf := &cloudfoundry.CFUtils{Exec: c}
+	return cf.Login(options)
+}
+
+// for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
+func cfLogout(c command.ExecRunner) error {
+	cf := &cloudfoundry.CFUtils{Exec: c}
+	return cf.Logout()
+}
 
 const smokeTestScript = `#!/usr/bin/env bash
 # this is simply testing if the application root returns HTTP STATUS_CODE
@@ -685,7 +697,7 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
-	err = _cfLogin(cloudfoundry.LoginOptions{
+	err = _cfLogin(command, cloudfoundry.LoginOptions{
 		CfAPIEndpoint: config.APIEndpoint,
 		CfOrg:         config.Org,
 		CfSpace:       config.Space,
@@ -719,7 +731,7 @@ func cfDeploy(
 
 	if loginPerformed {
 
-		logoutErr := _cfLogout()
+		logoutErr := _cfLogout(command)
 
 		if logoutErr != nil {
 			log.Entry().WithError(logoutErr).Errorf("Cannot perform cf logout")

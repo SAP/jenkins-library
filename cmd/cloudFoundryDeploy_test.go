@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/yaml"
@@ -132,16 +133,16 @@ func TestCfDeployment(t *testing.T) {
 	}
 
 	defer func() {
-		_cfLogin = cloudfoundry.Login
-		_cfLogout = cloudfoundry.Logout
+		_cfLogin = cfLogin
+		_cfLogout = cfLogout
 	}()
 
-	_cfLogin = func(opts cloudfoundry.LoginOptions) error {
+	_cfLogin = func(c command.ExecRunner, opts cloudfoundry.LoginOptions) error {
 		loginOpts = opts
 		return nil
 	}
 
-	_cfLogout = func() error {
+	_cfLogout = func(c command.ExecRunner) error {
 		logoutCalled = true
 		return nil
 	}
@@ -646,13 +647,13 @@ func TestCfDeployment(t *testing.T) {
 
 		defer func() {
 
-			_cfLogin = func(opts cloudfoundry.LoginOptions) error {
+			_cfLogin = func(c command.ExecRunner, opts cloudfoundry.LoginOptions) error {
 				loginOpts = opts
 				return nil
 			}
 		}()
 
-		_cfLogin = func(opts cloudfoundry.LoginOptions) error {
+		_cfLogin = func(c command.ExecRunner, opts cloudfoundry.LoginOptions) error {
 			loginOpts = opts
 			return fmt.Errorf("Unable to login")
 		}
