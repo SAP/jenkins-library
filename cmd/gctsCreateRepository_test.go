@@ -3,12 +3,13 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGctsCreateRepositorySuccess(t *testing.T) {
