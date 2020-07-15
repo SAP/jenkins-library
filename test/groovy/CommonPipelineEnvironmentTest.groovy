@@ -64,7 +64,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.originalArtifactVersion = '2.0.0'
         nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
         nullScript.commonPipelineEnvironment.setValue('custom1', 'customVal1')
-        nullScript.commonPipelineEnvironment.setAbapRepositoryNames(['value1', 'value2'])
         nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
 
 
@@ -72,7 +71,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/originalArtifactVersion'], is('2.0.0'))
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/container/image'], is('myImage'))
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/custom/custom1'], is('customVal1'))
-        assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/abap/repositoryNames'], is('[\"value1\",\"value2\"]'))
     }
 
     @Test
@@ -82,7 +80,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
             '.pipeline/commonPipelineEnvironment/artifactVersion',
             '.pipeline/commonPipelineEnvironment/originalArtifactVersion',
             '.pipeline/commonPipelineEnvironment/custom/custom1',
-            '.pipeline/commonPipelineEnvironment/abap/repositoryNames',
         ])
 
         nullScript.metaClass.findFiles {
@@ -98,7 +95,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
             '.pipeline/commonPipelineEnvironment/artifactVersion': '1.0.0',
             '.pipeline/commonPipelineEnvironment/originalArtifactVersion': '2.0.0',
             '.pipeline/commonPipelineEnvironment/custom': 'customVal1',
-            '.pipeline/commonPipelineEnvironment/abap/repositoryNames': '[\"value1\",\"value2\"]',
         ])
 
         nullScript.commonPipelineEnvironment.readFromDisk(nullScript)
@@ -106,7 +102,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         assertThat(nullScript.commonPipelineEnvironment.artifactVersion, is('1.0.0'))
         assertThat(nullScript.commonPipelineEnvironment.originalArtifactVersion, is('2.0.0'))
         assertThat(nullScript.commonPipelineEnvironment.valueMap['custom1'], is('customVal1'))
-        assertThat(nullScript.commonPipelineEnvironment.abapRepositoryNames, is("[\"value1\",\"value2\"]"))
     }
 
 }

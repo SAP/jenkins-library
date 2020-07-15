@@ -42,8 +42,6 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath = ""
 
-    def abapRepositoryNames = []
-
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -57,9 +55,6 @@ class commonPipelineEnvironment implements Serializable {
     String changeDocumentId
 
     def reset() {
-
-        abapRepositoryNames = []
-
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
@@ -182,18 +177,13 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
-        [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
     ]
 
     void writeToDisk(script) {
 
         files.each({f  ->
             if (this[f.property] && !script.fileExists(f.filename)) {
-                if(this[f.property] instanceof String) {
-                    script.writeFile file: f.filename, text: this[f.property]
-                } else {
-                    script.writeFile file: f.filename, text: groovy.json.JsonOutput.toJson(this[f.property])
-                }
+                script.writeFile file: f.filename, text: this[f.property]
             }
         })
 
@@ -221,8 +211,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void readFromDisk(script) {
-
-        // While a groovy list will be parsed into a JSON list in "writeToDisk", the function "readFromDisk" won't parse the received String
 
         files.each({f  ->
             if (script.fileExists(f.filename)) {
