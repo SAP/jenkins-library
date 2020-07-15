@@ -17,13 +17,13 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
-	packageJSONFiles, err := npmExecutor.FindPackageJSONFiles(config.BuildDescriptorExcludeList)
-	if err != nil {
-		return err
-	}
-
 	if config.Install {
-		err := npmExecutor.InstallAllDependencies(packageJSONFiles)
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFiles(config.BuildDescriptorExcludeList)
+		if err != nil {
+			return err
+		}
+
+		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
 		if err != nil {
 			return err
 		}
