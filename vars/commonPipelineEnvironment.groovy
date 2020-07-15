@@ -222,6 +222,8 @@ class commonPipelineEnvironment implements Serializable {
 
     void readFromDisk(script) {
 
+        // While a groovy list will be parsed into a JSON list in "writeToDisk", the function "readFromDisk" won't parse the received String
+
         files.each({f  ->
             if (script.fileExists(f.filename)) {
                 this[f.property] = script.readFile(f.filename)
