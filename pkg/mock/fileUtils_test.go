@@ -242,3 +242,49 @@ func TestFilesMockGlob(t *testing.T) {
 		assert.Len(t, matches, 0)
 	})
 }
+
+func TestStat(t *testing.T) {
+
+	var (
+		onlyMe                  os.FileMode = 0700
+		othersCanRead           os.FileMode = 0644
+		othersCanReadAndExecute os.FileMode = 0755
+	)
+
+	files := FilesMock{}
+	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+	files.AddDirWithMode("bin", 0700)
+
+	t.Run("non existing file", func(t *testing.T) {
+		_, err := files.Stat("doesNotExist.txt")
+		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
+	})
+
+	t.Run("check file info", func(t *testing.T) {
+		info, err := files.Stat("tmp/dummy.txt")
+
+		if assert.NoError(t, err) {
+			// only the base name is returned.
+			assert.Equal(t, "dummy.txt", info.Name())
+			assert.False(t, info.IsDir())
+			// if not specified otherwise the 644 file mode is used.
+			assert.Equal(t, othersCanRead, info.Mode())
+		}
+	})
+
+	t.Run("check implicit dir", func(t *testing.T) {
+		info, err := files.Stat("tmp")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, othersCanReadAndExecute, info.Mode())
+		}
+	})
+
+	t.Run("check explicit dir", func(t *testing.T) {
+		info, err := files.Stat("bin")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, onlyMe, info.Mode())
+		}
+	})
+}
