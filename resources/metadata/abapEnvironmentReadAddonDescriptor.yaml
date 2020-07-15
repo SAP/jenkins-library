@@ -1,0 +1,26 @@
+metadata:
+  name: abapEnvironmentReadAddonDescriptor
+  description: Reads the file that describes the AddOn Product
+  longDescription: |
+    Reads the file that describes the AddOn Product
+spec:
+  inputs:
+    params:
+      - name: fileName
+        type: string
+        description: File name of the YAML descriptor
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/repositoryNames
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never
