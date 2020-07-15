@@ -124,7 +124,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'mtaExtensionDescriptor',
     /**
-     * Defines the path to *.mtar for deployment with the mtaDeployPlugin.
+     * Defines the path to *.mtar for deployment with the mtaDeployPlugin. If not specified, it will use the mta file created in mtaBuild or search for an mtar file in the workspace.
      */
     'mtaPath',
     /**
@@ -293,9 +293,9 @@ void call(Map parameters = [:]) {
 
 private void handleMTADeployment(Map config, script) {
     // set default mtar path
-    config = ConfigurationHelper.newInstance(this, config)
-        .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
-        .use()
+    if(!config.mtaPath) {
+        config.mtaPath = script.commonPipelineEnvironment.mtarFilePath ?: findMtar()
+    }
 
     dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
         deployMta(config)

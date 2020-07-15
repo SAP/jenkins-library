@@ -81,6 +81,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
+
+        helper.registerAllowedMethod('findFiles', [Map.class], { m ->
+            return [].toArray()
+        })
     }
 
     @After
@@ -658,6 +662,23 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
         assertThat(shellRule.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
+    void useMtaFilePathFromPipelineEnvironment() {
+        environmentRule.env.mtarFilePath = 'target/test.mtar'
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin'
+        ])
+        // asserts
+        assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
     }
 
     @Test

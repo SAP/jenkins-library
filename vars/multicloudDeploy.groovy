@@ -93,7 +93,7 @@ void call(parameters = [:]) {
                     )
                 }
             }
-            runClosures(config, createServices, "cloudFoundryCreateService")
+            runClosures(script, createServices, config.parallelExecution, "cloudFoundryCreateService")
         }
 
         if (config.cfTargets) {
@@ -123,8 +123,7 @@ void call(parameters = [:]) {
                         deployType: deploymentType,
                         cloudFoundry: target,
                         mtaExtensionDescriptor: target.mtaExtensionDescriptor,
-                        mtaExtensionCredentials: target.mtaExtensionCredentials,
-                        mtaPath: script.commonPipelineEnvironment.mtarFilePath,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials
                     )
                     if (runInIsolatedWorkspace) {
                         deploymentUtils.stashStageFiles(script, stageName)
@@ -176,21 +175,6 @@ void call(parameters = [:]) {
             error "Deployment skipped because no targets defined!"
         }
 
-        runClosures(config, deployments, "deployments")
-
-    }
-}
-
-def runClosures(Map config, Map toRun, String label = "closures") {
-    echo "Executing $label"
-    if (config.parallelExecution) {
-        echo "Executing $label in parallel"
-        parallel toRun
-    } else {
-        echo "Executing $label in sequence"
-        def closuresToRun = toRun.values().asList()
-        for (int i = 0; i < closuresToRun.size(); i++) {
-            (closuresToRun[i] as Closure)()
-        }
+        runClosures(script, deployments, config.parallelExecution, "deployments")
     }
 }

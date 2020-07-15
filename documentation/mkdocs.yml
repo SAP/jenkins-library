@@ -81,6 +81,7 @@ nav:
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
+        - npmExecuteEndToEndTests: steps/npmExecuteEndToEndTests.md
         - npmExecuteLint: steps/npmExecuteLint.md
         - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md
