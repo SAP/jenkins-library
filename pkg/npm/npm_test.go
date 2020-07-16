@@ -59,7 +59,7 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath\\package.json"})
+		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath/package.json"})
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{filepath.Join("Path", "To", "filter", "package.json"), filepath.Join("notfiltered", "package.json"), "package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
