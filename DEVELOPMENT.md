@@ -99,7 +99,7 @@ docker rm piper
 The steps are generated based on the yaml files in `resources/metadata/` with the following command from the root of the project:
 
 ```bash
-go generate ./...
+go generate
 ```
 
 The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
