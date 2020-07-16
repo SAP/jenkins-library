@@ -210,13 +210,13 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 	return nil
 }
 
-// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+// FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
 func (exec *Execute) FindPackageJSONFiles() []string {
 	packageJSONFiles, _ := exec.FindPackageJSONFilesWithExcludes([]string{})
 	return packageJSONFiles
 }
 
-// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+// FindPackageJSONFilesWithExcludes returns a list of all package.json files of the project excluding node_modules, gen/ and directories/patterns defined by excludeList
 func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, _ := exec.Utils.Glob("**/package.json")
 
