@@ -243,13 +243,14 @@ func TestFilesMockGlob(t *testing.T) {
 	})
 }
 
-func TestStat(t *testing.T) {
+var (
+	onlyMe                     os.FileMode = 0700
+	othersCanRead              os.FileMode = 0644
+	othersCanReadAndExecute    os.FileMode = 0755
+	everybodyCanReadAndExecute os.FileMode = 0777
+)
 
-	var (
-		onlyMe                  os.FileMode = 0700
-		othersCanRead           os.FileMode = 0644
-		othersCanReadAndExecute os.FileMode = 0755
-	)
+func TestStat(t *testing.T) {
 
 	files := FilesMock{}
 	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
@@ -285,6 +286,37 @@ func TestStat(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, info.IsDir())
 			assert.Equal(t, onlyMe, info.Mode())
+		}
+	})
+}
+
+func TestGetChod(t *testing.T) {
+	files := FilesMock{}
+	files.AddDirWithMode("tmp", 0777)
+	files.AddFileWithMode("tmp/log.txt", []byte("build failed"), 0777)
+
+	t.Run("non existing file", func(t *testing.T) {
+		err := files.Chmod("does/not/exist", 0400)
+		assert.EqualError(t, err, "chmod: does/not/exist: No such file or directory")
+	})
+
+	t.Run("chmod for file", func(t *testing.T) {
+		err := files.Chmod("tmp/log.txt", 0644)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp/log.txt")
+			if assert.NoError(t, e) {
+				assert.Equal(t, othersCanRead, info.Mode())
+			}
+		}
+	})
+
+	t.Run("chmod for directory", func(t *testing.T) {
+		err := files.Chmod("tmp", 0755)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp")
+			if assert.NoError(t, e) {
+				assert.Equal(t, othersCanReadAndExecute, info.Mode())
+			}
 		}
 	})
 }
