@@ -19,6 +19,7 @@ type FileUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	MkdirAll(path string, perm os.FileMode) error
+	Chmod(path string, mode os.FileMode) error
 }
 
 // Files ...
@@ -84,6 +85,11 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+//Chmod ...
+func (f Files) Chmod(path string, mode os.FileMode) error {
+	return os.Chmod(path, mode)
 }
 
 // Unzip will decompress a zip archive, moving all files and folders
