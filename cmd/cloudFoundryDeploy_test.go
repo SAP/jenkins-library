@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
@@ -1072,5 +1073,83 @@ func TestMtarLookup(t *testing.T) {
 
 		_, err := findMtar()
 		assert.EqualError(t, err, "Found multiple mtar files matching pattern '**/*.mtar' (x.mtar,y.mtar), please specify file via mtaPath parameter 'mtarPath'")
+	})
+}
+
+func TestSmokeTestScriptHandling(t *testing.T) {
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddDir("/home/me")
+	filesMock.Chdir("/home/me")
+	fileUtils = &filesMock
+
+	var (
+		chmodPath string
+		chmodMode os.FileMode
+		canExec   os.FileMode = 0755
+	)
+
+	t.Run("non default existing smoke test file", func(t *testing.T) {
+
+		_chmod = func(path string, mode os.FileMode) error {
+			chmodPath = path
+			chmodMode = mode
+			return nil
+		}
+
+		parts, err := handleSmokeTestScript("mySmokeTestScript.sh")
+		if assert.NoError(t, err) {
+
+			// TODO: use mock when chmod is available in mock
+			assert.Equal(t, "mySmokeTestScript.sh", chmodPath)
+			assert.Equal(t, canExec, chmodMode)
+
+			// when the none-default file name is provided the file must already exist
+			// in the project sources.
+			assert.False(t, filesMock.HasWrittenFile("mySmokeTestScript.sh"))
+
+			assert.Equal(t, []string{
+				"--smoke-test",
+				"/home/me/mySmokeTestScript.sh",
+			}, parts)
+		}
+	})
+
+	t.Run("non default not existing smoke test file", func(t *testing.T) {
+
+		_chmod = func(path string, mode os.FileMode) error {
+			return fmt.Errorf("chmod: %s: No such file or directory", path)
+		}
+
+		parts, err := handleSmokeTestScript("mySmokeTestScript.sh")
+		if assert.EqualError(t, err, "chmod: mySmokeTestScript.sh: No such file or directory") {
+			assert.False(t, filesMock.HasWrittenFile("mySmokeTestScript.sh"))
+			assert.Equal(t, []string{}, parts)
+		}
+	})
+
+	t.Run("default smoke test file", func(t *testing.T) {
+
+		_chmod = func(path string, mode os.FileMode) error {
+			chmodPath = path
+			chmodMode = mode
+			return nil
+		}
+		parts, err := handleSmokeTestScript("blueGreenCheckScript.sh")
+
+		if assert.NoError(t, err) {
+
+			// TODO: use mock when chmod is available in mock
+			assert.Equal(t, "blueGreenCheckScript.sh", chmodPath)
+			assert.Equal(t, canExec, chmodMode)
+
+			// in this case we provide the file. We overwrite in case there is already such a file ...
+			assert.True(t, filesMock.HasWrittenFile("blueGreenCheckScript.sh"))
+
+			assert.Equal(t, []string{
+				"--smoke-test",
+				"/home/me/blueGreenCheckScript.sh",
+			}, parts)
+		}
 	})
 }
