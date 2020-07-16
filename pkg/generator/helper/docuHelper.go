@@ -114,7 +114,7 @@ func stepOutputs(stepData *config.StepData) string {
 			for _, param := range res.Parameters {
 				stepOutput += fmt.Sprintf("<li>%v</li>", param["name"])
 			}
-			stepOutput += "</ul> |/n"
+			stepOutput += "</ul> |\n"
 		}
 
 		//handle Influx output
