@@ -335,10 +335,10 @@ func possibleValueList(possibleValues []interface{}) string {
 
 func scopeDetails(scope []string) string {
 	scopeDetails := "<ul>"
-	scopeDetails += fmt.Sprintf("<li>- [%v] parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] general</li>", ifThenElse(contains(scope, "GENERAL"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] steps</li>", ifThenElse(contains(scope, "STEPS"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] stages</li>", ifThenElse(contains(scope, "STAGES"), "X", " "))
+	scopeDetails += fmt.Sprintf("<li>%v parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v general</li>", ifThenElse(contains(scope, "GENERAL"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v steps</li>", ifThenElse(contains(scope, "STEPS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v stages</li>", ifThenElse(contains(scope, "STAGES"), "&#9746;", "&#9744;"))
 	scopeDetails += "</ul>"
 	return scopeDetails
 }
