@@ -46,7 +46,7 @@ func cfLogout(c command.ExecRunner) error {
 	return cf.Logout()
 }
 
-const smokeTestScript = `#!/usr/bin/env bash
+const defaultSmokeTestScript = `#!/usr/bin/env bash
 # this is simply testing if the application root returns HTTP STATUS_CODE
 curl -so /dev/null -w '%{response_code}' https://$1 | grep $STATUS_CODE`
 
@@ -366,7 +366,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 
 	if smokeTestScript == "blueGreenCheckScript.sh" {
 		// what should we do if there is already a script with the given name? Should we really overwrite ...
-		err := fileUtils.FileWrite(smokeTestScript, []byte(smokeTestScript), 0755)
+		err := fileUtils.FileWrite(smokeTestScript, []byte(defaultSmokeTestScript), 0755)
 		if err != nil {
 			return []string{}, err
 		}
