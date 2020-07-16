@@ -57,7 +57,7 @@ func (p *abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment) persist(pa
 	}
 }
 
-// AbapEnvironmentReadAddonDescriptorCommand Reads the file that describes the AddOn Product
+// AbapEnvironmentReadAddonDescriptorCommand Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment
 func AbapEnvironmentReadAddonDescriptorCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentReadAddonDescriptor"
 
@@ -68,8 +68,8 @@ func AbapEnvironmentReadAddonDescriptorCommand() *cobra.Command {
 
 	var createAbapEnvironmentReadAddonDescriptorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Reads the file that describes the AddOn Product",
-		Long:  `Reads the file that describes the AddOn Product`,
+		Short: "Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment",
+		Long:  `Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
