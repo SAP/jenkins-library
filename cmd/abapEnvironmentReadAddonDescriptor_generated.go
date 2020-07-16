@@ -22,6 +22,11 @@ type abapEnvironmentReadAddonDescriptorOptions struct {
 type abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment struct {
 	abap struct {
 		repositoryNames string
+		addonProduct    string
+		addonUniqueID   string
+		addonVersion    string
+		customerID      string
+		repositories    string
 	}
 }
 
@@ -32,6 +37,11 @@ func (p *abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment) persist(pa
 		value    string
 	}{
 		{category: "abap", name: "repositoryNames", value: p.abap.repositoryNames},
+		{category: "abap", name: "addonProduct", value: p.abap.addonProduct},
+		{category: "abap", name: "addonUniqueID", value: p.abap.addonUniqueID},
+		{category: "abap", name: "addonVersion", value: p.abap.addonVersion},
+		{category: "abap", name: "customerID", value: p.abap.customerID},
+		{category: "abap", name: "repositories", value: p.abap.repositories},
 	}
 
 	errCount := 0

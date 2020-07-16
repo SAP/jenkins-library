@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 func abapEnvironmentReadAddonDescriptor(config abapEnvironmentReadAddonDescriptorOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment) {
@@ -29,29 +31,34 @@ func abapEnvironmentReadAddonDescriptor(config abapEnvironmentReadAddonDescripto
 	}
 }
 
-func runAbapEnvironmentReadAddonDescriptor(config *abapEnvironmentReadAddonDescriptorOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, commonPipelineEnvironment *abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment) error {
+func runAbapEnvironmentReadAddonDescriptor(config *abapEnvironmentReadAddonDescriptorOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, cpe *abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment) error {
 
 	var addonYAMLFile []byte
 	filelocation, err := filepath.Glob(config.FileName)
 
-	//Parse YAML ATC run configuration as body for ATC run trigger
-	if err != nil {
-		return err
+	if err != nil || len(filelocation) != 1 {
+		return errors.New(fmt.Sprintf("Could not find %v.", config.FileName))
 	}
-	filename, _ := filepath.Abs(filelocation[0])
+	filename, err := filepath.Abs(filelocation[0])
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not get path of %v.", config.FileName))
+	}
 	addonYAMLFile, err = ioutil.ReadFile(filename)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("Could not read %v.", config.FileName))
 	}
 
 	var jsonBytes []byte
 	jsonBytes, err = yaml.YAMLToJSON(addonYAMLFile)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("Could not parse %v.", config.FileName))
 	}
 
 	var addonDescriptor addonDescriptor
-	json.Unmarshal(jsonBytes, &addonDescriptor)
+	err = json.Unmarshal(jsonBytes, &addonDescriptor)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not unmarshal %v.", config.FileName))
+	}
 
 	var repositoryNames []string
 	for _, v := range addonDescriptor.Repositories {
@@ -59,8 +66,14 @@ func runAbapEnvironmentReadAddonDescriptor(config *abapEnvironmentReadAddonDescr
 	}
 
 	repositoryNamesJSONString, _ := json.Marshal(repositoryNames)
+	repositories, _ := json.Marshal(addonDescriptor.Repositories)
 
-	commonPipelineEnvironment.abap.repositoryNames = string(repositoryNamesJSONString)
+	cpe.abap.repositoryNames = string(repositoryNamesJSONString)
+	cpe.abap.addonProduct = addonDescriptor.AddonProduct
+	cpe.abap.addonUniqueID = addonDescriptor.AddonUniqueID
+	cpe.abap.addonVersion = addonDescriptor.AddonVersion
+	cpe.abap.customerID = fmt.Sprintf("%v", addonDescriptor.CustomerID)
+	cpe.abap.repositories = string(repositories)
 
 	return nil
 }

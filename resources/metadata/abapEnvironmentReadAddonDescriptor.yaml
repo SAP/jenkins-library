@@ -20,6 +20,11 @@ spec:
         type: piperEnvironment
         params:
           - name: abap/repositoryNames
+          - name: abap/addonProduct
+          - name: abap/addonUniqueID
+          - name: abap/addonVersion
+          - name: abap/customerID
+          - name: abap/repositories
   containers:
     - name: cf
       image: ppiper/cf-cli

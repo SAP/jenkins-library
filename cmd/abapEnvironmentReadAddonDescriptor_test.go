@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -47,5 +48,22 @@ repositories:
 		abapEnvironmentReadAddonDescriptor(config, nil, &cpe)
 
 		assert.Equal(t, `["/DMO/REPO_A","/DMO/REPO_B"]`, cpe.abap.repositoryNames)
+		assert.Equal(t, `/DMO/myAddonProduct`, cpe.abap.addonProduct)
+		assert.Equal(t, `3.1.4`, cpe.abap.addonVersion)
+		assert.Equal(t, `myAddonId`, cpe.abap.addonUniqueID)
+		assert.Equal(t, `1234`, cpe.abap.customerID)
+		assert.Equal(t, `[{"name":"/DMO/REPO_A","tag":"v-1.0.1-build-0001","version":"1.0.1"},{"name":"/DMO/REPO_B","tag":"rel-2.1.1-build-0001","version":"2.1.1"}]`, cpe.abap.repositories)
+	})
+
+	t.Run("Test: file does not exist", func(t *testing.T) {
+
+		config := abapEnvironmentReadAddonDescriptorOptions{
+			FileName: "filename.yaml",
+		}
+		cpe := abapEnvironmentReadAddonDescriptorCommonPipelineEnvironment{}
+		err := runAbapEnvironmentReadAddonDescriptor(&config, nil, nil, &cpe)
+
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v.", "filename.yaml"))
+
 	})
 }

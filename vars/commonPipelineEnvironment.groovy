@@ -43,6 +43,11 @@ class commonPipelineEnvironment implements Serializable {
     String mtarFilePath = ""
 
     String abapRepositoryNames
+    String abapAddonProduct
+    String abapAddonUniqueID
+    String abapAddonVersion
+    String abapCustomerID
+    String abapRepositories
 
     private Map valueMap = [:]
 
@@ -59,6 +64,11 @@ class commonPipelineEnvironment implements Serializable {
     def reset() {
 
         abapRepositoryNames = null
+        abapAddonProduct = null
+        abapAddonUniqueID = null
+        abapAddonVersion = null
+        abapCustomerID = null
+        abapRepositories = null
 
         appContainerProperties = [:]
         artifactVersion = null
@@ -183,6 +193,11 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/addonProduct', property: 'abapAddonProduct'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/addonUniqueID', property: 'abapAddonUniqueID'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/addonVersion', property: 'abapAddonVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/customerID', property: 'abapCustomerID'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/repositories', property: 'abapRepositories'],
     ]
 
     void writeToDisk(script) {
