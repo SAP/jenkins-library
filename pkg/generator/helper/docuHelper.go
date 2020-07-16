@@ -104,7 +104,7 @@ func stepOutputs(stepData *config.StepData) string {
 	}
 
 	stepOutput := "\n## Outputs\n\n"
-	stepOutput += "| output type | details |\n"
+	stepOutput += "| Output type | Details |\n"
 	stepOutput += "| ----------- | ------- |\n"
 
 	for _, res := range stepData.Spec.Outputs.Resources {
@@ -166,7 +166,7 @@ func createParameterOverview(stepData *config.StepData) string {
 	table += "| ---- | --------- | ---------------------- |\n"
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
-		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, param.Name, ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
+		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
 	}
 
 	table += "\n"
@@ -232,6 +232,8 @@ func createParameterDetails(stepData *config.StepData) string {
 		} else {
 			details += param.Description + "\n\n"
 		}
+
+		details += "[back to overview](#parameters)\n\n"
 
 		details += "| Scope | Details |\n"
 		details += "| ---- | --------- |\n"

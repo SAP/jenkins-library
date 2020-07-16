@@ -128,7 +128,7 @@ func TestCreateParameterOverview(t *testing.T) {
 	expected := `| Name | Mandatory | Additional information |
 | ---- | --------- | ---------------------- |
 | [param1](#param1) | no |  |
-| [stashContent](#stashContent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
+| [stashContent](#stashcontent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
 
 `
 	stepParameterNames = []string{"param1"}
