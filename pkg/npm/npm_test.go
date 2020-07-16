@@ -43,11 +43,15 @@ func TestNpm(t *testing.T) {
 	t.Run("find package.json files with two package.json and filtered package.json", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{}"))
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))
-		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
-		utils.AddFile(filepath.Join("gen", "package.json"), []byte("{}"))          // is filtered out
-		utils.AddFile(filepath.Join("filter", "package.json"), []byte("{}"))       // is filtered out
-		utils.AddFile(filepath.Join("filterPath", "package.json"), []byte("{}"))   // is filtered out
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))                  // should NOT be filtered out
+		utils.AddFile(filepath.Join("notfiltered", "package.json"), []byte("{}"))          // should NOT be filtered out
+		utils.AddFile(filepath.Join("Path", "To", "filter", "package.json"), []byte("{}")) // should NOT be filtered out
+		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}"))         // is filtered out
+		utils.AddFile(filepath.Join("gen", "package.json"), []byte("{}"))                  // is filtered out
+		utils.AddFile(filepath.Join("filter", "package.json"), []byte("{}"))               // is filtered out
+		utils.AddFile(filepath.Join("filterPath", "package.json"), []byte("{}"))           // is filtered out
+		utils.AddFile(filepath.Join("filter", "Path", "To", "package.json"), []byte("{}")) // is filtered out
+
 		options := ExecutorOptions{}
 
 		exec := &Execute{
@@ -55,10 +59,10 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath/package.json"})
+		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath\\package.json"})
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
+			assert.Equal(t, []string{filepath.Join("Path", "To", "filter", "package.json"), filepath.Join("notfiltered", "package.json"), "package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
 		}
 	})
 

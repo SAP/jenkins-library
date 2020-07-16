@@ -213,8 +213,8 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 func (exec *Execute) FindPackageJSONFiles(excludeList []string) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, _ := exec.Utils.Glob("**/package.json")
 
-	nodeModulesExclude := filepath.Join("**", "node_modules", "**")
-	genExclude := filepath.Join("**", "gen", "**")
+	nodeModulesExclude := "**/node_modules/**"
+	genExclude := "**/gen/**"
 	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
 	var packageJSONFiles []string
@@ -228,6 +228,7 @@ func (exec *Execute) FindPackageJSONFiles(excludeList []string) ([]string, error
 			}
 			if matched {
 				excludePackage = true
+				break
 			}
 		}
 		if excludePackage {
