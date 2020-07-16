@@ -15,7 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestFirstChangeMe(t *testing.T) {
+func TestCfDeployMavenProject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -52,7 +52,7 @@ cd /app
 	// Prepared docker image with deployable artifact, sources are at:
 	// https://github.com/piper-validation/cloud-s4-sdk-book/tree/consumer-test
 	reqNode := testcontainers.ContainerRequest{
-		Image: "fwilhe/cf-it",
+		Image: "ppiper/cloud-foundry-integration-test:maven",
 		Cmd:   []string{"tail", "-f"},
 		BindMounts: map[string]string{
 			pwd:     "/piperbin",
@@ -75,5 +75,68 @@ cd /app
 	}
 	output := string(content)
 	assert.Contains(t, output, "info  cloudFoundryDeploy - name:              devops-docker-images-IT")
+	assert.Contains(t, output, "info  cloudFoundryDeploy - Logged out successfully")
+}
+
+func TestCfDeployMtaProject(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
+
+	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
+	tempDir, err := createTmpDir("")
+	defer os.RemoveAll(tempDir) // clean up
+	assert.NoError(t, err, "Error when creating temp dir")
+
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestCfDeployIntegration"), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
+
+	username := os.Getenv("PIPER_INTEGRATION_CF_USERNAME")
+	if len(username) == 0 {
+		t.Fatal("Username for SAP Cloud Platform required")
+	}
+	password := os.Getenv("PIPER_INTEGRATION_CF_PASSWORD")
+	if len(username) == 0 {
+		t.Fatal("Password for SAP Cloud Platform required")
+	}
+
+	//workaround to use test script util it is possible to set workdir for Exec call
+	testScript := fmt.Sprintf(`#!/bin/sh
+cd /app
+/piperbin/piper cloudFoundryDeploy --username %s --password '%s' >/test/test-log.txt 2>&1
+`, username, password)
+	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	// Prepared docker image with deployable artifact, sources are at:
+	// https://github.com/piper-validation/cloud-s4-sdk-book/tree/mta-cf-integration-test
+	reqNode := testcontainers.ContainerRequest{
+		Image: "ppiper/cloud-foundry-integration-test:mta",
+		Cmd:   []string{"tail", "-f"},
+		BindMounts: map[string]string{
+			pwd:     "/piperbin",
+			tempDir: "/test",
+		},
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
+	})
+
+	code, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
+
+	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	if err != nil {
+		t.Fatal("Could not read test-log.txt.", err)
+	}
+	output := string(content)
+	assert.Contains(t, output, "info  cloudFoundryDeploy - running command: cf deploy mta_archives/address-manager_0.0.1.mtar -f")
 	assert.Contains(t, output, "info  cloudFoundryDeploy - Logged out successfully")
 }
