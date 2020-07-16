@@ -33,6 +33,7 @@ var _cfLogout = cfLogout
 var _getManifest = getManifest
 var _substitute = yaml.Substitute
 var fileUtils cfFileUtil = piperutils.Files{}
+var _chmod = os.Chmod
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
 func cfLogin(c command.ExecRunner, options cloudfoundry.LoginOptions) error {
@@ -374,7 +375,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 	}
 
 	if len(smokeTestScript) > 0 {
-		err := os.Chmod(smokeTestScript, 0755)
+		err := _chmod(smokeTestScript, 0755)
 		if err != nil {
 			return []string{}, err
 		}
