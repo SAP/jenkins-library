@@ -121,6 +121,7 @@ public class CommonStepsTest extends BasePiperTest{
         'buildSetResult',
         'runClosures',
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
+        'abapEnvironmentReadAddonDescriptor', //implementing new golang pattern without fields
         'checkmarxExecuteScan', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'kubernetesDeploy', //implementing new golang pattern without fields
