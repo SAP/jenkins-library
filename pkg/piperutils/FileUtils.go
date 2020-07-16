@@ -205,3 +205,8 @@ func (f Files) Getwd() (string, error) {
 func (f Files) Chdir(path string) error {
 	return os.Chdir(path)
 }
+
+// Stat is a wrapper for os.Stat()
+func (f Files) Stat(path string) (os.FileInfo, error) {
+	return os.Stat(path)
+}
