@@ -104,7 +104,7 @@ func stepOutputs(stepData *config.StepData) string {
 	}
 
 	stepOutput := "\n## Outputs\n\n"
-	stepOutput += "| output type | details |\n"
+	stepOutput += "| Output type | Details |\n"
 	stepOutput += "| ----------- | ------- |\n"
 
 	for _, res := range stepData.Spec.Outputs.Resources {
@@ -114,7 +114,7 @@ func stepOutputs(stepData *config.StepData) string {
 			for _, param := range res.Parameters {
 				stepOutput += fmt.Sprintf("<li>%v</li>", param["name"])
 			}
-			stepOutput += "</ul> |/n"
+			stepOutput += "</ul> |\n"
 		}
 
 		//handle Influx output
@@ -166,7 +166,7 @@ func createParameterOverview(stepData *config.StepData) string {
 	table += "| ---- | --------- | ---------------------- |\n"
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
-		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, param.Name, ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
+		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
 	}
 
 	table += "\n"
@@ -232,6 +232,8 @@ func createParameterDetails(stepData *config.StepData) string {
 		} else {
 			details += param.Description + "\n\n"
 		}
+
+		details += "[back to overview](#parameters)\n\n"
 
 		details += "| Scope | Details |\n"
 		details += "| ---- | --------- |\n"
@@ -333,10 +335,10 @@ func possibleValueList(possibleValues []interface{}) string {
 
 func scopeDetails(scope []string) string {
 	scopeDetails := "<ul>"
-	scopeDetails += fmt.Sprintf("<li>- [%v] parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] general</li>", ifThenElse(contains(scope, "GENERAL"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] steps</li>", ifThenElse(contains(scope, "STEPS"), "X", " "))
-	scopeDetails += fmt.Sprintf("<li>- [%v] stages</li>", ifThenElse(contains(scope, "STAGES"), "X", " "))
+	scopeDetails += fmt.Sprintf("<li>%v parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v general</li>", ifThenElse(contains(scope, "GENERAL"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v steps</li>", ifThenElse(contains(scope, "STEPS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v stages</li>", ifThenElse(contains(scope, "STAGES"), "&#9746;", "&#9744;"))
 	scopeDetails += "</ul>"
 	return scopeDetails
 }
