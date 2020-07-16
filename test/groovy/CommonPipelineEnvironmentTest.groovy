@@ -64,7 +64,7 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.originalArtifactVersion = '2.0.0'
         nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
         nullScript.commonPipelineEnvironment.setValue('custom1', 'customVal1')
-        nullScript.commonPipelineEnvironment.setAbapRepositoryNames(['value1', 'value2'])
+        nullScript.commonPipelineEnvironment.setAbapRepositoryNames('[\"value1\",\"value2\"]')
         nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
 
 
