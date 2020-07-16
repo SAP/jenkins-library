@@ -43,7 +43,7 @@ class CloudFoundry {
     def getAppRefUrl(String apiEndpoint, String org, String space, String bearerToken, String appName, boolean verbose){
         def orgGuid = getOrgGuid(apiEndpoint, org, bearerToken, verbose)
         def spaceGuid = getSpaceGuid(apiEndpoint, orgGuid, space, bearerToken, verbose)
-        def appInfo = script.httpRequest  url:"${apiEndpoint}/v3/apps?names=${appName},${appName}_blue,${appName}_green,space_guids=${spaceGuid}",  quiet: !verbose,
+        def appInfo = script.httpRequest  url:"${apiEndpoint}/v3/apps?names=${appName},${appName}-blue,${appName}-green,${appName}_blue,${appName}_green,space_guids=${spaceGuid}",  quiet: !verbose,
                             customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
         def responseJson = script.readJSON text:"${appInfo.content}"
         if (!responseJson.resources[0]) throw new Exception("Cannot find Application")
