@@ -1,8 +1,8 @@
 metadata:
   name: abapEnvironmentReadAddonDescriptor
-  description: Reads the file that describes the AddOn Product
+  description: Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment
   longDescription: |
-    Reads the file that describes the AddOn Product
+    Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment
 spec:
   inputs:
     params:
