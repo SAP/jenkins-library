@@ -24,6 +24,9 @@ spec:
         type: string
         mandatory: true
         secret: true
+        resourceRef:
+          - name: detectTokenCredentialsId
+            type: secret
         scope:
         - PARAMETERS
         - STAGES
