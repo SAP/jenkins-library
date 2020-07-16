@@ -131,25 +131,25 @@ func TestCreateParameterOverview(t *testing.T) {
 | [stashContent](#stashContent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
 
 `
-
+	stepParameterNames = []string{"param1"}
 	assert.Equal(t, expected, createParameterOverview(&stepData))
+	stepParameterNames = []string{}
 }
 
 func TestParameterFurtherInfo(t *testing.T) {
 	tt := []struct {
-		paramName     string
-		contextParams []string
-		stepData      *config.StepData
-		contains      string
-		notContains   []string
+		paramName   string
+		stepParams  []string
+		stepData    *config.StepData
+		contains    string
+		notContains []string
 	}{
-		{paramName: "verbose", contextParams: []string{}, stepData: nil, contains: "activates debug output"},
-		{paramName: "script", contextParams: []string{}, stepData: nil, contains: "reference to Jenkins main pipeline script"},
-		{paramName: "contextTest", contextParams: []string{"contextTest"}, stepData: &config.StepData{}, contains: "Jenkins only", notContains: []string{"pipeline script", "id of credentials"}},
-		{paramName: "noop", contextParams: []string{}, stepData: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{}}}}, contains: ""},
+		{paramName: "verbose", stepParams: []string{}, stepData: nil, contains: "activates debug output"},
+		{paramName: "script", stepParams: []string{}, stepData: nil, contains: "reference to Jenkins main pipeline script"},
+		{paramName: "contextTest", stepParams: []string{}, stepData: &config.StepData{}, contains: "Jenkins only", notContains: []string{"pipeline script", "id of credentials"}},
+		{paramName: "noop", stepParams: []string{"noop"}, stepData: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{}}}}, contains: ""},
 		{
-			paramName:     "testCredentialId",
-			contextParams: []string{"testCredentialId"},
+			paramName: "testCredentialId",
 			stepData: &config.StepData{
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
@@ -160,12 +160,13 @@ func TestParameterFurtherInfo(t *testing.T) {
 			contains: "id of credentials",
 		},
 		{
-			paramName: "testSecret",
+			paramName:  "testSecret1",
+			stepParams: []string{"testSecret1"},
 			stepData: &config.StepData{
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "testSecret", Secret: true, ResourceRef: []config.ResourceReference{{Name: "mytestSecret", Type: "secret"}}},
+							{Name: "testSecret1", Secret: true, ResourceRef: []config.ResourceReference{{Name: "mytestSecret", Type: "secret"}}},
 						},
 					},
 				},
@@ -173,12 +174,13 @@ func TestParameterFurtherInfo(t *testing.T) {
 			contains: "credentials ([`mytestSecret`](#mytestSecret))",
 		},
 		{
-			paramName: "testSecret",
+			paramName:  "testSecret2",
+			stepParams: []string{"testSecret2"},
 			stepData: &config.StepData{
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "testSecret"},
+							{Name: "testSecret2"},
 						},
 					},
 				},
@@ -188,14 +190,16 @@ func TestParameterFurtherInfo(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		res := parameterFurtherInfo(test.paramName, test.contextParams, test.stepData)
+		stepParameterNames = test.stepParams
+		res := parameterFurtherInfo(test.paramName, test.stepData)
+		stepParameterNames = []string{}
 		if len(test.contains) == 0 {
-			assert.Equal(t, test.contains, res)
+			assert.Equalf(t, test.contains, res, fmt.Sprintf("param %v", test.paramName))
 		} else {
-			assert.Contains(t, res, test.contains)
+			assert.Containsf(t, res, test.contains, fmt.Sprintf("param %v", test.paramName))
 		}
 		for _, notThere := range test.notContains {
-			assert.NotContains(t, res, notThere)
+			assert.NotContainsf(t, res, notThere, fmt.Sprintf("param %v", test.paramName))
 		}
 	}
 }
@@ -238,42 +242,42 @@ func TestCreateParameterDetails(t *testing.T) {
 
 func TestFormatDefault(t *testing.T) {
 	tt := []struct {
-		param         config.StepParameters
-		jenkinsParams []string
-		expected      string
-		contains      []string
+		param      config.StepParameters
+		stepParams []string
+		expected   string
+		contains   []string
 	}{
-		{param: config.StepParameters{Name: "test1"}, jenkinsParams: []string{}, expected: "`$PIPER_test1` (if set)"},
-		{param: config.StepParameters{Name: "jenkins1"}, jenkinsParams: []string{"jenkins1"}, expected: ""},
+		{param: config.StepParameters{Name: "test1"}, stepParams: []string{"test1"}, expected: "`$PIPER_test1` (if set)"},
+		{param: config.StepParameters{Name: "jenkins1"}, stepParams: []string{}, expected: ""},
 		{
-			param:         config.StepParameters{Name: "test1", Default: []conditionDefault{{key: "key1", value: "val1", def: "def1"}, {key: "key2", value: "val2", def: "def2"}}},
-			jenkinsParams: []string{},
-			contains:      []string{"key1=`val1`: `def1`", "key2=`val2`: `def2`"},
+			param:      config.StepParameters{Name: "test1", Default: []conditionDefault{{key: "key1", value: "val1", def: "def1"}, {key: "key2", value: "val2", def: "def2"}}},
+			stepParams: []string{"test1"},
+			contains:   []string{"key1=`val1`: `def1`", "key2=`val2`: `def2`"},
 		},
 		{
-			param:         config.StepParameters{Name: "test1", Default: []interface{}{conditionDefault{key: "key1", value: "val1", def: "def1"}, "def2"}},
-			jenkinsParams: []string{},
-			contains:      []string{"key1=`val1`: `def1`", "- `def2`"},
+			param:      config.StepParameters{Name: "test1", Default: []interface{}{conditionDefault{key: "key1", value: "val1", def: "def1"}, "def2"}},
+			stepParams: []string{"test1"},
+			contains:   []string{"key1=`val1`: `def1`", "- `def2`"},
 		},
 		{
-			param:         config.StepParameters{Name: "test1", Default: map[string]string{"key1": "def1", "key2": "def2"}},
-			jenkinsParams: []string{},
-			contains:      []string{"`key1`: `def1`", "`key2`: `def2`"},
+			param:      config.StepParameters{Name: "test1", Default: map[string]string{"key1": "def1", "key2": "def2"}},
+			stepParams: []string{"test1"},
+			contains:   []string{"`key1`: `def1`", "`key2`: `def2`"},
 		},
-		{param: config.StepParameters{Name: "test1", Default: ""}, jenkinsParams: []string{}, expected: "`''`"},
-		{param: config.StepParameters{Name: "test1", Default: "def1"}, jenkinsParams: []string{}, expected: "`def1`"},
-		{param: config.StepParameters{Name: "test1", Default: 1}, jenkinsParams: []string{}, expected: "`1`"},
+		{param: config.StepParameters{Name: "test1", Default: ""}, stepParams: []string{"test1"}, expected: "`''`"},
+		{param: config.StepParameters{Name: "test1", Default: "def1"}, stepParams: []string{"test1"}, expected: "`def1`"},
+		{param: config.StepParameters{Name: "test1", Default: 1}, stepParams: []string{"test1"}, expected: "`1`"},
 	}
 
 	for _, test := range tt {
 		if len(test.contains) > 0 {
-			res := formatDefault(test.param, test.jenkinsParams)
+			res := formatDefault(test.param, test.stepParams)
 			for _, check := range test.contains {
 				assert.Contains(t, res, check)
 			}
 
 		} else {
-			assert.Equal(t, test.expected, formatDefault(test.param, test.jenkinsParams))
+			assert.Equal(t, test.expected, formatDefault(test.param, test.stepParams))
 		}
 
 	}

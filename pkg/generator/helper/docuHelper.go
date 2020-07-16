@@ -12,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
+var stepParameterNames []string
+
 // generates the step documentation and replaces the template with the generated documentation
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
@@ -137,6 +139,7 @@ func stepOutputs(stepData *config.StepData) string {
 
 // Replaces the docGenParameters placeholder with the content from the yaml
 func docGenParameters(stepData *config.StepData) string {
+
 	var parameters = "Parameters\n\n"
 
 	// sort parameters alphabetically with mandatory parameters first
@@ -162,9 +165,8 @@ func createParameterOverview(stepData *config.StepData) string {
 	var table = "| Name | Mandatory | Additional information |\n"
 	table += "| ---- | --------- | ---------------------- |\n"
 
-	contextParamFilters := stepData.GetContextParameterFilters()
 	for _, param := range stepData.Spec.Inputs.Parameters {
-		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, param.Name, ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, contextParamFilters.All, stepData))
+		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, param.Name, ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
 	}
 
 	table += "\n"
@@ -172,7 +174,7 @@ func createParameterOverview(stepData *config.StepData) string {
 	return table
 }
 
-func parameterFurtherInfo(paramName string, contextParams []string, stepData *config.StepData) string {
+func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
 
 	// handle general parameters
 	// ToDo: add special handling once we have more than one general parameter to consider
@@ -185,7 +187,7 @@ func parameterFurtherInfo(paramName string, contextParams []string, stepData *co
 	}
 
 	// handle Jenkins-specific parameters
-	if contains(contextParams, paramName) {
+	if !contains(stepParameterNames, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
 				return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
@@ -216,12 +218,12 @@ func createParameterDetails(stepData *config.StepData) string {
 
 	details := ""
 
-	jenkinsParameters := append(stepData.GetContextParameterFilters().All, "script")
+	//jenkinsParameters := append(jenkinsParameters(stepData), "script")
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		details += fmt.Sprintf("#### %v\n\n", param.Name)
 
-		if contains(jenkinsParameters, param.Name) {
+		if !contains(stepParameterNames, param.Name) {
 			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
 		}
 
@@ -237,7 +239,7 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
 		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(param.Mandatory && param.Default == nil, "**yes**", "no"))
-		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, jenkinsParameters))
+		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames))
 		if param.PossibleValues != nil {
 			details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues))
 		}
@@ -251,10 +253,10 @@ func createParameterDetails(stepData *config.StepData) string {
 	return details
 }
 
-func formatDefault(param config.StepParameters, jenkinsParameters []string) string {
+func formatDefault(param config.StepParameters, stepParameterNames []string) string {
 	if param.Default == nil {
 		// Return environment variable for all step parameters (not for Jenkins-specific parameters) in case no default is available
-		if !contains(jenkinsParameters, param.Name) {
+		if contains(stepParameterNames, param.Name) {
 			return fmt.Sprintf("`$PIPER_%v` (if set)", param.Name)
 		}
 		return ""
@@ -371,6 +373,8 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 }
 
 func handleStepParameters(stepData *config.StepData) {
+
+	stepParameterNames = stepData.GetParameterFilters().All
 
 	//add general options like script, verbose, etc.
 	//ToDo: add to context.yaml
