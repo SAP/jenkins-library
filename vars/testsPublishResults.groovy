@@ -27,7 +27,12 @@ import groovy.transform.Field
      * Publishes performance test results with the [Performance plugin](https://plugins.jenkins.io/performance).
      * @possibleValues `true`, `false`, `Map`
      */
-    'jmeter'
+    'jmeter',
+    /**
+     * Publishes test results with the [Cucumber plugin](https://plugins.jenkins.io/cucumber-testresult-plugin/).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'cucumber'
 ]
 
 @Field def STEP_NAME = getClass().getName()
@@ -73,6 +78,7 @@ void call(Map parameters = [:]) {
         publishJacocoReport(configuration.get('jacoco'))
         publishCoberturaReport(configuration.get('cobertura'))
         publishJMeterReport(configuration.get('jmeter'))
+        publishCucumberReport(configuration.get('cucumber'))
 
         if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
             script.currentBuild.result = 'FAILURE'
@@ -82,7 +88,7 @@ void call(Map parameters = [:]) {
 }
 
 def publishJUnitReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -98,7 +104,7 @@ def publishJUnitReport(Map settings = [:]) {
 }
 
 def publishJacocoReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -112,7 +118,7 @@ def publishJacocoReport(Map settings = [:]) {
 }
 
 def publishCoberturaReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -132,7 +138,7 @@ def publishCoberturaReport(Map settings = [:]) {
 
 // publish Performance Report using "Jenkins Performance Plugin" https://wiki.jenkins.io/display/JENKINS/Performance+Plugin
 def publishJMeterReport(Map settings = [:]){
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
 
         perfReport(
@@ -153,6 +159,18 @@ def publishJMeterReport(Map settings = [:]){
             compareBuildPrevious: settings.get('compareBuildPrevious')
         )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
+    }
+}
+
+def publishCucumberReport(Map settings = [:]) {
+    if (settings.active) {
+        def pattern = settings.get('pattern')
+        def allowEmpty = settings.get('allowEmptyResults')
+
+        cucumber(
+            testResults: pattern
+        )
+        archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
 

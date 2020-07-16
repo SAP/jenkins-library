@@ -527,9 +527,16 @@ func TestGetResourceParameters(t *testing.T) {
 			in: StepData{
 				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
 					{Name: "param1", ResourceRef: []ResourceReference{{Name: "notAvailable", Param: "envparam1"}}},
-					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}},
+					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
 				}}}},
 			expected: map[string]interface{}{"param2": "val2"},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param3", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam3"}}, Type: "[]string"},
+				}}}},
+			expected: map[string]interface{}{"param3": []interface{}{"value1", "value2"}},
 		},
 	}
 
@@ -548,6 +555,7 @@ func TestGetResourceParameters(t *testing.T) {
 
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "envparam3"), []byte("[\"value1\",\"value2\"]"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
