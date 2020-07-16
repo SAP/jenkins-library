@@ -301,3 +301,13 @@ func (f *FilesMock) Stat(name string) (os.FileInfo, error) {
 		isDir: props.content == &dirContent,
 	}, nil
 }
+
+//Chmod ...
+func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
+	props, exists := f.files[f.toAbsPath(path)]
+	if !exists {
+		return fmt.Errorf("chmod: %s: No such file or directory", path)
+	}
+	props.mode = &mode
+	return nil
+}
