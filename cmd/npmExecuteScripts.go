@@ -18,7 +18,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
 	if config.Install {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFiles(config.BuildDescriptorExcludeList)
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 		if err != nil {
 			return err
 		}

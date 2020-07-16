@@ -33,14 +33,32 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles, err := exec.FindPackageJSONFiles(nil)
+		packageJSONFiles := exec.FindPackageJSONFiles()
 
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"package.json"}, packageJSONFiles)
-		}
+		assert.Equal(t, []string{"package.json"}, packageJSONFiles)
+
 	})
 
-	t.Run("find package.json files with two package.json and filtered package.json", func(t *testing.T) {
+	t.Run("find package.json files with two package.json and default filter", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))          // should NOT be filtered out
+		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
+		utils.AddFile(filepath.Join("gen", "package.json"), []byte("{}"))          // is filtered out
+
+		options := ExecutorOptions{}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+
+		packageJSONFiles := exec.FindPackageJSONFiles()
+
+		assert.Equal(t, []string{"package.json", filepath.Join("src", "package.json")}, packageJSONFiles)
+	})
+
+	t.Run("find package.json files with two package.json and excludes", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{}"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))                  // should NOT be filtered out
@@ -59,7 +77,7 @@ func TestNpm(t *testing.T) {
 			Options: options,
 		}
 
-		packageJSONFiles, err := exec.FindPackageJSONFiles([]string{"filter/**", "filterPath/package.json"})
+		packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes([]string{"filter/**", "filterPath/package.json"})
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{filepath.Join("Path", "To", "filter", "package.json"), filepath.Join("notfiltered", "package.json"), "package.json", filepath.Join("src", "package.json")}, packageJSONFiles)

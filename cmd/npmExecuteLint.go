@@ -79,7 +79,7 @@ func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.Custo
 }
 
 func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExecuteLintOptions) error {
-	packageJSONFiles, _ := npmExecutor.FindPackageJSONFiles(nil)
+	packageJSONFiles := npmExecutor.FindPackageJSONFiles()
 	packagesWithCiLint, _ := npmExecutor.FindPackageJSONFilesWithScript(packageJSONFiles, "ci-lint")
 
 	if len(packagesWithCiLint) > 0 {

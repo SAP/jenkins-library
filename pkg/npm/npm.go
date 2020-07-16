@@ -21,7 +21,8 @@ type Execute struct {
 
 // Executor interface to enable mocking for testing
 type Executor interface {
-	FindPackageJSONFiles(excludeList []string) ([]string, error)
+	FindPackageJSONFiles() []string
+	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
@@ -129,7 +130,7 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
 func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
-	packageJSONFiles, err := exec.FindPackageJSONFiles(excludeList)
+	packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes(excludeList)
 	if err != nil {
 		return err
 	}
@@ -210,7 +211,13 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 }
 
 // FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
-func (exec *Execute) FindPackageJSONFiles(excludeList []string) ([]string, error) {
+func (exec *Execute) FindPackageJSONFiles() []string {
+	packageJSONFiles, _ := exec.FindPackageJSONFilesWithExcludes([]string{})
+	return packageJSONFiles
+}
+
+// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, _ := exec.Utils.Glob("**/package.json")
 
 	nodeModulesExclude := "**/node_modules/**"

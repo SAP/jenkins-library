@@ -42,7 +42,13 @@ type npmExecutorMock struct {
 }
 
 // FindPackageJSONFiles mock implementation
-func (n *npmExecutorMock) FindPackageJSONFiles(excludeList []string) ([]string, error) {
+func (n *npmExecutorMock) FindPackageJSONFiles() []string {
+	packages, _ := n.utils.Glob("**/package.json")
+	return packages
+}
+
+// FindPackageJSONFiles mock implementation
+func (n *npmExecutorMock) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
 	packages, _ := n.utils.Glob("**/package.json")
 	return packages, nil
 }
@@ -84,7 +90,7 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 
 // InstallAllDependencies mock implementation
 func (n *npmExecutorMock) InstallAllDependencies(packageJSONFiles []string) error {
-	allPackages, _ := n.FindPackageJSONFiles(nil)
+	allPackages := n.FindPackageJSONFiles()
 	if len(packageJSONFiles) != len(allPackages) {
 		return fmt.Errorf("packageJSONFiles != n.FindPackageJSONFiles()")
 	}

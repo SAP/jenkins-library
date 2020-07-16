@@ -98,15 +98,15 @@ void call(Map parameters = [:]) {
                 utils.unstashStageFiles(script, stageName)
                 try {
                     withCredentials(credentials) {
+                        List scriptOptions = ["--launchUrl=${appUrl.url}"]
                         if (appUrl.parameters) {
                             if (appUrl.parameters instanceof List) {
-                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
+                                scriptOptions = scriptOptions + appUrl.parameters
                             } else {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
-                        } else {
-                            npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"], buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                         }
+                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                     }
 
                 } catch (Exception e) {
