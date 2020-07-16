@@ -11,12 +11,6 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## ${docJenkinsPluginDependencies}
 
-## Example
-
-```groovy
-detectExecuteScan script: this, scanProperties: ['--logging.level.com.synopsys.integration=TRACE']
-```
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
