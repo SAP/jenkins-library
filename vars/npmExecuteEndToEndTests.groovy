@@ -24,6 +24,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'appUrls',
     /**
+     * List of build descriptors and therefore modules to exclude from execution of the npm scripts.
+     * The elements of the list can either be a path to the build descriptor or a pattern.
+     */
+    'buildDescriptorExcludeList',
+    /**
      * Script to be executed from package.json.
      */
     'runScript'])
@@ -95,12 +100,12 @@ void call(Map parameters = [:]) {
                     withCredentials(credentials) {
                         if (appUrl.parameters) {
                             if (appUrl.parameters instanceof List) {
-                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters, buildDescriptorExcludeList: ["**/*/package.json"])
+                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                             } else {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
                         } else {
-                            npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"], buildDescriptorExcludeList: ["**/*/package.json"])
+                            npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"], buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                         }
                     }
 
