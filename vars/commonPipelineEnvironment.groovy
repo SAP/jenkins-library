@@ -6,6 +6,9 @@ import groovy.json.JsonOutput
 
 class commonPipelineEnvironment implements Serializable {
 
+    //Project identifier which might be used to distinguish resources which are available globally, e.g. for locking
+    def projectName
+
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
     def originalArtifactVersion
@@ -57,6 +60,8 @@ class commonPipelineEnvironment implements Serializable {
     String changeDocumentId
 
     def reset() {
+
+        projectName = null
 
         abapRepositoryNames = null
 
