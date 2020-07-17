@@ -70,7 +70,7 @@ void call(Map parameters = [:]) {
         // Prefer the newer multicloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_test_multicloud_duration') {
-                multicloudDeploy(script: script, stageName: stageName)
+                multicloudDeploy(script: script, stage: stageName)
             }
         } else {
             if (config.cloudFoundryDeploy) {
