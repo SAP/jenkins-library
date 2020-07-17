@@ -223,7 +223,7 @@ func TestWithNativeDockerClient(t *testing.T) {
 	testRunner := given(IntegrationTestDockerExecRunner{
 		Image:  "node:12",
 		User:   "root",
-		Mounts: nil,
+		Mounts: map[string]string{},
 		Setup: []string{
 			"apt-get -yqq update; apt-get -yqq install make",
 			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
@@ -253,9 +253,11 @@ func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner 
 	wd, _ := os.Getwd()
 	localPiper := path.Join(wd, "..", "piper")
 
+	projectDir := path.Join(wd, "testdata", "TestMtaIntegration", "npm-install-dev-dependencies")
+
 	//todo mounts
 	//todo random name gen
-	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u=" + testRunner.User, "-v", localPiper + ":/piper", "--name=foobar", testRunner.Image, "sleep", "2000")
+	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u=" + testRunner.User, "-v", localPiper + ":/piper", "-v", projectDir + ":/project", "--name=foobar", testRunner.Image, "sleep", "2000")
 	if err != nil {
 		panic(err)
 	}
@@ -279,8 +281,9 @@ type IntegrationTestDockerExecRunner struct {
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	executable := "/piper"
-	return d.Runner.RunExecutable(executable, append([]string{command}, parameters...)...)
+	args := []string{"exec", "--workdir", "/project", "foobar", "/piper", command}
+	args = append(args, parameters...)
+	return d.Runner.RunExecutable("docker", args...)
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(want string) {
