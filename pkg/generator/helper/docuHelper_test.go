@@ -128,7 +128,7 @@ func TestCreateParameterOverview(t *testing.T) {
 	expected := `| Name | Mandatory | Additional information |
 | ---- | --------- | ---------------------- |
 | [param1](#param1) | no |  |
-| [stashContent](#stashContent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
+| [stashContent](#stashcontent) | no | [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) |
 
 `
 	stepParameterNames = []string{"param1"}
@@ -334,8 +334,8 @@ func TestScopeDetails(t *testing.T) {
 		scope    []string
 		contains []string
 	}{
-		{scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, contains: []string{"<li>- [X] parameter</li>", "<li>- [X] general</li>", "<li>- [X] steps</li>", "<li>- [X] stages</li>"}},
-		{scope: []string{}, contains: []string{"<li>- [ ] parameter</li>", "<li>- [ ] general</li>", "<li>- [ ] steps</li>", "<li>- [ ] stages</li>"}},
+		{scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, contains: []string{"<li>&#9746; parameter</li>", "<li>&#9746; general</li>", "<li>&#9746; steps</li>", "<li>&#9746; stages</li>"}},
+		{scope: []string{}, contains: []string{"<li>&#9744; parameter</li>", "<li>&#9744; general</li>", "<li>&#9744; steps</li>", "<li>&#9744; stages</li>"}},
 	}
 
 	for _, test := range tt {

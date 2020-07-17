@@ -7,8 +7,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -22,8 +22,9 @@ type Execute struct {
 // Executor interface to enable mocking for testing
 type Executor interface {
 	FindPackageJSONFiles() []string
+	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
-	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error
+	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
 }
@@ -128,8 +129,12 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
-func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool) error {
-	packageJSONFiles := exec.FindPackageJSONFiles()
+func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
+	packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes(excludeList)
+	if err != nil {
+		return err
+	}
+
 	execRunner := exec.Utils.GetExecRunner()
 
 	if virtualFrameBuffer {
@@ -205,25 +210,42 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 	return nil
 }
 
-// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+// FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
 func (exec *Execute) FindPackageJSONFiles() []string {
+	packageJSONFiles, _ := exec.FindPackageJSONFilesWithExcludes([]string{})
+	return packageJSONFiles
+}
+
+// FindPackageJSONFilesWithExcludes returns a list of all package.json files of the project excluding node_modules, gen/ and directories/patterns defined by excludeList
+func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, _ := exec.Utils.Glob("**/package.json")
+
+	nodeModulesExclude := "**/node_modules/**"
+	genExclude := "**/gen/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
 	var packageJSONFiles []string
 
 	for _, file := range unfilteredListOfPackageJSONFiles {
-		if strings.Contains(file, "node_modules") {
-			continue
+		excludePackage := false
+		for _, exclude := range excludeList {
+			matched, err := doublestar.PathMatch(exclude, file)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
+			}
+			if matched {
+				excludePackage = true
+				break
+			}
 		}
-
-		if strings.HasPrefix(file, "gen"+string(os.PathSeparator)) || strings.Contains(file, string(os.PathSeparator)+"gen"+string(os.PathSeparator)) {
+		if excludePackage {
 			continue
 		}
 
 		packageJSONFiles = append(packageJSONFiles, file)
 		log.Entry().Info("Discovered package.json file " + file)
 	}
-	return packageJSONFiles
+	return packageJSONFiles, nil
 }
 
 // FindPackageJSONFilesWithScript returns a list of package.json fileUtils that contain the script
