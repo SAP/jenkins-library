@@ -5,6 +5,8 @@ package main
 
 import (
 	"context"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -214,4 +216,56 @@ mv mbt /usr/bin
 	}
 	output := string(content)
 	assert.Contains(t, output, "added 2 packages in")
+}
+
+func TestWithNativeDockerClient(t *testing.T) {
+	t.Parallel()
+	runner := command.Command{}
+	dockerRunner := IntegrationTestDockerExecRunner{
+		Runner: &runner,
+		Image:  "node:12",
+		User:   "root",
+		Mounts: nil,
+		Setup: []string{
+			"apt-get -yqq update; apt-get -yqq install make",
+			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
+			"mv mbt /usr/bin",
+		},
+	}
+
+	dockerRunner.executePiperCommand("mtaBuild")
+
+	_ = dockerRunner.AddExecConfig("uname", mock.DockerExecConfig{
+		Image: "node:12",
+		Setup: "apt-get -yqq update; apt-get -yqq install make\ncurl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz\ntar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz\nmv mbt /usr/bin"
+	})
+
+	dockerRunner.RunExecutable("uname", "-a")
+}
+
+type IntegrationTestDockerExecRunner struct {
+	// Runner is the ExecRunner to which all executions are forwarded in the end.
+	Runner baseRunner
+	Image  string
+	User   string
+	Mounts map[string]string
+	Setup  []string
+}
+
+func (d *IntegrationTestDockerExecRunner) RunExecutable(executable string, parameters ...string) error {
+	if config, ok := d.executablesToWrap[executable]; ok {
+		wrappedParameters := []string{"run", "--entrypoint=" + executable}
+		if config.Workspace != "" {
+			currentDir, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("failed to get current directory for mounting in docker: %w", err)
+			}
+			wrappedParameters = append(wrappedParameters, "-v", currentDir+":"+config.Workspace)
+		}
+		wrappedParameters = append(wrappedParameters, config.Image)
+		wrappedParameters = append(wrappedParameters, parameters...)
+		executable = "docker"
+		parameters = wrappedParameters
+	}
+	return d.Runner.RunExecutable(executable, parameters...)
 }
