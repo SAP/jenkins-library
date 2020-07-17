@@ -419,21 +419,9 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 				return "", []string{}, []string{}, err
 			}
 
-			defaultManifestVariableFileName := "manifest-variables.yml"
-
-			manifestVariablesFiles := config.ManifestVariablesFiles
-
-			if len(manifestVariablesFiles) == 1 && manifestVariablesFiles[0] == defaultManifestVariableFileName {
-				// we have only the default file. Most likely this is not configured, but we simply have the default.
-				// In case this file does not exist we ignore that file.
-				exists, err := fileUtils.FileExists(defaultManifestVariableFileName)
-				if err != nil {
-					return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
-				}
-
-				if !exists {
-					manifestVariablesFiles = []string{}
-				}
+			manifestVariablesFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(config.ManifestVariablesFiles)
+			if err != nil {
+				return "", []string{}, []string{}, err
 			}
 
 			modified, err := _substitute(config.Manifest, manifestVariables, manifestVariablesFiles)
@@ -456,6 +444,23 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 		log.Entry().Info("No manifest file configured")
 	}
 	return "blue-green-deploy", deployOptions, smokeTest, nil
+}
+
+func removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(manifestVariablesFiles []string) ([]string, error) {
+
+	const defaultManifestVariableFileName = "manifest-variables.yml"
+	if len(manifestVariablesFiles) == 1 && manifestVariablesFiles[0] == defaultManifestVariableFileName {
+		// we have only the default file. Most likely this is not configured, but we simply have the default.
+		// In case this file does not exist we ignore that file.
+		exists, err := fileUtils.FileExists(defaultManifestVariableFileName)
+		if err != nil {
+			return []string{}, err
+		}
+		if !exists {
+			return []string{}, nil
+		}
+	}
+	return manifestVariablesFiles, nil
 }
 
 func toParameterMap(parameters []string) (*orderedmap.OrderedMap, error) {

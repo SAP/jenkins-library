@@ -1141,3 +1141,64 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 		}
 	})
 }
+
+func TestDefaultManifestVariableFilesHandling(t *testing.T) {
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddDir("/home/me")
+	filesMock.Chdir("/home/me")
+	fileUtils = &filesMock
+
+	t.Run("default manifest variable file is the only one and exists", func(t *testing.T) {
+		defer func() {
+			filesMock.FileRemove("manifest-variables.yml")
+		}()
+		filesMock.AddFile("manifest-variables.yml", []byte("Content does not matter"))
+
+		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+			[]string{
+				"manifest-variables.yml",
+			},
+		)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t,
+				[]string{
+					"manifest-variables.yml",
+				}, manifestFiles)
+		}
+	})
+
+	t.Run("default manifest variable file is the only one and does not exist", func(t *testing.T) {
+
+		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+			[]string{
+				"manifest-variables.yml",
+			},
+		)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{}, manifestFiles)
+		}
+	})
+
+	t.Run("default manifest variable file among others remains if it does not exist", func(t *testing.T) {
+
+		// in this case we might fail later.
+
+		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+			[]string{
+				"manifest-variables.yml",
+				"a-second-file.yml",
+			},
+		)
+
+		if assert.NoError(t, err) {
+			// the order in which the files are returned is significant.
+			assert.Equal(t, []string{
+				"manifest-variables.yml",
+				"a-second-file.yml",
+			}, manifestFiles)
+		}
+	})
+}
