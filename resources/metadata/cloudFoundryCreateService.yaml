@@ -16,7 +16,10 @@ spec:
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
         aliases:
-          - name: cloudFoundry/credentialsId
+          - name: cloudFoundry/credentialsId    
+    resources:
+      - name: deployDescriptor
+        type: stash
     params:
       - name: cfApiEndpoint
         type: string

@@ -200,11 +200,6 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateService:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
-    stashContent:
-      - 'deployDescriptor'
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
