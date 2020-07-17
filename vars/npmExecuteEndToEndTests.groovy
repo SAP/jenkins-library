@@ -24,6 +24,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'appUrls',
     /**
+     * List of build descriptors and therefore modules to exclude from execution of the npm scripts.
+     * The elements of the list can either be a path to the build descriptor or a pattern.
+     */
+    'buildDescriptorExcludeList',
+    /**
      * Script to be executed from package.json.
      */
     'runScript'])
@@ -93,20 +98,31 @@ void call(Map parameters = [:]) {
                 utils.unstashStageFiles(script, stageName)
                 try {
                     withCredentials(credentials) {
+                        List scriptOptions = ["--launchUrl=${appUrl.url}"]
                         if (appUrl.parameters) {
                             if (appUrl.parameters instanceof List) {
-                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters)
+                                scriptOptions = scriptOptions + appUrl.parameters
                             } else {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
                         }
-                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"])
+                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                     }
 
                 } catch (Exception e) {
                     error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
                 } finally {
-                    //TODO: Implement Report handling
+                    List cucumberFiles = findFiles(glob: "**/e2e/*.json")
+                    List junitFiles = findFiles(glob: "**/e2e/*.xml")
+
+                    if (cucumberFiles.size() > 0) {
+                        testsPublishResults script: script, cucumber: [active: true, archive: true]
+                    } else if (junitFiles.size() > 0){
+                        testsPublishResults script: script, junit: [active: true, archive: true]
+                    } else {
+                        echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
+                    }
+
                     utils.stashStageFiles(script, parameters.stage)
                 }
             }
