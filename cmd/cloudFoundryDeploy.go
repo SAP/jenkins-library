@@ -419,7 +419,24 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 				return "", []string{}, []string{}, err
 			}
 
-			modified, err := _substitute(config.Manifest, manifestVariables, config.ManifestVariablesFiles)
+			defaultManifestVariableFileName := "manifest-variables.yml"
+
+			manifestVariablesFiles := config.ManifestVariablesFiles
+
+			if len(manifestVariablesFiles) == 1 && manifestVariablesFiles[0] == defaultManifestVariableFileName {
+				// we have only the default file. Most likely this is not configured, but we simply have the default.
+				// In case this file does not exist we ignore that file.
+				exists, err := fileUtils.FileExists(defaultManifestVariableFileName)
+				if err != nil {
+					return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
+				}
+
+				if !exists {
+					manifestVariablesFiles = []string{}
+				}
+			}
+
+			modified, err := _substitute(config.Manifest, manifestVariables, manifestVariablesFiles)
 			if err != nil {
 				return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
 			}
