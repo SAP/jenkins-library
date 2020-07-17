@@ -82,6 +82,10 @@ mkdir mym2
 	assert.Contains(t, output, "Installing /test/app/targe/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
 	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
 	assert.Contains(t, output, "added 2 packages from 3 contributors and audited 2 packages in")
+
+	if t.Failed() {
+		t.Fatal(output)
+	}
 }
 
 func TestNPMProject(t *testing.T) {
@@ -145,7 +149,7 @@ mv mbt /usr/bin
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
-	assert.Contains(t, output, "INFO the MTA archive generated at: test-mta-js.mtar")
+	assert.Contains(t, output, "INFO the MTA archive gendfserated at: test-mta-js.mtar")
 }
 
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {
