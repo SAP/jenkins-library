@@ -176,5 +176,6 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
+        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-e2e'))
     }
 }

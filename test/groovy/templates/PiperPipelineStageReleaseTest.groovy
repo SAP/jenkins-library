@@ -127,6 +127,7 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
+        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-smoke'))
     }
 
     @Test
