@@ -127,11 +127,8 @@ void call(Map parameters = [:]) {
                 }
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
-                echo env.POD_NAME
                 if (env.POD_NAME) {
                     dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
-                        echo env.POD_NAME
-                        echo
                         e2eTest.call()
                     }
                 } else {
