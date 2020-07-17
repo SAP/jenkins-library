@@ -267,7 +267,7 @@ func TestStat(t *testing.T) {
 			assert.Equal(t, "dummy.txt", info.Name())
 			assert.False(t, info.IsDir())
 			// if not specified otherwise the 644 file mode is used.
-			assert.Equal(t, os.FileMode(0644), info.Mode())
+			assert.Equal(t, defaultFileMode, info.Mode())
 		}
 	})
 	t.Run("check implicit dir", func(t *testing.T) {

@@ -15,7 +15,10 @@ import (
 
 var dirContent []byte
 
-const defaultDirMode os.FileMode = 0755
+const (
+	defaultFileMode os.FileMode = 0644
+	defaultDirMode  os.FileMode = 0755
+)
 
 type fileInfoMock struct {
 	name  string
@@ -67,7 +70,7 @@ func (f *FilesMock) toAbsPath(path string) string {
 // AddFile establishes the existence of a virtual file. The file is
 // added with mode 644
 func (f *FilesMock) AddFile(path string, contents []byte) {
-	f.AddFileWithMode(path, contents, 0644)
+	f.AddFileWithMode(path, contents, defaultFileMode)
 }
 
 // AddFileWithMode establishes the existence of a virtual file.
