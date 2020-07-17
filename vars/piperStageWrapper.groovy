@@ -25,6 +25,7 @@ void call(Map parameters = [:], body) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
         .addIfEmpty('stageName', stageName)
+        .addIfEmpty('lockingResourceGroup', script.commonPipelineEnvironment.projectName)
         .dependingOn('stageName').mixin('ordinal')
         .use()
 
@@ -46,8 +47,17 @@ void call(Map parameters = [:], body) {
 
 private void stageLocking(Map config, Closure body) {
     if (config.stageLocking) {
-        lock(resource: "${env.JOB_NAME}/${config.ordinal}", inversePrecedence: true) {
-            milestone config.ordinal
+        String resource = config.lockingResourceGroup?:env.JOB_NAME
+        if(config.lockingResource){
+            resource += "/${config.lockingResource}"
+        }
+        else if(config.ordinal){
+            resource += "/${config.ordinal}"
+        }
+        lock(resource: resource, inversePrecedence: true) {
+            if(config.ordinal) {
+                milestone config.ordinal
+            }
             body()
         }
     } else {

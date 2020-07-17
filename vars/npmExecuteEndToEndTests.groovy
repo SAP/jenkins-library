@@ -43,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stage ?: env.STAGE_NAME
+        def stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
