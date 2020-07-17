@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandContract(t *testing.T) {
@@ -70,6 +71,6 @@ func TestGenerator(t *testing.T) {
 	metadataFiles, err := helper.MetadataFiles(dir)
 	assert.NoError(t, err)
 
-	err = helper.ProcessMetaFiles(metadataFiles, stepHelperData, docuHelperData)
+	err = helper.ProcessMetaFiles(metadataFiles, "./cmd", stepHelperData, docuHelperData)
 	assert.NoError(t, err)
 }
