@@ -35,7 +35,6 @@ stages:
         configKeys:
           - 'testRepository'
       npmExecuteEndToEndTests:
-        filePattern: 'package.json'
         configKeys:
           - 'appUrls'
   Security:
@@ -75,7 +74,6 @@ stages:
         configKeys:
           - 'testServerUrl'
       npmExecuteEndToEndTests:
-        filePattern: 'package.json'
         configKeys:
           - 'appUrls'
       githubPublishRelease:
