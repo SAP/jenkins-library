@@ -6,9 +6,9 @@ package main
 import (
 	"context"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -219,53 +219,70 @@ mv mbt /usr/bin
 }
 
 func TestWithNativeDockerClient(t *testing.T) {
-	t.Parallel()
-	runner := command.Command{}
-	dockerRunner := IntegrationTestDockerExecRunner{
-		Runner: &runner,
+	//t.Parallel()
+	testRunner := given(IntegrationTestDockerExecRunner{
 		Image:  "node:12",
 		User:   "root",
 		Mounts: nil,
 		Setup: []string{
 			"apt-get -yqq update; apt-get -yqq install make",
 			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
+			"tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
 			"mv mbt /usr/bin",
 		},
-	}
-
-	dockerRunner.executePiperCommand("mtaBuild")
-
-	_ = dockerRunner.AddExecConfig("uname", mock.DockerExecConfig{
-		Image: "node:12",
-		Setup: "apt-get -yqq update; apt-get -yqq install make\ncurl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz\ntar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz\nmv mbt /usr/bin"
 	})
 
-	dockerRunner.RunExecutable("uname", "-a")
+	testRunner.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
+
+	testRunner.assertHasOutput("")
+
 }
+
+func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner {
+	runner := command.Command{}
+
+	testRunner := IntegrationTestDockerExecRunner{
+		Runner: runner,
+		Image:  foo.Image,
+		User:   foo.User,
+		Mounts: foo.Mounts,
+		Setup:  foo.Setup,
+	}
+
+	//todo ensure it is a linux binary
+	wd, _ := os.Getwd()
+	localPiper := path.Join(wd, "..", "piper")
+
+	//todo mounts
+	//todo random name gen
+	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u=" + testRunner.User, "-v", localPiper + ":/piper", "--name=foobar", testRunner.Image, "sleep", "2000")
+	if err != nil {
+		panic(err)
+	}
+	for _, scriptLine := range testRunner.Setup {
+		err := testRunner.Runner.RunExecutable("docker", "exec", "foobar", "/bin/bash", "-c", scriptLine)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return testRunner
+}
+
 
 type IntegrationTestDockerExecRunner struct {
 	// Runner is the ExecRunner to which all executions are forwarded in the end.
-	Runner baseRunner
+	Runner command.Command
 	Image  string
 	User   string
 	Mounts map[string]string
 	Setup  []string
 }
 
-func (d *IntegrationTestDockerExecRunner) RunExecutable(executable string, parameters ...string) error {
-	if config, ok := d.executablesToWrap[executable]; ok {
-		wrappedParameters := []string{"run", "--entrypoint=" + executable}
-		if config.Workspace != "" {
-			currentDir, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("failed to get current directory for mounting in docker: %w", err)
-			}
-			wrappedParameters = append(wrappedParameters, "-v", currentDir+":"+config.Workspace)
-		}
-		wrappedParameters = append(wrappedParameters, config.Image)
-		wrappedParameters = append(wrappedParameters, parameters...)
-		executable = "docker"
-		parameters = wrappedParameters
-	}
-	return d.Runner.RunExecutable(executable, parameters...)
+func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
+	executable := "/piper"
+	return d.Runner.RunExecutable(executable, append([]string{command}, parameters...)...)
+}
+
+func (d *IntegrationTestDockerExecRunner) assertHasOutput(want string) {
+	d.Runner.RunExecutable("docker", "logs", "foobar")
 }
