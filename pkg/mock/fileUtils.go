@@ -4,9 +4,9 @@ package mock
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -14,6 +14,8 @@ import (
 )
 
 var dirContent []byte
+
+const defaultDirMode os.FileMode = 0755
 
 type fileInfoMock struct {
 	name  string
@@ -31,7 +33,7 @@ func (fInfo fileInfoMock) Sys() interface{}   { return nil }
 
 type fileProperties struct {
 	content *[]byte
-	mode    *os.FileMode
+	mode    os.FileMode
 }
 
 //FilesMock implements the functions from piperutils.Files with an in-memory file system.
@@ -53,6 +55,9 @@ func (f *FilesMock) init() {
 }
 
 func (f *FilesMock) toAbsPath(path string) string {
+	if path == "." {
+		return f.Separator + f.currentDir
+	}
 	if !strings.HasPrefix(path, f.Separator) {
 		path = f.Separator + filepath.Join(f.currentDir, path)
 	}
@@ -67,21 +72,21 @@ func (f *FilesMock) AddFile(path string, contents []byte) {
 
 // AddFileWithMode establishes the existence of a virtual file.
 func (f *FilesMock) AddFileWithMode(path string, contents []byte, mode os.FileMode) {
-	f.associateContent(path, &contents, &mode)
+	f.associateContent(path, &contents, mode)
 }
 
 // AddDir establishes the existence of a virtual directory. The directory
 // is add with default mode 755
 func (f *FilesMock) AddDir(path string) {
-	f.AddDirWithMode(path, 0755)
+	f.AddDirWithMode(path, defaultDirMode)
 }
 
 // AddDirWithMode establishes the existence of a virtual directory.
 func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
-	f.associateContent(path, &dirContent, &mode)
+	f.associateContent(path, &dirContent, mode)
 }
 
-func (f *FilesMock) associateContent(path string, content *[]byte, mode *os.FileMode) {
+func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {
 	f.init()
 	path = strings.ReplaceAll(path, "/", f.Separator)
 	path = strings.ReplaceAll(path, "\\", f.Separator)
@@ -103,22 +108,13 @@ func (f *FilesMock) HasFile(path string) bool {
 // HasRemovedFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was removed via FileRemove().
 func (f *FilesMock) HasRemovedFile(path string) bool {
-	return contains(f.removedFiles, f.toAbsPath(path))
+	return piperutils.ContainsString(f.removedFiles, f.toAbsPath(path))
 }
 
 // HasWrittenFile returns true if the virtual file system at one point contained an entry for the given path,
 // and it was written via FileWrite().
 func (f *FilesMock) HasWrittenFile(path string) bool {
-	return contains(f.writtenFiles, f.toAbsPath(path))
-}
-
-func contains(collection []string, name string) bool {
-	for _, entry := range collection {
-		if entry == name {
-			return true
-		}
-	}
-	return false
+	return piperutils.ContainsString(f.writtenFiles, f.toAbsPath(path))
 }
 
 // FileExists returns true if file content has been associated with the given path, false otherwise.
@@ -138,6 +134,10 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 // previously added files.
 func (f *FilesMock) DirExists(path string) (bool, error) {
 	path = f.toAbsPath(path)
+	if path == "." || path == "."+f.Separator || path == f.Separator {
+		// The current folder, or the root folder always exist
+		return true, nil
+	}
 	for entry, props := range f.files {
 		var dirComponents []string
 		if props.content == &dirContent {
@@ -169,7 +169,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	if !exists || props.content == &dirContent {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
-	f.AddFileWithMode(dst, *props.content, *props.mode)
+	f.AddFileWithMode(dst, *props.content, props.mode)
 	return int64(len(*props.content)), nil
 }
 
@@ -248,7 +248,7 @@ func (f *FilesMock) Getwd() (string, error) {
 	return f.toAbsPath(""), nil
 }
 
-// Chdir changes virtually in to the given directory.
+// Chdir changes virtually into the given directory.
 // The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
 // The implementation does not support relative path components such as "..".
 func (f *FilesMock) Chdir(path string) error {
@@ -267,47 +267,61 @@ func (f *FilesMock) Chdir(path string) error {
 	return nil
 }
 
-// Stat ...
-func (f *FilesMock) Stat(name string) (os.FileInfo, error) {
-
-	props, exists := f.files[f.toAbsPath(name)]
-
+// Stat returns an approximated os.FileInfo. For files, it returns properties that have been associated
+// via the setup methods. For directories it depends. If a directory exists only implicitly, because
+// it is the parent of an added file, default values will be reflected in the file info.
+func (f *FilesMock) Stat(path string) (os.FileInfo, error) {
+	props, exists := f.files[f.toAbsPath(path)]
 	if !exists {
-
-		isDir, err := f.DirExists(f.toAbsPath(name))
+		// Check if this folder exists implicitly
+		isDir, err := f.DirExists(path)
 		if err != nil {
-			return nil, fmt.Errorf("Internal error inside mock: %w", err)
+			return nil, fmt.Errorf("internal error inside mock: %w", err)
 		}
 		if !isDir {
 			return nil, &os.PathError{
 				Op:   "stat",
-				Path: name,
+				Path: path,
 				Err:  fmt.Errorf("no such file or directory"),
 			}
 		}
 
-		// we assume some default // in the free wild wia umask
-		var mode os.FileMode = 0755
-
-		props = &fileProperties{}
-		props.mode = &mode
-		props.content = &dirContent
+		// we claim default umask, as no properties are stored for implicit folders
+		props = &fileProperties{
+			mode:    defaultDirMode,
+			content: &dirContent,
+		}
 	}
 
 	return fileInfoMock{
-		name:  path.Base(name),
-		mode:  *props.mode,
+		name:  filepath.Base(path),
+		mode:  props.mode,
 		size:  int64(len(*props.content)),
 		isDir: props.content == &dirContent,
 	}, nil
 }
 
-//Chmod ...
+// Chmod changes the file mode for the entry at the given path
 func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 	props, exists := f.files[f.toAbsPath(path)]
-	if !exists {
+	if exists {
+		props.mode = mode
+		return nil
+	}
+
+	// Check if the dir exists implicitly
+	isDir, err := f.DirExists(path)
+	if err != nil {
+		return fmt.Errorf("internal error inside mock: %w", err)
+	}
+	if !isDir {
 		return fmt.Errorf("chmod: %s: No such file or directory", path)
 	}
-	props.mode = &mode
+
+	if mode != defaultDirMode {
+		// we need to create properties to store the mode
+		f.AddDirWithMode(path, mode)
+	}
+
 	return nil
 }
