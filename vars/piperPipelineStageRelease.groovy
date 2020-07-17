@@ -21,6 +21,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
+    /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
+    'npmExecuteEndToEndTests'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -47,6 +49,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
         .addIfEmpty('tmsUpload', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.tmsUpload)
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
+        .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -81,6 +84,12 @@ void call(Map parameters = [:]) {
 
         if (config.healthExecuteCheck) {
             healthExecuteCheck script: script, stageName: stageName
+        }
+
+        if (config.npmExecuteEndToEndTests) {
+            durationMeasure(script: script, measurementName: 'npmExecuteEndToEndTests_duration') {
+                npmExecuteEndToEndTests script: script, stageName: stageName, runScript: 'ci-smoke'
+            }
         }
 
         if (config.githubPublishRelease) {

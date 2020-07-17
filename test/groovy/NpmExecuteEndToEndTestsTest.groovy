@@ -67,7 +67,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
     }
@@ -85,7 +85,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage"
+            stageName: "myStage"
         )
     }
 
@@ -102,7 +102,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
     }
@@ -120,7 +120,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
     }
@@ -138,7 +138,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
     }
@@ -153,7 +153,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
 
@@ -176,7 +176,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
 
@@ -199,7 +199,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
 
@@ -222,7 +222,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             buildDescriptorExcludeList: ["path/to/package.json"],
             runScript: "ci-e2e"
         )
@@ -249,7 +249,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
 
@@ -272,7 +272,7 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         stepRule.step.npmExecuteEndToEndTests(
             script: nullScript,
-            stage: "myStage",
+            stageName: "myStage",
             runScript: "ci-e2e"
         )
 

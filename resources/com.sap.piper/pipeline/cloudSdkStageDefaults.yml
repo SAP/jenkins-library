@@ -20,6 +20,9 @@ stages:
         filePattern: '**/conf.js'
         configKeys:
           - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
   productionDeployment:
     stepConditions:
       multicloudDeploy:
@@ -36,6 +39,9 @@ stages:
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
