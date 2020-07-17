@@ -75,19 +75,19 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_cf_duration') {
-                    cloudFoundryDeploy script: script
+                    cloudFoundryDeploy script: script, stageName: stageName
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_neo_duration') {
-                    neoDeploy script: script
+                    neoDeploy script: script, stageName: stageName
                 }
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script
+            healthExecuteCheck script: script, stageName: stageName
         }
 
 
@@ -97,7 +97,7 @@ void call(Map parameters = [:]) {
         if (config.gaugeExecuteTests) {
             durationMeasure(script: script, measurementName: 'gauge_duration') {
                 publishResults = true
-                gaugeExecuteTests script: script
+                gaugeExecuteTests script: script, stageName: stageName
                 publishMap += [gauge: [archive: true]]
             }
         }
@@ -105,18 +105,19 @@ void call(Map parameters = [:]) {
         if (config.newmanExecute) {
             durationMeasure(script: script, measurementName: 'newman_duration') {
                 publishResults = true
-                newmanExecute script: script
+                newmanExecute script: script, stageName: stageName
             }
         }
 
         if (config.uiVeri5ExecuteTests) {
             durationMeasure(script: script, measurementName: 'uiveri5_duration') {
                 publishResults = true
-                uiVeri5ExecuteTests script: script
+                uiVeri5ExecuteTests script: script, stageName: stageName
             }
         }
 
         if (publishResults) {
+            publishMap.stageName = stageName
             testsPublishResults publishMap
         }
     }

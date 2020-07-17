@@ -62,29 +62,29 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
-                    cloudFoundryDeploy script: script
+                    cloudFoundryDeploy script: script, stageName: stageName
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
-                    neoDeploy script: script
+                    neoDeploy script: script, stageName: stageName
                 }
             }
         }
 
         if (config.tmsUpload) {
             durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
-                tmsUpload script: script
+                tmsUpload script: script, stageName: stageName
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script
+            healthExecuteCheck script: script, stageName: stageName
         }
 
         if (config.githubPublishRelease) {
-            githubPublishRelease script: script
+            githubPublishRelease script: script, stageName: stageName
         }
 
     }
