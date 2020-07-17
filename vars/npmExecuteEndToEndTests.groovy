@@ -123,12 +123,15 @@ void call(Map parameters = [:]) {
                         echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
                     }
 
-                    utils.stashStageFiles(script, parameters.stage)
+                    utils.stashStageFiles(script, stageName)
                 }
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
+                echo env.POD_NAME
                 if (env.POD_NAME) {
-                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(parameters.stage) ?: [:]) {
+                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+                        echo env.POD_NAME
+                        echo
                         e2eTest.call()
                     }
                 } else {
