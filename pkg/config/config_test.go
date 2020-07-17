@@ -274,6 +274,20 @@ steps:
 		assert.Equal(t, nil, stepConfig.Config["p1"])
 	})
 
+	t.Run("Apply alias to paramJSON", func(t *testing.T) {
+		var c Config
+
+		secrets := []StepSecrets{
+			StepSecrets{Name: "p0", Type: "string", Aliases: []Alias{{Name: "p1/subParam"}}}}
+		testConf := ""
+
+		paramJSON := "{\"p1\":{\"subParam\":\"p1_value\"}}"
+		stepConfig, err := c.GetStepConfig(nil, paramJSON, ioutil.NopCloser(strings.NewReader(testConf)), nil, true, StepFilters{Parameters: []string{"p0"}}, nil, secrets, nil, "stage1", "step1", []Alias{{}})
+
+		assert.NoError(t, err, "Error occurred but no error expected")
+		assert.Equal(t, "p1_value", stepConfig.Config["p0"])
+	})
+
 	t.Run("Failure case config", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
