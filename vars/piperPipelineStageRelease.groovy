@@ -21,7 +21,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
-    /** Executes smoke tests by running the specified npm scripts. */
+    /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
     'npmExecuteEndToEndTests'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)

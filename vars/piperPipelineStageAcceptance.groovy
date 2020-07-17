@@ -28,7 +28,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'testsPublishResults',
     /** Performs end-to-end UI testing using UIVeri5 test framework against the deployed application/service. */
     'uiVeri5ExecuteTests',
-    /** Executes end to end tests by running the specified npm scripts. */
+    /** Executes end to end tests by running the npm script 'ci-e2e' defined in the project's package.json file. */
     'npmExecuteEndToEndTests'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
