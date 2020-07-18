@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
 type IntegrationTestDockerExecRunner struct {
 	// Runner is the ExecRunner to which all executions are forwarded in the end.
 	Runner        command.Command
@@ -25,6 +26,7 @@ type IntegrationTestDockerExecRunner struct {
 	ContainerName string
 }
 
+// IntegrationTestDockerExecRunnerBundle is used to construct an instance of IntegrationTestDockerExecRunner
 type IntegrationTestDockerExecRunnerBundle struct {
 	Image       string
 	User        string
