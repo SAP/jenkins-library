@@ -67,7 +67,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	//todo env (secrets)
 	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u="+testRunner.User,
 		"-v", localPiper+":/piper", "-v", projectDir+":/project",
-		"--name=" + testRunner.ContainerName,
+		"--name="+testRunner.ContainerName,
 		testRunner.Image,
 		"sleep", "2000")
 	if err != nil {
@@ -80,7 +80,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 	}
 
-	err = testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName + ":/piper-wrapper")
+	err = testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName+":/piper-wrapper")
 	if err != nil {
 		t.Fatalf("Copying command wrapper to container has failed %s", err)
 	}

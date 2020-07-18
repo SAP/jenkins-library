@@ -29,10 +29,10 @@ func TestMavenProject(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t,"Installing /test/.flattened-pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
-	container.assertHasOutput(t,"Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
-	container.assertHasOutput(t,"Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
-	container.assertHasOutput(t,"added 2 packages from 3 contributors and audited 2 packages in")
+	container.assertHasOutput(t, "Installing /test/.flattened-pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
+	container.assertHasOutput(t, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
+	container.assertHasOutput(t, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
+	container.assertHasOutput(t, "added 2 packages from 3 contributors and audited 2 packages in")
 }
 
 func TestNPMProject(t *testing.T) {
@@ -55,7 +55,7 @@ func TestNPMProject(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t,"INFO the MTA archive generated at: test-mta-js.mtar")
+	container.assertHasOutput(t, "INFO the MTA archive generated at: test-mta-js.mtar")
 }
 
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {
@@ -78,5 +78,5 @@ func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t,"added 2 packages in")
+	container.assertHasOutput(t, "added 2 packages in")
 }
