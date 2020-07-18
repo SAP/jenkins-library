@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"io/ioutil"
 	"os"
@@ -220,7 +221,7 @@ mv mbt /usr/bin
 
 func TestWithNativeDockerClient(t *testing.T) {
 	//t.Parallel()
-	testRunner := given(IntegrationTestDockerExecRunner{
+	testRunner := givenThisContainer(IntegrationTestDockerExecRunner{
 		Image:   "node:12",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
@@ -235,11 +236,11 @@ func TestWithNativeDockerClient(t *testing.T) {
 
 	testRunner.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
 
-	testRunner.assertHasOutput("")
+	testRunner.assertHasOutput("added 2 packages in")
 
 }
 
-func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner {
+func givenThisContainer(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner {
 	runner := command.Command{}
 
 	testRunner := IntegrationTestDockerExecRunner{
@@ -269,6 +270,15 @@ func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner 
 			panic(err)
 		}
 	}
+
+	err = testRunner.Runner.RunExecutable("docker", "cp", "runner.sh", "foobar:/runner")
+	if err != nil {
+		panic(err)
+	}
+	err = testRunner.Runner.RunExecutable("docker", "exec", "foobar", "chmod", "+x", "/runner")
+	if err != nil {
+		panic(err)
+	}
 	return testRunner
 }
 
@@ -284,11 +294,15 @@ type IntegrationTestDockerExecRunner struct {
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", "foobar", "/piper", command}
+	args := []string{"exec", "--workdir", "/project", "foobar", "/bin/bash", "/runner", "/piper", command}
 	args = append(args, parameters...)
 	return d.Runner.RunExecutable("docker", args...)
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(want string) {
-	d.Runner.RunExecutable("docker", "exec", "foobar", "cat", "/tmp/test-log.txt")
+	println("dbg>>>>>>>>>>>>>>>>>>>")
+	err := d.Runner.RunExecutable("docker", "exec", "foobar", "grep", fmt.Sprintf("'%s'", want), "/tmp/test-log.txt")
+	if err != nil {
+		panic(err)
+	}
 }
