@@ -234,7 +234,10 @@ func TestWithNativeDockerClient(t *testing.T) {
 		},
 	})
 
-	testRunner.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
+	err := testRunner.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
+	}
 
 	testRunner.assertHasOutput("added 2 packages in")
 
@@ -300,9 +303,11 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(want string) {
+	//todo depends on bash for now. I did not find a way to make it work with RunExecutable so far.
 	println("dbg>>>>>>>>>>>>>>>>>>>")
-	err := d.Runner.RunExecutable("docker", "exec", "foobar", "grep", fmt.Sprintf("'%s'", want), "/tmp/test-log.txt")
+	err := d.Runner.RunShell("/bin/bash", fmt.Sprintf("docker exec foobar grep --count '%s' /tmp/test-log.txt", want))
 	if err != nil {
-		panic(err)
+		println("dbg>>>>>>>>>>>>>>>>>>> assertion failed")
+		println(err)
 	}
 }
