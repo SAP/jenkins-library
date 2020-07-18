@@ -221,9 +221,10 @@ mv mbt /usr/bin
 func TestWithNativeDockerClient(t *testing.T) {
 	//t.Parallel()
 	testRunner := given(IntegrationTestDockerExecRunner{
-		Image:  "node:12",
-		User:   "root",
-		Mounts: map[string]string{},
+		Image:   "node:12",
+		User:    "root",
+		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
+		Mounts:  map[string]string{},
 		Setup: []string{
 			"apt-get -yqq update; apt-get -yqq install make",
 			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
@@ -253,11 +254,12 @@ func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner 
 	wd, _ := os.Getwd()
 	localPiper := path.Join(wd, "..", "piper")
 
-	projectDir := path.Join(wd, "testdata", "TestMtaIntegration", "npm-install-dev-dependencies")
+	projectDir := path.Join(wd, path.Join(foo.TestDir...))
 
 	//todo mounts
+	//todo env (secrets)
 	//todo random name gen
-	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u=" + testRunner.User, "-v", localPiper + ":/piper", "-v", projectDir + ":/project", "--name=foobar", testRunner.Image, "sleep", "2000")
+	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u="+testRunner.User, "-v", localPiper+":/piper", "-v", projectDir+":/project", "--name=foobar", testRunner.Image, "sleep", "2000")
 	if err != nil {
 		panic(err)
 	}
@@ -270,14 +272,15 @@ func given(foo IntegrationTestDockerExecRunner) IntegrationTestDockerExecRunner 
 	return testRunner
 }
 
-
 type IntegrationTestDockerExecRunner struct {
 	// Runner is the ExecRunner to which all executions are forwarded in the end.
-	Runner command.Command
-	Image  string
-	User   string
-	Mounts map[string]string
-	Setup  []string
+	Runner      command.Command
+	Image       string
+	User        string
+	TestDir     []string
+	Mounts      map[string]string
+	Environment map[string]string
+	Setup       []string
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
@@ -287,5 +290,5 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(want string) {
-	d.Runner.RunExecutable("docker", "logs", "foobar")
+	d.Runner.RunExecutable("docker", "exec", "foobar", "cat", "/tmp/test-log.txt")
 }

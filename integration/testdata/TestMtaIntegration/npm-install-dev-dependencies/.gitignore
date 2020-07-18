@@ -2,3 +2,4 @@
 node_modules
 package-lock.json
 test-mta-js.mtar
+mtaBuild_errorDetails.json
