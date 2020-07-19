@@ -24,10 +24,7 @@ func TestMavenProject(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts", "--m2Path=mym2")
-	if err != nil {
-		t.Fatalf("Piper command failed %s", err)
-	}
+	container.whenRunningPiperCommand(t, "mtaBuild", "--installArtifacts", "--m2Path=mym2")
 
 	container.assertHasOutput(t, "Installing /project/.flattened-pom.xml to /project/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
 	container.assertHasOutput(t, "Installing /project/app/target/mymvn-app-1.0-SNAPSHOT.war to /project/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
@@ -50,10 +47,7 @@ func TestNPMProject(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("mtaBuild", "")
-	if err != nil {
-		t.Fatalf("Piper command failed %s", err)
-	}
+	container.whenRunningPiperCommand(t, "mtaBuild", "")
 
 	container.assertHasOutput(t, "INFO the MTA archive generated at: test-mta-js.mtar")
 }
@@ -73,10 +67,7 @@ func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
-	if err != nil {
-		t.Fatalf("Piper command failed %s", err)
-	}
+	container.whenRunningPiperCommand(t, "mtaBuild", "--installArtifacts")
 
 	container.assertHasOutput(t, "added 2 packages in")
 }

@@ -93,10 +93,15 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	return testRunner
 }
 
-func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
+func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(t *testing.T, command string, parameters ...string) {
 	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "/piper-wrapper", "/piper", command}
 	args = append(args, parameters...)
-	return d.Runner.RunExecutable("docker", args...)
+	err := d.Runner.RunExecutable("docker", args...)
+	if err != nil {
+		println("dbg>>>>>")
+		_ = d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
+		t.Fatalf("Running piper command failed, error: %s", err)
+	}
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want string) {
