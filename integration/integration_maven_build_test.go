@@ -14,7 +14,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
 		Mounts:  map[string]string{},
-		Setup: []string{},
+		Setup:   []string{},
 	})
 
 	err := container.whenRunningPiperCommand("mavenBuild")
