@@ -86,7 +86,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	if err != nil {
 		t.Fatalf("Copying command wrapper to container has failed %s", err)
 	}
-	err = testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "chmod", "+x", "/piper-wrapper")
+	err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chmod", "+x", "/piper-wrapper")
 	if err != nil {
 		t.Fatalf("Making command wrapper in container execuable has failed %s", err)
 	}
@@ -104,6 +104,14 @@ func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want str
 	err := d.Runner.RunShell("/bin/bash", fmt.Sprintf("docker exec %s grep --count '%s' /tmp/test-log.txt", d.ContainerName, want))
 	if err != nil {
 		_ = d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
-		t.Fatalf("Assertion has failed. Expected output %s in command output.", want)
+		t.Fatalf("Assertion has failed. Expected output %s in command output. %s", want, err)
+	}
+}
+
+func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want string) {
+	//todo depends on bash for now. I did not find a way to make it work with RunExecutable so far.
+	err := d.Runner.RunShell("/bin/bash", fmt.Sprintf("docker exec %s stat '%s' /tmp/test-log.txt", d.ContainerName, want))
+	if err != nil {
+		t.Fatalf("Assertion has failed. Expected file to exist %s in container. %s", want, err)
 	}
 }
