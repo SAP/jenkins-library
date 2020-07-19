@@ -68,13 +68,19 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	//todo mounts
 	//todo env (secrets)
 	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u="+testRunner.User,
-		"-v", localPiper+":/piper", "-v", projectDir+":/project",
+		"-v", localPiper+":/piper", "-v", projectDir+":/project", //todo should this be configurable to avoid permission issues?
 		"--name="+testRunner.ContainerName,
 		testRunner.Image,
 		"sleep", "2000")
 	if err != nil {
 		t.Fatalf("Starting test container has failed %s", err)
 	}
+
+	err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chown", "-R", testRunner.User, "/project")
+	if err != nil {
+		t.Fatalf("Chown /project has failed %s", err)
+	}
+
 	for _, scriptLine := range testRunner.Setup {
 		err := testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/bash", "-c", scriptLine)
 		if err != nil {

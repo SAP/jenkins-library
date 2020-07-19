@@ -11,7 +11,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
-		User:    "root",
+		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
 		Mounts:  map[string]string{},
 		Setup:   []string{},
