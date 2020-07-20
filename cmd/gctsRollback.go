@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 
@@ -222,7 +220,7 @@ func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData
 	}
 
 	var response commitsResponseBody
-	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
 	if parsingErr != nil {
 		return []string{}, parsingErr
 	}
@@ -257,7 +255,7 @@ func getRepoInfo(config *gctsRollbackOptions, telemetryData *telemetry.CustomDat
 		return &response, errors.New("did not retrieve a HTTP response")
 	}
 
-	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
 	if parsingErr != nil {
 		return &response, parsingErr
 	}
@@ -308,7 +306,7 @@ func getRepoHistory(config *gctsRollbackOptions, telemetryData *telemetry.Custom
 		return &response, errors.New("did not retrieve a HTTP response")
 	}
 
-	parsingErr := parseHTTPResponseBodyJSON(resp, &response)
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
 	if parsingErr != nil {
 		return &response, parsingErr
 	}
@@ -326,22 +324,4 @@ type getRepoHistoryResponseBody struct {
 		Request      string `json:"request"`
 		Type         string `json:"type"`
 	} `json:"result"`
-}
-
-func parseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
-	if resp == nil {
-		return errors.Errorf("cannot parse HTTP response with value <nil>")
-	}
-
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read")
-	}
-
-	marshalErr := json.Unmarshal(bodyText, &response)
-	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
-	}
-
-	return nil
 }
