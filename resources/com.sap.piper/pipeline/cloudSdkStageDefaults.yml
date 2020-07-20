@@ -1,19 +1,5 @@
 stages:
-  Init:
-    stepConditions:
-      slackSendNotification:
-        configKeys:
-          - 'channel'
-  'Pull-Request Voting': {}
-  Build: {}
-  'Additional Unit Tests':
-    stepConditions:
-      batsExecuteTests:
-        filePattern: '**/*.bats'
-      karmaExecuteTests:
-        filePattern: '**/karma.conf.js'
-  Integration: {}
-  Acceptance:
+  endToEndTests:
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -37,27 +23,7 @@ stages:
       npmExecuteEndToEndTests:
         configKeys:
           - 'appUrls'
-  Security:
-    stepConditions:
-      checkmarxExecuteScan:
-        configKeys:
-          - 'checkmarxCredentialsId'
-      fortifyExecuteScan:
-        configKeys:
-          - 'fortifyCredentialsId'
-      whitesourceExecuteScan:
-        configKeys:
-          - 'userTokenCredentialsId'
-          - 'whitesource/userTokenCredentialsId'
-          - 'whitesourceUserTokenCredentialsId'
-  Performance: {}
-  Compliance: {}
-  Promote:
-    stepConditions:
-      containerPushToRegistry:
-        configKeys:
-          - 'dockerRegistryUrl'
-  Release:
+  productionDeployment:
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -79,8 +45,3 @@ stages:
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
-  'Post Actions':
-    stepConditions:
-      slackSendNotification:
-        configKeys:
-          - 'channel'

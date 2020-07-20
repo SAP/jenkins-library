@@ -62,6 +62,10 @@ nav:
         - durationMeasure: steps/durationMeasure.md
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
+        - gctsCloneRepository: steps/gctsCloneRepository.md
+        - gctsCreateRepository: steps/gctsCreateRepository.md
+        - gctsDeploy: steps/gctsDeploy.md
+        - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
@@ -81,6 +85,7 @@ nav:
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - nexusUpload: steps/nexusUpload.md
+        - npmExecuteEndToEndTests: steps/npmExecuteEndToEndTests.md
         - npmExecuteLint: steps/npmExecuteLint.md
         - npmExecuteScripts: steps/npmExecuteScripts.md
         - pipelineExecute: steps/pipelineExecute.md

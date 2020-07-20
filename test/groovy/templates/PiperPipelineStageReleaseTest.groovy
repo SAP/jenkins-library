@@ -43,6 +43,11 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             stepParameters.healthExecuteCheck = m
         })
 
+        helper.registerAllowedMethod('multicloudDeploy', [Map.class], {m ->
+            stepsCalled.add('multicloudDeploy')
+            stepParameters.multicloudDeploy = m
+        })
+
         helper.registerAllowedMethod('cloudFoundryDeploy', [Map.class], {m ->
             stepsCalled.add('cloudFoundryDeploy')
             stepParameters.cloudFoundryDeploy = m
@@ -51,6 +56,11 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         helper.registerAllowedMethod('neoDeploy', [Map.class], {m ->
             stepsCalled.add('neoDeploy')
             stepParameters.neoDeploy = m
+        })
+
+        helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
+            stepsCalled.add('npmExecuteEndToEndTests')
+            stepParameters.npmExecuteEndToEndTests = m
         })
 
         helper.registerAllowedMethod('githubPublishRelease', [Map.class], {m ->
@@ -67,6 +77,19 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             juStabUtils: utils
         )
         assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'))))
+    }
+
+    @Test
+    void testReleaseStageMultiCloud() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            multicloudDeploy: true,
+            healthExecuteCheck: true
+        )
+
+        assertThat(stepsCalled, hasItems('multicloudDeploy', 'healthExecuteCheck'))
     }
 
     @Test
@@ -92,6 +115,19 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('neoDeploy'))
+    }
+
+    @Test
+    void testAcceptanceNpmExecuteEndToEndTests() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            npmExecuteEndToEndTests: true
+        )
+
+        assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
+        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-smoke'))
     }
 
     @Test
