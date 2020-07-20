@@ -103,7 +103,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 	err = testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "chmod", "+x", "/piper-wrapper")
 	if err != nil {
-		t.Fatalf("Making command wrapper in container execuable has failed %s", err)
+		t.Fatalf("Making command wrapper in container executable has failed %s", err)
 	}
 	return testRunner
 }
