@@ -17,7 +17,10 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 		Setup:   []string{},
 	})
 
-	container.whenRunningPiperCommand(t, "mavenBuild", "")
+	err := container.whenRunningPiperCommand("mavenBuild", "")
+	if err != nil {
+		t.Fatalf("Calling piper command filed %s", err)
+	}
 
 	container.assertHasOutput(t, "BUILD SUCCESS")
 	container.assertHasFile(t, "/project/application/target/cloud-sdk-spring-archetype-application.jar")

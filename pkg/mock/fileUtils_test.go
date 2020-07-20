@@ -63,6 +63,12 @@ func TestFilesMockDirExists(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, exists)
 	})
+	t.Run("root folder always exists", func(t *testing.T) {
+		files := FilesMock{}
+		exists, err := files.DirExists(string(os.PathSeparator))
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
 	t.Run("dir exists after AddDir()", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
@@ -112,6 +118,17 @@ func TestFilesMockDirExists(t *testing.T) {
 			assert.False(t, exists, "Should not exist: '%s'", dir)
 		}
 	})
+	t.Run("dir still exists after removing last file", func(t *testing.T) {
+		files := FilesMock{}
+		dir := filepath.Join("path", "to")
+		file := filepath.Join(dir, "file")
+		files.AddFile(file, []byte("dummy content"))
+		err := files.FileRemove(file)
+		assert.NoError(t, err)
+		exists, err := files.DirExists(dir)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
 }
 
 func TestFilesMockCopy(t *testing.T) {
@@ -153,6 +170,53 @@ func TestFilesMockFileRemove(t *testing.T) {
 		err := files.FileRemove(path)
 		assert.EqualError(t, err, "the file '"+path+"' does not exist: file does not exist")
 		assert.False(t, files.HasRemovedFile(path))
+	})
+	t.Run("fail to remove non-empty directory", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("fail to remove non-empty directory also when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("succeed to remove empty directory when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.NoError(t, err)
+	})
+	t.Run("removing chain of entries works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
+	})
+	t.Run("removing entry from current dir works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+
+		err := files.Chdir("path")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("to")))
+
+		err = files.Chdir("/")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
 	})
 	t.Run("track removing a file", func(t *testing.T) {
 		files := FilesMock{}
@@ -243,24 +307,16 @@ func TestFilesMockGlob(t *testing.T) {
 	})
 }
 
-var (
-	onlyMe                     os.FileMode = 0700
-	othersCanRead              os.FileMode = 0644
-	othersCanReadAndExecute    os.FileMode = 0755
-	everybodyCanReadAndExecute os.FileMode = 0777
-)
-
 func TestStat(t *testing.T) {
-
 	files := FilesMock{}
 	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
-	files.AddDirWithMode("bin", 0700)
+	explicitMode := os.FileMode(0700)
+	files.AddDirWithMode("bin", explicitMode)
 
 	t.Run("non existing file", func(t *testing.T) {
 		_, err := files.Stat("doesNotExist.txt")
 		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
 	})
-
 	t.Run("check file info", func(t *testing.T) {
 		info, err := files.Stat("tmp/dummy.txt")
 
@@ -269,54 +325,115 @@ func TestStat(t *testing.T) {
 			assert.Equal(t, "dummy.txt", info.Name())
 			assert.False(t, info.IsDir())
 			// if not specified otherwise the 644 file mode is used.
-			assert.Equal(t, othersCanRead, info.Mode())
+			assert.Equal(t, defaultFileMode, info.Mode())
 		}
 	})
-
 	t.Run("check implicit dir", func(t *testing.T) {
 		info, err := files.Stat("tmp")
 		if assert.NoError(t, err) {
 			assert.True(t, info.IsDir())
-			assert.Equal(t, othersCanReadAndExecute, info.Mode())
+			assert.Equal(t, defaultDirMode, info.Mode())
 		}
 	})
-
 	t.Run("check explicit dir", func(t *testing.T) {
 		info, err := files.Stat("bin")
 		if assert.NoError(t, err) {
 			assert.True(t, info.IsDir())
-			assert.Equal(t, onlyMe, info.Mode())
+			assert.Equal(t, explicitMode, info.Mode())
 		}
 	})
 }
 
-func TestGetChod(t *testing.T) {
+func TestChmod(t *testing.T) {
 	files := FilesMock{}
-	files.AddDirWithMode("tmp", 0777)
 	files.AddFileWithMode("tmp/log.txt", []byte("build failed"), 0777)
 
 	t.Run("non existing file", func(t *testing.T) {
 		err := files.Chmod("does/not/exist", 0400)
 		assert.EqualError(t, err, "chmod: does/not/exist: No such file or directory")
 	})
-
 	t.Run("chmod for file", func(t *testing.T) {
-		err := files.Chmod("tmp/log.txt", 0644)
+		err := files.Chmod("tmp/log.txt", 0645)
 		if assert.NoError(t, err) {
 			info, e := files.Stat("tmp/log.txt")
 			if assert.NoError(t, e) {
-				assert.Equal(t, othersCanRead, info.Mode())
+				assert.Equal(t, os.FileMode(0645), info.Mode())
 			}
 		}
 	})
-
 	t.Run("chmod for directory", func(t *testing.T) {
-		err := files.Chmod("tmp", 0755)
+		err := files.Chmod("tmp", 0766)
 		if assert.NoError(t, err) {
 			info, e := files.Stat("tmp")
 			if assert.NoError(t, e) {
-				assert.Equal(t, othersCanReadAndExecute, info.Mode())
+				assert.Equal(t, os.FileMode(0766), info.Mode())
 			}
+		}
+	})
+}
+
+func TestRelativePaths(t *testing.T) {
+	t.Parallel()
+	t.Run("files are not mixed up", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+		files.AddFile("file", []byte("root-content"))
+
+		err := files.Chdir("path")
+		if assert.NoError(t, err) {
+			exists, _ := files.FileExists("file")
+			assert.False(t, exists)
+
+			err := files.Chdir("to")
+			if assert.NoError(t, err) {
+				content, err := files.FileRead("file")
+				if assert.NoError(t, err) {
+					assert.Equal(t, []byte("content"), content, "should not read root file")
+				}
+			}
+		}
+	})
+	t.Run("root folder exists after change dir", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		errChdirInto := files.Chdir("path")
+		assert.NoError(t, errChdirInto)
+
+		exists, err := files.DirExists("/")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the root folder should exist no matter the current dir")
+	})
+	t.Run("current folder always exists", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		exists, err := files.DirExists(".")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the current folder should exist")
+
+		errChdirInto := files.Chdir("path")
+		assert.NoError(t, errChdirInto)
+
+		exists, err = files.DirExists("./")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the current folder should exist after changing into it")
+	})
+	t.Run("chmod works on implicit, relative dir", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		errChdirInto := files.Chdir("path")
+		errChmod := files.Chmod("to", 0700)
+		errChdirBack := files.Chdir("/")
+
+		assert.NoError(t, errChdirInto)
+		assert.NoError(t, errChmod)
+		assert.NoError(t, errChdirBack)
+
+		fileInfo, err := files.Stat("path/to")
+		if assert.NoError(t, err) {
+			assert.Equal(t, os.FileMode(0700), fileInfo.Mode())
 		}
 	})
 }
