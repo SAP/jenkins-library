@@ -3,12 +3,15 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -65,10 +68,22 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 
 	projectDir := path.Join(wd, path.Join(bundle.TestDir...))
 
+	// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
+	// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
+	tempDir, err := ioutil.TempDir("", "piper-integration-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = copyDir(projectDir, tempDir)
+	if err != nil {
+		t.Fatalf("")
+	}
+
 	//todo mounts
 	//todo env (secrets)
-	err := testRunner.Runner.RunExecutable("docker", "run", "-d", "-u="+testRunner.User,
-		"-v", localPiper+":/piper", "-v", projectDir+":/project",
+	err = testRunner.Runner.RunExecutable("docker", "run", "-d", "-u="+testRunner.User,
+		"-v", localPiper+":/piper", "-v", tempDir+":/project",
 		"--name="+testRunner.ContainerName,
 		testRunner.Image,
 		"sleep", "2000")
@@ -100,10 +115,15 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want string) {
-	//todo depends on bash for now. I did not find a way to make it work with RunExecutable so far.
-	err := d.Runner.RunShell("/bin/bash", fmt.Sprintf("docker exec %s grep --count '%s' /tmp/test-log.txt", d.ContainerName, want))
+	buffer := new(bytes.Buffer)
+	d.Runner.Stdout(buffer)
+	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
+	d.Runner.Stdout(log.Writer())
 	if err != nil {
-		_ = d.Runner.RunExecutable("docker", "exec", d.ContainerName, "cat", "/tmp/test-log.txt")
-		t.Fatalf("Assertion has failed. Expected output %s in command output.", want)
+		t.Fatalf("Failed to get log output of container %s", d.ContainerName)
+	}
+
+	if !strings.Contains(buffer.String(), want) {
+		t.Fatalf("Assertion has failed. Expected output %s in command output.\n%s", want, buffer.String())
 	}
 }
