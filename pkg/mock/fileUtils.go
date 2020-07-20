@@ -244,7 +244,7 @@ func (f *FilesMock) FileRemove(path string) error {
 
 	// Make sure the parent directory still exists, if it only existed via this one entry
 	leaf := filepath.Base(absPath)
-	absPath = strings.TrimRight(absPath, f.Separator+leaf)
+	absPath = strings.TrimSuffix(absPath, f.Separator+leaf)
 	if absPath != f.Separator {
 		relPath := strings.TrimPrefix(absPath, f.Separator+f.currentDir+f.Separator)
 		dirExists, _ := f.DirExists(relPath)
