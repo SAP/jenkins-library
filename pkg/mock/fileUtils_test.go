@@ -242,3 +242,81 @@ func TestFilesMockGlob(t *testing.T) {
 		assert.Len(t, matches, 0)
 	})
 }
+
+var (
+	onlyMe                     os.FileMode = 0700
+	othersCanRead              os.FileMode = 0644
+	othersCanReadAndExecute    os.FileMode = 0755
+	everybodyCanReadAndExecute os.FileMode = 0777
+)
+
+func TestStat(t *testing.T) {
+
+	files := FilesMock{}
+	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+	files.AddDirWithMode("bin", 0700)
+
+	t.Run("non existing file", func(t *testing.T) {
+		_, err := files.Stat("doesNotExist.txt")
+		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
+	})
+
+	t.Run("check file info", func(t *testing.T) {
+		info, err := files.Stat("tmp/dummy.txt")
+
+		if assert.NoError(t, err) {
+			// only the base name is returned.
+			assert.Equal(t, "dummy.txt", info.Name())
+			assert.False(t, info.IsDir())
+			// if not specified otherwise the 644 file mode is used.
+			assert.Equal(t, othersCanRead, info.Mode())
+		}
+	})
+
+	t.Run("check implicit dir", func(t *testing.T) {
+		info, err := files.Stat("tmp")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, othersCanReadAndExecute, info.Mode())
+		}
+	})
+
+	t.Run("check explicit dir", func(t *testing.T) {
+		info, err := files.Stat("bin")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, onlyMe, info.Mode())
+		}
+	})
+}
+
+func TestGetChod(t *testing.T) {
+	files := FilesMock{}
+	files.AddDirWithMode("tmp", 0777)
+	files.AddFileWithMode("tmp/log.txt", []byte("build failed"), 0777)
+
+	t.Run("non existing file", func(t *testing.T) {
+		err := files.Chmod("does/not/exist", 0400)
+		assert.EqualError(t, err, "chmod: does/not/exist: No such file or directory")
+	})
+
+	t.Run("chmod for file", func(t *testing.T) {
+		err := files.Chmod("tmp/log.txt", 0644)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp/log.txt")
+			if assert.NoError(t, e) {
+				assert.Equal(t, othersCanRead, info.Mode())
+			}
+		}
+	})
+
+	t.Run("chmod for directory", func(t *testing.T) {
+		err := files.Chmod("tmp", 0755)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp")
+			if assert.NoError(t, e) {
+				assert.Equal(t, othersCanReadAndExecute, info.Mode())
+			}
+		}
+	})
+}
