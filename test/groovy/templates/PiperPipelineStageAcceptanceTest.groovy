@@ -41,6 +41,11 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             stepParameters.healthExecuteCheck = m
         })
 
+        helper.registerAllowedMethod('multicloudDeploy', [Map.class], {m ->
+            stepsCalled.add('multicloudDeploy')
+            stepParameters.multicloudDeploy = m
+        })
+
         helper.registerAllowedMethod('cloudFoundryDeploy', [Map.class], {m ->
             stepsCalled.add('cloudFoundryDeploy')
             stepParameters.cloudFoundryDeploy = m
@@ -66,6 +71,11 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             stepParameters.uiVeri5ExecuteTests = m
         })
 
+        helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
+            stepsCalled.add('npmExecuteEndToEndTests')
+            stepParameters.npmExecuteEndToEndTests = m
+        })
+
         helper.registerAllowedMethod('testsPublishResults', [Map.class], {m ->
             stepsCalled.add('testsPublishResults')
             stepParameters.testsPublishResults = m
@@ -81,6 +91,19 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
         )
         assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('uiVeri5ExecuteTests'), hasItem('gaugeExecuteTests'))))
 
+    }
+
+    @Test
+    void testReleaseStageMultiCloud() {
+
+        jsr.step.piperPipelineStageAcceptance(
+            script: nullScript,
+            juStabUtils: utils,
+            multicloudDeploy: true,
+            healthExecuteCheck: true
+        )
+
+        assertThat(stepsCalled, hasItems('multicloudDeploy', 'healthExecuteCheck'))
     }
 
     @Test
@@ -141,5 +164,18 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             uiVeri5ExecuteTests: true
         )
         assertThat(stepsCalled, hasItems('uiVeri5ExecuteTests', 'testsPublishResults'))
+    }
+
+    @Test
+    void testAcceptanceNpmExecuteEndToEndTests() {
+
+        jsr.step.piperPipelineStageAcceptance(
+            script: nullScript,
+            juStabUtils: utils,
+            npmExecuteEndToEndTests: true
+        )
+
+        assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
+        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-e2e'))
     }
 }

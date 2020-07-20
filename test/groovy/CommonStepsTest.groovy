@@ -54,6 +54,7 @@ public class CommonStepsTest extends BasePiperTest{
             'piperExecuteBin',
             'piperPipeline',
             'prepareDefaultValues',
+            'runClosures',
             'setupCommonPipelineEnvironment'
         ]
 
@@ -118,6 +119,7 @@ public class CommonStepsTest extends BasePiperTest{
         'handlePipelineStepErrors', // special step (infrastructure)
         'piperStageWrapper', //intended to be called from within stages
         'buildSetResult',
+        'runClosures',
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
         'checkmarxExecuteScan', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
@@ -139,7 +141,11 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
+<<<<<<< HEAD
         'gctsRollback', //implementing new golang pattern without fields
+=======
+        'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
+>>>>>>> upstream/master
         'gctsCloneRepository', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
@@ -208,7 +214,8 @@ public class CommonStepsTest extends BasePiperTest{
             'commonPipelineEnvironment',
             'piperPipeline',
             'piperExecuteBin',
-            'buildSetResult'
+            'buildSetResult',
+            'runClosures'
         ]
 
         def stepsWithWrongStepName = []

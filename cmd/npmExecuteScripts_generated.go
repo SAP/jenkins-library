@@ -14,12 +14,13 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
-	Install            bool     `json:"install,omitempty"`
-	RunScripts         []string `json:"runScripts,omitempty"`
-	DefaultNpmRegistry string   `json:"defaultNpmRegistry,omitempty"`
-	SapNpmRegistry     string   `json:"sapNpmRegistry,omitempty"`
-	VirtualFrameBuffer bool     `json:"virtualFrameBuffer,omitempty"`
-	ScriptOptions      []string `json:"scriptOptions,omitempty"`
+	Install                    bool     `json:"install,omitempty"`
+	RunScripts                 []string `json:"runScripts,omitempty"`
+	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty"`
+	SapNpmRegistry             string   `json:"sapNpmRegistry,omitempty"`
+	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty"`
+	ScriptOptions              []string `json:"scriptOptions,omitempty"`
+	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty"`
 }
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
@@ -83,6 +84,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", `https://npm.sap.com`, "The default npm registry URL to be used as the remote mirror for the SAP npm packages.")
 	cmd.Flags().BoolVar(&stepConfig.VirtualFrameBuffer, "virtualFrameBuffer", false, "(Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScriptOptions, "scriptOptions", []string{}, "Options are passed to all runScripts calls separated by a '--'. './piper npmExecuteScripts --runScripts ci-e2e --scriptOptions '--tag1' will correspond to 'npm run ci-e2e -- --tag1'")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`deployment/**`}, "List of build descriptors and therefore modules to exclude from execution of the npm scripts. The elements can either be a path to the build descriptor or a pattern.")
 
 }
 
@@ -138,6 +140,14 @@ func npmExecuteScriptsMetadata() config.StepData {
 					},
 					{
 						Name:        "scriptOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "buildDescriptorExcludeList",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
