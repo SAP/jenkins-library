@@ -201,6 +201,23 @@ func TestFilesMockFileRemove(t *testing.T) {
 		assert.NoError(t, files.FileRemove(filepath.Join("path")))
 		assert.Len(t, files.files, 0)
 	})
+	t.Run("removing entry from current dir works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+
+		err := files.Chdir("path")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("to")))
+
+		err = files.Chdir("/")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
+	})
 	t.Run("track removing a file", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "file")

@@ -246,7 +246,7 @@ func (f *FilesMock) FileRemove(path string) error {
 	leaf := filepath.Base(absPath)
 	absPath = strings.TrimRight(absPath, f.Separator+leaf)
 	if absPath != f.Separator {
-		relPath := strings.TrimLeft(absPath, f.currentDir)
+		relPath := strings.TrimPrefix(absPath, f.Separator+f.currentDir+f.Separator)
 		dirExists, _ := f.DirExists(relPath)
 		if !dirExists {
 			f.AddDir(relPath)
