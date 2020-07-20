@@ -39,6 +39,11 @@ type fileProperties struct {
 	mode    os.FileMode
 }
 
+// isDir returns true when the properties describe a directory entry.
+func (p *fileProperties) isDir() bool {
+	return p.content == &dirContent
+}
+
 //FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
 	files        map[string]*fileProperties
@@ -57,6 +62,9 @@ func (f *FilesMock) init() {
 	}
 }
 
+// toAbsPath checks if the given path is relative, and if so converts it to an absolute path considering the
+// current directory of the FilesMock.
+// Relative segments such as "../" are currently NOT supported.
 func (f *FilesMock) toAbsPath(path string) string {
 	if path == "." {
 		return f.Separator + f.currentDir
@@ -67,8 +75,8 @@ func (f *FilesMock) toAbsPath(path string) string {
 	return path
 }
 
-// AddFile establishes the existence of a virtual file. The file is
-// added with mode 644
+// AddFile establishes the existence of a virtual file.
+// The file is added with mode 644.
 func (f *FilesMock) AddFile(path string, contents []byte) {
 	f.AddFileWithMode(path, contents, defaultFileMode)
 }
@@ -78,8 +86,8 @@ func (f *FilesMock) AddFileWithMode(path string, contents []byte, mode os.FileMo
 	f.associateContent(path, &contents, mode)
 }
 
-// AddDir establishes the existence of a virtual directory. The directory
-// is add with default mode 755
+// AddDir establishes the existence of a virtual directory.
+// The directory is add with default mode 755.
 func (f *FilesMock) AddDir(path string) {
 	f.AddDirWithMode(path, defaultDirMode)
 }
@@ -91,9 +99,14 @@ func (f *FilesMock) AddDirWithMode(path string, mode os.FileMode) {
 
 func (f *FilesMock) associateContent(path string, content *[]byte, mode os.FileMode) {
 	f.init()
+	path = f.toAbsPath(path)
+	f.associateContentAbs(path, content, mode)
+}
+
+func (f *FilesMock) associateContentAbs(path string, content *[]byte, mode os.FileMode) {
+	f.init()
 	path = strings.ReplaceAll(path, "/", f.Separator)
 	path = strings.ReplaceAll(path, "\\", f.Separator)
-	path = f.toAbsPath(path)
 	if _, ok := f.files[path]; !ok {
 		f.files[path] = &fileProperties{}
 	}
@@ -143,7 +156,7 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 	}
 	for entry, props := range f.files {
 		var dirComponents []string
-		if props.content == &dirContent {
+		if props.isDir() {
 			dirComponents = strings.Split(entry, f.Separator)
 		} else {
 			dirComponents = strings.Split(filepath.Dir(entry), f.Separator)
@@ -169,7 +182,7 @@ func (f *FilesMock) DirExists(path string) (bool, error) {
 func (f *FilesMock) Copy(src, dst string) (int64, error) {
 	f.init()
 	props, exists := f.files[f.toAbsPath(src)]
-	if !exists || props.content == &dirContent {
+	if !exists || props.isDir() {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
 	f.AddFileWithMode(dst, *props.content, props.mode)
@@ -185,7 +198,7 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 		return nil, fmt.Errorf("could not read '%s'", path)
 	}
 	// check if trying to open a directory for reading
-	if props.content == &dirContent {
+	if props.isDir() {
 		return nil, fmt.Errorf("could not read '%s': %w", path, os.ErrInvalid)
 	}
 	return *props.content, nil
@@ -209,12 +222,38 @@ func (f *FilesMock) FileRemove(path string) error {
 		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	}
 	absPath := f.toAbsPath(path)
-	_, exists := f.files[absPath]
+	props, exists := f.files[absPath]
+
+	// If there is no leaf-entry in the map, path may be a directory, but implicitly it cannot be empty
 	if !exists {
-		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
+		dirExists, _ := f.DirExists(path)
+		if dirExists {
+			return fmt.Errorf("the directory '%s' is not empty", path)
+		} else {
+			return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
+		}
+	} else if props.isDir() {
+		// Check if the directory is not empty re-using the Glob() implementation
+		entries, _ := f.Glob(path + f.Separator + "*")
+		if len(entries) > 0 {
+			return fmt.Errorf("the directory '%s' is not empty", path)
+		}
 	}
+
 	delete(f.files, absPath)
 	f.removedFiles = append(f.removedFiles, absPath)
+
+	// Make sure the parent directory still exists, if it only existed via this one entry
+	leaf := filepath.Base(absPath)
+	absPath = strings.TrimRight(absPath, f.Separator+leaf)
+	if absPath != f.Separator {
+		relPath := strings.TrimLeft(absPath, f.currentDir)
+		dirExists, _ := f.DirExists(relPath)
+		if !dirExists {
+			f.AddDir(relPath)
+		}
+	}
+
 	return nil
 }
 
@@ -300,7 +339,7 @@ func (f *FilesMock) Stat(path string) (os.FileInfo, error) {
 		name:  filepath.Base(path),
 		mode:  props.mode,
 		size:  int64(len(*props.content)),
-		isDir: props.content == &dirContent,
+		isDir: props.isDir(),
 	}, nil
 }
 

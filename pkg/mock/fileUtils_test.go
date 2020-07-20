@@ -118,6 +118,17 @@ func TestFilesMockDirExists(t *testing.T) {
 			assert.False(t, exists, "Should not exist: '%s'", dir)
 		}
 	})
+	t.Run("dir still exists after removing last file", func(t *testing.T) {
+		files := FilesMock{}
+		dir := filepath.Join("path", "to")
+		file := filepath.Join(dir, "file")
+		files.AddFile(file, []byte("dummy content"))
+		err := files.FileRemove(file)
+		assert.NoError(t, err)
+		exists, err := files.DirExists(dir)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
 }
 
 func TestFilesMockCopy(t *testing.T) {
@@ -159,6 +170,36 @@ func TestFilesMockFileRemove(t *testing.T) {
 		err := files.FileRemove(path)
 		assert.EqualError(t, err, "the file '"+path+"' does not exist: file does not exist")
 		assert.False(t, files.HasRemovedFile(path))
+	})
+	t.Run("fail to remove non-empty directory", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("fail to remove non-empty directory also when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("succeed to remove empty directory when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.NoError(t, err)
+	})
+	t.Run("removing chain of entries works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
 	})
 	t.Run("track removing a file", func(t *testing.T) {
 		files := FilesMock{}
