@@ -229,9 +229,8 @@ func (f *FilesMock) FileRemove(path string) error {
 		dirExists, _ := f.DirExists(path)
 		if dirExists {
 			return fmt.Errorf("the directory '%s' is not empty", path)
-		} else {
-			return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 		}
+		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
 	} else if props.isDir() {
 		// Check if the directory is not empty re-using the Glob() implementation
 		entries, _ := f.Glob(path + f.Separator + "*")
