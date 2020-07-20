@@ -93,7 +93,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 	zipFileName := filepath.Join(workspace, "workspace.zip")
-	patterns := strings.Split(strings.ReplaceAll(filterPattern, " ", ""), ",")
+	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
