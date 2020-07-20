@@ -21,6 +21,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
+    /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
+    'npmExecuteEndToEndTests'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -47,6 +49,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
         .addIfEmpty('tmsUpload', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.tmsUpload)
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
+        .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -62,29 +65,35 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
-                    cloudFoundryDeploy script: script
+                    cloudFoundryDeploy script: script, stageName: stageName
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
-                    neoDeploy script: script
+                    neoDeploy script: script, stageName: stageName
                 }
             }
         }
 
         if (config.tmsUpload) {
             durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
-                tmsUpload script: script
+                tmsUpload script: script, stageName: stageName
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script
+            healthExecuteCheck script: script, stageName: stageName
+        }
+
+        if (config.npmExecuteEndToEndTests) {
+            durationMeasure(script: script, measurementName: 'npmExecuteEndToEndTests_duration') {
+                npmExecuteEndToEndTests script: script, stageName: stageName, runScript: 'ci-smoke'
+            }
         }
 
         if (config.githubPublishRelease) {
-            githubPublishRelease script: script
+            githubPublishRelease script: script, stageName: stageName
         }
 
     }

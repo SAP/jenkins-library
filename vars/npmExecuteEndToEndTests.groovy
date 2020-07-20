@@ -43,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stage ?: env.STAGE_NAME
+        def stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -123,12 +123,12 @@ void call(Map parameters = [:]) {
                         echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
                     }
 
-                    utils.stashStageFiles(script, parameters.stage)
+                    utils.stashStageFiles(script, stageName)
                 }
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
                 if (env.POD_NAME) {
-                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(parameters.stage) ?: [:]) {
+                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                         e2eTest.call()
                     }
                 } else {
