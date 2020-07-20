@@ -141,11 +141,8 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
-<<<<<<< HEAD
         'gctsRollback', //implementing new golang pattern without fields
-=======
         'gctsExecuteABAPUnitTests', //implementing new golang pattern without fields
->>>>>>> upstream/master
         'gctsCloneRepository', //implementing new golang pattern without fields
         'fortifyExecuteScan', //implementing new golang pattern without fields
         'gctsDeploy', //implementing new golang pattern without fields
