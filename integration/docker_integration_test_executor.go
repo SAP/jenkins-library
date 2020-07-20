@@ -146,8 +146,7 @@ func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want str
 }
 
 func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want string) {
-	//todo depends on bash for now. I did not find a way to make it work with RunExecutable so far.
-	err := d.Runner.RunShell("/bin/bash", fmt.Sprintf("docker exec %s stat '%s' /tmp/test-log.txt", d.ContainerName, want))
+	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
 	if err != nil {
 		t.Fatalf("Assertion has failed. Expected file to exist %s in container. %s", want, err)
 	}
