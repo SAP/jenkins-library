@@ -220,7 +220,12 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	for _, alert := range alerts {
 		vuln := alert.Vulnerability
 		if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
+			log.Entry().Infof("Vulnerability with Score %s / CVSS3Score %s treated as severe",
+				vuln.Score, vuln.CVSS3Score)
 			severeVulnerabilities++
+		} else {
+			log.Entry().Infof("Ignoring vulnerability with Score %s / CVSS3Score %s",
+				vuln.Score, vuln.CVSS3Score)
 		}
 	}
 
