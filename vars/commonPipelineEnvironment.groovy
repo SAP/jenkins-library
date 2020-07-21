@@ -6,6 +6,9 @@ import groovy.json.JsonOutput
 
 class commonPipelineEnvironment implements Serializable {
 
+    //Project identifier which might be used to distinguish resources which are available globally, e.g. for locking
+    def projectName
+
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
     def originalArtifactVersion
@@ -35,11 +38,15 @@ class commonPipelineEnvironment implements Serializable {
     Map configuration = [:]
     Map containerProperties = [:]
     Map defaultConfiguration = [:]
+
     // Location of the file from where the configuration was parsed. See setupCommonPipelineEnvironment.groovy
     // Useful for making sure that the piper binary uses the same file when called from Jenkins.
     String configurationFile = ''
 
-    String mtarFilePath
+    String mtarFilePath = ""
+
+    String abapRepositoryNames
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -53,6 +60,11 @@ class commonPipelineEnvironment implements Serializable {
     String changeDocumentId
 
     def reset() {
+
+        projectName = null
+
+        abapRepositoryNames = null
+
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
@@ -175,6 +187,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
     ]
 
     void writeToDisk(script) {

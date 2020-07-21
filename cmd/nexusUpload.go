@@ -34,7 +34,7 @@ type nexusUploadUtils interface {
 	UsesNpm() bool
 
 	getEnvParameter(path, name string) string
-	getExecRunner() execRunner
+	getExecRunner() command.ExecRunner
 	evaluate(options *maven.EvaluateOptions, expression string) (string, error)
 }
 
@@ -66,7 +66,7 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-func (u *utilsBundle) getExecRunner() execRunner {
+func (u *utilsBundle) getExecRunner() command.ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
@@ -317,7 +317,7 @@ func appendItemToString(list, item string, first bool) string {
 }
 
 func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions maven.ExecuteOptions,
-	execRunner execRunner) error {
+	execRunner command.ExecRunner) error {
 	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}

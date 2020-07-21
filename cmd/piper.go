@@ -86,17 +86,17 @@ func Execute() {
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
+	rootCmd.AddCommand(KanikoExecuteCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		// in case we end up here we know that something in the PreRunE function went wrong
-		// and thus this indicates a configuration issue
-		log.SetErrorCategory(log.ErrorConfiguration)
-		log.FatalError(err, "configuration error")
+		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
 

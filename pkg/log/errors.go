@@ -22,12 +22,33 @@ func (e ErrorCategory) String() string {
 		"undefined",
 		"build",
 		"compliance",
-		"configuration",
+		"config",
 		"custom",
 		"infrastructure",
 		"service",
 		"test",
 	}[e]
+}
+
+// ErrorCategoryByString returns the error category based on the category text
+func ErrorCategoryByString(category string) ErrorCategory {
+	switch category {
+	case "build":
+		return ErrorBuild
+	case "compliance":
+		return ErrorCompliance
+	case "config":
+		return ErrorConfiguration
+	case "custom":
+		return ErrorCustom
+	case "infrastructure":
+		return ErrorInfrastructure
+	case "service":
+		return ErrorService
+	case "test":
+		return ErrorTest
+	}
+	return ErrorUndefined
 }
 
 // SetErrorCategory sets the error category

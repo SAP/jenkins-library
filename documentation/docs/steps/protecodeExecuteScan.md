@@ -6,7 +6,7 @@
 1. Request creation of a team for your development group as described [here](http://go.sap.corp/protecode) and in addition request creation of a technical Protecode user through OS3 team
 2. Create a Username / Password credential with the Protecode technical user in your Jenkins credential store
 3. Supply the credential ID either via config.yml or on the step via parameter `protecodeCredentialsId`
-4. Supply the **group ID** of the Protecode group via parameter `protecodeGroup`. You can either inquire this value from OS3 upon creation of the group or look it up yourself via REST API using `curl -u <place your user here> "https://protecode.mo.sap.corp/api/groups/"`.
+4. Supply the **group ID** of the Protecode group via parameter `protecodeGroup`. You can either inquire this value from OS3 upon creation of the group or look it up yourself via REST API using `curl -u <place your user here> "https://<protecode host>/api/groups/"`.
 
 ## Example
 
