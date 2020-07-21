@@ -24,7 +24,7 @@ jobs:
       with:
         coverageCommand: go test ./... -coverprofile cover.out
         coverageLocations: cover.out:gocov
-        debug: true
+        #debug: true
         prefix: github.com/SAP/jenkins-library/
 #    - name: setup-coverage
 #      run: |
