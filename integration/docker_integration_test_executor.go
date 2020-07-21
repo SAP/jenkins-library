@@ -148,6 +148,6 @@ func (d *IntegrationTestDockerExecRunner) assertHasOutput(t *testing.T, want str
 func (d *IntegrationTestDockerExecRunner) assertHasFile(t *testing.T, want string) {
 	err := d.Runner.RunExecutable("docker", "exec", d.ContainerName, "stat", want)
 	if err != nil {
-		t.Fatalf("Assertion has failed. Expected file to exist %s in container. %s", want, err)
+		t.Fatalf("Assertion has failed. Expected file %s to exist in container. %s", want, err)
 	}
 }
