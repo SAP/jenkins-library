@@ -22,9 +22,9 @@ require (
 	github.com/google/go-containerregistry v0.1.1
 	github.com/google/go-github/v28 v28.1.1
 	github.com/google/uuid v1.1.1
+	github.com/hashicorp/vault/api v1.0.4
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/magiconair/properties v1.8.1
-	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
 	github.com/opencontainers/go-digest v1.0.0 // indirect

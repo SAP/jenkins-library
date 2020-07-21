@@ -9,11 +9,26 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
-	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
+	t.Run("Check Host: ABAP Endpoint with HTTPS prefix", func(t *testing.T) {
 		config := abapEnvironmentRunATCCheckOptions{
 			Username: "testUser",
 			Password: "testPassword",
 			Host:     "https://api.endpoint.com",
+		}
+		var con connectionDetailsHTTP
+		con, error := checkHost(config, con)
+		if error == nil {
+			assert.Equal(t, "testUser", con.User)
+			assert.Equal(t, "testPassword", con.Password)
+			assert.Equal(t, "https://api.endpoint.com", con.URL)
+			assert.Equal(t, "", con.XCsrfToken)
+		}
+	})
+	t.Run("Check Host: ABAP Endpoint without HTTPS prefix", func(t *testing.T) {
+		config := abapEnvironmentRunATCCheckOptions{
+			Username: "testUser",
+			Password: "testPassword",
+			Host:     "api.endpoint.com",
 		}
 		var con connectionDetailsHTTP
 		con, error := checkHost(config, con)
@@ -207,7 +222,6 @@ func TestParseATCResult(t *testing.T) {
 			_ = os.Chdir(oldCWD)
 			_ = os.RemoveAll(dir)
 		}()
-
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 			<file name="testFile">
@@ -222,7 +236,6 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-
 		err = parseATCResult(body)
 		assert.Equal(t, nil, err)
 	})

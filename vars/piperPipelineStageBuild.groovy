@@ -54,11 +54,11 @@ void call(Map parameters = [:]) {
 
         durationMeasure(script: script, measurementName: 'build_duration') {
 
-            buildExecute script: script
-            pipelineStashFilesAfterBuild script: script
+            buildExecute script: script, stageName: stageName
+            pipelineStashFilesAfterBuild script: script, stageName: stageName
 
-            testsPublishResults script: script, junit: [updateResults: true]
-            checksPublishResults script: script
+            testsPublishResults script: script, junit: [updateResults: true], stageName: stageName
+            checksPublishResults script: script, stageName: stageName
         }
     }
 }

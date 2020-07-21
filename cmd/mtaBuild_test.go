@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -364,6 +365,10 @@ func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.Fi
 
 func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
+}
+
+func (f *MtaTestFileUtilsMock) Chmod(path string, mode os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func newNpmExecutor(execRunner *mock.ExecMockRunner) *npm.Execute {
