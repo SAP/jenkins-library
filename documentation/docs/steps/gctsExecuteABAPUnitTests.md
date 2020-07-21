@@ -21,10 +21,10 @@ Example configuration for the use in a Jenkinsfile.
 ```groovy
 gctsExecuteABAPUnitTests(
   script: this,
-  host: "https://abap.server.com:port",
-  client: "000",
+  host: 'https://abap.server.com:port',
+  client: '000',
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
-  repository: "myrepo"
+  repository: 'myrepo'
   )
 ```
 
@@ -34,8 +34,8 @@ Example configuration for the use in a yaml config file (such as `.pipeline/conf
 steps:
   <...>
   gctsExecuteABAPUnitTests:
-    host: "https://abap.server.com:port"
-    client: "000"
+    host: 'https://abap.server.com:port'
+    client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
-    repository: "myrepo"
+    repository: 'myrepo'
 ```

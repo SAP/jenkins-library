@@ -20,10 +20,10 @@ Example configuration for the use in a `Jenkinsfile`.
 ```groovy
 gctsDeploy(
   script: this,
-  host: "https://abap.server.com:port",
-  client: "000",
+  host: 'https://abap.server.com:port',
+  client: '000',
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
-  repository: "myrepo"
+  repository: 'myrepo'
 )
 ```
 
@@ -33,8 +33,8 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   gctsDeploy:
-    host: "https://abap.server.com:port"
-    client: "000"
+    host: 'https://abap.server.com:port'
+    client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
-    repository: "myrepo"
+    repository: 'myrepo'
 ```

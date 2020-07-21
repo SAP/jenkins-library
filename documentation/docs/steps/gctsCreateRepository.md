@@ -20,13 +20,13 @@ Example configuration for the use in a `Jenkinsfile`.
 ```groovy
 gctsCreateRepository(
   script: this,
-  host: "https://abap.server.com:port",
-  client: "000",
+  host: 'https://abap.server.com:port',
+  client: '000',
   abapCredentialsId: 'ABAPUserPasswordCredentialsId',
-  repository: "myrepo",
-  remoteRepositoryURL: "https://github.com/user/myrepo",
-  role: "SOURCE",
-  vSID: "ABC"
+  repository: 'myrepo',
+  remoteRepositoryURL: 'https://github.com/user/myrepo',
+  role: 'SOURCE',
+  vSID: 'ABC'
   )
 ```
 
@@ -36,11 +36,11 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   gctsCreateRepository:
-    host: "https://abap.server.com:port"
-    client: "000"
+    host: 'https://abap.server.com:port'
+    client: '000'
     abapCredentialsId: 'ABAPUserPasswordCredentialsId'
-    repository: "myrepo"
-    remoteRepositoryURL: "https://github.com/user/myrepo"
-    role: "SOURCE"
-    vSID: "ABC"
+    repository: 'myrepo'
+    remoteRepositoryURL: 'https://github.com/user/myrepo'
+    role: 'SOURCE'
+    vSID: 'ABC'
 ```
