@@ -335,7 +335,7 @@ func downloadAgent(config *ScanOptions, cmd *command.Command) error {
 		client := piperhttp.Client{}
 		err := client.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 		if err != nil {
-			return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
+			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w",
 				config.AgentDownloadURL, agentFile, err)
 		}
 		//if err := cmd.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", agentFile); err != nil {
