@@ -11,6 +11,7 @@ import (
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -331,9 +332,15 @@ func downloadRiskReport(config *ScanOptions, sys *System) (*piperutils.Path, err
 func downloadAgent(config *ScanOptions, cmd *command.Command) error {
 	agentFile := config.AgentFileName
 	if !fileExists(agentFile) {
-		if err := cmd.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", agentFile); err != nil {
-			return err
+		client := piperhttp.Client{}
+		err := client.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
+				config.AgentDownloadURL, agentFile, err)
 		}
+		//if err := cmd.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", agentFile); err != nil {
+		//	return err
+		//}
 	}
 	return nil
 }
