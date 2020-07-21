@@ -8,7 +8,6 @@ import (
 )
 
 func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
-	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",

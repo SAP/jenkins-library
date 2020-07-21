@@ -67,27 +67,24 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		t.Fatal("Could not locate piper binary to test")
 	}
 
-	projectDir := path.Join(wd, path.Join(bundle.TestDir...))
-
-	// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
-	// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
-	tempDir, err := ioutil.TempDir("", "piper-integration-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = copyDir(projectDir, tempDir)
-	if err != nil {
-		t.Fatalf("")
-	}
-
 	params := []string{"run", "--detach", "-v", localPiper + ":/piper", "--name=" + testRunner.ContainerName}
 	if testRunner.User != "" {
 		params = append(params, fmt.Sprintf("--user=%s", testRunner.User))
 	}
 	if len(bundle.TestDir) > 0 {
 		projectDir := path.Join(wd, path.Join(bundle.TestDir...))
-		params = append(params, "-v", fmt.Sprintf("%s:/project", projectDir))
+		// 1. Copy test files to a temp dir in order to avoid non-repeatable test executions because of changed state
+		// 2. Don't remove the temp dir to allow investigation of failed tests. Maybe add an option for cleaning it later?
+		tempDir, err := ioutil.TempDir("", "piper-integration-test")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = copyDir(projectDir, tempDir)
+		if err != nil {
+			t.Fatalf("Failed to copy files from %s into %s", projectDir, tempDir)
+		}
+		params = append(params, "-v", fmt.Sprintf("%s:/project", tempDir))
 	}
 	if len(testRunner.Environment) > 0 {
 		for envVarName, envVarValue := range testRunner.Environment {
@@ -97,14 +94,16 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	params = append(params, testRunner.Image, "sleep", "2000")
 
 	//todo mounts
-	err = testRunner.Runner.RunExecutable("docker", params...)
+	err := testRunner.Runner.RunExecutable("docker", params...)
 	if err != nil {
 		t.Fatalf("Starting test container has failed %s", err)
 	}
 
-	err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chown", "-R", testRunner.User, "/project")
-	if err != nil {
-		t.Fatalf("Chown /project has failed %s", err)
+	if len(bundle.TestDir) > 0 {
+		err = testRunner.Runner.RunExecutable("docker", "exec", "-u=root", testRunner.ContainerName, "chown", "-R", testRunner.User, "/project")
+		if err != nil {
+			t.Fatalf("Chown /project has failed %s", err)
+		}
 	}
 
 	for _, scriptLine := range testRunner.Setup {
