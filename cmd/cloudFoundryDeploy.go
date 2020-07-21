@@ -661,23 +661,21 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		cfDeployParams = append(cfDeployParams, deployParams...)
 	}
 
-	{
-		var mtaExtensionDescriptor string
-
-		if len(config.MtaExtensionDescriptor) > 0 {
-			if !strings.HasPrefix(config.MtaExtensionDescriptor, "-e") {
-				mtaExtensionDescriptor = "-e " + config.MtaExtensionDescriptor
-			} else {
-				mtaExtensionDescriptor = config.MtaExtensionDescriptor
-			}
-		}
-
-		if len(mtaExtensionDescriptor) > 0 {
-			cfDeployParams = append(cfDeployParams, mtaExtensionDescriptor)
-		}
-	}
+	cfDeployParams = append(cfDeployParams, handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)...)
 
 	return cfDeploy(config, cfDeployParams, nil, nil, command)
+}
+
+func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) []string {
+	var result = []string{}
+	for _, part := range splitAtWhitespace(strings.Trim(mtaExtensionDescriptor, " ")) {
+		if part == "-e" || part == "" {
+			continue
+		}
+		// REVISIT: maybe check if the extension descriptor exists
+		result = append(result, "-e", part)
+	}
+	return result
 }
 
 // would make sense to have that method in some kind of helper instead having it here
