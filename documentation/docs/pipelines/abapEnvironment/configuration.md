@@ -6,6 +6,8 @@ In this section, you can learn how to create a configuration in a (GitHub) repos
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
 * Create a git repository on a host reachable by the Jenkinsserver (e.g. GitHub.com). The pipeline will be configured in this repository.
+* A Cloud Foundry Organization & Space with the necessary entitlements are available
+* A Cloud Foundry User & Password with the required authorizations in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store
 
 ## 2. Jenkinsfile
 
@@ -17,7 +19,13 @@ Create a file named `Jenkinsfile` in your repository with the following content:
 abapEnvironmentPipeline script: this
 ```
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch (see [documentation](https://sap.github.io/jenkins-library/customjenkins/#shared-library)).
+The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch. This can be achieved by either adapting the configuration (see [documentation](https://sap.github.io/jenkins-library/infrastructure/customjenkins/#shared-library)) or by specifying the release within the annotaion:
+
+```
+@Library('piper-lib-os@v1.53.0') _
+```
+
+An Overview of the releases of the Piper Library can be found [here](https://github.com/SAP/jenkins-library/releases).
 
 ## 3. Manifest for Service Creation
 
@@ -76,7 +84,6 @@ general:
 stages:
   Prepare System:
     cfServiceManifest: 'manifest.yml'
-    stashContent: ''
     cfServiceKeyConfig: 'sap_com_0510.json'
   Clone Repositories:
     repositoryNames: ['/DMO/REPO']
@@ -84,7 +91,7 @@ stages:
     atcConfig: 'atcConfig.yml'
 steps:
   cloudFoundryDeleteService:
-    deleteServiceKeys: true
+    cfDeleteServiceKeys: true
 ```
 
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.

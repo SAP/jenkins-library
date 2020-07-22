@@ -14,38 +14,38 @@ import (
 )
 
 type whitesourceExecuteScanOptions struct {
-	BuildDescriptorFile                  string `json:"buildDescriptorFile,omitempty"`
-	DefaultVersioningModel               string `json:"defaultVersioningModel,omitempty"`
-	CreateProductFromPipeline            bool   `json:"createProductFromPipeline,omitempty"`
-	SecurityVulnerabilities              bool   `json:"securityVulnerabilities,omitempty"`
-	Timeout                              string `json:"timeout,omitempty"`
-	AgentDownloadURL                     string `json:"agentDownloadUrl,omitempty"`
-	ConfigFilePath                       string `json:"configFilePath,omitempty"`
-	ReportDirectoryName                  string `json:"reportDirectoryName,omitempty"`
-	AggregateVersionWideReport           bool   `json:"aggregateVersionWideReport,omitempty"`
-	VulnerabilityReportFormat            string `json:"vulnerabilityReportFormat,omitempty"`
-	ParallelLimit                        string `json:"parallelLimit,omitempty"`
-	Reporting                            bool   `json:"reporting,omitempty"`
-	ServiceURL                           string `json:"serviceUrl,omitempty"`
-	BuildDescriptorExcludeList           string `json:"buildDescriptorExcludeList,omitempty"`
-	OrgToken                             string `json:"orgToken,omitempty"`
-	UserToken                            string `json:"userToken,omitempty"`
-	LicensingVulnerabilities             bool   `json:"licensingVulnerabilities,omitempty"`
-	AgentFileName                        string `json:"agentFileName,omitempty"`
-	EmailAddressesOfInitialProductAdmins string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
-	ProductVersion                       string `json:"productVersion,omitempty"`
-	JreDownloadURL                       string `json:"jreDownloadUrl,omitempty"`
-	ProductName                          string `json:"productName,omitempty"`
-	ProjectName                          string `json:"projectName,omitempty"`
-	ProjectToken                         string `json:"projectToken,omitempty"`
-	VulnerabilityReportTitle             string `json:"vulnerabilityReportTitle,omitempty"`
-	InstallCommand                       string `json:"installCommand,omitempty"`
-	ScanType                             string `json:"scanType,omitempty"`
-	CvssSeverityLimit                    string `json:"cvssSeverityLimit,omitempty"`
-	Includes                             string `json:"includes,omitempty"`
-	Excludes                             string `json:"excludes,omitempty"`
-	ProductToken                         string `json:"productToken,omitempty"`
-	AgentParameters                      string `json:"agentParameters,omitempty"`
+	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
+	DefaultVersioningModel               string   `json:"defaultVersioningModel,omitempty"`
+	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
+	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
+	Timeout                              string   `json:"timeout,omitempty"`
+	AgentDownloadURL                     string   `json:"agentDownloadUrl,omitempty"`
+	ConfigFilePath                       string   `json:"configFilePath,omitempty"`
+	ReportDirectoryName                  string   `json:"reportDirectoryName,omitempty"`
+	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty"`
+	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty"`
+	ParallelLimit                        string   `json:"parallelLimit,omitempty"`
+	Reporting                            bool     `json:"reporting,omitempty"`
+	ServiceURL                           string   `json:"serviceUrl,omitempty"`
+	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty"`
+	OrgToken                             string   `json:"orgToken,omitempty"`
+	UserToken                            string   `json:"userToken,omitempty"`
+	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty"`
+	AgentFileName                        string   `json:"agentFileName,omitempty"`
+	EmailAddressesOfInitialProductAdmins string   `json:"emailAddressesOfInitialProductAdmins,omitempty"`
+	ProductVersion                       string   `json:"productVersion,omitempty"`
+	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
+	ProductName                          string   `json:"productName,omitempty"`
+	ProjectName                          string   `json:"projectName,omitempty"`
+	ProjectToken                         string   `json:"projectToken,omitempty"`
+	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
+	InstallCommand                       string   `json:"installCommand,omitempty"`
+	ScanType                             string   `json:"scanType,omitempty"`
+	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
+	Includes                             string   `json:"includes,omitempty"`
+	Excludes                             string   `json:"excludes,omitempty"`
+	ProductToken                         string   `json:"productToken,omitempty"`
+	AgentParameters                      string   `json:"agentParameters,omitempty"`
 }
 
 // WhitesourceExecuteScanCommand BETA
@@ -130,7 +130,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", `15`, "Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource server API used for communication.")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", `[]`, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{``}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.OrgToken, "orgToken", os.Getenv("PIPER_orgToken"), "WhiteSource token identifying your organization.")
 	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying the user executing the scan")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "Whether license compliance is considered and reported as part of the assessment.")
@@ -321,7 +321,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "buildDescriptorExcludeList",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

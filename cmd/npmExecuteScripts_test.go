@@ -30,7 +30,9 @@ type npmConfig struct {
 	install            bool
 	runScripts         []string
 	runOptions         []string
+	scriptOptions      []string
 	virtualFrameBuffer bool
+	excludeList        []string
 }
 
 // npmExecutorMock mocking struct
@@ -45,13 +47,19 @@ func (n *npmExecutorMock) FindPackageJSONFiles() []string {
 	return packages
 }
 
+// FindPackageJSONFiles mock implementation
+func (n *npmExecutorMock) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
+	packages, _ := n.utils.Glob("**/package.json")
+	return packages, nil
+}
+
 // FindPackageJSONFilesWithScript mock implementation
 func (n *npmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error) {
 	return packageJSONFiles, nil
 }
 
 // RunScriptsInAllPackages mock implementation
-func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
+func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
 	if len(runScripts) != len(n.config.runScripts) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
 	}
@@ -61,12 +69,20 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 		}
 	}
 
+	if len(scriptOptions) != len(n.config.scriptOptions) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of scriptOptions than config.scriptOptions")
+	}
+
 	if len(runOptions) != len(n.config.runOptions) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
 	}
 
 	if virtualFrameBuffer != n.config.virtualFrameBuffer {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of virtualFrameBuffer than config.virtualFrameBuffer")
+	}
+
+	if len(excludeList) != len(n.config.excludeList) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of excludeList than config.excludeList")
 	}
 
 	return nil
@@ -96,6 +112,30 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 }
 
 func TestNpmExecuteScripts(t *testing.T) {
+	t.Run("Call with excludeList", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorExcludeList: []string{"**/path/**"}}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, excludeList: config.BuildDescriptorExcludeList}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with scriptOptions", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, scriptOptions: config.ScriptOptions}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Call with install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
 		utils := newNpmMockUtilsBundle()

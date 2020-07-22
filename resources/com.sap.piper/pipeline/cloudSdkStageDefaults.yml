@@ -1,0 +1,47 @@
+stages:
+  endToEndTests:
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      newmanExecute:
+        filePatternFromConfig: 'newmanCollection'
+        configKeys:
+          - 'testRepository'
+      uiVeri5ExecuteTests:
+        filePattern: '**/conf.js'
+        configKeys:
+          - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
+  productionDeployment:
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      neoDeploy:
+        configKeys:
+          - 'neo/account'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
+      githubPublishRelease:
+        configKeys:
+          - 'githubTokenCredentialsId'
