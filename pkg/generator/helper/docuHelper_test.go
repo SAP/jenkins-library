@@ -171,7 +171,7 @@ func TestParameterFurtherInfo(t *testing.T) {
 					},
 				},
 			},
-			contains: "credentials ([`mytestSecret`](#mytestSecret))",
+			contains: "credentials ([`mytestSecret`](#mytestsecret))",
 		},
 		{
 			paramName:  "testSecret2",
