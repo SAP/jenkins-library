@@ -17,6 +17,26 @@ import (
 	"time"
 )
 
+// The functions in this file provide a convenient way to integration test the piper binary in docker containers.
+// It follows the "given, when, then" approach for structuring tests.
+// The general concept is that per test one container is started, one piper command is run and outcomes are asserted.
+// Please note that so far this was only tested with debian/ubuntu based containers.
+//
+// Non-exhaustive list of assumptions those functions make:
+// - Bash is available in the container
+// - If the option TestDir is not provided, the test project must be in the container image  in the directory /project
+
+// IntegrationTestDockerExecRunnerBundle is used to construct an instance of IntegrationTestDockerExecRunner
+// This is what a test uses to specify the container it requires
+type IntegrationTestDockerExecRunnerBundle struct {
+	Image       string
+	User        string
+	TestDir     []string
+	Mounts      map[string]string
+	Environment map[string]string
+	Setup       []string
+}
+
 // IntegrationTestDockerExecRunner keeps the state of an instance of a docker runner
 type IntegrationTestDockerExecRunner struct {
 	// Runner is the ExecRunner to which all executions are forwarded in the end.
@@ -30,26 +50,9 @@ type IntegrationTestDockerExecRunner struct {
 	ContainerName string
 }
 
-// IntegrationTestDockerExecRunnerBundle is used to construct an instance of IntegrationTestDockerExecRunner
-type IntegrationTestDockerExecRunnerBundle struct {
-	Image       string
-	User        string
-	TestDir     []string
-	Mounts      map[string]string
-	Environment map[string]string
-	Setup       []string
-}
-
 func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBundle) IntegrationTestDockerExecRunner {
 	runner := command.Command{}
-
-	// Generate a random container name so we can start a new one for each test method
-	// We don't rely on docker's random name generator for two reasons
-	// First, it is easier to save the name here compared to getting it from stdout
-	// Second, the common prefix allows batch stopping/deleting of containers if so desired
-	// The test code will not automatically delete containers as they might be useful for debugging
-	var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	containerName := "piper-integration-test-" + strconv.Itoa(seededRand.Int())
+	containerName := generateContainerName()
 
 	testRunner := IntegrationTestDockerExecRunner{
 		Runner:        runner,
@@ -60,7 +63,6 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		ContainerName: containerName,
 	}
 
-	//todo ensure it is a linux binary
 	wd, _ := os.Getwd()
 	localPiper := path.Join(wd, "..", "piper")
 	if localPiper == "" {
@@ -113,7 +115,23 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		}
 	}
 
-	err = testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName+":/piper-wrapper")
+	setupPiperBinary(t, testRunner, localPiper)
+
+	return testRunner
+}
+
+// Generate a random container name so we can start a new one for each test method
+// We don't rely on docker's random name generator for two reasons
+// First, it is easier to save the name here compared to getting it from stdout
+// Second, the common prefix allows batch stopping/deleting of containers if so desired
+// The test code will not automatically delete containers as they might be useful for debugging
+func generateContainerName() string {
+	var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	return "piper-integration-test-" + strconv.Itoa(seededRand.Int())
+}
+
+func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, localPiper string) {
+	err := testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName+":/piper-wrapper")
 	if err != nil {
 		t.Fatalf("Copying command wrapper to container has failed %s", err)
 	}
@@ -121,7 +139,11 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	if err != nil {
 		t.Fatalf("Making command wrapper in container executable has failed %s", err)
 	}
-	return testRunner
+	err = testRunner.Runner.RunExecutable("docker", "exec", testRunner.ContainerName, "/bin/bash", "/piper-wrapper", "/piper", "version")
+	if err != nil {
+		t.Fatalf("Running piper failed. "+
+			"Please check that '%s' is the correct binary, and is compiled for this configuration: 'GOOS=linux GOARCH=amd64'. Error text: %s", localPiper, err)
+	}
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
