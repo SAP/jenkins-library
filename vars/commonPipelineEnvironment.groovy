@@ -6,6 +6,9 @@ import groovy.json.JsonOutput
 
 class commonPipelineEnvironment implements Serializable {
 
+    //Project identifier which might be used to distinguish resources which are available globally, e.g. for locking
+    def projectName
+
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
     def originalArtifactVersion
@@ -42,7 +45,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath = ""
 
-    def abapRepositoryNames = []
+    String abapRepositoryNames
 
     private Map valueMap = [:]
 
@@ -58,7 +61,9 @@ class commonPipelineEnvironment implements Serializable {
 
     def reset() {
 
-        abapRepositoryNames = []
+        projectName = null
+
+        abapRepositoryNames = null
 
         appContainerProperties = [:]
         artifactVersion = null
@@ -189,11 +194,7 @@ class commonPipelineEnvironment implements Serializable {
 
         files.each({f  ->
             if (this[f.property] && !script.fileExists(f.filename)) {
-                if(this[f.property] instanceof String) {
-                    script.writeFile file: f.filename, text: this[f.property]
-                } else {
-                    script.writeFile file: f.filename, text: groovy.json.JsonOutput.toJson(this[f.property])
-                }
+                script.writeFile file: f.filename, text: this[f.property]
             }
         })
 
@@ -221,8 +222,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void readFromDisk(script) {
-
-        // While a groovy list will be parsed into a JSON list in "writeToDisk", the function "readFromDisk" won't parse the received String
 
         files.each({f  ->
             if (script.fileExists(f.filename)) {

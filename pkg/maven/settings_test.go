@@ -200,3 +200,7 @@ func (f *fileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode)
 func (f *fileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
+
+func (f *fileUtilsMock) Chmod(path string, mode os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}

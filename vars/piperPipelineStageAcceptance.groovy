@@ -27,7 +27,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
     'testsPublishResults',
     /** Performs end-to-end UI testing using UIVeri5 test framework against the deployed application/service. */
-    'uiVeri5ExecuteTests'
+    'uiVeri5ExecuteTests',
+    /** Executes end to end tests by running the npm script 'ci-e2e' defined in the project's package.json file. */
+    'npmExecuteEndToEndTests'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -60,6 +62,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
         .addIfEmpty('newmanExecute', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.newmanExecute)
         .addIfEmpty('uiVeri5ExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.uiVeri5ExecuteTests)
+        .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -75,19 +78,19 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_cf_duration') {
-                    cloudFoundryDeploy script: script
+                    cloudFoundryDeploy script: script, stageName: stageName
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_neo_duration') {
-                    neoDeploy script: script
+                    neoDeploy script: script, stageName: stageName
                 }
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script
+            healthExecuteCheck script: script, stageName: stageName
         }
 
 
@@ -97,7 +100,7 @@ void call(Map parameters = [:]) {
         if (config.gaugeExecuteTests) {
             durationMeasure(script: script, measurementName: 'gauge_duration') {
                 publishResults = true
-                gaugeExecuteTests script: script
+                gaugeExecuteTests script: script, stageName: stageName
                 publishMap += [gauge: [archive: true]]
             }
         }
@@ -105,18 +108,25 @@ void call(Map parameters = [:]) {
         if (config.newmanExecute) {
             durationMeasure(script: script, measurementName: 'newman_duration') {
                 publishResults = true
-                newmanExecute script: script
+                newmanExecute script: script, stageName: stageName
             }
         }
 
         if (config.uiVeri5ExecuteTests) {
             durationMeasure(script: script, measurementName: 'uiveri5_duration') {
                 publishResults = true
-                uiVeri5ExecuteTests script: script
+                uiVeri5ExecuteTests script: script, stageName: stageName
+            }
+        }
+
+        if (config.npmExecuteEndToEndTests) {
+            durationMeasure(script: script, measurementName: 'npmExecuteEndToEndTests_duration') {
+                npmExecuteEndToEndTests script: script, stageName: stageName, runScript: 'ci-e2e'
             }
         }
 
         if (publishResults) {
+            publishMap.stageName = stageName
             testsPublishResults publishMap
         }
     }

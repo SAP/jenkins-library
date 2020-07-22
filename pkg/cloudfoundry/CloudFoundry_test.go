@@ -18,66 +18,31 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 
 	m := &mock.ExecMockRunner{}
 
-	t.Run("CF Login check: missing endpoint parameter", func(t *testing.T) {
-		cfconfig := LoginOptions{}
-		cf := CFUtils{Exec: m}
-		loggedIn, err := cf.LoginCheck(cfconfig)
-		assert.False(t, loggedIn)
-		assert.EqualError(t, err, "Cloud Foundry API endpoint parameter missing. Please provide the Cloud Foundry Endpoint")
-	})
-
-	t.Run("CF Login check: failure case", func(t *testing.T) {
-
-		defer loginMockCleanup(m)
-
-		m.ShouldFailOnCommand = map[string]error{"cf api.*": fmt.Errorf("Cannot perform login check")}
-		cfconfig := LoginOptions{
-			CfAPIEndpoint: "https://api.endpoint.com",
-		}
-		cf := CFUtils{Exec: m}
-		loggedIn, err := cf.LoginCheck(cfconfig)
-		assert.False(t, loggedIn)
-		assert.Error(t, err)
-		assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
-	})
-
-	t.Run("CF Login check: success case", func(t *testing.T) {
+	t.Run("CF Login check: logged in", func(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
 		}
-		cf := CFUtils{Exec: m}
+		cf := CFUtils{Exec: m, loggedIn: true}
 		loggedIn, err := cf.LoginCheck(cfconfig)
 		if assert.NoError(t, err) {
 			assert.True(t, loggedIn)
-			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}}}, m.Calls)
 		}
 	})
 
-	t.Run("CF Login check: with additional API options", func(t *testing.T) {
+	t.Run("CF Login check: not logged in", func(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
-			// should never used in productive environment, but it is useful for rapid prototyping/troubleshooting
-			CfAPIOpts: []string{"--skip-ssl-validation"},
 		}
-
-		cf := CFUtils{Exec: m}
+		cf := CFUtils{Exec: m, loggedIn: false}
 		loggedIn, err := cf.LoginCheck(cfconfig)
 		if assert.NoError(t, err) {
-			assert.True(t, loggedIn)
-			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{
-					Exec: "cf",
-					Params: []string{
-						"api",
-						"https://api.endpoint.com",
-						"--skip-ssl-validation",
-					}}}, m.Calls)
+			assert.False(t, loggedIn)
 		}
 	})
 }
@@ -99,7 +64,6 @@ func TestCloudFoundryLogin(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
-		m.StdoutReturn = map[string]string{"cf api .*": "Not logged in"}
 		m.ShouldFailOnCommand = map[string]error{"cf login .*": fmt.Errorf("wrong password or account does not exist")}
 
 		cfconfig := LoginOptions{
@@ -113,8 +77,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 		cf := CFUtils{Exec: m}
 		err := cf.Login(cfconfig)
 		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: wrong password or account does not exist") {
+			assert.False(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
 				mock.ExecCall{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
@@ -143,8 +107,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 		cf := CFUtils{Exec: m}
 		err := cf.Login(cfconfig)
 		if assert.NoError(t, err) {
+			assert.True(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
 				mock.ExecCall{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
@@ -160,8 +124,6 @@ func TestCloudFoundryLogin(t *testing.T) {
 	t.Run("CF Login: with additional login options", func(t *testing.T) {
 
 		defer loginMockCleanup(m)
-
-		m.StdoutReturn = map[string]string{"cf api:*": "Not logged in"}
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
@@ -181,12 +143,8 @@ func TestCloudFoundryLogin(t *testing.T) {
 		cf := CFUtils{Exec: m}
 		err := cf.Login(cfconfig)
 		if assert.NoError(t, err) {
+			assert.True(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{
-					"api",
-					"https://api.endpoint.com",
-					"--skip-ssl-validation",
-				}},
 				mock.ExecCall{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
@@ -200,17 +158,14 @@ func TestCloudFoundryLogin(t *testing.T) {
 			}, m.Calls)
 		}
 	})
-
 }
 
 func TestCloudFoundryLogout(t *testing.T) {
 	t.Run("CF Logout", func(t *testing.T) {
-		cf := CFUtils{Exec: &mock.ExecMockRunner{}}
+		cf := CFUtils{Exec: &mock.ExecMockRunner{}, loggedIn: true}
 		err := cf.Logout()
-		if err == nil {
-			assert.Equal(t, nil, err)
-		} else {
-			assert.Error(t, err)
+		if assert.NoError(t, err) {
+			assert.False(t, cf.loggedIn)
 		}
 	})
 }

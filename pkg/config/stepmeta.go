@@ -62,10 +62,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string  `json:"name"`
-	Type    string  `json:"type,omitempty"`
-	Param   string  `json:"param,omitempty"`
-	Aliases []Alias `json:"aliases,omitempty"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type,omitempty"`
+	Param   string   `json:"param,omitempty"`
+	Paths   []string `json:"path,omitempty"`
+	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -214,7 +215,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		}
 	}
 	if len(m.Spec.Containers) > 0 {
-		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
+		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
@@ -275,12 +276,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 			p["containerName"] = container.Name
 			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = envVarsAsMap(container.EnvVars)
+			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
 			p["dockerImage"] = container.Image
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = optionsAsStringSlice(container.Options)
+			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
 			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
 
 			// Ready command not relevant for main runtime container so far
@@ -293,13 +294,13 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = envVarsAsMap(m.Spec.Sidecars[0].EnvVars)
+		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
 		root["sidecarImage"] = m.Spec.Sidecars[0].Image
 		root["sidecarName"] = m.Spec.Sidecars[0].Name
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
 		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
 		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = optionsAsStringSlice(m.Spec.Sidecars[0].Options)
+		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
 		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
 	}
 
@@ -361,7 +362,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams = getParameterValue(path, name, res, param)
+				resourceParams[param.Name] = getParameterValue(path, name, res, param)
 			}
 		}
 	}
@@ -369,8 +370,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func getParameterValue(path, name string, res ResourceReference, param StepParameters) map[string]interface{} {
-	resourceParams := map[string]interface{}{}
+func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
 	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
@@ -378,15 +378,25 @@ func getParameterValue(path, name string, res ResourceReference, param StepParam
 			if err != nil {
 				log.Entry().Debugf("Failed to unmarshal: %v", val)
 			}
-			resourceParams[param.Name] = unmarshalledValue
-		} else {
-			resourceParams[param.Name] = val
+			return unmarshalledValue
 		}
+		return val
 	}
-	return resourceParams
+	return nil
 }
 
-func envVarsAsMap(envVars []EnvVar) map[string]string {
+// GetReference returns the ResourceReference of the given type
+func (m *StepParameters) GetReference(refType string) *ResourceReference {
+	for _, ref := range m.ResourceRef {
+		if refType == ref.Type {
+			return &ref
+		}
+	}
+	return nil
+}
+
+// EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute
+func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 	e := map[string]string{}
 	for _, v := range envVars {
 		e[v.Name] = v.Value
@@ -394,7 +404,8 @@ func envVarsAsMap(envVars []EnvVar) map[string]string {
 	return e
 }
 
-func optionsAsStringSlice(options []Option) []string {
+// OptionsAsStringSlice converts container options into a string slice as required by dockerExecute
+func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
 		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
