@@ -20,13 +20,17 @@ type logicalClient interface {
 }
 
 // NewClient instantiates a Client and sets the specified token
-func NewClient(config *api.Config, token string) (Client, error) {
+func NewClient(config *api.Config, token, namespace string) (Client, error) {
 	if config == nil {
 		config = api.DefaultConfig()
 	}
 	client, err := api.NewClient(config)
 	if err != nil {
 		return Client{}, err
+	}
+
+	if namespace != "" {
+		client.SetNamespace(namespace)
 	}
 
 	client.SetToken(token)
