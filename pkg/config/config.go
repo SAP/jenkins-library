@@ -213,6 +213,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			for _, p := range parameters {
 				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
 			}
+			for _, s := range secrets {
+				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+			}
 
 			stepConfig.mixIn(params, filters.Parameters)
 		}
@@ -221,6 +224,16 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// merge command line flags
 	if flagValues != nil {
 		stepConfig.mixIn(flagValues, filters.Parameters)
+	}
+
+	// fetch secrets from vault
+	vaultClient, err := getVaultClientFromConfig(stepConfig)
+	if err != nil {
+		return StepConfig{}, err
+	}
+	err = addVaultCredentials(&stepConfig, vaultClient, parameters)
+	if err != nil {
+		return StepConfig{}, err
 	}
 
 	// finally do the condition evaluation post processing

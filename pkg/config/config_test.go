@@ -154,6 +154,7 @@ steps:
 				Name:        "pe1",
 				Scope:       []string{"STEPS"},
 				ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "test_pe1"}},
+				Type:        "string",
 			},
 		}
 		secretMetadata := []StepSecrets{
@@ -223,7 +224,7 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, false, StepFilters{General: []string{"p0"}}, nil, nil, nil, "stage1", "step1", []Alias{})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, false, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
@@ -237,7 +238,7 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, true, StepFilters{General: []string{"p0"}}, nil, nil, nil, "stage1", "step1", []Alias{})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, true, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, nil, stepConfig.Config["p0"])
@@ -271,6 +272,20 @@ steps:
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, true, stepConfig.Config["p0"])
 		assert.Equal(t, nil, stepConfig.Config["p1"])
+	})
+
+	t.Run("Apply alias to paramJSON", func(t *testing.T) {
+		var c Config
+
+		secrets := []StepSecrets{
+			StepSecrets{Name: "p0", Type: "string", Aliases: []Alias{{Name: "p1/subParam"}}}}
+		testConf := ""
+
+		paramJSON := "{\"p1\":{\"subParam\":\"p1_value\"}}"
+		stepConfig, err := c.GetStepConfig(nil, paramJSON, ioutil.NopCloser(strings.NewReader(testConf)), nil, true, StepFilters{Parameters: []string{"p0"}}, nil, secrets, nil, "stage1", "step1", []Alias{{}})
+
+		assert.NoError(t, err, "Error occurred but no error expected")
+		assert.Equal(t, "p1_value", stepConfig.Config["p0"])
 	})
 
 	t.Run("Failure case config", func(t *testing.T) {
