@@ -226,6 +226,16 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
+	// fetch secrets from vault
+	vaultClient, err := getVaultClientFromConfig(stepConfig)
+	if err != nil {
+		return StepConfig{}, err
+	}
+	err = addVaultCredentials(&stepConfig, vaultClient, parameters)
+	if err != nil {
+		return StepConfig{}, err
+	}
+
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
