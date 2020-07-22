@@ -120,7 +120,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	return testRunner
 }
 
-// Generate a random container name so we can start a new one for each test method
+// generateContainerName creates a name with a common prefix and a random number so we can start a new container for each test method
 // We don't rely on docker's random name generator for two reasons
 // First, it is easier to save the name here compared to getting it from stdout
 // Second, the common prefix allows batch stopping/deleting of containers if so desired
@@ -130,6 +130,10 @@ func generateContainerName() string {
 	return "piper-integration-test-" + strconv.Itoa(seededRand.Int())
 }
 
+// setupPiperBinary copies a wrapper script for calling the piper binary into the container and verifies that the piper binary is executable inside the container
+// The wrapper script (piper-command-wrapper.sh) only calls the piper binary and redirects its output into a file
+// The purpose of this is to capture piper's stdout/stderr in order to assert on the output
+// This is not possible via "docker logs", cf https://github.com/moby/moby/issues/8662
 func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, localPiper string) {
 	err := testRunner.Runner.RunExecutable("docker", "cp", "piper-command-wrapper.sh", testRunner.ContainerName+":/piper-wrapper")
 	if err != nil {
