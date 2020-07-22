@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,40 +25,60 @@ import (
 type ScanOptions = whitesourceExecuteScanOptions
 type System = whitesource.System
 
-func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData) {
-	// reroute cmd output to logging framework
-	c := command.Command{}
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+type whitesourceUtils interface {
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	RunExecutable(executable string, params ...string) error
 
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+type whitesourceUtilsBundle struct {
+	*piperhttp.Client
+	*command.Command
+}
+
+func newUtils() *whitesourceUtilsBundle {
+	// reroute cmd output to logging framework
+	utils := whitesourceUtilsBundle{
+		Client:  &piperhttp.Client{},
+		Command: &command.Command{},
+	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
+func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData) {
+	utils := newUtils()
 	sys := whitesource.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
-	if err := resolveProjectIdentifiers(&c, sys, &config); err != nil {
+	if err := resolveProjectIdentifiers(&config, utils, sys); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
 	}
 
 	// Generate a vulnerability report for all projects with version = config.ProjectVersion
 	if config.AggregateVersionWideReport {
-		if err := aggregateVersionWideLibraries(sys, &config); err != nil {
+		if err := aggregateVersionWideLibraries(&config, sys); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide libraries")
 		}
-		if err := aggregateVersionWideVulnerabilities(sys, &config); err != nil {
+		if err := aggregateVersionWideVulnerabilities(&config, sys); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide vulnerabilities")
 		}
 	} else {
-		if err := runWhitesourceScan(&config, sys, telemetry, &c); err != nil {
+		if err := runWhitesourceScan(&config, sys, telemetry, utils); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on executing whitesource scan")
 		}
 	}
 }
 
-func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomData, cmd *command.Command) error {
+func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomData, utils whitesourceUtils) error {
 	// Start the scan
-	if err := triggerWhitesourceScan(cmd, config); err != nil {
+	if err := triggerWhitesourceScan(config, utils); err != nil {
 		return err
 	}
 
 	// Scan finished: we need to resolve project token again if the project was just created.
-	if err := resolveProjectIdentifiers(cmd, sys, config); err != nil {
+	if err := resolveProjectIdentifiers(config, utils, sys); err != nil {
 		return err
 	}
 
@@ -83,10 +105,10 @@ func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomDat
 	return nil
 }
 
-func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOptions) error {
+func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys *System) error {
 	if config.ProjectName == "" || config.ProductVersion == "" {
 		opts := &versioning.Options{}
-		artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, cmd)
+		artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, utils)
 		if err != nil {
 			return err
 		}
@@ -136,27 +158,32 @@ func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOp
 	return nil
 }
 
-func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
+func triggerWhitesourceScan(config *ScanOptions, utils whitesourceUtils) error {
 	switch config.ScanType {
+	case "maven":
+		// Execute scan with
+		if err := executeMavenScan(config, utils); err != nil {
+			return err
+		}
 	case "npm":
-		// Execute whitesource scan with
-		if err := executeNpmScan(config, cmd); err != nil {
+		// Execute scan with whitesource yarn plugin
+		if err := executeNpmScan(config, utils); err != nil {
 			return err
 		}
 	default:
 		// Download the unified agent jar file if one does not exist
-		if err := downloadAgent(config, cmd); err != nil {
+		if err := downloadAgent(config, utils); err != nil {
 			return err
 		}
 
 		// Auto generate a config file based on the working directory's contents.
 		// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-		if err := autoGenerateWhitesourceConfig(config, cmd); err != nil {
+		if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
 			return err
 		}
 
 		// Execute whitesource scan with unified agent jar file
-		if err := executeUAScan(config, cmd); err != nil {
+		if err := executeUAScan(config, utils); err != nil {
 			return err
 		}
 	}
@@ -166,16 +193,21 @@ func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
 // executeUAScan
 // Executes a scan with the Whitesource Unified Agent
 // returns stdout buffer of the unified agent for token extraction in case of multi-module gradle project
-func executeUAScan(config *ScanOptions, cmd *command.Command) error {
-	return cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
+func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
+	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
+}
+
+// executeMavenScan ...
+func executeMavenScan(config *ScanOptions, utils whitesourceUtils) error {
+	return nil
 }
 
 // executeNpmScan
 // generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan
-func executeNpmScan(config *ScanOptions, cmd *command.Command) error {
+func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 	npmConfig := []byte(fmt.Sprintf(`{
 		"apiKey": "%s",
 		"userKey": "%s",
@@ -188,13 +220,13 @@ func executeNpmScan(config *ScanOptions, cmd *command.Command) error {
 	if err := ioutil.WriteFile("whitesource.config.json", npmConfig, 0644); err != nil {
 		return err
 	}
-	if err := cmd.RunExecutable("yarn", "global", "add", "whitesource"); err != nil {
+	if err := utils.RunExecutable("yarn", "global", "add", "whitesource"); err != nil {
 		return err
 	}
-	if err := cmd.RunExecutable("yarn", "install"); err != nil {
+	if err := utils.RunExecutable("yarn", "install"); err != nil {
 		return err
 	}
-	if err := cmd.RunExecutable("whitesource", "yarn"); err != nil {
+	if err := utils.RunExecutable("whitesource", "yarn"); err != nil {
 		return err
 	}
 	return nil
@@ -334,18 +366,14 @@ func downloadRiskReport(config *ScanOptions, sys *System) (*piperutils.Path, err
 }
 
 // downloadAgent: Downloads the unified agent jar file if one does not exist
-func downloadAgent(config *ScanOptions, cmd *command.Command) error {
+func downloadAgent(config *ScanOptions, utils whitesourceUtils) error {
 	agentFile := config.AgentFileName
 	if !fileExists(agentFile) {
-		client := piperhttp.Client{}
-		err := client.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
+		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w",
 				config.AgentDownloadURL, agentFile, err)
 		}
-		//if err := cmd.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", agentFile); err != nil {
-		//	return err
-		//}
 	}
 	return nil
 }
@@ -353,9 +381,9 @@ func downloadAgent(config *ScanOptions, cmd *command.Command) error {
 // autoGenerateWhitesourceConfig
 // Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
 // Generated file name will be 'wss-generated-file.config'
-func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) error {
+func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) error {
 	// TODO: Should we rely on -detect, or set the parameters manually?
-	if err := cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
+	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
 		return err
 	}
 
@@ -369,7 +397,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Append additional config parameters to prevent multiple projects being generated
 	cfg := fmt.Sprintf("gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\nexcludes=%s", config.Excludes)
@@ -378,21 +406,21 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) er
 	}
 
 	// archiveExtractionDepth=0
-	if err := cmd.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
+	if err := utils.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
 		config.ConfigFilePath); err != nil {
 		return err
 	}
 
 	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
 	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
-	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
+	if err := utils.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
+func aggregateVersionWideLibraries(config *ScanOptions, sys *System) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -419,7 +447,7 @@ func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, sys *System) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
