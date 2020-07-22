@@ -24,25 +24,8 @@ jobs:
       with:
         coverageCommand: go test ./... -coverprofile cover.out
         coverageLocations: cover.out:gocov
-        #debug: true
+        # truncate package name from file paths in report
         prefix: github.com/SAP/jenkins-library/
-#    - name: setup-coverage
-#      run: |
-#        curl -L --output code-climate https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
-#        chmod +x ./code-climate
-#        ./code-climate before-build
-#    - name: unit-test
-#      run: go test ./... -coverprofile cover.out
-#    - name: report-coverage
-#      env:
-#        CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
-#        GIT_COMMIT_SHA: ${{ env.GITHUB_SHA }}
-#        #GIT_BRANCH: ${{ GITHUB_REF##*/ }}
-#      run: |
-#        echo "GIT-SHA $GIT_COMMIT_SHA"
-#        echo "GITHUB-SHA $GITHUB_SHA"
-#        ./code-climate format-coverage cover.out --input-type gocov --prefix github.com/SAP/jenkins-library/
-#        ./code-climate upload-coverage
   format:
     runs-on: ubuntu-latest
     steps:
