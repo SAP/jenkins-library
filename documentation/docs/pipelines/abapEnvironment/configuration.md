@@ -91,7 +91,7 @@ stages:
     atcConfig: 'atcConfig.yml'
 steps:
   cloudFoundryDeleteService:
-    deleteServiceKeys: true
+    cfDeleteServiceKeys: true
 ```
 
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.

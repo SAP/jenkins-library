@@ -62,10 +62,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string  `json:"name"`
-	Type    string  `json:"type,omitempty"`
-	Param   string  `json:"param,omitempty"`
-	Aliases []Alias `json:"aliases,omitempty"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type,omitempty"`
+	Param   string   `json:"param,omitempty"`
+	Paths   []string `json:"path,omitempty"`
+	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -380,6 +381,16 @@ func getParameterValue(path, name string, res ResourceReference, param StepParam
 			return unmarshalledValue
 		}
 		return val
+	}
+	return nil
+}
+
+// GetReference returns the ResourceReference of the given type
+func (m *StepParameters) GetReference(refType string) *ResourceReference {
+	for _, ref := range m.ResourceRef {
+		if refType == ref.Type {
+			return &ref
+		}
 	}
 	return nil
 }

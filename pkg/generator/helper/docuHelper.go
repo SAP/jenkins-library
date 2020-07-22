@@ -24,7 +24,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	if docTemplate != nil {
 		defer docTemplate.Close()
 	}
-	//check if there is an error during opening the template (true : skip docu generation for this meta data file)
+	// check if there is an error during opening the template (true : skip docu generation for this meta data file)
 	if err != nil {
 		return fmt.Errorf("error occured: %v", err)
 	}
@@ -47,12 +47,12 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	// add secrets, context defaults to the step parameters
 	handleStepParameters(&stepData)
 
-	//write executed template data to the previously opened file
+	// write executed template data to the previously opened file
 	var docContent bytes.Buffer
 	err = tmpl.Execute(&docContent, &stepData)
 	checkError(err)
 
-	//overwrite existing file
+	// overwrite existing file
 	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
 	checkError(err)
 
@@ -203,7 +203,7 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
 				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
 				for _, res := range param.ResourceRef {
 					if res.Type == "secret" {
-						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, res.Name)
+						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
 					}
 				}
 				return secretInfo
