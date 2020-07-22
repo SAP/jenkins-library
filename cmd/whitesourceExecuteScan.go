@@ -65,6 +65,11 @@ func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomDat
 	log.Entry().Infof("Project Token: %s", config.ProjectToken)
 	log.Entry().Info("-----------------------------------------------------")
 
+	// Project was scanned, wait for Whitesource backend to reflect the new scan
+	if err := pollProjectStatus(config, sys); err != nil {
+		return err
+	}
+
 	if config.Reporting {
 		paths, err := downloadReports(config, sys)
 		if err != nil {
@@ -123,7 +128,7 @@ func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOp
 	if config.ProjectToken == "" {
 		version := config.ProductVersion
 		if strings.Contains(config.ProductVersion, "-") {
-			version = strings.Split(config.ProductVersion, "-")[0]
+			version = strings.SplitN(version, "-", 1)[0]
 		}
 		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, version)
 		log.Entry().Infof("Attempting to resolve project token for project '%s'..", fullProjName)
@@ -253,36 +258,36 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 
 // pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
 func pollProjectStatus(config *ScanOptions, sys *System) error {
-	currentTime := time.Now()
+	log.Entry().Info("Polling project status before downloading reports...")
+	log.Entry().Infof("Project token: %s", config.ProjectToken)
+	retry := 30
 	for {
-		project, err := sys.GetProjectVitals(config.ProjectToken)
+		reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
 		if err != nil {
 			return err
 		}
-		if project == nil {
-			continue
+
+		if len(reportBytes) > 36000 {
+			log.Entry().Info("Report is ready in whitesource backend - downloading reports.")
+			break
 		}
 
-		// Make sure the project was updated in whitesource backend before downloading any reports
-		layout := "2006-01-02 15:04:05 +0000"
-		lastUpdatedTime, err := time.Parse(layout, project.LastUpdateDate) // parse string to time.Time
-		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {             // if currentTime - projectLastUpdated < 10s
-			break // done polling
-		}
+		log.Entry().Infof("Length of reportBytes: %v", len(reportBytes))
 		log.Entry().Info("Project still not updated in WS backend, waiting 10s and trying again...")
 		time.Sleep(10 * time.Second)
+
+		retry--
+		if retry == 0 {
+			break
+		}
 	}
 	return nil
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
 func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
+	log.Entry().Infof("Download project risk/vulnerability reports for project token %s", config.ProjectToken)
 	utils := piperutils.Files{}
-
-	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
-	if err := pollProjectStatus(config, sys); err != nil {
-		return nil, err
-	}
 
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return nil, err
