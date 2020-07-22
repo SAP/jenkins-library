@@ -31,7 +31,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 
 	var c command.ExecRunner = &command.Command{}
 
-	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	//  Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/")
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
