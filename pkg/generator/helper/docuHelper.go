@@ -203,7 +203,7 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
 				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
 				for _, res := range param.ResourceRef {
 					if res.Type == "secret" {
-						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, res.Name)
+						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
 					}
 				}
 				return secretInfo
