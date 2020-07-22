@@ -66,9 +66,6 @@ void call(parameters = [:]) {
 
         Map config = configHelper.use()
 
-        configHelper
-            .withMandatoryProperty('source', null, { config.neoTargets })
-
         utils.pushToSWA([
             step         : STEP_NAME,
             stepParamKey1: 'enableZeroDowntimeDeployment',
@@ -96,17 +93,18 @@ void call(parameters = [:]) {
                     )
                 }
             }
-            runClosures(config, createServices, "cloudFoundryCreateService")
+            runClosures(script, createServices, config.parallelExecution, "cloudFoundryCreateService")
         }
 
         if (config.cfTargets) {
 
             def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
-            def deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
 
-            // An isolated workspace is only required when using blue-green deployment with multiple cfTargets,
+            // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
             // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
-            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && deploymentType == "blue-green"
+            // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
+            // credentials are inserted in the mtaExtensionDescriptor file.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
@@ -124,8 +122,8 @@ void call(parameters = [:]) {
                         jenkinsUtilsStub: jenkinsUtils,
                         deployType: deploymentType,
                         cloudFoundry: target,
-                        mtaPath: script.commonPipelineEnvironment.mtarFilePath,
-                        deployTool: deployTool
+                        mtaExtensionDescriptor: target.mtaExtensionDescriptor,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials
                     )
                     if (runInIsolatedWorkspace) {
                         deploymentUtils.stashStageFiles(script, stageName)
@@ -177,21 +175,6 @@ void call(parameters = [:]) {
             error "Deployment skipped because no targets defined!"
         }
 
-        runClosures(config, deployments, "deployments")
-
-    }
-}
-
-def runClosures(Map config, Map toRun, String label = "closures") {
-    echo "Executing $label"
-    if (config.parallelExecution) {
-        echo "Executing $label in parallel"
-        parallel toRun
-    } else {
-        echo "Executing $label in sequence"
-        def closuresToRun = toRun.values().asList()
-        for (int i = 0; i < closuresToRun.size(); i++) {
-            (closuresToRun[i] as Closure)()
-        }
+        runClosures(script, deployments, config.parallelExecution, "deployments")
     }
 }

@@ -15,6 +15,10 @@ stages:
   Integration: {}
   Acceptance:
     stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
@@ -30,6 +34,9 @@ stages:
         filePattern: '**/conf.js'
         configKeys:
           - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
   Security:
     stepConditions:
       checkmarxExecuteScan:
@@ -52,6 +59,10 @@ stages:
           - 'dockerRegistryUrl'
   Release:
     stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
       cloudFoundryDeploy:
         configKeys:
           - 'cfSpace'
@@ -62,6 +73,9 @@ stages:
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
