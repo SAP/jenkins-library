@@ -107,8 +107,6 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	checkoutConnectionDetails.URL = checkoutConnectionDetails.URL + `/checkout_branch?branch_name='` + branchName + `'&sc_name='` + repositoryName + `'`
 	jsonBody := []byte(``)
 
-	//fmt.Println(checkoutConnectionDetails.URL)
-
 	// no JSON body needed
 	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
 	if err != nil {
