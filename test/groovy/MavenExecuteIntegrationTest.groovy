@@ -48,9 +48,9 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
             '{"verbose": false}'
         )
 
-        helper.registerAllowedMethod('fileExists', [String.class], {return true})
-        helper.registerAllowedMethod('findFiles', [Map.class], {return null})
-        helper.registerAllowedMethod('testsPublishResults', [Map.class], {return null})
+        helper.registerAllowedMethod('fileExists', [String], {return true})
+        helper.registerAllowedMethod('findFiles', [Map], {return null})
+        helper.registerAllowedMethod('testsPublishResults', [Map], {return null})
     }
 
     @Test
