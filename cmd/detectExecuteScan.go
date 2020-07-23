@@ -44,15 +44,16 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
 
-	args = append(args, fmt.Sprintf("--detect.project.name=%v", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", config.ProjectVersion))
-	args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", config.FailOn))
+	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", config.ProjectVersion))
 
 	if len(config.Groups) > 0 {
-		args = append(args, fmt.Sprintf("--detect.project.user.groups=\\\"%v\\\"", config.Groups))
+		args = append(args, fmt.Sprintf("--detect.project.user.groups=\\\"%v\\\"", strings.Join(config.Groups, "\\\",\\\"")))
 	}
 
-	//Comment
+	if len(config.FailOn) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
 
 	codeLocation := config.CodeLocation
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
