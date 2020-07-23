@@ -4,31 +4,38 @@ package com.sap.piper
 class DownloadCacheUtils {
 
     static Map injectDownloadCacheInParameters(Script script, Map parameters, BuildTool buildTool) {
-        if (DownloadCacheUtils.isEnabled(script)) {
+        if (!isEnabled(script)) {
+            return parameters
+        }
+        // Do not enable the DL-cache when a sidecar image is specified
+        // This is necessary because it is currently not possible to not connect a container to multiple networks.
+        // Can be removed when docker plugin supports multiple networks and jenkins-library implemented that feature
+        if (parameters.sidecarImage) {
+            return parameters
+        }
 
-            if (!parameters.dockerOptions) {
-                parameters.dockerOptions = []
-            }
-            if (parameters.dockerOptions instanceof CharSequence) {
-                parameters.dockerOptions = [parameters.dockerOptions]
+        if (!parameters.dockerOptions) {
+            parameters.dockerOptions = []
+        }
+        if (parameters.dockerOptions instanceof CharSequence) {
+            parameters.dockerOptions = [parameters.dockerOptions]
+        }
+
+        if (!(parameters.dockerOptions instanceof List)) {
+            throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${parameters.dockerOptions.getClass()}'")
+        }
+        parameters.dockerOptions.add(getDockerOptions(script))
+
+        if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
+            if (parameters.globalSettingsFile) {
+                throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
             }
 
-            if (!(parameters.dockerOptions instanceof List)) {
-                throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${parameters.dockerOptions.getClass()}'")
-            }
-            parameters.dockerOptions.add(DownloadCacheUtils.getDockerOptions(script))
+            parameters.globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
+        }
 
-            if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
-                if (parameters.globalSettingsFile) {
-                    throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
-                }
-
-                parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
-            }
-
-            if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
-                parameters['defaultNpmRegistry'] = DownloadCacheUtils.getNpmRegistryUri(script)
-            }
+        if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
+            parameters['defaultNpmRegistry'] = getNpmRegistryUri(script)
         }
 
         return parameters

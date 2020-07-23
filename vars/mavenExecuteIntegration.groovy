@@ -20,18 +20,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-
-    // Do not enable the DL-cache in the integration-tests with sidecar
-    // This is necessary because it is currently not possible to not connect a container to multiple networks.
-    // Can be removed when docker plugin supports multiple networks and jenkins-library implemented that feature
-    // NOTE: Perhaps the 'sidecarImage' parameter shall also originate from the step configuration.
-    // In that case, we would need a way to post-process the parameters *after* resolving the
-    // configuration using the piper binary from within piperExecuteBin.
-    // Or perhaps the Download Cache should be injected in piperExecuteBin depending on some
-    // condition controllable from the caller. That would get rid of some code-duplication.
-    if (!parameters.sidecarImage) {
-        parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
-    }
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 
     try {
         List credentials = []
