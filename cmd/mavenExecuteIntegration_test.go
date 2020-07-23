@@ -60,8 +60,7 @@ func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundl
 			StdoutReturn:        nil,
 			ShouldFailOnCommand: nil,
 		},
-		FilesMock: &mock.FilesMock{
-		},
+		FilesMock: &mock.FilesMock{},
 	}
 	return utilsBundle
 }
