@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
 
@@ -38,7 +39,7 @@ func TestTriggerPull(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -73,7 +74,7 @@ func TestTriggerPull(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -107,7 +108,7 @@ func TestPollEntity(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
@@ -138,7 +139,7 @@ func TestPollEntity(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
@@ -154,7 +155,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 
 	t.Run("Test cf cli command: success case", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -164,50 +165,23 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
 
-		getAbapCommunicationArrangementInfo(config, &execRunner)
+		execRunner := &mock.ExecMockRunner{}
+
+		abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
-		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.Calls[0].Params, "Wrong parameters")
-	})
+		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}, execRunner.Calls[0].Params, "Wrong parameters")
+		//assert.Equal(t, []string{"api", "https://api.endpoint.com"}, execRunner.Calls[0].Params, "Wrong parameters")
 
-	t.Run("Test host prefix: with https", func(t *testing.T) {
-
-		config := abapEnvironmentPullGitRepoOptions{
-			Host:     "test.host.com",
-			Username: "testUser",
-			Password: "testPassword",
-		}
-		execRunner := mock.ExecMockRunner{}
-
-		con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
-		if err == nil {
-			assert.Equal(t, "testUser", con.User)
-			assert.Equal(t, "testPassword", con.Password)
-			assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
-		}
-	})
-
-	t.Run("Test host prefix: with https", func(t *testing.T) {
-
-		config := abapEnvironmentPullGitRepoOptions{
-			Host:     "https://test.host.com",
-			Username: "testUser",
-			Password: "testPassword",
-		}
-		execRunner := mock.ExecMockRunner{}
-
-		con, err := getAbapCommunicationArrangementInfo(config, &execRunner)
-		if err == nil {
-			assert.Equal(t, "testUser", con.User)
-			assert.Equal(t, "testPassword", con.Password)
-			assert.Equal(t, "https://test.host.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", con.URL)
-		}
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
+			//CfServiceKeyName:  "testServiceKey", this parameter will be missing
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -216,22 +190,30 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
+		execRunner := &mock.ExecMockRunner{}
+
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
 
-		execRunner := mock.ExecMockRunner{}
+		options := abaputils.AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions: config,
+		}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
+		execRunner := &mock.ExecMockRunner{}
+
+		var _, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
 	})
 
