@@ -33,6 +33,6 @@ void call(Map parameters = [:]) {
         List credentials = []
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     } finally {
-        testsPublishResults(script: script, junit: true, allowEmptyResults: true, pattern: parameters.reportLocationPattern)
+        testsPublishResults(script: script, junit: [allowEmptyResults: true, pattern: parameters.reportLocationPattern])
     }
 }
