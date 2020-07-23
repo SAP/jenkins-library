@@ -9,7 +9,7 @@ import util.*
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class NexusUploadTest extends BasePiperTest {
+class MavenExecuteIntegrationTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
 
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
@@ -43,10 +43,9 @@ class NexusUploadTest extends BasePiperTest {
             }
             return closure()
         })
-        credentialsRule.withCredentials('idOfCxCredential', "admin", "admin123")
         shellCallRule.setReturnValue(
-            './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/nexusUpload.yaml\'',
-            '{"credentialsId": "idOfCxCredential", "verbose": false}'
+            './piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenExecuteIntegration.yaml\'',
+            '{"verbose": false}'
         )
 
         helper.registerAllowedMethod('fileExists', [String.class], {return true})
@@ -54,17 +53,18 @@ class NexusUploadTest extends BasePiperTest {
     }
 
     @Test
-    void testDeployPom() {
-        stepRule.step.nexusUpload(
+    void testWithSidecar() {
+        stepRule.step.mavenExecuteIntegration(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
-            testParam: "This is test content",
+            testParam: 'This is test content',
+            sidecarImage: 'some/image',
             script: nullScript,
         )
         // asserts
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/nexusUpload.yaml'], containsString('name: nexusUpload'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteIntegration.yaml'], containsString('name: mavenExecuteIntegration'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
             containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper nexusUpload'))
+        assertThat(shellCallRule.shell[1], is('./piper mavenExecuteIntegration'))
     }
 }
