@@ -34,8 +34,8 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
     @Before
     void init() {
         helper.registerAllowedMethod("readJSON", [Map], { m ->
-            if (m.text != null)
-                return new JsonSlurper().parseText(m.text)
+            if (m.text instanceof String)
+                return new JsonSlurper().parseText(m.text as String)
         })
         helper.registerAllowedMethod("withEnv", [List, Closure], { arguments, closure ->
             arguments.each {arg ->
@@ -63,9 +63,10 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
             script: nullScript,
         )
         // asserts
-        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteIntegration.yaml'], containsString('name: mavenExecuteIntegration'))
+        assertThat(writeFileRule.files['.pipeline/tmp/metadata/mavenExecuteIntegration.yaml'] as String,
+            containsString('name: mavenExecuteIntegration'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'),
             containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper mavenExecuteIntegration'))
+        assertThat(shellCallRule.shell[1] as String, is('./piper mavenExecuteIntegration'))
     }
 }
