@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - it/**
+  workflow_dispatch:
 
 jobs:
 
