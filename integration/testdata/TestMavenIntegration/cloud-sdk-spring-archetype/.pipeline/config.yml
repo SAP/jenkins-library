@@ -2,4 +2,6 @@ general:
 steps:
   mavenBuild:
     globalSettingsFile: settings.xml
+  mavenExecuteIntegration:
+    globalSettingsFile: settings.xml
 stages:

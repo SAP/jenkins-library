@@ -30,7 +30,10 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 		t.Fatalf("Calling piper command filed %s", err)
 	}
 
-	container.assertHasFile(t, "/project/integration-tests/target/cloud-sdk-spring-archetype-integration-tests-1.0.0-SNAPSHOT.jar")
+	container.assertHasOutput(t, "INFO mydemo.HelloWorldControllerTest - Starting HelloWorldControllerTest")
+	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+
+	container.assertHasFile(t, "/project/integration-tests/target/coverage-reports/jacoco.exec")
 }
 
 func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
@@ -57,6 +60,8 @@ func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
 		t.Fatalf("Calling piper command filed %s", err)
 	}
 
-	container.assertHasOutput(t, "this will fail")
+	container.assertHasOutput(t, "(prepare-agent) @ cloud-sdk-tomee-archetype-integration-tests")
+	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
 
+	container.assertHasFile(t, "/project/integration-tests/target/coverage-reports/jacoco.exec")
 }
