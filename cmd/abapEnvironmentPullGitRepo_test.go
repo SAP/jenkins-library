@@ -15,6 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStep(t *testing.T) {
+	t.Run("Run Step Successful", func(t *testing.T) {
+
+	})
+}
+
 func TestTriggerPull(t *testing.T) {
 
 	t.Run("Test trigger pull: success case", func(t *testing.T) {
