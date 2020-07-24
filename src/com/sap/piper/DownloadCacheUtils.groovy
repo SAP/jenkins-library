@@ -28,7 +28,7 @@ class DownloadCacheUtils {
 
         if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
             String globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
-            if (parameters.globalSettingsFile != globalSettingsFile) {
+            if (parameters.globalSettingsFile && parameters.globalSettingsFile != globalSettingsFile) {
                 throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
             }
 
