@@ -38,7 +38,7 @@ spec:
         mandatory: true
         secret: true
       - name: repositories
-        type: '[]map[string]string'
+        type: 'string'
         description: Specifies a list of maps of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
         scope:
         - PARAMETERS
