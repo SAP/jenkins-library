@@ -22,11 +22,20 @@ import (
 
 func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 
-	var c command.ExecRunner = &command.Command{}
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
-	err := runAbapEnvironmentPullGitRepo(options, telemetryData, c)
+	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	// and use a  &piperhttp.Client{} in a custom system
+	// Example: step checkmarxExecuteScan.go
+
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runAbapEnvironmentPullGitRepo(options, telemetryData, &c)
 	if err != nil {
-		log.Entry().Fatal("Step abapEnvironmentPullGitRepo failed")
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
 	return nil
