@@ -89,6 +89,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
