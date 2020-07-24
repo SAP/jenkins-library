@@ -1,6 +1,8 @@
 import com.sap.piper.BashUtils
+import com.sap.piper.BuildTool
 import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
@@ -60,6 +62,11 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 // Merge this parameter which is only relevant in Jenkins context
                 // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
+
+            if (!parameters.sidecarImage) {
+                // Using BuildTool.MTA here simply enabled the download cache for npm and maven at the same time.
+                parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
             }
 
             dockerWrapper(script, config) {
