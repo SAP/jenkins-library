@@ -77,11 +77,14 @@ class NeoDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('pwd', [], { return './' })
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
+
+        Utils.metaClass.echo = { def m -> }
     }
 
     @After
     void tearDown() {
         GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
+        GroovySystem.metaClassRegistry.removeMetaClass(Utils)
     }
 
     @Test

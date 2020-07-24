@@ -1,4 +1,6 @@
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.Utils
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -65,6 +67,14 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

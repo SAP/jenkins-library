@@ -1,4 +1,5 @@
 #!groovy
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -10,6 +11,8 @@ import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
+
+import com.sap.piper.Utils
 
 import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.CoreMatchers.hasItem
@@ -48,6 +51,12 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Before
     void init() {
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

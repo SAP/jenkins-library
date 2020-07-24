@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.hamcrest.core.IsNull
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +18,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.PiperGoUtils
+import com.sap.piper.Utils
 
 import hudson.AbortException
 import util.BasePiperTest
@@ -72,6 +74,13 @@ class XsDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

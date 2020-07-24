@@ -1,9 +1,11 @@
-
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.Ignore
+
+import com.sap.piper.Utils
 
 import util.BasePiperTest
 
@@ -39,6 +41,12 @@ class ChecksPublishResultsTest extends BasePiperTest {
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
             parameters -> archiveStepPatterns.push(parameters.artifacts)
         })
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

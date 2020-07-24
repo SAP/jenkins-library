@@ -1,8 +1,10 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -32,6 +34,13 @@ class MailSendNotificationTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration['steps']['mailSendNotification'] = nullScript.commonPipelineEnvironment.configuration['steps']['mailSendNotification'] ?: [:]
 
         helper.registerAllowedMethod('requestor', [], { -> return [$class: 'RequesterRecipientProvider']})
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

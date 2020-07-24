@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -9,6 +10,8 @@ import util.JenkinsMockStepRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
+
+import com.sap.piper.Utils
 
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
@@ -58,6 +61,13 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
         credentialsRule.reset()
             .withCredentials('testCred', 'test_cf', '********')
             .withCredentials('testCred2', 'test_other', '**')
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

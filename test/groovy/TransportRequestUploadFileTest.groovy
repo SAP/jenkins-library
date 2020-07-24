@@ -5,6 +5,7 @@ import java.util.List
 import java.util.Map
 
 import org.hamcrest.Matchers
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -12,6 +13,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -57,6 +59,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                          ]
                                      ]
                                  ]
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

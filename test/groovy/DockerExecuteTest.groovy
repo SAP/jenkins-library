@@ -1,6 +1,8 @@
 import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.SidecarUtils
+import com.sap.piper.Utils
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -44,6 +46,12 @@ class DockerExecuteTest extends BasePiperTest {
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         binding.setVariable('docker', docker)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 0)
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

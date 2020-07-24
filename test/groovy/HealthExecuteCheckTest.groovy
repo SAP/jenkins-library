@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -8,6 +9,8 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
+
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -34,6 +37,12 @@ class HealthExecuteCheckTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map.class], {map ->
             return map.script == command1 || map.script == command2 ? "200" : "404"
         })
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

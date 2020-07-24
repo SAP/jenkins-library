@@ -119,6 +119,7 @@ void pushToSWA(Map parameters, Map config) {
         Telemetry.notify(this, config, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
+        echo "[${parameters.step}] Telemetry Report failed: ${ignore.getMessage()}"
     }
 }
 

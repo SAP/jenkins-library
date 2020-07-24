@@ -21,6 +21,8 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.JenkinsShellCallRule
 
+import com.sap.piper.Utils
+
 import static com.lesfurets.jenkins.unit.MethodSignature.method
 
 class PiperPublishWarningsTest extends BasePiperTest {
@@ -60,14 +62,16 @@ class PiperPublishWarningsTest extends BasePiperTest {
         }
         JenkinsUtils.metaClass.static.getFullBuildLog = { def currentBuild -> return ""}
         JenkinsUtils.metaClass.static.isPluginActive = { id -> return true}
-    }
 
+        Utils.metaClass.echo = { def m -> }
+    }
 
     @After
     public void tearDown() {
         JenkinsUtils.metaClass.addWarningsNGParser = null
         JenkinsUtils.metaClass.static.getFullBuildLog = null
         JenkinsUtils.metaClass.static.isPluginActive = null
+        Utils.metaClass = null
     }
 
     @Test

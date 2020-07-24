@@ -1,11 +1,12 @@
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
 
 import groovy.json.JsonSlurper
 import util.BasePiperTest
@@ -113,6 +114,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             stashList.add(m)
         })
 
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

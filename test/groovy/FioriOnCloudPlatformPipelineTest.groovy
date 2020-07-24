@@ -13,12 +13,14 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
@@ -94,6 +96,13 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('mtaBuild', [Map], {
             m ->  m.script.commonPipelineEnvironment.mtarFilePath = 'test.mtar'
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

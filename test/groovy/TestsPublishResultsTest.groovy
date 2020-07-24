@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
@@ -10,6 +11,8 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
+
+import com.sap.piper.Utils
 
 import util.Rules
 import minimatch.Minimatch
@@ -51,6 +54,13 @@ class TestsPublishResultsTest extends BasePiperTest {
         helper.registerAllowedMethod('archiveArtifacts', [Map.class], {
             parameters -> archiveStepPatterns.push(parameters.artifacts)
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
