@@ -34,7 +34,7 @@ class DownloadCacheUtils {
             parameters.globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
         }
 
-        if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
+        if (buildTool == BuildTool.NPM || buildTool == BuildTool.MTA) {
             parameters['defaultNpmRegistry'] = getNpmRegistryUri(script)
         }
 
