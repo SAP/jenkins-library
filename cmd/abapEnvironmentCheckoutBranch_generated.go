@@ -37,7 +37,12 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 	var createAbapEnvironmentCheckoutBranchCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system",
-		Long:  `Switches between branches of a git repository (Software Component) on a SAP Cloud Platform ABAP Environment system.`,
+		Long: `This step switches between branches of a git repository (Software Component) on a SAP Cloud Platform ABAP Environment system.
+Please provide either of the following options:
+
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+* Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

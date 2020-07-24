@@ -151,6 +151,7 @@ type AbapEnvironmentPullGitRepoOptions struct {
 	RepositoryNames []string `json:"repositoryNames,omitempty"`
 }
 
+// AbapEnvironmentCheckoutBranchOptions struct for the CheckoutBranch piper step
 type AbapEnvironmentCheckoutBranchOptions struct {
 	AbapEnvOptions AbapEnvironmentOptions
 	RepositoryName string `json:"repositoryName,omitempty"`
@@ -230,8 +231,8 @@ type AbapBinding struct {
 	Type    string `json:"type"`
 	Version string `json:"version"`
 	Env     string `json:"env"`
-
 }
+
 /********************************
  *	Testing with a client mock  *
  ********************************/
@@ -248,7 +249,7 @@ type ClientMock struct {
 // SetOptions sets clientOptions for a client mock
 func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
 
-// SetRequest sets a HTTP response for a client mock
+// SendRequest sets a HTTP response for a client mock
 func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
 	var body []byte
