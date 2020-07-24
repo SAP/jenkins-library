@@ -49,6 +49,10 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
+	if err := validateForkCount(config.ForkCount); err != nil {
+		return err
+	}
+
 	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
 
@@ -64,4 +68,8 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	_, err := maven.Execute(&mavenOptions, utils)
 
 	return err
+}
+
+func validateForkCount(value string) error {
+	return nil
 }

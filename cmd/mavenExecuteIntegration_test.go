@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -48,6 +49,53 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	}
 
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
+}
+
+func TestValidateForkCount(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		testValue     string
+		expectedError error
+	}{
+		{
+			name:          "valid integer",
+			testValue:     "2",
+			expectedError: nil,
+		},
+		{
+			name:          "zero is valid",
+			testValue:     "0",
+			expectedError: nil,
+		},
+		{
+			name:          "valid floating point",
+			testValue:     "2.5C",
+			expectedError: nil,
+		},
+		{
+			name:          "invalid floating point",
+			testValue:     "1.2",
+			expectedError: fmt.Errorf("invalid forkCount parameter: A non-integer value may only be provided with a 'C' suffix"),
+		},
+		{
+			name:          "invalid",
+			testValue:     "C1",
+			expectedError: fmt.Errorf("invalid forkCount parameter"),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateForkCount(testCase.testValue)
+			if testCase.expectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, testCase.expectedError.Error())
+			}
+		})
+	}
 }
 
 func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundle {
