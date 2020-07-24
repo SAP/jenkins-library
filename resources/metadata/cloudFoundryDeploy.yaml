@@ -37,6 +37,17 @@ spec:
         aliases:
           - name: cfAppName
           - name: cloudFoundry/appName
+      - name: artifactVersion
+        type: string
+        description: "The artifact version, used for influx reporting"
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: cfHome
         type: string
         description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."

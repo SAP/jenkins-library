@@ -286,6 +286,7 @@ func TestCfDeployment(t *testing.T) {
 		defer prepareDefaultManifestMocking("manifest.yml", []string{"testAppName"})()
 
 		config.DeployTool = "cf_native"
+		config.ArtifactVersion = "0.1.2"
 
 		influxData := cloudFoundryDeployInflux{}
 
@@ -299,7 +300,7 @@ func TestCfDeployment(t *testing.T) {
 			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
 			expected.deployment_data.fields.jobTrigger = "<n/a>"
 
-			expected.deployment_data.tags.artifactVersion = "<n/a>" // TODO revisit
+			expected.deployment_data.tags.artifactVersion = "0.1.2"
 			expected.deployment_data.tags.deployUser = "me"
 			expected.deployment_data.tags.deployResult = "SUCCESS"
 			expected.deployment_data.tags.cfAPIEndpoint = "https://examples.sap.com/cf"

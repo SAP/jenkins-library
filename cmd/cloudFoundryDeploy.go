@@ -106,8 +106,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 		result = "SUCCESS"
 	}
 
-	// TODO done via CPE in groovy. In case we need this we have to enhance CPE
-	influxData.deployment_data.tags.artifactVersion = "<n/a>"
+	influxData.deployment_data.tags.artifactVersion = config.ArtifactVersion
 	influxData.deployment_data.tags.deployUser = config.Username
 	influxData.deployment_data.tags.deployResult = result
 	influxData.deployment_data.tags.cfAPIEndpoint = config.APIEndpoint

@@ -19,6 +19,7 @@ type cloudFoundryDeployOptions struct {
 	APIEndpoint              string   `json:"apiEndpoint,omitempty"`
 	APIParameters            string   `json:"apiParameters,omitempty"`
 	AppName                  string   `json:"appName,omitempty"`
+	ArtifactVersion          string   `json:"artifactVersion,omitempty"`
 	CfHome                   string   `json:"cfHome,omitempty"`
 	CfNativeDeployParameters string   `json:"cfNativeDeployParameters,omitempty"`
 	CfPluginHome             string   `json:"cfPluginHome,omitempty"`
@@ -155,6 +156,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.APIParameters, "apiParameters", os.Getenv("PIPER_apiParameters"), "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
+	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The artifact version, used for influx reporting")
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
 	cmd.Flags().StringVar(&stepConfig.CfNativeDeployParameters, "cfNativeDeployParameters", os.Getenv("PIPER_cfNativeDeployParameters"), "Additional parameters passed to cf native deployment command")
 	cmd.Flags().StringVar(&stepConfig.CfPluginHome, "cfPluginHome", os.Getenv("PIPER_cfPluginHome"), "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
@@ -219,6 +221,14 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName"}},
+					},
+					{
+						Name:        "artifactVersion",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "cfHome",
