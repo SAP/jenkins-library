@@ -53,6 +53,7 @@ func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomDat
 	if err := triggerWhitesourceScan(cmd, config); err != nil {
 		return err
 	}
+	var scanFinishTime = time.Now()
 
 	// Scan finished: we need to resolve project token again if the project was just created.
 	if err := resolveProjectIdentifiers(cmd, sys, config); err != nil {
@@ -66,7 +67,7 @@ func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomDat
 	log.Entry().Info("-----------------------------------------------------")
 
 	// Project was scanned, wait for Whitesource backend to reflect the new scan
-	if err := pollProjectStatus(config, sys); err != nil {
+	if err := pollProjectStatus(config, sys, scanFinishTime); err != nil {
 		return err
 	}
 
@@ -257,29 +258,36 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 }
 
 // pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
-func pollProjectStatus(config *ScanOptions, sys *System) error {
+func pollProjectStatus(config *ScanOptions, sys *System, scanFinishTime time.Time) error {
 	log.Entry().Info("Polling project status before downloading reports...")
 	log.Entry().Infof("Project token: %s", config.ProjectToken)
 	retry := 30
 	for {
+		project, err := sys.GetProjectVitals(config.ProjectToken)
+		if err != nil {
+			return err
+		}
+		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
+
 		reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
 		if err != nil {
 			return err
 		}
 
-		if len(reportBytes) > 36000 {
+		if len(reportBytes) > 36000 && scanFinishTime.Sub(lastUpdatedTime) < 10*time.Second {
 			log.Entry().Info("Report is ready in whitesource backend - downloading reports.")
+			break
+		}
+
+		retry--
+		if retry == 0 {
+			log.Entry().Infof("Reached maximum number of retries for polling project status: %s", config.ProjectName)
 			break
 		}
 
 		log.Entry().Infof("Length of reportBytes: %v", len(reportBytes))
 		log.Entry().Info("Project still not updated in WS backend, waiting 10s and trying again...")
 		time.Sleep(10 * time.Second)
-
-		retry--
-		if retry == 0 {
-			break
-		}
 	}
 	return nil
 }
