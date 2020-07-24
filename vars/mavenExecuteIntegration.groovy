@@ -19,6 +19,9 @@ import static com.sap.piper.Prerequisites.checkScript
 //Metadata maintained in file project://resources/metadata/mavenExecuteIntegration.yaml
 
 void call(Map parameters = [:]) {
+    final script = checkScript(this, parameters) ?: this
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
+
     try {
         List credentials = []
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)

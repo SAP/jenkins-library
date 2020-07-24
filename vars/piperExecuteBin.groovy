@@ -64,14 +64,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-            // Do not enable the Download Cache when a sidecarImage is configured, since the docker Jenkins
-            // plugin currently does not support connecting the container to multiple networks. Can be removed
-            // once support for that has been added there.
-            if (!parameters.sidecarImage && !parameters.globalSettingsFile) {
-                // Using BuildTool.MTA here simply enabled the download cache for npm and maven at the same time.
-                parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
-            }
-
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
