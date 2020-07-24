@@ -151,6 +151,11 @@ type AbapEnvironmentPullGitRepoOptions struct {
 	RepositoryNames []string `json:"repositoryNames,omitempty"`
 }
 
+type AbapEnvironmentCheckoutBranchOptions struct {
+	AbapEnvOptions  AbapEnvironmentOptions
+	RepositoryName string `json:"repositoryName,omitempty"`
+}
+
 // AbapEnvironmentRunATCCheckOptions struct for the RunATCCheck piper step
 type AbapEnvironmentRunATCCheckOptions struct {
 	AbapEnvOptions AbapEnvironmentOptions

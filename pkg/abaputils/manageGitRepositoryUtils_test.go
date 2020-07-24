@@ -1,10 +1,16 @@
 package abaputils
 
-/* func TestPollEntity(t *testing.T) {
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPollEntityPullStep(t *testing.T) {
 
 	t.Run("Test poll entity: success case", func(t *testing.T) {
 
-		client := &clientMock{
+		client := &ClientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -12,7 +18,8 @@ package abaputils
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		config := abapEnvironmentPullGitRepoOptions{
+
+		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -20,22 +27,26 @@ package abaputils
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := abaputils.ConnectionDetailsHTTP{
+		config := AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions:  options,
+			RepositoryNames: []string{"testRepo1", "testRepo2"},
+		}
+
+		con := ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config.RepositoryNames[0], con, client, 0)
+		status, _ := PollEntity(config.RepositoryNames[0], con, client, 0)
 		assert.Equal(t, "S", status)
 	})
 
 	t.Run("Test poll entity: error case", func(t *testing.T) {
 
-		client := &clientMock{
+		client := &ClientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -43,7 +54,8 @@ package abaputils
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		config := abapEnvironmentPullGitRepoOptions{
+
+		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -51,26 +63,29 @@ package abaputils
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
 		}
 
-		con := abaputils.ConnectionDetailsHTTP{
+		config := AbapEnvironmentPullGitRepoOptions{
+			AbapEnvOptions:  options,
+			RepositoryNames: []string{"testRepo1", "testRepo2"},
+		}
+
+		con := ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config.RepositoryNames[0], con, client, 0)
+		status, _ := PollEntity(config.RepositoryNames[0], con, client, 0)
 		assert.Equal(t, "E", status)
 	})
+}
 
-} */
-
-/* func TestPollEntityCheckoutStep(t *testing.T) {
+func TestPollEntityCheckoutStep(t *testing.T) {
 
 	t.Run("Test poll entity: success case", func(t *testing.T) {
 
-		client := &clientMock{
+		client := &ClientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -78,7 +93,8 @@ package abaputils
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		config := abapEnvironmentCheckoutBranchOptions{
+
+		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -86,22 +102,26 @@ package abaputils
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
 		}
 
-		con := abaputils.ConnectionDetailsHTTP{
+		config := AbapEnvironmentCheckoutBranchOptions{
+			AbapEnvOptions: options,
+			RepositoryName: "testRepo1",
+		}
+
+		con := ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config.RepositoryName, con, client, 0)
+		status, _ := PollEntity(config.RepositoryName, con, client, 0)
 		assert.Equal(t, "S", status)
 	})
 
 	t.Run("Test poll entity: error case", func(t *testing.T) {
 
-		client := &clientMock{
+		client := &ClientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "E" } }`,
 				`{"d" : { "status" : "R" } }`,
@@ -109,7 +129,8 @@ package abaputils
 			Token:      "myToken",
 			StatusCode: 200,
 		}
-		config := abapEnvironmentCheckoutBranchOptions{
+
+		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -117,17 +138,20 @@ package abaputils
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
 		}
 
-		con := abaputils.ConnectionDetailsHTTP{
+		config := AbapEnvironmentCheckoutBranchOptions{
+			AbapEnvOptions: options,
+			RepositoryName: "testRepo1",
+		}
+
+		con := ConnectionDetailsHTTP{
 			User:       "MY_USER",
 			Password:   "MY_PW",
 			URL:        "https://api.endpoint.com/Entity/",
 			XCsrfToken: "MY_TOKEN",
 		}
-		status, _ := pollEntity(config.RepositoryName, con, client, 0)
+		status, _ := PollEntity(config.RepositoryName, con, client, 0)
 		assert.Equal(t, "E", status)
 	})
-
-} */
+}
