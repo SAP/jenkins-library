@@ -326,7 +326,7 @@ boolean isContainerDefined(config) {
     }
 
     return containerMap.get(env.POD_NAME).containsKey(config.dockerImage)
-        && env.SIDECAR_IMAGE == config.sidecarImage
+//        && env.SIDECAR_IMAGE == config.sidecarImage
 }
 
 
