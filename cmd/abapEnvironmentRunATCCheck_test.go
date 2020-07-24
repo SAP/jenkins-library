@@ -5,33 +5,26 @@ import (
 	"os"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHostConfig(t *testing.T) {
-	t.Run("Check Host: ABAP Endpoint with HTTPS prefix", func(t *testing.T) {
-		config := abapEnvironmentRunATCCheckOptions{
+	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
+		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 			Host:     "https://api.endpoint.com",
 		}
-		var con connectionDetailsHTTP
-		con, error := checkHost(config, con)
-		if error == nil {
-			assert.Equal(t, "testUser", con.User)
-			assert.Equal(t, "testPassword", con.Password)
-			assert.Equal(t, "https://api.endpoint.com", con.URL)
-			assert.Equal(t, "", con.XCsrfToken)
+		options := abaputils.AbapEnvironmentRunATCCheckOptions{
+			AbapEnvOptions: config,
 		}
-	})
-	t.Run("Check Host: ABAP Endpoint without HTTPS prefix", func(t *testing.T) {
-		config := abapEnvironmentRunATCCheckOptions{
-			Username: "testUser",
-			Password: "testPassword",
-			Host:     "api.endpoint.com",
-		}
-		var con connectionDetailsHTTP
-		con, error := checkHost(config, con)
+
+		execRunner := &mock.ExecMockRunner{}
+		var con abaputils.ConnectionDetailsHTTP
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
 			assert.Equal(t, "testPassword", con.Password)
@@ -41,7 +34,7 @@ func TestHostConfig(t *testing.T) {
 	})
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
 		//Testing without CfOrg parameter
-		config := abapEnvironmentRunATCCheckOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
@@ -49,19 +42,25 @@ func TestHostConfig(t *testing.T) {
 			Username:          "testUser",
 			Password:          "testPassword",
 		}
-		var con connectionDetailsHTTP
-		con, err := checkHost(config, con)
+		options := abaputils.AbapEnvironmentRunATCCheckOptions{
+			AbapEnvOptions: config,
+		}
+
+		execRunner := &mock.ExecMockRunner{}
+
+		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
-		config = abapEnvironmentRunATCCheckOptions{
+		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		con, err = checkHost(config, con)
+		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
+
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
-		config := abapEnvironmentRunATCCheckOptions{
+		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
 			CfOrg:             "Test",
@@ -70,8 +69,12 @@ func TestHostConfig(t *testing.T) {
 			Username:          "testUser",
 			Password:          "testPassword",
 		}
-		var con connectionDetailsHTTP
-		con, error := checkHost(config, con)
+		options := abaputils.AbapEnvironmentRunATCCheckOptions{
+			AbapEnvOptions: config,
+		}
+		execRunner := &mock.ExecMockRunner{}
+		var con abaputils.ConnectionDetailsHTTP
+		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)
@@ -79,7 +82,6 @@ func TestHostConfig(t *testing.T) {
 			assert.Equal(t, "", con.XCsrfToken)
 		}
 	})
-
 }
 
 func TestATCTrigger(t *testing.T) {
@@ -91,7 +93,7 @@ func TestATCTrigger(t *testing.T) {
 			Token: tokenExpected,
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -114,7 +116,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 			Token: tokenExpected,
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -132,7 +134,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 			Token: "",
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -153,7 +155,7 @@ func TestPollATCRun(t *testing.T) {
 			Token: tokenExpected,
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -173,7 +175,7 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 			Body: `HTTP response test`,
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
@@ -195,7 +197,7 @@ func TestGetResultATCRun(t *testing.T) {
 			},
 		}
 
-		con := connectionDetailsHTTP{
+		con := abaputils.ConnectionDetailsHTTP{
 			User:     "Test",
 			Password: "Test",
 			URL:      "https://api.endpoint.com/Entity/",
