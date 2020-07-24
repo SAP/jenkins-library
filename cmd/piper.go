@@ -209,7 +209,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-var incompatibleTypesError = fmt.Errorf("incompatible types")
+var errIncompatibleTypes = fmt.Errorf("incompatible types")
 
 func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
@@ -236,7 +236,7 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			typeError = convertValueFromInt(config, optionsField, paramName, paramValueType.Int())
 		default:
-			typeError = incompatibleTypesError
+			typeError = errIncompatibleTypes
 		}
 
 		if typeError != nil {
@@ -267,7 +267,7 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 		}
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
@@ -280,7 +280,7 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 		return nil
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func convertValueFromInt(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue int64) error {
@@ -296,7 +296,7 @@ func convertValueFromInt(config map[string]interface{}, optionsField *reflect.St
 		return nil
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
