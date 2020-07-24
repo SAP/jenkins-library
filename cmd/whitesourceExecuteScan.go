@@ -176,7 +176,7 @@ func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
 // Executes a scan with the Whitesource Unified Agent
 // returns stdout buffer of the unified agent for token extraction in case of multi-module gradle project
 func executeUAScan(config *ScanOptions, cmd *command.Command) error {
-	log.Entry().Info("Starting whitesource sca with parameters: ", "java", "-jar", config.AgentFileName,
+	log.Entry().Info("Starting whitesource scan with parameters: ", "java", "-jar", config.AgentFileName,
 		"-d", ".", "-c", config.ConfigFilePath, "-apiKey", config.OrgToken, "-userKey", config.UserToken,
 		"-project", config.ProjectName, "-product", config.ProductName, "-productVersion", config.ProductVersion)
 	return cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
