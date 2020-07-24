@@ -1,15 +1,10 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/http/cookiejar"
 	"reflect"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -71,7 +66,7 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
+		status, errorPollEntity := abaputils.PollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
 		if errorPollEntity != nil {
 			log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
 		}
@@ -93,9 +88,9 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	pullConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -108,9 +103,9 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
-	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
+	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -136,7 +131,7 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	return uriConnectionDetails, nil
 }
 
-func pollEntity(repositoryName string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+/* func pollEntity(repositoryName string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
@@ -248,3 +243,4 @@ func convertTime(logTimeStamp string) time.Time {
 	t := time.Unix(n, 0).UTC()
 	return t
 }
+*/

@@ -7,51 +7,52 @@ import (
 	"sort"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
 // PollEntity periodically polls the pull/import entity to get the status. Check if the import is still running
-func PollEntity(repositoryName string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
 
 	for {
-		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
+		var resp, err = GetHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
-			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
+			err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
 			return "", err
 		}
 		defer resp.Body.Close()
 
 		// Parse response
-		var body abaputils.PullEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
 		var abapResp map[string]*json.RawMessage
+		var body PullEntity
+		bodyText, _ := ioutil.ReadAll(resp.Body)
+
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["d"], &body)
-		if reflect.DeepEqual(abaputils.PullEntity{}, body) {
+
+		if reflect.DeepEqual(PullEntity{}, body) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}
+
 		status = body.Status
 		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
 		if body.Status != "R" {
-			printLogs(body)
+			PrintLogs(body)
 			break
 		}
 		time.Sleep(pollIntervall)
 	}
-
 	return status, nil
 }
 
 // PrintLogs sorts and formats the received transport and execution log of an import
-func PrintLogs(entity abaputils.PullEntity) {
+func PrintLogs(entity PullEntity) {
 
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
@@ -67,14 +68,14 @@ func PrintLogs(entity abaputils.PullEntity) {
 	log.Entry().Info("-------------------------")
 	for _, logEntry := range entity.ToTransportLog.Results {
 
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
 	}
 
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("Execution Log")
 	log.Entry().Info("-------------------------")
 	for _, logEntry := range entity.ToExecutionLog.Results {
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
 	}
 	log.Entry().Info("-------------------------")
 }

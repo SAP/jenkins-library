@@ -3,6 +3,7 @@ package abaputils
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -91,20 +91,8 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	return abapServiceKey, nil
 }
 
-// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp
-func ConvertTime(logTimeStamp string) time.Time {
-	// The ABAP Environment system returns the date in the following format: /Date(1585576807000+0000)/
-	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, error := strconv.ParseInt(seconds, 10, 64)
-	if error != nil {
-		return time.Unix(0, 0).UTC()
-	}
-	t := time.Unix(n, 0).UTC()
-	return t
-}
-
 // GetHTTPResponse returns a HTTP response or its corresponding error
-func GetHTTPResponse(requestType string, connectionDetails abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	header := make(map[string][]string)
 	header["Content-Type"] = []string{"application/json"}
@@ -116,7 +104,7 @@ func GetHTTPResponse(requestType string, connectionDetails abaputils.ConnectionD
 }
 
 // HandleHTTPError handles ABAP error messages which can occur when using OData services
-func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
+func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
@@ -124,7 +112,7 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 
 		// Include the error message of the ABAP Environment system, if available
-		var abapErrorResponse abaputils.AbapError
+		var abapErrorResponse AbapError
 		bodyText, readError := ioutil.ReadAll(resp.Body)
 		if readError != nil {
 			return readError
@@ -132,7 +120,7 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		var abapResp map[string]*json.RawMessage
 		json.Unmarshal(bodyText, &abapResp)
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (abaputils.AbapError{}) != abapErrorResponse {
+		if (AbapError{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
 			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
 			err = errors.Wrap(abapError, err.Error())
@@ -140,6 +128,17 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		resp.Body.Close()
 	}
 	return err
+}
+
+// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
+func ConvertTime(logTimeStamp string) time.Time {
+	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	t := time.Unix(n, 0).UTC()
+	return t
 }
 
 /*******************************
@@ -226,4 +225,37 @@ type AbapBinding struct {
 	Type    string `json:"type"`
 	Version string `json:"version"`
 	Env     string `json:"env"`
+}
+
+/********************************
+ *	Testing with a client mock  *
+ ********************************/
+
+type ClientMock struct {
+	Token      string
+	Body       string
+	BodyList   []string
+	StatusCode int
+	Error      error
+}
+
+func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
+
+func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	var body []byte
+	if c.Body != "" {
+		body = []byte(c.Body)
+	} else {
+		bodyString := c.BodyList[len(c.BodyList)-1]
+		c.BodyList = c.BodyList[:len(c.BodyList)-1]
+		body = []byte(bodyString)
+	}
+	header := http.Header{}
+	header.Set("X-Csrf-Token", c.Token)
+	return &http.Response{
+		StatusCode: c.StatusCode,
+		Header:     header,
+		Body:       ioutil.NopCloser(bytes.NewReader(body)),
+	}, c.Error
 }

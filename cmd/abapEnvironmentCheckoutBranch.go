@@ -64,7 +64,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := pollEntity(options.RepositoryName, uriConnectionDetails, &client, pollIntervall)
+	status, errorPollEntity := abaputils.PollEntity(options.RepositoryName, uriConnectionDetails, &client, pollIntervall)
 	if errorPollEntity != nil {
 		log.Entry().WithError(errorPollEntity).Fatal("Status of checkout action on repository" + options.RepositoryName + " failed on the ABAP System")
 	}
@@ -85,9 +85,9 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	checkoutConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := getHTTPResponse("HEAD", checkoutConnectionDetails, nil, client)
+	resp, err := abaputils.GetHTTPResponse("HEAD", checkoutConnectionDetails, nil, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", checkoutConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", checkoutConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -108,9 +108,9 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	jsonBody := []byte(``)
 
 	// no JSON body needed
-	resp, err = getHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
+	resp, err = abaputils.GetHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()

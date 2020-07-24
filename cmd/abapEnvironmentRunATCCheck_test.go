@@ -88,7 +88,7 @@ func TestATCTrigger(t *testing.T) {
 	t.Run("Trigger ATC run test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `ATC trigger test`,
 			Token: tokenExpected,
 		}
@@ -111,7 +111,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `Xcsrf Token test`,
 			Token: tokenExpected,
 		}
@@ -129,7 +129,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 	t.Run("failure case: fetch token", func(t *testing.T) {
 		tokenExpected := ""
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `Xcsrf Token test`,
 			Token: "",
 		}
@@ -150,7 +150,7 @@ func TestPollATCRun(t *testing.T) {
 	t.Run("ATC run Poll Test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `ATC Poll test`,
 			Token: tokenExpected,
 		}
@@ -171,7 +171,7 @@ func TestPollATCRun(t *testing.T) {
 
 func TestGetHTTPResponseATCRun(t *testing.T) {
 	t.Run("Get HTTP Response from ATC run Test", func(t *testing.T) {
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body: `HTTP response test`,
 		}
 
@@ -191,7 +191,7 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 
 func TestGetResultATCRun(t *testing.T) {
 	t.Run("Get HTTP Response from ATC run Test", func(t *testing.T) {
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			BodyList: []string{
 				`ATC result body`,
 			},

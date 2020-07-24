@@ -17,7 +17,7 @@ func TestTriggerCheckout(t *testing.T) {
 		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
 			Token:      tokenExpected,
 			StatusCode: 200,
@@ -55,7 +55,7 @@ func TestTriggerCheckout(t *testing.T) {
 		HTTPErrorMessage := "HTTP Error Message"
 		combinedErrorMessage := "HTTP Error Message: ERROR/001 - ABAP Error Message"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:       `{"error" : { "code" : "` + errorCode + `", "message" : { "lang" : "en", "value" : "` + errorMessage + `" } } }`,
 			Token:      "myToken",
 			StatusCode: 400,
@@ -84,70 +84,4 @@ func TestTriggerCheckout(t *testing.T) {
 		// then
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
-}
-
-func TestPollEntityCheckoutStep(t *testing.T) {
-
-	t.Run("Test poll entity: success case", func(t *testing.T) {
-
-		client := &clientMock{
-			BodyList: []string{
-				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "R" } }`,
-			},
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-		config := abapEnvironmentCheckoutBranchOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
-		}
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:       "MY_USER",
-			Password:   "MY_PW",
-			URL:        "https://api.endpoint.com/Entity/",
-			XCsrfToken: "MY_TOKEN",
-		}
-		status, _ := pollEntity(config.RepositoryName, con, client, 0)
-		assert.Equal(t, "S", status)
-	})
-
-	t.Run("Test poll entity: error case", func(t *testing.T) {
-
-		client := &clientMock{
-			BodyList: []string{
-				`{"d" : { "status" : "E" } }`,
-				`{"d" : { "status" : "R" } }`,
-			},
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-		config := abapEnvironmentCheckoutBranchOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
-		}
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:       "MY_USER",
-			Password:   "MY_PW",
-			URL:        "https://api.endpoint.com/Entity/",
-			XCsrfToken: "MY_TOKEN",
-		}
-		status, _ := pollEntity(config.RepositoryName, con, client, 0)
-		assert.Equal(t, "E", status)
-	})
-
 }
