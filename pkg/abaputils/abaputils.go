@@ -10,9 +10,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string) (ConnectionDetailsHTTP, error) {
+/*
+AbapUtils Struct
+*/
+type AbapUtils struct {
+	Exec command.ExecRunner
+}
 
+type AbapUtilsInterface interface {
+	GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error)
+}
+
+// AUtilsMock mock
+type AUtilsMock struct {
+	ReturnedConnectionDetailsHTTP ConnectionDetailsHTTP
+	ReturnedError                 error
+}
+
+// GetAbapCommunicationArrangementInfo mock
+func (abaputils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
+	return abaputils.ReturnedConnectionDetailsHTTP, abaputils.ReturnedError
+}
+
+// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
+func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
+	c := abaputils.Exec
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
