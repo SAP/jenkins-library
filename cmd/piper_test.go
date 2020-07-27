@@ -132,7 +132,6 @@ func TestGetProjectConfigFile(t *testing.T) {
 }
 
 func TestConvertTypes(t *testing.T) {
-	t.Parallel()
 	t.Run("Converts strings to booleans", func(t *testing.T) {
 		// Init
 		hasFailed := false
