@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
@@ -39,6 +40,14 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 
 func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
+	coordinates := struct {
+		Version string
+	}{
+		Version: config.Version,
+	}
+
+	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
 	args = append(args, config.ScanProperties...)
 
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
@@ -46,7 +55,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
 	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", config.ProjectVersion))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", config.Version))
 
 	// Groups parameter is added only when there is atleast one non-empty groupname provided
 	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
@@ -60,7 +69,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
 	codeLocation := config.CodeLocation
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, config.ProjectVersion)
+		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=\\\"%v\\\"", codeLocation))
 
