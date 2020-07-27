@@ -31,17 +31,34 @@ void call(Map parameters = [:], body) {
 
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
+        List env = []
+        if (config.sidecarImage) {
+            env.add("SIDECARE_IMAGE=${config.sidecarImage}")
+        }
         if (Boolean.valueOf(env.ON_K8S) && (containerMap.size() > 0 || config.runStageInPod)) {
-            withEnv(["POD_NAME=${stageName}"]) {
+            env.add("POD_NAME=${stageName}")
+            withEnv(env) {
                 dockerExecuteOnKubernetes(script: script, containerMap: containerMap, stageName: stageName) {
                     executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
                 }
             }
         } else {
-            node(config.nodeLabel) {
-                executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+            withEnvWrapper(env) {
+                node(config.nodeLabel) {
+                    executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+                }
             }
         }
+    }
+}
+
+private void withEnvWrapper(List env, Closure body) {
+    if (env) {
+        withEnv(env) {
+            body()
+        }
+    } else {
+        body()
     }
 }
 
