@@ -1,8 +1,6 @@
 import com.sap.piper.BashUtils
-import com.sap.piper.BuildTool
 import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
-import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
