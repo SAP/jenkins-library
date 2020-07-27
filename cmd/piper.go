@@ -222,6 +222,11 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 			continue
 		}
 
+		if config[paramName] == nil {
+			// There is a key, but no value. This can result from merging values from the CPE.
+			continue
+		}
+
 		paramValueType := reflect.ValueOf(config[paramName])
 		if optionsField.Type.Kind() == paramValueType.Kind() {
 			// Types already match, nothing to do
@@ -242,9 +247,9 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		}
 
 		if typeError != nil {
-			log.Entry().WithError(typeError).Fatalf(
-				"config value for '%s' is of unexpected type %s, expected %s",
+			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s",
 				paramName, paramValueType.Kind(), optionsField.Type.Kind())
+			log.Entry().WithError(typeError).Fatal()
 		}
 	}
 	return config
@@ -279,6 +284,9 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 		return nil
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
+		return nil
+	case reflect.Float64:
+		config[paramName] = paramValue
 		return nil
 	}
 
