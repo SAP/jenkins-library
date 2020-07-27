@@ -182,6 +182,14 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	if len(config.M2Path) > 0 {
+		absolutePath, err := p.Abs(config.M2Path)
+		if err != nil {
+			return err
+		}
+		e.SetEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
+	}
+
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	if err := e.RunExecutable(call[0], call[1:]...); err != nil {

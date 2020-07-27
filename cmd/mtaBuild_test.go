@@ -259,6 +259,26 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
+	t.Run("M2Path releatd tests", func(t *testing.T) {
+		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
+
+			e := mock.ExecMockRunner{}
+
+			cpe.mtarFilePath = ""
+
+			options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar", M2Path: ".pipeline/local_repo"}
+
+			existingFiles := make(map[string]string)
+			existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
+			fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
+
+			assert.Nil(t, err)
+			assert.Contains(t, e.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
+		})
+	})
+
 	t.Run("Settings file releatd tests", func(t *testing.T) {
 
 		var settingsFile string
@@ -365,6 +385,10 @@ func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.Fi
 
 func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
+}
+
+func (f *MtaTestFileUtilsMock) Abs(path string) (string, error) {
+	return "/root_folder/workspace/" + path, nil
 }
 
 func (f *MtaTestFileUtilsMock) Chmod(path string, mode os.FileMode) error {
