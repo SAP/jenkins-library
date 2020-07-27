@@ -125,7 +125,10 @@ spec:
         - STAGES
         - STEPS
       - name: failOn
-        description: Mark the current build as fail based the policy categories. A comma seperated list can be provided to fail on multiple categories, for eg. 'BLOCKER,CRITICAL,MAJOR'
+        description: Mark the current build as fail based on the policy categories applied.
+        longDescription: |
+          A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
+          The list of accepted valed can be found at https://blackducksoftware.github.io/synopsys-detect/latest/properties/configuration/project/#fail-on-policy-violation-severities
         aliases:
           - name: detect/failOn
         type: '[]string'

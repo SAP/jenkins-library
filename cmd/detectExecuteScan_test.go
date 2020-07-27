@@ -88,6 +88,31 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.source.path=path1",
 			},
 		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:      "https://server.url",
+				APIToken:       "apiToken",
+				ProjectName:    "testName",
+				ProjectVersion: "1.0",
+				CodeLocation:   "testLocation",
+				FailOn:         []string{"BLOCKER", "MAJOR"},
+				Scanners:       []string{"source"},
+				ScanPaths:      []string{"path1", "path2"},
+				Groups:         []string{"testGroup", "testGroup2"},
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.project.user.groups=\\\"testGroup\\\",\\\"testGroup2\\\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"--detect.code.location.name=\\\"testLocation\\\"",
+				"--detect.source.path=path1",
+			},
+		},
 	}
 
 	for k, v := range testData {
