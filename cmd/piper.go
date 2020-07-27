@@ -287,6 +287,10 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	case reflect.Float64:
 		config[paramName] = paramValue
 		return nil
+	case reflect.Int:
+		if float64(int(paramValue)) == paramValue {
+			return nil
+		}
 	}
 
 	return errIncompatibleTypes

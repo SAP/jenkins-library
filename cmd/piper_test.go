@@ -11,6 +11,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -214,8 +215,13 @@ func TestConvertTypes(t *testing.T) {
 		}{}
 
 		stepConfig := map[string]interface{}{}
-		stepConfig["foo"] = 1
-		stepConfig["bar"] = 42
+
+		content := []byte(`
+foo: 1
+bar: 42
+`)
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
 
 		// Test
 		stepConfig = checkTypes(stepConfig, options)
@@ -224,13 +230,13 @@ func TestConvertTypes(t *testing.T) {
 		_ = json.Unmarshal(confJSON, &options)
 
 		// Assert
-		assert.Equal(t, 1, stepConfig["foo"])
+		assert.Equal(t, 1.0, stepConfig["foo"])
 		assert.Equal(t, float32(42.0), stepConfig["bar"])
 		assert.Equal(t, 1, options.Foo)
 		assert.Equal(t, float32(42.0), options.Bar)
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
-	t.Run("Exits on unsupported type mismatch", func(t *testing.T) {
+	t.Run("Exits because string found, slice expected", func(t *testing.T) {
 		// Init
 		hasFailed := false
 
@@ -251,6 +257,33 @@ func TestConvertTypes(t *testing.T) {
 		stepConfig = checkTypes(stepConfig, options)
 
 		// Assert
+		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Exits because float found, int expected", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo int `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+
+		content := []byte("foo: 1.1")
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
+		assert.Equal(t, 1.1, stepConfig["foo"])
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
 	t.Run("Ignores nil values", func(t *testing.T) {
