@@ -132,8 +132,17 @@ func TestGetProjectConfigFile(t *testing.T) {
 }
 
 func TestConvertTypes(t *testing.T) {
+	t.Parallel()
 	t.Run("Converts strings to booleans", func(t *testing.T) {
 		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
 		options := struct {
 			Foo bool `json:"foo,omitempty"`
 			Bar bool `json:"bar,omitempty"`
@@ -156,6 +165,71 @@ func TestConvertTypes(t *testing.T) {
 		assert.Equal(t, true, stepConfig["bar"])
 		assert.Equal(t, false, options.Foo)
 		assert.Equal(t, true, options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+	t.Run("Converts numbers to strings", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo string `json:"foo,omitempty"`
+			Bar string `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = 1.5
+		stepConfig["bar"] = 42
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, "1.5", stepConfig["foo"])
+		assert.Equal(t, "42", stepConfig["bar"])
+		assert.Equal(t, "1.5", options.Foo)
+		assert.Equal(t, "42", options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+	t.Run("Keeps numbers", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo int     `json:"foo,omitempty"`
+			Bar float32 `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = 1
+		stepConfig["bar"] = 42
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, 1, stepConfig["foo"])
+		assert.Equal(t, float32(42.0), stepConfig["bar"])
+		assert.Equal(t, 1, options.Foo)
+		assert.Equal(t, float32(42.0), options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
 	t.Run("Exits on unsupported type mismatch", func(t *testing.T) {
 		// Init
@@ -179,5 +253,36 @@ func TestConvertTypes(t *testing.T) {
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Ignores nil values", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo []string `json:"foo,omitempty"`
+			Bar string   `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = nil
+		stepConfig["bar"] = nil
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Nil(t, stepConfig["foo"])
+		assert.Nil(t, stepConfig["bar"])
+		assert.Equal(t, []string(nil), options.Foo)
+		assert.Equal(t, "", options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
 }
