@@ -259,7 +259,7 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
-	t.Run("M2Path releatd tests", func(t *testing.T) {
+	t.Run("M2Path related tests", func(t *testing.T) {
 		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
 
 			e := mock.ExecMockRunner{}
