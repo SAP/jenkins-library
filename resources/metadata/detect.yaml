@@ -110,7 +110,7 @@ spec:
         type: string
         description: Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.
         longDescription: |-
-          Defines the version number of the artifact being build in the pipeline. 
+          Defines the version number of the artifact being build in the pipeline.
           It is used for build version creation and as source for the Detect version.
           **Typically it is available through the pipeline run.**
           The project version of the Detect project is calculated using the [`versioningModel`](#versioningmodel).
@@ -125,7 +125,7 @@ spec:
         type: string
         description: The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1
         longDescription: |-
-          The versioning model used for result reporting (based on the artifact version). 
+          The versioning model used for result reporting (based on the artifact version).
           For example: the version 1.2.3 of the artifact will result in a version 1 to report into, when `versioningModel: major` is used and will result in a version 1.2 when `versioningModel: major-minor` is used.
           Recommendation for a Continuous Delivery process is to use `versioningModel: major`.
         scope:
