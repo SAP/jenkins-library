@@ -317,6 +317,8 @@ boolean isContainerDefined(config) {
         return false
     }
 
+    echo "dockerExecute.isContainerDefined(): env.SIDECAR_IMAGE: '${env.SIDECAR_IMAGE}' / config.sidecarImage: '${config.sidecarImage}'"
+
     return containerMap.get(env.POD_NAME).containsKey(config.dockerImage) && env.SIDECAR_IMAGE == config.sidecarImage
 }
 
