@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
@@ -39,16 +40,24 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 
 func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
+	coordinates := struct {
+		Version string
+	}{
+		Version: config.Version,
+	}
+
+	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
 	args = append(args, config.ScanProperties...)
 
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
 
 	args = append(args, fmt.Sprintf("--detect.project.name=%v", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", config.ProjectVersion))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", detectVersionName))
 	codeLocation := config.CodeLocation
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, config.ProjectVersion)
+		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
 
