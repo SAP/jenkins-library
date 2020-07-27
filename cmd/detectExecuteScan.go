@@ -55,7 +55,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
 	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", config.Version))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", detectVersionName))
 
 	// Groups parameter is added only when there is atleast one non-empty groupname provided
 	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
