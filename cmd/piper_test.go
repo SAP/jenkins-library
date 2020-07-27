@@ -132,6 +132,7 @@ func TestGetProjectConfigFile(t *testing.T) {
 }
 
 func TestConvertTypes(t *testing.T) {
+	t.Parallel()
 	t.Run("Converts strings to booleans", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -252,5 +253,36 @@ func TestConvertTypes(t *testing.T) {
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Ignores nil values", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo []string `json:"foo,omitempty"`
+			Bar string   `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = nil
+		stepConfig["bar"] = nil
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Nil(t, stepConfig["foo"])
+		assert.Nil(t, stepConfig["bar"])
+		assert.Equal(t, []string(nil), options.Foo)
+		assert.Equal(t, "", options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
 }

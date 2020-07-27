@@ -91,6 +91,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
@@ -211,7 +212,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-var incompatibleTypesError = fmt.Errorf("incompatible types")
+var errIncompatibleTypes = fmt.Errorf("incompatible types")
 
 func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
@@ -219,6 +220,11 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 	for paramName := range config {
 		optionsField := findStructFieldByJSONTag(paramName, optionsType)
 		if optionsField == nil {
+			continue
+		}
+
+		if config[paramName] == nil {
+			// There is a key, but no value. This can result from merging values from the CPE.
 			continue
 		}
 
@@ -238,13 +244,13 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			typeError = convertValueFromInt(config, optionsField, paramName, paramValueType.Int())
 		default:
-			typeError = incompatibleTypesError
+			typeError = errIncompatibleTypes
 		}
 
 		if typeError != nil {
-			log.Entry().WithError(typeError).Fatalf(
-				"config value for '%s' is of unexpected type %s, expected %s",
+			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s",
 				paramName, paramValueType.Kind(), optionsField.Type.Kind())
+			log.Entry().WithError(typeError).Fatal()
 		}
 	}
 	return config
@@ -269,7 +275,7 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 		}
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
@@ -280,9 +286,12 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil
+	case reflect.Float64:
+		config[paramName] = paramValue
+		return nil
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func convertValueFromInt(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue int64) error {
@@ -298,7 +307,7 @@ func convertValueFromInt(config map[string]interface{}, optionsField *reflect.St
 		return nil
 	}
 
-	return incompatibleTypesError
+	return errIncompatibleTypes
 }
 
 func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
