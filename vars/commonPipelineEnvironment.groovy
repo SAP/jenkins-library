@@ -199,7 +199,7 @@ class commonPipelineEnvironment implements Serializable {
         List customDefaultFiles = []
         customDefaults.each { customDefault ->
             def filepath =  ".pipeline/tmp/${customDefault}"
-            script.writeFile(file: filepath, text: libraryResource(customDefault))
+            script.writeFile(file: filepath, text: script.libraryResource(customDefault))
             customDefaultFiles.add(filepath)
         }
         script.writeFile file: '.pipeline/commonPipelineEnvironment/customDefaults', text: groovy.json.JsonOutput.toJson(customDefaultFiles)

@@ -201,6 +201,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
+	log.Entry().Debugf("Resolved configuration:\n%v", stepConfig)
+
 	for name, v := range stepConfig.HookConfig {
 		if name == "sentry" {
 			hookConfig, _ := v.MarshalJSON()
