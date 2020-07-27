@@ -80,5 +80,6 @@ spec:
       image: maven:3.6-jdk-8
       imagePullPolicy: Never
 
+  # This configuration is only here in order to declare "there /may/ be a side car".
   sidecars:
     - name: ''
