@@ -246,8 +246,8 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		}
 
 		if typeError != nil {
-			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s",
-				paramName, paramValueType.Kind(), optionsField.Type.Kind())
+			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s: %w",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind(), typeError)
 			log.Entry().WithError(typeError).Fatal()
 		}
 	}
