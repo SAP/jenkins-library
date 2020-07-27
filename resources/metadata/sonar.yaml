@@ -42,7 +42,7 @@ spec:
           - STEPS
       - name: customTlsCertificateLinks
         type: "[]string"
-        description: List of comma-separated download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+        description: List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
         scope:
           - PARAMETERS
           - STAGES
