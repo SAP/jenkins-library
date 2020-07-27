@@ -55,7 +55,9 @@ void call(Map parameters = [:]) {
             ['default_pipeline_environment.yml'], parameters, 'customDefaults')
         customDefaultsResources.each {
             cd ->
+                echo "writing default: ${cd}"
                 writeFile file: ".pipeline/${cd}", text: libraryResource(cd)
+                echo "File content: ${libraryResource(cd)}"
         }
 
         List customDefaultsFiles = Utils.appendParameterToStringList(
