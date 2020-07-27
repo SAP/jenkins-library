@@ -257,7 +257,7 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	return nil
 }
 
-// pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
+// pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan AND ensures the pdf risk report is not blank.
 func pollProjectStatus(config *ScanOptions, sys *System, scanFinishTime time.Time) error {
 	log.Entry().Info("Polling project status before downloading reports...")
 	log.Entry().Infof("Project token: %s", config.ProjectToken)
