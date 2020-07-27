@@ -1,3 +1,4 @@
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -234,6 +235,14 @@ void call(Map parameters = [:], body) {
                         config.sidecarOptions.add("--network ${networkName}")
                         sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
                             config.dockerOptions = config.dockerOptions ?: []
+                            // Remove download cache network option, as it doesn't work to connect to multiple
+                            // networks. The D/L cache also wouldn't work for the sidecar anyway as it requires
+                            // more parameters to be passed, such as the maven global settings file.
+                            String downloadCacheNetwork = DownloadCacheUtils.getDockerOptions()
+                            if (downloadCacheNetwork && config.dockerOptions.contains(downloadCacheNetwork)) {
+                                config.dockerOptions.remove(downloadCacheNetwork)
+                            }
+                            config.dockerOptions.remove('--network=cx-network')
                             if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
@@ -317,6 +326,7 @@ boolean isContainerDefined(config) {
     }
 
     return containerMap.get(env.POD_NAME).containsKey(config.dockerImage)
+//        && env.SIDECAR_IMAGE == config.sidecarImage
 }
 
 

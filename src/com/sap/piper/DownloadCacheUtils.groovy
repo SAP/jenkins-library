@@ -27,14 +27,15 @@ class DownloadCacheUtils {
         parameters.dockerOptions.add(getDockerOptions(script))
 
         if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
-            if (parameters.globalSettingsFile) {
+            String globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
+            if (parameters.globalSettingsFile && parameters.globalSettingsFile != globalSettingsFile) {
                 throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
             }
 
-            parameters.globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
+            parameters.globalSettingsFile = globalSettingsFile
         }
 
-        if (buildTool == BuildTool.NPM || buildTool == buildTool.MTA) {
+        if (buildTool == BuildTool.NPM || buildTool == BuildTool.MTA) {
             parameters['defaultNpmRegistry'] = getNpmRegistryUri(script)
         }
 
