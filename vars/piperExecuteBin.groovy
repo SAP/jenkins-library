@@ -35,6 +35,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
+            String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
