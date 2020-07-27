@@ -81,7 +81,6 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
-	rootCmd.AddCommand(MavenExecuteIntegrationCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
@@ -177,7 +176,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				defaultConfig = append(defaultConfig, fc)
 			}
 		}
-		log.Entry().Infof("stage name for config resolution: '%s'", GeneralConfig.StageName)
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
