@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -40,14 +41,15 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
-				ScanProperties: []string{"--scan1=1", "--scan2=2"},
-				ServerURL:      "https://server.url",
-				APIToken:       "apiToken",
-				ProjectName:    "testName",
-				ProjectVersion: "1.0",
-				CodeLocation:   "",
-				Scanners:       []string{"signature"},
-				ScanPaths:      []string{"path1", "path2"},
+				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
+				ServerURL:       "https://server.url",
+				APIToken:        "apiToken",
+				ProjectName:     "testName",
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "",
+				Scanners:        []string{"signature"},
+				ScanPaths:       []string{"path1", "path2"},
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -64,13 +66,14 @@ func TestAddDetectArgs(t *testing.T) {
 		{
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
-				ServerURL:      "https://server.url",
-				APIToken:       "apiToken",
-				ProjectName:    "testName",
-				ProjectVersion: "1.0",
-				CodeLocation:   "testLocation",
-				Scanners:       []string{"source"},
-				ScanPaths:      []string{"path1", "path2"},
+				ServerURL:       "https://server.url",
+				APIToken:        "apiToken",
+				ProjectName:     "testName",
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+				CodeLocation:    "testLocation",
+				Scanners:        []string{"source"},
+				ScanPaths:       []string{"path1", "path2"},
 			},
 			expected: []string{
 				"--testProp1=1",
