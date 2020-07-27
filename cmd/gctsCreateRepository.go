@@ -19,8 +19,8 @@ func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *tel
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -34,7 +34,7 @@ func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *tel
 	}
 }
 
-func createRepository(config *gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func createRepository(config *gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {

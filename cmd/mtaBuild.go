@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path"
 	"strings"
@@ -16,7 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -81,7 +82,12 @@ func mtaBuild(config mtaBuildOptions,
 	log.Entry().Debugf("Launching mta build")
 	files := piperutils.Files{}
 	httpClient := piperhttp.Client{}
-	err := runMtaBuild(config, commonPipelineEnvironment, &command.Command{}, &files, &httpClient)
+	e := command.Command{}
+
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
+
+	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -91,18 +97,22 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner,
+	e command.ExecRunner,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Downloader) error {
+	httpClient piperhttp.Downloader,
+	npmExecutor npm.Executor) error {
 
-	e.Stdout(log.Entry().Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	e.Stderr(log.Entry().Writer()) // entries to a logging framwork again. But this is considered to be some kind of project standard.
+	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
-	handleSettingsFiles(config, p, httpClient)
+	err = handleSettingsFiles(config, p, httpClient)
+	if err != nil {
+		return err
+	}
 
-	handleDefaultNpmRegistry(config, e)
+	err = npmExecutor.SetNpmRegistries()
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
@@ -179,6 +189,33 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
+
+	if config.InstallArtifacts {
+		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
+		err = installMavenArtifacts(e, config)
+		if err != nil {
+			return err
+		}
+		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
+		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
+	pomXMLExists, err := piperutils.FileExists("pom.xml")
+	if err != nil {
+		return err
+	}
+	if pomXMLExists {
+		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -193,7 +230,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e execRunner) error {
+func addNpmBinToPath(e command.ExecRunner) error {
 	dir, _ := os.Getwd()
 	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")
@@ -218,15 +255,15 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 		}
 
 		if len(mtaID) == 0 {
-			return "", fmt.Errorf("Invalid mtar name. Was empty")
+			return "", fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
 		log.Entry().Debugf("mtar name extracted from file \"%s\": \"%s\"", mtaYamlFile, mtaID)
 
-		mtarName = mtaID
+		mtarName = mtaID + ".mtar"
 	}
 
-	return mtarName + ".mtar", nil
+	return mtarName, nil
 
 }
 
@@ -299,21 +336,6 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
-func handleDefaultNpmRegistry(config mtaBuildOptions, e execRunner) error {
-
-	if len(config.DefaultNpmRegistry) > 0 {
-
-		log.Entry().Debugf("Setting default npm registry to \"%s\"", config.DefaultNpmRegistry)
-		if err := e.RunExecutable("npm", "config", "set", "registry", config.DefaultNpmRegistry); err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Debugf("No default npm registry provided via configuration. Leaving npm config untouched.")
-	}
-
-	return nil
-}
-
 func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
@@ -326,7 +348,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 
 	} else {
 
-		log.Entry().Debugf("Project settings file not provided via configuation.")
+		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
 	if len(config.GlobalSettingsFile) > 0 {
@@ -336,7 +358,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 		}
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuation.")
+		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
 	return nil

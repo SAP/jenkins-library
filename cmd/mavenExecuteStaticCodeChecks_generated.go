@@ -47,7 +47,7 @@ For more information please visit https://pmd.github.io/.
 The plugins should be configured in the respective pom.xml.
 For SpotBugs include- and exclude filters as well as maximum allowed violations are conifgurable via .pipeline/config.yml.
 For PMD the failure priority and the max allowed violations are configurable via .pipeline/config.yml.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -58,11 +58,18 @@ For PMD the failure priority and the max allowed violations are configurable via
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -74,6 +81,7 @@ For PMD the failure priority and the max allowed violations are configurable via
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 

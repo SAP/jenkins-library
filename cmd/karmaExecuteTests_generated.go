@@ -41,7 +41,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -52,11 +52,18 @@ In the Docker network, the containers can be referenced by the values provided i
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -68,6 +75,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -76,9 +84,9 @@ In the Docker network, the containers can be referenced by the values provided i
 }
 
 func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
-	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
-	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install --quiet`, "The command that is executed to install the test tool.")
+	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run karma`, "The command that is executed to start the tests.")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")

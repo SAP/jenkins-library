@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
 
@@ -14,10 +15,7 @@ void call(Map parameters = [:]) {
 
     // No credentials required/supported as of now
     List credentials = []
-
-    parameters['dockerOptions'] = DownloadCacheUtils.getDockerOptions(script)
-    if (DownloadCacheUtils.isEnabled(script)) {
-        parameters['defaultNpmRegistry'] = DownloadCacheUtils.getNpmRegistryUri(script)
-    }
+    parameters.dockerOptions = ['--cap-add=SYS_ADMIN'].plus(parameters.dockerOptions?:[])
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.NPM)
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

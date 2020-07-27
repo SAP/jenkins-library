@@ -25,6 +25,7 @@ void call(Map parameters = [:], body) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
         .addIfEmpty('stageName', stageName)
+        .addIfEmpty('lockingResourceGroup', script.commonPipelineEnvironment.projectName)
         .dependingOn('stageName').mixin('ordinal')
         .use()
 
@@ -46,8 +47,17 @@ void call(Map parameters = [:], body) {
 
 private void stageLocking(Map config, Closure body) {
     if (config.stageLocking) {
-        lock(resource: "${env.JOB_NAME}/${config.ordinal}", inversePrecedence: true) {
-            milestone config.ordinal
+        String resource = config.lockingResourceGroup?:env.JOB_NAME
+        if(config.lockingResource){
+            resource += "/${config.lockingResource}"
+        }
+        else if(config.ordinal){
+            resource += "/${config.ordinal}"
+        }
+        lock(resource: resource, inversePrecedence: true) {
+            if(config.ordinal) {
+                milestone config.ordinal
+            }
             body()
         }
     } else {
@@ -120,26 +130,26 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         utils.stashStageFiles(script, stageName)
 
         // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
-        if(!telemetryDisabled){
+        if (!telemetryDisabled) {
             def duration = System.currentTimeMillis() - startTime
             utils.pushToSWA([
-                eventType: 'library-os-stage',
-                stageName: stageName,
-                stepParamKey1: 'buildResult',
-                stepParam1: "${script.currentBuild.currentResult}",
-                buildResult: "${script.currentBuild.currentResult}",
-                stepParamKey2: 'stageStartTime',
-                stepParam2: "${startTime}",
-                stageStartTime: "${startTime}",
-                stepParamKey3: 'stageDuration',
-                stepParam3: "${duration}",
-                stageDuration: "${duration}",
-                stepParamKey4: 'projectExtension',
-                stepParam4: "${projectExtensions}",
+                eventType       : 'library-os-stage',
+                stageName       : stageName,
+                stepParamKey1   : 'buildResult',
+                stepParam1      : "${script.currentBuild.currentResult}",
+                buildResult     : "${script.currentBuild.currentResult}",
+                stepParamKey2   : 'stageStartTime',
+                stepParam2      : "${startTime}",
+                stageStartTime  : "${startTime}",
+                stepParamKey3   : 'stageDuration',
+                stepParam3      : "${duration}",
+                stageDuration   : "${duration}",
+                stepParamKey4   : 'projectExtension',
+                stepParam4      : "${projectExtensions}",
                 projectExtension: "${projectExtensions}",
-                stepParamKey5: 'globalExtension',
-                stepParam5: "${globalExtensions}",
-                globalExtension: "${globalExtensions}"
+                stepParamKey5   : 'globalExtension',
+                stepParam5      : "${globalExtensions}",
+                globalExtension : "${globalExtensions}"
             ], config)
         }
     }
@@ -191,6 +201,6 @@ private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
     return method != null
 }
 
-private boolean allowExtensions(){
+private boolean allowExtensions() {
     return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == false
 }

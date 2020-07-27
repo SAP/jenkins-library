@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +29,16 @@ func ConfigCommand() *cobra.Command {
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return generateConfig()
+		PreRun: func(cmd *cobra.Command, args []string) {
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+		},
+		Run: func(cmd *cobra.Command, _ []string) {
+			err := generateConfig()
+			if err != nil {
+				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+			}
 		},
 	}
 
@@ -88,7 +97,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases, GeneralConfig.EnvRootPath)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases, GeneralConfig.EnvRootPath)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
@@ -134,28 +143,11 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 	//consider conditions for context configuration
 
 	//containers
-	applyContainerConditions(metadata.Spec.Containers, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Containers, stepConfig)
 
 	//sidecars
-	applyContainerConditions(metadata.Spec.Sidecars, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Sidecars, stepConfig)
 
 	//ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
-}
-
-func applyContainerConditions(containers []config.Container, stepConfig *config.StepConfig) {
-	for _, container := range containers {
-		if len(container.Conditions) > 0 {
-			for _, param := range container.Conditions[0].Params {
-				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
-					var containerConf map[string]interface{}
-					containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-					for key, value := range containerConf {
-						stepConfig.Config[key] = value
-					}
-					delete(stepConfig.Config, param.Value)
-				}
-			}
-		}
-	}
 }

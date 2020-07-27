@@ -28,16 +28,44 @@ spec:
         description: URL of the npm registry to use. Defaults to https://registry.npmjs.org/
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
       - name: sapNpmRegistry
         type: string
         description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         default: https://npm.sap.com
+        aliases:
+          - name: npm/sapNpmRegistry
+      - name: virtualFrameBuffer
+        type: bool
+        description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scriptOptions
+        type: '[]string'
+        description: Options are passed to all runScripts calls separated by a '--'. './piper npmExecuteScripts --runScripts ci-e2e --scriptOptions '--tag1' will correspond to 'npm run ci-e2e -- --tag1'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildDescriptorExcludeList
+        type: '[]string'
+        description: List of build descriptors and therefore modules to exclude from execution of the npm scripts. The elements can either be a path to the build descriptor or a pattern.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["deployment/**"]
   containers:
     - name: node
       image: node:12-buster-slim

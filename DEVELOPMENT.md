@@ -9,6 +9,7 @@
 1. [Testing](#testing)
 1. [Debugging](#debugging)
 1. [Release](#release)
+1. [Pipeline Configuration](#pipeline-configuration)
 
 ## Getting started
 
@@ -89,14 +90,17 @@ You can extract the binary using Docker means to your local filesystem:
 
 ```sh
 docker create --name piper piper:latest
-docker cp piper:/piper .
+docker cp piper:/build/piper .
 docker rm piper
 ```
 
 ## Generating step framework
 
-The steps are generated based on the yaml files in `resources/metadata/` with the following command
-`go run pkg/generator/step-metadata.go`.
+The steps are generated based on the yaml files in `resources/metadata/` with the following command from the root of the project:
+
+```bash
+go generate
+```
 
 The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
 Where the Tekton format was not sufficient some extenstions have been made.
@@ -202,6 +206,24 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 
 It has proven a good practice to bubble up errors until the runtime entry function  and only
 there exit via the logging framework (see also [logging](#logging)).
+
+### Error categories
+
+For errors, we have a convenience function to set a pre-defined category once an error occurs:
+
+```golang
+log.SetErrorCategory(log.ErrorCompliance)
+```
+
+Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
+
+With writing a fatal error
+
+```golang
+log.Entry().WithError(err).Fatal("the error message")
+```
+the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
+Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 ## Testing
 
@@ -428,3 +450,34 @@ We release on schedule (once a week) and on demand.
 To perform a release, the respective action must be invoked for which a convenience script is available in `contrib/perform-release.sh`.
 It requires a personal access token for GitHub with `repo` scope.
 Example usage `PIPER_RELEASE_TOKEN=THIS_IS_MY_TOKEN contrib/perform-release.sh`.
+
+## Pipeline Configuration
+
+The pipeline configuration is organized in a hierarchical manner and configuration parameters are incorporated from multiple sources.
+In general, there are four sources for configurations:
+
+1. Directly passed step parameters
+1. Project specific configuration placed in `.pipeline/config.yml`
+1. Custom default configuration provided in `customDefaults` parameter of the project config or passed as parameter to the step `setupCommonPipelineEnvironment`
+1. Default configuration from Piper library
+
+For more information and examples on how to configure a project, please refer to the [configuration documentation](https://sap.github.io/jenkins-library/configuration/).
+
+### Groovy vs. Go step configuration
+
+The configuration of a project is, as of now, resolved separately for Groovy and Go steps.
+There are, however, dependencies between the steps responsible for resolving the configuration.
+The following provides an overview of the central components and their dependencies.
+
+#### setupCommonPipelineEnvironment (Groovy)
+
+The step `setupCommonPipelineEnvironment` initializes the `commonPipelineEnvironment` and `DefaultValueCache`.
+Custom default configurations can be provided as parameters to `setupCommonPipelineEnvironment` or via the `customDefaults` parameter in project configuration.
+
+#### DefaultValueCache (Groovy)
+
+The `DefaultValueCache` caches the resolved (custom) default pipeline configuration and the list of configurations that contributed to the result.
+On initialization, it merges the provided custom default configurations with the default configuration from Piper library, as per the hierarchical order.
+
+Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations of each Go step.
+It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration, since the Go layer already resolves configurations provided via `customDefaults` parameter independently.

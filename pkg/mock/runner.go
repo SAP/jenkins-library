@@ -7,11 +7,14 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
 )
 
 type ExecMockRunner struct {
 	Dir                 []string
 	Env                 []string
+	ExitCode            int
 	Calls               []ExecCall
 	stdout              io.Writer
 	stderr              io.Writer
@@ -20,13 +23,20 @@ type ExecMockRunner struct {
 }
 
 type ExecCall struct {
-	Exec   string
-	Params []string
+	Execution *Execution
+	Async     bool
+	Exec      string
+	Params    []string
+}
+
+type Execution struct {
+	Killed bool
 }
 
 type ShellMockRunner struct {
 	Dir                 string
 	Env                 []string
+	ExitCode            int
 	Calls               []string
 	Shell               []string
 	stdout              io.Writer
@@ -51,6 +61,25 @@ func (m *ExecMockRunner) RunExecutable(e string, p ...string) error {
 	c := strings.Join(append([]string{e}, p...), " ")
 
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
+}
+
+func (m *ExecMockRunner) GetExitCode() int {
+	return m.ExitCode
+}
+
+func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (command.Execution, error) {
+
+	execution := Execution{}
+	exec := ExecCall{Exec: e, Params: p, Async: true, Execution: &execution}
+	m.Calls = append(m.Calls, exec)
+
+	c := strings.Join(append([]string{e}, p...), " ")
+
+	err := handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
+	if err != nil {
+		return nil, err
+	}
+	return &execution, nil
 }
 
 func (m *ExecMockRunner) Stdout(out io.Writer) {
@@ -79,6 +108,19 @@ func (m *ShellMockRunner) RunShell(s string, c string) error {
 	m.Calls = append(m.Calls, c)
 
 	return handleCall(c, m.StdoutReturn, m.ShouldFailOnCommand, m.stdout)
+}
+
+func (m *ShellMockRunner) GetExitCode() int {
+	return m.ExitCode
+}
+
+func (e *Execution) Kill() error {
+	e.Killed = true
+	return nil
+}
+
+func (e *Execution) Wait() error {
+	return nil
 }
 
 func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {

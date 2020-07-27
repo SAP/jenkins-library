@@ -2,7 +2,6 @@ metadata:
   name: artifactPrepareVersion
   aliases:
     - name: artifactSetVersion
-    - name: mavenExecute
     - name: setVersion
       deprecated: true
   description: Prepares and potentially updates the artifact's version before building the artifact.
@@ -27,7 +26,7 @@ metadata:
     * Not creating a tag would lead to a loss of the final artifact version in scm which often is not acceptable
     * You need to ensure that your CI/CD system can push back to your SCM (via providing ssh or HTTP(s) credentials)
 
-    **This pattern is the default** behavior (`versioningType: cloud`) since this is suitable for for most cloud deliveries.
+    **This pattern is the default** behavior (`versioningType: cloud`) since this is suitable for most cloud deliveries.
 
     It is possible to use `versioningType: cloud_noTag` which has a slighly different behavior than described above:
 
@@ -173,6 +172,10 @@ spec:
         - STAGES
         - STEPS
         secret: true
+        resourceRef:
+          - name: gitHttpsCredentialsId
+            type: secret
+            param: password
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -180,6 +183,13 @@ spec:
         description: Maven only - Path to the mvn settings file that should be used as project settings file.
         scope:
           - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: shortCommitId
+        type: bool
+        description: Defines if a short version of the commitId should be used. GitHub format is used (first 7 characters).
+        scope:
           - STEPS
           - STAGES
           - PARAMETERS
@@ -191,6 +201,13 @@ spec:
         - STAGES
         - STEPS
         default: build_
+      - name: unixTimestamp
+        type: bool
+        description: Defines if the Unix timestamp number should be used as build number instead of the standard date format.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: username
         type: string
         description: User name for git authentication
@@ -199,6 +216,10 @@ spec:
         - STAGES
         - STEPS
         secret: true
+        resourceRef:
+          - name: gitHttpsCredentialsId
+            type: secret
+            param: username
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
@@ -209,12 +230,18 @@ spec:
         - STEPS
       - name: versioningType
         type: string
-        description: "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no tag created, `library`: manual)"
+        description: "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
+          tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor,
+          but not generate a new version)"
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
         default: cloud
+        possibleValues:
+          - cloud
+          - cloud_noTag
+          - library
     secrets:
     - name: gitHttpsCredentialsId
       type: jenkins
@@ -229,4 +256,14 @@ spec:
         type: piperEnvironment
         params:
           - name: artifactVersion
+          - name: originalArtifactVersion
           - name: git/commitId
+          - name: git/commitMessage
+  containers:
+    - image: maven:3.6-jdk-8
+      imagePullPolicy: Never
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: maven

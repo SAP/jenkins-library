@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
 
@@ -10,8 +11,8 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 
-    List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
+    List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_user', 'PIPER_password']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

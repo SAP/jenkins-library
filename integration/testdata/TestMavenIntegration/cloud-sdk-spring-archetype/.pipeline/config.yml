@@ -1,0 +1,5 @@
+general:
+steps:
+  mavenBuild:
+    globalSettingsFile: settings.xml
+stages:

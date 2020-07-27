@@ -55,7 +55,7 @@ It will use your gitignore file to exclude the mached files from publishing.
 Note: npm's gitignore parser might yield different results from your git client, to ignore a "foo" directory globally use the glob pattern "**/foo".
 
 If an image for mavenExecute is configured, and npm packages are to be published, the image must have npm installed.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -66,13 +66,20 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.User)
 			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -84,6 +91,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -92,7 +100,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 }
 
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
-	cmd.Flags().StringVar(&stepConfig.Version, "version", "nexus3", "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", `nexus3`, "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
 	cmd.Flags().StringVar(&stepConfig.MavenRepository, "mavenRepository", os.Getenv("PIPER_mavenRepository"), "Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.")

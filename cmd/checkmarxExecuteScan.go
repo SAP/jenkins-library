@@ -93,7 +93,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 	zipFileName := filepath.Join(workspace, "workspace.zip")
-	patterns := strings.Split(filterPattern, ",")
+	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
@@ -109,7 +109,6 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
 	if sourceCodeUploaded {
 		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
-		zipFile.Close()
 		err := os.Remove(zipFile.Name())
 		if err != nil {
 			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
@@ -188,7 +187,8 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 	for true {
 		stepDetail := "..."
 		stageDetail := "..."
-		status, detail := sys.GetScanStatusAndDetail(scan.ID)
+		var detail checkmarx.ScanStatusDetail
+		status, detail = sys.GetScanStatusAndDetail(scan.ID)
 		if status == "Finished" || status == "Canceled" || status == "Failed" {
 			break
 		}
@@ -515,6 +515,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 		baseDir = filepath.Base(source)
 	}
 
+	fileCount := 0
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -554,17 +555,17 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		fileCount++
 		return err
 	})
-
+	log.Entry().Infof("Zipped %d files", fileCount)
 	return err
 }
 
 func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
-	for index := 0; index < len(patterns); index++ {
-		pattern := patterns[index]
+	for _, pattern := range patterns {
 		negative := false
-		if strings.Index(pattern, "!") == 0 {
+		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
 			negative = true
 		}

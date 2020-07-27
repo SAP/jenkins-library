@@ -1,10 +1,10 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
 import com.sap.piper.DeploymentType
-import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.k8s.ContainerMap
 
 import groovy.transform.Field
 
@@ -13,71 +13,108 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Defines the targets to deploy on cloudFoundry.*/
+    /** Defines the targets to deploy on Cloud Foundry.*/
     'cfTargets',
     /** Defines the targets to deploy on neo.*/
-    'neoTargets'
+    'neoTargets',
+    /** Executes the deployments in parallel.*/
+    'parallelExecution'
 ]
 
-@Field Set STEP_CONFIG_KEYS = []
-
-@Field Set PARAMETER_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /** The stage name. If the stage name is not provided, it will be taken from the environment variable 'STAGE_NAME'.*/
-    'stage',
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Defines Cloud Foundry service instances to create as part of the deployment.
+     * This is a _list_ of _objects_ with the following properties each:
+     * - apiEndpoint
+     * - credentialsId
+     * - serviceManifest
+     * - manifestVariablesFiles
+     * - org
+     * - space
+     */
+    'cfCreateServices',
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
-    /** The source file to deploy to the SAP Cloud Platform.*/
+])
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
+
 /**
- * Deploys an application to multiple platforms (cloudFoundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
+ * Deploys an application to multiple platforms (Cloud Foundry, SAP Cloud Platform) or to multiple instances of multiple platforms or the same platform.
  */
 @GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        def stageName = parameters.stage ?: env.STAGE_NAME
-        def enableZeroDowntimeDeployment = parameters.enableZeroDowntimeDeployment ?: false
-
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
+        def stageName = parameters.stage ?: env.STAGE_NAME
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS)
 
         Map config = configHelper.use()
 
-        configHelper
-            .withMandatoryProperty('source', null, { config.neoTargets })
-
         utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'stage',
-            stepParam1: stageName,
-            stepParamKey2: 'enableZeroDowntimeDeployment',
-            stepParam2: enableZeroDowntimeDeployment
+            step         : STEP_NAME,
+            stepParamKey1: 'enableZeroDowntimeDeployment',
+            stepParam1   : config.enableZeroDowntimeDeployment
         ], config)
 
         def index = 1
         def deployments = [:]
-        def deploymentType
-        def deployTool
+
+        if (config.cfCreateServices) {
+            def createServices = [:]
+            for (int i = 0; i < config.cfCreateServices.size(); i++) {
+                Map createServicesConfig = config.cfCreateServices[i]
+                createServices["Service Creation ${i + 1}"] = {
+                    cloudFoundryCreateService(
+                        script: script,
+                        cloudFoundry: [
+                            apiEndpoint           : createServicesConfig.apiEndpoint,
+                            credentialsId         : createServicesConfig.credentialsId,
+                            serviceManifest       : createServicesConfig.serviceManifest,
+                            manifestVariablesFiles: createServicesConfig.manifestVariablesFiles,
+                            org                   : createServicesConfig.org,
+                            space                 : createServicesConfig.space
+                        ]
+                    )
+                }
+            }
+            runClosures(script, createServices, config.parallelExecution, "cloudFoundryCreateService")
+        }
 
         if (config.cfTargets) {
 
-            deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, enableZeroDowntimeDeployment).toString()
-            deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
+            def deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, config.enableZeroDowntimeDeployment).toString()
+
+            // An isolated workspace is required when using blue-green deployment with multiple cfTargets,
+            // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
+            // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
+            // credentials are inserted in the mtaExtensionDescriptor file.
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
                 def target = config.cfTargets[i]
 
                 Closure deployment = {
+                    Utils deploymentUtils = new Utils()
+                    if (runInIsolatedWorkspace) {
+                        deploymentUtils.unstashStageFiles(script, stageName)
+                    }
 
                     cloudFoundryDeploy(
                         script: script,
@@ -85,20 +122,35 @@ void call(parameters = [:]) {
                         jenkinsUtilsStub: jenkinsUtils,
                         deployType: deploymentType,
                         cloudFoundry: target,
-                        mtaPath: script.commonPipelineEnvironment.mtarFilePath,
-                        deployTool: deployTool
+                        mtaExtensionDescriptor: target.mtaExtensionDescriptor,
+                        mtaExtensionCredentials: target.mtaExtensionCredentials
                     )
-
+                    if (runInIsolatedWorkspace) {
+                        deploymentUtils.stashStageFiles(script, stageName)
+                    }
                 }
-                setDeployment(deployments, deployment, index, script, stageName)
+                if (runInIsolatedWorkspace){
+                    deployments["Deployment ${index}"] = {
+                        if (env.POD_NAME) {
+                            dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+                                deployment.call()
+                            }
+                        } else {
+                            node(env.NODE_NAME) {
+                                deployment.call()
+                            }
+                        }
+                    }
+                } else {
+                    deployments.put("Deployment ${index}", deployment)
+                }
                 index++
             }
-            utils.runClosures(deployments)
         }
 
         if (config.neoTargets) {
 
-            deploymentType = DeploymentType.selectFor(CloudPlatform.NEO, enableZeroDowntimeDeployment)
+            def deploymentType = DeploymentType.selectFor(CloudPlatform.NEO, config.enableZeroDowntimeDeployment).toString()
 
             for (int i = 0; i < config.neoTargets.size(); i++) {
 
@@ -106,36 +158,23 @@ void call(parameters = [:]) {
 
                 Closure deployment = {
 
-                    neoDeploy (
+                    neoDeploy(
                         script: script,
-                        warAction: deploymentType.toString(),
+                        warAction: deploymentType,
                         source: config.source,
                         neo: target
                     )
 
                 }
-                setDeployment(deployments, deployment, index, script, stageName)
+                deployments.put("Deployment ${index}", deployment)
                 index++
             }
-            utils.runClosures(deployments)
         }
 
         if (!config.cfTargets && !config.neoTargets) {
             error "Deployment skipped because no targets defined!"
         }
-    }
-}
 
-void setDeployment(deployments, deployment, index, script, stageName) {
-    deployments["Deployment ${index > 1 ? index : ''}"] = {
-        if (env.POD_NAME) {
-            dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
-                deployment.run()
-            }
-        } else {
-            node(env.NODE_NAME) {
-                deployment.run()
-            }
-        }
+        runClosures(script, deployments, config.parallelExecution, "deployments")
     }
 }
