@@ -89,7 +89,7 @@ func TestRunSonar(t *testing.T) {
 			options:     []string{},
 		}
 		options := sonarExecuteScanOptions{
-			CustomTLSCertificateLinks: "",
+			CustomTLSCertificateLinks: []string{},
 			Token:                     "secret-ABC",
 			Host:                      "https://sonar.sap.com",
 			Organization:              "SAP",
@@ -272,7 +272,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 		fileUtilsExists = mockFileUtilsExists(true)
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
-		err := loadCertificates("", &mockClient, &mockRunner)
+		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts"))
@@ -293,7 +293,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
 		}()
 		// test
-		err := loadCertificates("https://sap.com/custom-1.crt,https://sap.com/custom-2.crt", &mockClient, &mockRunner)
+		err := loadCertificates([]string{"https://sap.com/custom-1.crt", "https://sap.com/custom-2.crt"}, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, "https://sap.com/custom-1.crt", mockClient.requestedURL[0])
@@ -314,7 +314,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 		require.Empty(t, os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must not be set")
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
-		err := loadCertificates("any-certificate-url", &mockClient, &mockRunner)
+		err := loadCertificates([]string{"any-certificate-url"}, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.NotContains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts"))
@@ -335,7 +335,7 @@ func TestSonarLoadCertificates(t *testing.T) {
 			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
 		}()
 		// test
-		err := loadCertificates("", &mockClient, &mockRunner)
+		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
 		assert.Empty(t, sonar.environment)
