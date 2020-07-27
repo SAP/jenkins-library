@@ -34,6 +34,9 @@ stages:
         filePattern: '**/conf.js'
         configKeys:
           - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
   Security:
     stepConditions:
       checkmarxExecuteScan:
@@ -70,6 +73,9 @@ stages:
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'

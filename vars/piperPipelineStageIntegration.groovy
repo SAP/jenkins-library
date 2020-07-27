@@ -46,15 +46,12 @@ void call(Map parameters = [:]) {
         try {
             if (config.npmExecuteScripts) {
                 publishResults = true
-                //TODO Remove once config resolution supports technical names as well as labels for stages
-                withEnv(["STAGE_NAME=${stageName}"]) {
-                    npmExecuteScripts script: script
-                }
+                npmExecuteScripts script: script, stageName: stageName
             }
         }
         finally {
             if (publishResults) {
-                testsPublishResults script: script
+                testsPublishResults script: script, stageName: stageName
             }
         }
     }

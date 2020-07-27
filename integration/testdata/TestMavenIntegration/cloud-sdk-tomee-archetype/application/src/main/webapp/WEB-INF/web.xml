@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://java.sun.com/xml/ns/javaee"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0" metadata-complete="false">
+
+    <session-config>
+        <session-timeout>20</session-timeout>
+    </session-config>
+
+    <!--
+    <login-config>
+        <auth-method>XSUAA</auth-method>
+    </login-config>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Baseline Security</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>*</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <security-role>
+        <role-name>Display</role-name>
+    </security-role>
+    -->
+
+    <filter>
+        <filter-name>RestCsrfPreventionFilter</filter-name>
+        <filter-class>org.apache.catalina.filters.RestCsrfPreventionFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>RestCsrfPreventionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>HttpSecurityHeadersFilter</filter-name>
+        <filter-class>com.sap.cloud.sdk.cloudplatform.security.servlet.HttpSecurityHeadersFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>HttpSecurityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>HttpCachingHeaderFilter</filter-name>
+        <filter-class>com.sap.cloud.sdk.cloudplatform.security.servlet.HttpCachingHeaderFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>HttpCachingHeaderFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+</web-app>

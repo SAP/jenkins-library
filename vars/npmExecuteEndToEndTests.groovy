@@ -24,6 +24,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'appUrls',
     /**
+     * List of build descriptors and therefore modules to exclude from execution of the npm scripts.
+     * The elements of the list can either be a path to the build descriptor or a pattern.
+     */
+    'buildDescriptorExcludeList',
+    /**
      * Script to be executed from package.json.
      */
     'runScript'])
@@ -38,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stage ?: env.STAGE_NAME
+        def stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -93,14 +98,15 @@ void call(Map parameters = [:]) {
                 utils.unstashStageFiles(script, stageName)
                 try {
                     withCredentials(credentials) {
+                        List scriptOptions = ["--launchUrl=${appUrl.url}"]
                         if (appUrl.parameters) {
                             if (appUrl.parameters instanceof List) {
-                                npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"] + appUrl.parameters)
+                                scriptOptions = scriptOptions + appUrl.parameters
                             } else {
                                 error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
                             }
                         }
-                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: ["--launchUrl=${appUrl.url}"])
+                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
                     }
 
                 } catch (Exception e) {
@@ -117,12 +123,12 @@ void call(Map parameters = [:]) {
                         echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
                     }
 
-                    utils.stashStageFiles(script, parameters.stage)
+                    utils.stashStageFiles(script, stageName)
                 }
             }
             e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
                 if (env.POD_NAME) {
-                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(parameters.stage) ?: [:]) {
+                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                         e2eTest.call()
                     }
                 } else {

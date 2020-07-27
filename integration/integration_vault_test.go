@@ -50,7 +50,7 @@ func TestGetVaultSecret(t *testing.T) {
 	}
 	setupVault(t, config, testToken, secretData)
 
-	client, err := vault.NewClient(config, testToken)
+	client, err := vault.NewClient(config, testToken, "")
 	assert.NoError(t, err)
 	secret, err := client.GetKvSecret("secret/test")
 	assert.NoError(t, err)
