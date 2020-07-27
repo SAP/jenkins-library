@@ -33,7 +33,8 @@ void call(Map parameters = [:], body) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
         List environment = []
         if (config.sidecarImage) {
-            environment.add("SIDECARE_IMAGE=${config.sidecarImage}")
+            echo "sidecarImage configured: '${config.sidecarImage}'"
+            environment.add("SIDECAR_IMAGE=${config.sidecarImage}")
         }
         if (Boolean.valueOf(env.ON_K8S) && (containerMap.size() > 0 || config.runStageInPod)) {
             environment.add("POD_NAME=${stageName}")

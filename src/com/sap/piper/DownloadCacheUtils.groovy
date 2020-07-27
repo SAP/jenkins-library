@@ -55,6 +55,8 @@ class DownloadCacheUtils {
         if (script.env.SIDECAR_IMAGE) {
             script.echo "D/L cache disabled while running with sidecar image (${script.env.SIDECAR_IMAGE})"
             return false
+        } else {
+            script.echo "D/L cache enabled, no sidecar image"
         }
 
         return (networkName() && hostname())
