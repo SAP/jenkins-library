@@ -23,7 +23,7 @@ type Config struct {
 	General        map[string]interface{}            `json:"general"`
 	Stages         map[string]map[string]interface{} `json:"stages"`
 	Steps          map[string]map[string]interface{} `json:"steps"`
-	Hooks          *json.RawMessage       `json:"hooks,omitempty"`
+	Hooks          *json.RawMessage                  `json:"hooks,omitempty"`
 	defaults       PipelineDefaults
 	initialized    bool
 	openFile       func(s string) (io.ReadCloser, error)
