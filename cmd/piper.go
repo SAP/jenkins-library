@@ -209,11 +209,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
 	if source != nil {
 		log.Entry().Info("Retrieving hook configuration")
-		hookConfig, err := source.MarshalJSON()
+		err := json.Unmarshal(*source, target)
 		if err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}
-		_ = json.Unmarshal(hookConfig, target)
 	}
 }
 
