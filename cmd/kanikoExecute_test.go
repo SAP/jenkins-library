@@ -74,6 +74,10 @@ func (f *kanikoFileMock) Chmod(path string, mode os.FileMode) error {
 	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
+func (f *kanikoFileMock) Abs(path string) (string, error) {
+	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func TestRunKanikoExecute(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
