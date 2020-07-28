@@ -98,6 +98,27 @@ func TestPrepareConfig(t *testing.T) {
 	})
 }
 
+func TestRetrieveHookConfig(t *testing.T) {
+	tt := []struct {
+		hookJSON           []byte
+		expectedHookConfig HookConfiguration
+	}{
+		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+	}
+
+	for _, test := range tt {
+		var target HookConfiguration
+		var hookJSONRaw json.RawMessage
+		if len(test.hookJSON) > 0 {
+			err := json.Unmarshal(test.hookJSON, &hookJSONRaw)
+			assert.NoError(t, err)
+		}
+		retrieveHookConfig(&hookJSONRaw, &target)
+		assert.Equal(t, test.expectedHookConfig, target)
+	}
+}
+
 func TestGetProjectConfigFile(t *testing.T) {
 
 	tt := []struct {
