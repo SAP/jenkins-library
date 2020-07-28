@@ -94,10 +94,10 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	return err
 }
 
-func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux) error {
+func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux) {
 
 	if influxData == nil {
-		return nil
+		return
 	}
 
 	result := "FAILURE"
@@ -122,8 +122,6 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 	// 1.) outside Jenkins
 	// 2.) inside Jenkins (how to get)
 	influxData.deployment_data.fields.jobTrigger = "n/a"
-
-	return nil
 }
 
 func handleMTADeployment(config *cloudFoundryDeployOptions, command command.ExecRunner) error {
