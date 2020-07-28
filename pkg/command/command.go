@@ -55,7 +55,7 @@ func (c *Command) SetEnv(env []string) {
 	c.env = env
 }
 
-// SetEnv sets explicit environment variables to be used for execution
+// AppendEnv appends environment variables to be used for execution
 func (c *Command) AppendEnv(env []string) {
 	c.env = append(c.env, env...)
 }
