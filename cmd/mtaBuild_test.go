@@ -292,7 +292,7 @@ func TestMarBuild(t *testing.T) {
 			globalSettingsFile string,
 			projectSettingsFile string,
 			fileUtils piperutils.FileUtils,
-			httpClient piperhttp.Downloader) error {
+			httpClient maven.SettingsDownloadUtils) error {
 			projectSettingsFile = projectSettingsFile
 			globalSettingsFile = globalSettingsFile
 			return nil
@@ -389,6 +389,10 @@ func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 
 func (f *MtaTestFileUtilsMock) Abs(path string) (string, error) {
 	return "/root_folder/workspace/" + path, nil
+}
+
+func (f *MtaTestFileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func (f *MtaTestFileUtilsMock) Chmod(path string, mode os.FileMode) error {

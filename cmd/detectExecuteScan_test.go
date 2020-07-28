@@ -46,22 +46,28 @@ func TestRunDetect(t *testing.T) {
 			CurrentDir: "root_folder",
 		}
 		err := runDetect(detectExecuteScanOptions{
-			M2Path: ".pipeline/local_repo",
-			ProjectSettingsFile: "project-settings.yml",
-			GlobalSettingsFile: "global-settings.yml",
+			M2Path:              ".pipeline/local_repo",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
 		}, &s, &fileUtilsMock, &httpClient)
 
 		assert.Nil(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
-		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local="+absoluteLocalPath)
 
+		expectedParam := "--detect.maven.build.command='--global-settings global-settings.yml --settings project-settings.xml -Dmaven.repo.local=absoluteLocalPath'"
+		assert.Contains(t, s.Calls[0], expectedParam)
+
+		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local="+absoluteLocalPath)
 
 	})
 }
 
 func TestAddDetectArgs(t *testing.T) {
+	httpClient := piperhttp.Client{}
+	fileUtilsMock := mock.FilesMock{}
+
 	testData := []struct {
 		args     []string
 		options  detectExecuteScanOptions
@@ -118,7 +124,8 @@ func TestAddDetectArgs(t *testing.T) {
 
 	for k, v := range testData {
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
-			got := addDetectArgs(v.args, v.options)
+			got, err := addDetectArgs(v.args, v.options, &fileUtilsMock, &httpClient)
+			assert.Nil(t, err)
 			assert.Equal(t, v.expected, got)
 		})
 	}

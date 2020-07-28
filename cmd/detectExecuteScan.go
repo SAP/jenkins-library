@@ -37,22 +37,13 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
-	args = addDetectArgs(args, config)
-	script := strings.Join(args, " ")
-
-	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
-	if len(config.M2Path) > 0 {
-		absolutePath, err := fileUtils.Abs(config.M2Path)
-		if err != nil {
-			return err
-		}
-		envs = append(envs, "MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath)
-	}
-
-	err := maven.DownloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
+	args, err := addDetectArgs(args, config, fileUtils, httpClient)
 	if err != nil {
 		return err
 	}
+	script := strings.Join(args, " ")
+
+	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
 
 	command.SetDir(".")
 	command.SetEnv(envs)
@@ -60,7 +51,7 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 	return command.RunShell("/bin/bash", script)
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
+func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) ([]string, error) {
 
 	coordinates := struct {
 		Version string
@@ -90,5 +81,23 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	if sliceUtils.ContainsString(config.Scanners, "source") {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
-	return args
+
+	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(config.M2Path) > 0 {
+		absolutePath, err := fileUtils.Abs(config.M2Path)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
+	}
+
+	if len(mavenArgs) > 0 {
+		args = append(args, fmt.Sprintf("--detect.maven.build.command=%v", strings.Join(mavenArgs, " ")))
+	}
+
+	return args, nil
 }

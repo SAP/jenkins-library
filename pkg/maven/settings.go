@@ -2,9 +2,9 @@ package maven
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,14 +12,44 @@ import (
 
 var getenv = os.Getenv
 
-func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+type SettingsDownloadUtils interface {
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
+	mavenArgs := []string{}
+	if len(projectSettingsFile) > 0 {
+		globalSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
+	} else {
+
+		log.Entry().Debugf("Project settings file not provided via configuration.")
+	}
+
+	if len(globalSettingsFile) > 0 {
+		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
+	} else {
+
+		log.Entry().Debugf("Global settings file not provided via configuration.")
+	}
+	return mavenArgs, nil
+}
+
+func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
 	if len(projectSettingsFile) > 0 {
 		destination, err := getProjectSettingsFileDest()
 		if err != nil {
 			return err
 		}
 
-		if err := GetSettingsFile(projectSettingsFile, destination, fileUtils, httpClient); err != nil {
+		if err := downloadAndCopySettingsFile(projectSettingsFile, destination, fileUtils, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -32,7 +62,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 		if err != nil {
 			return err
 		}
-		if err := GetSettingsFile(globalSettingsFile, destination, fileUtils, httpClient); err != nil {
+		if err := downloadAndCopySettingsFile(globalSettingsFile, destination, fileUtils, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -43,8 +73,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 	return nil
 }
 
-// GetSettingsFile ...
-func GetSettingsFile(src string, dest string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+func downloadAndCopySettingsFile(src string, dest string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
 	if len(src) == 0 {
 		return fmt.Errorf("Settings file source location not provided")
 	}
@@ -83,6 +112,32 @@ func GetSettingsFile(src string, dest string, fileUtils piperutils.FileUtils, ht
 		}
 	}
 
+	return nil
+}
+
+func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) (string, error) {
+	result := settingsFileOption
+	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
+		err := downloadSettingsFromURL(settingsFileOption, settingsFile, fileUtils, httpClient)
+		if err != nil {
+			return "", err
+		}
+		result = settingsFile
+	}
+	return result, nil
+}
+
+func downloadSettingsFromURL(url, filename string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
+	exists, _ := fileUtils.FileExists(filename)
+	if exists {
+		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
+		return nil
+	}
+	err := httpClient.DownloadFile(url, filename, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
+			url, filename, err)
+	}
 	return nil
 }
 

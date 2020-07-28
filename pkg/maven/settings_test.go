@@ -29,7 +29,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile("", "foo", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("", "foo", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
 			assert.Equal(t, "Settings file source location not provided", err.Error())
@@ -41,7 +41,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile("/opt/sap/maven/global-settings.xml", "", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
 			assert.Equal(t, "Settings file destination location not provided", err.Error())
@@ -71,7 +71,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, "/usr/share/maven/conf/settings.xml", httpClient.downloadedFiles["https://example.org/maven/global-settings.xml"])
@@ -83,7 +83,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{expectedError: fmt.Errorf("Download failed")}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
 			assert.Equal(t, "Download failed", err.Error())
@@ -95,7 +95,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Source file '/opt/sap/maven/project-settings.xml' does not exist")
