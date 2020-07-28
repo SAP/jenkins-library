@@ -198,7 +198,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
-	
+
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
 	return nil
