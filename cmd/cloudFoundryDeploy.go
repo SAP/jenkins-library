@@ -813,30 +813,20 @@ func handleCfCliLog(logFile string) error {
 		}
 
 		defer f.Close()
+
 		bReader := bufio.NewReader(f)
-
-		var done bool
-
 		for {
 			line, err := bReader.ReadString('\n')
-			if err == io.EOF {
-
+			if err == nil || err == io.EOF {
 				// maybe inappropriate to log as info. Maybe the line from the
 				// log indicates an error, but that is something like a project
 				// standard.
-				done = true
-			} else if err != nil {
-
-				break
+				log.Entry().Info(strings.TrimSuffix(line, "\n"))
 			}
-
-			log.Entry().Info(strings.TrimSuffix(line, "\n"))
-
-			if done {
+			if err != nil {
 				break
 			}
 		}
-
 	} else {
 		log.Entry().Warningf("No trace file found at '%s'", logFile)
 	}
