@@ -65,7 +65,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${getCustomDefaultConfigsArg()}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${ignoreCustomDefaults()}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -101,10 +101,10 @@ static void prepareMetadataResource(Script script, String metadataFile) {
 }
 
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String customConfigArg) {
-    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${getCustomDefaultConfigsArg()}${customConfigArg}"))
+    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${ignoreCustomDefaults()}${customConfigArg}"))
 }
 
-static String getCustomDefaultConfigsArg() {
+static String ignoreCustomDefaults() {
     return DefaultValueCache.getInstance().getCustomDefaults().size() > 0 ? ' --ignoreCustomDefaults' : ''
 }
 
