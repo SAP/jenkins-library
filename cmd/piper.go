@@ -198,15 +198,20 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	_ = json.Unmarshal(confJSON, &options)
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
-
-	for name, v := range stepConfig.HookConfig {
-		if name == "sentry" {
-			hookConfig, _ := v.MarshalJSON()
-			_ = json.Unmarshal(hookConfig, &GeneralConfig.HookConfig.SentryConfig)
-		}
-	}
+	
+	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
 	return nil
+}
+
+func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
+	if source != nil {
+		log.Entry().Info("Retrieving hook configuration")
+		err := json.Unmarshal(*source, target)
+		if err != nil {
+			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
+		}
+	}
 }
 
 func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
