@@ -65,7 +65,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
