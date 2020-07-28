@@ -3,11 +3,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -94,6 +95,27 @@ func TestPrepareConfig(t *testing.T) {
 			assert.Error(t, err, "error expected but none occured")
 		})
 	})
+}
+
+func TestRetrieveHookConfig(t *testing.T) {
+	tt := []struct {
+		hookJSON           []byte
+		expectedHookConfig HookConfiguration
+	}{
+		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+	}
+
+	for _, test := range tt {
+		var target HookConfiguration
+		var hookJSONRaw json.RawMessage
+		if len(test.hookJSON) > 0 {
+			err := json.Unmarshal(test.hookJSON, &hookJSONRaw)
+			assert.NoError(t, err)
+		}
+		retrieveHookConfig(&hookJSONRaw, &target)
+		assert.Equal(t, test.expectedHookConfig, target)
+	}
 }
 
 func TestGetProjectConfigFile(t *testing.T) {

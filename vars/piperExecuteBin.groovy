@@ -35,7 +35,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
-            String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
@@ -43,7 +42,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             // get context configuration
             Map config
             handleErrorDetails(stepName) {
-                config = getStepContextConfig(script, piperGoPath, metadataFile, defaultConfigArgs, customConfigArg)
+                config = getStepContextConfig(script, piperGoPath, metadataFile, '', customConfigArg)
                 echo "Context Config: ${config}"
             }
 
@@ -80,6 +79,7 @@ static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
+    script.commonPipelineEnvironment.writeToDisk(script)
 }
 
 static Map prepareStepParameters(Map parameters) {

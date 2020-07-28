@@ -24,7 +24,7 @@ type Config struct {
 	General        map[string]interface{}            `json:"general"`
 	Stages         map[string]map[string]interface{} `json:"stages"`
 	Steps          map[string]map[string]interface{} `json:"steps"`
-	Hooks          map[string]*json.RawMessage       `json:"hooks,omitempty"`
+	Hooks          *json.RawMessage                  `json:"hooks,omitempty"`
 	defaults       PipelineDefaults
 	initialized    bool
 	openFile       func(s string) (io.ReadCloser, error)
@@ -33,7 +33,7 @@ type Config struct {
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig map[string]*json.RawMessage
+	HookConfig *json.RawMessage
 }
 
 // ReadConfig loads config and returns its content
@@ -132,7 +132,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 }
 
 // InitializeConfig prepares the config object, i.e. loading content, etc.
-func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool) error {
+func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, envRootPath string, ignoreCustomDefaults bool) error {
 	if configuration != nil {
 		if err := c.ReadConfig(configuration); err != nil {
 			return errors.Wrap(err, "failed to parse custom pipeline configuration")
@@ -141,12 +141,27 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 
 	// consider custom defaults defined in config.yml unless told otherwise
 	if ignoreCustomDefaults {
+		c.CustomDefaults = []string{}
 		log.Entry().Info("Ignoring custom defaults from pipeline config")
-	} else if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
+	}
+
+	// retrieve custom default configuration passed via commonPipelineEnvironment
+	// e.g. when pipeline has been initialized in any CI/CD system, e.g. Jenkins
+	// customDefaults take precedense over defaults from environment
+	customDefaultsJSON := piperenv.GetResourceParameter(envRootPath, "commonPipelineEnvironment", "customDefaults")
+	var customDefaultsFromEnv []string
+	json.Unmarshal([]byte(customDefaultsJSON), &customDefaultsFromEnv)
+	if len(customDefaultsFromEnv) > 0 {
+		log.Entry().Info("using custom defaults provided via environment")
+		c.CustomDefaults = append(customDefaultsFromEnv, c.CustomDefaults...)
+	}
+
+	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
 		if c.openFile == nil {
 			c.openFile = OpenPiperFile
 		}
 		for _, f := range c.CustomDefaults {
+			log.Entry().Infof("reading custom default '%v'", f)
 			fc, err := c.openFile(f)
 			if err != nil {
 				return errors.Wrapf(err, "getting default '%v' failed", f)
@@ -163,24 +178,12 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias, envRootPath string) (StepConfig, error) {  
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, parameters []StepParameters, secrets []StepSecrets, envParameters map[string]interface{}, stageName, stepName string, stepAliases []Alias, envRootPath string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var err error
-    
-  if c.CustomDefaults == nil {
-		c.CustomDefaults = []string{}
-	}
-  // consider defaults from commonPipelineEnvironment
-	customDefaultsJSON := piperenv.GetResourceParameter(envRootPath, "commonPipelineEnvironment", "customDefaults")
-	var customDefaultsFromEnv []string
-	json.Unmarshal([]byte(customDefaultsJSON), &customDefaultsFromEnv)
-  
-  // extend custom defaults defined in config.yml
-	c.CustomDefaults = append(customDefaultsFromEnv, c.CustomDefaults...)
-
 
 	if !c.initialized {
-		err = c.InitializeConfig(configuration, defaults, ignoreCustomDefaults)
+		err = c.InitializeConfig(configuration, defaults, envRootPath, ignoreCustomDefaults)
 		if err != nil {
 			return StepConfig{}, err
 		}

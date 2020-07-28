@@ -31,10 +31,9 @@ void call(Map parameters = [:]) {
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
         ]) {
-            String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
             String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customConfigArg}"))
             echo "Config: ${config}"
             // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
