@@ -214,7 +214,6 @@ func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}
 		_ = json.Unmarshal(hookConfig, target)
-		log.Entry().Debugf("Hook configuration: %v", &target)
 	}
 }
 
