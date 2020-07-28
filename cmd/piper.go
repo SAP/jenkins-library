@@ -242,7 +242,9 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			typeError = convertValueFromInt(config, optionsField, paramName, paramValueType.Int())
 		default:
-			typeError = errIncompatibleTypes
+			log.Entry().Warnf("Config value for '%s' is of unexpected type %s, expected %s. "+
+				"The value may be ignored as a result. To avoid any risk, specify this value with explicit type.",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind())
 		}
 
 		if typeError != nil {
