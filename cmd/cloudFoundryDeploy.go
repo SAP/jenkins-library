@@ -790,7 +790,7 @@ func findMtar() (string, error) {
 		for _, mtar := range mtars {
 			sMtars = append(sMtars, mtar)
 		}
-		return "", fmt.Errorf("Found multiple mtar files matching pattern '%s' (%s), please specify file via mtaPath parameter 'mtarPath'", pattern, strings.Join(sMtars, ","))
+		return "", fmt.Errorf("Found multiple mtar files matching pattern '%s' (%s), please specify file via parameter 'mtarPath'", pattern, strings.Join(sMtars, ","))
 	}
 
 	return mtars[0], nil
