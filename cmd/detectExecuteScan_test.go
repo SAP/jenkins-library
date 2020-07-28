@@ -18,7 +18,7 @@ func TestRunDetect(t *testing.T) {
 
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
+		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
 		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
@@ -26,7 +26,7 @@ func TestRunDetect(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
 		runDetect(detectExecuteScanOptions{}, &s)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
@@ -57,9 +57,9 @@ func TestAddDetectArgs(t *testing.T) {
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
-				"--detect.project.name=testName",
-				"--detect.project.version.name=1.0",
-				"--detect.code.location.name=testName/1.0",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.code.location.name=\\\"testName/1.0\\\"",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 			},
 		},
@@ -72,16 +72,46 @@ func TestAddDetectArgs(t *testing.T) {
 				Version:         "1.0",
 				VersioningModel: "major-minor",
 				CodeLocation:    "testLocation",
+				FailOn:          []string{"BLOCKER", "MAJOR"},
 				Scanners:        []string{"source"},
 				ScanPaths:       []string{"path1", "path2"},
+				Groups:          []string{"testGroup"},
 			},
 			expected: []string{
 				"--testProp1=1",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
-				"--detect.project.name=testName",
-				"--detect.project.version.name=1.0",
-				"--detect.code.location.name=testLocation",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.project.user.groups=\\\"testGroup\\\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"--detect.code.location.name=\\\"testLocation\\\"",
+				"--detect.source.path=path1",
+			},
+		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:       "https://server.url",
+				APIToken:        "apiToken",
+				ProjectName:     "testName",
+				CodeLocation:    "testLocation",
+				FailOn:          []string{"BLOCKER", "MAJOR"},
+				Scanners:        []string{"source"},
+				ScanPaths:       []string{"path1", "path2"},
+				Groups:          []string{"testGroup", "testGroup2"},
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.project.user.groups=\\\"testGroup\\\",\\\"testGroup2\\\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"--detect.code.location.name=\\\"testLocation\\\"",
 				"--detect.source.path=path1",
 			},
 		},
