@@ -1,7 +1,6 @@
 package maven
 
 import (
-	"errors"
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -13,32 +12,27 @@ import (
 
 var getenv = os.Getenv
 
-// SettingsFileType ...
-type SettingsFileType int
-
-const (
-	// GlobalSettingsFile ...
-	GlobalSettingsFile SettingsFileType = iota
-	// ProjectSettingsFile ...
-	ProjectSettingsFile
-)
-
-
 func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 	if len(projectSettingsFile) > 0 {
-
-		if err := GetSettingsFile(ProjectSettingsFile, projectSettingsFile, fileUtils, httpClient); err != nil {
+		destination, err := getProjectSettingsFileDest()
+		if err != nil {
 			return err
 		}
 
+		if err := GetSettingsFile(projectSettingsFile, destination, fileUtils, httpClient); err != nil {
+			return err
+		}
 	} else {
 
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
 	if len(globalSettingsFile) > 0 {
-
-		if err := GetSettingsFile(GlobalSettingsFile, globalSettingsFile, fileUtils, httpClient); err != nil {
+		destination, err := getGlobalSettingsFileDest()
+		if err != nil {
+			return err
+		}
+		if err := GetSettingsFile(globalSettingsFile, destination, fileUtils, httpClient); err != nil {
 			return err
 		}
 	} else {
@@ -50,26 +44,13 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 }
 
 // GetSettingsFile ...
-func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
-
-	var dest string
-	var err error
-
-	switch settingsFileType {
-	case GlobalSettingsFile:
-		dest, err = getGlobalSettingsFileDest()
-	case ProjectSettingsFile:
-		dest, err = getProjectSettingsFileDest()
-	default:
-		return errors.New("Invalid SettingsFileType")
-	}
-
-	if err != nil {
-		return err
-	}
-
+func GetSettingsFile(src string, dest string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 	if len(src) == 0 {
 		return fmt.Errorf("Settings file source location not provided")
+	}
+
+	if len(dest) == 0 {
+		return fmt.Errorf("Settings file destination location not provided")
 	}
 
 	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)

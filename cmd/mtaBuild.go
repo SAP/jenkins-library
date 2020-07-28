@@ -39,7 +39,7 @@ modules:
       build-result: dist`
 
 // for mocking
-var getSettingsFile = maven.GetSettingsFile
+var downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 
 // MTABuildTarget ...
 type MTABuildTarget int
@@ -348,7 +348,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	return maven.DownloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
+	return downloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
 }
 
 func generateMta(id, applicationName, version string) (string, error) {
