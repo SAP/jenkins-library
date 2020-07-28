@@ -86,7 +86,7 @@ func TestSettings(t *testing.T) {
 		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "Download failed", err.Error())
+			assert.Contains(t,err.Error(), "failed to download maven settings from URL")
 		}
 	})
 
