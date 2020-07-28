@@ -50,6 +50,10 @@ func (m *ExecMockRunner) SetDir(d string) {
 }
 
 func (m *ExecMockRunner) SetEnv(e []string) {
+	m.Env = e
+}
+
+func (m *ExecMockRunner) AppendEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
@@ -98,7 +102,7 @@ func (m *ShellMockRunner) SetEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
-func (m *ShellMockRunner) AddToEnv(e []string) {
+func (m *ShellMockRunner) AppendEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
