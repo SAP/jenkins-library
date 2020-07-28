@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"strings"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
@@ -17,18 +19,33 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
-	runDetect(config, &c)
+
+	fileUtils := piperutils.Files{}
+	httpClient := piperhttp.Client{}
+
+	runDetect(config, &c, &fileUtils, &httpClient)
 }
 
-func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
 	args = addDetectArgs(args, config)
 	script := strings.Join(args, " ")
 
+	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
+	if len(config.M2Path) > 0 {
+		absolutePath, err := fileUtils.Abs(config.M2Path)
+		if err != nil {
+			log.Entry().
+				WithError(err).
+				Fatal("failed to execute detect scan")
+		}
+		envs = append(envs, "MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath)
+	}
+
 	command.SetDir(".")
-	command.SetEnv([]string{"BLACKDUCK_SKIP_PHONE_HOME=true"})
+	command.SetEnv(envs)
 
 	err := command.RunShell("/bin/bash", script)
 	if err != nil {

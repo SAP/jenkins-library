@@ -348,28 +348,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	if len(config.ProjectSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-
-	} else {
-
-		log.Entry().Debugf("Project settings file not provided via configuration.")
-	}
-
-	if len(config.GlobalSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-	} else {
-
-		log.Entry().Debugf("Global settings file not provided via configuration.")
-	}
-
-	return nil
+	return maven.DownloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
 }
 
 func generateMta(id, applicationName, version string) (string, error) {

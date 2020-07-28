@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -12,9 +13,12 @@ import (
 
 func TestRunDetect(t *testing.T) {
 
+	httpClient := piperhttp.Client{}
+
 	t.Run("success case", func(t *testing.T) {
 		s := mock.ShellMockRunner{}
-		runDetect(detectExecuteScanOptions{}, &s)
+		fileUtilsMock := mock.FilesMock{}
+		runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
@@ -27,8 +31,25 @@ func TestRunDetect(t *testing.T) {
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
 		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
-		runDetect(detectExecuteScanOptions{}, &s)
+		fileUtilsMock := mock.FilesMock{}
+		runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
+	})
+
+	t.Run("maven parameters", func(t *testing.T) {
+		s := mock.ShellMockRunner{}
+		fileUtilsMock := mock.FilesMock{}
+		runDetect(detectExecuteScanOptions{
+			M2Path: ".pipeline/local_repo",
+			ProjectSettingsFile: "project-settings.yml",
+			GlobalSettingsFile: "global-settings.yml",
+		}, &s, &fileUtilsMock, &httpClient)
+
+		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
+
+		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
+
 	})
 }
 

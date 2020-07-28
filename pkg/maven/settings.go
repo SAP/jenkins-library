@@ -23,6 +23,32 @@ const (
 	ProjectSettingsFile
 )
 
+
+func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+	if len(projectSettingsFile) > 0 {
+
+		if err := GetSettingsFile(ProjectSettingsFile, projectSettingsFile, fileUtils, httpClient); err != nil {
+			return err
+		}
+
+	} else {
+
+		log.Entry().Debugf("Project settings file not provided via configuration.")
+	}
+
+	if len(globalSettingsFile) > 0 {
+
+		if err := GetSettingsFile(GlobalSettingsFile, globalSettingsFile, fileUtils, httpClient); err != nil {
+			return err
+		}
+	} else {
+
+		log.Entry().Debugf("Global settings file not provided via configuration.")
+	}
+
+	return nil
+}
+
 // GetSettingsFile ...
 func GetSettingsFile(settingsFileType SettingsFileType, src string, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 
