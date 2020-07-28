@@ -96,7 +96,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils pip
 	}
 
 	if len(mavenArgs) > 0 {
-		args = append(args, fmt.Sprintf("--detect.maven.build.command=%v", strings.Join(mavenArgs, " ")))
+		args = append(args, fmt.Sprintf("--detect.maven.build.command='%v'", strings.Join(mavenArgs, " ")))
 	}
 
 	return args, nil

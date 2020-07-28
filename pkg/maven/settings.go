@@ -18,8 +18,8 @@ type SettingsDownloadUtils interface {
 
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
-	if len(projectSettingsFile) > 0 {
-		globalSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient)
+	if len(globalSettingsFile) > 0 {
+		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient, false)
 		if err != nil {
 			return nil, err
 		}
@@ -29,12 +29,12 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 
-	if len(globalSettingsFile) > 0 {
-		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient)
+	if len(projectSettingsFile) > 0 {
+		projectSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", fileUtils, httpClient, false)
 		if err != nil {
 			return nil, err
 		}
-		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
+		mavenArgs = append(mavenArgs, "--settings", projectSettingsFileName)
 	} else {
 
 		log.Entry().Debugf("Global settings file not provided via configuration.")
@@ -85,8 +85,8 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils piperutils.F
 	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
 	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-
-		if err := httpClient.DownloadFile(src, dest, nil, nil); err != nil {
+		err := downloadSettingsFromURL(src, dest, fileUtils, httpClient, true)
+		if err != nil {
 			return err
 		}
 	} else {
@@ -115,10 +115,10 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils piperutils.F
 	return nil
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) (string, error) {
+func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils, overwrite bool) (string, error) {
 	result := settingsFileOption
 	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, fileUtils, httpClient)
+		err := downloadSettingsFromURL(settingsFileOption, settingsFile, fileUtils, httpClient, overwrite)
 		if err != nil {
 			return "", err
 		}
@@ -127,9 +127,9 @@ func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils pi
 	return result, nil
 }
 
-func downloadSettingsFromURL(url, filename string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
+func downloadSettingsFromURL(url, filename string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils, overwrite bool) error {
 	exists, _ := fileUtils.FileExists(filename)
-	if exists {
+	if exists && !overwrite {
 		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
 		return nil
 	}

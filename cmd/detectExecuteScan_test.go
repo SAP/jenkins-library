@@ -9,7 +9,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,14 +29,10 @@ func TestRunDetect(t *testing.T) {
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
-
 		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
 		fileUtilsMock := mock.FilesMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 		assert.NotNil(t, err)
-		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {
@@ -56,11 +51,8 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 
-		expectedParam := "--detect.maven.build.command='--global-settings global-settings.yml --settings project-settings.xml -Dmaven.repo.local=absoluteLocalPath'"
+		expectedParam := "--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local="+absoluteLocalPath+"'"
 		assert.Contains(t, s.Calls[0], expectedParam)
-
-		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local="+absoluteLocalPath)
-
 	})
 }
 
