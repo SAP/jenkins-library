@@ -1,5 +1,8 @@
 metadata:
   name: kubernetesDeploy
+  aliases:
+    - name: deployToKubernetes
+      deprecated: true
   description: Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
   longDescription: |-
     Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.

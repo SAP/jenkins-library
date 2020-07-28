@@ -143,7 +143,7 @@ func kubernetesDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "kubernetesDeploy",
-			Aliases: []config.Alias{},
+			Aliases: []config.Alias{{Name: "deployToKubernetes", Deprecated: true}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
