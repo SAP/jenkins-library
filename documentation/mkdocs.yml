@@ -66,6 +66,7 @@ nav:
         - gctsCreateRepository: steps/gctsCreateRepository.md
         - gctsDeploy: steps/gctsDeploy.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
+        - gctsRollback: steps/gctsRollback.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md

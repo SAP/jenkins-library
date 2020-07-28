@@ -90,6 +90,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())

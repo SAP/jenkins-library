@@ -71,6 +71,11 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             stepParameters.uiVeri5ExecuteTests = m
         })
 
+        helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
+            stepsCalled.add('npmExecuteEndToEndTests')
+            stepParameters.npmExecuteEndToEndTests = m
+        })
+
         helper.registerAllowedMethod('testsPublishResults', [Map.class], {m ->
             stepsCalled.add('testsPublishResults')
             stepParameters.testsPublishResults = m
@@ -159,5 +164,18 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             uiVeri5ExecuteTests: true
         )
         assertThat(stepsCalled, hasItems('uiVeri5ExecuteTests', 'testsPublishResults'))
+    }
+
+    @Test
+    void testAcceptanceNpmExecuteEndToEndTests() {
+
+        jsr.step.piperPipelineStageAcceptance(
+            script: nullScript,
+            juStabUtils: utils,
+            npmExecuteEndToEndTests: true
+        )
+
+        assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
+        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-e2e'))
     }
 }
