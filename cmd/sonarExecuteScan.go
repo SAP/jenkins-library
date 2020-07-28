@@ -202,7 +202,7 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
-func loadCertificates(certificateString string, client piperhttp.Downloader, runner command.ExecRunner) error {
+func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
@@ -212,7 +212,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 	} else
 	//TODO: certificate loading is deactivated due to the missing JAVA keytool
 	// see https://github.com/SAP/jenkins-library/issues/1072
-	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateString) > 0 {
+	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateList) > 0 {
 		// use local created trust store with downloaded certificates
 		keytoolOptions := []string{
 			"-import",
@@ -222,7 +222,6 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
-		certificateList := strings.Split(certificateString, ",")
 
 		for _, certificate := range certificateList {
 			filename := path.Base(certificate) // decode?

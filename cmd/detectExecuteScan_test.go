@@ -24,12 +24,12 @@ func TestRunDetect(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
+		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
 		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
 		fileUtilsMock := mock.FilesMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 		assert.NotNil(t, err)
@@ -51,7 +51,7 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 
-		expectedParam := "--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local="+absoluteLocalPath+"'"
+		expectedParam := "--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'"
 		assert.Contains(t, s.Calls[0], expectedParam)
 	})
 }
@@ -84,9 +84,9 @@ func TestAddDetectArgs(t *testing.T) {
 				"--scan2=2",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
-				"--detect.project.name=testName",
-				"--detect.project.version.name=1.0",
-				"--detect.code.location.name=testName/1.0",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.code.location.name=\\\"testName/1.0\\\"",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 			},
 		},
@@ -99,16 +99,46 @@ func TestAddDetectArgs(t *testing.T) {
 				Version:         "1.0",
 				VersioningModel: "major-minor",
 				CodeLocation:    "testLocation",
+				FailOn:          []string{"BLOCKER", "MAJOR"},
 				Scanners:        []string{"source"},
 				ScanPaths:       []string{"path1", "path2"},
+				Groups:          []string{"testGroup"},
 			},
 			expected: []string{
 				"--testProp1=1",
 				"--blackduck.url=https://server.url",
 				"--blackduck.api.token=apiToken",
-				"--detect.project.name=testName",
-				"--detect.project.version.name=1.0",
-				"--detect.code.location.name=testLocation",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.project.user.groups=\\\"testGroup\\\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"--detect.code.location.name=\\\"testLocation\\\"",
+				"--detect.source.path=path1",
+			},
+		},
+		{
+			args: []string{"--testProp1=1"},
+			options: detectExecuteScanOptions{
+				ServerURL:       "https://server.url",
+				APIToken:        "apiToken",
+				ProjectName:     "testName",
+				CodeLocation:    "testLocation",
+				FailOn:          []string{"BLOCKER", "MAJOR"},
+				Scanners:        []string{"source"},
+				ScanPaths:       []string{"path1", "path2"},
+				Groups:          []string{"testGroup", "testGroup2"},
+				Version:         "1.0",
+				VersioningModel: "major-minor",
+			},
+			expected: []string{
+				"--testProp1=1",
+				"--blackduck.url=https://server.url",
+				"--blackduck.api.token=apiToken",
+				"--detect.project.name=\\\"testName\\\"",
+				"--detect.project.version.name=\\\"1.0\\\"",
+				"--detect.project.user.groups=\\\"testGroup\\\",\\\"testGroup2\\\"",
+				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
+				"--detect.code.location.name=\\\"testLocation\\\"",
 				"--detect.source.path=path1",
 			},
 		},
