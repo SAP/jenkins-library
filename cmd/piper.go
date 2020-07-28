@@ -201,8 +201,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
-	log.Entry().Debugf("Resolved configuration:\n%v", stepConfig)
-
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
 	return nil
@@ -210,11 +208,13 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
 	if source != nil {
+		log.Entry().Info("Retrieving hook configuration")
 		hookConfig, err := source.MarshalJSON()
 		if err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}
 		_ = json.Unmarshal(hookConfig, target)
+		log.Entry().Debugf("Hook configuration: %v", &target)
 	}
 }
 
