@@ -52,7 +52,7 @@ func TestSettings(t *testing.T) {
 
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{existingFiles: map[string]string{
-			"/opt/sap/maven/global-settings.xml": "",
+			"/opt/sap/maven/global-settings.xml":  "",
 			"/opt/sap/maven/project-settings.xml": "",
 		}}
 
