@@ -42,7 +42,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             // get context configuration
             Map config
             handleErrorDetails(stepName) {
-                config = getStepContextConfig(script, piperGoPath, metadataFile, '', customConfigArg)
+                config = getStepContextConfig(script, piperGoPath, metadataFile, customConfigArg)
                 echo "Context Config: ${config}"
             }
 
@@ -65,7 +65,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${ignoreCustomDefaults()}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -100,26 +100,12 @@ static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
-static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
-    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String customConfigArg) {
+    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${ignoreCustomDefaults()}${customConfigArg}"))
 }
 
-static String getCustomDefaultConfigs() {
-    // The default config files were extracted from merged library
-    // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
-    List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
-    for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
-    }
-    return customDefaults.join(',')
-}
-
-static String getCustomDefaultConfigsArg() {
-    String customDefaults = getCustomDefaultConfigs()
-    if (customDefaults) {
-        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
-    }
-    return ''
+static String ignoreCustomDefaults() {
+    return DefaultValueCache.getInstance().getCustomDefaults().size() > 0 ? ' --ignoreCustomDefaults' : ''
 }
 
 static String getCustomConfigArg(def script) {

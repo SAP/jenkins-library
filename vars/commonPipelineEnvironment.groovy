@@ -251,6 +251,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     List getCustomDefaults() {
-        DefaultValueCache.getInstance().getCustomDefaults()
+        DefaultValueCache.getInstance()?.getCustomDefaults()?:[]
     }
 }
