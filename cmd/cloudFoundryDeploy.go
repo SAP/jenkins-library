@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -665,7 +664,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 
 func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) []string {
 	var result = []string{}
-	for _, part := range splitAtWhitespace(strings.Trim(mtaExtensionDescriptor, " ")) {
+	for _, part := range strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")) {
 		if part == "-e" || part == "" {
 			continue
 		}
@@ -721,8 +720,8 @@ func cfDeploy(
 		CfSpace:       config.Space,
 		Username:      config.Username,
 		Password:      config.Password,
-		CfAPIOpts:     splitAtWhitespace(config.APIParameters),
-		CfLoginOpts:   splitAtWhitespace(config.LoginParameters),
+		CfAPIOpts:     strings.Fields(config.APIParameters),
+		CfLoginOpts:   strings.Fields(config.LoginParameters),
 	})
 
 	if err == nil {
@@ -834,11 +833,4 @@ func handleCfCliLog(logFile string) error {
 	log.Entry().Info("### END OF CF CLI TRACE OUTPUT ###")
 
 	return err
-}
-
-func splitAtWhitespace(s string) []string {
-	if len(strings.TrimSpace(s)) == 0 {
-		return []string{}
-	}
-	return regexp.MustCompile("\\s+").Split(s, -1)
 }
