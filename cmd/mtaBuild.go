@@ -187,7 +187,7 @@ func runMtaBuild(config mtaBuildOptions,
 		if err != nil {
 			return err
 		}
-		e.SetEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
+		e.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))

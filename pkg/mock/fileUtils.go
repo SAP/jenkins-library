@@ -368,5 +368,5 @@ func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 }
 
 func (f *FilesMock) Abs(path string) (string, error) {
-	return "/root_folder/workspace/" + path, nil
+	return f.toAbsPath(path), nil
 }
