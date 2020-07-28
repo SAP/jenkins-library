@@ -152,6 +152,16 @@ func TestCfDeployment(t *testing.T) {
 		return false, nil
 	}
 
+	t.Run("Test invalid appname", func(t *testing.T) {
+
+		defer cleanup()
+		config.AppName = "a_z"
+		s := mock.ExecMockRunner{}
+		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+
+		assert.EqualError(t, err, "Your application name 'a_z' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+	})
+
 	t.Run("Manifest substitution", func(t *testing.T) {
 
 		defer func() {
@@ -1230,4 +1240,41 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 		extDesc := handleMtaExtensionDescriptors("")
 		assert.Equal(t, []string{}, extDesc)
 	})
+}
+
+func TestAppNameChecks(t *testing.T) {
+
+	t.Run("appName with alpha-numeric chars should work", func(t *testing.T) {
+		err := validateAppName("myValidAppName123")
+		assert.NoError(t, err)
+	})
+
+	t.Run("appName with alpha-numeric chars and dash should work", func(t *testing.T) {
+		err := validateAppName("my-Valid-AppName123")
+		assert.NoError(t, err)
+	})
+
+	t.Run("empty appName should work", func(t *testing.T) {
+		// we consider the empty string as valid appname since we only check app names handed over from outside
+		// in case there is no (real) app name provided from outside we might still find an appname in the metadata
+		// That app name in turn is not checked.
+		err := validateAppName("")
+		assert.NoError(t, err)
+	})
+
+	t.Run("single char appName should work", func(t *testing.T) {
+		err := validateAppName("a")
+		assert.NoError(t, err)
+	})
+
+	t.Run("appName with alpha-numeric chars and trailing dash should throw an error", func(t *testing.T) {
+		err := validateAppName("my-Invalid-AppName123-")
+		assert.EqualError(t, err, "Your application name 'my-Invalid-AppName123-' starts or ends with a '-' (dash) which is not allowed, only letters and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+	})
+
+	t.Run("appName with underscores should throw an error", func(t *testing.T) {
+		err := validateAppName("my_invalid_app_name")
+		assert.EqualError(t, err, "Your application name 'my_invalid_app_name' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+	})
+
 }

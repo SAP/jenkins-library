@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -73,8 +74,13 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
 
+	err := validateAppName(config.AppName)
+
+	if err != nil {
+		return err
+	}
+
 	var deployTriggered bool
-	var err error
 
 	if config.DeployTool == "mtaDeployPlugin" {
 		deployTriggered = true
@@ -91,6 +97,41 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	}
 
 	return err
+}
+
+func validateAppName(appName string) error {
+	// for the sake of brevity we consider the empty string as valid app name here
+	isValidAppName, err := regexp.MatchString("^$|^[a-zA-Z0-9]$|^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$", appName)
+	if err != nil {
+		return err
+	}
+	if isValidAppName {
+		return nil
+	}
+	const (
+		underscore = "_"
+		dash       = "-"
+		docuLink   = "https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings"
+	)
+
+	log.Entry().Warningf("Your application name '%s' contains non-alphanumeric characters which may lead to errors in the future, "+
+		"as they are not supported by CloudFoundry. For more details please visit %s", appName, docuLink)
+
+	var fail bool
+	message := []string{fmt.Sprintf("Your application name '%s'", appName)}
+	if strings.Contains(appName, underscore) {
+		message = append(message, fmt.Sprintf("contains a '%s' (underscore) which is not allowed, only letters, dashes and numbers can be used.", underscore))
+		fail = true
+	}
+	if strings.HasPrefix(appName, dash) || strings.HasSuffix(appName, dash) {
+		message = append(message, fmt.Sprintf("starts or ends with a '%s' (dash) which is not allowed, only letters and numbers can be used.", dash))
+		fail = true
+	}
+	message = append(message, fmt.Sprintf("Please change the name to fit this requirement(s). For more details please visit %s.", docuLink))
+	if fail {
+		return fmt.Errorf(strings.Join(message, " "))
+	}
+	return nil
 }
 
 func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux) {
