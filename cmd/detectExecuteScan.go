@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"strings"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -23,10 +24,16 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	fileUtils := piperutils.Files{}
 	httpClient := piperhttp.Client{}
 
-	runDetect(config, &c, &fileUtils, &httpClient)
+	err := runDetect(config, &c, &fileUtils, &httpClient)
+
+	if err != nil {
+		log.Entry().
+			WithError(err).
+			Fatal("failed to execute detect scan")
+	}
 }
 
-func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
@@ -37,22 +44,20 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 	if len(config.M2Path) > 0 {
 		absolutePath, err := fileUtils.Abs(config.M2Path)
 		if err != nil {
-			log.Entry().
-				WithError(err).
-				Fatal("failed to execute detect scan")
+			return err
 		}
 		envs = append(envs, "MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath)
+	}
+
+	err := maven.DownloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
+	if err != nil {
+		return err
 	}
 
 	command.SetDir(".")
 	command.SetEnv(envs)
 
-	err := command.RunShell("/bin/bash", script)
-	if err != nil {
-		log.Entry().
-			WithError(err).
-			Fatal("failed to execute detect scan")
-	}
+	return command.RunShell("/bin/bash", script)
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions) []string {

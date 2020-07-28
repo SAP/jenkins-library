@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -18,8 +20,9 @@ func TestRunDetect(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		s := mock.ShellMockRunner{}
 		fileUtilsMock := mock.FilesMock{}
-		runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
+		assert.Nil(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
@@ -32,23 +35,28 @@ func TestRunDetect(t *testing.T) {
 
 		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name=": fmt.Errorf("Test Error")}}
 		fileUtilsMock := mock.FilesMock{}
-		runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		assert.NotNil(t, err)
 		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {
 		s := mock.ShellMockRunner{}
-		fileUtilsMock := mock.FilesMock{}
-		runDetect(detectExecuteScanOptions{
+		fileUtilsMock := mock.FilesMock{
+			CurrentDir: "root_folder",
+		}
+		err := runDetect(detectExecuteScanOptions{
 			M2Path: ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.yml",
 			GlobalSettingsFile: "global-settings.yml",
 		}, &s, &fileUtilsMock, &httpClient)
 
+		assert.Nil(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
+		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
+		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local="+absoluteLocalPath)
 
-		assert.Contains(t, s.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
 
 	})
 }
