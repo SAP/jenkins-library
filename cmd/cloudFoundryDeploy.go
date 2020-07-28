@@ -814,6 +814,7 @@ func handleCfCliLog(logFile string) error {
 			return err
 		}
 
+		defer f.Close()
 		bReader := bufio.NewReader(f)
 
 		var done bool
