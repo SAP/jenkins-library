@@ -121,7 +121,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 	// we should discuss how we handle the job trigger
 	// 1.) outside Jenkins
 	// 2.) inside Jenkins (how to get)
-	influxData.deployment_data.fields.jobTrigger = "<n/a>"
+	influxData.deployment_data.fields.jobTrigger = "n/a"
 
 	return nil
 }

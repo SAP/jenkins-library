@@ -298,7 +298,7 @@ func TestCfDeployment(t *testing.T) {
 
 			expected.deployment_data.fields.artifactURL = "n/a"
 			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
-			expected.deployment_data.fields.jobTrigger = "<n/a>"
+			expected.deployment_data.fields.jobTrigger = "n/a"
 
 			expected.deployment_data.tags.artifactVersion = "0.1.2"
 			expected.deployment_data.tags.deployUser = "me"
