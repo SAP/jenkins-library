@@ -202,7 +202,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
 						Name:        "sapNpmRegistry",
@@ -210,7 +210,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -218,7 +218,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -226,7 +226,7 @@ func mtaBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
 						Name:        "m2Path",
