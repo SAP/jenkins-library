@@ -231,7 +231,7 @@ bar: 42
 		_ = json.Unmarshal(confJSON, &options)
 
 		// Assert
-		assert.Equal(t, 1.0, stepConfig["foo"])
+		assert.Equal(t, 1, stepConfig["foo"])
 		assert.Equal(t, float32(42.0), stepConfig["bar"])
 		assert.Equal(t, 1, options.Foo)
 		assert.Equal(t, float32(42.0), options.Bar)

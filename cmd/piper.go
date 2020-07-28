@@ -291,7 +291,10 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 		config[paramName] = paramValue
 		return nil
 	case reflect.Int:
+		// Treat as type-mismatch only in case the conversion would be lossy.
+		// In that case, the json.Unmarshall() would indeed just drop it, so we want to fail.
 		if float64(int(paramValue)) == paramValue {
+			config[paramName] = int(paramValue)
 			return nil
 		}
 	}
