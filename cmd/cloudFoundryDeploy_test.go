@@ -1073,7 +1073,7 @@ func TestMtarLookup(t *testing.T) {
 		filesMock.AddFile("y.mtar", []byte("content does not matter"))
 
 		_, err := findMtar()
-		assert.EqualError(t, err, "Found multiple mtar files matching pattern '**/*.mtar' (x.mtar,y.mtar), please specify file via mtaPath parameter 'mtarPath'")
+		assert.EqualError(t, err, "Found multiple mtar files matching pattern '**/*.mtar' (x.mtar,y.mtar), please specify file via parameter 'mtarPath'")
 	})
 }
 
