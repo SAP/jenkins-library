@@ -14,6 +14,7 @@ import (
 
 // FileUtils ...
 type FileUtils interface {
+	Abs(path string) (string, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
@@ -215,4 +216,9 @@ func (f Files) Chdir(path string) error {
 // Stat is a wrapper for os.Stat()
 func (f Files) Stat(path string) (os.FileInfo, error) {
 	return os.Stat(path)
+}
+
+// Abs is a wrapper for filepath.Abs()
+func (f Files) Abs(path string) (string, error) {
+	return filepath.Abs(path)
 }
