@@ -417,7 +417,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 		}
 		pwd, err := fileUtils.Getwd()
 		if err != nil {
-			return []string{}, err
+			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
 		return []string{"--smoke-test", fmt.Sprintf("%s/%s", pwd, smokeTestScript)}, nil
