@@ -46,7 +46,7 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, httpClient.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		fileStatus, err := fileUtilsMock.Stat("detect.sh")
 		assert.NoError(t, err)
-		assert.Equal(t, fileStatus.Mode(), os.FileMode(0600))
+		assert.Equal(t, fileStatus.Mode(), os.FileMode(0700))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")

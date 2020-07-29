@@ -36,7 +36,7 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 	httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
-	err := fileUtils.Chmod("detect.sh", 0600)
+	err := fileUtils.Chmod("detect.sh", 0700)
 	if err != nil {
 		return err
 	}
