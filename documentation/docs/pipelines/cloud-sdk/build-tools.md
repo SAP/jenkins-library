@@ -47,6 +47,23 @@ The following table gives an overview over the features available per build tool
 
 ¹ MTA projects can only be deployed to the Cloud Foundry Environment
 
+## Java/Node.js runtime versions
+
+Runtime versions used in builds are determined by Docker images.
+
+For Java, the default is still (as of August 2020) version 8.
+
+So if you need to use a specific Java version to build your application, you may do so by setting another docker image in your `.pipeline/config.yml` file.
+See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
+
+As an example you might want to configure the `mavenExecute` step to use another image like so:
+
+```yaml
+steps:
+  mavenExecute:
+    dockerImage: 'maven:3.6.3-jdk-11'
+```
+
 ## Projects Requirements
 
 Each variant of the pipeline has different requirements regarding the project structure, location of reports and tooling.
