@@ -256,7 +256,6 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
             stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
-//            withEnv(['SIDECAR_IMAGE=...']) ?!
             node(config.uniqueId) {
                 if (config.sidecarReadyCommand) {
                     sidecarUtils.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
