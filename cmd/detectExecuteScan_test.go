@@ -21,7 +21,7 @@ func TestRunDetect(t *testing.T) {
 		fileUtilsMock := mock.FilesMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
@@ -46,7 +46,7 @@ func TestRunDetect(t *testing.T) {
 			GlobalSettingsFile:  "global-settings.xml",
 		}, &s, &fileUtilsMock, &httpClient)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
@@ -147,7 +147,7 @@ func TestAddDetectArgs(t *testing.T) {
 	for k, v := range testData {
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
 			got, err := addDetectArgs(v.args, v.options, &fileUtilsMock, &httpClient)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
 	}

@@ -26,7 +26,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
 	} else {
 
-		log.Entry().Debugf("Project settings file not provided via configuration.")
+		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
 	if len(projectSettingsFile) > 0 {
@@ -37,7 +37,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		mavenArgs = append(mavenArgs, "--settings", projectSettingsFileName)
 	} else {
 
-		log.Entry().Debugf("Global settings file not provided via configuration.")
+		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
 	return mavenArgs, nil
 }
