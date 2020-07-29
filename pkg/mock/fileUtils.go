@@ -366,3 +366,7 @@ func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 
 	return nil
 }
+
+func (f *FilesMock) Abs(path string) (string, error) {
+	return f.toAbsPath(path), nil
+}

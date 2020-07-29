@@ -23,7 +23,7 @@ type Config struct {
 	General        map[string]interface{}            `json:"general"`
 	Stages         map[string]map[string]interface{} `json:"stages"`
 	Steps          map[string]map[string]interface{} `json:"steps"`
-	Hooks          map[string]*json.RawMessage       `json:"hooks,omitempty"`
+	Hooks          *json.RawMessage                  `json:"hooks,omitempty"`
 	defaults       PipelineDefaults
 	initialized    bool
 	openFile       func(s string) (io.ReadCloser, error)
@@ -32,7 +32,7 @@ type Config struct {
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig map[string]*json.RawMessage
+	HookConfig *json.RawMessage
 }
 
 // ReadConfig loads config and returns its content
