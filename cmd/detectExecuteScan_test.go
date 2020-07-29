@@ -3,34 +3,61 @@ package cmd
 import (
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
-
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunDetect(t *testing.T) {
+type httpClientMock struct {
+	expectedError   error
+	downloadedFiles map[string]string // src, dest
+}
 
-	httpClient := piperhttp.Client{}
+func (c *httpClientMock) SetOptions(options piperhttp.ClientOptions) {
+
+}
+
+func (c *httpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+
+	if c.expectedError != nil {
+		return c.expectedError
+	}
+
+	if c.downloadedFiles == nil {
+		c.downloadedFiles = make(map[string]string)
+	}
+	c.downloadedFiles[url] = filename
+	return nil
+}
+
+func TestRunDetect(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
 		s := mock.ShellMockRunner{}
 		fileUtilsMock := mock.FilesMock{}
+		fileUtilsMock.AddFile("detect.sh", []byte(""))
+		httpClient := httpClientMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
+		assert.Equal(t, httpClient.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		fileStatus, err := fileUtilsMock.Stat("detect.sh")
+		assert.NoError(t, err)
+		assert.Equal(t, fileStatus.Mode(), os.FileMode(0600))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
 		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
 		fileUtilsMock := mock.FilesMock{}
+		httpClient := httpClientMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 		assert.NotNil(t, err)
 	})
@@ -40,6 +67,8 @@ func TestRunDetect(t *testing.T) {
 		fileUtilsMock := mock.FilesMock{
 			CurrentDir: "root_folder",
 		}
+		fileUtilsMock.AddFile("detect.sh", []byte(""))
+		httpClient := httpClientMock{}
 		err := runDetect(detectExecuteScanOptions{
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
