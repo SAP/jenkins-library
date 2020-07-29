@@ -28,7 +28,6 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 		ForkCount: "1C",
 	}
 
-	utils.FilesMock.AddDir("integration-tests")
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	err := runMavenExecuteIntegration(&config, utils)
@@ -48,6 +47,20 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	}
 
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
+}
+
+func TestInvalidForkCountParam(t *testing.T) {
+	// init
+	utils := newMavenIntegrationTestsUtilsBundle()
+	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
+
+	// test
+	err := runMavenExecuteIntegration(&mavenExecuteIntegrationOptions{ForkCount: "4.2"}, utils)
+
+	// assert
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "invalid forkCount parameter")
+	}
 }
 
 func TestValidateForkCount(t *testing.T) {
@@ -114,15 +127,8 @@ func TestValidateForkCount(t *testing.T) {
 
 func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundle {
 	utilsBundle := mavenExecuteIntegrationTestUtilsBundle{
-		ExecMockRunner: &mock.ExecMockRunner{
-			Dir:                 nil,
-			Env:                 nil,
-			ExitCode:            0,
-			Calls:               nil,
-			StdoutReturn:        nil,
-			ShouldFailOnCommand: nil,
-		},
-		FilesMock: &mock.FilesMock{},
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
 	}
 	return utilsBundle
 }
