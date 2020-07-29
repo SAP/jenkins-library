@@ -53,7 +53,7 @@ Runtime versions used in builds are determined by Docker images.
 
 For Java, the default is still (as of August 2020) version 8.
 
-So if you need to use a specific Java version to build your application, you may do so by setting another docker image in your `.pipeline/config.yml` file.
+In case you need to use a specific Java version to build your application, you may do so by setting another Docker image in your `.pipeline/config.yml` file.
 See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
 
 As an example you might want to configure the `mavenExecute` step to use another image like so:
@@ -63,6 +63,8 @@ steps:
   mavenExecute:
     dockerImage: 'maven:3.6.3-jdk-11'
 ```
+
+Please note that multiple steps might need to be configured to have the full build consistently with the same version.
 
 ## Projects Requirements
 
