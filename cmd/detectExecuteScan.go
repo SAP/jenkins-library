@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
@@ -39,18 +40,38 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 
 func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 
+	coordinates := struct {
+		Version string
+	}{
+		Version: config.Version,
+	}
+
+	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
 	args = append(args, config.ScanProperties...)
 
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
+	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
+	// Hence the string need to be surrounded by \"
+	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", detectVersionName))
 
-	args = append(args, fmt.Sprintf("--detect.project.name=%v", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", config.ProjectVersion))
+	// Groups parameter is added only when there is atleast one non-empty groupname provided
+	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.project.user.groups=\\\"%v\\\"", strings.Join(config.Groups, "\\\",\\\"")))
+	}
+
+	// Atleast 1, non-empty category to fail on must be provided
+	if len(config.FailOn) > 0 && len(config.FailOn[0]) > 0 {
+		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
+	}
+
 	codeLocation := config.CodeLocation
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, config.ProjectVersion)
+		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
-	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
+	args = append(args, fmt.Sprintf("--detect.code.location.name=\\\"%v\\\"", codeLocation))
 
 	if sliceUtils.ContainsString(config.Scanners, "signature") {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))

@@ -90,8 +90,8 @@ func Execute() {
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
-	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
@@ -201,14 +201,19 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
-	for name, v := range stepConfig.HookConfig {
-		if name == "sentry" {
-			hookConfig, _ := v.MarshalJSON()
-			_ = json.Unmarshal(hookConfig, &GeneralConfig.HookConfig.SentryConfig)
-		}
-	}
+	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
 	return nil
+}
+
+func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
+	if source != nil {
+		log.Entry().Info("Retrieving hook configuration")
+		err := json.Unmarshal(*source, target)
+		if err != nil {
+			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
+		}
+	}
 }
 
 var errIncompatibleTypes = fmt.Errorf("incompatible types")
@@ -219,6 +224,11 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 	for paramName := range config {
 		optionsField := findStructFieldByJSONTag(paramName, optionsType)
 		if optionsField == nil {
+			continue
+		}
+
+		if config[paramName] == nil {
+			// There is a key, but no value. This can result from merging values from the CPE.
 			continue
 		}
 
@@ -238,13 +248,16 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			typeError = convertValueFromInt(config, optionsField, paramName, paramValueType.Int())
 		default:
-			typeError = errIncompatibleTypes
+			log.Entry().Warnf("Config value for '%s' is of unexpected type %s, expected %s. "+
+				"The value may be ignored as a result. To avoid any risk, specify this value with explicit type.",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind())
 		}
 
 		if typeError != nil {
-			log.Entry().WithError(typeError).Fatalf(
-				"config value for '%s' is of unexpected type %s, expected %s",
-				paramName, paramValueType.Kind(), optionsField.Type.Kind())
+			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s: %w",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind(), typeError)
+			log.SetErrorCategory(log.ErrorConfiguration)
+			log.Entry().WithError(typeError).Fatal()
 		}
 	}
 	return config
@@ -280,6 +293,16 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil
+	case reflect.Float64:
+		config[paramName] = paramValue
+		return nil
+	case reflect.Int:
+		// Treat as type-mismatch only in case the conversion would be lossy.
+		// In that case, the json.Unmarshall() would indeed just drop it, so we want to fail.
+		if float64(int(paramValue)) == paramValue {
+			config[paramName] = int(paramValue)
+			return nil
+		}
 	}
 
 	return errIncompatibleTypes
