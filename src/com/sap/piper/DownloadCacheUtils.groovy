@@ -53,7 +53,7 @@ class DownloadCacheUtils {
         // This is necessary because it is currently not possible to connect a container to multiple networks.
         // Can be removed when docker plugin supports multiple networks and jenkins-library implemented that feature
         if (script.env.SIDECAR_IMAGE) {
-            script.echo "D/L cache disabled while running with sidecar image (${script.env.SIDECAR_IMAGE})"
+            script.echo "Download cache disabled while running with sidecar image (${script.env.SIDECAR_IMAGE})"
             return false
         }
 
