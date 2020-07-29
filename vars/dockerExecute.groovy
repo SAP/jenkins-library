@@ -1,4 +1,3 @@
-import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
