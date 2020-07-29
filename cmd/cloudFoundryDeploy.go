@@ -405,7 +405,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 		// what should we do if there is already a script with the given name? Should we really overwrite ...
 		err := fileUtils.FileWrite(smokeTestScript, []byte(defaultSmokeTestScript), 0755)
 		if err != nil {
-			return []string{}, err
+			return []string{}, fmt.Errorf("failed to write default smoke-test script: %w", err)
 		}
 		log.Entry().Debugf("smoke test script '%s' has been written.", smokeTestScript)
 	}
