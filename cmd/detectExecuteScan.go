@@ -40,7 +40,7 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 	if err != nil {
 		return err
 	}
-	args := []string{"ls -alh &&./detect.sh"}
+	args := []string{"./detect.sh"}
 	args, err = addDetectArgs(args, config, fileUtils, httpClient)
 	if err != nil {
 		return err
