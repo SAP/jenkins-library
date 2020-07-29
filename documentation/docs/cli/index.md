@@ -12,7 +12,7 @@ To verify the version you got, run `piper version`.
 To read the online help, run `piper help`.
 
 !!! note
-    Since this is a binary compiled for Linux systems, you won't be able to use it on macos or Windows systems.
+    Since this is a binary compiled for Linux systems, you won't be able to use it on macOS or Windows systems.
     You might try running it inside Docker on those systems.
 
 If you're interested in using it with GitHub Actions, see [the Project "Piper" Action](https://github.com/SAP/project-piper-action) which makes the tool more convinient to use.
