@@ -9,6 +9,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"io"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"unicode"
 )
 
 type mavenExecuteIntegrationUtils interface {
@@ -71,5 +74,33 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 }
 
 func validateForkCount(value string) error {
+	var err error
+
+	if strings.HasSuffix(value, "C") {
+		value := strings.TrimSuffix(value, "C")
+		for _, c := range value {
+			if !unicode.IsDigit(c) && c != '.' {
+				err = fmt.Errorf("only integers or floats allowed with 'C' suffix")
+				break
+			}
+		}
+		if err == nil {
+			_, err = strconv.ParseFloat(value, 64)
+		}
+	} else {
+		for _, c := range value {
+			if !unicode.IsDigit(c) {
+				err = fmt.Errorf("only integers allowed without 'C' suffix")
+				break
+			}
+		}
+		if err == nil {
+			_, err = strconv.ParseInt(value, 10, 64)
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("invalid forkCount parameter '%v': %w, please see https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount for details", value, err)
+	}
 	return nil
 }

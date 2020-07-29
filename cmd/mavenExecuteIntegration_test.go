@@ -56,42 +56,57 @@ func TestValidateForkCount(t *testing.T) {
 	testCases := []struct {
 		name          string
 		testValue     string
-		expectedError error
+		expectedError string
 	}{
 		{
 			name:          "valid integer",
 			testValue:     "2",
-			expectedError: nil,
+			expectedError: "",
 		},
 		{
 			name:          "zero is valid",
 			testValue:     "0",
-			expectedError: nil,
+			expectedError: "",
 		},
 		{
 			name:          "valid floating point",
 			testValue:     "2.5C",
-			expectedError: nil,
+			expectedError: "",
 		},
-		//{
-		//	name:          "invalid floating point",
-		//	testValue:     "1.2",
-		//	expectedError: fmt.Errorf("invalid forkCount parameter: A non-integer value may only be provided with a 'C' suffix"),
-		//},
-		//{
-		//	name:          "invalid",
-		//	testValue:     "C1",
-		//	expectedError: fmt.Errorf("invalid forkCount parameter"),
-		//},
+		{
+			name:          "valid integer with C",
+			testValue:     "2C",
+			expectedError: "",
+		},
+		{
+			name:          "invalid floating point",
+			testValue:     "1.2",
+			expectedError: "invalid forkCount parameter",
+		},
+		{
+			name:          "invalid",
+			testValue:     "C1",
+			expectedError: "invalid forkCount parameter",
+		},
+		{
+			name:          "another invalid",
+			testValue:     "1 C",
+			expectedError: "invalid forkCount parameter",
+		},
+		{
+			name:          "invalid float",
+			testValue:     "1..2C",
+			expectedError: "invalid forkCount parameter",
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			err := validateForkCount(testCase.testValue)
-			if testCase.expectedError == nil {
+			if testCase.expectedError == "" {
 				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, testCase.expectedError.Error())
+			} else if assert.Error(t, err) {
+				assert.Contains(t, err.Error(), testCase.expectedError)
 			}
 		})
 	}
