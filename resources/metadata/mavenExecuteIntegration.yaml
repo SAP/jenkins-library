@@ -80,6 +80,7 @@ spec:
       image: maven:3.6-jdk-8
       imagePullPolicy: Never
 
-  # This configuration is only here in order to declare "there /may/ be a side car".
+  # This declaration is necessary in order to return the sidecar configuration in the context config, in the
+  # case that it is configured for the step.
   sidecars:
     - name: ''
