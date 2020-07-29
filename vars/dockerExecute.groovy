@@ -316,7 +316,15 @@ boolean isContainerDefined(config) {
         return false
     }
 
-    return containerMap.get(env.POD_NAME).containsKey(config.dockerImage) && env.SIDECAR_IMAGE == config.sidecarImage
+    if (env.SIDECAR_IMAGE != config.sidecarImage) {
+        // If a sidecar image has been configured for the current stage,
+        // then piperStageWrapper will have set the env.SIDECAR_IMAGE variable.
+        // If the current step overrides the stage's sidecar image,
+        // then a new Pod needs to be spawned.
+        return false
+    }
+
+    return containerMap.get(env.POD_NAME).containsKey(config.dockerImage)
 }
 
 
