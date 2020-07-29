@@ -1119,7 +1119,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 	t.Run("non default not existing smoke test file", func(t *testing.T) {
 
 		parts, err := handleSmokeTestScript("notExistingSmokeTestScript.sh")
-		if assert.EqualError(t, err, "chmod: notExistingSmokeTestScript.sh: No such file or directory") {
+		if assert.EqualError(t, err, "failed to make smoke-test script executable: chmod: notExistingSmokeTestScript.sh: No such file or directory") {
 			assert.False(t, filesMock.HasWrittenFile("notExistingSmokeTestScript.sh"))
 			assert.Equal(t, []string{}, parts)
 		}

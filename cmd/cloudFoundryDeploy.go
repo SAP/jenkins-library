@@ -414,7 +414,7 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 	if len(smokeTestScript) > 0 {
 		err := fileUtils.Chmod(smokeTestScript, 0755)
 		if err != nil {
-			return []string{}, err
+			return []string{}, fmt.Errorf("failed to make smoke-test script executable: %w", err)
 		}
 		pwd, err := fileUtils.Getwd()
 		if err != nil {
