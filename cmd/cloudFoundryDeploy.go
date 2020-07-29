@@ -315,7 +315,6 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 
 		if config.KeepOldInstance && config.DeployType == "blue-green" {
 			oldAppName := deployConfig.AppName + "-old"
-			_ = oldAppName
 
 			var buff bytes.Buffer
 
