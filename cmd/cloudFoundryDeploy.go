@@ -370,21 +370,21 @@ func getAppNameOrFail(config *cloudFoundryDeployOptions) (string, error) {
 	if !fileExists {
 		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", config.Manifest)
 	}
-	m, err := _getManifest(config.Manifest)
+	manifest, err := _getManifest(config.Manifest)
 	if err != nil {
 		return "", err
 	}
-	apps, err := m.GetApplications()
+	apps, err := manifest.GetApplications()
 	if err != nil {
 		return "", err
 	}
 	if len(apps) > 0 {
-		namePropertyExists, err := m.ApplicationHasProperty(0, "name")
+		namePropertyExists, err := manifest.ApplicationHasProperty(0, "name")
 		if err != nil {
 			return "", err
 		}
 		if namePropertyExists {
-			appName, err := m.GetApplicationProperty(0, "name")
+			appName, err := manifest.GetApplicationProperty(0, "name")
 			if err != nil {
 				return "", err
 			}
