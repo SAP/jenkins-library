@@ -80,7 +80,7 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 
-		expectedParam := "--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'"
+		expectedParam := "\"--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'\""
 		assert.Contains(t, s.Calls[0], expectedParam)
 	})
 }
