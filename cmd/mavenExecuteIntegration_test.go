@@ -22,13 +22,12 @@ func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
 
 func TestHappyPathIntegrationTests(t *testing.T) {
 	utils := newMavenIntegrationTestsUtilsBundle()
+	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
 		Retry:     2,
 		ForkCount: "1C",
 	}
-
-	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	err := runMavenExecuteIntegration(&config, utils)
 	if err != nil {
