@@ -31,9 +31,7 @@ func TestSettings(t *testing.T) {
 
 		err := downloadAndCopySettingsFile("", "foo", &fileUtils, &httpClient)
 
-		if assert.Error(t, err) {
-			assert.Equal(t, "Settings file source location not provided", err.Error())
-		}
+		assert.EqualError(t, err, "Settings file source location not provided")
 	})
 
 	t.Run("Settings file destination location not provided", func(t *testing.T) {
@@ -43,9 +41,7 @@ func TestSettings(t *testing.T) {
 
 		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", &fileUtils, &httpClient)
 
-		if assert.Error(t, err) {
-			assert.Equal(t, "Settings file destination location not provided", err.Error())
-		}
+		assert.EqualError(t, err, "Settings file destination location not provided")
 	})
 
 	t.Run("Retrieve settings files", func(t *testing.T) {
