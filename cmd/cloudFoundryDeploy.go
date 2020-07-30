@@ -566,7 +566,7 @@ func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]inte
 					return nil, fmt.Errorf("No entry found for '%v'", key)
 				}
 			} else {
-				return map[string]interface{}{}, fmt.Errorf("Cannot cast key '%v' to string", key)
+				return nil, fmt.Errorf("Cannot cast key '%v' to string", key)
 			}
 		}
 	}
