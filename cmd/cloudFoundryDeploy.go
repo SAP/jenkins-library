@@ -640,7 +640,7 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 		apps, err := manifest.GetApplications()
 
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to obtain applications from manifest: %w", err)
 		}
 		if len(apps) > 1 {
 			return "", fmt.Errorf("Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application")
