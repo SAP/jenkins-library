@@ -451,7 +451,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 
 			manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
 			if err != nil {
-				return "", []string{}, []string{}, err
+				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", config.ManifestVariablesFiles)
 			}
 
 			modified, err := _replaceVariables(config.Manifest, manifestVariables, manifestVariablesFiles)
