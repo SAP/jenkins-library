@@ -322,9 +322,9 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 				cfStopLog := buff.String()
 
 				if !strings.Contains(cfStopLog, oldAppName+" not found") {
-					return fmt.Errorf("Could not stop application %s. Error: %s", oldAppName, cfStopLog)
+					return fmt.Errorf("Could not stop application '%s'. Error: %s", oldAppName, cfStopLog)
 				}
-				log.Entry().Infof("Cannot stop application '%s': %s", oldAppName, cfStopLog)
+				log.Entry().Infof("Cannot stop application '%s' since this appliation was not found.", oldAppName)
 
 			} else {
 				log.Entry().Infof("Old application '%s' has been stopped.", oldAppName)
