@@ -543,7 +543,7 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 	}
 	varFileOptions, err := getVarFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
-		return "", []string{}, []string{}, err
+		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
 	}
 
 	deployOptions = append(deployOptions, varOptions...)
