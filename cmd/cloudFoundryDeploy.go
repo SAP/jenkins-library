@@ -623,14 +623,10 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 	if len(manifestFile) == 0 {
 		manifestFile = "manifest.yml"
 	}
-	var manifestFileExists bool
-	var err error
 
-	if len(manifestFile) > 0 {
-		manifestFileExists, err = fileUtils.FileExists(manifestFile)
-		if err != nil {
-			return "", err
-		}
+	manifestFileExists, err := fileUtils.FileExists(manifestFile)
+	if err != nil {
+		return "", err
 	}
 
 	if config.DeployType == "blue-green" && manifestFileExists {
