@@ -270,7 +270,6 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 
 	log.Entry().Infof("DeployConfig: %v", myDeployConfig)
 
-	//return nil
 	return deployCfNative(myDeployConfig, config, additionalEnvironment, command)
 }
 
