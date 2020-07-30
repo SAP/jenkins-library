@@ -541,6 +541,7 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 	if err != nil {
 		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
 	}
+
 	varFileOptions, err := getVarFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
 		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
@@ -593,7 +594,12 @@ func getVarOptions(vars []string) ([]string, error) {
 	return varsResult, nil
 }
 
-func getVarFileOptions(varFiles []string) ([]string, error) {
+func getVarFileOptions(manifestVariableFiles []string) ([]string, error) {
+
+	varFiles, err := validateManifestVariablesFiles(manifestVariableFiles)
+	if err != nil {
+		return []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", manifestVariableFiles)
+	}
 
 	varFilesResult := []string{}
 
