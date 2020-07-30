@@ -308,9 +308,7 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 	}
 
 	if len(config.CfNativeDeployParameters) > 0 {
-		deployStatement = append(deployStatement, strings.FieldsFunc(config.CfNativeDeployParameters, func(c rune) bool {
-			return c == ' '
-		})...)
+		deployStatement = append(deployStatement, strings.Fields(config.CfNativeDeployParameters)...)
 	}
 
 	stopOldAppIfRunning := func(_cmd command.ExecRunner) error {
