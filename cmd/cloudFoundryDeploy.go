@@ -367,25 +367,30 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(apps) > 0 {
-		namePropertyExists, err := manifest.ApplicationHasProperty(0, "name")
-		if err != nil {
-			return "", err
-		}
-		if namePropertyExists {
-			appName, err := manifest.GetApplicationProperty(0, "name")
-			if err != nil {
-				return "", err
-			}
-			if name, ok := appName.(string); ok {
-				if len(name) > 0 {
-					return name, nil
-				}
-			}
-		}
-	}
 
-	return "", fmt.Errorf("No appName available in manifest '%s'", config.Manifest)
+	if len(apps) == 0 {
+		return "", fmt.Errorf("No apps declared in manifest '%s'", config.Manifest)
+	}
+	namePropertyExists, err := manifest.ApplicationHasProperty(0, "name")
+	if err != nil {
+		return "", err
+	}
+	if !namePropertyExists {
+		return "", fmt.Errorf("No appName available in manifest '%s'", config.Manifest)
+	}
+	appName, err := manifest.GetApplicationProperty(0, "name")
+	if err != nil {
+		return "", err
+	}
+	var name string
+	var ok bool
+	if name, ok = appName.(string); !ok {
+		return "", fmt.Errorf("appName from manifest '%s' has wrong type", config.Manifest)
+	}
+	if len(name) == 0 {
+		return "", fmt.Errorf("appName from manifest '%s' is empty", config.Manifest)
+	}
+	return name, nil
 }
 
 func handleSmokeTestScript(smokeTestScript string) ([]string, error) {

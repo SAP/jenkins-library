@@ -498,7 +498,7 @@ func TestCfDeployment(t *testing.T) {
 
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
-		if assert.EqualError(t, err, "No appName available in manifest 'test-manifest.yml'") {
+		if assert.EqualError(t, err, "appName from manifest 'test-manifest.yml' is empty") {
 
 			t.Run("check shell calls", func(t *testing.T) {
 				noopCfAPICalls(t, s)
