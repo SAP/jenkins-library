@@ -87,7 +87,10 @@ spec:
         aliases:
           - name: dockerRegistryUrl
         type: string
-        description: http(s) url of the Container registry.
+        description: http(s) url of the Container registry where the image to deploy is located.
+        resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/registryUrl
         scope:
           - GENERAL
           - PARAMETERS
@@ -158,7 +161,7 @@ spec:
         description: Full name of the image to be deployed.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/image
+            param: container/imageNameTag
         mandatory: true
         scope:
           - PARAMETERS
