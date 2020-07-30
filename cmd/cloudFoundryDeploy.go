@@ -529,7 +529,7 @@ func handleLegacyCfManifest(manifestFile string) error {
 		}
 		log.Entry().Infof("Manifest file '%s' was in legacy format has been transformed and updated.", manifestFile)
 	} else {
-		log.Entry().Infof("Manifest file '%s' was not in legacy format. No tranformation needed, no update performed.", manifestFile)
+		log.Entry().Debugf("Manifest file '%s' was not in legacy format. No transformation needed, no update performed.", manifestFile)
 	}
 	return nil
 }
