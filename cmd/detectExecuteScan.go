@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"strings"
@@ -132,18 +133,60 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 	} else {
 		c1 := command.Command{} 
 		switch config.BuildTool {
-			case "maven" : localMavenBuild(fileUtils, config, &c1)
-			default : localMavenBuild(fileUtils, config, &c1)
+			case "maven" : localMavenBuild(fileUtils, config, &c1, args)
+			default : localMavenBuild(fileUtils, config, &c1, args)
 		}
 	}
 	return args, nil
 }
 
-func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner) {
+func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner, args []string) {
 	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
 	}
+    
+    _, found := findElement(pomFiles, "pom.xml")
+    if found {
+        args = append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
+    } else {
+		for _, pomFile := range pomFiles {
+			if strings.Count(pomFile, string(os.PathSeparator)) == 1 {
+				executeCleanOptions := maven.ExecuteOptions{
+					PomPath:             pomFile,
+					ProjectSettingsFile: config.ProjectSettingsFile,
+					GlobalSettingsFile:  config.GlobalSettingsFile,
+					M2Path:              config.M2Path,
+					Goals:               []string{"clean"},
+					Defines:             []string{"-DskipTests=true"},
+					ReturnStdout: 		 true,
+				}
+				_, errClean := maven.Execute(&executeCleanOptions, command)
+				if errClean != nil {
+					log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
+				}
+				executeInstallOptions := maven.ExecuteOptions{
+					PomPath:             pomFile,
+					ProjectSettingsFile: config.ProjectSettingsFile,
+					GlobalSettingsFile:  config.GlobalSettingsFile,
+					M2Path:              config.M2Path,
+					Goals:               []string{"install"},
+					Defines:             []string{"-DskipTests=true"},
+					ReturnStdout: 		 true,
+				}
+				_, errInstall := maven.Execute(&executeInstallOptions, command)
+				if errInstall != nil {
+					log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
+				}				
+			}
+		}
+	}
+	// if pom.xml : parent POM : maven intall  args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", "clean install"))
+
+	// 
+	// A/pom.xml : MTA : maven install
+
+
 
 	if config.M2Path != "" {
 		config.M2Path, err = filepath.Abs(config.M2Path)
@@ -180,4 +223,13 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 			log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
 		}
 	}
+}
+
+func findElement(slice []string, val string) (int, bool) {
+		for i, item := range slice {
+			if item == val {
+				return i, true
+			}
+		}
+		return -1, false
 }
