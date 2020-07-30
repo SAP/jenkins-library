@@ -32,7 +32,7 @@ var _now = time.Now
 var _cfLogin = cfLogin
 var _cfLogout = cfLogout
 var _getManifest = getManifest
-var _substitute = yaml.Substitute
+var _replaceVariables = yaml.Substitute
 var fileUtils cfFileUtil = piperutils.Files{}
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
@@ -454,7 +454,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 				return "", []string{}, []string{}, err
 			}
 
-			modified, err := _substitute(config.Manifest, manifestVariables, manifestVariablesFiles)
+			modified, err := _replaceVariables(config.Manifest, manifestVariables, manifestVariablesFiles)
 			if err != nil {
 				return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
 			}

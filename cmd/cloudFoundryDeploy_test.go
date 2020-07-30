@@ -55,7 +55,7 @@ func TestCfDeployment(t *testing.T) {
 
 	defer func() {
 		fileUtils = &piperutils.Files{}
-		_substitute = yaml.Substitute
+		_replaceVariables = yaml.Substitute
 	}()
 
 	filesMock := mock.FilesMock{}
@@ -148,7 +148,7 @@ func TestCfDeployment(t *testing.T) {
 		return nil
 	}
 
-	_substitute = func(manifest string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
+	_replaceVariables = func(manifest string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
 		return false, nil
 	}
 
@@ -166,7 +166,7 @@ func TestCfDeployment(t *testing.T) {
 
 		defer func() {
 			cleanup()
-			_substitute = func(manifest string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
+			_replaceVariables = func(manifest string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
 				return false, nil
 			}
 		}()
@@ -183,7 +183,7 @@ func TestCfDeployment(t *testing.T) {
 		config.AppName = "myApp"
 		config.Manifest = "substitute-manifest.yml"
 
-		_substitute = func(manifest string, _replacements map[string]interface{}, _replacementsFiles []string) (bool, error) {
+		_replaceVariables = func(manifest string, _replacements map[string]interface{}, _replacementsFiles []string) (bool, error) {
 			manifestForSubstitution = manifest
 			replacements = _replacements
 			replacementFiles = _replacementsFiles
