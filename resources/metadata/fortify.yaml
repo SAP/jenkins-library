@@ -338,6 +338,7 @@ spec:
           deprecated: true
       type: string
       description: "Fortify SSC Url to be used for accessing the APIs"
+      mandatory: true
       scope:
         - GENERAL
         - PARAMETERS
