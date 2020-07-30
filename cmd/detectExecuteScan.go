@@ -98,22 +98,36 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 
-	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
-	if err != nil {
-		return nil, err
-	}
+	if (!config.buildCode){
+		mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
 
-	if len(config.M2Path) > 0 {
-		absolutePath, err := fileUtils.Abs(config.M2Path)
 		if err != nil {
 			return nil, err
 		}
-		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
+
+		if len(config.M2Path) > 0 {
+			absolutePath, err := fileUtils.Abs(config.M2Path)
+			if err != nil {
+				return nil, err
+			}
+			mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
+		}
+
+		if len(mavenArgs) > 0 {
+			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+		}
+	} else {
+		switch config.buildTool {
+			case "maven": mavenBuild(fileUtils)
+			default : mavenBuild(fileUtils)
+		}
 	}
 
-	if len(mavenArgs) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
-	}
+	
 
 	return args, nil
+}
+
+func mavenBuild(fileUtils piperutils.FileUtils) {
+	
 }
