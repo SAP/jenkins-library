@@ -635,9 +635,9 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 
 	if config.DeployType == "blue-green" && manifestFileExists {
 
-		m, _ := _getManifest(manifestFile)
+		manifest, _ := _getManifest(manifestFile)
 
-		apps, err := m.GetApplications()
+		apps, err := manifest.GetApplications()
 
 		if err != nil {
 			return "", err
@@ -646,7 +646,7 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 			return "", fmt.Errorf("Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application")
 		}
 
-		hasNoRouteProperty, err := m.ApplicationHasProperty(0, "no-route")
+		hasNoRouteProperty, err := manifest.ApplicationHasProperty(0, "no-route")
 		if err != nil {
 			return "", err
 		}
