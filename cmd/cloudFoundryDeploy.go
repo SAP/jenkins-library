@@ -585,7 +585,7 @@ func getVarOptions(vars []string) ([]string, error) {
 	for _, key := range varsMap.Keys() {
 		val, _ := varsMap.Get(key)
 		if v, ok := val.(string); ok {
-			varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, quoteAndBashEscape(v)))
+			varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, v))
 		} else {
 			return []string{}, fmt.Errorf("Cannot cast '%v' to string", val)
 		}
@@ -608,18 +608,13 @@ func getVarFileOptions(varFiles []string) ([]string, error) {
 			continue
 		}
 
-		varFilesResult = append(varFilesResult, "--vars-file", quoteAndBashEscape(varFile))
+		varFilesResult = append(varFilesResult, "--vars-file", varFile)
 	}
 
 	if len(varFilesResult) > 0 {
 		log.Entry().Infof("We will add the following string to the cf push call: '%s'", strings.Join(varFilesResult, " "))
 	}
 	return varFilesResult, nil
-}
-
-func quoteAndBashEscape(s string) string {
-	escapedSingleQuote := "'\"'\"'"
-	return strings.ReplaceAll(s, "'", escapedSingleQuote)
 }
 
 func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
