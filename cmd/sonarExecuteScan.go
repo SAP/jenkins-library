@@ -71,8 +71,8 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
-	if len(config.Host) > 0 {
-		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
+	if len(config.ServerURL) > 0 {
+		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
 	if len(config.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)

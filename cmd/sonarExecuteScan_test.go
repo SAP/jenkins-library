@@ -91,7 +91,7 @@ func TestRunSonar(t *testing.T) {
 		options := sonarExecuteScanOptions{
 			CustomTLSCertificateLinks: []string{},
 			Token:                     "secret-ABC",
-			Host:                      "https://sonar.sap.com",
+			ServerURL:                 "https://sonar.sap.com",
 			Organization:              "SAP",
 			ProjectVersion:            "1.2.3",
 		}

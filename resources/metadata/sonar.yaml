@@ -7,21 +7,22 @@ spec:
     params:
       - name: instance
         type: string
-        description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use host parameter instead"
+        description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: 'SonarCloud'
-      - name: host
+      - name: serverUrl
+        aliases:
+          - name: host
+          - name: sonarServerUrl
         type: string
         description: The URL to the Sonar backend.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        aliases:
-          - name: sonarServerUrl
       - name: token
         type: string
         description: Token used to authenticate with the Sonar Server.
