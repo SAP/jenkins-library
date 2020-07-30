@@ -446,7 +446,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 
 			manifestVariables, err := toStringInterfaceMap(toParameterMap(config.ManifestVariables))
 			if err != nil {
-				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%s'", config.ManifestVariables)
+				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%v'", config.ManifestVariables)
 			}
 
 			manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
