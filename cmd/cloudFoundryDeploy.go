@@ -318,8 +318,6 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 
 			var buff bytes.Buffer
 
-			oldOut := _cmd.Stdout
-			_ = oldOut
 			_cmd.Stdout(&buff)
 
 			defer func() {
