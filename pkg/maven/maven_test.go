@@ -146,19 +146,6 @@ func TestGetParameters(t *testing.T) {
 	})
 }
 
-func TestDownloadSettingsFromURL(t *testing.T) {
-	t.Run("should pass if download is successful", func(t *testing.T) {
-		utils := newMockUtils(false)
-		err := downloadSettingsFromURL("anyURL", "settings.xml", &utils)
-		assert.NoError(t, err)
-	})
-	t.Run("should fail if download fails", func(t *testing.T) {
-		utils := newMockUtils(true)
-		err := downloadSettingsFromURL("anyURL", "settings.xml", &utils)
-		assert.EqualError(t, err, "failed to download maven settings from URL 'anyURL' to file 'settings.xml': something happened")
-	})
-}
-
 func TestGetTestModulesExcludes(t *testing.T) {
 	t.Run("Should return excludes for unit- and integration-tests", func(t *testing.T) {
 		utils := newMockUtils(false)

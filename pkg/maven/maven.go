@@ -43,11 +43,8 @@ type mavenExecRunner interface {
 }
 
 type mavenUtils interface {
-	FileExists(path string) (bool, error)
+	piperutils.FileUtils
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	Glob(pattern string) (matches []string, err error)
-	Getwd() (dir string, err error)
-	Chdir(dir string) error
 }
 
 type utilsBundle struct {
@@ -290,20 +287,9 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]string, error) {
 	var parameters []string
 
-	if options.GlobalSettingsFile != "" {
-		globalSettingsFileName, err := downloadSettingsIfURL(options.GlobalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--global-settings", globalSettingsFileName)
-	}
-
-	if options.ProjectSettingsFile != "" {
-		projectSettingsFileName, err := downloadSettingsIfURL(options.ProjectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--settings", projectSettingsFileName)
+	parameters, err := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils, utils)
+	if err != nil {
+		return nil, err
 	}
 
 	if options.M2Path != "" {
@@ -331,33 +317,6 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	parameters = append(parameters, options.Goals...)
 
 	return parameters, nil
-}
-
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {
-	result := settingsFileOption
-	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils)
-		if err != nil {
-			return "", err
-		}
-		result = settingsFile
-	}
-	return result, nil
-}
-
-// ToDo replace with pkg/maven/settings GetSettingsFile
-func downloadSettingsFromURL(url, filename string, utils mavenUtils) error {
-	exists, _ := utils.FileExists(filename)
-	if exists {
-		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
-		return nil
-	}
-	err := utils.DownloadFile(url, filename, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
-			url, filename, err)
-	}
-	return nil
 }
 
 func GetTestModulesExcludes() []string {

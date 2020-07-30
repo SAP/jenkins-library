@@ -39,7 +39,7 @@ modules:
       build-result: dist`
 
 // for mocking
-var getSettingsFile = maven.GetSettingsFile
+var downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 
 // MTABuildTarget ...
 type MTABuildTarget int
@@ -180,6 +180,14 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if err = addNpmBinToPath(e); err != nil {
 		return err
+	}
+
+	if len(config.M2Path) > 0 {
+		absolutePath, err := p.Abs(config.M2Path)
+		if err != nil {
+			return err
+		}
+		e.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
@@ -340,28 +348,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	if len(config.ProjectSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-
-	} else {
-
-		log.Entry().Debugf("Project settings file not provided via configuration.")
-	}
-
-	if len(config.GlobalSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-	} else {
-
-		log.Entry().Debugf("Global settings file not provided via configuration.")
-	}
-
-	return nil
+	return downloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
 }
 
 func generateMta(id, applicationName, version string) (string, error) {
