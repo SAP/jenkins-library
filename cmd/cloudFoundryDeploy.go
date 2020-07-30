@@ -744,9 +744,6 @@ func cfDeploy(
 
 	if err == nil {
 		loginPerformed = true
-	}
-
-	if err == nil {
 		err = command.RunExecutable("cf", []string{"plugins"}...)
 		if err != nil {
 			log.Entry().WithError(err).Errorf("Command '%s' failed.", []string{"plugins"})
