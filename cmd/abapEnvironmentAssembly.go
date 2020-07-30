@@ -43,11 +43,79 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 
 func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, commonPipelineEnvironment *abapEnvironmentAssemblyCommonPipelineEnvironment) error {
 	// err := testDownload(config)
-	err := startBuildAndLogs(config)
+	err := runAssembly(config)
 	// err := testGet(config)
 	return err
 }
 
+func runAssembly(config *abapEnvironmentAssemblyOptions) error {
+
+	conn := new(connector)
+	conn.setupAttributes(&piperhttp.Client{})
+	err := conn.setConnectionDetails(*config)
+	if err != nil {
+		return err
+	}
+	assemblyBuild := build{
+		connector: *conn,
+	}
+	valuesInput := values{
+		Values: []value{
+			// {
+			// 	ValueID: "SWC",
+			// 	Value:   config.SWC,
+			// },
+			{
+				ValueID: "PACKAGES",
+				Value:   "/BUILD/CORE",
+			},
+			{
+				ValueID: "SOFTWARE_COMPONENT",
+				Value:   config.SWC,
+			},
+			{
+				ValueID: "CVERS",
+				Value:   config.CVERS,
+			},
+			{
+				ValueID: "NAMESPACE",
+				Value:   config.Namespace,
+			},
+			{
+				ValueID: "PREVIOUS_DELIVERY_COMMIT",
+				Value:   config.PreviousDeliveryCommit,
+			},
+			{
+				ValueID: "PACKAGE_NAME_" + config.PackageType,
+				Value:   config.PackageName,
+			},
+		},
+	}
+
+	//TODO phase build_aoi etc testten
+	// phase := "BUILD_" + config.PackageType
+	phase := "test1"
+	err = assemblyBuild.startPollLog(phase, valuesInput)
+	if err != nil {
+		return err
+	}
+
+	//this is just for testing, instead of SAR_XML we will really download "2times_hello"
+	// resultName := "SAR_XML"
+	resultName := "2times_hello"
+	resultSARXML, err := assemblyBuild.getResult(resultName)
+	if err != nil {
+		return err
+	}
+
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	downloadPath := filepath.Join(envPath, path.Base("SAR_XML"))
+	// downloadPath := filepath.Join(envPath, path.Base(resultName))
+	err = resultSARXML.download(downloadPath)
+	return err
+}
+
+// ############################## REUSE ################################
 type resultState string
 type runState string
 type msgty string
@@ -241,42 +309,6 @@ func (conn *connector) setConnectionDetails(options abapEnvironmentAssemblyOptio
 	return nil
 }
 
-//TODO das hatte ich fürs mocking benutzt -> checken wie ich das jetzt ersetze und dann löschen
-// var cf = cloudfoundry.CFUtils{Exec: &command.Command{}}
-// var cfReadServiceKey = cf.ReadServiceKeyAbapEnvironment
-
-// func (conn *connector) setConnectionDetailsFromCF(config abapEnvironmentAssemblyOptions) error {
-// 	cfconfig := cloudfoundry.ServiceKeyOptions{
-// 		CfAPIEndpoint:     config.CfAPIEndpoint,
-// 		CfOrg:             config.CfOrg,
-// 		CfSpace:           config.CfSpace,
-// 		Username:          config.Username,
-// 		Password:          config.Password,
-// 		CfServiceInstance: config.CfServiceInstance,
-// 		CfServiceKey:      config.CfServiceKeyName,
-// 	}
-// 	if cfconfig.CfServiceInstance == "" || cfconfig.CfOrg == "" || cfconfig.CfAPIEndpoint == "" || cfconfig.CfSpace == "" || cfconfig.CfServiceKey == "" {
-// 		return errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0582")
-// 	}
-// 	abapServiceKey, err := cfReadServiceKey(cfconfig, true)
-// 	if err != nil {
-// 		return fmt.Errorf("Reading Service Key failed: %w", err)
-// 	}
-
-// 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{
-// 		Username: abapServiceKey.Abap.Username,
-// 		Password: abapServiceKey.Abap.Password,
-// 	})
-// 	cookieJar, _ := cookiejar.New(nil)
-// 	conn.Client.SetOptions(piperhttp.ClientOptions{
-// 		Username:  abapServiceKey.Abap.Username,
-// 		Password:  abapServiceKey.Abap.Password,
-// 		CookieJar: cookieJar,
-// 	})
-// 	conn.Baseurl = abapServiceKey.URL
-// 	return nil
-// }
-
 func (conn *connector) setupAttributes(inputclient piperhttp.Sender) {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
@@ -333,13 +365,8 @@ func (conn connector) post(importBody string) ([]byte, error) {
 	return body, err
 }
 
-//TODO wohin speichern?
 func (conn connector) download(appendum string, downloadPath string) error {
 	url := conn.Baseurl + appendum
-	// tmpFolder := createTempDir()
-	// archive := filepath.Join(tmpFolder, path.Base(name))
-	// archive := filepath.Join(".", path.Base(name))
-
 	err := conn.DownloadClient.DownloadFile(url, downloadPath, nil, nil)
 	return err
 }
@@ -353,10 +380,7 @@ func (b *build) start(phase string, inputValues values) error {
 		values: inputValues,
 	}.String()
 
-	// TODO inline declaration
-	var body []byte
-	var err error
-	body, err = b.connector.post(importBody)
+	body, err := b.connector.post(importBody)
 	if err != nil {
 		return err
 	}
@@ -371,6 +395,19 @@ func (b *build) start(phase string, inputValues values) error {
 	b.Startedby = data.Build.Startedby
 	b.StartedAt = data.Build.StartedAt
 	b.FinishedAt = data.Build.FinishedAt
+	return nil
+}
+
+func (b *build) startPollLog(phase string, inputValues values) error {
+	if err := b.start(phase, inputValues); err != nil {
+		return err
+	}
+	if err := b.poll(15, 60); err != nil {
+		return err
+	}
+	if err := b.printLogs(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -498,18 +535,18 @@ func (b *build) getResult(name string) (result, error) {
 	}
 }
 
-func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) (bool, error) {
+func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
 	for {
 		select {
 		case <-timeout:
-			return false, errors.New("timed out")
+			return errors.New("timed out")
 		case <-ticker:
 			b.get()
 			ok, err := b.IsFinished()
 			if ok {
-				return true, err
+				return err
 			}
 		}
 	}
@@ -577,111 +614,8 @@ func (logging *logStruct) print() {
 	}
 }
 
+//TODO delete
 // ############################## delete start ################################
-
-func startBuildAndLogs(config *abapEnvironmentAssemblyOptions) error {
-
-	conn := new(connector)
-	conn.setupAttributes(&piperhttp.Client{})
-	err := conn.setConnectionDetails(*config)
-	if err != nil {
-		return err
-	}
-	build1 := build{
-		connector: *conn,
-		// BuildID:   "ABIFNLDCSQPNVKWNGL2US3IB4Q",
-	}
-	valuesInput := values{
-		Values: []value{
-			// {
-			// 	ValueID: "SWC",
-			// 	Value:   config.SWC,
-			// },
-			{
-				ValueID: "PACKAGES",
-				Value:   "/BUILD/CORE",
-			},
-			{
-				ValueID: "SOFTWARE_COMPONENT",
-				Value:   config.SWC,
-			},
-			{
-				ValueID: "CVERS",
-				Value:   config.CVERS,
-			},
-			{
-				ValueID: "NAMESPACE",
-				Value:   config.Namespace,
-			},
-			{
-				ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value:   config.PreviousDeliveryCommit,
-			},
-			{
-				ValueID: "PACKAGE_NAME_" + config.PackageType,
-				Value:   config.PackageName,
-			},
-		},
-	}
-
-	//TODO phase build_aoi etc testten
-	// phase := "BUILD_" + config.PackageType
-	phase := "test1"
-	// if err := build1.start(phase, valuesInput); err != nil {
-	// 	return err
-	// }
-
-	err = build1.start(phase, valuesInput)
-	if err != nil {
-		return err
-	}
-	build1.poll(15, 60)
-	build1.getTasks()
-	build1.getLogs()
-	build1.getResults()
-	result, err := build1.getResult("HT-6100.JPG")
-	if err != nil {
-		return err
-	}
-	fmt.Println(result.Mimetype)
-	build1.printLogs()
-
-	build1.getValues()
-
-	for i, value := range build1.Values {
-		fmt.Println(i)
-		fmt.Println(value)
-		fmt.Println("-----------------------------------")
-	}
-
-	return nil
-}
-
-func testDownload(config *abapEnvironmentAssemblyOptions) error {
-
-	conn := new(connector)
-	conn.setupAttributes(&piperhttp.Client{})
-	err := conn.setConnectionDetails(*config)
-	if err != nil {
-		return err
-	}
-	b := build{
-		connector: *conn,
-		BuildID:   "ABIFNLDCSQPOVJOUDMJG2M37OU",
-	}
-	r, err := b.getResult("2times_hello")
-	if err != nil {
-		return err
-	}
-
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	fmt.Println(envPath)
-	downloadPath := filepath.Join(envPath, path.Base("SAR_XML"))
-	fmt.Println(downloadPath)
-	err = r.download(downloadPath)
-	return err
-
-}
 
 func createTempDir() string {
 	tmpFolder, err := ioutil.TempDir(".", "temp-")
