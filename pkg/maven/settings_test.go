@@ -24,64 +24,50 @@ func TestSettings(t *testing.T) {
 		return ""
 	}
 
-	t.Run("Invalid settings file type", func(t *testing.T) {
-
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
-
-		err := GetSettingsFile(-1, "/dev/null", &fileUtils, &httpClient)
-
-		if assert.Error(t, err) {
-			assert.Equal(t, "Invalid SettingsFileType", err.Error())
-		}
-	})
-
 	t.Run("Settings file source location not provided", func(t *testing.T) {
 
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile(1, "", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("", "foo", &fileUtils, &httpClient)
 
-		if assert.Error(t, err) {
-			assert.Equal(t, "Settings file source location not provided", err.Error())
-		}
+		assert.EqualError(t, err, "Settings file source location not provided")
 	})
 
-	t.Run("Retrieve global settings file", func(t *testing.T) {
+	t.Run("Settings file destination location not provided", func(t *testing.T) {
 
 		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{existingFiles: map[string]string{"/opt/sap/maven/global-settings.xml": ""}}
+		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile(GlobalSettingsFile, "/opt/sap/maven/global-settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", &fileUtils, &httpClient)
+
+		assert.EqualError(t, err, "Settings file destination location not provided")
+	})
+
+	t.Run("Retrieve settings files", func(t *testing.T) {
+
+		httpClient := httpMock{}
+		fileUtils := fileUtilsMock{existingFiles: map[string]string{
+			"/opt/sap/maven/global-settings.xml":  "",
+			"/opt/sap/maven/project-settings.xml": "",
+		}}
+
+		err := DownloadAndCopySettingsFiles("/opt/sap/maven/global-settings.xml", "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, "/usr/share/maven/conf/settings.xml", fileUtils.copiedFiles["/opt/sap/maven/global-settings.xml"])
-		}
-
-		assert.Empty(t, httpClient.downloadedFiles)
-	})
-
-	t.Run("Retrieve project settings file", func(t *testing.T) {
-
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{existingFiles: map[string]string{"/opt/sap/maven/project-settings.xml": ""}}
-
-		err := GetSettingsFile(ProjectSettingsFile, "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
-
-		if assert.NoError(t, err) {
 			assert.Equal(t, "/home/me/.m2/settings.xml", fileUtils.copiedFiles["/opt/sap/maven/project-settings.xml"])
 		}
 
 		assert.Empty(t, httpClient.downloadedFiles)
 	})
 
-	t.Run("Retrieve global settings file via http", func(t *testing.T) {
+	t.Run("Retrieve settings file via http", func(t *testing.T) {
 
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile(GlobalSettingsFile, "https://example.org/maven/global-settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, "/usr/share/maven/conf/settings.xml", httpClient.downloadedFiles["https://example.org/maven/global-settings.xml"])
@@ -93,22 +79,10 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{expectedError: fmt.Errorf("Download failed")}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile(GlobalSettingsFile, "https://example.org/maven/global-settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
-			assert.Equal(t, "Download failed", err.Error())
-		}
-	})
-
-	t.Run("Retrieve project settings file via http", func(t *testing.T) {
-
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
-
-		err := GetSettingsFile(ProjectSettingsFile, "https://example.org/maven/project-settings.xml", &fileUtils, &httpClient)
-
-		if assert.NoError(t, err) {
-			assert.Equal(t, "/home/me/.m2/settings.xml", httpClient.downloadedFiles["https://example.org/maven/project-settings.xml"])
+			assert.Contains(t, err.Error(), "failed to download maven settings from URL")
 		}
 	})
 
@@ -117,7 +91,7 @@ func TestSettings(t *testing.T) {
 		httpClient := httpMock{}
 		fileUtils := fileUtilsMock{}
 
-		err := GetSettingsFile(ProjectSettingsFile, "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", &fileUtils, &httpClient)
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Source file '/opt/sap/maven/project-settings.xml' does not exist")
@@ -207,4 +181,8 @@ func (f *fileUtilsMock) Chmod(path string, mode os.FileMode) error {
 
 func (f *fileUtilsMock) Abs(path string) (string, error) {
 	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *fileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
