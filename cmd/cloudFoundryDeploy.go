@@ -484,7 +484,7 @@ func removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(m
 		// In case this file does not exist we ignore that file.
 		exists, err := fileUtils.FileExists(defaultManifestVariableFileName)
 		if err != nil {
-			return []string{}, err
+			return []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", defaultManifestVariableFileName)
 		}
 		if !exists {
 			return []string{}, nil
