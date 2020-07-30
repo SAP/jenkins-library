@@ -717,9 +717,6 @@ func cfDeploy(
 	var err error
 	var loginPerformed bool
 
-	if additionalEnvironment == nil {
-		additionalEnvironment = []string{}
-	}
 	additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
 
 	if len(config.CfHome) > 0 {
