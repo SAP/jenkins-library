@@ -134,8 +134,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 	return args, nil
 }
 
-func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.) {
-	c := command.Command{}
+func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner) {
 	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
@@ -158,7 +157,7 @@ func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions,
 			Defines:             []string{"-DskipTests=true"},
 			ReturnStdout: true,
 		}
-		_, err := maven.Execute(&executeOptions, c)
+		_, err := maven.Execute(&executeOptions, command)
 		if err != nil {
 			log.Entry().WithError(err).Warn("failed to build : ", pomFile)
 		}

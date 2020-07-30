@@ -181,7 +181,7 @@ spec:
           - STAGES
           - STEPS
       - name: buildCode
-        type: boolean
+        type: bool
         description: "To specify if a build is needed before running the scan"
         scope:
           - PARAMETERS
@@ -231,6 +231,6 @@ spec:
       params:
       - name: buildTool
         value: maven
-  image: maven:3.5-jdk-8
+  - image: maven:3.5-jdk-8
     workingDir: /home/java
     env: []
