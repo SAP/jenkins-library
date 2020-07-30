@@ -449,7 +449,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%s'", config.ManifestVariables)
 			}
 
-			manifestVariablesFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(config.ManifestVariablesFiles)
+			manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
 			if err != nil {
 				return "", []string{}, []string{}, err
 			}
@@ -476,7 +476,10 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 	return "blue-green-deploy", deployOptions, smokeTest, nil
 }
 
-func removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(manifestVariablesFiles []string) ([]string, error) {
+// validateManifestVariablesFiles: in case the only provided file is 'manifest-variables.yml' and this file does not
+// exist we ignore that file. For any other file there is no check if that file exists. In case several files are
+// provided we also do not check for the default file 'manifest-variables.yml'
+func validateManifestVariablesFiles(manifestVariablesFiles []string) ([]string, error) {
 
 	const defaultManifestVariableFileName = "manifest-variables.yml"
 	if len(manifestVariablesFiles) == 1 && manifestVariablesFiles[0] == defaultManifestVariableFileName {

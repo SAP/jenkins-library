@@ -1166,7 +1166,7 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 		}()
 		filesMock.AddFile("manifest-variables.yml", []byte("Content does not matter"))
 
-		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+		manifestFiles, err := validateManifestVariablesFiles(
 			[]string{
 				"manifest-variables.yml",
 			},
@@ -1182,7 +1182,7 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 
 	t.Run("default manifest variable file is the only one and does not exist", func(t *testing.T) {
 
-		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+		manifestFiles, err := validateManifestVariablesFiles(
 			[]string{
 				"manifest-variables.yml",
 			},
@@ -1197,7 +1197,7 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 
 		// in this case we might fail later.
 
-		manifestFiles, err := removeDefaultManifestVariableFileIfItIsTheOnlyFileAndThatFileDoesNotExist(
+		manifestFiles, err := validateManifestVariablesFiles(
 			[]string{
 				"manifest-variables.yml",
 				"a-second-file.yml",
