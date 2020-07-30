@@ -648,7 +648,7 @@ func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployO
 
 		hasNoRouteProperty, err := manifest.ApplicationHasProperty(0, "no-route")
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "Failed to obtain 'no-route' property from manifest")
 		}
 		if len(apps) == 1 && hasNoRouteProperty {
 
