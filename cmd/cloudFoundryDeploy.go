@@ -213,7 +213,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 		return err
 	}
 
-	var appName string
+	var appNameUsedForLoggingOnly string
 	var deployCommand string
 	var smokeTestScript []string
 	var deployOptions []string
@@ -238,14 +238,17 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 		// Basically we try to retrieve the app name from the manifest here since it is not provided from the config
 		// Later on we don't use the app name retrieved here since we can use it from the manifest.
 		// Here we simply fail early when the app name is not provided and also not contained in the manifest.
-		appName, err = getAppName(config)
+		appNameFromManifest, err := getAppName(config)
 		if err != nil {
 			return err
 		}
+		appNameUsedForLoggingOnly = appNameFromManifest
+	} else {
+		appNameUsedForLoggingOnly = config.AppName
 	}
 
 	log.Entry().Infof("CF native deployment ('%s') with:", config.DeployType)
-	log.Entry().Infof("cfAppName='%s'", appName)
+	log.Entry().Infof("cfAppName='%s'", appNameUsedForLoggingOnly)
 	log.Entry().Infof("cfManifest='%s'", config.Manifest)
 	log.Entry().Infof("cfManifestVariables: '%v'", config.ManifestVariables)
 	log.Entry().Infof("cfManifestVariablesFiles: '%v'", config.ManifestVariablesFiles)
