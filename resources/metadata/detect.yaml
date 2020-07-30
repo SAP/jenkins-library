@@ -95,11 +95,11 @@ spec:
         - STAGES
         - STEPS
       - name: serverUrl
-        description: Server url to the Synopsis Detect (formerly BlackDuck) Server.
+        description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
         type: string
-        mandatory: false
+        mandatory: true
         scope:
         - PARAMETERS
         - STAGES
