@@ -467,7 +467,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 
 			err = handleLegacyCfManifest(config.Manifest)
 			if err != nil {
-				return "", []string{}, []string{}, err
+				return "", []string{}, []string{}, errors.Wrapf(err, "Cannot handle legacy manifest '%s'", config.Manifest)
 			}
 		}
 	} else {
