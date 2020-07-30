@@ -136,38 +136,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: groups
-        description: Users groups to be assigned for the Project
-        aliases:
-          - name: detect/groups
-        type: '[]string'
-        mandatory: false
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: failOn
-        description: Mark the current build as fail based on the policy categories applied.
-        longDescription: |
-          A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
-          The list of accepted valed can be found at https://blackducksoftware.github.io/synopsys-detect/latest/properties/configuration/project/#fail-on-policy-violation-severities
-        aliases:
-          - name: detect/failOn
-        type: '[]string'
-        mandatory: false
-        default:
-        - BLOCKER
-        possibleValues:
-        - ALL
-        - BLOCKER
-        - CRITICAL
-        - MAJOR
-        - MINOR
-        - NONE
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
       - name: version
         aliases:
           - name: projectVersion
@@ -204,6 +172,23 @@ spec:
           - major-minor
           - semantic
           - full
+      - name: buildTool
+        type: string
+        description: "Scan type used for the step which can be `'maven'`"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildCode
+        type: boolean
+        description: "To specify if a build is needed before running the scan"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: true
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
@@ -238,9 +223,14 @@ spec:
         aliases:
           - name: maven/m2Path
   containers:
-    - name: openjdk
-      image: openjdk:11
-      workingDir: /root
-      options:
-        - name: -u
-          value: '0'
+  - image: maven:3.5-jdk-8
+    workingDir: /home/java
+    env: []
+    conditions:
+    - conditionRef: strings-equal
+      params:
+      - name: buildTool
+        value: maven
+  image: maven:3.5-jdk-8
+    workingDir: /home/java
+    env: []

@@ -41,7 +41,7 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 		return err
 	}
 	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, fileUtils, httpClient)
+	args, err = addDetectArgsAndBuild(args, config, fileUtils, httpClient)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fil
 	return command.RunShell("/bin/bash", script)
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) ([]string, error) {
+func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) ([]string, error) {
 
 	coordinates := struct {
 		Version string
