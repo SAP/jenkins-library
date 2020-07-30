@@ -2,37 +2,94 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
+
+type httpClientMock struct {
+	expectedError   error
+	downloadedFiles map[string]string // src, dest
+}
+
+func (c *httpClientMock) SetOptions(options piperhttp.ClientOptions) {
+
+}
+
+func (c *httpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+
+	if c.expectedError != nil {
+		return c.expectedError
+	}
+
+	if c.downloadedFiles == nil {
+		c.downloadedFiles = make(map[string]string)
+	}
+	c.downloadedFiles[url] = filename
+	return nil
+}
 
 func TestRunDetect(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
 		s := mock.ShellMockRunner{}
-		runDetect(detectExecuteScanOptions{}, &s)
+		fileUtilsMock := mock.FilesMock{}
+		fileUtilsMock.AddFile("detect.sh", []byte(""))
+		httpClient := httpClientMock{}
+		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
+		assert.Equal(t, httpClient.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		fileStatus, err := fileUtilsMock.Stat("detect.sh")
+		assert.NoError(t, err)
+		assert.Equal(t, fileStatus.Mode(), os.FileMode(0700))
+		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
 		assert.Equal(t, expectedScript, s.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
+		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
+		fileUtilsMock := mock.FilesMock{}
+		httpClient := httpClientMock{}
+		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		assert.NotNil(t, err)
+	})
 
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
-		runDetect(detectExecuteScanOptions{}, &s)
-		assert.True(t, hasFailed, "expected command to exit with fatal")
+	t.Run("maven parameters", func(t *testing.T) {
+		s := mock.ShellMockRunner{}
+		fileUtilsMock := mock.FilesMock{
+			CurrentDir: "root_folder",
+		}
+		fileUtilsMock.AddFile("detect.sh", []byte(""))
+		httpClient := httpClientMock{}
+		err := runDetect(detectExecuteScanOptions{
+			M2Path:              ".pipeline/local_repo",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}, &s, &fileUtilsMock, &httpClient)
+
+		assert.NoError(t, err)
+		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
+		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
+
+		expectedParam := "\"--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'\""
+		assert.Contains(t, s.Calls[0], expectedParam)
 	})
 }
 
 func TestAddDetectArgs(t *testing.T) {
+	httpClient := piperhttp.Client{}
+	fileUtilsMock := mock.FilesMock{}
+
 	testData := []struct {
 		args     []string
 		options  detectExecuteScanOptions
@@ -119,7 +176,8 @@ func TestAddDetectArgs(t *testing.T) {
 
 	for k, v := range testData {
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
-			got := addDetectArgs(v.args, v.options)
+			got, err := addDetectArgs(v.args, v.options, &fileUtilsMock, &httpClient)
+			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
 	}

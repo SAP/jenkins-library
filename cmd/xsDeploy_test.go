@@ -42,6 +42,14 @@ func (f *FileUtilsMock) Chmod(path string, mode os.FileMode) error {
 	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
+func (f *FileUtilsMock) Abs(path string) (string, error) {
+	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
@@ -294,7 +302,7 @@ func TestRetrieveOperationID(t *testing.T) {
 	Uploading 1 files:
         myFolder/dummy.mtar
 	File upload finished
-	
+
 	Detected MTA schema version: "3.1.0"
 	Detected deploy target as "myOrg mySpace"
 	Detected deployed MTA with ID "my_mta" and version "0.0.1"
