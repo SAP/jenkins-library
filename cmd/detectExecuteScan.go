@@ -129,5 +129,31 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 }
 
 func mavenBuild(fileUtils piperutils.FileUtils) {
-	
+	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
+	if err != nil {
+		log.Entry().WithError(err).Warn("no pom xml found")
+	}
+
+	if config.M2Path != "" {
+		config.M2Path, err = filepath.Abs(config.M2Path)
+		if err != nil {
+			log.Entry().WithError(err).Warn("absolute file path error for pom")
+		}
+	}
+
+	for _, pomFile := range pomFiles {
+		executeOptions := maven.ExecuteOptions{
+			PomPath:             pomFile,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+			M2Path:              config.M2Path,
+			Goals:               []string{"clean,install"},
+			Defines:             []string{"-DskipTests=true"},
+			ReturnStdout: true,
+		}
+		_, err := maven.Execute(&executeOptions, e)
+		if err != nil {
+			log.Entry().WithError(err).Warn("failed to build : ", pomFile)
+		}
+	}
 }
