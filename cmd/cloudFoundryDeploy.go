@@ -462,7 +462,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 			if modified {
 				log.Entry().Infof("Manifest file '%s' has been updated (variable substitution)", config.Manifest)
 			} else {
-				log.Entry().Infof("Manifest file '%s' has not been updated (variable substitution)", config.Manifest)
+				log.Entry().Infof("Manifest file '%s' has not been updated (no variable substitution)", config.Manifest)
 			}
 
 			err = handleLegacyCfManifest(config.Manifest)
