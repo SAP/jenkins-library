@@ -1,0 +1,78 @@
+metadata:
+    name: abapEnvironmentASimulate
+    description: simulates writing to the commonPipelineEnvironment
+    longDescription: |
+        simulates writing to the commonPipelineEnvironment
+spec:
+    inputs:
+      params:
+        - name: PackageType
+          type: string
+          description: "Package Types. Valid values: 'AOI', 'CSP', 'CPK'."
+          default: AOI
+          mandatory: true
+          scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          possibleValues:
+            - AOI
+            - CSP
+            - CPK
+        - name: PackageName
+          type: string
+          description: Package Name
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+        - name: SWC
+          type: string
+          description: SWC
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+        - name: CVERS
+          type: string
+          description: Cvers
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+        - name: Namespace
+          type: string
+          description: Namespace
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+        - name: PreviousDeliveryCommit
+          type: string
+          description: Previous delivery commit
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+    outputs:
+      resources:
+        - name: commonPipelineEnvironment
+          type: piperEnvironment
+          params:
+            - name: PackageName
+            - name: PackageType
+            - name: SWC
+            - name: CVERS
+            - name: Namespace
+            - name: PreviousDeliveryCommit
