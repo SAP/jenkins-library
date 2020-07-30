@@ -354,7 +354,7 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	}
 	fileExists, err := fileUtils.FileExists(config.Manifest)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Cannot check if file '%s' exists", config.Manifest)
 	}
 	if !fileExists {
 		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", config.Manifest)
@@ -435,7 +435,7 @@ func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, 
 	if len(config.Manifest) > 0 {
 		manifestFileExists, err := fileUtils.FileExists(config.Manifest)
 		if err != nil {
-			return "", []string{}, []string{}, err
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", config.Manifest)
 		}
 
 		if !manifestFileExists {
