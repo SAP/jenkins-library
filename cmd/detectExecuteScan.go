@@ -133,23 +133,39 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 	} else {
 		c1 := command.Command{} 
 		switch config.BuildTool {
-			case "maven" : localMavenBuild(fileUtils, config, &c1, args)
-			default : localMavenBuild(fileUtils, config, &c1, args)
+			case "maven" : 
+				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
+				if err != nil {
+					log.Entry().WithError(err).Warn("no pom xml found")
+				}
+			
+				_, found := findElement(pomFiles, "pom.xml")
+				if found {
+				args = append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
+				} else {
+					localMavenBuild(fileUtils, config, &c1, args)
+				}
+			default : 
+				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
+				if err != nil {
+					log.Entry().WithError(err).Warn("no pom xml found")
+				}
+				localMavenBuild(fileUtils, config, &c1, pomFiles)
 		}
 	}
 	return args, nil
 }
 
-func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner, args []string) {
-	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
+func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner, pomFiles []string) {
+	/* pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
 	}
     
     _, found := findElement(pomFiles, "pom.xml")
     if found {
-        args = append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
-    } else {
+        return append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
+    } else { */
 		for _, pomFile := range pomFiles {
 			if strings.Count(pomFile, string(os.PathSeparator)) == 1 {
 				executeCleanOptions := maven.ExecuteOptions{
@@ -163,7 +179,7 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 				}
 				_, errClean := maven.Execute(&executeCleanOptions, command)
 				if errClean != nil {
-					log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
+					log.Entry().WithError(errClean).Warn("failed to clean : ", pomFile)
 				}
 				executeInstallOptions := maven.ExecuteOptions{
 					PomPath:             pomFile,
@@ -176,11 +192,11 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 				}
 				_, errInstall := maven.Execute(&executeInstallOptions, command)
 				if errInstall != nil {
-					log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
+					log.Entry().WithError(errInstall).Warn("failed to clean : ", pomFile)
 				}				
 			}
 		}
-	}
+	//}
 	// if pom.xml : parent POM : maven intall  args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", "clean install"))
 
 	// 
