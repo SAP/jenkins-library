@@ -188,7 +188,7 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 
 
 
-	if config.M2Path != "" {
+	/* if config.M2Path != "" {
 		config.M2Path, err = filepath.Abs(config.M2Path)
 		if err != nil {
 			log.Entry().WithError(err).Warn("absolute file path error for pom")
@@ -222,7 +222,7 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 		if errInstall != nil {
 			log.Entry().WithError(err).Warn("failed to clean : ", pomFile)
 		}
-	}
+	} */
 }
 
 func findElement(slice []string, val string) (int, bool) {
