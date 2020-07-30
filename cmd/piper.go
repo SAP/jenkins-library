@@ -81,6 +81,7 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
+	rootCmd.AddCommand(MavenExecuteIntegrationCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
