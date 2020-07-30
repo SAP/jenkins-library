@@ -5,6 +5,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"strings"
+	"path/filepath"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -124,15 +125,17 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 		}
 	} else {
+		c1 := command.Command{} 
 		switch config.buildTool {
-			case "maven": mavenBuild(fileUtils, config)
+			case "maven": mavenBuild(fileUtils, config, &c1)
 			default : mavenBuild(fileUtils)
 		}
 	}
 	return args, nil
 }
 
-func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions) {
+func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.) {
+	c := command.Command{}
 	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
@@ -155,7 +158,7 @@ func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions)
 			Defines:             []string{"-DskipTests=true"},
 			ReturnStdout: true,
 		}
-		_, err := maven.Execute(&executeOptions, e)
+		_, err := maven.Execute(&executeOptions, c)
 		if err != nil {
 			log.Entry().WithError(err).Warn("failed to build : ", pomFile)
 		}
