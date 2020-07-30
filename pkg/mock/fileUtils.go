@@ -49,7 +49,7 @@ type FilesMock struct {
 	files        map[string]*fileProperties
 	writtenFiles []string
 	removedFiles []string
-	currentDir   string
+	CurrentDir   string
 	Separator    string
 }
 
@@ -67,10 +67,10 @@ func (f *FilesMock) init() {
 // Relative segments such as "../" are currently NOT supported.
 func (f *FilesMock) toAbsPath(path string) string {
 	if path == "." {
-		return f.Separator + f.currentDir
+		return f.Separator + f.CurrentDir
 	}
 	if !strings.HasPrefix(path, f.Separator) {
-		path = f.Separator + filepath.Join(f.currentDir, path)
+		path = f.Separator + filepath.Join(f.CurrentDir, path)
 	}
 	return path
 }
@@ -246,7 +246,7 @@ func (f *FilesMock) FileRemove(path string) error {
 	leaf := filepath.Base(absPath)
 	absPath = strings.TrimSuffix(absPath, f.Separator+leaf)
 	if absPath != f.Separator {
-		relPath := strings.TrimPrefix(absPath, f.Separator+f.currentDir+f.Separator)
+		relPath := strings.TrimPrefix(absPath, f.Separator+f.CurrentDir+f.Separator)
 		dirExists, _ := f.DirExists(relPath)
 		if !dirExists {
 			f.AddDir(relPath)
@@ -304,7 +304,7 @@ func (f *FilesMock) Chdir(path string) error {
 		return fmt.Errorf("failed to change current directory into '%s': %w", path, os.ErrNotExist)
 	}
 
-	f.currentDir = strings.TrimLeft(path, f.Separator)
+	f.CurrentDir = strings.TrimLeft(path, f.Separator)
 	return nil
 }
 
@@ -365,4 +365,9 @@ func (f *FilesMock) Chmod(path string, mode os.FileMode) error {
 	}
 
 	return nil
+}
+
+func (f *FilesMock) Abs(path string) (string, error) {
+	f.init()
+	return f.toAbsPath(path), nil
 }
