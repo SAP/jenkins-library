@@ -539,7 +539,7 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 	deployOptions := []string{}
 	varOptions, err := getVarOptions(config.ManifestVariables)
 	if err != nil {
-		return "", []string{}, []string{}, err
+		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
 	}
 	varFileOptions, err := getVarFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
