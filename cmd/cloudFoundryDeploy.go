@@ -238,7 +238,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 		// Basically we try to retrieve the app name from the manifest here since it is not provided from the config
 		// Later on we don't use the app name retrieved here since we can use it from the manifest.
 		// Here we simply fail early when the app name is not provided and also not contained in the manifest.
-		appName, err = getAppNameOrFail(config)
+		appName, err = getAppName(config)
 		if err != nil {
 			return err
 		}
@@ -352,7 +352,7 @@ func getManifest(name string) (cloudfoundry.Manifest, error) {
 	return cloudfoundry.ReadManifest(name)
 }
 
-func getAppNameOrFail(config *cloudFoundryDeployOptions) (string, error) {
+func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 
 	if len(config.AppName) > 0 {
 		return config.AppName, nil
