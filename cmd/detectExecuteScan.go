@@ -15,6 +15,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
+func newUtils() *utilsBundleDetectMaven {
+	return &utilsBundleDetectMaven{
+		Client: &piperhttp.Client{},
+		Files:  &piperutils.Files{},
+	}
+}
+
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -118,17 +125,14 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		}
 	} else {
 		switch config.buildTool {
-			case "maven": mavenBuild(fileUtils)
+			case "maven": mavenBuild(fileUtils, config)
 			default : mavenBuild(fileUtils)
 		}
 	}
-
-	
-
 	return args, nil
 }
 
-func mavenBuild(fileUtils piperutils.FileUtils) {
+func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions) {
 	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
