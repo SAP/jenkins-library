@@ -16,6 +16,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
+type utilsBundleDetectMaven struct {
+	*piperhttp.Client
+	*piperutils.Files
+}
+
 func newUtils() *utilsBundleDetectMaven {
 	return &utilsBundleDetectMaven{
 		Client: &piperhttp.Client{},
@@ -106,7 +111,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 
-	if (!config.buildCode){
+	if (!config.BuildCode){
 		mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
 
 		if err != nil {
@@ -125,16 +130,18 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
 		}
 	} else {
+		log.Entry().Info("Anil Building project")
 		c1 := command.Command{} 
-		switch config.buildTool {
-			case "maven": mavenBuild(fileUtils, config, &c1)
-			default : mavenBuild(fileUtils)
+		switch config.BuildTool {
+			case "maven" : localMavenBuild(fileUtils, config, &c1)
+			default : localMavenBuild(fileUtils, config, &c1)
 		}
 	}
 	return args, nil
 }
 
-func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner) {
+func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner) {
+	log.Entry().Info("Anil Building project for maven")
 	pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 	if err != nil {
 		log.Entry().WithError(err).Warn("no pom xml found")
@@ -155,7 +162,7 @@ func mavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions,
 			M2Path:              config.M2Path,
 			Goals:               []string{"clean,install"},
 			Defines:             []string{"-DskipTests=true"},
-			ReturnStdout: true,
+			ReturnStdout: 		 true,
 		}
 		_, err := maven.Execute(&executeOptions, command)
 		if err != nil {
