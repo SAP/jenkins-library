@@ -675,7 +675,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		deployCommand = "bg-deploy"
 
 		const noConfirmFlag = "--no-confirm"
-		if !contains(deployParams, noConfirmFlag) {
+		if !piperutils.ContainsString(deployParams, noConfirmFlag) {
 			deployParams = append(deployParams, noConfirmFlag)
 		}
 	}
@@ -704,17 +704,6 @@ func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) []string {
 		result = append(result, "-e", part)
 	}
 	return result
-}
-
-// would make sense to have that method in some kind of helper instead having it here
-func contains(collection []string, key string) bool {
-
-	for _, v := range collection {
-		if v == key {
-			return true
-		}
-	}
-	return false
 }
 
 func cfDeploy(
