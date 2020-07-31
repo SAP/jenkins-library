@@ -1,4 +1,4 @@
-package mock
+package abapMock
 
 import "github.com/SAP/jenkins-library/pkg/abaputils"
 
@@ -9,6 +9,11 @@ type AUtilsMock struct {
 }
 
 // GetAbapCommunicationArrangementInfo mock
-func (abaputils *AUtilsMock) GetAbapCommunicationArrangementInfo(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
-	return abaputils.ReturnedConnectionDetailsHTTP, abaputils.ReturnedError
+func (autils *AUtilsMock) GetAbapCommunicationArrangementInfo(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
+	return autils.ReturnedConnectionDetailsHTTP, autils.ReturnedError
+}
+
+func (autils *AUtilsMock) cleanup() {
+	autils.ReturnedConnectionDetailsHTTP = abaputils.ConnectionDetailsHTTP{}
+	autils.ReturnedError = nil
 }
