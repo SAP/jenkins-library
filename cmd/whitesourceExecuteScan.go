@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -27,6 +28,7 @@ type ScanOptions = whitesourceExecuteScanOptions
 type System = whitesource.System
 
 type whitesourceUtils interface {
+	SetDir(path string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(executable string, params ...string) error
@@ -34,6 +36,8 @@ type whitesourceUtils interface {
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	FileExists(path string) (bool, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
 }
 
 type whitesourceUtilsBundle struct {
@@ -165,6 +169,11 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 
 func triggerWhitesourceScan(config *ScanOptions, utils whitesourceUtils) error {
 	switch config.ScanType {
+	case "mta":
+		// Execute scan for maven and all npm modules
+		if err := executeMTAScan(config, utils); err != nil {
+			return err
+		}
 	case "maven":
 		// Execute scan with maven plugin goal
 		if err := executeMavenScan(config, utils); err != nil {
@@ -202,10 +211,34 @@ func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
 }
 
+// executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
+func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
+	log.Entry().Infof("Executing Whitesource scan for MTA project")
+	err := executeMavenScan(config, utils)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Pass npm related options from config (download cache setup, registries)
+	npmExecutor := npm.NewExecutor(npm.ExecutorOptions{})
+	modules := npmExecutor.FindPackageJSONFiles()
+	for _, module := range modules {
+		log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", module)
+		dir := filepath.Dir(module)
+		utils.SetDir(dir)
+		err := executeNpmScan(config, utils)
+		if err != nil {
+			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
+		}
+	}
+
+	return nil
+}
+
 // executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
 func executeMavenScan(config *ScanOptions, utils whitesourceUtils) error {
-	log.Entry().Infof("Using maven goal to scan")
+	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.BuildDescriptorFile
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
@@ -261,6 +294,7 @@ func executeMavenScan(config *ScanOptions, utils whitesourceUtils) error {
 // executeNpmScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
 func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
+	const whiteSourceConfig = "whitesource.config.json"
 	npmConfig := []byte(fmt.Sprintf(`{
 		"apiKey": "%s",
 		"userKey": "%s",
@@ -268,11 +302,13 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 		"productName": "%s",
 		"projectName": "%s",
 		"productVer": "%s",
-		"devDep": true
+		"devDep": true,
+		"ignoreNpmLsErrors"": true
 	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion))
-	if err := ioutil.WriteFile("whitesource.config.json", npmConfig, 0644); err != nil {
+	if err := utils.FileWrite(whiteSourceConfig, npmConfig, 0644); err != nil {
 		return err
 	}
+	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 	if err := utils.RunExecutable("yarn", "global", "add", "whitesource"); err != nil {
 		return err
 	}
