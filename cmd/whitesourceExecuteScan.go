@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -31,19 +32,23 @@ type whitesourceUtils interface {
 	RunExecutable(executable string, params ...string) error
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+
+	FileExists(path string) (bool, error)
 }
 
 type whitesourceUtilsBundle struct {
 	*piperhttp.Client
 	*command.Command
+	*piperutils.Files
 }
 
 func newUtils() *whitesourceUtilsBundle {
-	// reroute cmd output to logging framework
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
 		Command: &command.Command{},
+		Files:   &piperutils.Files{},
 	}
+	// Reroute cmd output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
@@ -161,7 +166,7 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 func triggerWhitesourceScan(config *ScanOptions, utils whitesourceUtils) error {
 	switch config.ScanType {
 	case "maven":
-		// Execute scan with
+		// Execute scan with maven plugin goal
 		if err := executeMavenScan(config, utils); err != nil {
 			return err
 		}
@@ -190,23 +195,71 @@ func triggerWhitesourceScan(config *ScanOptions, utils whitesourceUtils) error {
 	return nil
 }
 
-// executeUAScan
-// Executes a scan with the Whitesource Unified Agent
-// returns stdout buffer of the unified agent for token extraction in case of multi-module gradle project
+// executeUAScan executes a scan with the Whitesource Unified Agent.
 func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
 }
 
-// executeMavenScan ...
+// executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
+// "org.whitesource:whitesource-maven-plugin:19.5.1:update".
 func executeMavenScan(config *ScanOptions, utils whitesourceUtils) error {
-	return nil
+	log.Entry().Infof("Using maven goal to scan")
+	pomPath := config.BuildDescriptorFile
+	pomExists, _ := utils.FileExists(pomPath)
+	if !pomExists {
+		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
+			config.ScanType, pomPath)
+	}
+
+	defines := []string{
+		"-Dorg.whitesource.orgToken=" + config.OrgToken,
+		"-Dorg.whitesource.product=" + config.ProductName,
+		"-Dorg.whitesource.checkPolicies=true",
+		"-Dorg.whitesource.failOnError=true",
+	}
+
+	if config.ProjectName != "" {
+		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
+		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
+	}
+
+	if config.UserToken != "" {
+		defines = append(defines, "-Dorg.whitesource.userKey="+config.UserToken)
+	}
+
+	if config.ProductVersion != "" {
+		defines = append(defines, "-Dorg.whitesource.productVersion="+config.ProductVersion)
+	}
+
+	var flags []string
+	if len(config.BuildDescriptorExcludeList) == 0 {
+		// exclude known test modules by default
+		flags = append(flags, maven.GetTestModulesExcludes()...)
+	} else {
+		// TODO: From the documentation, this would be a file path to a module's pom.xml,
+		// but descriptor is used here as the module's name.
+		for _, descriptor := range config.BuildDescriptorExcludeList {
+			flags = append(flags, "-pl", "!"+descriptor)
+		}
+	}
+
+	_, err := maven.Execute(&maven.ExecuteOptions{
+		PomPath:             pomPath,
+		M2Path:              config.M2Path,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		Defines:             defines,
+		Flags:               flags,
+		Goals:               []string{"org.whitesource:whitesource-maven-plugin:19.5.1:update"},
+	}, utils)
+
+	return err
 }
 
-// executeNpmScan
-// generates a configuration file whitesource.config.json with appropriate values from config,
-// installs whitesource yarn plugin and executes the scan
+// executeNpmScan generates a configuration file whitesource.config.json with appropriate values from config,
+// installs whitesource yarn plugin and executes the scan.
 func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 	npmConfig := []byte(fmt.Sprintf(`{
 		"apiKey": "%s",
@@ -232,7 +285,7 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 	return nil
 }
 
-// checkSecurityViolations: checks security violations and fails build is severity limit is crossed
+// checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
 func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	severeVulnerabilities := 0
 

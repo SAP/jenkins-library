@@ -46,6 +46,9 @@ type whitesourceExecuteScanOptions struct {
 	Excludes                             string   `json:"excludes,omitempty"`
 	ProductToken                         string   `json:"productToken,omitempty"`
 	AgentParameters                      string   `json:"agentParameters,omitempty"`
+	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
+	M2Path                               string   `json:"m2Path,omitempty"`
 }
 
 // WhitesourceExecuteScanCommand BETA
@@ -149,6 +152,9 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.Excludes, "excludes", `tests/**/*.py **/src/test/**/*.java`, "Space separated list of file path patterns to exclude in the scan")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
 	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", ``, "Additional parameters passed to the Unified Agent command line.")
+	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
+	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 
 	cmd.MarkFlagRequired("orgToken")
 	cmd.MarkFlagRequired("userToken")
@@ -468,6 +474,30 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "projectSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+					},
+					{
+						Name:        "globalSettingsFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 				},
 			},

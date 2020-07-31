@@ -218,7 +218,7 @@ func (s *System) GetProjectByName(productToken, projectName string) (*Project, e
 	return project, nil
 }
 
-// GetProjectsByIDs: get all project tokens given a list of project ids
+// GetProjectsByIDs returns all project tokens given a list of project ids
 func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
 	var projectsMatched []Project
 
