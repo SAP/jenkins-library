@@ -18,7 +18,7 @@ import (
 func TestStep(t *testing.T) {
 	t.Run("Run Step Successful", func(t *testing.T) {
 
-		var autils = abaputils.AUtilsMock{}
+		var autils = mock.AUtilsMock{}
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"

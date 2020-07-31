@@ -17,19 +17,11 @@ type AbapUtils struct {
 	Exec command.ExecRunner
 }
 
-type AbapUtilsInterface interface {
+/*
+Communication for defining function used for communication
+*/
+type Communication interface {
 	GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error)
-}
-
-// AUtilsMock mock
-type AUtilsMock struct {
-	ReturnedConnectionDetailsHTTP ConnectionDetailsHTTP
-	ReturnedError                 error
-}
-
-// GetAbapCommunicationArrangementInfo mock
-func (abaputils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
-	return abaputils.ReturnedConnectionDetailsHTTP, abaputils.ReturnedError
 }
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment

@@ -45,7 +45,7 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, autils abaputils.AbapUtilsInterface, client piperhttp.Sender) error {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
@@ -60,7 +60,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	subOptions.Username = options.Username
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := autils.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
