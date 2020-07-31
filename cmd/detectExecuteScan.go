@@ -176,19 +176,19 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
     if found {
         return append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
 	} else { */
-		if len(config.M2Path) > 0 {
+		/* if len(config.M2Path) > 0 {
 			absolutePath, err := filepath.Abs(config.M2Path)
 			if err != nil {
 				log.Entry().WithError(err).Warn("absolute file path error for pom")
 			}
-		}
+		} */
 		for _, pomFile := range pomFiles {
 			if strings.Count(pomFile, string(os.PathSeparator)) == 1 {
 				executeCleanOptions := maven.ExecuteOptions{
 					PomPath:             pomFile,
 					ProjectSettingsFile: config.ProjectSettingsFile,
 					GlobalSettingsFile:  config.GlobalSettingsFile,
-					M2Path:              absolutePath,
+					M2Path:              config.M2Path,
 					Goals:               []string{"clean"},
 					Defines:             []string{"-DskipTests=true"},
 					ReturnStdout: 		 true,
@@ -201,7 +201,7 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 					PomPath:             pomFile,
 					ProjectSettingsFile: config.ProjectSettingsFile,
 					GlobalSettingsFile:  config.GlobalSettingsFile,
-					M2Path:              absolutePath,
+					M2Path:              config.M2Path,
 					Goals:               []string{"install"},
 					Defines:             []string{"-DskipTests=true"},
 					ReturnStdout: 		 true,
