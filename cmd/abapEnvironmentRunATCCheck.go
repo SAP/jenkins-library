@@ -36,11 +36,14 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	var c = &command.Command{}
-	var err error
-
+	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: c,
+	}
+	var err error
 
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
@@ -53,7 +56,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	var abapEndpoint string
 	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
-		details, err = abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "")
+		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
 	}
 	var resp *http.Response
 	//Fetch Xcrsf-Token
