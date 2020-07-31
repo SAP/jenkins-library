@@ -72,26 +72,26 @@ type Request struct {
 	Format       string `json:"format,omitempty"`
 }
 
-// System defines a WhiteSource system including respective tokens (e.g. org token, user token)
-type System struct {
-	HTTPClient piperhttp.Sender
-	OrgToken   string
-	ServerURL  string
-	UserToken  string
+// system defines a WhiteSource system including respective tokens (e.g. org token, user token)
+type system struct {
+	httpClient piperhttp.Sender
+	orgToken   string
+	serverURL  string
+	userToken  string
 }
 
 // NewSystem constructs a new system instance
-func NewSystem(serverURL, orgToken, userToken string) *System {
-	return &System{
-		ServerURL:  serverURL,
-		OrgToken:   orgToken,
-		UserToken:  userToken,
-		HTTPClient: &piperhttp.Client{},
+func NewSystem(serverURL, orgToken, userToken string) System {
+	return &system{
+		serverURL:  serverURL,
+		orgToken:   orgToken,
+		userToken:  userToken,
+		httpClient: &piperhttp.Client{},
 	}
 }
 
 // GetProductsMetaInfo retrieves meta information for all WhiteSource products a user has access to
-func (s *System) GetProductsMetaInfo() ([]Product, error) {
+func (s *system) GetProductsMetaInfo() ([]Product, error) {
 	wsResponse := struct {
 		ProductVitals []Product `json:"productVitals"`
 	}{
@@ -116,7 +116,7 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 }
 
 // GetMetaInfoForProduct retrieves meta information for a specific WhiteSource product
-func (s *System) GetMetaInfoForProduct(productName string) (Product, error) {
+func (s *system) GetMetaInfoForProduct(productName string) (Product, error) {
 	products, err := s.GetProductsMetaInfo()
 	if err != nil {
 		return Product{}, errors.Wrap(err, "failed to retrieve WhiteSource products")
@@ -132,7 +132,7 @@ func (s *System) GetMetaInfoForProduct(productName string) (Product, error) {
 }
 
 // GetProjectsMetaInfo retrieves meta information for a specific WhiteSource product
-func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
+func (s *system) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -158,7 +158,7 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 }
 
 // GetProjectToken returns the project token for a project with a given name
-func (s *System) GetProjectToken(productToken, projectName string) (string, error) {
+func (s *system) GetProjectToken(productToken, projectName string) (string, error) {
 	var token string
 	project, err := s.GetProjectByName(productToken, projectName)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 }
 
 // GetProjectVitals returns project meta info given a project token
-func (s *System) GetProjectVitals(projectToken string) (*Project, error) {
+func (s *system) GetProjectVitals(projectToken string) (*Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -200,7 +200,7 @@ func (s *System) GetProjectVitals(projectToken string) (*Project, error) {
 }
 
 // GetProjectByName returns the finds and returns a project by name
-func (s *System) GetProjectByName(productToken, projectName string) (*Project, error) {
+func (s *system) GetProjectByName(productToken, projectName string) (*Project, error) {
 	var project *Project
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
@@ -219,7 +219,7 @@ func (s *System) GetProjectByName(productToken, projectName string) (*Project, e
 }
 
 // GetProjectsByIDs returns all project tokens given a list of project ids
-func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
+func (s *system) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
 	var projectsMatched []Project
 
 	projects, err := s.GetProjectsMetaInfo(productToken)
@@ -239,7 +239,7 @@ func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Pr
 }
 
 // GetProjectTokens returns the project tokens matching a given a slice of project names
-func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
+func (s *system) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
 	projectTokens := []string{}
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
@@ -257,7 +257,7 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 }
 
 // GetProductName returns the product name for a given product token
-func (s *System) GetProductName(productToken string) (string, error) {
+func (s *system) GetProductName(productToken string) (string, error) {
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
 	}{
@@ -286,7 +286,7 @@ func (s *System) GetProductName(productToken string) (string, error) {
 }
 
 // GetProjectRiskReport
-func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
+func (s *system) GetProjectRiskReport(projectToken string) ([]byte, error) {
 	req := Request{
 		RequestType:  "getProjectRiskReport",
 		ProjectToken: projectToken,
@@ -301,7 +301,7 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 }
 
 // GetProjectVulnerabilityReport
-func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
+func (s *system) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
 
 	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
@@ -318,7 +318,7 @@ func (s *System) GetProjectVulnerabilityReport(projectToken string, format strin
 }
 
 // GetOrganizationProductVitals
-func (s *System) GetOrganizationProductVitals() ([]Product, error) {
+func (s *system) GetOrganizationProductVitals() ([]Product, error) {
 	wsResponse := struct {
 		ProductVitals []Product `json:"productVitals"`
 	}{
@@ -343,7 +343,7 @@ func (s *System) GetOrganizationProductVitals() ([]Product, error) {
 }
 
 // GetProductByName
-func (s *System) GetProductByName(productName string) (*Product, error) {
+func (s *system) GetProductByName(productName string) (*Product, error) {
 	var product Product
 
 	products, err := s.GetOrganizationProductVitals()
@@ -362,7 +362,7 @@ func (s *System) GetProductByName(productName string) (*Product, error) {
 }
 
 // GetProjectAlerts
-func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
+func (s *system) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	wsResponse := struct {
 		Alerts []Alert `json:"alerts"`
 	}{
@@ -388,7 +388,7 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 }
 
 // GetProjectLibraryLocations
-func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
+func (s *system) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
 	wsResponse := struct {
 		Libraries []Library `json:"libraryLocations"`
 	}{
@@ -413,13 +413,13 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 	return wsResponse.Libraries, nil
 }
 
-func (s *System) sendRequest(req Request) ([]byte, error) {
+func (s *system) sendRequest(req Request) ([]byte, error) {
 	var responseBody []byte
 	if req.UserKey == "" {
-		req.UserKey = s.UserToken
+		req.UserKey = s.userToken
 	}
 	if req.OrgToken == "" {
-		req.OrgToken = s.OrgToken
+		req.OrgToken = s.orgToken
 	}
 
 	body, err := json.Marshal(req)
@@ -431,7 +431,7 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
-	response, err := s.HTTPClient.SendRequest(http.MethodPost, s.ServerURL, bytes.NewBuffer(body), headers, nil)
+	response, err := s.httpClient.SendRequest(http.MethodPost, s.serverURL, bytes.NewBuffer(body), headers, nil)
 
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to send request to WhiteSource")

@@ -46,7 +46,7 @@ func TestGetProductsMetaInfo(t *testing.T) {
 
 	expectedRequestBody := `{"requestType":"getOrganizationProductVitals","userKey":"test_user_token","orgToken":"test_org_token"}`
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 	products, err := sys.GetProductsMetaInfo()
 
 	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
@@ -77,7 +77,7 @@ func TestGetMetaInfoForProduct(t *testing.T) {
 }`,
 	}
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 	product, err := sys.GetMetaInfoForProduct("Test Product 2")
 
 	assert.NoError(t, err)
@@ -104,7 +104,7 @@ func TestGetProjectsMetaInfo(t *testing.T) {
 
 	expectedRequestBody := `{"requestType":"getProductProjectVitals","userKey":"test_user_token","productToken":"test_product_token","orgToken":"test_org_token"}`
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 	projects, err := sys.GetProjectsMetaInfo("test_product_token")
 
 	requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
@@ -145,7 +145,7 @@ func TestGetProjectToken(t *testing.T) {
 }`,
 	}
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 
 	projectToken, err := sys.GetProjectToken("test_product_token", "Test Project1")
 	assert.NoError(t, err)
@@ -184,7 +184,7 @@ func TestGetProjectTokens(t *testing.T) {
 }`,
 	}
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 
 	projectTokens, err := sys.GetProjectTokens("test_product_token", []string{"Test Project1", "Test Project2"})
 	assert.NoError(t, err)
@@ -207,7 +207,7 @@ func TestGetProductName(t *testing.T) {
 }`,
 	}
 
-	sys := System{ServerURL: "https://my.test.server", HTTPClient: &myTestClient, OrgToken: "test_org_token", UserToken: "test_user_token"}
+	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 
 	productName, err := sys.GetProductName("test_product_token")
 	assert.NoError(t, err)

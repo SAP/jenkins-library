@@ -80,7 +80,7 @@ func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData)
 	}
 }
 
-func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomData, utils whitesourceUtils) error {
+func runWhitesourceScan(config *ScanOptions, sys System, _ *telemetry.CustomData, utils whitesourceUtils) error {
 	// Start the scan
 	if err := triggerWhitesourceScan(config, utils); err != nil {
 		return err
@@ -114,7 +114,7 @@ func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomDat
 	return nil
 }
 
-func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys *System) error {
+func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys System) error {
 	if config.ProjectName == "" || config.ProductVersion == "" {
 		opts := &versioning.Options{}
 		artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, utils)
@@ -329,7 +329,7 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkSecurityViolations(config *ScanOptions, sys *System) error {
+func checkSecurityViolations(config *ScanOptions, sys System) error {
 	severeVulnerabilities := 0
 
 	// convert config.CvssSeverityLimit to float64
@@ -348,11 +348,11 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	for _, alert := range alerts {
 		vuln := alert.Vulnerability
 		if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
-			log.Entry().Infof("Vulnerability with Score %s / CVSS3Score %s treated as severe",
+			log.Entry().Infof("Vulnerability with Score %v / CVSS3Score %v treated as severe",
 				vuln.Score, vuln.CVSS3Score)
 			severeVulnerabilities++
 		} else {
-			log.Entry().Infof("Ignoring vulnerability with Score %s / CVSS3Score %s",
+			log.Entry().Infof("Ignoring vulnerability with Score %v / CVSS3Score %v",
 				vuln.Score, vuln.CVSS3Score)
 		}
 	}
@@ -378,7 +378,7 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 }
 
 // pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
-func pollProjectStatus(config *ScanOptions, sys *System) error {
+func pollProjectStatus(config *ScanOptions, sys System) error {
 	currentTime := time.Now()
 	for {
 		project, err := sys.GetProjectVitals(config.ProjectToken)
@@ -399,7 +399,7 @@ func pollProjectStatus(config *ScanOptions, sys *System) error {
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
+func downloadReports(config *ScanOptions, sys System) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 
 	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
@@ -421,7 +421,7 @@ func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error
 	return []piperutils.Path{*vulnPath, *riskPath}, nil
 }
 
-func downloadVulnerabilityReport(config *ScanOptions, sys *System) (*piperutils.Path, error) {
+func downloadVulnerabilityReport(config *ScanOptions, sys System) (*piperutils.Path, error) {
 	utils := piperutils.Files{}
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return nil, err
@@ -444,7 +444,7 @@ func downloadVulnerabilityReport(config *ScanOptions, sys *System) (*piperutils.
 	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
 }
 
-func downloadRiskReport(config *ScanOptions, sys *System) (*piperutils.Path, error) {
+func downloadRiskReport(config *ScanOptions, sys System) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
 	if err != nil {
 		return nil, err
@@ -516,7 +516,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) 
 	return nil
 }
 
-func aggregateVersionWideLibraries(config *ScanOptions, sys *System) error {
+func aggregateVersionWideLibraries(config *ScanOptions, sys System) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -543,7 +543,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, sys *System) error {
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(config *ScanOptions, sys *System) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, sys System) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
