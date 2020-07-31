@@ -183,6 +183,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
       - name: org
         type: string
         description: "Cloud Foundry target organization."
