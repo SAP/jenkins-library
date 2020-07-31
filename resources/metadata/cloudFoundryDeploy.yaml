@@ -18,14 +18,6 @@ spec:
         aliases:
           - name: cfApiEndpoint
           - name: cloudFoundry/apiEndpoint
-      - name: apiParameters
-        type: string
-        description: "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments."
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        mandatory: false
       - name: appName
         type: string
         description: "Defines the name of the application to be deployed to the Cloud Foundry space"

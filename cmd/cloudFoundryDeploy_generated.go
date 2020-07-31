@@ -17,7 +17,6 @@ import (
 
 type cloudFoundryDeployOptions struct {
 	APIEndpoint              string   `json:"apiEndpoint,omitempty"`
-	APIParameters            string   `json:"apiParameters,omitempty"`
 	AppName                  string   `json:"appName,omitempty"`
 	ArtifactVersion          string   `json:"artifactVersion,omitempty"`
 	CfHome                   string   `json:"cfHome,omitempty"`
@@ -154,7 +153,6 @@ func CloudFoundryDeployCommand() *cobra.Command {
 
 func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
-	cmd.Flags().StringVar(&stepConfig.APIParameters, "apiParameters", os.Getenv("PIPER_apiParameters"), "Addition command line options for cf api command. No escaping/quoting is performed. Not recommanded for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The artifact version, used for influx reporting")
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
@@ -205,14 +203,6 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint"}},
-					},
-					{
-						Name:        "apiParameters",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "appName",

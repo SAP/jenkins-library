@@ -85,7 +85,6 @@ func TestCfDeployment(t *testing.T) {
 		CfSpace:       "mySpace",
 		Username:      "me",
 		Password:      "******",
-		CfAPIOpts:     []string{},
 		CfLoginOpts:   []string{},
 	}
 

@@ -740,7 +740,6 @@ func cfDeploy(
 		CfSpace:       config.Space,
 		Username:      config.Username,
 		Password:      config.Password,
-		CfAPIOpts:     strings.Fields(config.APIParameters),
 		CfLoginOpts:   strings.Fields(config.LoginParameters),
 	})
 
