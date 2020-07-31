@@ -12,6 +12,7 @@ import (
 
 // YAMLDescriptor holds the unique identifier combination for an artifact
 type YAMLDescriptor struct {
+	GroupID    string
 	ArtifactID string
 	Version    string
 }
