@@ -234,3 +234,20 @@ type AbapBinding struct {
 	Version string `json:"version"`
 	Env     string `json:"env"`
 }
+
+// AUtilsMock mock
+type AUtilsMock struct {
+	ReturnedConnectionDetailsHTTP ConnectionDetailsHTTP
+	ReturnedError                 error
+}
+
+// GetAbapCommunicationArrangementInfo mock
+func (autils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
+	return autils.ReturnedConnectionDetailsHTTP, autils.ReturnedError
+}
+
+// Cleanup to reset AUtilsMock
+func (autils *AUtilsMock) Cleanup() {
+	autils.ReturnedConnectionDetailsHTTP = ConnectionDetailsHTTP{}
+	autils.ReturnedError = nil
+}

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -17,8 +18,8 @@ import (
 func TestStep(t *testing.T) {
 	t.Run("Run Step Successful", func(t *testing.T) {
 
-		var autils = mock.AUtilsMock{}
-		defer autils.cleanup()
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
 		autils.ReturnedConnectionDetailsHTTP.User = "user"
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
