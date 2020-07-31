@@ -105,3 +105,26 @@ type CFUtils struct {
 	Exec     command.ExecRunner
 	loggedIn bool
 }
+
+type CloudFoundryUtils interface {
+	Login(options LoginOptions) error
+	Logout() error
+}
+
+type CfUtilsMock struct {
+	LoginError  error
+	LogoutError error
+}
+
+func (cf *CfUtilsMock) Login(options LoginOptions) error {
+	return cf.LoginError
+}
+
+func (cf *CfUtilsMock) Logout() error {
+	return cf.LogoutError
+}
+
+func (cf *CfUtilsMock) Cleanup() {
+	cf.LoginError = nil
+	cf.LogoutError = nil
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -18,38 +19,49 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var err error
-
-	err = cloudFoundryLogin(options, &c)
-
-	if err == nil && options.CfDeleteServiceKeys == true {
-		err = cloudFoundryDeleteServiceKeys(options, &c)
+	cfUtils := cloudfoundry.CFUtils{
+		Exec: &c,
 	}
 
-	if err == nil {
-		err = cloudFoundryDeleteServiceFunction(options.CfServiceInstance, &c)
-	}
-
-	var logoutErr error
-
-	if err == nil {
-		logoutErr = cloudFoundryLogout(&c)
-		if logoutErr != nil {
-			log.Entry().
-				WithError(logoutErr).
-				Fatal("Error while logging out occured.")
-		}
-	} else if err != nil {
-		logoutErr = cloudFoundryLogout(&c)
-		if logoutErr != nil {
-			log.Entry().
-				WithError(logoutErr).
-				Fatal("Error while logging out occured.")
-		}
+	err := runCloudFoundryDeleteService(options, &c, &cfUtils)
+	if err != nil {
 		log.Entry().
 			WithError(err).
-			Fatal("Error occured.")
+			Fatal("Error occured during step.")
 	}
+}
+
+func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.CloudFoundryUtils) error {
+
+	config := cloudfoundry.LoginOptions{
+		CfAPIEndpoint: options.CfAPIEndpoint,
+		CfOrg:         options.CfOrg,
+		CfSpace:       options.CfSpace,
+		Username:      options.Username,
+		Password:      options.Password,
+	}
+	loginErr := cfUtils.Login(config)
+	if loginErr != nil {
+		return fmt.Errorf("Error while logging in occured: %w", loginErr)
+	}
+
+	if options.CfDeleteServiceKeys == true {
+		err := cloudFoundryDeleteServiceKeys(options, c)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := cloudFoundryDeleteServiceFunction(options.CfServiceInstance, c)
+	if err != nil {
+		return err
+	}
+
+	logoutErr := cfUtils.Logout()
+	if logoutErr != nil {
+		return fmt.Errorf("Error while logging out occured: %w", logoutErr)
+	}
+	return nil
 }
 
 func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
@@ -92,20 +104,6 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c c
 	return nil
 }
 
-func cloudFoundryLogin(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
-	var cfLoginScript = []string{"login", "-a", options.CfAPIEndpoint, "-o", options.CfOrg, "-s", options.CfSpace, "-u", options.Username, "-p", options.Password}
-
-	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
-
-	err := c.RunExecutable("cf", cfLoginScript...)
-
-	if err != nil {
-		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
-	}
-	log.Entry().Info("Logged in successfully to Cloud Foundry..")
-	return nil
-}
-
 func cloudFoundryDeleteServiceFunction(service string, c command.ExecRunner) error {
 	var cfdeleteServiceScript = []string{"delete-service", service, "-f"}
 
@@ -117,18 +115,5 @@ func cloudFoundryDeleteServiceFunction(service string, c command.ExecRunner) err
 		return fmt.Errorf("Failed to delete Service: %w", err)
 	}
 	log.Entry().Info("Deletion of Service is finished or the Service has never existed")
-	return nil
-}
-
-func cloudFoundryLogout(c command.ExecRunner) error {
-	var cfLogoutScript = "logout"
-
-	log.Entry().Info("Logging out of Cloud Foundry")
-
-	err := c.RunExecutable("cf", cfLogoutScript)
-	if err != nil {
-		return fmt.Errorf("Failed to Logout of Cloud Foundry: %w", err)
-	}
-	log.Entry().Info("Logged out successfully")
 	return nil
 }
