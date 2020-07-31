@@ -134,7 +134,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		c1 := command.Command{} 
 		switch config.BuildTool {
 			case "maven" : 
-				mavenBuildCommand := []string{"clean", "install"}
+				mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
 				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 				if err != nil {
 					log.Entry().WithError(err).Warn("no pom xml found")
@@ -148,7 +148,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 					localMavenBuild(fileUtils, config, &c1, args)
 				}
 			default : 
-				mavenBuildCommand := []string{"clean", "install"}
+				mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
 				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 				if err != nil {
 					log.Entry().WithError(err).Warn("no pom xml found")
