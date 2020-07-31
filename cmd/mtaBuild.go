@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -152,6 +153,7 @@ func runMtaBuild(config mtaBuildOptions,
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
 
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 
@@ -164,6 +166,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 		platform, err := ValueOfBuildTarget(config.Platform)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 
@@ -175,6 +178,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	default:
 
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("Unknown mta build tool: \"%s\"", config.MtaBuildTool)
 	}
 
@@ -193,6 +197,7 @@ func runMtaBuild(config mtaBuildOptions,
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	if err := e.RunExecutable(call[0], call[1:]...); err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
 
@@ -259,10 +264,12 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 		mtaID, err := getMtaID(mtaYamlFile, p)
 
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", err
 		}
 
 		if len(mtaID) == 0 {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
@@ -288,6 +295,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 	if strings.Contains(mtaYamlStr, timestampVar) {
 
 		if err := p.FileWrite(mtaYamlFile, []byte(strings.ReplaceAll(mtaYamlStr, timestampVar, getTimestamp())), 0644); err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
