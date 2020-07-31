@@ -342,7 +342,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtarFilePath"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
