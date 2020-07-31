@@ -31,7 +31,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	}
 }
 
-func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.CloudFoundryUtils) error {
+func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) error {
 
 	config := cloudfoundry.LoginOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,

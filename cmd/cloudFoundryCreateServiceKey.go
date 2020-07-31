@@ -28,7 +28,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	}
 }
 
-func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, cfUtils cloudfoundry.CloudFoundryUtils) error {
+func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) error {
 
 	// Login via cf cli
 	config := cloudfoundry.LoginOptions{
