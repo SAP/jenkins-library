@@ -214,7 +214,7 @@ func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
 // executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
 func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for MTA project")
-	err := executeMavenScan(config, utils)
+	err := executeMavenScanForPomFile(config, utils, "pom.xml")
 	if err != nil {
 		return err
 	}
@@ -240,6 +240,13 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 func executeMavenScan(config *ScanOptions, utils whitesourceUtils) error {
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.BuildDescriptorFile
+	if pomPath == "" {
+		pomPath = "pom.xml"
+	}
+	return executeMavenScanForPomFile(config, utils, pomPath)
+}
+
+func executeMavenScanForPomFile(config *ScanOptions, utils whitesourceUtils, pomPath string) error {
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
 		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
