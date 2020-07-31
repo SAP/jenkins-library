@@ -145,7 +145,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 				} else {
 					log.Entry().Info("no parent pom xml")
-					localMavenBuild(fileUtils, config, &c1, args)
+					localMavenBuild(fileUtils, config, &c1, pomFiles)
 				}
 			default : 
 				mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
@@ -159,7 +159,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 				} else {
 					log.Entry().Info("no parent pom xml")
-					localMavenBuild(fileUtils, config, &c1, args)
+					localMavenBuild(fileUtils, config, &c1, pomFiles)
 				}
 		}
 	}
@@ -175,14 +175,20 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
     _, found := findElement(pomFiles, "pom.xml")
     if found {
         return append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
-    } else { */
+	} else { */
+		if len(config.M2Path) > 0 {
+			absolutePath, err := filepath.Abs(config.M2Path)
+			if err != nil {
+				log.Entry().WithError(err).Warn("absolute file path error for pom")
+			}
+		}
 		for _, pomFile := range pomFiles {
 			if strings.Count(pomFile, string(os.PathSeparator)) == 1 {
 				executeCleanOptions := maven.ExecuteOptions{
 					PomPath:             pomFile,
 					ProjectSettingsFile: config.ProjectSettingsFile,
 					GlobalSettingsFile:  config.GlobalSettingsFile,
-					M2Path:              config.M2Path,
+					M2Path:              absolutePath,
 					Goals:               []string{"clean"},
 					Defines:             []string{"-DskipTests=true"},
 					ReturnStdout: 		 true,
@@ -195,7 +201,7 @@ func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOpt
 					PomPath:             pomFile,
 					ProjectSettingsFile: config.ProjectSettingsFile,
 					GlobalSettingsFile:  config.GlobalSettingsFile,
-					M2Path:              config.M2Path,
+					M2Path:              absolutePath,
 					Goals:               []string{"install"},
 					Defines:             []string{"-DskipTests=true"},
 					ReturnStdout: 		 true,
