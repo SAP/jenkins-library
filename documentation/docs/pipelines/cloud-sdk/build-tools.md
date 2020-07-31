@@ -87,7 +87,8 @@ It is recommended to use the same tools as in the `package.json` of this [exampl
 
 ##### Maven
 
-In the maven module called `unit-tests` we run the command `mvn test`.
+Maven unit-tests are executed as part of the [`mavenBuild`](https://sap.github.io/jenkins-library/steps/mavenBuild/) step.
+They are supposed to be placed inside of `application/src/test`.
 
 ##### Java MTA modules
 
@@ -181,11 +182,10 @@ For Maven the pipeline expects the following structure.
 The project should have three maven modules named:
 
 - `application`
-- `unit-tests`
 - `integration-tests`
 
-The module `application` should contain the application code.
-The modules `unit-tests` and `integration-tests` should contain the corresponding tests.
+The module `application` should contain the application code and unit tests.
+The module `integration-tests` should contain integration tests.
 
 Furthermore, the test modules have to include the following dependency:
 
