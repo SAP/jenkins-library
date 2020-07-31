@@ -134,6 +134,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		c1 := command.Command{} 
 		switch config.BuildTool {
 			case "maven" : 
+				mavenBuildCommand := []string{"clean", "install"}
 				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 				if err != nil {
 					log.Entry().WithError(err).Warn("no pom xml found")
@@ -141,12 +142,13 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			
 				_, found := findElement(pomFiles, "pom.xml")
 				if found {
-					args = append(args, fmt.Sprintf("--detect.maven.build.command=\"clean install\""))
+					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 				} else {
 					log.Entry().Info("no parent pom xml")
 					localMavenBuild(fileUtils, config, &c1, args)
 				}
 			default : 
+				mavenBuildCommand := []string{"clean", "install"}
 				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 				if err != nil {
 					log.Entry().WithError(err).Warn("no pom xml found")
@@ -154,7 +156,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		
 				_, found := findElement(pomFiles, "pom.xml")
 				if found {
-					args = append(args, fmt.Sprintf("--detect.maven.build.command=\"clean install\""))
+					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 				} else {
 					log.Entry().Info("no parent pom xml")
 					localMavenBuild(fileUtils, config, &c1, args)
