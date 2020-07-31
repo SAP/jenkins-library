@@ -193,8 +193,7 @@ class commonPipelineEnvironment implements Serializable {
 
     void writeToDisk(script) {
 
-        // The default config files were extracted from merged library resources
-        // by setupCommonPipelineEnvironment.groovy into folder .pipeline/tmp/defaults/.
+        // The custom defaults are extracted from library resources into folder .pipeline/tmp/defaults/.
         List customDefaults = getCustomDefaults()
         List customDefaultFiles = []
         customDefaults.each { customDefault ->
@@ -202,6 +201,7 @@ class commonPipelineEnvironment implements Serializable {
             script.writeFile(file: filepath, text: script.libraryResource(customDefault))
             customDefaultFiles.add(filepath)
         }
+        // references to the files are provided via json so that they can be properly accessed from the go step
         script.writeFile file: '.pipeline/commonPipelineEnvironment/customDefaults', text: groovy.json.JsonOutput.toJson(customDefaultFiles)
 
         files.each({f  ->
