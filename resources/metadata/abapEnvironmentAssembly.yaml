@@ -1,8 +1,8 @@
 metadata:
     name: abapEnvironmentAssembly
-    description: Creates a package
+    description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
     longDescription: |
-      Whatever      
+        Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system      
 spec:
   inputs:
     secrets:
@@ -159,7 +159,7 @@ spec:
       - name: PreviousDeliveryCommit
         type: string
         description: Commit ID for the previous delivery event
-        mandatory: true
+        mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
             param: PreviousDeliveryCommit

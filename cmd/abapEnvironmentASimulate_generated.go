@@ -129,7 +129,6 @@ func addAbapEnvironmentASimulateFlags(cmd *cobra.Command, stepConfig *abapEnviro
 	cmd.MarkFlagRequired("SWC")
 	cmd.MarkFlagRequired("CVERS")
 	cmd.MarkFlagRequired("Namespace")
-	cmd.MarkFlagRequired("PreviousDeliveryCommit")
 }
 
 // retrieve step metadata
@@ -187,7 +186,7 @@ func abapEnvironmentASimulateMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

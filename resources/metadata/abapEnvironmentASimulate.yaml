@@ -59,7 +59,7 @@ spec:
         - name: PreviousDeliveryCommit
           type: string
           description: Previous delivery commit
-          mandatory: true
+          mandatory: false
           scope:
             - GENERAL
             - PARAMETERS

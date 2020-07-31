@@ -35,16 +35,14 @@ func TestConnectionDetails(t *testing.T) {
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
 		getAbapCommunicationArrangement = mockgetAbapCommunicationArrangement
 		conn := new(connector)
-		conn.setupAttributes(&piperhttp.Client{})
-		err := conn.setConnectionDetails(configHost)
+		err := conn.init(configHost, &piperhttp.Client{})
 		assert.NoError(t, err)
 		assert.Equal(t, "https://host.endpoint.com/sap/opu/odata/BUILD/CORE_SRV", conn.Baseurl)
 	})
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
 		getAbapCommunicationArrangement = mockgetAbapCommunicationArrangement
 		conn := new(connector)
-		conn.setupAttributes(&piperhttp.Client{})
-		err := conn.setConnectionDetails(configCF)
+		err := conn.init(configCF, &piperhttp.Client{})
 		assert.NoError(t, err)
 		assert.Equal(t, "https://my_cf.endpoint.com/sap/opu/odata/BUILD/CORE_SRV", conn.Baseurl)
 	})
@@ -52,10 +50,9 @@ func TestConnectionDetails(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	t.Run("Run Get", func(t *testing.T) {
-		client := &clientMock2{}
+		client := &clMock{}
 		conn := new(connector)
-		conn.setupAttributes(client)
-		err := conn.setConnectionDetails(configHost)
+		err := conn.init(configHost, client)
 		assert.NoError(t, err)
 		b := build{
 			connector: *conn,
@@ -74,12 +71,11 @@ func TestGet(t *testing.T) {
 
 func TestSTart(t *testing.T) {
 	t.Run("Run start", func(t *testing.T) {
-		client := &clientMock2{
+		client := &clMock{
 			Token: "MyToken",
 		}
 		conn := new(connector)
-		conn.setupAttributes(client)
-		err := conn.setConnectionDetails(configHost)
+		err := conn.init(configHost, client)
 		assert.NoError(t, err)
 		b := build{
 			connector: *conn,
@@ -101,11 +97,13 @@ func TestSTart(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, accepted, b.RunState)
 
-		b.get()
+		err = b.get()
+		assert.NoError(t, err)
 		assert.Equal(t, finished, b.RunState)
 		//tasks
 		assert.Equal(t, 0, len(b.Tasks))
-		b.getTasks()
+		err = b.getTasks()
+		assert.NoError(t, err)
 		assert.Equal(t, b.Tasks[0].TaskID, 0)
 		assert.Equal(t, b.Tasks[0].PluginClass, "")
 		assert.Equal(t, b.Tasks[1].TaskID, 1)
@@ -113,14 +111,16 @@ func TestSTart(t *testing.T) {
 		//logs
 		assert.Equal(t, 0, len(b.Tasks[0].Logs))
 		assert.Equal(t, 0, len(b.Tasks[1].Logs))
-		b.getLogs()
+		err = b.getLogs()
+		assert.NoError(t, err)
 		assert.Equal(t, "I:/BUILD/LOG:000 ABAP Build Framework", b.Tasks[0].Logs[0].Logline)
 		assert.Equal(t, loginfo, b.Tasks[0].Logs[0].Msgty)
 		assert.Equal(t, "W:/BUILD/LOG:000 We can even have warnings!", b.Tasks[1].Logs[1].Logline)
 		assert.Equal(t, logwarning, b.Tasks[1].Logs[1].Msgty)
 		//values
 		assert.Equal(t, 0, len(b.Values))
-		b.getValues()
+		err = b.getValues()
+		assert.NoError(t, err)
 		assert.Equal(t, 4, len(b.Values))
 		assert.Equal(t, "PHASE", b.Values[0].ValueID)
 		assert.Equal(t, "test1", b.Values[0].Value)
@@ -133,7 +133,8 @@ func TestSTart(t *testing.T) {
 		//results
 		assert.Equal(t, 0, len(b.Tasks[0].Results))
 		assert.Equal(t, 0, len(b.Tasks[1].Results))
-		b.getResults()
+		err = b.getResults()
+		assert.NoError(t, err)
 		assert.Equal(t, 0, len(b.Tasks[0].Results))
 		assert.Equal(t, 2, len(b.Tasks[1].Results))
 		assert.Equal(t, "image/jpeg", b.Tasks[1].Results[0].Mimetype)
@@ -148,15 +149,15 @@ func TestSTart(t *testing.T) {
 	})
 }
 
-type clientMock2 struct {
+type clMock struct {
 	Token      string
 	StatusCode int
 	Error      error
 }
 
-func (c *clientMock2) SetOptions(opts piperhttp.ClientOptions) {}
+func (c *clMock) SetOptions(opts piperhttp.ClientOptions) {}
 
-func (c *clientMock2) SendRequest(method string, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *clMock) SendRequest(method string, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	if method == "GET" || method == "POST" {
 		var body []byte
 		body = []byte(fakeResponse(method, url))

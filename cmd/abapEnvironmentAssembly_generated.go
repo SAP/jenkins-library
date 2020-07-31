@@ -58,7 +58,7 @@ func (p *abapEnvironmentAssemblyCommonPipelineEnvironment) persist(path, resourc
 	}
 }
 
-// AbapEnvironmentAssemblyCommand Creates a package
+// AbapEnvironmentAssemblyCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentAssemblyCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentAssembly"
 
@@ -69,8 +69,8 @@ func AbapEnvironmentAssemblyCommand() *cobra.Command {
 
 	var createAbapEnvironmentAssemblyCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Creates a package",
-		Long:  `Whatever`,
+		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+		Long:  `Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -139,7 +139,6 @@ func addAbapEnvironmentAssemblyFlags(cmd *cobra.Command, stepConfig *abapEnviron
 	cmd.MarkFlagRequired("SWC")
 	cmd.MarkFlagRequired("CVERS")
 	cmd.MarkFlagRequired("Namespace")
-	cmd.MarkFlagRequired("PreviousDeliveryCommit")
 }
 
 // retrieve step metadata
@@ -261,7 +260,7 @@ func abapEnvironmentAssemblyMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "PreviousDeliveryCommit"}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

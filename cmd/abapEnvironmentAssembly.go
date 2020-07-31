@@ -20,9 +20,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-//todo:
-//durch groovy skripte gehen -> hab ich was vergessen?
-//aufräumen & logging
 func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *abapEnvironmentAssemblyCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{}
@@ -42,17 +39,15 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 }
 
 func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, commonPipelineEnvironment *abapEnvironmentAssemblyCommonPipelineEnvironment) error {
-	// err := testDownload(config)
-	err := runAssembly(config)
-	// err := testGet(config)
-	return err
+	return runAssembly(config)
 }
 
+// *******************************************************************************************************************************
+// ********************************************************** Step logic *********************************************************
+// *******************************************************************************************************************************
 func runAssembly(config *abapEnvironmentAssemblyOptions) error {
-
 	conn := new(connector)
-	conn.setupAttributes(&piperhttp.Client{})
-	err := conn.setConnectionDetails(*config)
+	err := conn.init(*config, &piperhttp.Client{})
 	if err != nil {
 		return err
 	}
@@ -61,16 +56,8 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 	}
 	valuesInput := values{
 		Values: []value{
-			// {
-			// 	ValueID: "SWC",
-			// 	Value:   config.SWC,
-			// },
 			{
-				ValueID: "PACKAGES",
-				Value:   "/BUILD/CORE",
-			},
-			{
-				ValueID: "SOFTWARE_COMPONENT",
+				ValueID: "SWC",
 				Value:   config.SWC,
 			},
 			{
@@ -82,40 +69,35 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 				Value:   config.Namespace,
 			},
 			{
-				ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value:   config.PreviousDeliveryCommit,
-			},
-			{
 				ValueID: "PACKAGE_NAME_" + config.PackageType,
 				Value:   config.PackageName,
 			},
 		},
 	}
-
-	//TODO phase build_aoi etc testten
-	// phase := "BUILD_" + config.PackageType
-	phase := "test1"
-	err = assemblyBuild.startPollLog(phase, valuesInput)
+	if config.PreviousDeliveryCommit != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
+				Value: config.PreviousDeliveryCommit})
+	}
+	phase := "BUILD_" + config.PackageType
+	err = assemblyBuild.startPollLog(phase, valuesInput, 30, 60)
 	if err != nil {
 		return err
 	}
-
-	//this is just for testing, instead of SAR_XML we will really download "2times_hello"
-	// resultName := "SAR_XML"
-	resultName := "2times_hello"
+	resultName := "SAR_XML"
 	resultSARXML, err := assemblyBuild.getResult(resultName)
 	if err != nil {
 		return err
 	}
-
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	downloadPath := filepath.Join(envPath, path.Base("SAR_XML"))
-	// downloadPath := filepath.Join(envPath, path.Base(resultName))
+	downloadPath := filepath.Join(envPath, path.Base(resultName))
 	err = resultSARXML.download(downloadPath)
 	return err
 }
 
-// ############################## REUSE ################################
+// *******************************************************************************************************************************
+// ************************************************************ REUSE ************************************************************
+// *******************************************************************************************************************************
 type resultState string
 type runState string
 type msgty string
@@ -143,7 +125,7 @@ type connector struct {
 	Baseurl        string
 }
 
-//structs needed for json convertion
+//******** structs needed for json convertion ********
 
 type jsonBuild struct {
 	Build *build `json:"d"`
@@ -173,7 +155,7 @@ type jsonValues struct {
 	} `json:"d"`
 }
 
-// resembling data model in backend
+// ******** resembling data model in backend ********
 
 type build struct {
 	connector
@@ -228,7 +210,7 @@ type value struct {
 	Value   string `json:"value"`
 }
 
-// import structure to post call
+// ******** import structure to post call ********
 
 type inputForPost struct {
 	phase  string
@@ -266,15 +248,19 @@ func (in inputForPost) String() string {
 		in.values.String())
 }
 
-// var cf = cloudfoundry.CFUtils{Exec: &command.Command{}}
-// var cfReadServiceKey = cf.ReadServiceKeyAbapEnvironment
+// ******** technical communication settings ********
 
 var getAbapCommunicationArrangement = abaputils.GetAbapCommunicationArrangementInfo
 
-func (conn *connector) setConnectionDetails(options abapEnvironmentAssemblyOptions) error {
+func (conn *connector) init(options abapEnvironmentAssemblyOptions, inputclient piperhttp.Sender) error {
+	conn.Client = inputclient
+	conn.Header = make(map[string][]string)
+	conn.Header["Accept"] = []string{"application/json"}
+	conn.Header["Content-Type"] = []string{"application/json"}
+	conn.DownloadClient = &piperhttp.Client{}
+	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
-
 	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
 	subOptions.CfServiceInstance = options.CfServiceInstance
 	subOptions.CfServiceKeyName = options.CfServiceKeyName
@@ -285,12 +271,10 @@ func (conn *connector) setConnectionDetails(options abapEnvironmentAssemblyOptio
 	subOptions.Username = options.Username
 
 	var c command.ExecRunner = &command.Command{}
-
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	// connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/BUILD/CORE_SRV")
-	connectionDetails, errorGetInfo := getAbapCommunicationArrangement(subOptions, c, "/sap/opu/odata/BUILD/CORE_SRV")
-	if errorGetInfo != nil {
-		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
+	connectionDetails, err := getAbapCommunicationArrangement(subOptions, c, "/sap/opu/odata/BUILD/CORE_SRV")
+	if err != nil {
+		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
 
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{
@@ -298,9 +282,7 @@ func (conn *connector) setConnectionDetails(options abapEnvironmentAssemblyOptio
 		Password: connectionDetails.Password,
 	})
 	cookieJar, _ := cookiejar.New(nil)
-	//TODO soll das benutzt werden?
 	conn.Client.SetOptions(piperhttp.ClientOptions{
-		// MaxRequestDuration: 180 * time.Second,
 		Username:  connectionDetails.User,
 		Password:  connectionDetails.Password,
 		CookieJar: cookieJar,
@@ -309,20 +291,19 @@ func (conn *connector) setConnectionDetails(options abapEnvironmentAssemblyOptio
 	return nil
 }
 
-func (conn *connector) setupAttributes(inputclient piperhttp.Sender) {
-	conn.Client = inputclient
-	conn.Header = make(map[string][]string)
-	conn.Header["Accept"] = []string{"application/json"}
-	conn.Header["Content-Type"] = []string{"application/json"}
-	conn.DownloadClient = &piperhttp.Client{}
-	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
-}
+// ******** technical communication calls ********
 
 func (conn *connector) getToken() error {
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
 	response, err := conn.Client.SendRequest("HEAD", conn.Baseurl, nil, conn.Header, nil)
 	if err != nil {
-		return fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
+		if response == nil {
+			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
+		}
+		defer response.Body.Close()
+		errorbody, _ := ioutil.ReadAll(response.Body)
+		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
+
 	}
 	defer response.Body.Close()
 	token := response.Header.Get("X-CSRF-Token")
@@ -335,11 +316,11 @@ func (conn connector) get(appendum string) ([]byte, error) {
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil {
-			return nil, err
+			return nil, errors.Wrap(err, "Get failed")
 		}
 		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Get failed %v", string(errorbody))
+		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -349,15 +330,14 @@ func (conn connector) get(appendum string) ([]byte, error) {
 
 func (conn connector) post(importBody string) ([]byte, error) {
 	url := conn.Baseurl + "/builds"
-	byteBody := bytes.NewBuffer([]byte(importBody))
-	response, err := conn.Client.SendRequest("POST", url, byteBody, conn.Header, nil)
+	response, err := conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
 	if err != nil {
 		if response == nil {
-			return nil, err
+			return nil, errors.Wrap(err, "Post failed")
 		}
 		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed %v", string(errorbody))
+		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
 
 	}
 	defer response.Body.Close()
@@ -370,6 +350,8 @@ func (conn connector) download(appendum string, downloadPath string) error {
 	err := conn.DownloadClient.DownloadFile(url, downloadPath, nil, nil)
 	return err
 }
+
+// ******** BUILD logic ********
 
 func (b *build) start(phase string, inputValues values) error {
 	if err := b.getToken(); err != nil {
@@ -385,24 +367,24 @@ func (b *build) start(phase string, inputValues values) error {
 		return err
 	}
 
-	var data jsonBuild
-	json.Unmarshal(body, &data)
-	b.BuildID = data.Build.BuildID
-	b.RunState = data.Build.RunState
-	b.ResultState = data.Build.ResultState
-	b.Phase = data.Build.Phase
-	b.Entitytype = data.Build.Entitytype
-	b.Startedby = data.Build.Startedby
-	b.StartedAt = data.Build.StartedAt
-	b.FinishedAt = data.Build.FinishedAt
+	var jBuild jsonBuild
+	json.Unmarshal(body, &jBuild)
+	b.BuildID = jBuild.Build.BuildID
+	b.RunState = jBuild.Build.RunState
+	b.ResultState = jBuild.Build.ResultState
+	b.Phase = jBuild.Build.Phase
+	b.Entitytype = jBuild.Build.Entitytype
+	b.Startedby = jBuild.Build.Startedby
+	b.StartedAt = jBuild.Build.StartedAt
+	b.FinishedAt = jBuild.Build.FinishedAt
 	return nil
 }
 
-func (b *build) startPollLog(phase string, inputValues values) error {
+func (b *build) startPollLog(phase string, inputValues values, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	if err := b.start(phase, inputValues); err != nil {
 		return err
 	}
-	if err := b.poll(15, 60); err != nil {
+	if err := b.poll(maxRuntimeInMinutes, pollIntervalsInSeconds); err != nil {
 		return err
 	}
 	if err := b.printLogs(); err != nil {
@@ -417,15 +399,15 @@ func (b *build) get() error {
 	if err != nil {
 		return err
 	}
-	var data jsonBuild
-	json.Unmarshal(body, &data)
-	b.RunState = data.Build.RunState
-	b.ResultState = data.Build.ResultState
-	b.Phase = data.Build.Phase
-	b.Entitytype = data.Build.Entitytype
-	b.Startedby = data.Build.Startedby
-	b.StartedAt = data.Build.StartedAt
-	b.FinishedAt = data.Build.FinishedAt
+	var jBuild jsonBuild
+	json.Unmarshal(body, &jBuild)
+	b.RunState = jBuild.Build.RunState
+	b.ResultState = jBuild.Build.ResultState
+	b.Phase = jBuild.Build.Phase
+	b.Entitytype = jBuild.Build.Entitytype
+	b.Startedby = jBuild.Build.Startedby
+	b.StartedAt = jBuild.Build.StartedAt
+	b.FinishedAt = jBuild.Build.FinishedAt
 	return nil
 }
 
@@ -436,9 +418,9 @@ func (b *build) getTasks() error {
 		if err != nil {
 			return err
 		}
-		var data jsonTasks
-		json.Unmarshal(body, &data)
-		b.Tasks = data.ResultTasks.Tasks
+		var jTasks jsonTasks
+		json.Unmarshal(body, &jTasks)
+		b.Tasks = jTasks.ResultTasks.Tasks
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
 		})
@@ -456,9 +438,9 @@ func (b *build) getValues() error {
 		if err != nil {
 			return err
 		}
-		var data jsonValues
-		json.Unmarshal(body, &data)
-		b.Values = data.ResultValues.Values
+		var jValues jsonValues
+		json.Unmarshal(body, &jValues)
+		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
 			b.Values[i].connector = b.connector
 		}
@@ -541,7 +523,7 @@ func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds t
 	for {
 		select {
 		case <-timeout:
-			return errors.New("timed out")
+			return errors.New("Timed out")
 		case <-ticker:
 			b.get()
 			ok, err := b.IsFinished()
@@ -557,7 +539,7 @@ func (b *build) IsFinished() (bool, error) {
 	case finished:
 		return true, nil
 	case failed:
-		return true, errors.New("build failed")
+		return true, errors.New("Build finished with status failed")
 	default:
 		return false, nil
 	}
@@ -570,9 +552,9 @@ func (t *task) getLogs() error {
 		if err != nil {
 			return err
 		}
-		var data jsonLogs
-		json.Unmarshal(body, &data)
-		t.Logs = data.ResultLogs.Logs
+		var jLogs jsonLogs
+		json.Unmarshal(body, &jLogs)
+		t.Logs = jLogs.ResultLogs.Logs
 	}
 	return nil
 }
@@ -584,9 +566,9 @@ func (t *task) getResults() error {
 		if err != nil {
 			return err
 		}
-		var data jsonResults
-		json.Unmarshal(body, &data)
-		t.Results = data.ResultResults.Results
+		var jResults jsonResults
+		json.Unmarshal(body, &jResults)
+		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
 		}
@@ -613,37 +595,3 @@ func (logging *logStruct) print() {
 	default:
 	}
 }
-
-//TODO delete
-// ############################## delete start ################################
-
-func createTempDir() string {
-	tmpFolder, err := ioutil.TempDir(".", "temp-")
-	if err != nil {
-		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
-	}
-	return tmpFolder
-}
-
-func testGet(config *abapEnvironmentAssemblyOptions) error {
-
-	conn := new(connector)
-	conn.setupAttributes(&piperhttp.Client{})
-	conn.setConnectionDetails(*config)
-	b := build{
-		connector: *conn,
-		BuildID:   "ABIFNLDCSQPNVNE2XXXMMBC2KY",
-	}
-	err := b.get()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(b.RunState)
-	fmt.Println(b.ResultState)
-
-	err = b.printLogs()
-	return err
-}
-
-// ############################ delete ende ##################
