@@ -259,22 +259,42 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
+	t.Run("M2Path related tests", func(t *testing.T) {
+		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
+
+			e := mock.ExecMockRunner{}
+
+			cpe.mtarFilePath = ""
+
+			options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar", M2Path: ".pipeline/local_repo"}
+
+			existingFiles := make(map[string]string)
+			existingFiles["mta.yaml"] = "ID: \"myNameFromMtar\""
+			fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
+
+			err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, newNpmExecutor(&e))
+
+			assert.Nil(t, err)
+			assert.Contains(t, e.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
+		})
+	})
+
 	t.Run("Settings file releatd tests", func(t *testing.T) {
 
-		var settingsFile string
-		var settingsFileType maven.SettingsFileType
+		var projectSettingsFile string
+		var globalSettingsFile string
 
 		defer func() {
-			getSettingsFile = maven.GetSettingsFile
+			downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 		}()
 
-		getSettingsFile = func(
-			sfType maven.SettingsFileType,
-			src string,
-			fileUtilsMock piperutils.FileUtils,
-			httpClientMock piperhttp.Downloader) error {
-			settingsFile = src
-			settingsFileType = sfType
+		downloadAndCopySettingsFiles = func(
+			globalSettings string,
+			projectSettings string,
+			fileUtils piperutils.FileUtils,
+			httpClient maven.SettingsDownloadUtils) error {
+			projectSettingsFile = projectSettings
+			globalSettingsFile = globalSettings
 			return nil
 		}
 
@@ -285,8 +305,8 @@ func TestMarBuild(t *testing.T) {
 		t.Run("Copy global settings file", func(t *testing.T) {
 
 			defer func() {
-				settingsFile = ""
-				settingsFileType = -1
+				projectSettingsFile = ""
+				globalSettingsFile = ""
 			}()
 
 			e := mock.ExecMockRunner{}
@@ -297,15 +317,15 @@ func TestMarBuild(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			assert.Equal(t, settingsFile, "/opt/maven/settings.xml")
-			assert.Equal(t, settingsFileType, maven.GlobalSettingsFile)
+			assert.Equal(t, globalSettingsFile, "/opt/maven/settings.xml")
+			assert.Equal(t, projectSettingsFile, "")
 		})
 
 		t.Run("Copy project settings file", func(t *testing.T) {
 
 			defer func() {
-				settingsFile = ""
-				settingsFileType = -1
+				projectSettingsFile = ""
+				globalSettingsFile = ""
 			}()
 
 			e := mock.ExecMockRunner{}
@@ -316,8 +336,8 @@ func TestMarBuild(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			assert.Equal(t, "/my/project/settings.xml", settingsFile)
-			assert.Equal(t, maven.ProjectSettingsFile, settingsFileType)
+			assert.Equal(t, "/my/project/settings.xml", projectSettingsFile)
+			assert.Equal(t, "", globalSettingsFile)
 		})
 	})
 }
@@ -365,6 +385,14 @@ func (f *MtaTestFileUtilsMock) FileWrite(path string, content []byte, perm os.Fi
 
 func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
+}
+
+func (f *MtaTestFileUtilsMock) Abs(path string) (string, error) {
+	return "/root_folder/workspace/" + path, nil
+}
+
+func (f *MtaTestFileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func (f *MtaTestFileUtilsMock) Chmod(path string, mode os.FileMode) error {
