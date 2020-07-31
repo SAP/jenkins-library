@@ -274,16 +274,16 @@ func executeMavenScanForPomFile(config *ScanOptions, utils whitesourceUtils, pom
 	}
 
 	var flags []string
-	if len(config.BuildDescriptorExcludeList) == 0 {
-		// exclude known test modules by default
-		flags = append(flags, maven.GetTestModulesExcludes()...)
-	} else {
-		// TODO: From the documentation, this would be a file path to a module's pom.xml,
-		// but descriptor is used here as the module's name.
-		for _, descriptor := range config.BuildDescriptorExcludeList {
-			flags = append(flags, "-pl", "!"+descriptor)
-		}
-	}
+	//	if len(config.BuildDescriptorExcludeList) == 0 {
+	// exclude known test modules by default
+	flags = append(flags, maven.GetTestModulesExcludes()...)
+	//} else {
+	//	// TODO: From the documentation, this would be a file path to a module's pom.xml,
+	//	// but descriptor is used here as the module's name.
+	//	for _, descriptor := range config.BuildDescriptorExcludeList {
+	//		flags = append(flags, "-pl", "!"+descriptor)
+	//	}
+	//}
 
 	_, err := maven.Execute(&maven.ExecuteOptions{
 		PomPath:             pomPath,
