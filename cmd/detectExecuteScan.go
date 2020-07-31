@@ -143,6 +143,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 				if found {
 				args = append(args, fmt.Sprintf("-detect.maven.build.command=\"clean install\""))
 				} else {
+					log.Entry().Info("no parent pom xml")
 					localMavenBuild(fileUtils, config, &c1, args)
 				}
 			default : 
