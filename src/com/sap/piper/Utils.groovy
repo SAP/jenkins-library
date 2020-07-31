@@ -113,8 +113,8 @@ void pushToSWA(Map parameters, Map config) {
     try {
         parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
         parameters.eventType = parameters.get('eventType') ?: 'library-os'
-        parameters.jobUrlSha1 = generateSha1(env.JOB_URL)
-        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
+        parameters.jobUrlSha1 = generateSha1(env.JOB_URL ?: '')
+        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL ?: '')
 
         Telemetry.notify(this, config, parameters)
     } catch (ignore) {

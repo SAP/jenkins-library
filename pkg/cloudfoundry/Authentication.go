@@ -92,7 +92,6 @@ type LoginOptions struct {
 	CfSpace       string
 	Username      string
 	Password      string
-	CfAPIOpts     []string
 	CfLoginOpts   []string
 }
 

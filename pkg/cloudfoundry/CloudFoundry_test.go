@@ -136,9 +136,6 @@ func TestCloudFoundryLogin(t *testing.T) {
 				"--skip-ssl-validation",
 				"--origin", "ldap",
 			},
-			CfAPIOpts: []string{
-				"--skip-ssl-validation",
-			},
 		}
 		cf := CFUtils{Exec: m}
 		err := cf.Login(cfconfig)

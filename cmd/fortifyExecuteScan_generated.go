@@ -54,7 +54,7 @@ type fortifyExecuteScanOptions struct {
 	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
 	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
 	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
-	DefaultVersioningModel          string   `json:"defaultVersioningModel,omitempty"`
+	VersioningModel                 string   `json:"versioningModel,omitempty"`
 	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
 	ReportTemplateID                int      `json:"reportTemplateId,omitempty"`
 	FilterSetTitle                  string   `json:"filterSetTitle,omitempty"`
@@ -225,7 +225,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.DeltaMinutes, "deltaMinutes", 5, "The number of minutes for which an uploaded FPR artifact is considered to be recent and healthy, if exceeded an error will be thrown")
 	cmd.Flags().IntVar(&stepConfig.SpotCheckMinimum, "spotCheckMinimum", 1, "The minimum number of issues that must be audited per category in the `Spot Checks of each Category` folder to avoid an error being thrown")
 	cmd.Flags().StringVar(&stepConfig.FprDownloadEndpoint, "fprDownloadEndpoint", `/download/currentStateFprDownload.html`, "Fortify SSC endpoint for FPR downloads")
-	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
+	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.PythonInstallCommand, "pythonInstallCommand", `{{.Pip}} install --user .`, "Additional install command that can be run when `buildTool: 'pip'` is used which allows further customizing the execution environment of the scan")
 	cmd.Flags().IntVar(&stepConfig.ReportTemplateID, "reportTemplateId", 18, "Report template ID to be used for generating the Fortify report")
 	cmd.Flags().StringVar(&stepConfig.FilterSetTitle, "filterSetTitle", `SAP`, "Title of the filter set to use for analysing the results")
@@ -237,6 +237,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 
 	cmd.MarkFlagRequired("authToken")
+	cmd.MarkFlagRequired("serverUrl")
 }
 
 // retrieve step metadata
@@ -518,7 +519,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl"}},
 					},
 					{
@@ -554,12 +555,12 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "fortifyFprDownloadEndpoint"}},
 					},
 					{
-						Name:        "defaultVersioningModel",
+						Name:        "versioningModel",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
 					},
 					{
 						Name:        "pythonInstallCommand",
