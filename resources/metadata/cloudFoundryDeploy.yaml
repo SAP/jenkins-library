@@ -173,6 +173,8 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        aliases:
+          - name: cloudFoundry/mtaExtensionDescriptor
       - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
