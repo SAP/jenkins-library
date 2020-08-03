@@ -106,24 +106,24 @@ type CFUtils struct {
 	loggedIn bool
 }
 
-// AuthenticationUtils Interface for cfLogin und cfLogout
+// AuthenticationUtils - interface for cloud foundry login and logout
 type AuthenticationUtils interface {
 	Login(options LoginOptions) error
 	Logout() error
 }
 
-// CfUtilsMock mock for CfUtils
+// CfUtilsMock - mock for CfUtils
 type CfUtilsMock struct {
 	LoginError  error
 	LogoutError error
 }
 
-// Login mock implementation for Login
+// Login mock implementation
 func (cf *CfUtilsMock) Login(options LoginOptions) error {
 	return cf.LoginError
 }
 
-// Logout mock implementation for Logout
+// Logout mock implementation
 func (cf *CfUtilsMock) Logout() error {
 	return cf.LogoutError
 }
