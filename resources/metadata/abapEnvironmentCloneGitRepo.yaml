@@ -38,16 +38,29 @@ spec:
         mandatory: true
         secret: true
       - name: repositories
-        type: 'string'
-        description: Specifies a list of maps of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
+        type: string
+        description: Specifies a string containing a json list of maps of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
         scope:
         - PARAMETERS
         - STAGES
         - STEPS
-        mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/repositories
+      - name: repositoryName
+        type: string
+        description: Specifies a repository (Software Components) on the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: branchName
+        type: string
+        description: Specifies a branch of a repository (Software Components) on the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
       - name: host
         type: string
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
