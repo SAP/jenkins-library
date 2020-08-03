@@ -18,9 +18,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
-func GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, c command.ExecRunner, oDataURL string) (ConnectionDetailsHTTP, error) {
+/*
+AbapUtils Struct
+*/
+type AbapUtils struct {
+	Exec command.ExecRunner
+}
 
+/*
+Communication for defining function used for communication
+*/
+type Communication interface {
+	GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error)
+}
+
+// GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
+func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
+	c := abaputils.Exec
 	var connectionDetails ConnectionDetailsHTTP
 	var error error
 
@@ -267,4 +281,21 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 		Header:     header,
 		Body:       ioutil.NopCloser(bytes.NewReader(body)),
 	}, c.Error
+}
+
+// AUtilsMock mock
+type AUtilsMock struct {
+	ReturnedConnectionDetailsHTTP ConnectionDetailsHTTP
+	ReturnedError                 error
+}
+
+// GetAbapCommunicationArrangementInfo mock
+func (autils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
+	return autils.ReturnedConnectionDetailsHTTP, autils.ReturnedError
+}
+
+// Cleanup to reset AUtilsMock
+func (autils *AUtilsMock) Cleanup() {
+	autils.ReturnedConnectionDetailsHTTP = ConnectionDetailsHTTP{}
+	autils.ReturnedError = nil
 }

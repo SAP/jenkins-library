@@ -22,8 +22,11 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
@@ -47,15 +50,18 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 
-		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
 		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 
@@ -73,8 +79,11 @@ func TestHostConfig(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)
