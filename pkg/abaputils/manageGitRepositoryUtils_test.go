@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPollEntityPullStep(t *testing.T) {
+func TestPollEntity(t *testing.T) {
 
-	t.Run("Test poll entity: success case", func(t *testing.T) {
+	t.Run("Test poll entity multiple repos: success case", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
@@ -44,7 +44,7 @@ func TestPollEntityPullStep(t *testing.T) {
 		assert.Equal(t, "S", status)
 	})
 
-	t.Run("Test poll entity: error case", func(t *testing.T) {
+	t.Run("Test poll entity multiple repos: error case", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
@@ -79,11 +79,8 @@ func TestPollEntityPullStep(t *testing.T) {
 		status, _ := PollEntity(config.RepositoryNames[0], con, client, 0)
 		assert.Equal(t, "E", status)
 	})
-}
 
-func TestPollEntityCheckoutStep(t *testing.T) {
-
-	t.Run("Test poll entity: success case", func(t *testing.T) {
+	t.Run("Test poll entity single repo: success case", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
@@ -119,7 +116,7 @@ func TestPollEntityCheckoutStep(t *testing.T) {
 		assert.Equal(t, "S", status)
 	})
 
-	t.Run("Test poll entity: error case", func(t *testing.T) {
+	t.Run("Test poll entity single repo: error case", func(t *testing.T) {
 
 		client := &ClientMock{
 			BodyList: []string{
