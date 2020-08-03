@@ -111,6 +111,8 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 
+	// if buildCode is false then user may provide a path to a local .m2 config where previously build artifacts are present 
+	// when buildCode is true (default behaviour) we build the code 
 	if !config.BuildCode {
 		mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
 
@@ -150,11 +152,12 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			if err != nil {
 				log.Entry().Info("Build tool is %v and no pom xml found. Detect scan will proceed without a build", config.BuildTool) 
 			}
-			/* _, found := findElement(pomFiles, "pom.xml") */
+			/* When pom.xml is present in the workspace directory and if this has not been added to BuildDescriptorExcludeList we build the code 
+			considering this to be the parent POM 
+			if not then we find every pom xml in the current workspace and use it to build unless it is added in BuildDescriptorExcludeList*/
 			if findElement(pomFiles, "pom.xml") && !findElement(config.BuildDescriptorExcludeList, "pom.xml") {
 				args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 			} else {
-				/* look at buildDescriptorExcludeList list and try to build everything else*/
 				localMavenBuild(fileUtils, config, &c1, pomFiles)
 			}
 		default:
