@@ -3,6 +3,7 @@ package abaputils
 import (
 	"encoding/json"
 	"regexp"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -14,7 +15,8 @@ import (
 AbapUtils Struct
 */
 type AbapUtils struct {
-	Exec command.ExecRunner
+	Exec      command.ExecRunner
+	Intervall time.Duration
 }
 
 /*
@@ -22,6 +24,7 @@ Communication for defining function used for communication
 */
 type Communication interface {
 	GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error)
+	GetPollIntervall() time.Duration
 }
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
@@ -96,6 +99,16 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 
 	log.Entry().Info("Service Key read successfully")
 	return abapServiceKey, nil
+}
+
+/*
+GetPollIntervall returns the specified intervall from AbapUtils or a default value of 10 seconds
+*/
+func (abaputils *AbapUtils) GetPollIntervall() time.Duration {
+	if abaputils.Intervall != 0 {
+		return abaputils.Intervall
+	}
+	return 10 * time.Second
 }
 
 /****************************************
@@ -244,6 +257,11 @@ type AUtilsMock struct {
 // GetAbapCommunicationArrangementInfo mock
 func (autils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
 	return autils.ReturnedConnectionDetailsHTTP, autils.ReturnedError
+}
+
+// GetPollIntervall mock
+func (autils *AUtilsMock) GetPollIntervall() time.Duration {
+	return 1 * time.Microsecond
 }
 
 // Cleanup to reset AUtilsMock

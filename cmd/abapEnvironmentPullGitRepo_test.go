@@ -39,8 +39,9 @@ func TestStep(t *testing.T) {
 		client := &clientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
