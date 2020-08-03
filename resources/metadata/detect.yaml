@@ -189,6 +189,15 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: buildDescriptorExcludeList
+        type: '[]string'
+        description: List of build descriptors and therefore modules to exclude from the build, scan and assessment activities.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: []
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
@@ -230,6 +239,5 @@ spec:
       params:
       - name: buildTool
         value: maven
-  # default to plain openjdk 
-  - image: maven:3.5-jdk-8
-    workingDir: /home/java
+  - image: openjdk:11
+    workingDir: /root
