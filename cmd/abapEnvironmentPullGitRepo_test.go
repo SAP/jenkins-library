@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStep(t *testing.T) {
+func TestPullStep(t *testing.T) {
 	t.Run("Run Step Successful", func(t *testing.T) {
 
 		var autils = abaputils.AUtilsMock{}
