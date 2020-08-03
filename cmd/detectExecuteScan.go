@@ -148,7 +148,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			mavenBuildCommand = append(mavenBuildCommand, mavenBuildArgs...)
 			pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 			if err != nil {
-				log.Entry().WithError(err).Warn("no pom xml found") 
+				log.Entry().Info("Build tool is %v and no pom xml found. Detect scan will proceed without a build", config.BuildTool) 
 			}
 			/* _, found := findElement(pomFiles, "pom.xml") */
 			if findElement(pomFiles, "pom.xml") && !findElement(config.BuildDescriptorExcludeList, "pom.xml") {
