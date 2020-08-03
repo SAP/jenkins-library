@@ -225,12 +225,11 @@ spec:
   containers:
   - image: maven:3.5-jdk-8
     workingDir: /home/java
-    env: []
     conditions:
     - conditionRef: strings-equal
       params:
       - name: buildTool
         value: maven
+  # default to plain openjdk 
   - image: maven:3.5-jdk-8
     workingDir: /home/java
-    env: []

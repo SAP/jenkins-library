@@ -133,7 +133,7 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 	} else {
 		c1 := command.Command{} 
 		switch config.BuildTool {
-			case "maven" : 
+			case "maven", "mta" : 
 				mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
 				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
 				if err != nil {
@@ -144,21 +144,11 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 				if found {
 					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 				} else {
+					/* look at buildDescriptorExcludeList list and try to build everything else*/
 					localMavenBuild(fileUtils, config, &c1, pomFiles)
 				}
 			default : 
-				mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
-				pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
-				if err != nil {
-					log.Entry().WithError(err).Warn("no pom xml found")
-				}
-		
-				_, found := findElement(pomFiles, "pom.xml")
-				if found {
-					args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
-				} else {
-					localMavenBuild(fileUtils, config, &c1, pomFiles)
-				}
+				log.Entry().Info("Detect scan will proceed without a build")
 		}
 	}
 	return args, nil
