@@ -338,6 +338,7 @@ spec:
           deprecated: true
       type: string
       description: "Fortify SSC Url to be used for accessing the APIs"
+      mandatory: true
       scope:
         - GENERAL
         - PARAMETERS
@@ -380,15 +381,24 @@ spec:
         - STAGES
         - STEPS
       default: "/download/currentStateFprDownload.html"
-    - name: defaultVersioningModel
+    - name: versioningModel
+      aliases:
+        - name: defaultVersioningModel
+          deprecated: true
       type: string
       description: "The default project versioning model used for creating the version based on the build descriptor version to report results in SSC, can be one of `'major'`,
         `'major-minor'`, `'semantic'`, `'full'`"
       scope:
         - PARAMETERS
+        - GENERAL
         - STAGES
         - STEPS
       default: "major"
+      possibleValues:
+        - major
+        - major-minor
+        - semantic
+        - full
     - name: pythonInstallCommand
       type: string
       description: "Additional install command that can be run when `buildTool: 'pip'`
