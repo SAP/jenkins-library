@@ -30,7 +30,7 @@ func TestStep(t *testing.T) {
 			RepositoryNames:   []string{"testRepo1"},
 		}
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			BodyList: []string{
 				`{"d" : { "status" : "S" } }`,
 				`{"d" : { "status" : "S" } }`,
@@ -114,78 +114,3 @@ func TestTriggerPull(t *testing.T) {
 	})
 
 }
-
-/* func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
-
-	t.Run("Test cf cli command: success case", func(t *testing.T) {
-
-		config := abaputils.AbapEnvironmentOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		options := abaputils.AbapEnvironmentPullGitRepoOptions{
-			AbapEnvOptions: config,
-		}
-
-		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
-			Exec: execRunner,
-		}
-
-		autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
-		assert.Equal(t, "cf", execRunner.Calls[0].Exec, "Wrong command")
-		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}, execRunner.Calls[0].Params, "Wrong parameters")
-		//assert.Equal(t, []string{"api", "https://api.endpoint.com"}, execRunner.Calls[0].Params, "Wrong parameters")
-
-	})
-
-	t.Run("Test cf cli command: params missing", func(t *testing.T) {
-
-		config := abaputils.AbapEnvironmentOptions{
-			//CfServiceKeyName:  "testServiceKey", this parameter will be missing
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			Username:          "testUser",
-			Password:          "testPassword",
-		}
-
-		options := abaputils.AbapEnvironmentPullGitRepoOptions{
-			AbapEnvOptions: config,
-		}
-
-		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
-			Exec: execRunner,
-		}
-		var _, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
-		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
-	})
-
-	t.Run("Test cf cli command: params missing", func(t *testing.T) {
-
-		config := abaputils.AbapEnvironmentOptions{
-			Username: "testUser",
-			Password: "testPassword",
-		}
-
-		options := abaputils.AbapEnvironmentPullGitRepoOptions{
-			AbapEnvOptions: config,
-		}
-
-		execRunner := &mock.ExecMockRunner{}
-		var autils = abaputils.AbapUtils{
-			Exec: execRunner,
-		}
-		var _, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
-		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Different error message expected")
-	})
-
-} */

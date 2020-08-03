@@ -15,7 +15,32 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData) error {
+func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData) {
+
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+
+	client := piperhttp.Client{}
+
+	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	// and use a  &piperhttp.Client{} in a custom system
+	// Example: step checkmarxExecuteScan.go
+
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runAbapEnvironmentCheckoutBranch(&options, telemetryData, &autils, &client)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
@@ -29,19 +54,16 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	var c command.ExecRunner = &command.Command{}
-
 	//  Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/")
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/")
 	if errorGetInfo != nil {
 		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
 	}
 
 	// Configuring the HTTP Client and CookieJar
-	client := piperhttp.Client{}
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
-		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
+		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -58,13 +80,13 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	log.Entry().Info("--------------------------------")
 
 	// Triggering the Checkout of the repository into the ABAP Environment system
-	uriConnectionDetails, errorTriggerCheckout := triggerCheckout(options.RepositoryName, options.BranchName, connectionDetails, &client)
+	uriConnectionDetails, errorTriggerCheckout := triggerCheckout(options.RepositoryName, options.BranchName, connectionDetails, client)
 	if errorTriggerCheckout != nil {
 		log.Entry().WithError(errorTriggerCheckout).Fatal("Checkout of " + options.BranchName + " for software component " + options.RepositoryName + " failed on the ABAP System")
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(options.RepositoryName, uriConnectionDetails, &client, pollIntervall)
+	status, errorPollEntity := abaputils.PollEntity(options.RepositoryName, uriConnectionDetails, client, pollIntervall)
 	if errorPollEntity != nil {
 		log.Entry().WithError(errorPollEntity).Fatal("Status of checkout action on repository" + options.RepositoryName + " failed on the ABAP System")
 	}

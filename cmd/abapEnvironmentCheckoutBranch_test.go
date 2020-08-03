@@ -8,6 +8,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCheckoutBranchStep(t *testing.T) {
+	t.Run("Run Step Successful", func(t *testing.T) {
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCheckoutBranchOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			RepositoryName:    "testRepo1",
+			BranchName:        "testBranch",
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "S" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.NoError(t, err, "Did not expect error")
+	})
+}
+
 func TestTriggerCheckout(t *testing.T) {
 
 	t.Run("Test trigger checkout: success case", func(t *testing.T) {
