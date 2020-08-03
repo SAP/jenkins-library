@@ -132,6 +132,7 @@ static String getCustomConfigArg(def script) {
 }
 
 void dockerWrapper(script, config, body) {
+    echo "dbg>> config.dockerImage ${config.dockerImage}"
     if (config.dockerImage) {
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script

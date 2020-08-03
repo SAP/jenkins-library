@@ -51,7 +51,8 @@ The following table gives an overview over the features available per build tool
 
 Runtime versions used in builds are determined by Docker images.
 
-For Java, the default is still (as of August 2020) version 8.
+For Java, the default is still (as of August 2020) version 8 which is also the default runtime for deployment to SAP Cloud Platform.
+For more information please check the [Java Version Compabibility in SAP Cloud SDK](https://sap.github.io/cloud-sdk/docs/java/getting-started/).
 
 In case you need to use a specific Java version to build your application, you may do so by setting another Docker image in your `.pipeline/config.yml` file.
 See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
