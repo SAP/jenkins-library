@@ -27,8 +27,14 @@ spec:
   inputs:
     secrets:
       - name: kubeConfigFileCredentialsId
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
         type: jenkins
       - name: kubeTokenCredentialsId
+        aliases:
+          - name: k8sTokenCredentialsId
+            deprecated: true
         type: jenkins
       - name: dockerCredentialsId
         type: jenkins
