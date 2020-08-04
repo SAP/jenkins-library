@@ -400,7 +400,6 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime tim
 			return err
 		}
 
-		// Make sure the project was updated in whitesource backend before downloading any reports
 		lastUpdatedTime, err := time.Parse(dateTimeLayout, project.LastUpdateDate)
 		if err != nil {
 			return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
