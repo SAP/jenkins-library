@@ -383,9 +383,17 @@ func checkSecurityViolations(config *ScanOptions, sys System) error {
 	return nil
 }
 
-// pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
+// pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
 func pollProjectStatus(config *ScanOptions, sys System) error {
-	currentTime := time.Now()
+	return blockUntilProjectIsUpdated(config, sys, time.Now(), 10*time.Second, 5*time.Second, 300*time.Second)
+}
+
+const dateTimeLayout = "2006-01-02 15:04:05 -0700"
+
+// blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
+// or no older than maxAge relative to the given time stamp.
+func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
+	startTime := time.Now()
 	for {
 		project, err := sys.GetProjectVitals(config.ProjectToken)
 		if err != nil {
@@ -393,13 +401,22 @@ func pollProjectStatus(config *ScanOptions, sys System) error {
 		}
 
 		// Make sure the project was updated in whitesource backend before downloading any reports
-		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
-		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {
+		lastUpdatedTime, err := time.Parse(dateTimeLayout, project.LastUpdateDate)
+		if err != nil {
+			return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
+				project.LastUpdateDate, err)
+		}
+		if currentTime.Sub(lastUpdatedTime) < maxAge {
 			//done polling
 			break
 		}
-		log.Entry().Info("time since project was last updated > 10 seconds, polling status...")
-		time.Sleep(5 * time.Second)
+
+		if time.Now().Sub(startTime) > maxWaitTime {
+			return fmt.Errorf("timeout while waiting for Whitesource scan results to be reflected in service")
+		}
+
+		log.Entry().Infof("time since project was last updated > %v, polling status...", maxAge)
+		time.Sleep(timeBetweenPolls)
 	}
 	return nil
 }

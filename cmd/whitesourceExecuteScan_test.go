@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type whitesourceSystemMock struct {
@@ -86,15 +87,15 @@ var mockLibrary = whitesource.Library{
 	Project:  "mock-project",
 }
 
-func newWhitesourceSystemMock() *whitesourceSystemMock {
+func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 	return &whitesourceSystemMock{
 		productName: "mock-product",
 		products: []whitesource.Product{
 			{
 				Name:           "mock-product",
 				Token:          "mock-product-token",
-				CreationDate:   "yesterday",
-				LastUpdateDate: "last-thursday",
+				CreationDate:   "last-thursday",
+				LastUpdateDate: lastUpdateDate,
 			},
 		},
 		projects: []whitesource.Project{
@@ -104,8 +105,8 @@ func newWhitesourceSystemMock() *whitesourceSystemMock {
 				PluginName:     "mock-plugin-name",
 				Token:          "mock-project-token",
 				UploadedBy:     "MrBean",
-				CreationDate:   "yesterday",
-				LastUpdateDate: "last-thursday",
+				CreationDate:   "last-thursday",
+				LastUpdateDate: lastUpdateDate,
 			},
 		},
 		alerts: []whitesource.Alert{
@@ -113,7 +114,7 @@ func newWhitesourceSystemMock() *whitesourceSystemMock {
 				Vulnerability: whitesource.Vulnerability{},
 				Library:       mockLibrary,
 				Project:       "mock-project",
-				CreationDate:  "yesterday",
+				CreationDate:  "last-thursday",
 			},
 		},
 		libraries:           []whitesource.Library{mockLibrary},
@@ -167,7 +168,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			DefaultVersioningModel: "major",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock()
+		systemMock := newWhitesourceSystemMock("ignored")
 		// test
 		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
 		// assert
@@ -176,6 +177,45 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			assert.Equal(t, "1", config.ProductVersion)
 			assert.Equal(t, "mock-project-token", config.ProjectToken)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
+		}
+	})
+}
+
+func TestBlockUntilProjectIsUpdated(t *testing.T) {
+	t.Run("already new enough", func(t *testing.T) {
+		// init
+		nowString := "2010-05-30 00:15:00 +0100"
+		now, err := time.Parse(dateTimeLayout, nowString)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
+		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
+		config := ScanOptions{
+			ProjectToken: systemMock.projects[0].Token,
+		}
+		// test
+		err = blockUntilProjectIsUpdated(&config, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
+		// assert
+		assert.NoError(t, err)
+	})
+	t.Run("timeout while polling", func(t *testing.T) {
+		// init
+		nowString := "2010-05-30 00:15:00 +0100"
+		now, err := time.Parse(dateTimeLayout, nowString)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
+		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
+		config := ScanOptions{
+			ProjectToken: systemMock.projects[0].Token,
+		}
+		// test
+		err = blockUntilProjectIsUpdated(&config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		// assert
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "timeout while waiting")
 		}
 	})
 }
