@@ -38,12 +38,23 @@ type whitesourceUtils interface {
 	FileExists(path string) (bool, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
+
+	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
 }
 
 type whitesourceUtilsBundle struct {
 	*piperhttp.Client
 	*command.Command
 	*piperutils.Files
+}
+
+func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error) {
+	opts := &versioning.Options{}
+	artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, w)
+	if err != nil {
+		return nil, err
+	}
+	return artifact.GetCoordinates()
 }
 
 func newUtils() *whitesourceUtilsBundle {
@@ -116,18 +127,13 @@ func runWhitesourceScan(config *ScanOptions, sys System, _ *telemetry.CustomData
 
 func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys System) error {
 	if config.ProjectName == "" || config.ProductVersion == "" {
-		opts := &versioning.Options{}
-		artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, utils)
+		coordinates, err := utils.GetArtifactCoordinates(config)
 		if err != nil {
-			return err
-		}
-		gav, err := artifact.GetCoordinates()
-		if err != nil {
-			return err
+			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		pName, pVer := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
+		pName, pVer := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, coordinates)
 		if config.ProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", pName)
 			config.ProjectName = pName

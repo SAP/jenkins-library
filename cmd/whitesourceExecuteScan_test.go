@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/SAP/jenkins-library/pkg/whitesource"
-	"os"
+	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 )
 
@@ -119,19 +122,55 @@ func newWhitesourceSystemMock() *whitesourceSystemMock {
 	}
 }
 
+type coordinatesMock struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+}
+
+type downloadedFile struct {
+	sourceURL string
+	filePath  string
+}
+
+type whitesourceUtilsMock struct {
+	*mock.FilesMock
+	*mock.ExecMockRunner
+	coordinates     coordinatesMock
+	downloadedFiles []downloadedFile
+}
+
+func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
+	w.downloadedFiles = append(w.downloadedFiles, downloadedFile{sourceURL: url, filePath: filename})
+	return nil
+}
+
+func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versioning.Coordinates, error) {
+	return w.coordinates, nil
+}
+
+func newWhitesourceUtilsMock() *whitesourceUtilsMock {
+	return &whitesourceUtilsMock{
+		coordinates: coordinatesMock{
+			GroupID:    "mock-group-id",
+			ArtifactID: "mock-artifact-id",
+			Version:    "1.0.42",
+		},
+	}
+}
+
 func TestProjectCoordinates(t *testing.T) {
 	t.Run("MTA project", func(t *testing.T) {
-		err := os.Chdir("../../GettingStartedBookshop")
-		if err != nil {
-			t.Fatal("sample project not found")
-		}
 		config := ScanOptions{
 			ScanType:               "mta",
 			DefaultVersioningModel: "major",
 		}
-		utils := newUtils()
+		utils := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock()
-		err = resolveProjectIdentifiers(&config, utils, systemMock)
+		err := resolveProjectIdentifiers(&config, utils, systemMock)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-group-id-mock-artifact-id", config.ProjectName)
+			assert.Equal(t, "1", config.ProductVersion)
+		}
 	})
-
 }
