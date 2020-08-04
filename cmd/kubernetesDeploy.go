@@ -105,6 +105,9 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	// make sure that secret is hidden in log output
 	log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
+	// pass secret in helm default template way and in Piper backward compatible way
+	secretsData := fmt.Sprintf(",secret.dockerconfigjson=%v,imagePullSecrets[0].name=regsecret,imagePullSecrets[0].dockerconfigjson=%v", dockerRegistrySecretData.Data.DockerConfJSON, dockerRegistrySecretData.Data.DockerConfJSON)
+
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {
 		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
@@ -118,7 +121,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		"--force",
 		"--namespace", config.Namespace,
 		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,secret.dockerconfigjson=%v%v", containerRegistry, containerImageName, containerImageTag, dockerRegistrySecretData.Data.DockerConfJSON, ingressHosts),
+		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
 	}
 
 	if config.DeployTool == "helm" {
