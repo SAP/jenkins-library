@@ -117,8 +117,8 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 		}
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
-		assert.Equal(t, error.Error(), "Error while logging out occured: "+errorMessage, "Wrong error message")
+		err := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)
+		assert.Equal(t, err.Error(), "Error while logging out occured: "+errorMessage, "Wrong error message")
 	})
 
 	t.Run("CF Create Service Key Error", func(t *testing.T) {
@@ -138,7 +138,9 @@ func TestCloudFoundryCreateServiceKeyErrorMessages(t *testing.T) {
 		execRunner := mock.ExecMockRunner{
 			ShouldFailOnCommand: m,
 		}
-		cfUtilsMock := cloudfoundry.CfUtilsMock{}
+		cfUtilsMock := cloudfoundry.CfUtilsMock{
+			LogoutError: errors.New(errorMessage),
+		}
 		defer cfUtilsMock.Cleanup()
 
 		error := runCloudFoundryCreateServiceKey(&config, &telemetryData, &execRunner, &cfUtilsMock)

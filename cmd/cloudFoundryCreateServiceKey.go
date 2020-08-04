@@ -28,7 +28,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	}
 }
 
-func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) error {
+func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) (returnedError error) {
 
 	// Login via cf cli
 	config := cloudfoundry.LoginOptions{
@@ -42,7 +42,12 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 	if loginErr != nil {
 		return fmt.Errorf("Error while logging in occured: %w", loginErr)
 	}
-
+	defer func() {
+		logoutErr := cfUtils.Logout()
+		if logoutErr != nil && returnedError == nil {
+			returnedError = fmt.Errorf("Error while logging out occured: %w", logoutErr)
+		}
+	}()
 	log.Entry().Info("Creating Service Key")
 
 	var cfCreateServiceKeyScript []string
@@ -56,10 +61,5 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 		return fmt.Errorf("Failed to Create Service Key: %w", err)
 	}
 
-	// Logout via cf cli
-	logoutErr := cfUtils.Logout()
-	if logoutErr != nil {
-		return fmt.Errorf("Error while logging out occured: %w", logoutErr)
-	}
-	return nil
+	return returnedError
 }
