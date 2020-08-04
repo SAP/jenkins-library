@@ -5,11 +5,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStep(t *testing.T) {
+func TestCheckoutBranchStep(t *testing.T) {
 	t.Run("Run Step Successful", func(t *testing.T) {
 
 		var autils = abaputils.AUtilsMock{}
@@ -19,7 +18,7 @@ func TestStep(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -27,7 +26,8 @@ func TestStep(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1"},
+			RepositoryName:    "testRepo1",
+			BranchName:        "testBranch",
 		}
 
 		client := &abaputils.ClientMock{
@@ -40,16 +40,17 @@ func TestStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
 }
 
-func TestTriggerPull(t *testing.T) {
+func TestTriggerCheckout(t *testing.T) {
 
-	t.Run("Test trigger pull: success case", func(t *testing.T) {
+	t.Run("Test trigger checkout: success case", func(t *testing.T) {
 
-		receivedURI := "example.com/Entity"
+		// given
+		receivedURI := "example.com/Branches"
 		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
 		tokenExpected := "myToken"
 
@@ -58,7 +59,7 @@ func TestTriggerPull(t *testing.T) {
 			Token:      tokenExpected,
 			StatusCode: 200,
 		}
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -66,22 +67,26 @@ func TestTriggerPull(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
+			RepositoryName:    "testRepo1",
+			BranchName:        "feature-unit-test",
 		}
-
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Entity/",
+			URL:      "https://api.endpoint.com/Branches",
 		}
-		entityConnection, err := triggerPull(config.RepositoryNames[0], con, client)
-		assert.Nil(t, err)
+		// when
+		entityConnection, err := triggerCheckout(config.RepositoryName, config.BranchName, con, client)
+
+		// then
+		assert.NoError(t, err)
 		assert.Equal(t, uriExpected, entityConnection.URL)
 		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
 	})
 
-	t.Run("Test trigger pull: ABAP Error", func(t *testing.T) {
+	t.Run("Test trigger checkout: ABAP Error case", func(t *testing.T) {
 
+		// given
 		errorMessage := "ABAP Error Message"
 		errorCode := "ERROR/001"
 		HTTPErrorMessage := "HTTP Error Message"
@@ -93,7 +98,7 @@ func TestTriggerPull(t *testing.T) {
 			StatusCode: 400,
 			Error:      errors.New(HTTPErrorMessage),
 		}
-		config := abapEnvironmentPullGitRepoOptions{
+		config := abapEnvironmentCheckoutBranchOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
@@ -101,16 +106,19 @@ func TestTriggerPull(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
+			RepositoryName:    "testRepo1",
+			BranchName:        "feature-unit-test",
 		}
-
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Entity/",
+			URL:      "https://api.endpoint.com/Branches",
 		}
-		_, err := triggerPull(config.RepositoryNames[0], con, client)
+
+		// when
+		_, err := triggerCheckout(config.RepositoryName, config.BranchName, con, client)
+
+		// then
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
-
 }
