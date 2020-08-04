@@ -147,17 +147,25 @@ func TestGetProjectToken(t *testing.T) {
 
 	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 
-	projectToken, err := sys.GetProjectToken("test_product_token", "Test Project1")
-	assert.NoError(t, err)
-	assert.Equal(t, "test_project_token1", projectToken)
+	t.Parallel()
 
-	projectToken, err = sys.GetProjectToken("test_product_token", "Test Project2")
-	assert.NoError(t, err)
-	assert.Equal(t, "test_project_token2", projectToken)
+	t.Run("find project 1", func(t *testing.T) {
+		projectToken, err := sys.GetProjectToken("test_product_token", "Test Project1")
+		assert.NoError(t, err)
+		assert.Equal(t, "test_project_token1", projectToken)
+	})
 
-	projectToken, err = sys.GetProjectToken("test_product_token", "Test Project3")
-	assert.NoError(t, err)
-	assert.Equal(t, "", projectToken)
+	t.Run("find project 2", func(t *testing.T) {
+		projectToken, err := sys.GetProjectToken("test_product_token", "Test Project2")
+		assert.NoError(t, err)
+		assert.Equal(t, "test_project_token2", projectToken)
+	})
+
+	t.Run("not finding project 3 is no error", func(t *testing.T) {
+		projectToken, err := sys.GetProjectToken("test_product_token", "Test Project3")
+		assert.NoError(t, err)
+		assert.Equal(t, "", projectToken)
+	})
 }
 
 func TestGetProjectTokens(t *testing.T) {

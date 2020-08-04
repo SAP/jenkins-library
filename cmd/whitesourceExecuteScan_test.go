@@ -42,17 +42,17 @@ func (m *whitesourceSystemMock) GetProjectToken(productToken, projectName string
 	return "mock-project-token", nil
 }
 
-func (m *whitesourceSystemMock) GetProjectVitals(projectToken string) (*whitesource.Project, error) {
+func (m *whitesourceSystemMock) GetProjectByToken(projectToken string) (whitesource.Project, error) {
 	for _, project := range m.projects {
 		if project.Token == projectToken {
-			return &project, nil
+			return project, nil
 		}
 	}
-	return nil, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
+	return whitesource.Project{}, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
 }
 
-func (m *whitesourceSystemMock) GetProjectByName(productToken, projectName string) (*whitesource.Project, error) {
-	return &m.projects[0], nil
+func (m *whitesourceSystemMock) GetProjectByName(productToken, projectName string) (whitesource.Project, error) {
+	return m.projects[0], nil
 }
 
 func (m *whitesourceSystemMock) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {

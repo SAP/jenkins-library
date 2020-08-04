@@ -395,7 +395,7 @@ const dateTimeLayout = "2006-01-02 15:04:05 -0700"
 func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
 	startTime := time.Now()
 	for {
-		project, err := sys.GetProjectVitals(config.ProjectToken)
+		project, err := sys.GetProjectByToken(config.ProjectToken)
 		if err != nil {
 			return err
 		}

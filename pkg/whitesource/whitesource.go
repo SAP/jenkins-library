@@ -159,22 +159,16 @@ func (s *system) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 // GetProjectToken returns the project token for a project with a given name
 func (s *system) GetProjectToken(productToken, projectName string) (string, error) {
-	var token string
 	project, err := s.GetProjectByName(productToken, projectName)
 	if err != nil {
 		return "", err
 	}
 
-	// returns a nil token and no error if not found
-	if project != nil {
-		token = project.Token
-	}
-
-	return token, nil
+	return project.Token, nil
 }
 
-// GetProjectVitals returns project meta info given a project token
-func (s *system) GetProjectVitals(projectToken string) (*Project, error) {
+// GetProjectByToken returns project meta info given a project token
+func (s *system) GetProjectByToken(projectToken string) (Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -188,34 +182,35 @@ func (s *system) GetProjectVitals(projectToken string) (*Project, error) {
 
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return Project{}, errors.Wrap(err, "WhiteSource request failed")
 	}
 
 	err = json.Unmarshal(respBody, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+		return Project{}, errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+	if len(wsResponse.ProjectVitals) == 0 {
+		return Project{}, errors.Wrapf(err, "no project with token '%s' found in WhiteSource", projectToken)
 	}
 
-	return &wsResponse.ProjectVitals[0], nil
+	return wsResponse.ProjectVitals[0], nil
 }
 
-// GetProjectByName returns the finds and returns a project by name
-func (s *system) GetProjectByName(productToken, projectName string) (*Project, error) {
-	var project *Project
+// GetProjectByName fetches all projects and returns the one matching the given projectName, or none, if not found
+func (s *system) GetProjectByName(productToken, projectName string) (Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+		return Project{}, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
 	}
 
-	for _, proj := range projects {
-		if projectName == proj.Name {
-			project = &proj
-			break
+	for _, project := range projects {
+		if projectName == project.Name {
+			return project, nil
 		}
 	}
 
-	// returns a nil project and no error if no project exists with projectName
-	return project, nil
+	// returns empty project and no error. The reason seems to be that it makes polling until the project exists easier.
+	return Project{}, nil
 }
 
 // GetProjectTokens returns the project tokens matching a given a slice of project names
@@ -259,10 +254,11 @@ func (s *system) GetProductName(productToken string) (string, error) {
 		return "", errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
-	if len(wsResponse.ProductTags) > 0 {
-		return wsResponse.ProductTags[0].Name, nil
+	if len(wsResponse.ProductTags) == 0 {
+		return "", nil // fmt.Errorf("no product with token '%s' found in WhiteSource", productToken)
 	}
-	return "", nil
+
+	return wsResponse.ProductTags[0].Name, nil
 }
 
 // GetProjectRiskReport
