@@ -177,5 +177,4 @@ spec:
               - name: sonar
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:latest
-
+      image: sonarsource/sonar-scanner-cli:4.4
