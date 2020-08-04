@@ -25,6 +25,7 @@ void call(Map parameters = [:]) {
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+            "PIPER_correlationID=${env.BUILD_URL}",
         ]) {
             String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
             String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
