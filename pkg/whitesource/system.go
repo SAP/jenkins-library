@@ -8,7 +8,6 @@ type System interface {
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectVitals(projectToken string) (*Project, error)
 	GetProjectByName(productToken, projectName string) (*Project, error)
-	GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error)
 	GetProjectTokens(productToken string, projectNames []string) ([]string, error)
 	GetProductName(productToken string) (string, error)
 	GetProjectRiskReport(projectToken string) ([]byte, error)

@@ -55,10 +55,6 @@ func (m *whitesourceSystemMock) GetProjectByName(productToken, projectName strin
 	return &m.projects[0], nil
 }
 
-func (m *whitesourceSystemMock) GetProjectsByIDs(productToken string, projectIDs []int64) ([]whitesource.Project, error) {
-	return m.projects, nil
-}
-
 func (m *whitesourceSystemMock) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
 	return []string{"mock-project-token-1", "mock-project-token-2"}, nil
 }

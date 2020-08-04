@@ -78,7 +78,7 @@ func TestGetMetaInfoForProduct(t *testing.T) {
 	}
 
 	sys := system{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
-	product, err := sys.GetMetaInfoForProduct("Test Product 2")
+	product, err := sys.GetProductByName("Test Product 2")
 
 	assert.NoError(t, err)
 	assert.Equal(t, product.Name, "Test Product 2")
