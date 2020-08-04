@@ -20,7 +20,32 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
+func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) {
+
+	// for command execution use Command
+	c := command.Command{}
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+
+	client := piperhttp.Client{}
+
+	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	// and use a  &piperhttp.Client{} in a custom system
+	// Example: step checkmarxExecuteScan.go
+
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runAbapEnvironmentPullGitRepo(&options, telemetryData, &autils, &client)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
@@ -34,19 +59,17 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	var c command.ExecRunner = &command.Command{}
-
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := abaputils.GetAbapCommunicationArrangementInfo(subOptions, c, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
 	if errorGetInfo != nil {
-		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
+		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
 
 	// Configuring the HTTP Client and CookieJar
-	client := piperhttp.Client{}
+
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
-		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
+		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -65,18 +88,19 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 		log.Entry().Info("-------------------------")
 
 		// Triggering the Pull of the repository into the ABAP Environment system
-		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, connectionDetails, &client)
+		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, connectionDetails, client)
 		if errorTriggerPull != nil {
-			log.Entry().WithError(errorTriggerPull).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+			return errors.Wrapf(errorTriggerPull, "Pull of '%s' failed on the ABAP System", repositoryName)
+
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
+		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, client, pollIntervall)
 		if errorPollEntity != nil {
-			log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+			return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repositoryName)
 		}
 		if status == "E" {
-			log.Entry().Fatal("Pull of " + repositoryName + " failed on the ABAP System")
+			return errors.New("Pull of " + repositoryName + " failed on the ABAP System")
 		}
 
 		log.Entry().Info(repositoryName + " was pulled successfully")
