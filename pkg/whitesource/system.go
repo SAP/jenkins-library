@@ -1,5 +1,6 @@
 package whitesource
 
+// System declares an interface for talking to the Whitesource service.
 type System interface {
 	GetProductsMetaInfo() ([]Product, error)
 	GetMetaInfoForProduct(productName string) (Product, error)
