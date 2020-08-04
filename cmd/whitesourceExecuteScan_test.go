@@ -159,18 +159,23 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	}
 }
 
-func TestProjectCoordinates(t *testing.T) {
-	t.Run("MTA project", func(t *testing.T) {
+func TestResolveProjectIdentifiers(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
+		// init
 		config := ScanOptions{
 			ScanType:               "mta",
 			DefaultVersioningModel: "major",
 		}
 		utils := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock()
+		// test
 		err := resolveProjectIdentifiers(&config, utils, systemMock)
+		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", config.ProjectName)
 			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "mock-project-token", config.ProjectToken)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
 		}
 	})
 }
