@@ -36,8 +36,8 @@ type mvnRunner struct{}
 func (m *mvnRunner) Execute(options *maven.ExecuteOptions, execRunner mavenExecRunner) (string, error) {
 	return maven.Execute(options, execRunner)
 }
-func (m *mvnRunner) Evaluate(pomFile, expression string, execRunner mavenExecRunner) (string, error) {
-	return maven.Evaluate(pomFile, expression, execRunner)
+func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, execRunner mavenExecRunner) (string, error) {
+	return maven.Evaluate(options, expression, execRunner)
 }
 
 var fileExists func(string) (bool, error)
@@ -71,36 +71,49 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			path:         buildDescriptorFilePath,
 			versionField: "version",
 		}
+	case "gradle":
+		if len(buildDescriptorFilePath) == 0 {
+			buildDescriptorFilePath = "build.gradle"
+		}
+		artifact = &Gradle{}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"VERSION", "version.txt", "go.mod"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
 		}
-		artifact = &Versionfile{
-			path: buildDescriptorFilePath,
+
+		switch buildDescriptorFilePath {
+		case "go.mod":
+			artifact = &GoMod{path: buildDescriptorFilePath}
+			break
+		default:
+			artifact = &Versionfile{path: buildDescriptorFilePath}
 		}
 	case "maven":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "pom.xml"
 		}
 		artifact = &Maven{
-			runner:              &mvnRunner{},
-			execRunner:          execRunner,
-			pomPath:             buildDescriptorFilePath,
-			projectSettingsFile: opts.ProjectSettingsFile,
-			globalSettingsFile:  opts.GlobalSettingsFile,
-			m2Path:              opts.M2Path,
+			runner:     &mvnRunner{},
+			execRunner: execRunner,
+			options: maven.EvaluateOptions{
+				PomPath:             buildDescriptorFilePath,
+				ProjectSettingsFile: opts.ProjectSettingsFile,
+				GlobalSettingsFile:  opts.GlobalSettingsFile,
+				M2Path:              opts.M2Path,
+			},
 		}
 	case "mta":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "mta.yaml"
 		}
 		artifact = &YAMLfile{
-			path:         buildDescriptorFilePath,
-			versionField: "version",
+			path:            buildDescriptorFilePath,
+			versionField:    "version",
+			artifactIDField: "ID",
 		}
 	case "npm":
 		if len(buildDescriptorFilePath) == 0 {

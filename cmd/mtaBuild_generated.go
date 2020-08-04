@@ -27,6 +27,8 @@ type mtaBuildOptions struct {
 	SapNpmRegistry      string `json:"sapNpmRegistry,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
+	InstallArtifacts    bool   `json:"installArtifacts,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -68,7 +70,7 @@ func MtaBuildCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Performs an mta build",
 		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -79,6 +81,7 @@ func MtaBuildCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
@@ -89,7 +92,7 @@ func MtaBuildCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -122,6 +125,8 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", `https://npm.sap.com`, "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
+	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, for npm packages this step will install all depedencies including dev dependencies. For maven it will install all artifacts to the local maven repository.")
 
 }
 
@@ -194,32 +199,48 @@ func mtaBuildMetadata() config.StepData {
 					{
 						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
 						Name:        "sapNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
 					},
 					{
 						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
 						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+					},
+					{
+						Name:        "m2Path",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "installArtifacts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

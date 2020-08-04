@@ -22,8 +22,10 @@ type PiperEnvironmentParameter struct {
 }
 
 const piperEnvStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
-	{{ range $notused, $param := .Parameters }}
-	{{- if not $param.Category}}{{ $param.Name | golangName }} string{{ end }}
+	{{- range $notused, $param := .Parameters }}
+	{{- if not $param.Category}}
+	{{ $param.Name | golangName }} string
+	{{- end }}
 	{{- end }}
 	{{- range $notused, $category := .Categories }}
 	{{ $category }} struct {

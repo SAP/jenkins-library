@@ -25,29 +25,57 @@ void call(Map parameters = [:], body) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
         .addIfEmpty('stageName', stageName)
+        .addIfEmpty('lockingResourceGroup', script.commonPipelineEnvironment.projectName)
         .dependingOn('stageName').mixin('ordinal')
         .use()
 
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
+        List environment = []
+        if (config.sidecarImage) {
+            echo "sidecarImage configured for stage '${stageName}': '${config.sidecarImage}'"
+            environment.add("SIDECAR_IMAGE=${config.sidecarImage}")
+        }
         if (Boolean.valueOf(env.ON_K8S) && (containerMap.size() > 0 || config.runStageInPod)) {
-            withEnv(["POD_NAME=${stageName}"]) {
+            environment.add("POD_NAME=${stageName}")
+            withEnv(environment) {
                 dockerExecuteOnKubernetes(script: script, containerMap: containerMap, stageName: stageName) {
                     executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
                 }
             }
         } else {
-            node(config.nodeLabel) {
-                executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+            withEnvWrapper(environment) {
+                node(config.nodeLabel) {
+                    executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+                }
             }
         }
     }
 }
 
+private void withEnvWrapper(List environment, Closure body) {
+    if (environment) {
+        withEnv(environment) {
+            body()
+        }
+    } else {
+        body()
+    }
+}
+
 private void stageLocking(Map config, Closure body) {
     if (config.stageLocking) {
-        lock(resource: "${env.JOB_NAME}/${config.ordinal}", inversePrecedence: true) {
-            milestone config.ordinal
+        String resource = config.lockingResourceGroup?:env.JOB_NAME
+        if(config.lockingResource){
+            resource += "/${config.lockingResource}"
+        }
+        else if(config.ordinal){
+            resource += "/${config.ordinal}"
+        }
+        lock(resource: resource, inversePrecedence: true) {
+            if(config.ordinal) {
+                milestone config.ordinal
+            }
             body()
         }
     } else {
@@ -120,26 +148,26 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         utils.stashStageFiles(script, stageName)
 
         // In general telemetry reporting is disabled by the config settings. This flag is used to disable the reporting when the config is not yet read (e.g. init stage).
-        if(!telemetryDisabled){
+        if (!telemetryDisabled) {
             def duration = System.currentTimeMillis() - startTime
             utils.pushToSWA([
-                eventType: 'library-os-stage',
-                stageName: stageName,
-                stepParamKey1: 'buildResult',
-                stepParam1: "${script.currentBuild.currentResult}",
-                buildResult: "${script.currentBuild.currentResult}",
-                stepParamKey2: 'stageStartTime',
-                stepParam2: "${startTime}",
-                stageStartTime: "${startTime}",
-                stepParamKey3: 'stageDuration',
-                stepParam3: "${duration}",
-                stageDuration: "${duration}",
-                stepParamKey4: 'projectExtension',
-                stepParam4: "${projectExtensions}",
+                eventType       : 'library-os-stage',
+                stageName       : stageName,
+                stepParamKey1   : 'buildResult',
+                stepParam1      : "${script.currentBuild.currentResult}",
+                buildResult     : "${script.currentBuild.currentResult}",
+                stepParamKey2   : 'stageStartTime',
+                stepParam2      : "${startTime}",
+                stageStartTime  : "${startTime}",
+                stepParamKey3   : 'stageDuration',
+                stepParam3      : "${duration}",
+                stageDuration   : "${duration}",
+                stepParamKey4   : 'projectExtension',
+                stepParam4      : "${projectExtensions}",
                 projectExtension: "${projectExtensions}",
-                stepParamKey5: 'globalExtension',
-                stepParam5: "${globalExtensions}",
-                globalExtension: "${globalExtensions}"
+                stepParamKey5   : 'globalExtension',
+                stepParam5      : "${globalExtensions}",
+                globalExtension : "${globalExtensions}"
             ], config)
         }
     }
@@ -191,6 +219,6 @@ private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
     return method != null
 }
 
-private boolean allowExtensions(){
+private boolean allowExtensions() {
     return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == false
 }

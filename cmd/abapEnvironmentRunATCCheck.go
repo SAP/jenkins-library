@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -22,14 +22,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
 
-	var c = command.Command{}
+	// Mapping for options
+	subOptions := abaputils.AbapEnvironmentOptions{}
 
-	var err error
+	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
+	subOptions.CfServiceInstance = options.CfServiceInstance
+	subOptions.CfServiceKeyName = options.CfServiceKeyName
+	subOptions.CfOrg = options.CfOrg
+	subOptions.CfSpace = options.CfSpace
+	subOptions.Host = options.Host
+	subOptions.Password = options.Password
+	subOptions.Username = options.Username
 
+	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: c,
+	}
+	var err error
 
 	client := piperhttp.Client{}
 	cookieJar, _ := cookiejar.New(nil)
@@ -38,11 +52,11 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	}
 	client.SetOptions(clientOptions)
 
-	var details connectionDetailsHTTP
+	var details abaputils.ConnectionDetailsHTTP
 	var abapEndpoint string
 	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
-		details, err = checkHost(config, details)
+		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
 	}
 	var resp *http.Response
 	//Fetch Xcrsf-Token
@@ -57,7 +71,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
-		resp, err = triggerATCrun(config, details, &client, abapEndpoint)
+		resp, err = triggerATCrun(options, details, &client, abapEndpoint)
 	}
 	if err == nil {
 		err = handleATCresults(resp, details, &client, abapEndpoint)
@@ -69,7 +83,7 @@ func abapEnvironmentRunATCCheck(config abapEnvironmentRunATCCheckOptions, teleme
 	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
 }
 
-func handleATCresults(resp *http.Response, details connectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) error {
 	var err error
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
@@ -93,7 +107,7 @@ func handleATCresults(resp *http.Response, details connectionDetailsHTTP, client
 	return nil
 }
 
-func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details connectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
+func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
 	var atcConfigyamlFile []byte
 	filelocation, err := filepath.Glob(config.AtcConfig)
 	//Parse YAML ATC run configuration as body for ATC run trigger
@@ -122,7 +136,7 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details connectionD
 		resp, err = runATC("POST", details, body, client)
 	}
 	if err != nil {
-		return resp, fmt.Errorf("Triggering ATC result failed: %w", err)
+		return resp, fmt.Errorf("Triggering ATC run failed: %w", err)
 	}
 	return resp, nil
 }
@@ -178,7 +192,7 @@ func parseATCResult(body []byte) error {
 	return nil
 }
 
-func runATC(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	log.Entry().WithField("ABAP endpoint: ", details.URL).Info("Triggering ATC run")
 
@@ -194,7 +208,7 @@ func runATC(requestType string, details connectionDetailsHTTP, body []byte, clie
 	return req, err
 }
 
-func fetchXcsrfToken(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
+func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Fetching Xcrsf-Token")
 
@@ -212,40 +226,7 @@ func fetchXcsrfToken(requestType string, details connectionDetailsHTTP, body []b
 	return token, err
 }
 
-func checkHost(config abapEnvironmentRunATCCheckOptions, details connectionDetailsHTTP) (connectionDetailsHTTP, error) {
-
-	var err error
-
-	if config.Host == "" {
-		cfconfig := cloudfoundry.ServiceKeyOptions{
-			CfAPIEndpoint:     config.CfAPIEndpoint,
-			CfOrg:             config.CfOrg,
-			CfSpace:           config.CfSpace,
-			Username:          config.Username,
-			Password:          config.Password,
-			CfServiceInstance: config.CfServiceInstance,
-			CfServiceKey:      config.CfServiceKeyName,
-		}
-		if cfconfig.CfServiceInstance == "" || cfconfig.CfOrg == "" || cfconfig.CfAPIEndpoint == "" || cfconfig.CfSpace == "" || cfconfig.CfServiceKey == "" {
-			return details, errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		}
-		var abapServiceKey cloudfoundry.ServiceKey
-		abapServiceKey, err = cloudfoundry.ReadServiceKeyAbapEnvironment(cfconfig, true)
-		if err != nil {
-			return details, fmt.Errorf("Reading Service Key failed: %w", err)
-		}
-		details.User = abapServiceKey.Abap.Username
-		details.Password = abapServiceKey.Abap.Password
-		details.URL = abapServiceKey.URL
-		return details, err
-	}
-	details.User = config.Username
-	details.Password = config.Password
-	details.URL = config.Host
-	return details, err
-}
-
-func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
+func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
 
 	log.Entry().WithField("ABAP endpoint", details.URL).Info("Polling ATC run status")
 
@@ -276,7 +257,7 @@ func pollATCRun(details connectionDetailsHTTP, body []byte, client piperhttp.Sen
 	}
 }
 
-func getHTTPResponseATCRun(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func getHTTPResponseATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Polling ATC run status")
 
@@ -290,7 +271,7 @@ func getHTTPResponseATCRun(requestType string, details connectionDetailsHTTP, bo
 	return req, err
 }
 
-func getResultATCRun(requestType string, details connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
+func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Getting ATC results")
 

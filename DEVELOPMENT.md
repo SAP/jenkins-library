@@ -96,8 +96,11 @@ docker rm piper
 
 ## Generating step framework
 
-The steps are generated based on the yaml files in `resources/metadata/` with the following command
-`go run pkg/generator/step-metadata.go`.
+The steps are generated based on the yaml files in `resources/metadata/` with the following command from the root of the project:
+
+```bash
+go generate
+```
 
 The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
 Where the Tekton format was not sufficient some extenstions have been made.
@@ -203,6 +206,24 @@ We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
 
 It has proven a good practice to bubble up errors until the runtime entry function  and only
 there exit via the logging framework (see also [logging](#logging)).
+
+### Error categories
+
+For errors, we have a convenience function to set a pre-defined category once an error occurs:
+
+```golang
+log.SetErrorCategory(log.ErrorCompliance)
+```
+
+Error categories are defined in [`pkg/log/ErrorCategory`](pkg/log/errors.go).
+
+With writing a fatal error
+
+```golang
+log.Entry().WithError(err).Fatal("the error message")
+```
+the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
+Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 ## Testing
 

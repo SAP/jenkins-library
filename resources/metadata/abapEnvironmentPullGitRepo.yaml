@@ -52,6 +52,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint
@@ -92,7 +93,7 @@ spec:
         - GENERAL
         aliases:
           - name: cloudFoundry/serviceInstance
-      - name: cfServiceKey
+      - name: cfServiceKeyName
         type: string
         description: Cloud Foundry Service Key
         scope:
@@ -103,7 +104,7 @@ spec:
         aliases:
           - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
-          - name: cfServiceKeyName
+          - name: cfServiceKey
   containers:
     - name: cf
       image: ppiper/cf-cli

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -80,19 +81,26 @@ func Execute() {
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
+	rootCmd.AddCommand(MavenExecuteIntegrationCommand())
 	rootCmd.AddCommand(MavenExecuteStaticCodeChecksCommand())
 	rootCmd.AddCommand(NexusUploadCommand())
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
+	rootCmd.AddCommand(NpmExecuteLintCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
+	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(CloudFoundryDeployCommand())
+	rootCmd.AddCommand(GctsRollbackCommand())
+	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
+	rootCmd.AddCommand(GctsCloneRepositoryCommand())
+	rootCmd.AddCommand(JsonApplyPatchCommand())
+	rootCmd.AddCommand(KanikoExecuteCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
-		// in case we end up here we know that something in the PreRunE function went wrong
-		// and thus this indicates a configuration issue
-		log.Entry().WithError(err).WithField("category", "config").Fatal("configuration error")
+		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
 
@@ -134,6 +142,8 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
+		log.Entry().Infof("Project config: passed via JSON")
+		log.Entry().Infof("Project defaults: passed via JSON")
 	} else {
 		// use config & defaults
 		var customConfig io.ReadCloser
@@ -141,31 +151,33 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
-
-			exists, err := piperutils.FileExists(projectConfigFile)
-			if exists {
+			if exists, err := piperutils.FileExists(projectConfigFile); exists {
+				log.Entry().Infof("Project config: '%s'", projectConfigFile)
 				if customConfig, err = openFile(projectConfigFile); err != nil {
 					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
 				}
 			} else {
-				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
+				log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
 				customConfig = nil
 			}
-
 		}
 		var defaultConfig []io.ReadCloser
-		for _, f := range GeneralConfig.DefaultConfig {
-			fc, err := openFile(f)
+		if len(GeneralConfig.DefaultConfig) == 0 {
+			log.Entry().Info("Project defaults: NONE")
+		}
+		for _, projectDefaultFile := range GeneralConfig.DefaultConfig {
+			fc, err := openFile(projectDefaultFile)
 			// only create error for non-default values
-			if err != nil && f != ".pipeline/defaults.yaml" {
-				return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
-			}
-			if err == nil {
+			if err != nil {
+				if projectDefaultFile != ".pipeline/defaults.yaml" {
+					log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
+					return errors.Wrapf(err, "Cannot read '%s'", projectDefaultFile)
+				}
+			} else {
+				log.Entry().Infof("Project defaults: '%s'", projectDefaultFile)
 				defaultConfig = append(defaultConfig, fc)
-				log.Entry().Infof("Added default config '%s'", f)
 			}
 		}
-
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
@@ -190,15 +202,22 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
-	for name, v := range stepConfig.HookConfig {
-		if name == "sentry" {
-			hookConfig, _ := v.MarshalJSON()
-			_ = json.Unmarshal(hookConfig, &GeneralConfig.HookConfig.SentryConfig)
-		}
-	}
+	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
 	return nil
 }
+
+func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
+	if source != nil {
+		log.Entry().Info("Retrieving hook configuration")
+		err := json.Unmarshal(*source, target)
+		if err != nil {
+			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
+		}
+	}
+}
+
+var errIncompatibleTypes = fmt.Errorf("incompatible types")
 
 func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
 	optionsType := getStepOptionsStructType(options)
@@ -209,41 +228,101 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 			continue
 		}
 
-		paramValueType := reflect.ValueOf(config[paramName])
-		if paramValueType.Kind() != reflect.String {
-			// Type check is limited to strings at the moment
+		if config[paramName] == nil {
+			// There is a key, but no value. This can result from merging values from the CPE.
 			continue
 		}
 
-		paramValue := paramValueType.String()
-		logWarning := true
-
-		switch optionsField.Type.Kind() {
-		case reflect.String:
-			// Types match, ignore
-			logWarning = false
-		case reflect.Slice, reflect.Array:
-			// Could do automatic conversion for those types in theory,
-			// but that might obscure what really happens in error cases.
-			log.Entry().Fatalf("Type mismatch in configuration for option '%s'. Expected type to be a list (or slice, or array) but got %s.", paramName, paramValueType.Kind())
-		case reflect.Bool:
-			// Sensible to convert strings "true"/"false" to respective boolean values as it is
-			// common practice to write booleans as string in yaml files.
-			paramValue = strings.ToLower(paramValue)
-			if paramValue == "true" {
-				config[paramName] = true
-				logWarning = false
-			} else if paramValue == "false" {
-				config[paramName] = false
-				logWarning = false
-			}
+		paramValueType := reflect.ValueOf(config[paramName])
+		if optionsField.Type.Kind() == paramValueType.Kind() {
+			// Types already match, nothing to do
+			continue
 		}
 
-		if logWarning {
-			log.Entry().Warnf("Config value for '%s' is of unexpected type and is ignored", paramName)
+		var typeError error = nil
+
+		switch paramValueType.Kind() {
+		case reflect.String:
+			typeError = convertValueFromString(config, optionsField, paramName, paramValueType.String())
+		case reflect.Float32, reflect.Float64:
+			typeError = convertValueFromFloat(config, optionsField, paramName, paramValueType.Float())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			typeError = convertValueFromInt(config, optionsField, paramName, paramValueType.Int())
+		default:
+			log.Entry().Warnf("Config value for '%s' is of unexpected type %s, expected %s. "+
+				"The value may be ignored as a result. To avoid any risk, specify this value with explicit type.",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind())
+		}
+
+		if typeError != nil {
+			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s: %w",
+				paramName, paramValueType.Kind(), optionsField.Type.Kind(), typeError)
+			log.SetErrorCategory(log.ErrorConfiguration)
+			log.Entry().WithError(typeError).Fatal()
 		}
 	}
 	return config
+}
+
+func convertValueFromString(config map[string]interface{}, optionsField *reflect.StructField, paramName, paramValue string) error {
+	switch optionsField.Type.Kind() {
+	case reflect.Slice, reflect.Array:
+		// Could do automatic conversion for those types in theory,
+		// but that might obscure what really happens in error cases.
+		return fmt.Errorf("expected type to be a list (or slice, or array) but got string")
+	case reflect.Bool:
+		// Sensible to convert strings "true"/"false" to respective boolean values as it is
+		// common practice to write booleans as string in yaml files.
+		paramValue = strings.ToLower(paramValue)
+		if paramValue == "true" {
+			config[paramName] = true
+			return nil
+		} else if paramValue == "false" {
+			config[paramName] = false
+			return nil
+		}
+	}
+
+	return errIncompatibleTypes
+}
+
+func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
+	switch optionsField.Type.Kind() {
+	case reflect.String:
+		config[paramName] = strconv.FormatFloat(paramValue, 'f', -1, 64)
+		return nil
+	case reflect.Float32:
+		config[paramName] = float32(paramValue)
+		return nil
+	case reflect.Float64:
+		config[paramName] = paramValue
+		return nil
+	case reflect.Int:
+		// Treat as type-mismatch only in case the conversion would be lossy.
+		// In that case, the json.Unmarshall() would indeed just drop it, so we want to fail.
+		if float64(int(paramValue)) == paramValue {
+			config[paramName] = int(paramValue)
+			return nil
+		}
+	}
+
+	return errIncompatibleTypes
+}
+
+func convertValueFromInt(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue int64) error {
+	switch optionsField.Type.Kind() {
+	case reflect.String:
+		config[paramName] = strconv.FormatInt(paramValue, 10)
+		return nil
+	case reflect.Float32:
+		config[paramName] = float32(paramValue)
+		return nil
+	case reflect.Float64:
+		config[paramName] = float64(paramValue)
+		return nil
+	}
+
+	return errIncompatibleTypes
 }
 
 func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {

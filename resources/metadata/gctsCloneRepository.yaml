@@ -1,0 +1,55 @@
+metadata:
+  name: gctsCloneRepository
+  description: Clones a Git repository
+  longDescription: |
+    Clones a Git repository from a remote repository to a local repository on an ABAP system. To be able to execute this step, the corresponding local repository has to exist on the local ABAP system.
+
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to clone the repository
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User to authenticate to the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password to authenticate to the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: repository
+        type: string
+        description: Specifies the name (ID) of the local repsitory on the ABAP system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the protocol and host adress, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: client
+        type: string
+        description: Specifies the client of the ABAP system to be adressed
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true

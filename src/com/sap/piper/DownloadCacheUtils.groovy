@@ -3,50 +3,71 @@ package com.sap.piper
 
 class DownloadCacheUtils {
 
-    static Map injectDownloadCacheInMavenParameters(Script script, Map parameters) {
-        if (DownloadCacheUtils.isEnabled(script)) {
+    static Map injectDownloadCacheInParameters(Script script, Map parameters, BuildTool buildTool) {
+        if (!isEnabled(script)) {
+            return parameters
+        }
 
-            if (!parameters.dockerOptions) {
-                parameters.dockerOptions = []
-            }
-            if (parameters.dockerOptions instanceof CharSequence) {
-                parameters.dockerOptions = [parameters.dockerOptions]
-            }
+        if (!parameters.dockerOptions) {
+            parameters.dockerOptions = []
+        }
+        if (parameters.dockerOptions instanceof CharSequence) {
+            parameters.dockerOptions = [parameters.dockerOptions]
+        }
 
-            if (!(parameters.dockerOptions instanceof List)) {
-                throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${parameters.dockerOptions.getClass()}'")
-            }
-            parameters.dockerOptions.add(DownloadCacheUtils.getDockerOptions(script))
+        if (!(parameters.dockerOptions instanceof List)) {
+            throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${parameters.dockerOptions.getClass()}'")
+        }
+        parameters.dockerOptions.add(getDockerOptions(script))
 
-            if (parameters.globalSettingsFile) {
+        if (buildTool == BuildTool.MAVEN || buildTool == BuildTool.MTA) {
+            String globalSettingsFile = getGlobalMavenSettingsForDownloadCache(script)
+            if (parameters.globalSettingsFile && parameters.globalSettingsFile != globalSettingsFile) {
                 throw new IllegalArgumentException("You can not specify the parameter globalSettingsFile if the download cache is active")
             }
 
-            parameters.globalSettingsFile = DownloadCacheUtils.getGlobalMavenSettingsForDownloadCache(script)
+            parameters.globalSettingsFile = globalSettingsFile
+        }
+
+        if (buildTool == BuildTool.NPM || buildTool == BuildTool.MTA) {
+            parameters['defaultNpmRegistry'] = getNpmRegistryUri(script)
         }
 
         return parameters
+    }
+
+    static String networkName() {
+        return System.getenv('DL_CACHE_NETWORK')
+    }
+
+    static String hostname() {
+        return System.getenv('DL_CACHE_HOSTNAME')
     }
 
     static boolean isEnabled(Script script) {
         if (script.env.ON_K8S) {
             return false
         }
-        script.node('master') {
-            String network = script.env.DL_CACHE_NETWORK
-            String host = script.env.DL_CACHE_HOSTNAME
-            return (network.asBoolean() && host.asBoolean())
+
+        // Do not enable the DL-cache when a sidecar image is specified.
+        // This is necessary because it is currently not possible to connect a container to multiple networks.
+        // Can be removed when docker plugin supports multiple networks and jenkins-library implemented that feature
+        // See also https://github.com/SAP/jenkins-library/issues/1864
+        if (script.env.SIDECAR_IMAGE) {
+            script.echo "Download cache disabled while running with sidecar image (${script.env.SIDECAR_IMAGE})"
+            return false
         }
+
+        return (networkName() && hostname())
     }
 
     static String getDockerOptions(Script script) {
-        script.node('master') {
-            String dockerNetwork = script.env.DL_CACHE_NETWORK
-            if (!dockerNetwork) {
-                return ''
-            }
-            return "--network=$dockerNetwork"
+
+        String dockerNetwork = networkName()
+        if (!dockerNetwork) {
+            return ''
         }
+        return "--network=$dockerNetwork"
     }
 
     static String getGlobalMavenSettingsForDownloadCache(Script script) {
@@ -55,10 +76,7 @@ class DownloadCacheUtils {
             return globalSettingsFilePath
         }
 
-        String hostname = ''
-        script.node('master') {
-            hostname = script.env.DL_CACHE_HOSTNAME // set by cx-server
-        }
+        String hostname = hostname()
 
         if (!hostname) {
             return ''
@@ -76,9 +94,12 @@ class DownloadCacheUtils {
     }
 
     static String getNpmRegistryUri(Script script) {
-        script.node('master') {
-            return "http://${script.env.DL_CACHE_HOSTNAME}:8081/repository/npm-proxy/"
+        String hostname = hostname()
+
+        if (!hostname) {
+            return ''
         }
-        return ""
+        String npmRegistry = "http://${hostname}:8081/repository/npm-proxy/"
+        return npmRegistry
     }
 }

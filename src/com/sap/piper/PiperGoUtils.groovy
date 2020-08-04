@@ -53,13 +53,12 @@ class PiperGoUtils implements Serializable {
                 //Inform that no Piper binary is available for used library branch
                 steps.echo ("Not able to download go binary of Piper for version ${version}")
                 //Fallback to master version & throw error in case this fails
-                steps.retry(5) {
+                steps.retry(12) {
                     if (!downloadGoBinary(fallbackUrl)) {
-                        steps.sleep(2)
+                        steps.sleep(10)
                         steps.error("Download of Piper go binary failed.")
                     }
                 }
-
             }
         }
         try {
@@ -86,7 +85,8 @@ class PiperGoUtils implements Serializable {
             }
         } catch(err) {
             //nothing to do since error should just result in downloaded=false
-            steps.echo "Failed downloading Piper go binary with error '${err}'"
+            steps.echo "Failed downloading Piper go binary with error '${err}'. " +
+                "If curl is missing, please ensure that curl is available in the Jenkins master and the agents. It is a prerequisite to run piper."
         }
         return false
     }
