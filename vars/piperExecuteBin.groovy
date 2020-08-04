@@ -76,12 +76,14 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     }
 }
 
+// reused in sonarExecuteScan
 static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
 }
 
+// reused in sonarExecuteScan
 static Map prepareStepParameters(Map parameters) {
     Map stepParameters = [:].plus(parameters)
 
@@ -96,10 +98,12 @@ static Map prepareStepParameters(Map parameters) {
     return MapUtils.pruneNulls(stepParameters)
 }
 
+// reused in sonarExecuteScan
 static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
+// reused in sonarExecuteScan
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
     return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
@@ -114,6 +118,7 @@ static String getCustomDefaultConfigs() {
     return customDefaults.join(',')
 }
 
+// reused in sonarExecuteScan
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
@@ -122,6 +127,7 @@ static String getCustomDefaultConfigsArg() {
     return ''
 }
 
+// reused in sonarExecuteScan
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
@@ -182,6 +188,7 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
+// reused in sonarExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()

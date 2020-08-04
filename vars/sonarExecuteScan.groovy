@@ -11,22 +11,17 @@ import java.nio.charset.StandardCharsets
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def stepParameters = [:].plus(parameters)
-
         def script = checkScript(this, parameters) ?: this
-        stepParameters.remove('script')
-
         def utils = parameters.juStabUtils ?: new Utils()
-        stepParameters.remove('juStabUtils')
-
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        stepParameters.remove('jenkinsUtilsStub')
+        String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+        piperExecuteBin.prepareExecution(this, utils, parameters)
+        piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
+        Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
+
         script.commonPipelineEnvironment.writeToDisk(script)
 
-        writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -34,11 +29,15 @@ void call(Map parameters = [:]) {
             String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
             String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
             // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
-            echo "Config: ${config}"
+            Map config
+            piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
+                echo "Context Config: ${config}"
+            }
+
             // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
-            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
-            echo "StepConfig: ${stepConfig}"
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            echo "Step Config: ${stepConfig}"
 
             // determine credentials to load
             List credentials = []
@@ -73,7 +72,7 @@ void call(Map parameters = [:]) {
                             withCredentials(credentials) {
                                 withEnv(environment){
                                     try {
-                                        sh "./piper ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                        sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     } finally {
                                         InfluxData.readFromDisk(script)
                                     }
