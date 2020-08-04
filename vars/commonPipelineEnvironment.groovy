@@ -187,10 +187,22 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
+        [filename: '.pipeline/commonPipelineEnvironment/configurationFile', property: 'configurationFile'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
     ]
 
     void writeToDisk(script) {
+
+        // The custom defaults are extracted from library resources into folder .pipeline/tmp/defaults/.
+        List customDefaults = getCustomDefaults()
+        List customDefaultFiles = []
+        customDefaults.each { customDefault ->
+            def filepath =  ".pipeline/tmp/defaults/${customDefault}"
+            script.writeFile(file: filepath, text: script.libraryResource(customDefault))
+            customDefaultFiles.add(filepath)
+        }
+        // references to the files are provided via json so that they can be properly accessed from the go step
+        script.writeFile file: '.pipeline/commonPipelineEnvironment/customDefaults', text: groovy.json.JsonOutput.toJson(customDefaultFiles)
 
         files.each({f  ->
             if (this[f.property] && !script.fileExists(f.filename)) {
@@ -239,6 +251,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     List getCustomDefaults() {
-        DefaultValueCache.getInstance().getCustomDefaults()
+        DefaultValueCache.getInstance()?.getCustomDefaults()?:[]
     }
 }

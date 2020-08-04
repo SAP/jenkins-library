@@ -35,7 +35,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             "PIPER_correlationID=${env.BUILD_URL}",
             //ToDo: check if parameters make it into docker image on JaaS
         ]) {
-            String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
             echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
@@ -43,7 +42,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             // get context configuration
             Map config
             handleErrorDetails(stepName) {
-                config = getStepContextConfig(script, piperGoPath, metadataFile, defaultConfigArgs, customConfigArg)
+                config = getStepContextConfig(script, piperGoPath, metadataFile, customConfigArg)
                 echo "Context Config: ${config}"
             }
 
@@ -66,7 +65,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        sh "${piperGoPath} ${stepName}${ignoreCustomDefaults()}${customConfigArg}"
                     }
                     jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                     script.commonPipelineEnvironment.readFromDisk(script)
@@ -80,6 +79,7 @@ static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
+    script.commonPipelineEnvironment.writeToDisk(script)
 }
 
 static Map prepareStepParameters(Map parameters) {
@@ -100,26 +100,12 @@ static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
-static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
-    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
+static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String customConfigArg) {
+    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${ignoreCustomDefaults()}${customConfigArg}"))
 }
 
-static String getCustomDefaultConfigs() {
-    // The default config files were extracted from merged library
-    // resources by setupCommonPipelineEnvironment.groovy into .pipeline/.
-    List customDefaults = DefaultValueCache.getInstance().getCustomDefaults()
-    for (int i = 0; i < customDefaults.size(); i++) {
-        customDefaults[i] = BashUtils.quoteAndEscape(".pipeline/${customDefaults[i]}")
-    }
-    return customDefaults.join(',')
-}
-
-static String getCustomDefaultConfigsArg() {
-    String customDefaults = getCustomDefaultConfigs()
-    if (customDefaults) {
-        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
-    }
-    return ''
+static String ignoreCustomDefaults() {
+    return DefaultValueCache.getInstance().getCustomDefaults().size() > 0 ? ' --ignoreCustomDefaults' : ''
 }
 
 static String getCustomConfigArg(def script) {

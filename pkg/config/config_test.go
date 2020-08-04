@@ -177,7 +177,7 @@ steps:
 		piperenv.SetParameter(filepath.Join(dir, "commonPipelineEnvironment"), "test_pe1", "pe1_val")
 
 		stepAliases := []Alias{{Name: "stepAlias"}}
-		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, false, filters, parameterMetadata, secretMetadata, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1", stepAliases)
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, false, filters, parameterMetadata, secretMetadata, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1", stepAliases, dir)
 
 		assert.Equal(t, nil, err, "error occurred but none expected")
 
@@ -224,7 +224,7 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, false, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, false, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{}, "")
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
@@ -238,7 +238,7 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, true, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, true, StepFilters{General: []string{"p0"}}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{}, "")
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, nil, stepConfig.Config["p0"])
@@ -252,7 +252,7 @@ steps:
 		stepParams := []StepParameters{StepParameters{Name: "p0", Scope: []string{"GENERAL"}, Type: "string", Default: "p0_step_default", Aliases: []Alias{{Name: "p0_alias"}}}}
 		testConf := "general:\n p1: p1_conf"
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{}, "")
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p0_step_default", stepConfig.Config["p0"])
@@ -267,7 +267,7 @@ steps:
 			StepParameters{Name: "p1", Scope: []string{"GENERAL"}, Type: "string", Aliases: []Alias{{Name: "p0/subParam"}}}}
 		testConf := "general:\n p0: true"
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{{}})
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, false, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, nil, "stage1", "step1", []Alias{{}}, "")
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, true, stepConfig.Config["p0"])
@@ -282,7 +282,7 @@ steps:
 		testConf := ""
 
 		paramJSON := "{\"p1\":{\"subParam\":\"p1_value\"}}"
-		stepConfig, err := c.GetStepConfig(nil, paramJSON, ioutil.NopCloser(strings.NewReader(testConf)), nil, true, StepFilters{Parameters: []string{"p0"}}, nil, secrets, nil, "stage1", "step1", []Alias{{}})
+		stepConfig, err := c.GetStepConfig(nil, paramJSON, ioutil.NopCloser(strings.NewReader(testConf)), nil, true, StepFilters{Parameters: []string{"p0"}}, nil, secrets, nil, "stage1", "step1", []Alias{{}}, "")
 
 		assert.NoError(t, err, "Error occurred but no error expected")
 		assert.Equal(t, "p1_value", stepConfig.Config["p0"])
@@ -291,7 +291,7 @@ steps:
 	t.Run("Failure case config", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
-		_, err := c.GetStepConfig(nil, "", myConfig, nil, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		_, err := c.GetStepConfig(nil, "", myConfig, nil, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{}, "")
 		assert.EqualError(t, err, "failed to parse custom pipeline configuration: format of configuration is invalid \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
@@ -299,7 +299,7 @@ steps:
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
-		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
+		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{}, "")
 		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 

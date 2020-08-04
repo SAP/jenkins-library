@@ -97,14 +97,12 @@ class ContainerMap implements Serializable {
 
         Map stepParameters = script.piperExecuteBin.prepareStepParameters(['buildTool': buildTool])
 
-        String defaultConfigArgs = script.piperExecuteBin.getCustomDefaultConfigsArg()
         String customConfigArg = script.piperExecuteBin.getCustomConfigArg(script)
 
         Map config = [:]
         script.withEnv(["PIPER_parametersJSON=${JsonOutput.toJson(stepParameters)}",
                         "STAGE_NAME=$stageName"]) {
-            config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, defaultConfigArgs,
-                customConfigArg)
+            config = script.piperExecuteBin.getStepContextConfig(script, './piper', stepMetadataPath, customConfigArg)
         }
         return config.dockerImage
     }
