@@ -84,6 +84,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if artifact == nil {
 		artifact, err = versioning.GetArtifact(config.BuildTool, config.FilePath, &artifactOpts, runner)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to retrieve artifact")
 		}
 	}
@@ -97,12 +98,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	version, err := artifact.GetVersion()
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
 	gitCommit, gitCommitMessage, err := getGitCommitID(repository)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
 	gitCommitID := gitCommit.String()
@@ -112,6 +115,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
 		versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
 		}
 
@@ -124,6 +128,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		worktree, err := getWorktree(repository)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to retrieve git worktree")
 		}
 
@@ -139,6 +144,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		if newVersion != version {
 			err = artifact.SetVersion(newVersion)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrap(err, "failed to write version")
 			}
 		}
@@ -285,6 +291,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	urls := originUrls(repository)
 	if len(urls) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return commitID, fmt.Errorf("no remote url maintained")
 	}
 	if strings.HasPrefix(urls[0], "http") {
@@ -306,6 +313,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 			pushOptions.Auth, err = sshAgentAuth("git")
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
 			log.Entry().Infof("using remote '%v'", remoteURL)
@@ -315,6 +323,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	} else {
 		pushOptions.Auth, err = sshAgentAuth("git")
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 		}
 	}

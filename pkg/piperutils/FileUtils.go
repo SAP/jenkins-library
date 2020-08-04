@@ -21,6 +21,7 @@ type FileUtils interface {
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
 }
 
 // Files ...

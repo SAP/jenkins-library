@@ -281,20 +281,20 @@ func TestMarBuild(t *testing.T) {
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
 
-		var settingsFile string
-		var settingsFileType maven.SettingsFileType
+		var projectSettingsFile string
+		var globalSettingsFile string
 
 		defer func() {
-			getSettingsFile = maven.GetSettingsFile
+			downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 		}()
 
-		getSettingsFile = func(
-			sfType maven.SettingsFileType,
-			src string,
-			fileUtilsMock piperutils.FileUtils,
-			httpClientMock piperhttp.Downloader) error {
-			settingsFile = src
-			settingsFileType = sfType
+		downloadAndCopySettingsFiles = func(
+			globalSettings string,
+			projectSettings string,
+			fileUtils piperutils.FileUtils,
+			httpClient maven.SettingsDownloadUtils) error {
+			projectSettingsFile = projectSettings
+			globalSettingsFile = globalSettings
 			return nil
 		}
 
@@ -305,8 +305,8 @@ func TestMarBuild(t *testing.T) {
 		t.Run("Copy global settings file", func(t *testing.T) {
 
 			defer func() {
-				settingsFile = ""
-				settingsFileType = -1
+				projectSettingsFile = ""
+				globalSettingsFile = ""
 			}()
 
 			e := mock.ExecMockRunner{}
@@ -317,15 +317,15 @@ func TestMarBuild(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			assert.Equal(t, settingsFile, "/opt/maven/settings.xml")
-			assert.Equal(t, settingsFileType, maven.GlobalSettingsFile)
+			assert.Equal(t, globalSettingsFile, "/opt/maven/settings.xml")
+			assert.Equal(t, projectSettingsFile, "")
 		})
 
 		t.Run("Copy project settings file", func(t *testing.T) {
 
 			defer func() {
-				settingsFile = ""
-				settingsFileType = -1
+				projectSettingsFile = ""
+				globalSettingsFile = ""
 			}()
 
 			e := mock.ExecMockRunner{}
@@ -336,8 +336,8 @@ func TestMarBuild(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			assert.Equal(t, "/my/project/settings.xml", settingsFile)
-			assert.Equal(t, maven.ProjectSettingsFile, settingsFileType)
+			assert.Equal(t, "/my/project/settings.xml", projectSettingsFile)
+			assert.Equal(t, "", globalSettingsFile)
 		})
 	})
 }
@@ -389,6 +389,10 @@ func (f *MtaTestFileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 
 func (f *MtaTestFileUtilsMock) Abs(path string) (string, error) {
 	return "/root_folder/workspace/" + path, nil
+}
+
+func (f *MtaTestFileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func (f *MtaTestFileUtilsMock) Chmod(path string, mode os.FileMode) error {

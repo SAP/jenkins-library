@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"strings"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
@@ -17,20 +20,12 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
-	runDetect(config, &c)
-}
 
-func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
-	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
+	fileUtils := piperutils.Files{}
+	httpClient := piperhttp.Client{}
 
-	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
-	args = addDetectArgs(args, config)
-	script := strings.Join(args, " ")
+	err := runDetect(config, &c, &fileUtils, &httpClient)
 
-	command.SetDir(".")
-	command.SetEnv([]string{"BLACKDUCK_SKIP_PHONE_HOME=true"})
-
-	err := command.RunShell("/bin/bash", script)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -38,7 +33,29 @@ func runDetect(config detectExecuteScanOptions, command command.ShellRunner) {
 	}
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
+	httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	err := fileUtils.Chmod("detect.sh", 0700)
+	if err != nil {
+		return err
+	}
+	args := []string{"./detect.sh"}
+	args, err = addDetectArgs(args, config, fileUtils, httpClient)
+	if err != nil {
+		return err
+	}
+	script := strings.Join(args, " ")
+
+	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
+
+	command.SetDir(".")
+	command.SetEnv(envs)
+
+	return command.RunShell("/bin/bash", script)
+}
+
+func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) ([]string, error) {
 
 	coordinates := struct {
 		Version string
@@ -80,5 +97,23 @@ func addDetectArgs(args []string, config detectExecuteScanOptions) []string {
 	if sliceUtils.ContainsString(config.Scanners, "source") {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
-	return args
+
+	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(config.M2Path) > 0 {
+		absolutePath, err := fileUtils.Abs(config.M2Path)
+		if err != nil {
+			return nil, err
+		}
+		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
+	}
+
+	if len(mavenArgs) > 0 {
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+	}
+
+	return args, nil
 }
