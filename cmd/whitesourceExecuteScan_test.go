@@ -166,10 +166,10 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			ScanType:               "mta",
 			DefaultVersioningModel: "major",
 		}
-		utils := newWhitesourceUtilsMock()
+		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock()
 		// test
-		err := resolveProjectIdentifiers(&config, utils, systemMock)
+		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", config.ProjectName)
