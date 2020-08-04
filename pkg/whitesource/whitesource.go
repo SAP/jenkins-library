@@ -115,8 +115,8 @@ func (s *system) GetProductsMetaInfo() ([]Product, error) {
 	return wsResponse.ProductVitals, nil
 }
 
-// GetMetaInfoForProduct retrieves meta information for a specific WhiteSource product
-func (s *system) GetMetaInfoForProduct(productName string) (Product, error) {
+// GetProductByName retrieves meta information for a specific WhiteSource product
+func (s *system) GetProductByName(productName string) (Product, error) {
 	products, err := s.GetProductsMetaInfo()
 	if err != nil {
 		return Product{}, errors.Wrap(err, "failed to retrieve WhiteSource products")
@@ -315,50 +315,6 @@ func (s *system) GetProjectVulnerabilityReport(projectToken string, format strin
 	}
 
 	return respBody, nil
-}
-
-// GetOrganizationProductVitals
-func (s *system) GetOrganizationProductVitals() ([]Product, error) {
-	wsResponse := struct {
-		ProductVitals []Product `json:"productVitals"`
-	}{
-		ProductVitals: []Product{},
-	}
-
-	req := Request{
-		RequestType: "getOrganizationProductVitals",
-	}
-
-	respBody, err := s.sendRequest(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
-	}
-
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
-	}
-
-	return wsResponse.ProductVitals, nil
-}
-
-// GetProductByName
-func (s *system) GetProductByName(productName string) (*Product, error) {
-	var product Product
-
-	products, err := s.GetOrganizationProductVitals()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to getOrganizationProductVitals")
-	}
-
-	for _, prod := range products {
-		if prod.Name == productName {
-			product = prod
-		}
-	}
-
-	// returns nil, nil if no product was found
-	return &product, nil
 }
 
 // GetProjectAlerts

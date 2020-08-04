@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/SAP/jenkins-library/pkg/whitesource"
@@ -24,8 +25,13 @@ func (m *whitesourceSystemMock) GetProductsMetaInfo() ([]whitesource.Product, er
 	return m.products, nil
 }
 
-func (m *whitesourceSystemMock) GetMetaInfoForProduct(productName string) (whitesource.Product, error) {
-	return m.products[0], nil
+func (m *whitesourceSystemMock) GetProductByName(productName string) (whitesource.Product, error) {
+	for _, product := range m.products {
+		if product.Name == productName {
+			return product, nil
+		}
+	}
+	return whitesource.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
 }
 
 func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]whitesource.Project, error) {
@@ -37,7 +43,12 @@ func (m *whitesourceSystemMock) GetProjectToken(productToken, projectName string
 }
 
 func (m *whitesourceSystemMock) GetProjectVitals(projectToken string) (*whitesource.Project, error) {
-	return &m.projects[0], nil
+	for _, project := range m.projects {
+		if project.Token == projectToken {
+			return &project, nil
+		}
+	}
+	return nil, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
 }
 
 func (m *whitesourceSystemMock) GetProjectByName(productToken, projectName string) (*whitesource.Project, error) {
@@ -62,14 +73,6 @@ func (m *whitesourceSystemMock) GetProjectRiskReport(projectToken string) ([]byt
 
 func (m *whitesourceSystemMock) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
 	return m.vulnerabilityReport, nil
-}
-
-func (m *whitesourceSystemMock) GetOrganizationProductVitals() ([]whitesource.Product, error) {
-	return m.products, nil
-}
-
-func (m *whitesourceSystemMock) GetProductByName(productName string) (*whitesource.Product, error) {
-	return &m.products[0], nil
 }
 
 func (m *whitesourceSystemMock) GetProjectAlerts(projectToken string) ([]whitesource.Alert, error) {
@@ -166,6 +169,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		config := ScanOptions{
 			ScanType:               "mta",
 			DefaultVersioningModel: "major",
+			ProductName:            "mock-product",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
@@ -178,6 +182,20 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			assert.Equal(t, "mock-project-token", config.ProjectToken)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 		}
+	})
+	t.Run("product not found", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:               "mta",
+			DefaultVersioningModel: "major",
+			ProductName:            "does-not-exist",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := newWhitesourceSystemMock("ignored")
+		// test
+		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
+		// assert
+		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
 }
 

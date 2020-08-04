@@ -151,7 +151,7 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		if err != nil {
 			return err
 		}
-		if product != nil {
+		if product.Token != "" {
 			log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 			config.ProductToken = product.Token
 		}
