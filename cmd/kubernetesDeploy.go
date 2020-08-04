@@ -106,7 +106,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
 	// pass secret in helm default template way and in Piper backward compatible way
-	secretsData := fmt.Sprintf(",secret.dockerconfigjson=%v,imagePullSecrets[0].name=regsecret,imagePullSecrets[0].dockerconfigjson=%v", dockerRegistrySecretData.Data.DockerConfJSON, dockerRegistrySecretData.Data.DockerConfJSON)
+	secretsData := fmt.Sprintf("secret.dockerconfigjson=%v,imagePullSecrets[0].name=regsecret,imagePullSecrets[0].dockerconfigjson=%v", dockerRegistrySecretData.Data.DockerConfJSON, dockerRegistrySecretData.Data.DockerConfJSON)
 
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {
