@@ -38,6 +38,8 @@ void call(Map parameters = [:]) {
                 echo "Context Config: ${config}"
             }
             // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
+            // writeToDisk needs to be called here as owner and repository may come from the pipeline environment
+            script.commonPipelineEnvironment.writeToDisk(script)
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
@@ -62,7 +64,6 @@ void call(Map parameters = [:]) {
                         withSonarQubeEnv(stepConfig.instance) {
                             withEnv(environment){
                                 influxWrapper(script){
-                                    script.commonPipelineEnvironment.writeToDisk(script)
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
