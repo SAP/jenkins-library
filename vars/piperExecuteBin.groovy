@@ -185,9 +185,6 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
-void stepResultsWrapper(jenkinsUtils, String stepName, boolean failOnMissingReports, boolean failOnMissingLinks, body){
-}
-
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()
