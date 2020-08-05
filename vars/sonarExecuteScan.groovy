@@ -20,8 +20,12 @@ void call(Map parameters = [:]) {
         piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
-        script.commonPipelineEnvironment.writeToDisk(script)
+        List credentialInfo = [
+            [type: 'token', id: 'sonarTokenCredentialsId', env: ['PIPER_token']],
+            [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
+        ]
 
+        script.commonPipelineEnvironment.writeToDisk(script)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -35,23 +39,16 @@ void call(Map parameters = [:]) {
                 config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
                 echo "Context Config: ${config}"
             }
-
             // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
-            // determine credentials to load
-            List credentials = []
             List environment = []
-            if (config.sonarTokenCredentialsId)
-                credentials.add(string(credentialsId: config.sonarTokenCredentialsId, variable: 'PIPER_token'))
             if(isPullRequest()){
                 checkMandatoryParameter(stepConfig, "owner")
                 checkMandatoryParameter(stepConfig, "repository")
                 if(stepConfig.legacyPRHandling) {
                     checkMandatoryParameter(config, "githubTokenCredentialsId")
-                    if (config.githubTokenCredentialsId)
-                        credentials.add(string(credentialsId: config.githubTokenCredentialsId, variable: 'PIPER_githubToken'))
                 }
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
@@ -70,13 +67,13 @@ void call(Map parameters = [:]) {
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         withSonarQubeEnv(stepConfig.instance) {
-                            withCredentials(credentials) {
-                                withEnv(environment){
-                                    try {
+                            withEnv(environment){
+                                try {
+                                    piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                    } finally {
-                                        InfluxData.readFromDisk(script)
                                     }
+                                } finally {
+                                    InfluxData.readFromDisk(script)
                                 }
                             }
                         }

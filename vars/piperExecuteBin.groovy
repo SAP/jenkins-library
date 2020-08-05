@@ -149,6 +149,7 @@ void dockerWrapper(script, config, body) {
     }
 }
 
+// reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     if (credentialInfo.size() > 0) {
         def creds = []
