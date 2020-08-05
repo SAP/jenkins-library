@@ -146,6 +146,7 @@ void dockerWrapper(script, config, body) {
     }
 }
 
+// reused in protecodeExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     if (credentialInfo.size() > 0) {
         def creds = []

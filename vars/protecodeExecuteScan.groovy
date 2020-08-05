@@ -20,6 +20,11 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         parameters.jenkinsUtilsStub = null
 
+        List credentials = [
+            [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+            [type: 'file', id: 'dockerCredentialsId', env: ['DOCKER_CONFIG']],
+        ]
+
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
 
@@ -32,12 +37,8 @@ void call(Map parameters = [:]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
 
-            def creds = []
-            if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_username'))
-            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG'))
-
             // execute step
-            withCredentials(creds) {
+            piperExecuteBin.credentialWrapper(config, credentials){
                 sh "./piper protecodeExecuteScan"
             }
 
