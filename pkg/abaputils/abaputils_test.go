@@ -25,7 +25,10 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "")
+		var autils = AbapUtils{
+			Exec: &command.Command{},
+		}
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
@@ -52,7 +55,10 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, &command.Command{}, "")
+		var autils = AbapUtils{
+			Exec: &command.Command{},
+		}
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
 		//then
 		assert.Equal(t, "", connectionDetails.URL)
@@ -65,7 +71,6 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
 		//given
-		m := &mock.ExecMockRunner{}
 
 		const testURL = "https://testurl.com"
 		const oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
@@ -85,12 +90,15 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 			CfServiceKeyName:  "testServiceKeyName",
 		}
 
+		m := &mock.ExecMockRunner{}
 		m.StdoutReturn = map[string]string{"cf service-key testInstance testServiceKeyName": serviceKey}
-
+		var autils = AbapUtils{
+			Exec: m,
+		}
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
 
 		//then
 		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
@@ -105,7 +113,6 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
 		//given
-		m := &mock.ExecMockRunner{}
 
 		const testURL = "https://testurl.com"
 		const oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
@@ -121,12 +128,16 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 			Password: password,
 		}
 
+		m := &mock.ExecMockRunner{}
 		m.StdoutReturn = map[string]string{"cf service-key testInstance testServiceKeyName": serviceKey}
+		var autils = AbapUtils{
+			Exec: m,
+		}
 
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
 
 		//then
 		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
@@ -139,7 +150,6 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success - w/o https", func(t *testing.T) {
 
 		//given
-		m := &mock.ExecMockRunner{}
 
 		const testURL = "testurl.com"
 		const oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
@@ -155,12 +165,16 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 			Password: password,
 		}
 
+		m := &mock.ExecMockRunner{}
 		m.StdoutReturn = map[string]string{"cf service-key testInstance testServiceKeyName": serviceKey}
+		var autils = AbapUtils{
+			Exec: m,
+		}
 
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		connectionDetails, err = GetAbapCommunicationArrangementInfo(options, m, oDataURL)
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
 
 		//then
 		assert.Equal(t, "https://"+testURL+oDataURL, connectionDetails.URL)
@@ -205,5 +219,26 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.URL)
 
 		assert.Error(t, err)
+	})
+}
+
+func TestTimeConverter(t *testing.T) {
+	t.Run("Test example time", func(t *testing.T) {
+		inputDate := "/Date(1585576809000+0000)/"
+		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
+		result := ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test Unix time", func(t *testing.T) {
+		inputDate := "/Date(0000000000000+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test unexpected format", func(t *testing.T) {
+		inputDate := "/Date(0012300000001+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
 	})
 }
