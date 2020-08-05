@@ -4,6 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -12,12 +19,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/elliotchance/orderedmap"
 	"github.com/pkg/errors"
-	"io"
-	"os"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type cfFileUtil interface {
