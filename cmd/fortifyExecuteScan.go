@@ -81,7 +81,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 		return fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
 
-	if config.AuthEntityIDs != "" {
+	if len(config.AuthEntityIDs) > 0 {
 		ensureAuthEntitiesExist(projectVersion.ID, sys, &config)
 	}
 
