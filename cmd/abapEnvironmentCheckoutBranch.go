@@ -72,7 +72,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-	pollIntervall := 10 * time.Second
+	pollIntervall := com.GetPollIntervall()
 
 	log.Entry().Infof("Starting to switch branch to branch '%v' on repository '%v'", options.BranchName, options.RepositoryName)
 	log.Entry().Info("--------------------------------")
