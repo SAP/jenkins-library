@@ -21,6 +21,8 @@ void call(Map parameters = [:]) {
         parameters.jenkinsUtilsStub = null
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
+        Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
+
         List credentials = [
             [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
             [type: 'file', id: 'dockerCredentialsId', env: ['DOCKER_CONFIG']],
@@ -32,7 +34,7 @@ void call(Map parameters = [:]) {
         writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
         withEnv([
-            "PIPER_parametersJSON=${getParametersJSON(parameters)}",
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
         ]) {
             String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
@@ -65,16 +67,4 @@ void call(Map parameters = [:]) {
             jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
         }
     }
-}
-
-String getParametersJSON(Map parameters = [:]){
-    Map stepParameters = [:].plus(parameters)
-    // Remove script parameter etc.
-    stepParameters.remove('script')
-    stepParameters.remove('juStabUtils')
-    stepParameters.remove('jenkinsUtilsStub')
-    // When converting to JSON and back again, entries which had a 'null' value will now have a value
-    // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
-    stepParameters = MapUtils.pruneNulls(stepParameters)
-    return groovy.json.JsonOutput.toJson(stepParameters)
 }

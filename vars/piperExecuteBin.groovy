@@ -85,6 +85,7 @@ static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     utils.unstash('pipelineConfigAndTests')
 }
 
+// reused in protecodeExecuteScan
 static Map prepareStepParameters(Map parameters) {
     Map stepParameters = [:].plus(parameters)
 
