@@ -35,6 +35,7 @@ type whitesourceUtils interface {
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
+	MkdirAll(path string, perm os.FileMode) error
 	FileExists(path string) (bool, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
@@ -109,7 +110,7 @@ func runWhitesourceScan(config *ScanOptions, sys System, _ *telemetry.CustomData
 	log.Entry().Info("-----------------------------------------------------")
 
 	if config.Reporting {
-		paths, err := downloadReports(config, sys)
+		paths, err := downloadReports(config, utils, sys)
 		if err != nil {
 			return err
 		}
@@ -388,7 +389,7 @@ func pollProjectStatus(config *ScanOptions, sys System) error {
 	return blockUntilProjectIsUpdated(config, sys, time.Now(), 10*time.Second, 5*time.Second, 300*time.Second)
 }
 
-const dateTimeLayout = "2006-01-02 15:04:05 -0700"
+const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
 
 // blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
 // or no older than maxAge relative to the given time stamp.
@@ -400,7 +401,7 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime tim
 			return err
 		}
 
-		lastUpdatedTime, err := time.Parse(dateTimeLayout, project.LastUpdateDate)
+		lastUpdatedTime, err := time.Parse(whitesourceDateTimeLayout, project.LastUpdateDate)
 		if err != nil {
 			return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
 				project.LastUpdateDate, err)
@@ -421,9 +422,7 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime tim
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, sys System) ([]piperutils.Path, error) {
-	utils := piperutils.Files{}
-
+func downloadReports(config *ScanOptions, utils whitesourceUtils, sys System) ([]piperutils.Path, error) {
 	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
 	if err := pollProjectStatus(config, sys); err != nil {
 		return nil, err
@@ -432,19 +431,18 @@ func downloadReports(config *ScanOptions, sys System) ([]piperutils.Path, error)
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return nil, err
 	}
-	vulnPath, err := downloadVulnerabilityReport(config, sys)
+	vulnPath, err := downloadVulnerabilityReport(config, utils, sys)
 	if err != nil {
 		return nil, err
 	}
-	riskPath, err := downloadRiskReport(config, sys)
+	riskPath, err := downloadRiskReport(config, utils, sys)
 	if err != nil {
 		return nil, err
 	}
 	return []piperutils.Path{*vulnPath, *riskPath}, nil
 }
 
-func downloadVulnerabilityReport(config *ScanOptions, sys System) (*piperutils.Path, error) {
-	utils := piperutils.Files{}
+func downloadVulnerabilityReport(config *ScanOptions, utils whitesourceUtils, sys System) (*piperutils.Path, error) {
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return nil, err
 	}
@@ -457,7 +455,7 @@ func downloadVulnerabilityReport(config *ScanOptions, sys System) (*piperutils.P
 	// Write report to file
 	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", config.ProjectName, config.VulnerabilityReportFormat)
 	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := ioutil.WriteFile(rptFileName, reportBytes, 0644); err != nil {
+	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
 		return nil, err
 	}
 
@@ -466,7 +464,7 @@ func downloadVulnerabilityReport(config *ScanOptions, sys System) (*piperutils.P
 	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
 }
 
-func downloadRiskReport(config *ScanOptions, sys System) (*piperutils.Path, error) {
+func downloadRiskReport(config *ScanOptions, utils whitesourceUtils, sys System) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
 	if err != nil {
 		return nil, err
@@ -474,7 +472,7 @@ func downloadRiskReport(config *ScanOptions, sys System) (*piperutils.Path, erro
 
 	rptFileName := fmt.Sprintf("%s-risk-report.pdf", config.ProjectName)
 	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := ioutil.WriteFile(rptFileName, reportBytes, 0644); err != nil {
+	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
 		return nil, err
 	}
 

@@ -199,7 +199,7 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	t.Run("already new enough", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(dateTimeLayout, nowString)
+		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -216,7 +216,7 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	t.Run("timeout while polling", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(dateTimeLayout, nowString)
+		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
