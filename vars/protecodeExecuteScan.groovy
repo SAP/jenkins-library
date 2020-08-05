@@ -27,6 +27,7 @@ void call(Map parameters = [:]) {
 
         withEnv([
             "PIPER_parametersJSON=${getParametersJSON(parameters)}",
+            "PIPER_correlationID=${env.BUILD_URL}",
         ]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
@@ -46,7 +47,7 @@ void call(Map parameters = [:]) {
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             archiveArtifacts artifacts: "protecodeExecuteScan.json", allowEmptyArchive: false
             archiveArtifacts artifacts: "protecodescan_vulns.json", allowEmptyArchive: false
-            
+
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
