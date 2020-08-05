@@ -112,7 +112,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
     @Test
     void credentialsFileWritten() {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
-        fileExistsRule.registerExistingFile('./systems.yml')
+        fileExistsRule.registerExistingFile('systems.yml')
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
             credentials: [credential],

@@ -39,7 +39,7 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-
+        println(config)
         // telemetry reporting
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -71,10 +71,12 @@ void call(Map parameters = [:], body) {
 }
 
 private assertSystemsFileExists(String credentialsDirectory){
-    if (!fileExists(credentialsDirectory + "systems.yml") && !fileExists(credentialsDirectory + "systems.yaml") && !fileExists(credentialsDirectory + "systems.json")) {
-        error("The directory ${credentialsDirectory} does not contain any of the files systems.yml, systems.yaml or systems.json. " +
-            "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
-            "Please add the file as explained in the SAP Cloud SDK documentation.")
+    dir(credentialsDirectory) {
+        if (!fileExists("systems.yml") && !fileExists("systems.yaml") && !fileExists("systems.json")) {
+            error("The directory ${credentialsDirectory} does not contain any of the files systems.yml, systems.yaml or systems.json. " +
+                "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
+                "Please add the file as explained in the SAP Cloud SDK documentation.")
+        }
     }
 }
 
