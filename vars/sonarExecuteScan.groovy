@@ -61,15 +61,13 @@ void call(Map parameters = [:]) {
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         withSonarQubeEnv(stepConfig.instance) {
                             withEnv(environment){
-                                try {
+                                influxWrapper(script){
                                     script.commonPipelineEnvironment.writeToDisk(script)
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
                                     jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                                     script.commonPipelineEnvironment.readFromDisk(script)
-                                } finally {
-                                    InfluxData.readFromDisk(script)
                                 }
                             }
                         }
@@ -79,6 +77,14 @@ void call(Map parameters = [:]) {
                 def ignore = sh script: 'rm -rf .sonar-scanner .certificates', returnStatus: true
             }
         }
+    }
+}
+
+private void influxWrapper(Script script, body){
+    try {
+        body()
+    } finally {
+        InfluxData.readFromDisk(script)
     }
 }
 
