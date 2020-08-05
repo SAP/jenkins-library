@@ -1,15 +1,10 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/http/cookiejar"
 	"reflect"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -95,7 +90,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, client, pollIntervall)
+		status, errorPollEntity := abaputils.PollEntity(repositoryName, uriConnectionDetails, client, pollIntervall)
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repositoryName)
 		}
@@ -117,9 +112,9 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	pullConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -132,9 +127,9 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
-	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
+	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -158,117 +153,4 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	expandLog := "?$expand=to_Execution_log,to_Transport_log"
 	uriConnectionDetails.URL = body.Metadata.URI + expandLog
 	return uriConnectionDetails, nil
-}
-
-func pollEntity(repositoryName string, connectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
-
-	log.Entry().Info("Start polling the status...")
-	var status string = "R"
-
-	for {
-		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
-		if err != nil {
-			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		// Parse response
-		var body abaputils.PullEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["d"], &body)
-		if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-			var err = errors.New("Request to ABAP System not successful")
-			return "", err
-		}
-		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
-		if body.Status != "R" {
-			printLogs(body)
-			break
-		}
-		time.Sleep(pollIntervall)
-	}
-
-	return status, nil
-}
-
-func getHTTPResponse(requestType string, connectionDetails abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
-	header := make(map[string][]string)
-	header["Content-Type"] = []string{"application/json"}
-	header["Accept"] = []string{"application/json"}
-	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
-
-	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
-	return req, err
-}
-
-func handleHTTPError(resp *http.Response, err error, message string, connectionDetails abaputils.ConnectionDetailsHTTP) error {
-	if resp == nil {
-		// Response is nil in case of a timeout
-		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
-	} else {
-		log.Entry().WithField("StatusCode", resp.Status).Error(message)
-
-		// Include the error message of the ABAP Environment system, if available
-		var abapErrorResponse abaputils.AbapError
-		bodyText, readError := ioutil.ReadAll(resp.Body)
-		if readError != nil {
-			return readError
-		}
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (abaputils.AbapError{}) != abapErrorResponse {
-			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
-			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
-			err = errors.Wrap(abapError, err.Error())
-		}
-		resp.Body.Close()
-	}
-	return err
-}
-
-func printLogs(entity abaputils.PullEntity) {
-
-	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
-	})
-
-	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
-		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
-	})
-
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Transport Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToTransportLog.Results {
-
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
-	}
-
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Execution Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToExecutionLog.Results {
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
-	}
-	log.Entry().Info("-------------------------")
-
-}
-
-func convertTime(logTimeStamp string) time.Time {
-	// The ABAP Environment system returns the date in the following format: /Date(1585576807000+0000)/
-	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, error := strconv.ParseInt(seconds, 10, 64)
-	if error != nil {
-		return time.Unix(0, 0).UTC()
-	}
-	t := time.Unix(n, 0).UTC()
-	return t
 }
