@@ -101,6 +101,7 @@ static Map prepareStepParameters(Map parameters) {
     return MapUtils.pruneNulls(stepParameters)
 }
 
+// reused in protecodeExecuteScan
 static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }

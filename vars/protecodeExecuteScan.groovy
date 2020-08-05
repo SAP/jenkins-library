@@ -16,20 +16,17 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters,  failOnError: true) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        parameters.jenkinsUtilsStub = null
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
         piperExecuteBin.prepareExecution(this, utils, parameters)
+        piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
         List credentials = [
             [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
             [type: 'file', id: 'dockerCredentialsId', env: ['DOCKER_CONFIG']],
         ]
-
-        writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
