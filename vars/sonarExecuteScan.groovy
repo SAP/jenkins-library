@@ -25,8 +25,6 @@ void call(Map parameters = [:]) {
             [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
         ]
 
-        script.commonPipelineEnvironment.writeToDisk(script)
-
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
@@ -64,15 +62,17 @@ void call(Map parameters = [:]) {
                         withSonarQubeEnv(stepConfig.instance) {
                             withEnv(environment){
                                 try {
+                                    script.commonPipelineEnvironment.writeToDisk(script)
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
+                                    jenkinsUtils.handleStepResults(STEP_NAME, false, false)
+                                    script.commonPipelineEnvironment.readFromDisk(script)
                                 } finally {
                                     InfluxData.readFromDisk(script)
                                 }
                             }
                         }
-                        jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                     }
                 }
             } finally {
