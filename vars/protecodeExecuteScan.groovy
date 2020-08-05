@@ -47,6 +47,7 @@ void call(Map parameters = [:]) {
                 sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
             }
 
+            //TODO: refactor to use jenkinsUtils.StepResults
             def json = readJSON (file: "protecodescan_vulns.json")
             def report = readJSON (file: 'protecodeExecuteScan.json')
 
