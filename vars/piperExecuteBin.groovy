@@ -79,6 +79,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     }
 }
 
+// reused in protecodeExecuteScan
 static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()

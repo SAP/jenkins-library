@@ -21,15 +21,13 @@ void call(Map parameters = [:]) {
         parameters.jenkinsUtilsStub = null
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
+        piperExecuteBin.prepareExecution(this, utils, parameters)
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
         List credentials = [
             [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
             [type: 'file', id: 'dockerCredentialsId', env: ['DOCKER_CONFIG']],
         ]
-
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
 
         writeFile(file: ".pipeline/tmp/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
