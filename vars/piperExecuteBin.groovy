@@ -5,6 +5,7 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -72,6 +73,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                     } finally {
                         jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                         script.commonPipelineEnvironment.readFromDisk(script)
+                        InfluxData.readFromDisk(script)
                     }
                 }
             }
