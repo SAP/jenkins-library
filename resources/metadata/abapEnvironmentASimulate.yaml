@@ -38,9 +38,18 @@ spec:
             - PARAMETERS
             - STAGES
             - STEPS
-        - name: CVERS
+        - name: SWCRelease
           type: string
-          description: Cvers
+          description: Software component release
+          mandatory: true
+          scope:
+            - GENERAL
+            - PARAMETERS
+            - STAGES
+            - STEPS
+        - name: SpsLevel
+          type: string
+          description: Support package level
           mandatory: true
           scope:
             - GENERAL
@@ -73,6 +82,7 @@ spec:
             - name: PackageName
             - name: PackageType
             - name: SWC
-            - name: CVERS
+            - name: SWCRelease
+            - name: SpsLevel
             - name: Namespace
             - name: PreviousDeliveryCommit

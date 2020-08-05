@@ -132,13 +132,25 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: CVERS
+      - name: SWCRelease
         type: string
-        description: Data for CVERS software component name, release, support package as provided by AAKaaS
+        description: Software component release as provided by AAKaaS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: CVERS
+            param: SWCRelease
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: SpsLevel
+        type: string
+        description: Support package level as provided by AAKaaS
+        mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: SpsLevel
         scope:
         - GENERAL
         - PARAMETERS
@@ -168,6 +180,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+      - name: MaxRuntimeInMinutes
+        type: int
+        description: maximal runtime of the step
+        mandatory: true
+        default: 360
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment

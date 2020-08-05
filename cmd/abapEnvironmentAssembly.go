@@ -54,6 +54,7 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 	assemblyBuild := build{
 		connector: *conn,
 	}
+
 	valuesInput := values{
 		Values: []value{
 			{
@@ -62,7 +63,7 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 			},
 			{
 				ValueID: "CVERS",
-				Value:   config.CVERS,
+				Value:   config.SWC + "." + config.SWCRelease + "." + config.SpsLevel,
 			},
 			{
 				ValueID: "NAMESPACE",
@@ -80,7 +81,7 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 				Value: config.PreviousDeliveryCommit})
 	}
 	phase := "BUILD_" + config.PackageType
-	err = assemblyBuild.startPollLog(phase, valuesInput, 30, 60)
+	err = assemblyBuild.startPollLog(phase, valuesInput, time.Duration(config.MaxRuntimeInMinutes), 60)
 	if err != nil {
 		return err
 	}

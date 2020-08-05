@@ -27,9 +27,11 @@ type abapEnvironmentAssemblyOptions struct {
 	PackageType            string `json:"PackageType,omitempty"`
 	PackageName            string `json:"PackageName,omitempty"`
 	SWC                    string `json:"SWC,omitempty"`
-	CVERS                  string `json:"CVERS,omitempty"`
+	SWCRelease             string `json:"SWCRelease,omitempty"`
+	SpsLevel               string `json:"SpsLevel,omitempty"`
 	Namespace              string `json:"Namespace,omitempty"`
 	PreviousDeliveryCommit string `json:"PreviousDeliveryCommit,omitempty"`
+	MaxRuntimeInMinutes    int    `json:"MaxRuntimeInMinutes,omitempty"`
 }
 
 type abapEnvironmentAssemblyCommonPipelineEnvironment struct {
@@ -128,17 +130,21 @@ func addAbapEnvironmentAssemblyFlags(cmd *cobra.Command, stepConfig *abapEnviron
 	cmd.Flags().StringVar(&stepConfig.PackageType, "PackageType", os.Getenv("PIPER_PackageType"), "Type of the delivery package(AOI, CSP, CPK) as provided by AAKaaS")
 	cmd.Flags().StringVar(&stepConfig.PackageName, "PackageName", os.Getenv("PIPER_PackageName"), "Name of delivery package as provided by AAKaaS")
 	cmd.Flags().StringVar(&stepConfig.SWC, "SWC", os.Getenv("PIPER_SWC"), "Name of software component as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.CVERS, "CVERS", os.Getenv("PIPER_CVERS"), "Data for CVERS software component name, release, support package as provided by AAKaaS")
+	cmd.Flags().StringVar(&stepConfig.SWCRelease, "SWCRelease", os.Getenv("PIPER_SWCRelease"), "Software component release as provided by AAKaaS")
+	cmd.Flags().StringVar(&stepConfig.SpsLevel, "SpsLevel", os.Getenv("PIPER_SpsLevel"), "Support package level as provided by AAKaaS")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "Namespace", os.Getenv("PIPER_Namespace"), "Development namespace for software component")
 	cmd.Flags().StringVar(&stepConfig.PreviousDeliveryCommit, "PreviousDeliveryCommit", os.Getenv("PIPER_PreviousDeliveryCommit"), "Commit ID for the previous delivery event")
+	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "MaxRuntimeInMinutes", 360, "maximal runtime of the step")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("PackageType")
 	cmd.MarkFlagRequired("PackageName")
 	cmd.MarkFlagRequired("SWC")
-	cmd.MarkFlagRequired("CVERS")
+	cmd.MarkFlagRequired("SWCRelease")
+	cmd.MarkFlagRequired("SpsLevel")
 	cmd.MarkFlagRequired("Namespace")
+	cmd.MarkFlagRequired("MaxRuntimeInMinutes")
 }
 
 // retrieve step metadata
@@ -240,8 +246,16 @@ func abapEnvironmentAssemblyMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "CVERS",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "CVERS"}},
+						Name:        "SWCRelease",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "SWCRelease"}},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "SpsLevel",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "SpsLevel"}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -261,6 +275,14 @@ func abapEnvironmentAssemblyMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "MaxRuntimeInMinutes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 				},

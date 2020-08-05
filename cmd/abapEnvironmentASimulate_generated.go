@@ -19,7 +19,8 @@ type abapEnvironmentASimulateOptions struct {
 	PackageType            string `json:"PackageType,omitempty"`
 	PackageName            string `json:"PackageName,omitempty"`
 	SWC                    string `json:"SWC,omitempty"`
-	CVERS                  string `json:"CVERS,omitempty"`
+	SWCRelease             string `json:"SWCRelease,omitempty"`
+	SpsLevel               string `json:"SpsLevel,omitempty"`
 	Namespace              string `json:"Namespace,omitempty"`
 	PreviousDeliveryCommit string `json:"PreviousDeliveryCommit,omitempty"`
 }
@@ -28,7 +29,8 @@ type abapEnvironmentASimulateCommonPipelineEnvironment struct {
 	PackageName            string
 	PackageType            string
 	SWC                    string
-	CVERS                  string
+	SWCRelease             string
+	SpsLevel               string
 	Namespace              string
 	PreviousDeliveryCommit string
 }
@@ -42,7 +44,8 @@ func (p *abapEnvironmentASimulateCommonPipelineEnvironment) persist(path, resour
 		{category: "", name: "PackageName", value: p.PackageName},
 		{category: "", name: "PackageType", value: p.PackageType},
 		{category: "", name: "SWC", value: p.SWC},
-		{category: "", name: "CVERS", value: p.CVERS},
+		{category: "", name: "SWCRelease", value: p.SWCRelease},
+		{category: "", name: "SpsLevel", value: p.SpsLevel},
 		{category: "", name: "Namespace", value: p.Namespace},
 		{category: "", name: "PreviousDeliveryCommit", value: p.PreviousDeliveryCommit},
 	}
@@ -120,14 +123,16 @@ func addAbapEnvironmentASimulateFlags(cmd *cobra.Command, stepConfig *abapEnviro
 	cmd.Flags().StringVar(&stepConfig.PackageType, "PackageType", `AOI`, "Package Types. Valid values: 'AOI', 'CSP', 'CPK'.")
 	cmd.Flags().StringVar(&stepConfig.PackageName, "PackageName", os.Getenv("PIPER_PackageName"), "Package Name")
 	cmd.Flags().StringVar(&stepConfig.SWC, "SWC", os.Getenv("PIPER_SWC"), "SWC")
-	cmd.Flags().StringVar(&stepConfig.CVERS, "CVERS", os.Getenv("PIPER_CVERS"), "Cvers")
+	cmd.Flags().StringVar(&stepConfig.SWCRelease, "SWCRelease", os.Getenv("PIPER_SWCRelease"), "Software component release")
+	cmd.Flags().StringVar(&stepConfig.SpsLevel, "SpsLevel", os.Getenv("PIPER_SpsLevel"), "Support package level")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "Namespace", os.Getenv("PIPER_Namespace"), "Namespace")
 	cmd.Flags().StringVar(&stepConfig.PreviousDeliveryCommit, "PreviousDeliveryCommit", os.Getenv("PIPER_PreviousDeliveryCommit"), "Previous delivery commit")
 
 	cmd.MarkFlagRequired("PackageType")
 	cmd.MarkFlagRequired("PackageName")
 	cmd.MarkFlagRequired("SWC")
-	cmd.MarkFlagRequired("CVERS")
+	cmd.MarkFlagRequired("SWCRelease")
+	cmd.MarkFlagRequired("SpsLevel")
 	cmd.MarkFlagRequired("Namespace")
 }
 
@@ -166,7 +171,15 @@ func abapEnvironmentASimulateMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "CVERS",
+						Name:        "SWCRelease",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "SpsLevel",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

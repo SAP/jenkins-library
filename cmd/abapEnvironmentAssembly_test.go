@@ -48,25 +48,15 @@ func TestConnectionDetails(t *testing.T) {
 	})
 }
 
-func TestGet(t *testing.T) {
-	t.Run("Run Get", func(t *testing.T) {
-		client := &clMock{}
-		conn := new(connector)
-		err := conn.init(configHost, client)
-		assert.NoError(t, err)
-		b := build{
-			connector: *conn,
-			BuildID:   "ABIFNLDCSQPOVMXK4DNPBDRW2M",
-		}
-		b.get()
-		assert.Equal(t, finished, b.RunState)
-		assert.Equal(t, 0, len(b.Tasks))
-		b.getTasks()
-		assert.Equal(t, b.Tasks[0].TaskID, 0)
-		assert.Equal(t, b.Tasks[0].PluginClass, "")
-		assert.Equal(t, b.Tasks[1].TaskID, 1)
-		assert.Equal(t, b.Tasks[1].PluginClass, "/BUILD/CL_TEST_PLUGIN_OK")
-	})
+func testSetup(client piperhttp.Sender, buildID string) build {
+	conn := new(connector)
+	conn.Client = client
+	conn.Header = make(map[string][]string)
+	b := build{
+		connector: *conn,
+		BuildID:   buildID,
+	}
+	return b
 }
 
 func TestSTart(t *testing.T) {
@@ -74,12 +64,7 @@ func TestSTart(t *testing.T) {
 		client := &clMock{
 			Token: "MyToken",
 		}
-		conn := new(connector)
-		err := conn.init(configHost, client)
-		assert.NoError(t, err)
-		b := build{
-			connector: *conn,
-		}
+		b := testSetup(client, "")
 		inputValues := values{
 			Values: []value{
 				{
@@ -92,34 +77,52 @@ func TestSTart(t *testing.T) {
 				},
 			},
 		}
-
-		err = b.start("test", inputValues)
+		err := b.start("test", inputValues)
 		assert.NoError(t, err)
 		assert.Equal(t, accepted, b.RunState)
+	})
+}
 
-		err = b.get()
+func TestGet(t *testing.T) {
+	t.Run("Run Get", func(t *testing.T) {
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		err := b.get()
 		assert.NoError(t, err)
 		assert.Equal(t, finished, b.RunState)
-		//tasks
 		assert.Equal(t, 0, len(b.Tasks))
-		err = b.getTasks()
+	})
+}
+
+func TestGetTasks(t *testing.T) {
+	t.Run("Run getTasks", func(t *testing.T) {
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		assert.Equal(t, 0, len(b.Tasks))
+		err := b.getTasks()
 		assert.NoError(t, err)
 		assert.Equal(t, b.Tasks[0].TaskID, 0)
 		assert.Equal(t, b.Tasks[0].PluginClass, "")
 		assert.Equal(t, b.Tasks[1].TaskID, 1)
 		assert.Equal(t, b.Tasks[1].PluginClass, "/BUILD/CL_TEST_PLUGIN_OK")
-		//logs
-		assert.Equal(t, 0, len(b.Tasks[0].Logs))
-		assert.Equal(t, 0, len(b.Tasks[1].Logs))
-		err = b.getLogs()
+	})
+}
+
+func TestGetLogs(t *testing.T) {
+	t.Run("Run getLogs", func(t *testing.T) {
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		err := b.getLogs()
 		assert.NoError(t, err)
 		assert.Equal(t, "I:/BUILD/LOG:000 ABAP Build Framework", b.Tasks[0].Logs[0].Logline)
 		assert.Equal(t, loginfo, b.Tasks[0].Logs[0].Msgty)
 		assert.Equal(t, "W:/BUILD/LOG:000 We can even have warnings!", b.Tasks[1].Logs[1].Logline)
 		assert.Equal(t, logwarning, b.Tasks[1].Logs[1].Msgty)
-		//values
+	})
+}
+
+func TestGetValues(t *testing.T) {
+	t.Run("Run getValues", func(t *testing.T) {
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
 		assert.Equal(t, 0, len(b.Values))
-		err = b.getValues()
+		err := b.getValues()
 		assert.NoError(t, err)
 		assert.Equal(t, 4, len(b.Values))
 		assert.Equal(t, "PHASE", b.Values[0].ValueID)
@@ -130,10 +133,13 @@ func TestSTart(t *testing.T) {
 		assert.Equal(t, "winter", b.Values[2].Value)
 		assert.Equal(t, "SUN", b.Values[3].ValueID)
 		assert.Equal(t, "FLOWER", b.Values[3].Value)
-		//results
-		assert.Equal(t, 0, len(b.Tasks[0].Results))
-		assert.Equal(t, 0, len(b.Tasks[1].Results))
-		err = b.getResults()
+	})
+}
+
+func TestGetResults(t *testing.T) {
+	t.Run("Run getResults", func(t *testing.T) {
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		err := b.getResults()
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(b.Tasks[0].Results))
 		assert.Equal(t, 2, len(b.Tasks[1].Results))
@@ -145,7 +151,6 @@ func TestSTart(t *testing.T) {
 		r, err := b.getResult("2times_hello")
 		assert.Equal(t, "text/plain", r.Mimetype)
 		assert.NoError(t, err)
-
 	})
 }
 

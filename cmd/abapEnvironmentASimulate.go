@@ -29,14 +29,16 @@ func runAbapEnvironmentASimulate(config *abapEnvironmentASimulateOptions, teleme
 	log.Entry().Infof("package Type %v", config.PackageType)
 	log.Entry().Infof("packageName %v", config.PackageName)
 	log.Entry().Infof("SWC %v", config.SWC)
-	log.Entry().Infof("CVERS %v", config.CVERS)
+	log.Entry().Infof("SWCRelease %v", config.SWCRelease)
+	log.Entry().Infof("SpsLevel %v", config.SpsLevel)
 	log.Entry().Infof("Namespace %v", config.Namespace)
 	log.Entry().Infof("commit %v", config.PreviousDeliveryCommit)
 	// ins environment schreibne
 	commonPipelineEnvironment.PackageType = config.PackageType
 	commonPipelineEnvironment.PackageName = config.PackageName
 	commonPipelineEnvironment.SWC = config.SWC
-	commonPipelineEnvironment.CVERS = config.CVERS
+	commonPipelineEnvironment.SWCRelease = config.SWCRelease
+	commonPipelineEnvironment.SpsLevel = config.SpsLevel
 	commonPipelineEnvironment.Namespace = config.Namespace
 	commonPipelineEnvironment.PreviousDeliveryCommit = config.PreviousDeliveryCommit
 	commonPipelineEnvironment.persist(".pipeline", "commonPipelineEnvironment")
