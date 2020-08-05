@@ -43,8 +43,13 @@ void call(Map parameters = [:]) {
             }
 
             // execute step
-            piperExecuteBin.credentialWrapper(config, credentials){
-                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+            try {
+                script.commonPipelineEnvironment.writeToDisk(script)
+                piperExecuteBin.credentialWrapper(config, credentials){
+                    sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                }
+            } finally {
+                script.commonPipelineEnvironment.readFromDisk(script)
             }
 
             //TODO: refactor to use jenkinsUtils.StepResults
