@@ -58,12 +58,7 @@ void call(Map parameters = [:]) {
                 // load certificates into cacerts file
                 loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
                 // execute step
-                dockerExecute(
-                    script: script,
-                    dockerImage: config.dockerImage,
-                    dockerWorkspace: config.dockerWorkspace,
-                    dockerOptions: config.dockerOptions
-                ) {
+                piperExecuteBin.dockerWrapper(script, config){
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         withSonarQubeEnv(stepConfig.instance) {
