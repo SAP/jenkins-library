@@ -8,14 +8,13 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 
 	"io/ioutil"
 )
 
-func mockgetAbapCommunicationArrangement(options abaputils.AbapEnvironmentOptions, c command.ExecRunner, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
+func mockgetAbapCommunicationArrangement(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
 	var connectionDetails abaputils.ConnectionDetailsHTTP
 	var error error
 

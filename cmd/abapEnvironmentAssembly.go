@@ -251,7 +251,11 @@ func (in inputForPost) String() string {
 
 // ******** technical communication settings ********
 
-var getAbapCommunicationArrangement = abaputils.GetAbapCommunicationArrangementInfo
+// var getAbapCommunicationArrangement = abaputils.GetAbapCommunicationArrangementInfo //GetAbapCommunicationArrangementInfo
+var aUtils = abaputils.AbapUtils{Exec: &command.Command{}}
+var getAbapCommunicationArrangement = aUtils.GetAbapCommunicationArrangementInfo
+
+// var getAbapCommunicationArrangement = abaputils.Communication.GetAbapCommunicationArrangementInfo
 
 func (conn *connector) init(options abapEnvironmentAssemblyOptions, inputclient piperhttp.Sender) error {
 	conn.Client = inputclient
@@ -271,9 +275,10 @@ func (conn *connector) init(options abapEnvironmentAssemblyOptions, inputclient 
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
-	var c command.ExecRunner = &command.Command{}
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, err := getAbapCommunicationArrangement(subOptions, c, "/sap/opu/odata/BUILD/CORE_SRV")
+	// connectionDetails, err := aUtils.getAbapCommunicationArrangement(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
+	// var c command.ExecRunner = &command.Command{}
+	connectionDetails, err := getAbapCommunicationArrangement(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
