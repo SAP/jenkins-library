@@ -103,6 +103,7 @@ static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
+// reused in protecodeExecuteScan
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
     return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
@@ -117,6 +118,7 @@ static String getCustomDefaultConfigs() {
     return customDefaults.join(',')
 }
 
+// reused in protecodeExecuteScan
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
@@ -125,6 +127,7 @@ static String getCustomDefaultConfigsArg() {
     return ''
 }
 
+// reused in protecodeExecuteScan
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
@@ -186,6 +189,7 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
+// reused in protecodeExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()

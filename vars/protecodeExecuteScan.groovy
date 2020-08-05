@@ -19,6 +19,7 @@ void call(Map parameters = [:]) {
         parameters.juStabUtils = null
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         parameters.jenkinsUtilsStub = null
+        String piperGoPath = parameters.piperGoPath ?: './piper'
 
         List credentials = [
             [type: 'usernamePassword', id: 'protecodeCredentialsId', env: ['PIPER_username', 'PIPER_password']],
@@ -34,12 +35,21 @@ void call(Map parameters = [:]) {
             "PIPER_parametersJSON=${getParametersJSON(parameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
         ]) {
+            String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
+            String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
+
+            echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
+
             // get context configuration
-            Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'"))
+            Map config
+            piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
+                echo "Context Config: ${config}"
+            }
 
             // execute step
             piperExecuteBin.credentialWrapper(config, credentials){
-                sh "./piper protecodeExecuteScan"
+                sh "${piperGoPath} protecodeExecuteScan"
             }
 
             def json = readJSON (file: "protecodescan_vulns.json")
