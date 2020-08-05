@@ -1,6 +1,4 @@
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.MapUtils
-import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -46,7 +44,7 @@ void call(Map parameters = [:]) {
 
             // execute step
             piperExecuteBin.credentialWrapper(config, credentials){
-                sh "${piperGoPath} protecodeExecuteScan"
+                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
             }
 
             def json = readJSON (file: "protecodescan_vulns.json")
