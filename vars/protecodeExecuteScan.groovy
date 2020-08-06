@@ -36,17 +36,19 @@ void call(Map parameters = [:]) {
             if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG'))
 
             // execute step
-            withCredentials(creds) {
-                sh "./piper protecodeExecuteScan"
+            try {
+                withCredentials(creds) {
+                    sh "./piper protecodeExecuteScan"
+                }
+            } finall {
+                jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
 
             def json = readJSON (file: "protecodescan_vulns.json")
             def report = readJSON (file: 'protecodeExecuteScan.json')
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
-            archiveArtifacts artifacts: "protecodeExecuteScan.json", allowEmptyArchive: false
-            archiveArtifacts artifacts: "protecodescan_vulns.json", allowEmptyArchive: false
-            
+
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")

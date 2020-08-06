@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -199,6 +200,13 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	log.Entry().Debug("Write report to filesystem")
 	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
+
+	// write reports JSON
+	reports := []StepResults.Path{
+		{Target: "protecodeExecuteScan.json", Mandatory: true},
+		{Target: "protecodescan_vulns.json", Mandatory: true},
+	}
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, nil)
 
 	return parsedResult
 }
