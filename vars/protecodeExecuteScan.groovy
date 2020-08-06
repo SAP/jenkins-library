@@ -40,7 +40,7 @@ void call(Map parameters = [:]) {
                 withCredentials(creds) {
                     sh "./piper protecodeExecuteScan"
                 }
-            } finall {
+            } finally {
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
 
