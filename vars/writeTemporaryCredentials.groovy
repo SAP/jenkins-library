@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.ConfigurationLoader
 import com.sap.piper.Credential
 import com.sap.piper.CredentialCollection
 import com.sap.piper.GenerateDocumentation
@@ -35,6 +36,7 @@ void call(Map parameters = [:], body) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
+            .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
