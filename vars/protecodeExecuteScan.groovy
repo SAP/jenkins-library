@@ -47,8 +47,6 @@ void call(Map parameters = [:]) {
             def json = readJSON (file: "protecodescan_vulns.json")
             def report = readJSON (file: 'protecodeExecuteScan.json')
 
-            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
-
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")

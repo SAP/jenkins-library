@@ -203,6 +203,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	// write reports JSON
 	reports := []StepResults.Path{
+		{Target: config.ReportFileName, Mandatory: true},
 		{Target: "protecodeExecuteScan.json", Mandatory: true},
 		{Target: "protecodescan_vulns.json", Mandatory: true},
 	}
