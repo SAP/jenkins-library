@@ -226,10 +226,11 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 	originalJarExists, _ := utils.FileExists(originalJarFile(dir, finalName))
 
 	log.Entry().Infof("JAR file with name %s does exist: %t", jarFile(dir, finalName), jarExists)
-	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 	log.Entry().Infof("Classes-JAR file with name %s does exist: %t", classesJarFile(dir, finalName), classesJarExists)
 	log.Entry().Infof("Original-JAR file with name %s does exist: %t", originalJarFile(dir, finalName), originalJarExists)
+	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 
+	// Due to spring's jar repackaging we need to check for an "original" jar file because the repackaged one is no suitable source for dependent maven modules
 	if originalJarExists {
 		err = InstallFile(originalJarFile(dir, finalName), pomFile, options.M2Path, command)
 		if err != nil {
