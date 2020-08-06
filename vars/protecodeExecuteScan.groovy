@@ -44,7 +44,6 @@ void call(Map parameters = [:]) {
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
 
-            def json = readJSON (file: "protecodescan_vulns.json")
             def report = readJSON (file: 'protecodeExecuteScan.json')
 
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
