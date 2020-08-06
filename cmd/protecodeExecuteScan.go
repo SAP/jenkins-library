@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -210,6 +211,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	// write links JSON
 	links := []StepResults.Path{
 		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
 
 	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)

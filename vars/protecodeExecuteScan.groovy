@@ -43,12 +43,6 @@ void call(Map parameters = [:]) {
             } finally {
                 jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
-
-            def report = readJSON (file: 'protecodeExecuteScan.json')
-
-            jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
-            jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
         }
     }
 }
