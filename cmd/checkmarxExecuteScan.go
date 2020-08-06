@@ -328,7 +328,7 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 		}
 	}
 	if config.VulnerabilityThresholdUnit == "absolute" {
-		unit = "findings"
+		unit = " findings"
 		if highValue > cxHighThreshold {
 			insecure = true
 			highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
