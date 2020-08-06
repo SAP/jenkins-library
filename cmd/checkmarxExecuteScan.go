@@ -377,6 +377,9 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 }
 
 func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
+	if presetValue == "" {
+		log.Entry().Infof("No preset configured")
+	}
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
 	presetID, err := strconv.Atoi(presetValue)
@@ -391,8 +394,11 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 	}
 
 	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
-		log.Entry().Debugf("Loaded preset %v", preset.Name)
+		log.Entry().Infof("Loaded preset %v", preset.Name)
 		return true, preset
+	}
+	if presetValue != "" {
+		log.Entry().Infof("Preset '%s' not found in %v", presetValue, presets)
 	}
 	return false, checkmarx.Preset{}
 }
