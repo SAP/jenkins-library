@@ -176,7 +176,7 @@ func TestAddDetectArgs(t *testing.T) {
 
 	for k, v := range testData {
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
-			got, err := addDetectArgs(v.args, v.options, &fileUtilsMock, &httpClient)
+			got, err := addDetectArgsAndBuild(v.args, v.options, &fileUtilsMock, &httpClient)
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
