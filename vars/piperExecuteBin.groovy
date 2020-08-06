@@ -67,12 +67,18 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     try {
-                        credentialWrapper(config, credentialInfo) {
-                            sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        try {
+                            try {
+                                credentialWrapper(config, credentialInfo) {
+                                    sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                                }
+                            } finally {
+                                jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                            }
+                        } finally {
+                            script.commonPipelineEnvironment.readFromDisk(script)
                         }
                     } finally {
-                        jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
-                        script.commonPipelineEnvironment.readFromDisk(script)
                         InfluxData.readFromDisk(script)
                     }
                 }
