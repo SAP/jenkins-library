@@ -10,7 +10,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field Set STEP_CONFIG_KEYS = [
     /**
      * The list of credentials that are written to a temporary file for the execution of the body.
      * Each element of credentials must be a map containing a property alias and a property credentialId.
@@ -20,7 +20,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * The path to the directory where the credentials file has to be placed.
      */
-    'credentialsDirectory'])
+    'credentialsDirectory'
+]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
