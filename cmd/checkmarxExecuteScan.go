@@ -40,14 +40,14 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 
 	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
-		log.Entry().Debugf("Project %v exists...", projectName)
+		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
 			setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
 		} else {
 			log.Entry().Infof("No preset configured")
 		}
 	} else {
-		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
+		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
 	}
 
