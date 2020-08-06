@@ -369,7 +369,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	return checkmarx.Project{}
 }
 
-// loadPreset finds a checkmarx.Preset that has either the ID or Label given by presetValue.
+// loadPreset finds a checkmarx.Preset that has either the ID or Name given by presetValue.
 // presetValue is not expected to be empty.
 func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
 	presets := sys.GetPresets()
