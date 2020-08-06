@@ -41,6 +41,11 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
 		log.Entry().Debugf("Project %v exists...", projectName)
+		if len(config.Preset) > 0 {
+			setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+		} else {
+			log.Entry().Infof("No preset configured")
+		}
 	} else {
 		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
 		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
@@ -351,17 +356,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
 	if ok {
 		if len(presetValue) > 0 {
-			ok, preset := loadPreset(sys, presetValue)
-			if ok {
-				configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, engineConfiguration)
-				if configurationUpdated {
-					log.Entry().Debugf("Configuration of project %v updated", projectName)
-				} else {
-					log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
-				}
-			} else {
-				log.Entry().Fatalf("Preset %v not found, creation of project %v failed", presetValue, projectName)
-			}
+			setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
 		} else {
 			log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectName)
 		}
@@ -377,9 +372,6 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 }
 
 func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
-	if presetValue == "" {
-		log.Entry().Infof("No preset configured")
-	}
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
 	presetID, err := strconv.Atoi(presetValue)
@@ -401,6 +393,20 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 		log.Entry().Infof("Preset '%s' not found in %v", presetValue, presets)
 	}
 	return false, checkmarx.Preset{}
+}
+
+func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) {
+	ok, preset := loadPreset(sys, presetValue)
+	if ok {
+		configurationUpdated := sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+		if configurationUpdated {
+			log.Entry().Debugf("Configuration of project %v updated", projectName)
+		} else {
+			log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
+		}
+	} else {
+		log.Entry().Fatalf("Preset %v not found, configuration of project %v failed", presetValue, projectName)
+	}
 }
 
 func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {
