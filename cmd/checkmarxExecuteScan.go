@@ -385,16 +385,15 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 		configuredPresetID = presetID
 	}
 
-	for _, prs := range presets {
-		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
-	}
-
 	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
 		log.Entry().Infof("Loaded preset %v", preset.Name)
 		return true, preset
 	}
 	if presetValue != "" {
-		log.Entry().Infof("Preset '%s' not found in %v", presetValue, presets)
+		log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue, presets)
+		for _, prs := range presets {
+			log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
+		}
 	}
 	return false, checkmarx.Preset{}
 }
