@@ -65,11 +65,14 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    try {
+                        credentialWrapper(config, credentialInfo) {
+                            sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        }
+                    } finally {
+                        jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                        script.commonPipelineEnvironment.readFromDisk(script)
                     }
-                    jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
-                    script.commonPipelineEnvironment.readFromDisk(script)
                 }
             }
         }

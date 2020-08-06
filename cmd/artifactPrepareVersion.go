@@ -330,6 +330,20 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	err = repository.Push(&pushOptions)
 	if err != nil {
+		errText := fmt.Sprint(err)
+		switch {
+		case strings.Contains(errText, "ssh: handshake failed"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "Permission"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "knownhosts: illegal base64"):
+			err = errors.Wrap(err, "known_hosts file seems invalid")
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "unable to find any valid known_hosts file"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "connection timed out"):
+			log.SetErrorCategory(log.ErrorInfrastructure)
+		}
 		return commitID, err
 	}
 
