@@ -43,8 +43,6 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
 			setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
-		} else {
-			log.Entry().Infof("No preset configured")
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
@@ -390,7 +388,7 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 		return true, preset
 	}
 	if presetValue != "" {
-		log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue, presets)
+		log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
 		for _, prs := range presets {
 			log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
 		}
