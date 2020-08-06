@@ -42,9 +42,7 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-        println("stage name: " + stageName)
-        println("Parameters: " + parameters)
-        println("resolved config: " + config)
+
         // telemetry reporting
         new Utils().pushToSWA([
             step: STEP_NAME,

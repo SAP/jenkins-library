@@ -8,6 +8,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsFileExistsRule
 import util.JenkinsReadFileRule
 import util.JenkinsReadYamlRule
+import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
@@ -17,14 +18,13 @@ import static org.hamcrest.Matchers.*
 class WriteTemporaryCredentialsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private ExpectedException thrown = ExpectedException.none()
-    //private JenkinsMockStepRule npmExecuteScriptsRule = new JenkinsMockStepRule(this, 'npmExecuteScripts')
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
     private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, null)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
-    List withEnvArgs = []
     def bodyExecuted
 
     @Rule
@@ -37,21 +37,13 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         .around(writeFileRule)
         .around(fileExistsRule)
         .around(readFileRule)
-
-        //.around(npmExecuteScriptsRule)
+        .around(shellRule)
 
     @Before
     void init() {
         bodyExecuted = false
 
         helper.registerAllowedMethod("deleteDir", [], null)
-
-        /*helper.registerAllowedMethod("withEnv", [List.class, Closure.class], {arguments, closure ->
-            arguments.each {arg ->
-                withEnvArgs.add(arg.toString())
-            }
-            return closure()
-        })*/
 
         credentialsRule.reset()
             .withCredentials('erp-credentials', 'test_user', '********')
@@ -126,10 +118,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
             bodyExecuted = true
         }
 
-        assertThat(writeFileRule.files['credentials.json'], containsString('test_user'))
-        assertThat(writeFileRule.files['credentials.json'], containsString('********'))
+        assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
     }
-
-    //
-    // def appUrl = [url: "http://my-url.com", credentialId: 'testCred', parameters: '--tag scenario1']
 }
