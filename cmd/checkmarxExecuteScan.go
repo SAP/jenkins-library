@@ -331,15 +331,15 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 		unit = " findings"
 		if highValue > cxHighThreshold {
 			insecure = true
-			highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
+			highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
 		}
 		if mediumValue > cxMediumThreshold {
 			insecure = true
-			mediumViolation = fmt.Sprintf("<-- %v %v deviation", mediumValue-cxMediumThreshold, unit)
+			mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
 		}
 		if lowValue > cxLowThreshold {
 			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v %v deviation", lowValue-cxLowThreshold, unit)
+			lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
 		}
 	}
 
