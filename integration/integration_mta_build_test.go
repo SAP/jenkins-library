@@ -59,7 +59,7 @@ func TestMavenSpringProject(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t,"Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
 }
 
 func TestNPMProject(t *testing.T) {
