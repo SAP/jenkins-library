@@ -1,11 +1,19 @@
 package abaputils
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"regexp"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
@@ -61,8 +69,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 	return connectionDetails, error
 }
 
-// ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it.
-// Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
+// ReadServiceKeyAbapEnvironment from Cloud Foundry and returns it. Depending on user/developer requirements if he wants to perform further Cloud Foundry actions
 func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (AbapServiceKey, error) {
 
 	var abapServiceKey AbapServiceKey
@@ -98,55 +105,54 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	return abapServiceKey, nil
 }
 
-/****************************************
- *	Structs for the A4C_A2G_GHA service *
- ****************************************/
+// GetHTTPResponse returns a HTTP response or its corresponding error
+func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
-// PullEntity struct for the Pull/Import entity A4C_A2G_GHA_SC_IMP
-type PullEntity struct {
-	Metadata          AbapMetadata `json:"__metadata"`
-	UUID              string       `json:"uuid"`
-	Namespace         string       `json:"namepsace"`
-	ScName            string       `json:"sc_name"`
-	ImportType        string       `json:"import_type"`
-	BranchName        string       `json:"branch_name"`
-	StartedByUser     string       `json:"user_name"`
-	Status            string       `json:"status"`
-	StatusDescription string       `json:"status_descr"`
-	CommitID          string       `json:"commit_id"`
-	StartTime         string       `json:"start_time"`
-	ChangeTime        string       `json:"change_time"`
-	ToExecutionLog    AbapLogs     `json:"to_Execution_log"`
-	ToTransportLog    AbapLogs     `json:"to_Transport_log"`
+	header := make(map[string][]string)
+	header["Content-Type"] = []string{"application/json"}
+	header["Accept"] = []string{"application/json"}
+	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
+
+	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
+	return req, err
 }
 
-// BranchEntity struct for the Branch entity A4C_A2G_GHA_SC_BRANCH
-type BranchEntity struct {
-	Metadata      AbapMetadata `json:"__metadata"`
-	ScName        string       `json:"sc_name"`
-	Namespace     string       `json:"namepsace"`
-	BranchName    string       `json:"branch_name"`
-	ParentBranch  string       `json:"derived_from"`
-	CreatedBy     string       `json:"created_by"`
-	CreatedOn     string       `json:"created_on"`
-	IsActive      bool         `json:"is_active"`
-	CommitID      string       `json:"commit_id"`
-	CommitMessage string       `json:"commit_message"`
-	LastCommitBy  string       `json:"last_commit_by"`
-	LastCommitOn  string       `json:"last_commit_on"`
+// HandleHTTPError handles ABAP error messages which can occur when using OData services
+func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
+	if resp == nil {
+		// Response is nil in case of a timeout
+		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
+	} else {
+		log.Entry().WithField("StatusCode", resp.Status).Error(message)
+
+		// Include the error message of the ABAP Environment system, if available
+		var abapErrorResponse AbapError
+		bodyText, readError := ioutil.ReadAll(resp.Body)
+		if readError != nil {
+			return readError
+		}
+		var abapResp map[string]*json.RawMessage
+		json.Unmarshal(bodyText, &abapResp)
+		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
+		if (AbapError{}) != abapErrorResponse {
+			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
+			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
+			err = errors.Wrap(abapError, err.Error())
+		}
+		resp.Body.Close()
+	}
+	return err
 }
 
-// AbapLogs struct for ABAP logs
-type AbapLogs struct {
-	Results []LogResults `json:"results"`
-}
-
-// LogResults struct for Execution and Transport Log entities A4C_A2G_GHA_SC_LOG_EXE and A4C_A2G_GHA_SC_LOG_TP
-type LogResults struct {
-	Index       string `json:"index_no"`
-	Type        string `json:"type"`
-	Description string `json:"descr"`
-	Timestamp   string `json:"timestamp"`
+// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
+func ConvertTime(logTimeStamp string) time.Time {
+	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	t := time.Unix(n, 0).UTC()
+	return t
 }
 
 /*******************************
@@ -157,6 +163,12 @@ type LogResults struct {
 type AbapEnvironmentPullGitRepoOptions struct {
 	AbapEnvOptions  AbapEnvironmentOptions
 	RepositoryNames []string `json:"repositoryNames,omitempty"`
+}
+
+// AbapEnvironmentCheckoutBranchOptions struct for the CheckoutBranch piper step
+type AbapEnvironmentCheckoutBranchOptions struct {
+	AbapEnvOptions AbapEnvironmentOptions
+	RepositoryName string `json:"repositoryName,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckOptions struct for the RunATCCheck piper step
@@ -233,6 +245,42 @@ type AbapBinding struct {
 	Type    string `json:"type"`
 	Version string `json:"version"`
 	Env     string `json:"env"`
+}
+
+/********************************
+ *	Testing with a client mock  *
+ ********************************/
+
+// ClientMock contains information about the client mock
+type ClientMock struct {
+	Token      string
+	Body       string
+	BodyList   []string
+	StatusCode int
+	Error      error
+}
+
+// SetOptions sets clientOptions for a client mock
+func (c *ClientMock) SetOptions(opts piperhttp.ClientOptions) {}
+
+// SendRequest sets a HTTP response for a client mock
+func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	var body []byte
+	if c.Body != "" {
+		body = []byte(c.Body)
+	} else {
+		bodyString := c.BodyList[len(c.BodyList)-1]
+		c.BodyList = c.BodyList[:len(c.BodyList)-1]
+		body = []byte(bodyString)
+	}
+	header := http.Header{}
+	header.Set("X-Csrf-Token", c.Token)
+	return &http.Response{
+		StatusCode: c.StatusCode,
+		Header:     header,
+		Body:       ioutil.NopCloser(bytes.NewReader(body)),
+	}, c.Error
 }
 
 // AUtilsMock mock
