@@ -1,8 +1,7 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
-import com.sap.piper.Credential
-import com.sap.piper.CredentialCollection
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -91,7 +90,7 @@ private writeCredentials(List credentialItems, String credentialsDirectory, Stri
 
     assertSystemsFileExists(credentialsDirectory)
 
-    String credentialJson = readCredentials(credentialItems).toCredentialJson()
+    String credentialJson = readCredentials(credentialItems)
 
     echo "Writing credential file with ${credentialItems.size()} items."
     dir(credentialsDirectory) {
@@ -100,7 +99,8 @@ private writeCredentials(List credentialItems, String credentialsDirectory, Stri
 }
 
 private readCredentials(List credentialItems) {
-    CredentialCollection credentialCollection = new CredentialCollection()
+    Map credentialCollection = [:]
+    credentialCollection['credentials'] = []
 
     for (int i = 0; i < credentialItems.size(); i++) {
         String alias = credentialItems[i]['alias']
@@ -109,11 +109,11 @@ private readCredentials(List credentialItems) {
         withCredentials([
             usernamePassword(credentialsId: jenkinsCredentialId, passwordVariable: 'password', usernameVariable: 'user')
         ]) {
-            credentialCollection.addCredential(new Credential(alias, user, password))
+            credentialCollection['credentials'] += [alias: alias, username: user, password: password]
         }
     }
 
-    return credentialCollection
+    return new JsonUtils().groovyObjectToJsonString(credentialCollection)
 }
 
 private deleteCredentials(String credentialsDirectory, String credentialsFileName) {
