@@ -223,12 +223,19 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 	jarExists, _ := utils.FileExists(jarFile(dir, finalName))
 	warExists, _ := utils.FileExists(warFile(dir, finalName))
 	classesJarExists, _ := utils.FileExists(classesJarFile(dir, finalName))
+	originalJarExists, _ := utils.FileExists(originalJarFile(dir, finalName))
 
 	log.Entry().Infof("JAR file with name %s does exist: %t", jarFile(dir, finalName), jarExists)
 	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 	log.Entry().Infof("Classes-JAR file with name %s does exist: %t", classesJarFile(dir, finalName), classesJarExists)
+	log.Entry().Infof("Original-JAR file with name %s does exist: %t", originalJarFile(dir, finalName), originalJarExists)
 
-	if jarExists {
+	if originalJarExists {
+		err = InstallFile(originalJarFile(dir, finalName), pomFile, options.M2Path, command)
+		if err != nil {
+			return err
+		}
+	} else if jarExists {
 		err = InstallFile(jarFile(dir, finalName), pomFile, options.M2Path, command)
 		if err != nil {
 			return err
@@ -257,6 +264,10 @@ func jarFile(dir, finalName string) string {
 
 func classesJarFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+"-classes.jar")
+}
+
+func originalJarFile(dir, finalName string) string {
+	return filepath.Join(dir, "target", finalName+".jar.original")
 }
 
 func warFile(dir, finalName string) string {
