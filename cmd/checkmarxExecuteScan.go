@@ -396,6 +396,8 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 	return false, checkmarx.Preset{}
 }
 
+// setPresetForProject is only called when it has already been established that the preset needs to be set.
+// It will exit via the logging framework in case the preset could be found, or the project could not be updated.
 func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) {
 	ok, preset := loadPreset(sys, presetValue)
 	if ok {
