@@ -52,7 +52,6 @@ void call(Map parameters = [:]) {
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
         }
     }
 }

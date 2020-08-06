@@ -206,7 +206,12 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		{Target: "protecodeExecuteScan.json", Mandatory: true},
 		{Target: "protecodescan_vulns.json", Mandatory: true},
 	}
-	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, nil)
+	// write links JSON
+	links := []StepResults.Path{
+		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+	}
+
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
 
 	return parsedResult
 }
