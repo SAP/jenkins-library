@@ -40,6 +40,7 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
         println("stage name: " + stageName)
+        println("Parameters: " + parameters)
         println("resolved config: " + config)
         // telemetry reporting
         new Utils().pushToSWA([
