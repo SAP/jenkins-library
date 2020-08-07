@@ -42,28 +42,17 @@ void call(Map parameters = [:]) {
                 echo "Context Config: ${config}"
             }
 
+            //TODO: refactor to use jenkinsUtils.StepResults
             // execute step
             try {
                 script.commonPipelineEnvironment.writeToDisk(script)
                 piperExecuteBin.credentialWrapper(config, credentials){
-                    sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                    sh "./piper protecodeExecuteScan"
                 }
             } finally {
                 script.commonPipelineEnvironment.readFromDisk(script)
+                jenkinsUtils.handleStepResults(STEP_NAME, false, false)
             }
-
-            //TODO: refactor to use jenkinsUtils.StepResults
-            def json = readJSON (file: "protecodescan_vulns.json")
-            def report = readJSON (file: 'protecodeExecuteScan.json')
-
-            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
-            archiveArtifacts artifacts: "protecodeExecuteScan.json", allowEmptyArchive: false
-            archiveArtifacts artifacts: "protecodescan_vulns.json", allowEmptyArchive: false
-
-            jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
-            jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
         }
     }
 }
