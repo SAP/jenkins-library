@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -199,6 +201,20 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	log.Entry().Debug("Write report to filesystem")
 	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
+
+	// write reports JSON
+	reports := []StepResults.Path{
+		{Target: config.ReportFileName, Mandatory: true},
+		{Target: "protecodeExecuteScan.json", Mandatory: true},
+		{Target: "protecodescan_vulns.json", Mandatory: true},
+	}
+	// write links JSON
+	links := []StepResults.Path{
+		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
+	}
+
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
 
 	return parsedResult
 }
