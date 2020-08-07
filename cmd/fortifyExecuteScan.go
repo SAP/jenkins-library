@@ -71,12 +71,12 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if err != nil {
 		return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	gav, err := artifact.GetCoordinates()
+	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	log.Entry().Debugf("determined project coordinates %v", gav)
-	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, gav)
+	log.Entry().Debugf("determined project coordinates %v", coordinates)
+	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, coordinates)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
