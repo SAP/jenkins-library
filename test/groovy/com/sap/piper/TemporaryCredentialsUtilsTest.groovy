@@ -15,6 +15,8 @@ import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
+
+import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertTrue
@@ -112,5 +114,25 @@ class TemporaryCredentialsUtilsTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
         assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
+    }
+
+    @Test
+    void handleTemporaryCredentialsNoDirectory() {
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("This should not happen: Directory for credentials file not specified.")
+
+        credUtils.handleTemporaryCredentials([], ""){
+            bodyExecuted = true
+        }
+    }
+
+    @Test
+    void handleTemporaryCredentialsNoCredentials() {
+        credUtils.handleTemporaryCredentials([], "./"){
+            bodyExecuted = true
+        }
+        assertTrue(bodyExecuted)
+        assertThat(writeFileRule.files.keySet(), hasSize(0))
+        assertThat(shellRule.shell, hasSize(0))
     }
 }

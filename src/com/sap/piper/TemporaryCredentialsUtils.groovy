@@ -2,7 +2,7 @@ package com.sap.piper
 
 class TemporaryCredentialsUtils implements Serializable {
 
-    private static Script script
+    private Script script
 
     TemporaryCredentialsUtils(Script script) {
         this.script = script
@@ -11,47 +11,48 @@ class TemporaryCredentialsUtils implements Serializable {
     void handleTemporaryCredentials(List credentialItems, String credentialsDirectory, Closure body) {
         final String credentialsFileName = 'credentials.json'
 
-        if (credentialsDirectory == null) {
+        if (!credentialsDirectory) {
             script.error("This should not happen: Directory for credentials file not specified.")
         }
 
+        final boolean useCredentials = credentialItems
         try {
-            if (credentialItems != null && !credentialItems.isEmpty()) {
+            if (useCredentials) {
                 writeCredentials(credentialItems, credentialsDirectory, credentialsFileName)
             }
             body()
         }
         finally {
-            if (credentialItems != null && !credentialItems.isEmpty()) {
+            if (useCredentials) {
                 deleteCredentials(credentialsDirectory, credentialsFileName)
             }
         }
     }
 
     private void writeCredentials(List credentialItems, String credentialsDirectory, String credentialsFileName) {
-        if (credentialItems == null || credentialItems.isEmpty()) {
+        if (!credentialItems) {
             script.echo "Not writing any credentials."
             return
         }
 
         assertSystemsFileExists(credentialsDirectory)
 
-        String credentialJson = readCredentials(credentialItems)
+        String credentialJson = returnCredentialsAsJSON(credentialItems)
 
-        script.echo "Writing credential file with ${credentialItems.size()} items."
+        script.echo "Writing credentials file with ${credentialItems.size()} items."
         script.dir(credentialsDirectory) {
             script.writeFile file: credentialsFileName, text: credentialJson
         }
     }
 
     private void deleteCredentials(String credentialsDirectory, String credentialsFileName) {
-        script.echo "Deleting credential file."
+        script.echo "Deleting credentials file."
         script.dir(credentialsDirectory) {
             script.sh "rm -f ${credentialsFileName}"
         }
     }
 
-    private String readCredentials(List credentialItems) {
+    private String returnCredentialsAsJSON(List credentialItems) {
         Map credentialCollection = [:]
         credentialCollection['credentials'] = []
 
