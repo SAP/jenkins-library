@@ -10,18 +10,9 @@ import (
 func TestMavenProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "maven:3-openjdk-8-slim",
-		User:    "root",
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
-		Mounts:  map[string]string{},
-		Setup: []string{
-			"apt-get -yqq update; apt-get -yqq install make",
-			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"mv mbt /usr/bin",
-			"curl -sL https://deb.nodesource.com/setup_12.x | bash -",
-			"apt-get install -yqq nodejs",
-		},
 	})
 
 	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts", "--m2Path=mym2")
@@ -38,16 +29,9 @@ func TestMavenProject(t *testing.T) {
 func TestMavenSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "maven:3-openjdk-8-slim",
-		User:    "root",
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
-		Mounts:  map[string]string{},
-		Setup: []string{
-			"apt-get -yqq update; apt-get -yqq install make",
-			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"mv mbt /usr/bin",
-		},
 	})
 
 	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts", "--m2Path=mym2")
@@ -65,16 +49,9 @@ func TestMavenSpringProject(t *testing.T) {
 func TestNPMProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "node:12",
-		User:    "root",
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
-		Mounts:  map[string]string{},
-		Setup: []string{
-			"apt-get -yqq update; apt-get -yqq install make",
-			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"mv mbt /usr/bin",
-		},
 	})
 
 	err := container.whenRunningPiperCommand("mtaBuild", "")
@@ -88,16 +65,9 @@ func TestNPMProject(t *testing.T) {
 func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "node:12",
-		User:    "root",
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
-		Mounts:  map[string]string{},
-		Setup: []string{
-			"apt-get -yqq update; apt-get -yqq install make",
-			"curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz",
-			"mv mbt /usr/bin",
-		},
 	})
 
 	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
