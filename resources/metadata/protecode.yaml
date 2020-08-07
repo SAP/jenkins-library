@@ -79,14 +79,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: addSideBarLink
-      type: bool
-      description: Whether to create a side bar link pointing to the report produced by Protecode or not
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: true
     - name: timeoutMinutes
       aliases:
       - name: protecodeTimeoutMinutes
