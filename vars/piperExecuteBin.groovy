@@ -79,14 +79,14 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     }
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static Map prepareStepParameters(Map parameters) {
     Map stepParameters = [:].plus(parameters)
 
@@ -101,12 +101,12 @@ static Map prepareStepParameters(Map parameters) {
     return MapUtils.pruneNulls(stepParameters)
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
     return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
@@ -121,7 +121,7 @@ static String getCustomDefaultConfigs() {
     return customDefaults.join(',')
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
@@ -130,7 +130,7 @@ static String getCustomDefaultConfigsArg() {
     return ''
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
@@ -140,6 +140,7 @@ static String getCustomConfigArg(def script) {
     return ''
 }
 
+// reused in sonarExecuteScan
 void dockerWrapper(script, config, body) {
     if (config.dockerImage) {
         Map dockerExecuteParameters = [:].plus(config)
@@ -152,7 +153,7 @@ void dockerWrapper(script, config, body) {
     }
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
     if (credentialInfo.size() > 0) {
         def creds = []
@@ -192,7 +193,7 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
-// reused in protecodeExecuteScan
+// reused in protecodeExecuteScan, sonarExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()
