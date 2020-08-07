@@ -12,11 +12,9 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
-import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
-import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertTrue
