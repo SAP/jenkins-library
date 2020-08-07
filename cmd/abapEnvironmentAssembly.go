@@ -27,27 +27,24 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
+	}
+	client := piperhttp.Client{}
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentAssembly(&config, telemetryData, &c, commonPipelineEnvironment)
+	err := runAbapEnvironmentAssembly(&config, telemetryData, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, commonPipelineEnvironment *abapEnvironmentAssemblyCommonPipelineEnvironment) error {
-	return runAssembly(config)
-}
-
 // *******************************************************************************************************************************
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
-func runAssembly(config *abapEnvironmentAssemblyOptions) error {
+func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+
 	conn := new(connector)
-	err := conn.init(*config, &piperhttp.Client{})
+	err := conn.init(config, com, client)
 	if err != nil {
 		return err
 	}
@@ -59,11 +56,11 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 		Values: []value{
 			{
 				ValueID: "SWC",
-				Value:   config.SWC,
+				Value:   config.Swc,
 			},
 			{
 				ValueID: "CVERS",
-				Value:   config.SWC + "." + config.SWCRelease + "." + config.SpsLevel,
+				Value:   config.Swc + "." + config.SwcRelease + "." + config.SpsLevel,
 			},
 			{
 				ValueID: "NAMESPACE",
@@ -99,162 +96,14 @@ func runAssembly(config *abapEnvironmentAssemblyOptions) error {
 // *******************************************************************************************************************************
 // ************************************************************ REUSE ************************************************************
 // *******************************************************************************************************************************
-type resultState string
-type runState string
-type msgty string
 
-const (
-	successful   resultState = "SUCCESSFUL"
-	warning      resultState = "WARNING"
-	erroneous    resultState = "ERRONEOUS"
-	aborted      resultState = "ABORTED"
-	initializing runState    = "INITIALIZING"
-	accepted     runState    = "ACCEPTED"
-	running      runState    = "RUNNING"
-	finished     runState    = "FINISHED"
-	failed       runState    = "FAILED"
-	loginfo      msgty       = "I"
-	logwarning   msgty       = "W"
-	logerror     msgty       = "E"
-	logaborted   msgty       = "A"
-)
-
-type connector struct {
-	Client         piperhttp.Sender
-	DownloadClient piperhttp.Downloader
-	Header         map[string][]string
-	Baseurl        string
-}
-
-//******** structs needed for json convertion ********
-
-type jsonBuild struct {
-	Build *build `json:"d"`
-}
-
-type jsonTasks struct {
-	ResultTasks struct {
-		Tasks []task `json:"results"`
-	} `json:"d"`
-}
-
-type jsonLogs struct {
-	ResultLogs struct {
-		Logs []logStruct `json:"results"`
-	} `json:"d"`
-}
-
-type jsonResults struct {
-	ResultResults struct {
-		Results []result `json:"results"`
-	} `json:"d"`
-}
-
-type jsonValues struct {
-	ResultValues struct {
-		Values []value `json:"results"`
-	} `json:"d"`
-}
-
-// ******** resembling data model in backend ********
-
-type build struct {
-	connector
-	BuildID     string      `json:"build_id"`
-	RunState    runState    `json:"run_state"`
-	ResultState resultState `json:"result_state"`
-	Phase       string      `json:"phase"`
-	Entitytype  string      `json:"entitytype"`
-	Startedby   string      `json:"startedby"`
-	StartedAt   string      `json:"started_at"`
-	FinishedAt  string      `json:"finished_at"`
-	Tasks       []task
-	Values      []value
-}
-
-type task struct {
-	connector
-	BuildID     string      `json:"build_id"`
-	TaskID      int         `json:"task_id"`
-	LogID       string      `json:"log_id"`
-	PluginClass string      `json:"plugin_class"`
-	StartedAt   string      `json:"started_at"`
-	FinishedAt  string      `json:"finished_at"`
-	ResultState resultState `json:"result_state"`
-	Logs        []logStruct
-	Results     []result
-}
-
-type logStruct struct {
-	BuildID   string `json:"build_id"`
-	TaskID    int    `json:"task_id"`
-	LogID     string `json:"log_id"`
-	Msgty     msgty  `json:"msgty"`
-	Detlevel  string `json:"detlevel"`
-	Logline   string `json:"log_line"`
-	Timestamp string `json:"TIME_STMP"`
-}
-
-type result struct {
-	connector
-	BuildID        string `json:"build_id"`
-	TaskID         int    `json:"task_id"`
-	Name           string `json:"name"`
-	AdditionalInfo string `json:"additional_info"`
-	Mimetype       string `json:"mimetype"`
-}
-
-type value struct {
-	connector
-	BuildID string `json:"build_id"`
-	ValueID string `json:"value_id"`
-	Value   string `json:"value"`
-}
-
-// ******** import structure to post call ********
-
-type inputForPost struct {
-	phase  string
-	values values
-}
-
-type values struct {
-	Values []value `json:"results"`
-}
-
-func (v value) String() string {
-	return fmt.Sprintf(
-		`{ "value_id": "%s", "value": "%s" }`,
-		v.ValueID,
-		v.Value)
-}
-
-func (vs values) String() string {
-	returnString := ""
-	for _, value := range vs.Values {
-		returnString = returnString + value.String() + ",\n"
-	}
-	returnString = returnString[:len(returnString)-2] //removes last ,
-	return returnString
-}
-
-func (in inputForPost) String() string {
-	return fmt.Sprintf(
-		`{ "phase": "%s",
-		   "values": [ 
-			   %s
-		   ]
-		   }`,
-		in.phase,
-		in.values.String())
-}
+// *********************************************************************
+// ******************************* Funcs *******************************
+// *********************************************************************
 
 // ******** technical communication settings ********
 
-var aUtils = abaputils.AbapUtils{Exec: &command.Command{}}
-var getAbapCommunicationArrangement = aUtils.GetAbapCommunicationArrangementInfo
-
-func (conn *connector) init(options abapEnvironmentAssemblyOptions, inputclient piperhttp.Sender) error {
+func (conn *connector) init(config *abapEnvironmentAssemblyOptions, com abaputils.Communication, inputclient piperhttp.Sender) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
@@ -263,17 +112,17 @@ func (conn *connector) init(options abapEnvironmentAssemblyOptions, inputclient 
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = "SAP_COM_0582"
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, err := getAbapCommunicationArrangement(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
+	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
@@ -595,4 +444,159 @@ func (logging *logStruct) print() {
 		log.Entry().WithField("Timestamp", logging.Timestamp).Error(logging.Logline)
 	default:
 	}
+}
+
+// ******** parsing ********
+func (v value) String() string {
+	return fmt.Sprintf(
+		`{ "value_id": "%s", "value": "%s" }`,
+		v.ValueID,
+		v.Value)
+}
+
+func (vs values) String() string {
+	returnString := ""
+	for _, value := range vs.Values {
+		returnString = returnString + value.String() + ",\n"
+	}
+	returnString = returnString[:len(returnString)-2] //removes last ,
+	return returnString
+}
+
+func (in inputForPost) String() string {
+	return fmt.Sprintf(
+		`{ "phase": "%s",
+		   "values": [ 
+			   %s
+		   ]
+		   }`,
+		in.phase,
+		in.values.String())
+}
+
+// *********************************************************************
+// ****************************** Structs ******************************
+// *********************************************************************
+
+type resultState string
+type runState string
+type msgty string
+
+const (
+	successful   resultState = "SUCCESSFUL"
+	warning      resultState = "WARNING"
+	erroneous    resultState = "ERRONEOUS"
+	aborted      resultState = "ABORTED"
+	initializing runState    = "INITIALIZING"
+	accepted     runState    = "ACCEPTED"
+	running      runState    = "RUNNING"
+	finished     runState    = "FINISHED"
+	failed       runState    = "FAILED"
+	loginfo      msgty       = "I"
+	logwarning   msgty       = "W"
+	logerror     msgty       = "E"
+	logaborted   msgty       = "A"
+)
+
+type connector struct {
+	Client         piperhttp.Sender
+	DownloadClient piperhttp.Downloader
+	Header         map[string][]string
+	Baseurl        string
+}
+
+//******** structs needed for json convertion ********
+
+type jsonBuild struct {
+	Build *build `json:"d"`
+}
+
+type jsonTasks struct {
+	ResultTasks struct {
+		Tasks []task `json:"results"`
+	} `json:"d"`
+}
+
+type jsonLogs struct {
+	ResultLogs struct {
+		Logs []logStruct `json:"results"`
+	} `json:"d"`
+}
+
+type jsonResults struct {
+	ResultResults struct {
+		Results []result `json:"results"`
+	} `json:"d"`
+}
+
+type jsonValues struct {
+	ResultValues struct {
+		Values []value `json:"results"`
+	} `json:"d"`
+}
+
+// ******** resembling data model in backend ********
+
+type build struct {
+	connector
+	BuildID     string      `json:"build_id"`
+	RunState    runState    `json:"run_state"`
+	ResultState resultState `json:"result_state"`
+	Phase       string      `json:"phase"`
+	Entitytype  string      `json:"entitytype"`
+	Startedby   string      `json:"startedby"`
+	StartedAt   string      `json:"started_at"`
+	FinishedAt  string      `json:"finished_at"`
+	Tasks       []task
+	Values      []value
+}
+
+type task struct {
+	connector
+	BuildID     string      `json:"build_id"`
+	TaskID      int         `json:"task_id"`
+	LogID       string      `json:"log_id"`
+	PluginClass string      `json:"plugin_class"`
+	StartedAt   string      `json:"started_at"`
+	FinishedAt  string      `json:"finished_at"`
+	ResultState resultState `json:"result_state"`
+	Logs        []logStruct
+	Results     []result
+}
+
+type logStruct struct {
+	BuildID   string `json:"build_id"`
+	TaskID    int    `json:"task_id"`
+	LogID     string `json:"log_id"`
+	Msgty     msgty  `json:"msgty"`
+	Detlevel  string `json:"detlevel"`
+	Logline   string `json:"log_line"`
+	Timestamp string `json:"TIME_STMP"`
+}
+
+type result struct {
+	connector
+	BuildID        string `json:"build_id"`
+	TaskID         int    `json:"task_id"`
+	Name           string `json:"name"`
+	AdditionalInfo string `json:"additional_info"`
+	Mimetype       string `json:"mimetype"`
+}
+
+type value struct {
+	connector
+	BuildID string `json:"build_id"`
+	ValueID string `json:"value_id"`
+	Value   string `json:"value"`
+}
+
+// ******** import structure to post call ********
+
+type inputForPost struct {
+	phase  string
+	values values
+}
+
+type values struct {
+	Values []value `json:"results"`
 }

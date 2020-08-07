@@ -7,45 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 
 	"io/ioutil"
 )
-
-func mockgetAbapCommunicationArrangement(options abaputils.AbapEnvironmentOptions, oDataURL string) (abaputils.ConnectionDetailsHTTP, error) {
-	var connectionDetails abaputils.ConnectionDetailsHTTP
-	var error error
-
-	if options.Host != "" {
-		connectionDetails.URL = options.Host + oDataURL
-		connectionDetails.User = options.Username
-		connectionDetails.Password = options.Password
-	} else {
-		connectionDetails.URL = "https://my_cf.endpoint.com" + oDataURL
-		connectionDetails.User = "cfUser"
-		connectionDetails.Password = "cfPassword"
-	}
-	return connectionDetails, error
-}
-
-func TestConnectionDetails(t *testing.T) {
-	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
-		getAbapCommunicationArrangement = mockgetAbapCommunicationArrangement
-		conn := new(connector)
-		err := conn.init(configHost, &piperhttp.Client{})
-		assert.NoError(t, err)
-		assert.Equal(t, "https://host.endpoint.com/sap/opu/odata/BUILD/CORE_SRV", conn.Baseurl)
-	})
-	t.Run("Check Host: CF Service Key", func(t *testing.T) {
-		getAbapCommunicationArrangement = mockgetAbapCommunicationArrangement
-		conn := new(connector)
-		err := conn.init(configCF, &piperhttp.Client{})
-		assert.NoError(t, err)
-		assert.Equal(t, "https://my_cf.endpoint.com/sap/opu/odata/BUILD/CORE_SRV", conn.Baseurl)
-	})
-}
 
 func testSetup(client piperhttp.Sender, buildID string) build {
 	conn := new(connector)
@@ -182,22 +148,6 @@ func (c *clMock) SendRequest(method string, url string, bdy io.Reader, hdr http.
 	} else {
 		return nil, c.Error
 	}
-}
-
-var configHost = abapEnvironmentAssemblyOptions{
-	Username: "testUser",
-	Password: "testPassword",
-	Host:     "https://host.endpoint.com",
-}
-
-var configCF = abapEnvironmentAssemblyOptions{
-	CfAPIEndpoint:     "https://cf.endpoint.com",
-	CfSpace:           "testSpace",
-	CfOrg:             "Test",
-	CfServiceInstance: "testInstance",
-	CfServiceKeyName:  "testServiceKey",
-	Username:          "testUser",
-	Password:          "testPassword",
 }
 
 func fakeResponse(method string, url string) string {

@@ -9,6 +9,9 @@ spec:
       - name: abapCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: credentialsId
     params:
       - name: cfApiEndpoint
         type: string
@@ -54,18 +57,6 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceInstance
-      - name: cfServiceKeyName
-        type: string
-        description: Parameter of CloudFoundry Service Key to be created
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
-        mandatory: false
-        default: SAP_COM_0582
-        aliases:
-          - name: cloudFoundry/serviceKeyName
       - name: host
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
         type: string
@@ -92,7 +83,7 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: PackageType
+      - name: packageType
         type: string
         description: Type of the delivery package(AOI, CSP, CPK) as provided by AAKaaS 
         mandatory: true
@@ -102,37 +93,34 @@ spec:
           - CPK
         resourceRef:
           - name: commonPipelineEnvironment
-            param: PackageType
+            param: packageType
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: PackageName
+      - name: packageName
         type: string
         description: Name of delivery package as provided by AAKaaS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: PackageName
+            param: packageName
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: SWC
+      - name: swc
         type: string
         description: Name of software component as provided by AAKaaS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: SWC
+            param: swc
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: SWCRelease
+      - name: swcRelease
         type: string
         description: Software component release as provided by AAKaaS
         mandatory: true
@@ -140,53 +128,48 @@ spec:
           - name: commonPipelineEnvironment
             param: SWCRelease
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: SpsLevel
+      - name: spsLevel
         type: string
         description: Support package level as provided by AAKaaS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: SpsLevel
+            param: spsLevel
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: Namespace
+      - name: namespace
         type: string
         description: Development namespace for software component
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
-            param: Namespace
+            param: namespace
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: PreviousDeliveryCommit
+      - name: previousDeliveryCommit
         type: string
         description: Commit ID for the previous delivery event
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
-            param: PreviousDeliveryCommit
+            param: previousDeliveryCommit
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: MaxRuntimeInMinutes
+      - name: maxRuntimeInMinutes
         type: int
         description: maximal runtime of the step
         mandatory: true
         default: 360
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -195,7 +178,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: SAR_XML
+          - name: sar_xml
   containers:
     - name: cf
       image: ppiper/cf-cli
