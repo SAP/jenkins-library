@@ -17,6 +17,7 @@ import util.JenkinsWriteFileRule
 import util.Rules
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertTrue
 
 class TemporaryCredentialsUtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -97,5 +98,19 @@ class TemporaryCredentialsUtilsTest extends BasePiperTest {
             "Please add the file as explained in the SAP Cloud SDK documentation.")
 
         credUtils.assertSystemsFileExists(directory)
+    }
+
+    @Test
+    void handleTemporaryCredentials() {
+        def credential = [alias: 'ERP', credentialId: 'erp-credentials']
+        def directory = './'
+        fileExistsRule.registerExistingFile('systems.yml')
+
+        credUtils.handleTemporaryCredentials([credential], directory) {
+            bodyExecuted = true
+        }
+        assertTrue(bodyExecuted)
+        assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
     }
 }

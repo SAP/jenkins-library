@@ -8,7 +8,27 @@ class TemporaryCredentialsUtils implements Serializable {
         this.script = script
     }
 
-    void writeCredentials(List credentialItems, String credentialsDirectory, String credentialsFileName) {
+    void handleTemporaryCredentials(List credentialItems, String credentialsDirectory, Closure body) {
+        final String credentialsFileName = 'credentials.json'
+
+        if (credentialsDirectory == null) {
+            script.error("This should not happen: Directory for credentials file not specified.")
+        }
+
+        try {
+            if (credentialItems != null && !credentialItems.isEmpty()) {
+                writeCredentials(credentialItems, credentialsDirectory, credentialsFileName)
+            }
+            body()
+        }
+        finally {
+            if (credentialItems != null && !credentialItems.isEmpty()) {
+                deleteCredentials(credentialsDirectory, credentialsFileName)
+            }
+        }
+    }
+
+    private void writeCredentials(List credentialItems, String credentialsDirectory, String credentialsFileName) {
         if (credentialItems == null || credentialItems.isEmpty()) {
             script.echo "Not writing any credentials."
             return
@@ -24,7 +44,7 @@ class TemporaryCredentialsUtils implements Serializable {
         }
     }
 
-    void deleteCredentials(String credentialsDirectory, String credentialsFileName) {
+    private void deleteCredentials(String credentialsDirectory, String credentialsFileName) {
         script.echo "Deleting credential file."
         script.dir(credentialsDirectory) {
             script.sh "rm -f ${credentialsFileName}"
