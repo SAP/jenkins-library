@@ -39,7 +39,7 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 
 func TestCreateTransportConfig(t *testing.T) {
 	t.Run("Valid URL", func(t *testing.T) {
-		config := createTransportConfig("http://some.fortify.host.com/ssc", "api/v2")
+		config := createTransportConfig("http://some.fortify.host.com/ssc/", "/api/v2/")
 		assert.Equal(t, []string{"http"}, config.Schemes)
 		assert.Equal(t, "some.fortify.host.com", config.Host)
 		assert.Equal(t, "ssc/api/v2", config.BasePath)

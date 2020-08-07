@@ -90,6 +90,8 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
 	scheme, host := splitSchemeAndHost(serverURL)
 	host, hostEndpoint := splitHostAndEndpoint(host)
+	hostEndpoint = strings.TrimRight(hostEndpoint, "/")
+	apiEndpoint = strings.Trim(apiEndpoint, "/")
 	return &ff.TransportConfig{
 		Host:     host,
 		Schemes:  []string{scheme},
