@@ -76,6 +76,7 @@ type SystemInstance struct {
 
 // NewSystemInstance - creates an returns a new SystemInstance
 func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
+	serverURL = strings.TrimRight(serverURL, "/")
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
