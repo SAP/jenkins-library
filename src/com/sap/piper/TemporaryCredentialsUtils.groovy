@@ -47,9 +47,7 @@ class TemporaryCredentialsUtils implements Serializable {
         }
         return new JsonUtils().groovyObjectToJsonString(credentialCollection)
     }
-
-
-
+    
     private assertSystemsFileExists(String credentialsDirectory){
         script.dir(credentialsDirectory) {
             if (!script.fileExists("systems.yml") && !script.fileExists("systems.yaml") && !script.fileExists("systems.json")) {
@@ -59,7 +57,4 @@ class TemporaryCredentialsUtils implements Serializable {
             }
         }
     }
-
-
 }
-
