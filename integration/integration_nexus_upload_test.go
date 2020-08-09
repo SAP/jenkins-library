@@ -29,7 +29,7 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 func TestNexus3UploadMta(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "sonatype/nexus3:3.22.0",
+		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",
 		TestDir:     []string{"testdata", "TestNexusIntegration", "mta"},
 		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
@@ -55,7 +55,7 @@ func TestNexus3UploadMta(t *testing.T) {
 func TestNexus3UploadMaven(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "sonatype/nexus3:3.22.0",
+		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",
 		TestDir:     []string{"testdata", "TestNexusIntegration", "maven"},
 		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
@@ -81,7 +81,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 func TestNexus3UploadNpm(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:       "sonatype/nexus3:3.22.0",
+		Image:       "sonatype/nexus3:3.25.1",
 		User:        "nexus",
 		TestDir:     []string{"testdata", "TestNexusIntegration", "npm"},
 		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
@@ -111,7 +111,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 func TestNexus2Upload(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus:2.14.16-01",
+		Image:        "sonatype/nexus:2.14.18-01",
 		ExposedPorts: []string{"8081/tcp"},
 		WaitingFor:   wait.ForLog("org.sonatype.nexus.bootstrap.jetty.JettyServer - Running").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
 	}
