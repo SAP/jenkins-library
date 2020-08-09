@@ -23,7 +23,7 @@ func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExec
 	if err != nil {
 		t.Fatalf("Attempting to download file %s failed: %s", url, err)
 	}
-	container.assertHasFile(t, "/project/" + path.Base(url))
+	container.assertHasFile(t, "/project/"+path.Base(url))
 }
 
 func TestNexus3UploadMta(t *testing.T) {
@@ -93,7 +93,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 		},
 	})
 
-	// Create npm repo because nexus does not one bring one by default
+	// Create npm repo because nexus does not bring one by default
 	err := container.runScriptInsideContainer("curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted")
 	if err != nil {
 		panic(err)
