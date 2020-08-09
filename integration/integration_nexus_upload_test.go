@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -17,109 +18,95 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestNexusUpload(t *testing.T) {
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "sonatype/nexus3:3.22.0",
-		ExposedPorts: []string{"8081/tcp"},
-		Env:          map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
-		WaitingFor:   wait.ForLog("Started Sonatype Nexus").WithStartupTimeout(5 * time.Minute), // Nexus takes more than one minute to boot
+func assertFileCanBeDownloaded(t *testing.T, container IntegrationTestDockerExecRunner, url string) {
+	err := container.runScriptInsideContainer("curl -O " + url)
+	if err != nil {
+		t.Fatalf("Attempting to download file %s failed: %s", url, err)
 	}
-	nexusContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	container.assertHasFile(t, "/project/" + path.Base(url))
+}
+
+func TestNexus3UploadMta(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:       "sonatype/nexus3:3.22.0",
+		User:        "nexus",
+		TestDir:     []string{"testdata", "TestNexusIntegration", "mta"},
+		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
+		Setup: []string{
+			"/opt/sonatype/start-nexus-repository-manager.sh &",
+			"curl http://mirror.23media.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
+			"echo PATH=/tmp/apache-maven-3.6.3/bin:$PATH >> ~/.profile",
+			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
+		},
 	})
-	assert.NoError(t, err)
-	defer nexusContainer.Terminate(ctx)
-	ip, err := nexusContainer.Host(ctx)
-	assert.NoError(t, err)
-	port, err := nexusContainer.MappedPort(ctx, "8081")
-	assert.NoError(t, err, "Could not map port for nexus container")
-	nexusIpAndPort := fmt.Sprintf("%s:%s", ip, port.Port())
-	url := "http://" + nexusIpAndPort
-	resp, err := http.Get(url)
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
 
-	cmd := command.Command{}
-	cmd.SetDir("testdata/TestNexusIntegration/mta")
-
-	piperOptions := []string{
-		"nexusUpload",
-		"--groupId=mygroup",
-		"--artifactId=mymta",
-		"--user=admin",
-		"--password=admin123",
-		"--mavenRepository=maven-releases",
-		"--url=" + nexusIpAndPort,
+	err := container.whenRunningPiperCommand("nexusUpload", "--groupId=mygroup", "--artifactId=mymta",
+		"--user=admin", "--password=admin123", "--mavenRepository=maven-releases", "--url=http://localhost:8081")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
 	}
 
-	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
-	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+	container.assertHasOutput(t, "BUILD SUCCESS")
+	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
+	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
+}
 
-	cmd = command.Command{}
-	cmd.SetDir("testdata/TestNexusIntegration/maven")
+func TestNexus3UploadMaven(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:       "sonatype/nexus3:3.22.0",
+		User:        "nexus",
+		TestDir:     []string{"testdata", "TestNexusIntegration", "maven"},
+		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
+		Setup: []string{
+			"/opt/sonatype/start-nexus-repository-manager.sh &",
+			"curl http://mirror.23media.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
+			"echo PATH=/tmp/apache-maven-3.6.3/bin:$PATH >> ~/.profile",
+			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
+		},
+	})
 
-	piperOptions = []string{
-		"nexusUpload",
-		"--user=admin",
-		"--password=admin123",
-		"--mavenRepository=maven-releases",
-		"--url=" + nexusIpAndPort,
+	err := container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
+		"--mavenRepository=maven-releases", "--url=http://localhost:8081")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
 	}
 
-	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
-	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
+	container.assertHasOutput(t, "BUILD SUCCESS")
+	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
+	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
+}
 
-	cmd = command.Command{}
-	cmd.SetDir("testdata/TestNexusIntegration/npm")
+func TestNexus3UploadNpm(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:       "sonatype/nexus3:3.22.0",
+		User:        "nexus",
+		TestDir:     []string{"testdata", "TestNexusIntegration", "npm"},
+		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
+		Setup: []string{
+			"/opt/sonatype/start-nexus-repository-manager.sh &",
+			"curl https://nodejs.org/dist/v12.18.3/node-v12.18.3-linux-x64.tar.gz | tar xz -C /tmp",
+			"echo PATH=/tmp/node-v12.18.3-linux-x64/bin:$PATH >> ~/.profile",
+			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
+		},
+	})
 
-	piperOptions = []string{
-		"nexusUpload",
-		"--user=admin",
-		"--password=admin123",
-		"--npmRepository=npm-repo",
-		"--url=" + nexusIpAndPort,
+	// Create npm repo because nexus does not one bring one by default
+	err := container.runScriptInsideContainer("curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted")
+	if err != nil {
+		panic(err)
 	}
 
-	// Create npm repo for this test because nexus does not create one by default
-	request, err := http.NewRequest("POST", url+"/service/rest/beta/repositories/npm/hosted", strings.NewReader(`{"name": "npm-repo", "online": true, "storage": {"blobStoreName": "default", "strictContentTypeValidation": true, "writePolicy": "ALLOW_ONCE"}}`))
-	assert.NoError(t, err)
-	request.Header.Set("Content-Type", "application/json")
-	request.SetBasicAuth("admin", "admin123")
-	response, err := http.DefaultClient.Do(request)
-	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
+	err = container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
+		"--npmRepository=npm-repo", "--url=http://localhost:8081")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
+	}
 
-	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)
-	assert.NoError(t, err, "Calling piper with arguments %v failed.", piperOptions)
-
-	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app-parent/1.0/my-app-parent-1.0.pom")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-parent-1.0.pom: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.pom")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.pom: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0.jar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0.jar: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/maven-releases/com/mycompany/app/my-app/1.0/my-app-1.0-classes.jar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get my-app-1.0-classes.jar: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.yaml")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.yaml: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/maven-releases/mygroup/mymta/0.3.0/mymta-0.3.0.mtar")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get mymta-0.3.0.mtar: %s", resp.Status)
-
-	resp, err = http.Get(url + "/repository/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
-	assert.NoError(t, err, "Downloading artifact failed")
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Get npm-nexus-upload-test-1.0.0.tgz: %s", resp.Status)
+	container.assertHasOutput(t, "npm notice total files:   1")
+	assertFileCanBeDownloaded(t, container, "http://localhost:8081/repository/npm-repo/npm-nexus-upload-test/-/npm-nexus-upload-test-1.0.0.tgz")
 }
 
 func TestNexus2Upload(t *testing.T) {
