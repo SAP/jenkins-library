@@ -90,15 +90,12 @@ func TestNexus3UploadNpm(t *testing.T) {
 			"curl https://nodejs.org/dist/v12.18.3/node-v12.18.3-linux-x64.tar.gz | tar xz -C /tmp",
 			"echo PATH=/tmp/node-v12.18.3-linux-x64/bin:$PATH >> ~/.profile",
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
+			// Create npm repo because nexus does not bring one by default
+			"curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted",
 		},
 	})
-	// Create npm repo because nexus does not bring one by default
-	err := container.runScriptInsideContainer("curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted")
-	if err != nil {
-		panic(err)
-	}
 
-	err = container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
+	err := container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
 		"--npmRepository=npm-repo", "--url=http://localhost:8081")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
