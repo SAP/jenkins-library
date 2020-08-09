@@ -92,7 +92,6 @@ func TestNexus3UploadNpm(t *testing.T) {
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
 	})
-
 	// Create npm repo because nexus does not bring one by default
 	err := container.runScriptInsideContainer("curl -u admin:admin123 -d '{\"name\": \"npm-repo\", \"online\": true, \"storage\": {\"blobStoreName\": \"default\", \"strictContentTypeValidation\": true, \"writePolicy\": \"ALLOW_ONCE\"}}' --header \"Content-Type: application/json\" -X POST http://localhost:8081/service/rest/beta/repositories/npm/hosted")
 	if err != nil {
