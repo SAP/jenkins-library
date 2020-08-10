@@ -35,7 +35,7 @@ func TestNexus3UploadMta(t *testing.T) {
 		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
 		Setup: []string{
 			"/opt/sonatype/start-nexus-repository-manager.sh &",
-			"curl http://mirror.23media.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
+			"curl https://ftp.fau.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
 			"echo PATH=/tmp/apache-maven-3.6.3/bin:$PATH >> ~/.profile",
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
@@ -61,7 +61,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 		Environment: map[string]string{"NEXUS_SECURITY_RANDOMPASSWORD": "false"},
 		Setup: []string{
 			"/opt/sonatype/start-nexus-repository-manager.sh &",
-			"curl http://mirror.23media.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
+			"curl https://ftp.fau.de/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar xz -C /tmp",
 			"echo PATH=/tmp/apache-maven-3.6.3/bin:$PATH >> ~/.profile",
 			"until curl --fail --silent http://localhost:8081/service/rest/v1/status; do sleep 5; done",
 		},
