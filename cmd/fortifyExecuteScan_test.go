@@ -97,7 +97,7 @@ func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact
 		if f.getArtifactsOfProjectVersionIdx == 0 {
 			f.getArtifactsOfProjectVersionTime = time.Now().Add(-2 * time.Minute)
 		}
-		if f.getArtifactsOfProjectVersionIdx < 3 {
+		if f.getArtifactsOfProjectVersionIdx < 2 {
 			status = "PROCESSING"
 		} else {
 			f.getArtifactsOfProjectVersionTime = time.Now()
@@ -485,51 +485,62 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	t.Run("error no recent upload detected", func(t *testing.T) {
 		ffMock := fortifyMock{}
 		config := fortifyExecuteScanOptions{DeltaMinutes: -1}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{})
 		assert.EqualError(t, err, "No recent upload detected on Project Version")
 	})
 
 	config := fortifyExecuteScanOptions{DeltaMinutes: 20}
 	t.Run("success", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{})
 		assert.NoError(t, err)
 	})
 
 	t.Run("error processing", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4712, "", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4712, "", &models.FilterSet{})
 		assert.EqualError(t, err, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=")
 	})
 
 	t.Run("error required auth", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{})
 		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
-		assert.EqualError(t, err, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING")
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{})
+		assert.EqualError(t, err, "terminating after 0s since artifact for Project Version 4714 is still in status PROCESSING")
 	})
 
 	t.Run("success build label", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{})
 		assert.NoError(t, err)
 	})
 
-	t.Run("success after polling", func(t *testing.T) {
-		config := fortifyExecuteScanOptions{DeltaMinutes: 1, PollingMinutes: 20}
+	t.Run("failure after polling", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{DeltaMinutes: 1}
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, 0)
+		const pollingDelay = 1 * time.Second
+		const timeout = 1 * time.Second
+		err := verifyScanResultsFinishedUploadingWithDurations(config, &ffMock, 4716, "", &models.FilterSet{}, pollingDelay, timeout)
+		assert.EqualError(t, err, "terminating after 1s since artifact for Project Version 4716 is still in status PROCESSING")
+	})
+
+	t.Run("success after polling", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{DeltaMinutes: 1}
+		ffMock := fortifyMock{}
+		const pollingDelay = 500 * time.Millisecond
+		const timeout = 1 * time.Second
+		err := verifyScanResultsFinishedUploadingWithDurations(config, &ffMock, 4716, "", &models.FilterSet{}, pollingDelay, timeout)
 		assert.NoError(t, err)
 	})
 
 	t.Run("error no artifacts", func(t *testing.T) {
 		ffMock := fortifyMock{}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4717, "", &models.FilterSet{}, 0)
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4717, "", &models.FilterSet{})
 		assert.EqualError(t, err, "No uploaded artifacts for assessment detected for project version with ID 4717")
 	})
 }

@@ -157,7 +157,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	}
 
 	// Ensure latest FPR is processed
-	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet, 0)
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet)
 	if err != nil {
 		return err
 	}
@@ -380,15 +380,17 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	return data, nil
 }
 
-func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, artifact *models.Artifact, numInvokes int) error {
-	numInvokes++
+var errProcessing = errors.New("artifact still processing")
+
+func checkArtifactStatus(config fortifyExecuteScanOptions, projectVersionID int64, filterSet *models.FilterSet, artifact *models.Artifact, retries int, pollingDelay, timeout time.Duration) error {
 	if "PROCESSING" == artifact.Status || "SCHED_PROCESSING" == artifact.Status {
-		if numInvokes >= (config.PollingMinutes * 6) {
-			return fmt.Errorf("Terminating after %v minutes since artifact for Project Version %v is still in status %v", config.PollingMinutes, projectVersionID, artifact.Status)
+		pollingTime := time.Duration(retries) * pollingDelay
+		if pollingTime >= timeout {
+			return fmt.Errorf("terminating after %v since artifact for Project Version %v is still in status %v", timeout, projectVersionID, artifact.Status)
 		}
 		log.Entry().Infof("Most recent artifact uploaded on %v of Project Version %v is still in status %v...", artifact.UploadDate, projectVersionID, artifact.Status)
-		time.Sleep(10 * time.Second)
-		return verifyScanResultsFinishedUploading(config, sys, projectVersionID, buildLabel, filterSet, numInvokes)
+		time.Sleep(pollingDelay)
+		return errProcessing
 	}
 	if "REQUIRE_AUTH" == artifact.Status {
 		// verify no manual issue approval needed
@@ -400,19 +402,31 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, p
 	return nil
 }
 
-func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, numInvokes int) error {
+func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet) error {
+	const pollingDelay = 10 * time.Second
+	var timeout = time.Duration(config.PollingMinutes) * time.Minute
+	return verifyScanResultsFinishedUploadingWithDurations(config, sys, projectVersionID, buildLabel, filterSet, pollingDelay, timeout)
+}
+
+func verifyScanResultsFinishedUploadingWithDurations(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, pollingDelay, timeout time.Duration) error {
 	log.Entry().Debug("Verifying scan results have finished uploading and processing")
 	var artifacts []*models.Artifact
 	var relatedUpload *models.Artifact
+	retries := 0
 	for relatedUpload == nil {
 		artifacts, err := sys.GetArtifactsOfProjectVersion(projectVersionID)
 		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("Failed to fetch artifacts of project version ID %v", projectVersionID)
+			return fmt.Errorf("failed to fetch artifacts of project version ID %v", projectVersionID)
 		}
 		if len(artifacts) > 0 {
 			latest := artifacts[0]
-			if err := checkArtifactStatus(config, sys, projectVersionID, buildLabel, filterSet, latest, numInvokes); err != nil {
+			err = checkArtifactStatus(config, projectVersionID, filterSet, latest, retries, pollingDelay, timeout)
+			if err != nil {
+				if err == errProcessing {
+					retries++
+					continue
+				}
 				return err
 			}
 			notFound := true
