@@ -73,7 +73,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-	pollIntervall := 10 * time.Second
+	pollIntervall := com.GetPollIntervall()
 
 	log.Entry().Infof("Start pulling %v repositories", len(options.RepositoryNames))
 	for _, repositoryName := range options.RepositoryNames {
