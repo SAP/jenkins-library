@@ -53,6 +53,9 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
 
     @Test
     void noCredentials() {
+        nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
+            credentialsDirectory: './',
+        ]]]
         stepRule.step.writeTemporaryCredentials(
             script: nullScript,
             stageName: "myStage",
