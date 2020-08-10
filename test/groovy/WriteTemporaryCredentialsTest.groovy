@@ -15,6 +15,7 @@ import util.Rules
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertTrue
+import static org.junit.Assert.assertFalse
 
 class WriteTemporaryCredentialsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -84,6 +85,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         ){
             bodyExecuted = true
         }
+        assertFalse(bodyExecuted)
     }
 
     @Test
@@ -103,6 +105,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         ){
             bodyExecuted = true
         }
+        assertFalse(bodyExecuted)
     }
 
     @Test
@@ -122,6 +125,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
             bodyExecuted = true
         }
 
+        assertTrue(bodyExecuted)
         assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
         assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
     }
