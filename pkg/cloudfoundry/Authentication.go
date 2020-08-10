@@ -105,3 +105,31 @@ type CFUtils struct {
 	Exec     command.ExecRunner
 	loggedIn bool
 }
+
+// AuthenticationUtils - interface for cloud foundry login and logout
+type AuthenticationUtils interface {
+	Login(options LoginOptions) error
+	Logout() error
+}
+
+// CfUtilsMock - mock for CfUtils
+type CfUtilsMock struct {
+	LoginError  error
+	LogoutError error
+}
+
+// Login mock implementation
+func (cf *CfUtilsMock) Login(options LoginOptions) error {
+	return cf.LoginError
+}
+
+// Logout mock implementation
+func (cf *CfUtilsMock) Logout() error {
+	return cf.LogoutError
+}
+
+// Cleanup for CfUtilsMock
+func (cf *CfUtilsMock) Cleanup() {
+	cf.LoginError = nil
+	cf.LogoutError = nil
+}
