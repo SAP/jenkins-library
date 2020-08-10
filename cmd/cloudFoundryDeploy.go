@@ -184,7 +184,7 @@ func handleMTADeployment(config *cloudFoundryDeployOptions, command command.Exec
 		exists, err := fileUtils.FileExists(mtarFilePath)
 
 		if err != nil {
-			return errors.Wrapf(err, "Cannot check if file path '%s' exists %w", mtarFilePath, err)
+			return errors.Wrapf(err, "Cannot check if file path '%s' exists", mtarFilePath)
 		}
 
 		if !exists {
