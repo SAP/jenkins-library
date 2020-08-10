@@ -3,6 +3,7 @@
 ## ${docGenDescription}
 
 ## Prerequisites
+
 1. Create a Username / Password credential with the Protecode user in your Jenkins credential store
 1. Lookup your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
 
