@@ -14,6 +14,7 @@ import util.JenkinsWriteFileRule
 import util.Rules
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertTrue
 
 class WriteTemporaryCredentialsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -52,15 +53,15 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
 
     @Test
     void noCredentials() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[writeTemporaryCredentials] The execution failed, since no credentials are defined. Please provide credentials as a list of maps.')
-
         stepRule.step.writeTemporaryCredentials(
             script: nullScript,
             stageName: "myStage",
         ){
             bodyExecuted = true
         }
+        assertTrue(bodyExecuted)
+        assertThat(writeFileRule.files.keySet(), hasSize(0))
+        assertThat(shellRule.shell, hasSize(0))
     }
 
     @Test
