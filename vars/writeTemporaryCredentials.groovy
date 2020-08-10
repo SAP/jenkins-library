@@ -51,10 +51,7 @@ void call(Map parameters = [:], Closure body) {
             stepParam1: parameters?.script == null
         ], config)
 
-        if (!config.credentials) {
-            error "[${STEP_NAME}] The execution failed, since no credentials are defined. Please provide credentials as a list of maps.\n"
-        }
-        if (!(config.credentials instanceof List)) {
+        if (config.credentials && !(config.credentials instanceof List)) {
             error "[${STEP_NAME}] The execution failed, since credentials is not a list. Please provide credentials as a list of maps. For example:\n" +
                 "credentials: \n" + "  - alias: 'ERP'\n" + "    credentialId: 'erp-credentials'"
         }
