@@ -22,8 +22,11 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 
 		if error == nil {
 			assert.Equal(t, "testUser", con.User)
@@ -47,15 +50,18 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 
-		_, err := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 		//Testing without ABAP Host
 		config = abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
 		}
-		_, err = abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 
@@ -73,8 +79,11 @@ func TestHostConfig(t *testing.T) {
 			AbapEnvOptions: config,
 		}
 		execRunner := &mock.ExecMockRunner{}
+		var autils = abaputils.AbapUtils{
+			Exec: execRunner,
+		}
 		var con abaputils.ConnectionDetailsHTTP
-		con, error := abaputils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, execRunner, "")
+		con, error := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
 		if error == nil {
 			assert.Equal(t, "", con.User)
 			assert.Equal(t, "", con.Password)
@@ -88,7 +97,7 @@ func TestATCTrigger(t *testing.T) {
 	t.Run("Trigger ATC run test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `ATC trigger test`,
 			Token: tokenExpected,
 		}
@@ -111,7 +120,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `Xcsrf Token test`,
 			Token: tokenExpected,
 		}
@@ -129,7 +138,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 	t.Run("failure case: fetch token", func(t *testing.T) {
 		tokenExpected := ""
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `Xcsrf Token test`,
 			Token: "",
 		}
@@ -150,7 +159,7 @@ func TestPollATCRun(t *testing.T) {
 	t.Run("ATC run Poll Test", func(t *testing.T) {
 		tokenExpected := "myToken"
 
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body:  `ATC Poll test`,
 			Token: tokenExpected,
 		}
@@ -171,7 +180,7 @@ func TestPollATCRun(t *testing.T) {
 
 func TestGetHTTPResponseATCRun(t *testing.T) {
 	t.Run("Get HTTP Response from ATC run Test", func(t *testing.T) {
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			Body: `HTTP response test`,
 		}
 
@@ -191,7 +200,7 @@ func TestGetHTTPResponseATCRun(t *testing.T) {
 
 func TestGetResultATCRun(t *testing.T) {
 	t.Run("Get HTTP Response from ATC run Test", func(t *testing.T) {
-		client := &clientMock{
+		client := &abaputils.ClientMock{
 			BodyList: []string{
 				`ATC result body`,
 			},
