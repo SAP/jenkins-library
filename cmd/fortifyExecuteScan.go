@@ -427,16 +427,7 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 			}
 			return err
 		}
-		notFound := true
-		for _, artifact := range artifacts {
-			if len(buildLabel) > 0 && artifact.Embed != nil && artifact.Embed.Scans != nil && len(artifact.Embed.Scans) > 0 {
-				scan := artifact.Embed.Scans[0]
-				if notFound && scan != nil && strings.HasSuffix(scan.BuildLabel, buildLabel) {
-					relatedUpload = artifact
-					notFound = false
-				}
-			}
-		}
+		relatedUpload = findArtifactByBuildLabel(artifacts, buildLabel)
 		if relatedUpload == nil {
 			log.Entry().Warn("Unable to identify artifact based on the build label, will consider most recent artifact as related to the scan")
 			relatedUpload = artifacts[0]
@@ -446,16 +437,28 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	differenceInSeconds := calculateTimeDifferenceToLastUpload(relatedUpload.UploadDate, projectVersionID)
 	// Use the absolute value for checking the time difference
 	if differenceInSeconds > float64(60*config.DeltaMinutes) {
-		return errors.New("No recent upload detected on Project Version")
+		return errors.New("no recent upload detected on Project Version")
 	}
-	warn := false
 	for _, upload := range artifacts {
 		if upload.Status == "ERROR_PROCESSING" {
-			warn = true
+			log.Entry().Warn("Previous uploads detected that failed processing, please ensure that your scans are properly configured")
+			break
 		}
 	}
-	if warn {
-		log.Entry().Warn("Previous uploads detected that failed processing, please ensure that your scans are properly configured")
+	return nil
+}
+
+func findArtifactByBuildLabel(artifacts []*models.Artifact, buildLabel string) *models.Artifact {
+	if len(buildLabel) == 0 {
+		return nil
+	}
+	for _, artifact := range artifacts {
+		if len(buildLabel) > 0 && artifact.Embed != nil && artifact.Embed.Scans != nil && len(artifact.Embed.Scans) > 0 {
+			scan := artifact.Embed.Scans[0]
+			if scan != nil && strings.HasSuffix(scan.BuildLabel, buildLabel) {
+				return artifact
+			}
+		}
 	}
 	return nil
 }

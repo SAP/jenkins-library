@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"io/ioutil"
 	"os"
@@ -110,6 +112,18 @@ func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact
 			Status:     status,
 			UploadDate: toFortifyTime(f.getArtifactsOfProjectVersionTime),
 		}}, nil
+	case 4718:
+		return []*models.Artifact{
+			{
+				Status:     "PROCESSED",
+				UploadDate: toFortifyTime(time.Now()),
+			},
+			{
+				Status:     "ERROR_PROCESSING",
+				UploadDate: toFortifyTime(time.Now().Add(-2 * time.Minute)),
+			},
+		}, nil
+
 	default:
 		return []*models.Artifact{}, nil
 	}
@@ -494,7 +508,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 		ffMock := fortifyMock{}
 		config := fortifyExecuteScanOptions{DeltaMinutes: -1}
 		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4711)
-		assert.EqualError(t, err, "No recent upload detected on Project Version")
+		assert.EqualError(t, err, "no recent upload detected on Project Version")
 	})
 
 	config := fortifyExecuteScanOptions{DeltaMinutes: 20}
@@ -551,6 +565,19 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 		ffMock := fortifyMock{}
 		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4717)
 		assert.EqualError(t, err, "no uploaded artifacts for assessment detected for project version with ID 4717")
+	})
+
+	t.Run("warn old artifacts have errors", func(t *testing.T) {
+		ffMock := fortifyMock{}
+
+		logBuffer := new(bytes.Buffer)
+		logOutput := log.Entry().Logger.Out
+		log.Entry().Logger.Out = logBuffer
+		defer func() { log.Entry().Logger.Out = logOutput }()
+
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4718)
+		assert.NoError(t, err)
+		assert.Contains(t, logBuffer.String(), "Previous uploads detected that failed processing")
 	})
 }
 
