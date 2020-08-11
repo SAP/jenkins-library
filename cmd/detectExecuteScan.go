@@ -153,9 +153,9 @@ func addDetectArgsAndBuild(args []string, config detectExecuteScanOptions, fileU
 			if err != nil {
 				log.Entry().Info("Build tool is " + config.BuildTool + " and no pom xml found. Detect scan will proceed without a build")
 			}
-			/* When pom.xml is present in the workspace directory and if this has not been added to BuildDescriptorExcludeList we build the code
-			considering this to be the parent POM
-			if not then we find every pom xml in the current workspace and use it to build unless it is added in BuildDescriptorExcludeList*/
+			//When pom.xml is present in the workspace directory and if this has not been added to BuildDescriptorExcludeList we build the code
+			//considering this to be the parent POM
+			//if not then we find every pom xml in the current workspace and use it to build unless it is added in BuildDescriptorExcludeList*/
 			if findElement(pomFiles, "pom.xml") && !findElement(config.BuildDescriptorExcludeList, "pom.xml") {
 				args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
 			} else {
