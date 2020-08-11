@@ -352,9 +352,12 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 func correctDockerConfigEnvVar() {
 	path := os.Getenv("DOCKER_CONFIG")
 	if len(path) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
 		path, _ := filepath.Abs(path)
+		// use parent directory
 		path = filepath.Dir(path)
-		fmt.Println("DOCKER_CONFIG: use parent directory")
 		os.Setenv("DOCKER_CONFIG", path)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
 	}
 }
