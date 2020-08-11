@@ -76,6 +76,9 @@ type SystemInstance struct {
 
 // NewSystemInstance - creates an returns a new SystemInstance
 func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Duration) *SystemInstance {
+	// If serverURL ends in a trailing slash, UploadResultFile() will construct a URL with two or more
+	// consecutive slashes and actually fail with a 503. https://github.com/SAP/jenkins-library/issues/1826
+	// Also, since the step outputs a lot of URLs to the log, those will look nicer without redundant slashes.
 	serverURL = strings.TrimRight(serverURL, "/")
 	format := strfmt.Default
 	dateTimeFormat := models.Iso8601MilliDateTime{}
@@ -91,6 +94,7 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
 	scheme, host := splitSchemeAndHost(serverURL)
 	host, hostEndpoint := splitHostAndEndpoint(host)
+	// Cleaning up any slashes here is mostly for cleaner log-output.
 	hostEndpoint = strings.TrimRight(hostEndpoint, "/")
 	apiEndpoint = strings.Trim(apiEndpoint, "/")
 	return &ff.TransportConfig{
