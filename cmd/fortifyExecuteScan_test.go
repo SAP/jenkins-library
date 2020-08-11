@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"io/ioutil"
 	"os"
@@ -19,7 +22,9 @@ import (
 )
 
 type fortifyMock struct {
-	Successive bool
+	Successive                       bool
+	getArtifactsOfProjectVersionIdx  int
+	getArtifactsOfProjectVersionTime time.Time
 }
 
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
@@ -61,22 +66,67 @@ func (f *fortifyMock) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoint, u
 	return nil
 }
 func (f *fortifyMock) GetArtifactsOfProjectVersion(id int64) ([]*models.Artifact, error) {
-	if id == 4711 {
-		return []*models.Artifact{{Status: "PROCESSED", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
+	switch id {
+	case 4711:
+		return []*models.Artifact{{
+			Status:     "PROCESSED",
+			UploadDate: toFortifyTime(time.Now()),
+		}}, nil
+	case 4712:
+		return []*models.Artifact{{
+			Status:     "ERROR_PROCESSING",
+			UploadDate: toFortifyTime(time.Now()),
+		}}, nil
+	case 4713:
+		return []*models.Artifact{{
+			Status:     "REQUIRE_AUTH",
+			UploadDate: toFortifyTime(time.Now()),
+		}}, nil
+	case 4714:
+		return []*models.Artifact{{
+			Status:     "PROCESSING",
+			UploadDate: toFortifyTime(time.Now()),
+		}}, nil
+	case 4715:
+		return []*models.Artifact{{
+			Status: "PROCESSED",
+			Embed: &models.EmbeddedScans{
+				Scans: []*models.Scan{{BuildLabel: "/commit/test"}},
+			},
+			UploadDate: toFortifyTime(time.Now()),
+		}}, nil
+	case 4716:
+		var status string
+		if f.getArtifactsOfProjectVersionIdx == 0 {
+			f.getArtifactsOfProjectVersionTime = time.Now().Add(-2 * time.Minute)
+		}
+		if f.getArtifactsOfProjectVersionIdx < 2 {
+			status = "PROCESSING"
+		} else {
+			f.getArtifactsOfProjectVersionTime = time.Now()
+			status = "PROCESSED"
+		}
+		f.getArtifactsOfProjectVersionIdx++
+
+		return []*models.Artifact{{
+			Status:     status,
+			UploadDate: toFortifyTime(f.getArtifactsOfProjectVersionTime),
+		}}, nil
+	case 4718:
+		return []*models.Artifact{
+			{
+				Status:     "PROCESSED",
+				UploadDate: toFortifyTime(time.Now()),
+			},
+			{
+				Status:     "ERROR_PROCESSING",
+				UploadDate: toFortifyTime(time.Now().Add(-2 * time.Minute)),
+			},
+		}, nil
+
+	default:
+		return []*models.Artifact{}, nil
 	}
-	if id == 4712 {
-		return []*models.Artifact{{Status: "ERROR_PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
-	}
-	if id == 4713 {
-		return []*models.Artifact{{Status: "REQUIRE_AUTH", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
-	}
-	if id == 4714 {
-		return []*models.Artifact{{Status: "PROCESSING", UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
-	}
-	if id == 4715 {
-		return []*models.Artifact{{Status: "PROCESSED", Embed: &models.EmbeddedScans{[]*models.Scan{{BuildLabel: "/commit/test"}}}, UploadDate: models.Iso8601MilliDateTime(time.Now().UTC())}}, nil
-	}
-	return []*models.Artifact{}, nil
 }
 func (f *fortifyMock) GetFilterSetOfProjectVersionByTitle(id int64, title string) (*models.FilterSet, error) {
 	return &models.FilterSet{}, nil
@@ -443,44 +493,91 @@ func TestGenerateAndDownloadQGateReport(t *testing.T) {
 	})
 }
 
+var defaultPollingDelay = 10 * time.Second
+var defaultPollingTimeout = 0 * time.Minute
+
+func verifyScanResultsFinishedUploadingDefaults(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64) error {
+	return verifyScanResultsFinishedUploading(config, sys, projectVersionID, "", &models.FilterSet{},
+		defaultPollingDelay, defaultPollingTimeout)
+}
+
 func TestVerifyScanResultsFinishedUploading(t *testing.T) {
-	ffMock := fortifyMock{Successive: false}
+	t.Parallel()
 
 	t.Run("error no recent upload detected", func(t *testing.T) {
+		ffMock := fortifyMock{}
 		config := fortifyExecuteScanOptions{DeltaMinutes: -1}
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
-		assert.EqualError(t, err, "No recent upload detected on Project Version")
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4711)
+		assert.EqualError(t, err, "no recent upload detected on Project Version")
 	})
 
 	config := fortifyExecuteScanOptions{DeltaMinutes: 20}
 	t.Run("success", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4711, "", &models.FilterSet{}, 0)
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4711)
 		assert.NoError(t, err)
 	})
 
 	t.Run("error processing", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4712, "", &models.FilterSet{}, 0)
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4712)
 		assert.EqualError(t, err, "There are artifacts that failed processing for Project Version 4712\n/html/ssc/index.jsp#!/version/4712/artifacts?filterSet=")
 	})
 
 	t.Run("error required auth", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4713, "", &models.FilterSet{}, 0)
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4713)
 		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4714, "", &models.FilterSet{}, 1)
-		assert.EqualError(t, err, "Terminating after 0 minutes since artifact for Project Version 4714 is still in status PROCESSING")
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4714)
+		assert.EqualError(t, err, "terminating after 0s since artifact for Project Version 4714 is still in status PROCESSING")
 	})
 
 	t.Run("success build label", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{}, 0)
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4715, "/commit/test", &models.FilterSet{},
+			10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
+		assert.NoError(t, err)
+	})
+
+	t.Run("failure after polling", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{DeltaMinutes: 1}
+		ffMock := fortifyMock{}
+		const pollingDelay = 1 * time.Second
+		const timeout = 1 * time.Second
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, pollingDelay, timeout)
+		assert.EqualError(t, err, "terminating after 1s since artifact for Project Version 4716 is still in status PROCESSING")
+	})
+
+	t.Run("success after polling", func(t *testing.T) {
+		config := fortifyExecuteScanOptions{DeltaMinutes: 1}
+		ffMock := fortifyMock{}
+		const pollingDelay = 500 * time.Millisecond
+		const timeout = 1 * time.Second
+		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, pollingDelay, timeout)
 		assert.NoError(t, err)
 	})
 
 	t.Run("error no artifacts", func(t *testing.T) {
-		err := verifyScanResultsFinishedUploading(config, &ffMock, 4716, "", &models.FilterSet{}, 0)
-		assert.EqualError(t, err, "No uploaded artifacts for assessment detected for project version with ID 4716")
+		ffMock := fortifyMock{}
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4717)
+		assert.EqualError(t, err, "no uploaded artifacts for assessment detected for project version with ID 4717")
+	})
+
+	t.Run("warn old artifacts have errors", func(t *testing.T) {
+		ffMock := fortifyMock{}
+
+		logBuffer := new(bytes.Buffer)
+		logOutput := log.Entry().Logger.Out
+		log.Entry().Logger.Out = logBuffer
+		defer func() { log.Entry().Logger.Out = logOutput }()
+
+		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4718)
+		assert.NoError(t, err)
+		assert.Contains(t, logBuffer.String(), "Previous uploads detected that failed processing")
 	})
 }
 
@@ -704,4 +801,8 @@ func TestRemoveDuplicates(t *testing.T) {
 			assert.Equal(t, data.expected, removeDuplicates(data.input, data.separator))
 		})
 	}
+}
+
+func toFortifyTime(time time.Time) models.Iso8601MilliDateTime {
+	return models.Iso8601MilliDateTime(time.UTC())
 }
