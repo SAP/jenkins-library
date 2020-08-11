@@ -69,7 +69,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
 	utils := newLintUtilsBundle()
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: utils.getExecRunner()}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteLint(npmExecutor, utils, &config)
