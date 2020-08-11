@@ -52,33 +52,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
+		if assert.Len(t, e.Calls, 3) { // the second (unchecked) entry is the mta call
 			assert.Equal(t, "npm", e.Calls[1].Exec)
 			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, e.Calls[1].Params)
-		}
-	})
-
-	t.Run("Provide SAP npm registry", func(t *testing.T) {
-
-		e := mock.ExecMockRunner{}
-		e.StdoutReturn = map[string]string{"npm config get @sap:registry": "undefined"}
-
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", SapNpmRegistry: "https://example.sap/npm", MtarName: "myName"}
-
-		existingFiles := make(map[string]string)
-		existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
-		fileUtils := MtaTestFileUtilsMock{existingFiles: existingFiles}
-
-		npmExecutor := newNpmExecutor(&e)
-		npmExecutor.Options = npm.ExecutorOptions{SapNpmRegistry: options.SapNpmRegistry}
-
-		err := runMtaBuild(options, &cpe, &e, &fileUtils, &httpClient, npmExecutor)
-
-		assert.Nil(t, err)
-
-		if assert.Len(t, e.Calls, 4) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", e.Calls[2].Exec)
-			assert.Equal(t, []string{"config", "set", "@sap:registry", "https://example.sap/npm"}, e.Calls[2].Params)
 		}
 	})
 
@@ -185,9 +161,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 3) {
-			assert.Equal(t, "java", e.Calls[2].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
+		if assert.Len(t, e.Calls, 2) {
+			assert.Equal(t, "java", e.Calls[1].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[1].Params)
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
@@ -210,9 +186,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 3) {
-			assert.Equal(t, "java", e.Calls[2].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
+		if assert.Len(t, e.Calls, 2) {
+			assert.Equal(t, "java", e.Calls[1].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, e.Calls[1].Params)
 		}
 	})
 
@@ -230,9 +206,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 3) {
-			assert.Equal(t, "java", e.Calls[2].Exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[2].Params)
+		if assert.Len(t, e.Calls, 2) {
+			assert.Equal(t, "java", e.Calls[1].Exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, e.Calls[1].Params)
 		}
 	})
 
@@ -252,9 +228,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, e.Calls, 3) {
-			assert.Equal(t, "mbt", e.Calls[2].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[2].Params)
+		if assert.Len(t, e.Calls, 2) {
+			assert.Equal(t, "mbt", e.Calls[1].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, e.Calls[1].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
