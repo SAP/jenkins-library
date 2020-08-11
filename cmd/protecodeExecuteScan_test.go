@@ -89,9 +89,9 @@ func TestRunProtecodeScan(t *testing.T) {
 	requestURI := ""
 	dir, err := ioutil.TempDir("", "t")
 	if err != nil {
-		t.Fatal("Failed to create temporary directory")
+		t.Fatal("Failed to create temporary directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(dir)
 	testFile, err := ioutil.TempFile(dir, "t.tar")
 	if err != nil {
@@ -358,9 +358,9 @@ func TestExecuteProtecodeScan(t *testing.T) {
 
 		dir, err := ioutil.TempDir("", "t")
 		if err != nil {
-			t.Fatal("Failed to create temporary directory")
+			t.Fatal("Failed to create temporary directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(dir)
 		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
