@@ -357,7 +357,7 @@ func correctDockerConfigEnvVar() {
 		// use parent directory
 		path = filepath.Dir(path)
 		os.Setenv("DOCKER_CONFIG", path)
-	}else{
+	} else {
 		log.Entry().Info("Docker credential configuration: NONE")
 	}
 }
