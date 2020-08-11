@@ -1,0 +1,20 @@
+metadata:
+  name: testExecute
+  description: Test
+  longDescription: |-
+    Test
+spec:
+  inputs:
+    secrets:
+    - name: testCredentialsId
+      description: Some technical user/password credentials
+      type: jenkins
+    params:
+    - name: testParam
+      type: bool
+      description: Whether to test
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: true
