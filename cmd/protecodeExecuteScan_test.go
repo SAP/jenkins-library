@@ -19,6 +19,7 @@ import (
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type DockerClientMock struct {
@@ -89,9 +90,9 @@ func TestRunProtecodeScan(t *testing.T) {
 	requestURI := ""
 	dir, err := ioutil.TempDir("", "t")
 	if err != nil {
-		t.Fatal("Failed to create temporary directory")
+		t.Fatal("Failed to create temporary directory")
 	}
-	// clean up tmp dir
+	// clean up tmp dir
 	defer os.RemoveAll(dir)
 	testFile, err := ioutil.TempFile(dir, "t.tar")
 	if err != nil {
@@ -358,9 +359,9 @@ func TestExecuteProtecodeScan(t *testing.T) {
 
 		dir, err := ioutil.TempDir("", "t")
 		if err != nil {
-			t.Fatal("Failed to create temporary directory")
+			t.Fatal("Failed to create temporary directory")
 		}
-		// clean up tmp dir
+		// clean up tmp dir
 		defer os.RemoveAll(dir)
 		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
@@ -374,4 +375,30 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 226, got["vulnerabilities"])
 	}
+}
+
+func TestCorrectDockerConfigEnvVar(t *testing.T) {
+	// init
+	testDirectory, _ := ioutil.TempDir(".", "")
+	require.DirExists(t, testDirectory)
+	defer os.RemoveAll(testDirectory)
+
+	dockerConfigDir := filepath.Join(testDirectory, "myConfig")
+	os.Mkdir(dockerConfigDir, 0755)
+	require.DirExists(t, dockerConfigDir)
+
+	dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+	file, _ := os.Create(dockerConfigFile)
+	defer file.Close()
+	require.FileExists(t, dockerConfigFile)
+
+	resetValue := os.Getenv("DOCKER_CONFIG")
+	os.Setenv("DOCKER_CONFIG", dockerConfigFile)
+	require.Equal(t, dockerConfigFile, os.Getenv("DOCKER_CONFIG"))
+	defer os.Setenv("DOCKER_CONFIG", resetValue)
+	// test
+	correctDockerConfigEnvVar()
+	// assert
+	absolutePath, _ := filepath.Abs(dockerConfigDir)
+	assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
 }
