@@ -378,27 +378,37 @@ func TestExecuteProtecodeScan(t *testing.T) {
 }
 
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
-	// init
-	testDirectory, _ := ioutil.TempDir(".", "")
-	require.DirExists(t, testDirectory)
-	defer os.RemoveAll(testDirectory)
 
-	dockerConfigDir := filepath.Join(testDirectory, "myConfig")
-	os.Mkdir(dockerConfigDir, 0755)
-	require.DirExists(t, dockerConfigDir)
+	t.Run("with credentials", func(t *testing.T) {
+		// init
+		testDirectory, _ := ioutil.TempDir(".", "")
+		require.DirExists(t, testDirectory)
+		defer os.RemoveAll(testDirectory)
 
-	dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
-	file, _ := os.Create(dockerConfigFile)
-	defer file.Close()
-	require.FileExists(t, dockerConfigFile)
+		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
+		os.Mkdir(dockerConfigDir, 0755)
+		require.DirExists(t, dockerConfigDir)
 
-	resetValue := os.Getenv("DOCKER_CONFIG")
-	os.Setenv("DOCKER_CONFIG", dockerConfigFile)
-	require.Equal(t, dockerConfigFile, os.Getenv("DOCKER_CONFIG"))
-	defer os.Setenv("DOCKER_CONFIG", resetValue)
-	// test
-	correctDockerConfigEnvVar()
-	// assert
-	absolutePath, _ := filepath.Abs(dockerConfigDir)
-	assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+		file, _ := os.Create(dockerConfigFile)
+		defer file.Close()
+		require.FileExists(t, dockerConfigFile)
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		// assert
+		absolutePath, _ := filepath.Abs(dockerConfigDir)
+		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+	})
+	t.Run("without credentials", func(t *testing.T) {
+		// init
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
+		// assert
+		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
+	})
 }
