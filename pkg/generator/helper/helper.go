@@ -210,6 +210,8 @@ type {{.StepName}}UtilsBundle struct {
 
 	// Embed more structs as necessary to implement methods or interfaces you add to {{.StepName}}Utils.
 	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to 
+	// {{.StepName}}UtilsBundle and forward to the implementation of the dependency.
 }
 
 func new{{.StepName | title}}Utils() {{.StepName}}Utils {
@@ -243,8 +245,10 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
+	// Example of calling methods from external dependencies directly on utils:
 	exists, err := utils.FileExists("file.txt")
 	if err != nil {
+		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
 	if !exists {

@@ -23,6 +23,8 @@ type testExecuteUtilsBundle struct {
 
 	// Embed more structs as necessary to implement methods or interfaces you add to testExecuteUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to
+	// {{.StepName}}UtilsBundle and forward to the implementation of the dependency.
 }
 
 func newTestExecuteUtils() testExecuteUtils {
@@ -56,8 +58,10 @@ func testExecute(config testExecuteOptions, telemetryData *telemetry.CustomData)
 func runTestExecute(config *testExecuteOptions, telemetryData *telemetry.CustomData, utils testExecuteUtils) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
+	// Example of calling methods from external dependencies directly on utils:
 	exists, err := utils.FileExists("file.txt")
 	if err != nil {
+		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
 	if !exists {
