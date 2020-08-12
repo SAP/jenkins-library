@@ -378,7 +378,6 @@ func TestExecuteProtecodeScan(t *testing.T) {
 }
 
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
-
 	t.Run("with credentials", func(t *testing.T) {
 		// init
 		testDirectory, _ := ioutil.TempDir(".", "")
@@ -410,5 +409,28 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
+	})
+	t.Run("error - credential file not found", func(t *testing.T) {
+		// init
+		testDirectory, _ := ioutil.TempDir(".", "")
+		require.DirExists(t, testDirectory)
+		defer os.RemoveAll(testDirectory)
+
+		dockerConfigDir := filepath.Join(testDirectory, "myConfig")
+		os.Mkdir(dockerConfigDir, 0755)
+		require.DirExists(t, dockerConfigDir)
+
+		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+		// file, _ := os.Create(dockerConfigFile)
+		// defer file.Close()
+		// require.FileExists(t, dockerConfigFile)
+
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		// assert
+		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
+		assert.EqualError(t, err, "the Docker credential config file doesn't exist")
 	})
 }
