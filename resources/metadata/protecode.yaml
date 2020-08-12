@@ -62,7 +62,7 @@ spec:
         - STEPS
       secret: true
       resourceRef:
-        - name: dockerCredentialsId
+        - name: dockerConfigJsonCredentialsId
           type: secret
     - name: cleanupMode
       type: string
@@ -187,7 +187,7 @@ spec:
     - name: dockerConfigJsonCredentialsId
       type: jenkins
       aliases:
-        - name: dockerConfigJsonCredentialsId
+        - name: dockerCredentialsId
           deprecated: true
   outputs:
     resources:
