@@ -383,9 +383,10 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
+		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
+		assert.NoError(t, err)
 	})
 	t.Run("with credentials", func(t *testing.T) {
 		// init
@@ -405,10 +406,11 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
 		// assert
 		absolutePath, _ := filepath.Abs(dockerConfigDir)
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+		assert.NoError(t, err)
 	})
 	t.Run("error - credential file not found", func(t *testing.T) {
 		// init
