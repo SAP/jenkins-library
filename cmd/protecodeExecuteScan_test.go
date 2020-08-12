@@ -378,6 +378,15 @@ func TestExecuteProtecodeScan(t *testing.T) {
 }
 
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
+	t.Run("without credentials", func(t *testing.T) {
+		// init
+		resetValue := os.Getenv("DOCKER_CONFIG")
+		defer os.Setenv("DOCKER_CONFIG", resetValue)
+		// test
+		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
+		// assert
+		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
+	})
 	t.Run("with credentials", func(t *testing.T) {
 		// init
 		testDirectory, _ := ioutil.TempDir(".", "")
@@ -400,15 +409,6 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		// assert
 		absolutePath, _ := filepath.Abs(dockerConfigDir)
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
-	})
-	t.Run("without credentials", func(t *testing.T) {
-		// init
-		resetValue := os.Getenv("DOCKER_CONFIG")
-		defer os.Setenv("DOCKER_CONFIG", resetValue)
-		// test
-		correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
-		// assert
-		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 	})
 	t.Run("error - credential file not found", func(t *testing.T) {
 		// init
