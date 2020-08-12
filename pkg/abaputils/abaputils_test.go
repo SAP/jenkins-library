@@ -267,14 +267,14 @@ addonVersion: 3.1.4
 addonUniqueId: myAddonId
 customerID: 1234
 repositories:
-  - name: /DMO/REPO_A
-	tag: v-1.0.1-build-0001
-	version: 1.0.1
-	branch: branchA
-  - name: /DMO/REPO_B
-	tag: rel-2.1.1-build-0001
-	branch: branchB
-    version: 2.1.1
+- name: /DMO/REPO_A
+  tag: v-1.0.1-build-0001
+  branch: branchA
+  version: 1.0.1
+- name: /DMO/REPO_B
+  tag: rel-2.1.1-build-0001
+  branch: branchB
+  version: 2.1.1
 `
 		file, _ := os.Create("filename.yaml")
 		file.Write([]byte(body))
