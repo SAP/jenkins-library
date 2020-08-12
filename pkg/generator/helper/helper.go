@@ -292,7 +292,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 
 		// test
 		err := run{{.StepName | title}}(&config, nil, utils)
-	
+
 		// assert
 		assert.NoError(t, err)
 	})
@@ -305,7 +305,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 
 		// test
 		err := run{{.StepName | title}}(&config, nil, utils)
-	
+
 		// assert
 		assert.EqualError(t, err, "cannot run without important file")
 	})
