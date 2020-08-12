@@ -30,8 +30,8 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 	var autils = abaputils.AbapUtils{
 		Exec: &c,
 	}
-	client := piperhttp.Client{}
 
+	client := piperhttp.Client{}
 	err := runAbapEnvironmentAssembly(&config, telemetryData, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -42,7 +42,6 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
 func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
-
 	conn := new(connector)
 	err := conn.init(config, com, client)
 	if err != nil {
