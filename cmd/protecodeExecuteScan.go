@@ -358,14 +358,14 @@ func correctDockerConfigEnvVar() error {
 		log.Entry().Infof("Docker credentials configuration: %v", path)
 		path, _ = filepath.Abs(path)
 		if exists, err := FileUtils.FileExists(path); err != nil || !exists {
-			//TODO: define error category config
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("the Docker credential config file doesn't exist")
 		}
 		if filepath.Base(path) != "config.json" {
 			oldPath := path
 			path = filepath.Join(filepath.Dir(path), "config.json")
 			if err := os.Rename(oldPath, path); err != nil {
-				//TODO: define error category config
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return fmt.Errorf("the Docker credential config file doesn't point to a 'config.json' file")
 			}
 			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldPath), "config.json")
