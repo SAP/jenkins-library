@@ -3,9 +3,11 @@ package abaputils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -167,6 +170,39 @@ func ConvertTime(logTimeStamp string) time.Time {
 	return t
 }
 
+// ReadAddonDescriptor parses AddonDescriptor YAML file
+func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
+
+	var addonDescriptor AddonDescriptor
+	var addonYAMLFile []byte
+	filelocation, err := filepath.Glob(FileName)
+
+	if err != nil || len(filelocation) != 1 {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v.", FileName))
+	}
+	filename, err := filepath.Abs(filelocation[0])
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v.", FileName))
+	}
+	addonYAMLFile, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v.", FileName))
+	}
+
+	var jsonBytes []byte
+	jsonBytes, err = yaml.YAMLToJSON(addonYAMLFile)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v.", FileName))
+	}
+
+	err = json.Unmarshal(jsonBytes, &addonDescriptor)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v.", FileName))
+	}
+
+	return addonDescriptor, nil
+}
+
 /*******************************
  *	Structs for specific steps *
  *******************************/
@@ -257,6 +293,34 @@ type AbapBinding struct {
 	Type    string `json:"type"`
 	Version string `json:"version"`
 	Env     string `json:"env"`
+}
+
+// AddonDescriptor contains fields about the addonProduct
+type AddonDescriptor struct {
+	AddonProduct    string      `json:"addonProduct"`
+	AddonVersion    string      `json:"addonVersion"`
+	AddonUniqueID   string      `json:"addonUniqueID"`
+	CustomerID      interface{} `json:"customerID"`
+	AddonSpsLevel   string
+	AddonPatchLevel string
+	TargetVectorID  string
+	Repositories    []Repositories `json:"repositories"`
+}
+
+// Repositories contains fields for the repository/component version
+type Repositories struct {
+	Name                string `json:"name"`
+	Tag                 string `json:"tag"`
+	Branch              string `json:"branch"`
+	Version             string `json:"version"`
+	VersionOtherFormat  string
+	SpsLevel            string
+	PackageName         string
+	PatchLevel          string
+	PredecessorCommitID string
+	Status              string
+	Namespace           string
+	SarXMLFilePath      string
 }
 
 /********************************
