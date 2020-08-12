@@ -278,8 +278,7 @@ func pollProjectStatus(config *ScanOptions, sys *System, scanFinishTime time.Tim
 
 		retry--
 		if retry == 0 {
-			log.Entry().Infof("Reached maximum number of retries for polling project status: %s", config.ProjectName)
-			break
+			return fmt.Errorf("Reached maximum number of retries while polling project status: %s", config.ProjectName)
 		}
 
 		log.Entry().Infof("Length of reportBytes: %v", len(reportBytes))
