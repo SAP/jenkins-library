@@ -13,12 +13,8 @@ type testExecuteUtils interface {
 
 	FileExists(filename string) (bool, error)
 
-	// Add more methods here, or embed additional interfaces,
-	// for everything you need to be able to mock in tests.
-	// Unit tests shall
-	//  - not depend on global state,
-	//  - be executable in parallel,
-	//  - and don't (re-)test dependencies.
+	// Add more methods here, or embed additional interfaces, for everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 }
 
 type testExecuteUtilsBundle struct {
