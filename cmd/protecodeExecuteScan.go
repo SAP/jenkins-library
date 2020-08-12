@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
+	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -53,7 +54,9 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
-	correctDockerConfigEnvVar()
+	if err := correctDockerConfigEnvVar(); err != nil {
+		return err
+	}
 
 	var fileName, filePath string
 	//create client for sending api request
@@ -349,12 +352,26 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	return err
 }
 
-func correctDockerConfigEnvVar() {
-	path := os.Getenv("DOCKER_CONFIG")
-	if len(path) > 0 {
-		path, _ := filepath.Abs(path)
-		path = filepath.Dir(path)
+func correctDockerConfigEnvVar() error {
+	configFile := os.Getenv("DOCKER_CONFIG")
+	if len(configFile) > 0 {
+		configFile, _ = filepath.Abs(configFile)
+		if exists, err := FileUtils.FileExists(configFile); err != nil || !exists {
+			//TODO: define error category config
+			return fmt.Errorf("the Docker credential config file doesn't exist")
+		}
+		if filepath.Base(configFile) != "config.json" {
+			oldConfigFile := configFile
+			configFile = filepath.Join(filepath.Dir(configFile), "config.json")
+			if err := os.Rename(oldConfigFile, configFile); err != nil {
+				//TODO: define error category config
+				return fmt.Errorf("the Docker credential config file doesn't point to a 'config.json' file")
+			}
+			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldConfigFile), "config.json")
+		}
+		configPath := filepath.Dir(configFile)
 		fmt.Println("DOCKER_CONFIG: use parent directory")
-		os.Setenv("DOCKER_CONFIG", path)
+		os.Setenv("DOCKER_CONFIG", configPath)
 	}
+	return nil
 }
