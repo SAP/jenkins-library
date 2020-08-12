@@ -353,27 +353,26 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 }
 
 func correctDockerConfigEnvVar() error {
-	configFile := os.Getenv("DOCKER_CONFIG")
-	if len(configFile) > 0 {
+	path := os.Getenv("DOCKER_CONFIG")
+	if len(path) > 0 {
 		log.Entry().Infof("Docker credentials configuration: %v", path)
-		configFile, _ = filepath.Abs(configFile)
-		if exists, err := FileUtils.FileExists(configFile); err != nil || !exists {
+		path, _ = filepath.Abs(path)
+		if exists, err := FileUtils.FileExists(path); err != nil || !exists {
 			//TODO: define error category config
 			return fmt.Errorf("the Docker credential config file doesn't exist")
 		}
-		if filepath.Base(configFile) != "config.json" {
-			oldConfigFile := configFile
-			configFile = filepath.Join(filepath.Dir(configFile), "config.json")
-			if err := os.Rename(oldConfigFile, configFile); err != nil {
+		if filepath.Base(path) != "config.json" {
+			oldPath := path
+			path = filepath.Join(filepath.Dir(path), "config.json")
+			if err := os.Rename(oldPath, path); err != nil {
 				//TODO: define error category config
 				return fmt.Errorf("the Docker credential config file doesn't point to a 'config.json' file")
 			}
-			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldConfigFile), "config.json")
+			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldPath), "config.json")
 		}
 		// use parent directory
-		configPath := filepath.Dir(configFile)
-		fmt.Println("DOCKER_CONFIG: use parent directory")
-		os.Setenv("DOCKER_CONFIG", configPath)
+		path = filepath.Dir(path)
+		os.Setenv("DOCKER_CONFIG", path)
 	} else {
 		log.Entry().Info("Docker credentials configuration: NONE")
 	}
