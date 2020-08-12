@@ -94,18 +94,6 @@ spec:
         aliases:
           - name: npm/defaultNpmRegistry
         default:
-      - name: sapNpmRegistry
-        type: string
-        description: "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
-        default: https://npm.sap.com
-        aliases:
-          - name: npm/sapNpmRegistry
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
