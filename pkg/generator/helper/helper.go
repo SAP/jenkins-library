@@ -246,7 +246,7 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 
 func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
-	
+
 	exists, err := utils.FileExists("file.txt")
 	if err != nil {
 		return fmt.Errorf("failed to check for important file: %w", err)
@@ -254,7 +254,7 @@ func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *tel
 	if !exists {
 		return fmt.Errorf("cannot run without important file")
 	}
-	
+
 	return nil
 }
 `
@@ -282,7 +282,7 @@ func new{{.StepName | title}}TestsUtils() {{.StepName}}MockUtils {
 
 func TestRun{{.StepName | title}}(t *testing.T) {
 	t.Parallel()
-	
+
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := {{.StepName}}Options{}
