@@ -31,6 +31,47 @@ func TestAddRootFlags(t *testing.T) {
 
 }
 
+func TestAdoptStageNameFromParametersJSON(t *testing.T) {
+	tt := []struct {
+		name      string
+		stageName string
+	}{
+		{name: "no stageName", stageName: ""},
+		{name: "stage name given", stageName: "technicalIdentifier"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			// init
+			GeneralConfig.StageName = "stageLabel"
+
+			const envKey = "STAGE_NAME"
+			resetValue := os.Getenv(envKey)
+			defer func() { _ = os.Setenv(envKey, resetValue) }()
+
+			err := os.Setenv(envKey, GeneralConfig.StageName)
+			if err != nil {
+				t.Fatalf("could not set env var %s", envKey)
+			}
+
+			if test.stageName != "" {
+				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageName)
+			} else {
+				GeneralConfig.ParametersJSON = "{}"
+			}
+			// test
+			adoptStageNameFromParametersJSON()
+
+			// assert
+			if test.stageName != "" {
+				assert.Equal(t, test.stageName, GeneralConfig.StageName)
+			} else {
+				assert.Equal(t, "stageLabel", GeneralConfig.StageName)
+			}
+		})
+	}
+}
+
 func TestPrepareConfig(t *testing.T) {
 	defaultsBak := GeneralConfig.DefaultConfig
 	GeneralConfig.DefaultConfig = []string{"testDefaults.yml"}

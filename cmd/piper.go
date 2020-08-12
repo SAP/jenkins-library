@@ -52,7 +52,6 @@ var rootCmd = &cobra.Command{
 This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
-	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
 }
 
 // GeneralConfig contains global configuration flags for piper binary
@@ -121,8 +120,48 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
+func adoptStageNameFromParametersJSON() {
+	var stageNameSource string
+	if GeneralConfig.StageName != os.Getenv("STAGE_NAME") {
+		stageNameSource = "command line arguments"
+	} else {
+		stageNameSource = "environment 'STAGE_NAME'"
+	}
+
+	defer func() {
+		log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
+	}()
+
+	if len(GeneralConfig.ParametersJSON) == 0 {
+		return
+	}
+
+	if GeneralConfig.StageName != os.Getenv("STAGE_NAME") {
+		return
+	}
+
+	var params map[string]interface{}
+	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	if err != nil {
+		// Ignore here, will be logged later anyway
+		return
+	}
+
+	stageName, hasKey := params["stageName"]
+	if !hasKey {
+		return
+	}
+
+	if stageNameString, ok := stageName.(string); ok && stageNameString != "" {
+		stageNameSource = "PIPER_parametersJSON"
+		GeneralConfig.StageName = stageNameString
+	}
+}
+
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
+
+	adoptStageNameFromParametersJSON()
 
 	filters := metadata.GetParameterFilters()
 
