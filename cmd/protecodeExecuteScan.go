@@ -355,6 +355,7 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 func correctDockerConfigEnvVar() error {
 	configFile := os.Getenv("DOCKER_CONFIG")
 	if len(configFile) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
 		configFile, _ = filepath.Abs(configFile)
 		if exists, err := FileUtils.FileExists(configFile); err != nil || !exists {
 			//TODO: define error category config
@@ -369,9 +370,12 @@ func correctDockerConfigEnvVar() error {
 			}
 			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldConfigFile), "config.json")
 		}
+		// use parent directory
 		configPath := filepath.Dir(configFile)
 		fmt.Println("DOCKER_CONFIG: use parent directory")
 		os.Setenv("DOCKER_CONFIG", configPath)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
 	}
 	return nil
 }
