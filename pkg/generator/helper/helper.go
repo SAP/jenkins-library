@@ -341,24 +341,24 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 			myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 			checkError(err)
 
-			step := stepTemplate(myStepInfo)
+			step := stepTemplate(myStepInfo, "step", stepGoTemplate)
 			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
 			checkError(err)
 
-			test := stepTestTemplate(myStepInfo)
+			test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
 			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
 			checkError(err)
 
 			exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
 			if !exists {
-				impl := stepImplementation(myStepInfo)
+				impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
 				err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
 				checkError(err)
 			}
 
 			exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)))
 			if !exists {
-				impl := stepImplementationTest(myStepInfo)
+				impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
 				err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)), impl, 0644)
 				checkError(err)
 			}
@@ -542,8 +542,7 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
-func stepTemplate(myStepInfo stepInfo) []byte {
-
+func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
 	funcMap["golangName"] = golangNameTitle
@@ -551,57 +550,19 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
 
-	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func stepTestTemplate(myStepInfo stepInfo) []byte {
-
-	funcMap := sprig.HermeticTxtFuncMap()
-	funcMap["flagType"] = flagType
-	funcMap["golangName"] = golangNameTitle
-	funcMap["title"] = strings.Title
-	funcMap["uniqueName"] = mustUniqName
-
-	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
-}
-
-func stepImplementation(myStepInfo stepInfo) []byte {
-
+func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["title"] = strings.Title
 	funcMap["uniqueName"] = mustUniqName
 
-	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func stepImplementationTest(myStepInfo stepInfo) []byte {
-
-	funcMap := sprig.HermeticTxtFuncMap()
-	funcMap["title"] = strings.Title
-	funcMap["uniqueName"] = mustUniqName
-
-	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTestTemplate)
+func generateCode(myStepInfo stepInfo, templateName, goTemplate string, funcMap template.FuncMap) []byte {
+	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
 	checkError(err)
 
 	var generatedCode bytes.Buffer

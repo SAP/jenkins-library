@@ -24,7 +24,7 @@ type testExecuteUtilsBundle struct {
 	// Embed more structs as necessary to implement methods or interfaces you add to testExecuteUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
 	// If there is no struct which implements the method you need, attach the method to
-	// {{.StepName}}UtilsBundle and forward to the implementation of the dependency.
+	// testExecuteUtilsBundle and forward to the implementation of the dependency.
 }
 
 func newTestExecuteUtils() testExecuteUtils {
