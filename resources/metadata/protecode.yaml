@@ -173,8 +173,11 @@ spec:
     secrets:
     - name: protecodeCredentialsId
       type: jenkins
-    - name: dockerCredentialsId
+    - name: dockerConfigJsonCredentialsId
       type: jenkins
+      aliases:
+        - name: dockerCredentialsId
+          deprecated: true
   outputs:
     resources:
       - name: influx
