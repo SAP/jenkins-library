@@ -1,0 +1,32 @@
+metadata:
+    name: abapEnvironmentReadAddonDescriptor
+    description: Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment
+    longDescription: |
+        Reads a YAML file that describes an AddOn for the SAP Cloud Platform ABAP Environment
+spec:
+    inputs:
+      params:
+        - name: fileName
+          type: string
+          description: File name of the YAML descriptor
+          scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          mandatory: true
+          default: .pipeline/addon.yml
+    outputs:
+      resources:
+        - name: commonPipelineEnvironment
+          type: piperEnvironment
+          params:
+            - name: abap/repositoryNames
+            - name: abap/addonProduct
+            - name: abap/addonUniqueID
+            - name: abap/addonVersion
+            - name: abap/customerID
+            - name: abap/repositories
+    containers:
+      - name: cf
+        image: ppiper/cf-cli
+        imagePullPolicy: Never

@@ -1,0 +1,53 @@
+metadata:
+    name: aAKaaSCheckCVs
+    description: Check Component Version
+    longDescription: |
+        Check Component Version      
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Credential for AAKaaS System
+        type: jenkins
+    params:
+      - name: aAKaaSEndpoint
+        type: string
+        description: AAKaaS Endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        default: https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package
+      - name: username
+        type: string
+        description: User
+        scope: 
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: User Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: repositories
+        type: string
+        description: repositories
+        mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/repositories
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/repositories

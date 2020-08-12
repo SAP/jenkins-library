@@ -1,0 +1,66 @@
+metadata:
+    name: aAKaaSCheckPV
+    description: Check Product Version
+    longDescription: |
+        Check Product Version      
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Credential for AAKaaS System
+        type: jenkins
+    params:
+      - name: aAKaaSEndpoint
+        type: string
+        description: AAKaaS Endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        default: https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package
+      - name: username
+        type: string
+        description: User
+        scope: 
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: User Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: addonProduct
+        type: string
+        description: addonProduct
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+      - name: addonVersion
+        type: string
+        description: addonVersion
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: PVersion
+          - name: PSpspLevel
+          - name: PPatchLevel

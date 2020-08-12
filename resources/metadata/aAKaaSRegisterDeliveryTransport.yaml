@@ -1,0 +1,52 @@
+metadata:
+    name: aAKaaSRegisterDeliveryTransport
+    description: aAKaaSRegisterDeliveryTransport
+    longDescription: |
+      aAKaaSRegisterDeliveryTransport     
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Credential for AAKaaS System
+        type: jenkins
+    params:
+      - name: aAKaaSEndpoint
+        type: string
+        description: AAKaaS Endpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        default: https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package
+      - name: username
+        type: string
+        description: User
+        scope: 
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: User Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: PackageName
+        type: string
+        description: PackageName
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: PackageName

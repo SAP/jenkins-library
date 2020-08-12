@@ -99,6 +99,10 @@ func Execute() {
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblyCommand())
+	rootCmd.AddCommand(AAKaaSCheckPVCommand())
+	rootCmd.AddCommand(AAKaaSCheckCVsCommand())
+	rootCmd.AddCommand(AbapEnvironmentReadAddonDescriptorCommand())
+	// rootCmd.AddCommand(AAKaaSReserveNextPackageCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
