@@ -54,7 +54,7 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
-	if err := correctDockerConfigEnvVar(); err != nil {
+	if err := correctDockerConfigEnvVar(config); err != nil {
 		return err
 	}
 
@@ -352,8 +352,8 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	return err
 }
 
-func correctDockerConfigEnvVar() error {
-	path := os.Getenv("DOCKER_CONFIG")
+func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) error {
+	path := config.DockerConfigJSON
 	if len(path) > 0 {
 		log.Entry().Infof("Docker credentials configuration: %v", path)
 		path, _ = filepath.Abs(path)
