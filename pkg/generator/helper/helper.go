@@ -180,7 +180,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 	testCmd := {{.CobraCmdFuncName}}()
 
-	// only high level testing performed - details are tested in step generation procedure
+	// only high level testing performed - details are tested in step generation procudure
 	assert.Equal(t, "{{ .StepName }}", testCmd.Use, "command name incorrect")
 
 }
