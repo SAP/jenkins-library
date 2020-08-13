@@ -45,3 +45,8 @@ stages:
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
+  backendIntegrationTests:
+    stepConditions:
+      mavenExecuteIntegration:
+        fileExists:
+          filePattern: 'integration-tests/pom.xml'

@@ -35,6 +35,7 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('npmExecuteScripts', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteScripts)
+        .addIfEmpty('mavenExecuteIntegration', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.mavenExecuteIntegration)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -46,7 +47,19 @@ void call(Map parameters = [:]) {
         try {
             if (config.npmExecuteScripts) {
                 publishResults = true
-                npmExecuteScripts script: script, stageName: stageName
+                String credentialsFilePath = "./"
+
+                writeTemporaryCredentials(script: script, credentialsDirectory: credentialsFilePath) {
+                    npmExecuteScripts script: script, stageName: stageName
+                }
+            }
+            if (config.mavenExecuteIntegration) {
+                publishResults = true
+                String credentialsFilePath = "integration-tests/src/test/resources"
+
+                writeTemporaryCredentials(script: script, credentialsDirectory: credentialsFilePath) {
+                    mavenExecuteIntegration script: script, stageName: stageName
+                }
             }
         }
         finally {
