@@ -149,7 +149,9 @@ func initStageName(outputToLog bool) {
 	var params map[string]interface{}
 	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
-		// Ignore here, will be logged later anyway
+		if outputToLog {
+			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)
+		}
 		return
 	}
 
