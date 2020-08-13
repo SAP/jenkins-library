@@ -47,6 +47,9 @@ stages:
           - 'githubTokenCredentialsId'
   backendIntegrationTests:
     stepConditions:
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
       mavenExecuteIntegration:
         fileExists:
           filePattern: 'integration-tests/pom.xml'
