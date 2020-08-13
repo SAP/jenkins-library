@@ -124,6 +124,7 @@ const stageNameEnvKey = "STAGE_NAME"
 
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
 // or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+// Log output needs to be suppressed via outputToLog by the getConfig step.
 func initStageName(outputToLog bool) {
 	var stageNameSource string
 	if outputToLog {
