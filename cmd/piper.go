@@ -134,11 +134,11 @@ func initStageName() {
 		// Means it was given as command line argument and has the highest precedence
 		stageNameSource = "command line arguments"
 		return
-	} else {
-		// Use stageName from ENV as fall-back, when extracting it from parametersJSON fails below
-		GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
-		stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
 	}
+
+	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
+	GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
+	stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
