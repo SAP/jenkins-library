@@ -112,7 +112,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", "", "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
@@ -120,23 +120,27 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
-func adoptStageNameFromParametersJSON() {
-	var stageNameSource string
-	if GeneralConfig.StageName != os.Getenv("STAGE_NAME") {
-		stageNameSource = "command line arguments"
-	} else {
-		stageNameSource = "environment 'STAGE_NAME'"
-	}
+const stageNameEnvKey = "STAGE_NAME"
 
+// initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
+// or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+func initStageName() {
+	var stageNameSource string
 	defer func() {
 		log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
 	}()
 
-	if len(GeneralConfig.ParametersJSON) == 0 {
+	if GeneralConfig.StageName != "" {
+		// Means it was given as command line argument and has the highest precedence
+		stageNameSource = "command line arguments"
 		return
+	} else {
+		// Use stageName from ENV as fall-back, when extracting it from parametersJSON fails below
+		GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
+		stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
 	}
 
-	if GeneralConfig.StageName != os.Getenv("STAGE_NAME") {
+	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
 	}
 
@@ -153,7 +157,7 @@ func adoptStageNameFromParametersJSON() {
 	}
 
 	if stageNameString, ok := stageName.(string); ok && stageNameString != "" {
-		stageNameSource = "PIPER_parametersJSON"
+		stageNameSource = "parametersJSON"
 		GeneralConfig.StageName = stageNameString
 	}
 }
@@ -161,7 +165,9 @@ func adoptStageNameFromParametersJSON() {
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
 
-	adoptStageNameFromParametersJSON()
+	log.SetFormatter(GeneralConfig.LogFormat)
+
+	initStageName()
 
 	filters := metadata.GetParameterFilters()
 
@@ -176,8 +182,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
-
-	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

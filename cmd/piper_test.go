@@ -33,40 +33,49 @@ func TestAddRootFlags(t *testing.T) {
 
 func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 	tt := []struct {
-		name      string
-		stageName string
+		name          string
+		stageNameArg  string
+		stageNameEnv  string
+		stageNameJSON string
 	}{
-		{name: "no stageName", stageName: ""},
-		{name: "stage name given", stageName: "technicalIdentifier"},
+		{name: "no stage name", stageNameArg: "", stageNameEnv: "", stageNameJSON: ""},
+		{name: "stage name arg+env", stageNameArg: "arg", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name env", stageNameArg: "", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name json", stageNameArg: "", stageNameEnv: "", stageNameJSON: "json"},
+		{name: "stage name arg", stageNameArg: "arg", stageNameEnv: "", stageNameJSON: "json"},
 	}
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
 			// init
-			GeneralConfig.StageName = "stageLabel"
+			GeneralConfig.StageName = test.stageNameArg
 
-			const envKey = "STAGE_NAME"
-			resetValue := os.Getenv(envKey)
-			defer func() { _ = os.Setenv(envKey, resetValue) }()
+			resetValue := os.Getenv(stageNameEnvKey)
+			defer func() { _ = os.Setenv(stageNameEnvKey, resetValue) }()
 
-			err := os.Setenv(envKey, GeneralConfig.StageName)
+			err := os.Setenv(stageNameEnvKey, test.stageNameEnv)
 			if err != nil {
-				t.Fatalf("could not set env var %s", envKey)
+				t.Fatalf("could not set env var %s", stageNameEnvKey)
 			}
 
-			if test.stageName != "" {
-				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageName)
+			if test.stageNameJSON != "" {
+				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageNameJSON)
 			} else {
 				GeneralConfig.ParametersJSON = "{}"
 			}
 			// test
-			adoptStageNameFromParametersJSON()
+			initStageName()
 
 			// assert
-			if test.stageName != "" {
-				assert.Equal(t, test.stageName, GeneralConfig.StageName)
+			// Order of if-clauses reflects wanted precedence.
+			if test.stageNameArg != "" {
+				assert.Equal(t, test.stageNameArg, GeneralConfig.StageName)
+			} else if test.stageNameJSON != "" {
+				assert.Equal(t, test.stageNameJSON, GeneralConfig.StageName)
+			} else if test.stageNameEnv != "" {
+				assert.Equal(t, test.stageNameEnv, GeneralConfig.StageName)
 			} else {
-				assert.Equal(t, "stageLabel", GeneralConfig.StageName)
+				assert.Equal(t, "", GeneralConfig.StageName)
 			}
 		})
 	}
