@@ -29,3 +29,5 @@ debug.test
 /cache/protecode
 
 *errorDetails.json
+cmd/protecodeExecuteScan_links.json
+cmd/protecodeExecuteScan_reports.json

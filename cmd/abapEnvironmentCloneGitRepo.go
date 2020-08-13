@@ -73,15 +73,17 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-	pollIntervall := 10 * time.Second
+	pollIntervall := com.GetPollIntervall()
 
-	var repositories = make([]Repository, 0)
-
-	if config.RepositoryName != "" && config.BranchName != "" {
-		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
-	}
+	var repositories = make([]abaputils.Repository, 0)
 	if config.Repositories != "" {
-		// ToDo Parse json and append to repositories
+		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
+		if err == nil {
+			repositories = descriptor.Repositories
+		}
+	}
+	if config.RepositoryName != "" && config.BranchName != "" {
+		repositories = append(repositories, abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName})
 	}
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
@@ -97,7 +99,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := pollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, "Clone of '%s' with branch '%s' failed on the ABAP System", repo.Name, repo.Branch)
 		}
@@ -112,23 +114,16 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	return nil
 }
 
-/*
-Repository type
-*/
-type Repository struct {
-	Name   string
-	Branch string
-}
-
 func triggerClone(repositoryName string, branchName string, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
+
 	uriConnectionDetails := cloneConnectionDetails
 	uriConnectionDetails.URL = ""
 	cloneConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := getHTTPResponse("HEAD", cloneConnectionDetails, nil, client)
+	resp, err := abaputils.GetHTTPResponse("HEAD", cloneConnectionDetails, nil, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", cloneConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", cloneConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -141,9 +136,9 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
-	resp, err = getHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
+	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repositoryName+" with branch "+branchName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repositoryName+" with branch "+branchName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()

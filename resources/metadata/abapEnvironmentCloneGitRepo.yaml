@@ -39,7 +39,7 @@ spec:
         secret: true
       - name: repositories
         type: string
-        description: Specifies a string containing a json list of maps of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
+        description: Specifies a YAML file containing the repositories configuration
         scope:
         - PARAMETERS
         - STAGES
