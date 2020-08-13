@@ -18,9 +18,8 @@ import (
 
 func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData) {
 
-	// for command execution use Command
 	c := command.Command{}
-	// reroute command output to logging framework
+
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
@@ -43,16 +42,7 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 
 func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
-
-	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
-	subOptions.CfServiceInstance = config.CfServiceInstance
-	subOptions.CfServiceKeyName = config.CfServiceKeyName
-	subOptions.CfOrg = config.CfOrg
-	subOptions.CfSpace = config.CfSpace
-	subOptions.Host = config.Host
-	subOptions.Password = config.Password
-	subOptions.Username = config.Username
+	subOptions := convertConfig(config)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones")
@@ -61,30 +51,19 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	}
 
 	// Configuring the HTTP Client and CookieJar
-
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
 		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
 	}
-	clientOptions := piperhttp.ClientOptions{
+
+	client.SetOptions(piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
 		CookieJar:          cookieJar,
 		Username:           connectionDetails.User,
 		Password:           connectionDetails.Password,
-	}
-	client.SetOptions(clientOptions)
-	pollIntervall := com.GetPollIntervall()
+	})
 
-	var repositories = make([]abaputils.Repository, 0)
-	if config.Repositories != "" {
-		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
-		if err == nil {
-			repositories = descriptor.Repositories
-		}
-	}
-	if config.RepositoryName != "" && config.BranchName != "" {
-		repositories = append(repositories, abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName})
-	}
+	repositories := getRepositories(config)
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
@@ -99,7 +78,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
 		if errorPollEntity != nil {
 			return errors.Wrapf(errorPollEntity, "Clone of '%s' with branch '%s' failed on the ABAP System", repo.Name, repo.Branch)
 		}
@@ -168,4 +147,32 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 
 	uriConnectionDetails.URL = pollingURI + expandLog
 	return uriConnectionDetails, nil
+}
+
+func getRepositories(config *abapEnvironmentCloneGitRepoOptions) []abaputils.Repository {
+	var repositories = make([]abaputils.Repository, 0)
+	if config.Repositories != "" {
+		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
+		if err == nil {
+			repositories = descriptor.Repositories
+		}
+	}
+	if config.RepositoryName != "" && config.BranchName != "" {
+		repositories = append(repositories, abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	return repositories
+}
+
+func convertConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+	return subOptions
 }
