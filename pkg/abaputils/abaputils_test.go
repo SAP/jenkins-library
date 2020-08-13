@@ -1,13 +1,17 @@
 package abaputils
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -301,5 +305,29 @@ repositories:
 	t.Run("Test: file does not exist", func(t *testing.T) {
 		_, err := ReadAddonDescriptor("filename.yaml")
 		assert.EqualError(t, err, fmt.Sprintf("Could not find %v.", "filename.yaml"))
+	})
+}
+
+func TestHandleHTTPError(t *testing.T) {
+	t.Run("Test", func(t *testing.T) {
+
+		errorValue := "HTTP 400"
+		abapErrorCode := "abapErrorCode"
+		abapErrorMessage := "abapErrorMessage"
+		bodyString := `{"error" : { "code" : "` + abapErrorCode + `", "message" : { "lang" : "en", "value" : "` + abapErrorMessage + `" } } }`
+		body := []byte(bodyString)
+
+		resp := http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: 400,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.Error(t, err, "Error was expected")
+		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", errorValue, abapErrorCode, abapErrorMessage))
+		log.Entry().Info(err.Error())
 	})
 }
