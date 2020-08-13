@@ -11,6 +11,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     /** Runs npm scripts to run generic integration tests written on JavaScript */
     'npmExecuteScripts',
+    /** Runs backend integration tests via the Jacoco Maven-plugin */
+    'mavenExecuteIntegration',
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
     'testsPublishResults',
 ]
@@ -45,19 +47,14 @@ void call(Map parameters = [:]) {
 
         boolean publishResults = false
         try {
-            if (config.npmExecuteScripts) {
-                publishResults = true
-                String credentialsFilePath = "./"
-
-                writeTemporaryCredentials(script: script, credentialsDirectory: credentialsFilePath) {
+            List credentialsDirectories = ['./', 'integration-tests/src/test/resources']
+            writeTemporaryCredentials(script: script, credentialsDirectories: credentialsDirectories) {
+                if (config.npmExecuteScripts) {
+                    publishResults = true
                     npmExecuteScripts script: script, stageName: stageName
                 }
-            }
-            if (config.mavenExecuteIntegration) {
-                publishResults = true
-                String credentialsFilePath = "integration-tests/src/test/resources"
-
-                writeTemporaryCredentials(script: script, credentialsDirectory: credentialsFilePath) {
+                if (config.mavenExecuteIntegration) {
+                    publishResults = true
                     mavenExecuteIntegration script: script, stageName: stageName
                 }
             }
