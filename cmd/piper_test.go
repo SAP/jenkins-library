@@ -64,7 +64,7 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 				GeneralConfig.ParametersJSON = "{}"
 			}
 			// test
-			initStageName()
+			initStageName(false)
 
 			// assert
 			// Order of if-clauses reflects wanted precedence.

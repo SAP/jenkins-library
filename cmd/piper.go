@@ -124,11 +124,13 @@ const stageNameEnvKey = "STAGE_NAME"
 
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
 // or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
-func initStageName() {
+func initStageName(outputToLog bool) {
 	var stageNameSource string
-	defer func() {
-		log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
-	}()
+	if outputToLog {
+		defer func() {
+			log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
+		}()
+	}
 
 	if GeneralConfig.StageName != "" {
 		// Means it was given as command line argument and has the highest precedence
@@ -167,7 +169,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	log.SetFormatter(GeneralConfig.LogFormat)
 
-	initStageName()
+	initStageName(true)
 
 	filters := metadata.GetParameterFilters()
 
