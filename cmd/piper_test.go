@@ -123,7 +123,7 @@ func TestPrepareConfig(t *testing.T) {
 			}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.NoError(t, err, "no error expected but error occured")
+			assert.NoError(t, err, "no error expected but error occurred")
 
 			//assert config
 			assert.Equal(t, "testValue", testOptions.TestParam, "wrong value retrieved from config")
@@ -143,7 +143,7 @@ func TestPrepareConfig(t *testing.T) {
 			metadata := config.StepData{}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.Error(t, err, "error expected but none occured")
+			assert.Error(t, err, "error expected but none occurred")
 		})
 	})
 }
