@@ -54,7 +54,7 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
-	if err := correctDockerConfigEnvVar(config); err != nil {
+	if err := handleDockerCredentialConfigFile(config); err != nil {
 		return err
 	}
 
@@ -352,24 +352,25 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	return err
 }
 
-func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) error {
+func handleDockerCredentialConfigFile(config *protecodeExecuteScanOptions) error {
 	path := config.DockerConfigJSON
 	if len(path) > 0 {
-		log.Entry().Infof("Docker credentials configuration: %v", path)
 		path, _ = filepath.Abs(path)
 		if exists, err := FileUtils.FileExists(path); err != nil || !exists {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("the Docker credential config file doesn't exist")
 		}
-		if filepath.Base(path) != "config.json" {
-			oldPath := path
-			path = filepath.Join(filepath.Dir(path), "config.json")
-			if err := os.Rename(oldPath, path); err != nil {
+		if configJSONFileName := "config.json"; filepath.Base(path) != configJSONFileName {
+			originalPath := path
+			path = filepath.Join(filepath.Dir(originalPath), configJSONFileName)
+			if err := os.Rename(originalPath, path); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
+				log.Entry().Warningf("failed to move the Docker credential config file from '%s' to '%s'", filepath.Base(originalPath), configJSONFileName)
 				return fmt.Errorf("the Docker credential config file doesn't point to a 'config.json' file")
 			}
-			log.Entry().Warningf("the Docker credential config file was renamed from '%s' to '%s'.", filepath.Base(oldPath), "config.json")
+			log.Entry().Debugf("moved the Docker credential config file from '%s' to '%s'.", filepath.Base(originalPath), configJSONFileName)
 		}
+		log.Entry().Infof("Docker credentials configuration: %v", path)
 		// use parent directory
 		path = filepath.Dir(path)
 		os.Setenv("DOCKER_CONFIG", path)

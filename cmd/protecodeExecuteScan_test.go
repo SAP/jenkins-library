@@ -383,7 +383,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{})
+		err := handleDockerCredentialConfigFile(&protecodeExecuteScanOptions{})
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 		assert.NoError(t, err)
@@ -398,7 +398,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		os.Mkdir(dockerConfigDir, 0755)
 		require.DirExists(t, dockerConfigDir)
 
-		dockerConfigFile := filepath.Join(dockerConfigDir, "docker.json")
+		dockerConfigFile := filepath.Join(dockerConfigDir, "myConfig.json")
 		file, _ := os.Create(dockerConfigFile)
 		defer file.Close()
 		require.FileExists(t, dockerConfigFile)
@@ -406,10 +406,11 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		err := handleDockerCredentialConfigFile(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
 		// assert
 		absolutePath, _ := filepath.Abs(dockerConfigDir)
 		assert.Equal(t, absolutePath, os.Getenv("DOCKER_CONFIG"))
+		assert.FileExists(t, filepath.Join(absolutePath, "config.json"))
 		assert.NoError(t, err)
 	})
 	t.Run("error - credential file not found", func(t *testing.T) {
@@ -430,7 +431,7 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		resetValue := os.Getenv("DOCKER_CONFIG")
 		defer os.Setenv("DOCKER_CONFIG", resetValue)
 		// test
-		err := correctDockerConfigEnvVar(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
+		err := handleDockerCredentialConfigFile(&protecodeExecuteScanOptions{DockerConfigJSON: dockerConfigFile})
 		// assert
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 		assert.EqualError(t, err, "the Docker credential config file doesn't exist")
