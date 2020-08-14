@@ -33,6 +33,7 @@ func ConfigCommand() *cobra.Command {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+			initStageName(false)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
