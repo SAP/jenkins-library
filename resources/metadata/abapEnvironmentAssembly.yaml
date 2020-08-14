@@ -83,87 +83,17 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: packageType
+      - name: repositories
         type: string
-        description: Type of the delivery package(AOI, CSP, CPK) as provided by AAKaaS 
+        description: repositories
         mandatory: true
-        possibleValues:
-          - AOI
-          - CSP
-          - CPK
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: packageType
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: packageName
-        type: string
-        description: Name of delivery package as provided by AAKaaS
-        mandatory: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: packageName
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: swc
-        type: string
-        description: Name of software component as provided by AAKaaS
-        mandatory: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: swc
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: swcRelease
-        type: string
-        description: Software component release as provided by AAKaaS
-        mandatory: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: SWCRelease
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: spsLevel
-        type: string
-        description: Support package level as provided by AAKaaS
-        mandatory: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: spsLevel
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: namespace
-        type: string
-        description: Development namespace for software component
-        mandatory: true
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: namespace
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      - name: previousDeliveryCommit
-        type: string
-        description: Commit ID for the previous delivery event
-        mandatory: false
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: previousDeliveryCommit
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+            param: abap/repositories
       - name: maxRuntimeInMinutes
         type: int
         description: maximal runtime of the step
@@ -178,7 +108,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: sar_xml
+          - name: abap/repositories
   containers:
     - name: cf
       image: ppiper/cf-cli

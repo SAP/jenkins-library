@@ -38,6 +38,69 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 	}
 }
 
+// TODO Move
+
+//TODO check if failed => damit pipeline auf failed gesetzt werden kann
+func polling(builds []buildWithRepo, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for _, b := range builds {
+				if !b.build.IsFinished() {
+					b.build.get()
+					if !b.build.IsFinished() {
+						allFinished = false
+					}
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
+}
+
+type buildWithRepo struct {
+	build build
+	repo  abaputils.Repository
+}
+
+// TODO move und rename
+func (b *buildWithRepo) start() error {
+	valuesInput := values{
+		Values: []value{
+			{
+				ValueID: "SWC",
+				Value:   b.repo.Name,
+			},
+			{
+				ValueID: "CVERS",
+				Value:   b.repo.Name + "." + b.repo.VersionOtherFormat + "." + b.repo.SpsLevel,
+			},
+			{
+				ValueID: "NAMESPACE",
+				Value:   b.repo.Namespace,
+			},
+			{
+				ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
+				Value:   b.repo.PackageName,
+			},
+		},
+	}
+	if b.repo.PredecessorCommitID != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
+				Value: b.repo.PredecessorCommitID})
+	}
+	phase := "BUILD_" + b.repo.PackageType
+	return b.build.start(phase, valuesInput)
+}
+
 // *******************************************************************************************************************************
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
@@ -47,48 +110,67 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 	if err != nil {
 		return err
 	}
-	assemblyBuild := build{
-		connector: *conn,
+	var repos []abaputils.Repository
+	json.Unmarshal([]byte(config.Repositories), &repos)
+	var builds []buildWithRepo
+	for _, repo := range repos {
+		assemblyBuild := build{
+			connector: *conn,
+		}
+		// TODO Err?
+		buildRepo := buildWithRepo{
+			build: assemblyBuild,
+			repo:  repo,
+		}
+		err := buildRepo.start()
+		if err != nil {
+			return err
+		}
+		builds = append(builds, buildRepo)
 	}
 
-	valuesInput := values{
-		Values: []value{
-			{
-				ValueID: "SWC",
-				Value:   config.Swc,
-			},
-			{
-				ValueID: "CVERS",
-				Value:   config.Swc + "." + config.SwcRelease + "." + config.SpsLevel,
-			},
-			{
-				ValueID: "NAMESPACE",
-				Value:   config.Namespace,
-			},
-			{
-				ValueID: "PACKAGE_NAME_" + config.PackageType,
-				Value:   config.PackageName,
-			},
-		},
+	polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
+
+	var buildFailed bool = false
+	for _, bR := range builds {
+		b := bR.build
+		if b.RunState == failed {
+			log.Entry().Errorf("Assembly of %s failed", b.BuildID)
+			buildFailed = true
+		}
+		b.printLogs()
 	}
-	if config.PreviousDeliveryCommit != "" {
-		valuesInput.Values = append(valuesInput.Values,
-			value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value: config.PreviousDeliveryCommit})
+	if buildFailed {
+		return errors.New("At least the assembly of one package failed")
 	}
-	phase := "BUILD_" + config.PackageType
-	err = assemblyBuild.startPollLog(phase, valuesInput, time.Duration(config.MaxRuntimeInMinutes), 60)
-	if err != nil {
-		return err
-	}
+
+	// TODO das muss ich noch einbauen
+	var reposBackToCPE []abaputils.Repository
 	resultName := "SAR_XML"
-	resultSARXML, err := assemblyBuild.getResult(resultName)
-	if err != nil {
-		return err
-	}
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	downloadPath := filepath.Join(envPath, path.Base(resultName))
-	err = resultSARXML.download(downloadPath)
+	for i, b := range builds {
+		resultSARXML, err := b.build.getResult(resultName)
+		// TODO error?
+		if err != nil {
+			return err
+		}
+		downloadPath := filepath.Join(envPath, path.Base(resultName))
+		err = resultSARXML.download(downloadPath)
+		// TODO error?
+		if err != nil {
+			return err
+		}
+		builds[i].repo.SarXMLFilePath = downloadPath
+		reposBackToCPE = append(reposBackToCPE, b.repo)
+	}
+	// resultName := "SAR_XML"
+	// resultSARXML, err := assemblyBuild.getResult(resultName)
+	// if err != nil {
+	// 	return err
+	// }
+	// envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	// downloadPath := filepath.Join(envPath, path.Base(resultName))
+	// err = resultSARXML.download(downloadPath)
 	return err
 }
 
@@ -229,18 +311,19 @@ func (b *build) start(phase string, inputValues values) error {
 	return nil
 }
 
-func (b *build) startPollLog(phase string, inputValues values, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	if err := b.start(phase, inputValues); err != nil {
-		return err
-	}
-	if err := b.poll(maxRuntimeInMinutes, pollIntervalsInSeconds); err != nil {
-		return err
-	}
-	if err := b.printLogs(); err != nil {
-		return err
-	}
-	return nil
-}
+// TODO Delete
+// func (b *build) startPollLog(phase string, inputValues values, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+// 	if err := b.start(phase, inputValues); err != nil {
+// 		return err
+// 	}
+// 	if err := b.poll(maxRuntimeInMinutes, pollIntervalsInSeconds); err != nil {
+// 		return err
+// 	}
+// 	if err := b.printLogs(); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 func (b *build) get() error {
 	appendum := "/builds('" + b.BuildID + "')"
@@ -366,32 +449,29 @@ func (b *build) getResult(name string) (result, error) {
 	}
 }
 
-func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
-	for {
-		select {
-		case <-timeout:
-			return errors.New("Timed out")
-		case <-ticker:
-			b.get()
-			ok, err := b.IsFinished()
-			if ok {
-				return err
-			}
-		}
-	}
-}
+// TODO delete
+// func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+// 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+// 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+// 	for {
+// 		select {
+// 		case <-timeout:
+// 			return errors.New("Timed out")
+// 		case <-ticker:
+// 			b.get()
+// 			ok, err := b.IsFinished()
+// 			if ok {
+// 				return err
+// 			}
+// 		}
+// 	}
+// }
 
-func (b *build) IsFinished() (bool, error) {
-	switch b.RunState {
-	case finished:
-		return true, nil
-	case failed:
-		return true, errors.New("Build finished with status failed")
-	default:
-		return false, nil
+func (b *build) IsFinished() bool {
+	if b.RunState == finished || b.RunState == failed {
+		return true
 	}
+	return false
 }
 
 func (t *task) getLogs() error {

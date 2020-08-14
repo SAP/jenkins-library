@@ -16,25 +16,21 @@ import (
 )
 
 type abapEnvironmentAssemblyOptions struct {
-	CfAPIEndpoint          string `json:"cfApiEndpoint,omitempty"`
-	CfOrg                  string `json:"cfOrg,omitempty"`
-	CfSpace                string `json:"cfSpace,omitempty"`
-	CfServiceInstance      string `json:"cfServiceInstance,omitempty"`
-	Host                   string `json:"host,omitempty"`
-	Username               string `json:"username,omitempty"`
-	Password               string `json:"password,omitempty"`
-	PackageType            string `json:"packageType,omitempty"`
-	PackageName            string `json:"packageName,omitempty"`
-	Swc                    string `json:"swc,omitempty"`
-	SwcRelease             string `json:"swcRelease,omitempty"`
-	SpsLevel               string `json:"spsLevel,omitempty"`
-	Namespace              string `json:"namespace,omitempty"`
-	PreviousDeliveryCommit string `json:"previousDeliveryCommit,omitempty"`
-	MaxRuntimeInMinutes    int    `json:"maxRuntimeInMinutes,omitempty"`
+	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
+	CfOrg               string `json:"cfOrg,omitempty"`
+	CfSpace             string `json:"cfSpace,omitempty"`
+	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
+	Host                string `json:"host,omitempty"`
+	Username            string `json:"username,omitempty"`
+	Password            string `json:"password,omitempty"`
+	Repositories        string `json:"repositories,omitempty"`
+	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
 }
 
 type abapEnvironmentAssemblyCommonPipelineEnvironment struct {
-	sar_xml string
+	abap struct {
+		repositories string
+	}
 }
 
 func (p *abapEnvironmentAssemblyCommonPipelineEnvironment) persist(path, resourceName string) {
@@ -43,7 +39,7 @@ func (p *abapEnvironmentAssemblyCommonPipelineEnvironment) persist(path, resourc
 		name     string
 		value    string
 	}{
-		{category: "", name: "sar_xml", value: p.sar_xml},
+		{category: "abap", name: "repositories", value: p.abap.repositories},
 	}
 
 	errCount := 0
@@ -125,23 +121,12 @@ func addAbapEnvironmentAssemblyFlags(cmd *cobra.Command, stepConfig *abapEnviron
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
-	cmd.Flags().StringVar(&stepConfig.PackageType, "packageType", os.Getenv("PIPER_packageType"), "Type of the delivery package(AOI, CSP, CPK) as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.PackageName, "packageName", os.Getenv("PIPER_packageName"), "Name of delivery package as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.Swc, "swc", os.Getenv("PIPER_swc"), "Name of software component as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.SwcRelease, "swcRelease", os.Getenv("PIPER_swcRelease"), "Software component release as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.SpsLevel, "spsLevel", os.Getenv("PIPER_spsLevel"), "Support package level as provided by AAKaaS")
-	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", os.Getenv("PIPER_namespace"), "Development namespace for software component")
-	cmd.Flags().StringVar(&stepConfig.PreviousDeliveryCommit, "previousDeliveryCommit", os.Getenv("PIPER_previousDeliveryCommit"), "Commit ID for the previous delivery event")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("packageType")
-	cmd.MarkFlagRequired("packageName")
-	cmd.MarkFlagRequired("swc")
-	cmd.MarkFlagRequired("swcRelease")
-	cmd.MarkFlagRequired("spsLevel")
-	cmd.MarkFlagRequired("namespace")
+	cmd.MarkFlagRequired("repositories")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
 }
 
@@ -212,59 +197,11 @@ func abapEnvironmentAssemblyMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "packageType",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "packageType"}},
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "packageName",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "packageName"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "swc",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "swc"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "swcRelease",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "SWCRelease"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "spsLevel",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "spsLevel"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "namespace",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "namespace"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "previousDeliveryCommit",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "previousDeliveryCommit"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
