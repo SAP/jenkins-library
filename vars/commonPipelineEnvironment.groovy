@@ -203,8 +203,10 @@ class commonPipelineEnvironment implements Serializable {
             if (value && !script.fileExists(fileName)) {
                 if(value instanceof String) {
                     script.writeFile file: fileName, text: value
+                    script.echo("Writing file: ${fileName} with string value: ${value}")
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
+                    script.echo("Writing file: ${fileName} with JSON value: ${groovy.json.JsonOutput.toJson(value)}")
                 }
             }
         })
