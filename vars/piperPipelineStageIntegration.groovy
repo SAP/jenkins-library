@@ -46,12 +46,12 @@ void call(Map parameters = [:]) {
         try {
             if (config.npmExecuteScripts) {
                 publishResults = true
-                npmExecuteScripts script: script, stageName: stageName
+                npmExecuteScripts script: script
             }
         }
         finally {
             if (publishResults) {
-                testsPublishResults script: script, stageName: stageName
+                testsPublishResults script: script
             }
         }
     }
