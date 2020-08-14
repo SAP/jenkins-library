@@ -314,8 +314,9 @@ type Repositories struct {
 	Branch              string `json:"branch"`
 	Version             string `json:"version"`
 	VersionOtherFormat  string
-	SpsLevel            string
 	PackageName         string
+	PackageType         string
+	SpsLevel            string
 	PatchLevel          string
 	PredecessorCommitID string
 	Status              string
