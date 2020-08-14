@@ -35,7 +35,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		e := mock.ExecMockRunner{
 			StdoutReturn: map[string]string{
-				"kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=******** --dry-run=true --output=json": dockerConfigJSON,
+				`kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=\*\*\*\*\*\*\*\* --dry-run=true --output=json`: dockerConfigJSON,
 			},
 		}
 
@@ -90,7 +90,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		e := mock.ExecMockRunner{
 			StdoutReturn: map[string]string{
-				"kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=******** --dry-run=true --output=json": dockerConfigJSON,
+				`kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=\*\*\*\*\*\*\*\* --dry-run=true --output=json`: dockerConfigJSON,
 			},
 		}
 
@@ -112,6 +112,46 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentNamespace",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=regsecret,imagePullSecrets[0].dockerconfigjson=ThisIsOurBase64EncodedSecret==,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"--atomic",
+			"--timeout",
+			"400s",
+			"--kube-context",
+			"testCluster",
+			"--testParam",
+			"testValue",
+		}, e.Calls[1].Params, "Wrong upgrade parameters")
+	})
+
+	t.Run("test helm v3 - no container credentials", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:  "https://my.registry:55555",
+			ChartPath:             "path/to/chart",
+			DeploymentName:        "deploymentName",
+			DeployTool:            "helm3",
+			HelmDeployWaitSeconds: 400,
+			IngressHosts:          []string{"ingress.host1", "ingress.host2"},
+			Image:                 "path/to/Image:latest",
+			AdditionalParameters:  []string{"--testParam", "testValue"},
+			KubeContext:           "testCluster",
+			Namespace:             "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		runKubernetesDeploy(opts, &e, &stdout)
+
+		assert.Equal(t, "helm", e.Calls[1].Exec, "Wrong upgrade command")
+		assert.Equal(t, []string{
+			"upgrade",
+			"deploymentName",
+			"path/to/chart",
+			"--install",
+			"--force",
+			"--namespace",
+			"deploymentNamespace",
+			"--set",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--atomic",
 			"--timeout",
 			"400s",
