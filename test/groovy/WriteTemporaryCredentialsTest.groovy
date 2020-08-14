@@ -93,7 +93,8 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
-            credentials: [credential]
+            credentials: [credential],
+            credentialsDirectories: []
         ]]]
 
         thrown.expect(hudson.AbortException)
