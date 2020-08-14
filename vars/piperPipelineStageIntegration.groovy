@@ -51,17 +51,17 @@ void call(Map parameters = [:]) {
             writeTemporaryCredentials(script: script, credentialsDirectories: credentialsDirectories) {
                 if (config.npmExecuteScripts) {
                     publishResults = true
-                    npmExecuteScripts script: script, stageName: stageName
+                    npmExecuteScripts script: script
                 }
                 if (config.mavenExecuteIntegration) {
                     publishResults = true
-                    mavenExecuteIntegration script: script, stageName: stageName
+                    mavenExecuteIntegration script: script
                 }
             }
         }
         finally {
             if (publishResults) {
-                testsPublishResults script: script, stageName: stageName
+                testsPublishResults script: script
             }
         }
     }
