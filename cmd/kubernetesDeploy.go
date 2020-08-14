@@ -83,7 +83,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 			"create",
 			"secret",
 			"docker-registry",
-			"regsecret",
+			config.ContainerRegistrySecret,
 			fmt.Sprintf("--docker-server=%v", containerRegistry),
 			fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
 			fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
