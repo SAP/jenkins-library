@@ -52,7 +52,6 @@ var rootCmd = &cobra.Command{
 This project 'Piper' binary provides a CI/CD step library.
 It contains many steps which can be used within CI/CD systems as well as directly on e.g. a developer's machine.
 `,
-	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
 }
 
 // GeneralConfig contains global configuration flags for piper binary
@@ -113,7 +112,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", "", "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
@@ -121,8 +120,59 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
+const stageNameEnvKey = "STAGE_NAME"
+
+// initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
+// or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+// Log output needs to be suppressed via outputToLog by the getConfig step.
+func initStageName(outputToLog bool) {
+	var stageNameSource string
+	if outputToLog {
+		defer func() {
+			log.Entry().Infof("Using stageName '%s' from %s", GeneralConfig.StageName, stageNameSource)
+		}()
+	}
+
+	if GeneralConfig.StageName != "" {
+		// Means it was given as command line argument and has the highest precedence
+		stageNameSource = "command line arguments"
+		return
+	}
+
+	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
+	GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
+	stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
+
+	if len(GeneralConfig.ParametersJSON) == 0 {
+		return
+	}
+
+	var params map[string]interface{}
+	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	if err != nil {
+		if outputToLog {
+			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)
+		}
+		return
+	}
+
+	stageName, hasKey := params["stageName"]
+	if !hasKey {
+		return
+	}
+
+	if stageNameString, ok := stageName.(string); ok && stageNameString != "" {
+		stageNameSource = "parametersJSON"
+		GeneralConfig.StageName = stageNameString
+	}
+}
+
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
+
+	log.SetFormatter(GeneralConfig.LogFormat)
+
+	initStageName(true)
 
 	filters := metadata.GetParameterFilters()
 
@@ -137,8 +187,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
-
-	log.SetFormatter(GeneralConfig.LogFormat)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
