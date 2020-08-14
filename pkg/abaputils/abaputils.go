@@ -304,11 +304,11 @@ type AddonDescriptor struct {
 	AddonSpsLevel   string
 	AddonPatchLevel string
 	TargetVectorID  string
-	Repositories    []Repositories `json:"repositories"`
+	Repositories    []Repository `json:"repositories"`
 }
 
-// Repositories contains fields for the repository/component version
-type Repositories struct {
+// Repository contains fields for the repository/component version
+type Repository struct {
 	Name                string `json:"name"`
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
