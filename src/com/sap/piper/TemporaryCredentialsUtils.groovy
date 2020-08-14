@@ -37,7 +37,10 @@ class TemporaryCredentialsUtils implements Serializable {
 
         Boolean systemsFileFound = false
         for (int i = 0; i < credentialsDirectories.size(); i++) {
-            if (credentialsDirectories[i] && !credentialsDirectories[i].endsWith("/")) {
+            if (!credentialsDirectories[i]) {
+                continue
+            }
+            if (!credentialsDirectories[i].endsWith("/")) {
                 credentialsDirectories[i] += '/'
             }
             if (script.fileExists("${credentialsDirectories[i]}systems.yml") || script.fileExists("${credentialsDirectories[i]}systems.yaml") || script.fileExists("${credentialsDirectories[i]}systems.json")) {
@@ -58,6 +61,9 @@ class TemporaryCredentialsUtils implements Serializable {
 
     private void deleteCredentials(List credentialsDirectories, String credentialsFileName) {
         for (int i = 0; i < credentialsDirectories.size(); i++) {
+            if (!credentialsDirectories[i]) {
+                continue
+            }
             if(!credentialsDirectories[i].endsWith('/'))
                 credentialsDirectories[i] += '/'
 

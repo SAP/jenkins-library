@@ -150,5 +150,6 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertThat(writeFileRule.files['./credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
         assertThat(shellRule.shell, hasItem('rm -f ./credentials.json'))
+        assertThat(writeFileRule.files.size(), is(1))
     }
 }
