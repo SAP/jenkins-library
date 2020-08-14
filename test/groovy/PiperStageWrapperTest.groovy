@@ -129,7 +129,42 @@ class PiperStageWrapperTest extends BasePiperTest {
         }
         assertThat(executed, is(true))
         assertThat(executedOnKubernetes, is(true))
-        assertThat(customEnv[0].toString(), is("POD_NAME=test"))
+        assertThat(customEnv[1].toString(), is("POD_NAME=test"))
+    }
+
+    @Test
+    void testStageNameInEnv() {
+        def executed = false
+
+        binding.variables.env.STAGE_NAME = 'label'
+
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            stageName: 'test',
+            ordinal: 10
+        ) {
+            executed = true
+        }
+        assertThat(executed, is(true))
+        assertThat(customEnv[0].toString(), is("STAGE_NAME=test"))
+    }
+
+    @Test
+    void testStageNameAlreadyInEnv() {
+        def executed = false
+
+        binding.variables.env.STAGE_NAME = 'test'
+
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            ordinal: 10
+        ) {
+            executed = true
+        }
+        assertThat(executed, is(true))
+        assertThat(customEnv.size(), is(0))
     }
 
     @Test
