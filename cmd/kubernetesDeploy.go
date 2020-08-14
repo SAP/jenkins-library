@@ -74,6 +74,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	var secretsData string
 	if len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No container registry credentials provided or credentials incomplete: skipping secret creation")
+		secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
@@ -110,7 +111,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
 		// pass secret in helm default template way and in Piper backward compatible way
-		secretsData = fmt.Sprintf(",secret.dockerconfigjson=%v,imagePullSecrets[0].name=regsecret,imagePullSecrets[0].dockerconfigjson=%v", dockerRegistrySecretData.Data.DockerConfJSON, dockerRegistrySecretData.Data.DockerConfJSON)
+		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
 	}
 
 	ingressHosts := ""
