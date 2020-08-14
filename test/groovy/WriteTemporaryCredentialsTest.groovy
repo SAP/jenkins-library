@@ -55,7 +55,7 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
     @Test
     void noCredentials() {
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
-            credentialsDirectory: './',
+            credentialsDirectories: ['./', 'integration-test/'],
         ]]]
         stepRule.step.writeTemporaryCredentials(
             script: nullScript,
@@ -89,15 +89,37 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
     }
 
     @Test
-    void noCredentialsDirectory() {
+    void noCredentialsDirectories() {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
-            credentials: [credential]
+            credentials: [credential],
+            credentialsDirectories: []
         ]]]
 
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("[writeTemporaryCredentials] The execution failed, since no credentialsDirectory is defined. Please provide the path for the credentials file.")
+        thrown.expectMessage("[writeTemporaryCredentials] The execution failed, since no credentialsDirectories are defined. Please provide a list of paths for the credentials files.")
+
+        stepRule.step.writeTemporaryCredentials(
+            script: nullScript,
+            stageName: "myStage",
+        ){
+            bodyExecuted = true
+        }
+        assertFalse(bodyExecuted)
+    }
+
+    @Test
+    void credentialsDirectoriesNoList() {
+        def credential = [alias: 'ERP', credentialId: 'erp-credentials']
+
+        nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
+            credentials: [credential],
+            credentialsDirectories: './',
+        ]]]
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("[writeTemporaryCredentials] The execution failed, since credentialsDirectories is not a list. Please provide credentialsDirectories as a list of paths.")
 
         stepRule.step.writeTemporaryCredentials(
             script: nullScript,
@@ -111,11 +133,12 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
     @Test
     void credentialsFileWrittenAndRemoved() {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
-        fileExistsRule.registerExistingFile('systems.yml')
+        fileExistsRule.registerExistingFile('./systems.yml')
+        fileExistsRule.registerExistingFile('./credentials.json')
 
         nullScript.commonPipelineEnvironment.configuration = [stages: [myStage:[
             credentials: [credential],
-            credentialsDirectory: './',
+            credentialsDirectories: ['./', 'integration-test/'],
         ]]]
 
         stepRule.step.writeTemporaryCredentials(
@@ -126,7 +149,8 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         }
 
         assertTrue(bodyExecuted)
-        assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
-        assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
+        assertThat(writeFileRule.files['./credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(shellRule.shell, hasItem('rm -f ./credentials.json'))
+        assertThat(writeFileRule.files.size(), is(1))
     }
 }
