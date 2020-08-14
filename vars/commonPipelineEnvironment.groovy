@@ -201,7 +201,7 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                if(value instanceof String || value instanceof GString) {
+                if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
