@@ -1,0 +1,61 @@
+metadata:
+    name: abapEnvironmentASimulate
+    description: Simulation
+    longDescription: |
+        Simulation      
+spec:
+  inputs:
+    params:
+      - name: SWC
+        type: string
+        description: SWC
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+      - name: SWCRelease
+        type: string
+        description: SWCRelease
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+      - name: SpsLevel
+        type: string
+        description: SpsLevel
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: true
+      - name: Namespace
+        description: Namespace
+        type: string
+        mandatory: true
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: PackageName
+        type: string
+        description: PackageName
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/repositories
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never

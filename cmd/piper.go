@@ -98,6 +98,7 @@ func Execute() {
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblyCommand())
+	rootCmd.AddCommand(AbapEnvironmentASimulateCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

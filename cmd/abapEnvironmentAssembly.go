@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *abapEnvironmentAssemblyCommonPipelineEnvironment) {
+func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentAssemblyCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -32,79 +32,16 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 	}
 
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssembly(&config, telemetryData, &autils, &client)
+	err := runAbapEnvironmentAssembly(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-// TODO Move
-
-//TODO check if failed => damit pipeline auf failed gesetzt werden kann
-func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
-	for {
-		select {
-		case <-timeout:
-			return errors.New("Timed out")
-		case <-ticker:
-			var allFinished bool = true
-			for _, b := range builds {
-				if !b.build.IsFinished() {
-					b.build.get()
-					if !b.build.IsFinished() {
-						allFinished = false
-					}
-				}
-			}
-			if allFinished {
-				return nil
-			}
-		}
-	}
-}
-
-type buildWithRepository struct {
-	build build
-	repo  abaputils.Repository
-}
-
-// TODO move
-func (b *buildWithRepository) start() error {
-	valuesInput := values{
-		Values: []value{
-			{
-				ValueID: "SWC",
-				Value:   b.repo.Name,
-			},
-			{
-				ValueID: "CVERS",
-				Value:   b.repo.Name + "." + b.repo.VersionOtherFormat + "." + b.repo.SpsLevel,
-			},
-			{
-				ValueID: "NAMESPACE",
-				Value:   b.repo.Namespace,
-			},
-			{
-				ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
-				Value:   b.repo.PackageName,
-			},
-		},
-	}
-	if b.repo.PredecessorCommitID != "" {
-		valuesInput.Values = append(valuesInput.Values,
-			value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value: b.repo.PredecessorCommitID})
-	}
-	phase := "BUILD_" + b.repo.PackageType
-	return b.build.start(phase, valuesInput)
-}
-
 // *******************************************************************************************************************************
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
-func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblyCommonPipelineEnvironment) error {
 	conn := new(connector)
 	err := conn.init(config, com, client)
 	if err != nil {
@@ -161,15 +98,68 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 		builds[i].repo.SarXMLFilePath = downloadPath
 		reposBackToCPE = append(reposBackToCPE, b.repo)
 	}
-	// resultName := "SAR_XML"
-	// resultSARXML, err := assemblyBuild.getResult(resultName)
-	// if err != nil {
-	// 	return err
-	// }
-	// envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	// downloadPath := filepath.Join(envPath, path.Base(resultName))
-	// err = resultSARXML.download(downloadPath)
-	return err
+	backToCPE, _ := json.Marshal(reposBackToCPE)
+	cpe.abap.repositories = string(backToCPE)
+	return nil
+}
+
+func (b *buildWithRepository) start() error {
+	valuesInput := values{
+		Values: []value{
+			{
+				ValueID: "SWC",
+				Value:   b.repo.Name,
+			},
+			{
+				ValueID: "CVERS",
+				Value:   b.repo.Name + "." + b.repo.VersionOtherFormat + "." + b.repo.SpsLevel,
+			},
+			{
+				ValueID: "NAMESPACE",
+				Value:   b.repo.Namespace,
+			},
+			{
+				ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
+				Value:   b.repo.PackageName,
+			},
+		},
+	}
+	if b.repo.PredecessorCommitID != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
+				Value: b.repo.PredecessorCommitID})
+	}
+	phase := "BUILD_" + b.repo.PackageType
+	return b.build.start(phase, valuesInput)
+}
+
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for _, b := range builds {
+				if !b.build.IsFinished() {
+					b.build.get()
+					if !b.build.IsFinished() {
+						allFinished = false
+					}
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
+}
+
+type buildWithRepository struct {
+	build build
+	repo  abaputils.Repository
 }
 
 // *******************************************************************************************************************************
