@@ -14,14 +14,19 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 
 	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
 
+	err := runCloudFoundryCreateService(&config, telemetryData, cf)
+
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+
+}
+
+func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) error {
+
+	var err error
+
 	var c = cf.Exec
-
-	//var c command.ExecRunner = &command.Command{}
-
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
-
-	var err, logouterr error
 
 	loginOptions := cloudfoundry.LoginOptions{
 		CfAPIEndpoint: config.CfAPIEndpoint,
@@ -32,29 +37,37 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 	}
 
 	err = cf.Login(loginOptions)
-	if err == nil {
-		err = runCloudFoundryCreateService(&config, telemetryData, c)
-	}
+
 	if err != nil {
-		logouterr = cf.Logout()
-		if logouterr != nil {
-			log.Entry().WithError(logouterr).Fatal("step execution failed")
+		return fmt.Errorf("Error while logging in: %w", err)
+	}
+
+	if err == nil {
+		err = cloudFoundryCreateServiceRequest(config, telemetryData, c)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Service creation failed: %w", err)
+	}
+
+	defer func() {
+		logoutErr := cf.Logout()
+		if logoutErr != nil {
+			err = fmt.Errorf("Error while logging out occured: %w", logoutErr)
 		}
-		log.Entry().WithError(err).Fatal("step execution failed")
-	}
-	logouterr = cf.Logout()
-	if logouterr != nil {
-		log.Entry().WithError(logouterr).Fatal("step execution failed")
-	}
+	}()
+
 	log.Entry().Info("Service creation completed successfully")
+
+	return err
+
 }
 
-func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) error {
+func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) error {
 	var err error
 	log.Entry().Info("Creating Cloud Foundry Service")
 
-	var cfCreateServiceScript []string
-	cfCreateServiceScript = []string{"create-service", config.CfService, config.CfServicePlan, config.CfServiceInstanceName}
+	cfCreateServiceScript := []string{"create-service", config.CfService, config.CfServicePlan, config.CfServiceInstanceName}
 
 	if config.CfServiceBroker != "" {
 		cfCreateServiceScript = append(cfCreateServiceScript, "-b", config.CfServiceBroker)
@@ -85,7 +98,6 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 			cfCreateServiceScript = append(cfCreateServiceScript, s)
 		}
 	}
-	fmt.Print(cfCreateServiceScript)
 	err = c.RunExecutable("cf", cfCreateServiceScript...)
 
 	if err != nil {
