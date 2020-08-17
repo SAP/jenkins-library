@@ -6,17 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/ghodss/yaml"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
@@ -75,13 +71,6 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		}
 	}
 
-	// read values.yaml in order to better influence parameter setting behavior
-	var helmValues map[string]interface{}
-	if err := readHelmValues(filepath.Join(config.ChartPath, "values.yaml"), &helmValues); err != nil {
-		// error should not break the step since this only influences the behavior of setting values via helm
-		log.Entry().Infof("failed to read values.yaml, error: %v", err)
-	}
-
 	var secretsData string
 	if len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No container registry credentials provided or credentials incomplete: skipping secret creation")
@@ -128,18 +117,35 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
 	}
 
-	ingressHostSettings := ingressHosts(config.IngressHosts, helmValues)
+	// Deprecated functionality
+	// only for backward compatible handling of ingress.hosts
+	// this requires an adoption of the default ingress.yaml template
+	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
+	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
+	// Recommended way is to use a custom values file which contains the appropriate data
+	ingressHosts := ""
+	for i, h := range config.IngressHosts {
+		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
+	}
 
 	upgradeParams := []string{
 		"upgrade",
 		config.DeploymentName,
 		config.ChartPath,
+	}
+
+	for _, v := range config.HelmValues {
+		upgradeParams = append(upgradeParams, "--values", v)
+	}
+
+	upgradeParams = append(
+		upgradeParams,
 		"--install",
 		"--force",
 		"--namespace", config.Namespace,
 		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHostSettings),
-	}
+		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
+	)
 
 	if config.DeployTool == "helm" {
 		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
@@ -241,48 +247,6 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
-}
-
-func readHelmValues(filePath string, helmValues *map[string]interface{}) error {
-	valuesContent, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to read helm values file")
-	}
-
-	err = yaml.Unmarshal(valuesContent, &helmValues)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse helm values file")
-	}
-	return nil
-}
-
-func ingressHosts(ingressHostsConfig []string, helmValues map[string]interface{}) string {
-	ingressHosts := ""
-	if helmValues == nil {
-		return ingressHosts
-	}
-	if helmValues["ingress"] != nil {
-		ingressSettings, ok := helmValues["ingress"].(map[string]interface{})
-		if ok {
-			switch ingressSettings["hosts"].(type) {
-			case []string:
-				// backward compatibility when hosts only contains list of ingress names
-				for i, h := range ingressHostsConfig {
-					ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
-				}
-			default:
-				// standard behavior (= based on default helm template)
-				for i, h := range ingressHostsConfig {
-					ingressHosts += fmt.Sprintf(",ingress.hosts[%v].host=%v", i, h)
-				}
-			}
-		}
-	} else {
-		if len(ingressHostsConfig) > 0 {
-			log.Entry().Info("no ingress setting in values.yaml: ingressHosts configuration not passed to helm")
-		}
-	}
-	return ingressHosts
 }
 
 func splitRegistryURL(registryURL string) (protocol, registry string, err error) {

@@ -170,6 +170,13 @@ spec:
           - STAGES
           - STEPS
         default: 300
+      - name: helmValues
+        type: '[]string'
+        description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: image
         aliases:
           - name: deployImage
@@ -185,21 +192,15 @@ spec:
           - STEPS
       - name: ingressHosts
         type: '[]string'
-        description: List of ingress hosts to be exposed via helm deployment.
+        description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
         longDescription: |-
+          **DEPRECATEED**<br />
           List of ingress hosts to be exposed via helm deployment.<br />
-          Host names are passed to helm template via ingress configuration
+          Host names are passed to helm template via ingress configuration.<br />
+          This requires a modification to the default helm template, thus it is not recommended.
 
-          Assumption is the default format of the helm template. Example from `values.yaml`:
-
-          ```
-          ingress:
-            enabled: true
-            annotations: {}
-            hosts:
-              - host: chart-example.local
-                paths: []
-          ```
+          Recommendation is to use custom values and pass them via parameter `helmValues`.<br />
+          Since helm supports multiple files on top of the `values.yaml`, landscape-specific attributes can be passed via a specific file.
         mandatory: false
         scope:
           - PARAMETERS
