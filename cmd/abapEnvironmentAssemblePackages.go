@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentAssemblyCommonPipelineEnvironment) {
+func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
@@ -32,7 +32,7 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 	}
 
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssembly(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -41,7 +41,7 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 // *******************************************************************************************************************************
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
-func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblyCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(connector)
 	err := conn.init(config, com, client)
 	if err != nil {
@@ -90,7 +90,8 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 		if err != nil {
 			return err
 		}
-		downloadPath := filepath.Join(envPath, path.Base(resultName))
+		sarPackage := resultName + "_" + builds[i].repo.PackageName
+		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
 		err = resultSARXML.download(downloadPath)
 		if err != nil {
 			return err
@@ -172,7 +173,7 @@ type buildWithRepository struct {
 
 // ******** technical communication settings ********
 
-func (conn *connector) init(config *abapEnvironmentAssemblyOptions, com abaputils.Communication, inputclient piperhttp.Sender) error {
+func (conn *connector) init(config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, inputclient piperhttp.Sender) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}

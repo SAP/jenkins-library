@@ -1,8 +1,8 @@
 metadata:
-    name: abapEnvironmentAssembly
+    name: abapEnvironmentAssemblePackages
     description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
     longDescription: |
-        Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system      
+        Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system      
 spec:
   inputs:
     secrets:

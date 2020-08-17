@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type abapEnvironmentAssemblyOptions struct {
+type abapEnvironmentAssemblePackagesOptions struct {
 	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
 	CfOrg               string `json:"cfOrg,omitempty"`
 	CfSpace             string `json:"cfSpace,omitempty"`
@@ -27,13 +27,13 @@ type abapEnvironmentAssemblyOptions struct {
 	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
 }
 
-type abapEnvironmentAssemblyCommonPipelineEnvironment struct {
+type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
 	abap struct {
 		repositories string
 	}
 }
 
-func (p *abapEnvironmentAssemblyCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -55,19 +55,19 @@ func (p *abapEnvironmentAssemblyCommonPipelineEnvironment) persist(path, resourc
 	}
 }
 
-// AbapEnvironmentAssemblyCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
-func AbapEnvironmentAssemblyCommand() *cobra.Command {
-	const STEP_NAME = "abapEnvironmentAssembly"
+// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
+func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
+	const STEP_NAME = "abapEnvironmentAssemblePackages"
 
-	metadata := abapEnvironmentAssemblyMetadata()
-	var stepConfig abapEnvironmentAssemblyOptions
+	metadata := abapEnvironmentAssemblePackagesMetadata()
+	var stepConfig abapEnvironmentAssemblePackagesOptions
 	var startTime time.Time
-	var commonPipelineEnvironment abapEnvironmentAssemblyCommonPipelineEnvironment
+	var commonPipelineEnvironment abapEnvironmentAssemblePackagesCommonPipelineEnvironment
 
-	var createAbapEnvironmentAssemblyCmd = &cobra.Command{
+	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long:  `Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system`,
+		Long:  `Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -103,17 +103,17 @@ func AbapEnvironmentAssemblyCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			abapEnvironmentAssembly(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapEnvironmentAssemblePackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAbapEnvironmentAssemblyFlags(createAbapEnvironmentAssemblyCmd, &stepConfig)
-	return createAbapEnvironmentAssemblyCmd
+	addAbapEnvironmentAssemblePackagesFlags(createAbapEnvironmentAssemblePackagesCmd, &stepConfig)
+	return createAbapEnvironmentAssemblePackagesCmd
 }
 
-func addAbapEnvironmentAssemblyFlags(cmd *cobra.Command, stepConfig *abapEnvironmentAssemblyOptions) {
+func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *abapEnvironmentAssemblePackagesOptions) {
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
@@ -131,10 +131,10 @@ func addAbapEnvironmentAssemblyFlags(cmd *cobra.Command, stepConfig *abapEnviron
 }
 
 // retrieve step metadata
-func abapEnvironmentAssemblyMetadata() config.StepData {
+func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentAssembly",
+			Name:    "abapEnvironmentAssemblePackages",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{

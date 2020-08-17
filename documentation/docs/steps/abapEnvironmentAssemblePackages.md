@@ -18,14 +18,14 @@
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
 ```groovy
-abapEnvironmentAssembly script: this
+abapEnvironmentAssemblePackages script: this
 ```
 
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
 
 ```yaml
 steps:
-  abapEnvironmentAssembly:
+  abapEnvironmentAssemblePackages:
     abapCredentialsId: 'abapCredentialsId',
     host: 'https://myABAPendpoint.com',
 ```
@@ -34,7 +34,7 @@ Or by authenticating against Cloud Foundry and reading the Service Key details f
 
 ```yaml
 steps:
-  abapEnvironmentAssembly:
+  abapEnvironmentAssemblePackages:
     abapCredentialsId: 'cfCredentialsId',
     cfApiEndpoint : 'https://test.server.com',
     cfOrg : 'cfOrg',
