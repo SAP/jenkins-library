@@ -7,7 +7,7 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData) {
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteScripts(npmExecutor, &config)
@@ -17,14 +17,17 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 }
 
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
-	packageJSONFiles := npmExecutor.FindPackageJSONFiles()
-
 	if config.Install {
-		err := npmExecutor.InstallAllDependencies(packageJSONFiles)
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+		if err != nil {
+			return err
+		}
+
+		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
 		if err != nil {
 			return err
 		}
 	}
 
-	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.VirtualFrameBuffer)
+	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList)
 }

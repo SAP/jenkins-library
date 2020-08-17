@@ -1,5 +1,8 @@
 metadata:
   name: kubernetesDeploy
+  aliases:
+    - name: deployToKubernetes
+      deprecated: true
   description: Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
   longDescription: |-
     Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -24,8 +27,14 @@ spec:
   inputs:
     secrets:
       - name: kubeConfigFileCredentialsId
+        aliases:
+          - name: kubeCredentialsId
+            deprecated: true
         type: jenkins
       - name: kubeTokenCredentialsId
+        aliases:
+          - name: k8sTokenCredentialsId
+            deprecated: true
         type: jenkins
       - name: dockerCredentialsId
         type: jenkins
@@ -84,7 +93,10 @@ spec:
         aliases:
           - name: dockerRegistryUrl
         type: string
-        description: http(s) url of the Container registry.
+        description: http(s) url of the Container registry where the image to deploy is located.
+        resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/registryUrl
         scope:
           - GENERAL
           - PARAMETERS
@@ -155,7 +167,7 @@ spec:
         description: Full name of the image to be deployed.
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/image
+            param: container/imageNameTag
         mandatory: true
         scope:
           - PARAMETERS
@@ -217,6 +229,9 @@ spec:
   containers:
   - image: dtzar/helm-kubectl:3.1.2
     workingDir: /config
+    options:
+      - name: -u
+        value: '0'
     conditions:
     - conditionRef: strings-equal
       params:
@@ -224,6 +239,9 @@ spec:
         value: helm3
   - image: dtzar/helm-kubectl:2.12.1
     workingDir: /config
+    options:
+      - name: -u
+        value: '0'
     conditions:
     - conditionRef: strings-equal
       params:
@@ -231,6 +249,9 @@ spec:
         value: helm
   - image: dtzar/helm-kubectl:2.12.1
     workingDir: /config
+    options:
+      - name: -u
+        value: '0'
     conditions:
     - conditionRef: strings-equal
       params:

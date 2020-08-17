@@ -4,143 +4,76 @@
 package main
 
 import (
-	"context"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestMavenProject(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Getting current working directory failed: %v", err)
-	}
-	pwd = filepath.Dir(pwd)
-
-	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
-
-	if err != nil {
-		t.Fatalf("Error when creating temp dir: %v", err)
-	}
-
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestMtaIntegration", "maven"), tempDir)
-	if err != nil {
-		t.Fatal("Failed to copy test project.")
-	}
-
-	//workaround to use test script util it is possible to set workdir for Exec call
-	testScript := `#!/bin/sh
-cd /test
-apt-get -yqq update; apt-get -yqq install make
-curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
-tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
-mv mbt /usr/bin
-mkdir mym2
-/piperbin/piper mtaBuild --m2Path=mym2 >test-log.txt 2>&1
-`
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
-
-	reqNode := testcontainers.ContainerRequest{
-		Image: "maven:3-openjdk-8-slim",
-		Cmd:   []string{"tail", "-f"},
-
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
-	}
-
-	mbtContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: reqNode,
-		Started:          true,
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
+		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
 	})
 
-	code, err := mbtContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
-
+	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts", "--m2Path=mym2")
 	if err != nil {
-		t.Fatalf("Script returened error: %v", err)
+		t.Fatalf("Piper command failed %s", err)
 	}
-	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	container.assertHasOutput(t, "Installing /project/.flattened-pom.xml to /project/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
+	container.assertHasOutput(t, "Installing /project/app/target/mymvn-app-1.0-SNAPSHOT.war to /project/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
+	container.assertHasOutput(t, "Installing /project/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /project/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
+	container.assertHasOutput(t, "added 2 packages from 3 contributors and audited 2 packages in")
+}
+
+func TestMavenSpringProject(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
+		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
+	})
+
+	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts", "--m2Path=mym2")
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatalf("Piper command failed %s", err)
 	}
-	output := string(content)
-	assert.Contains(t, output, "Installing /test/.flattened-pom.xml to /test/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
-	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT.war to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
-	assert.Contains(t, output, "Installing /test/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /test/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
+	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "--m2Path=mym2")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
+	}
+
+	container.assertHasOutput(t, "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
 }
 
 func TestNPMProject(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Getting current working directory failed: %v", err)
-	}
-	pwd = filepath.Dir(pwd)
-
-	// using custom createTmpDir function to avoid issues with symlinks on Docker for Mac
-	tempDir, err := createTmpDir("")
-	defer os.RemoveAll(tempDir) // clean up
-
-	if err != nil {
-		t.Fatalf("Error when creating temp dir: %v", err)
-	}
-
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestMtaIntegration", "npm"), tempDir)
-	if err != nil {
-		t.Fatal("Failed to copy test project.")
-	}
-
-	//workaround to use test script util it is possible to set workdir for Exec call
-	testScript := `#!/bin/sh
-cd /test
-apt-get -yqq update; apt-get -yqq install make
-curl -OL https://github.com/SAP/cloud-mta-build-tool/releases/download/v1.0.14/cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
-tar xzf cloud-mta-build-tool_1.0.14_Linux_amd64.tar.gz
-mv mbt /usr/bin
-/piperbin/piper mtaBuild >test-log.txt 2>&1
-`
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
-
-	reqNode := testcontainers.ContainerRequest{
-		Image: "node:12",
-		Cmd:   []string{"tail", "-f"},
-
-		BindMounts: map[string]string{
-			pwd:     "/piperbin",
-			tempDir: "/test",
-		},
-	}
-
-	mbtContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: reqNode,
-		Started:          true,
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
+		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
-	code, err := mbtContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
-
+	err := container.whenRunningPiperCommand("mtaBuild", "")
 	if err != nil {
-		t.Fatalf("Script returened error: %v", err)
+		t.Fatalf("Piper command failed %s", err)
 	}
-	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	container.assertHasOutput(t, "INFO the MTA archive generated at: test-mta-js.mtar")
+}
+
+func TestNPMProjectInstallsDevDependencies(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "devxci/mbtci:latest",
+		User:    "mta",
+		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
+	})
+
+	err := container.whenRunningPiperCommand("mtaBuild", "--installArtifacts")
 	if err != nil {
-		t.Fatal("Could not read test-log.txt.", err)
+		t.Fatalf("Piper command failed %s", err)
 	}
-	output := string(content)
-	assert.Contains(t, output, "INFO the MTA archive generated at: test-mta-js.mtar")
+
+	container.assertHasOutput(t, "added 2 packages in")
 }

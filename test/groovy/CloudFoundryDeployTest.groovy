@@ -1,4 +1,5 @@
 import com.sap.piper.JenkinsUtils
+import hudson.AbortException
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -26,6 +27,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.stringContainsInOrder
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
@@ -79,6 +81,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
+
+        helper.registerAllowedMethod('findFiles', [Map.class], { m ->
+            return [].toArray()
+        })
     }
 
     @After
@@ -91,7 +97,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [
                 camSystemRole: 'testRole',
-                cfCredentialsId: 'myCreds'
+                cfCredentialsId: 'test_cfCredentialsId'
             ],
             stages: [
                 acceptance: [
@@ -104,17 +110,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 cloudFoundryDeploy: []
             ]
         ]
-
+        nullScript.commonPipelineEnvironment.setBuildTool('mta')
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool: '',
+            mtaPath: 'target/test.mtar',
             stageName: 'acceptance',
         ])
         // asserts
-        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds'))
-        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=mtaDeployPlugin, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=test_cfCredentialsId'))
     }
 
     @Test
@@ -660,6 +665,23 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void useMtaFilePathFromPipelineEnvironment() {
+        environmentRule.env.mtarFilePath = 'target/test.mtar'
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin'
+        ])
+        // asserts
+        assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
+    }
+
+    @Test
     void testMtaBlueGreen() {
 
         stepRule.step.cloudFoundryDeploy([
@@ -977,6 +999,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 space: 'testSpace',
                 manifest: 'test.yml',
                 ],
+            deployTool: 'cf_native',
             cfCredentialsId: 'test_cfCredentialsId',
             verbose: true
         ])
@@ -1004,6 +1027,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 space: 'testSpace',
                 manifest: 'test.yml',
                 ],
+            deployTool: 'cf_native',
             cfCredentialsId: 'test_cfCredentialsId',
             verbose: true
         ])
@@ -1069,4 +1093,242 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     }
 
+    @Test
+    void 'appName with underscores should throw an error'() {
+        String expected = "Your application name my_invalid_app_name contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\n" +
+            "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: 'my_invalid_app_name'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars and leading dash should throw an error'() {
+        String expected = "Your application name -my-Invalid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: '-my-Invalid-AppName123'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars and trailing dash should throw an error'() {
+        String expected = "Your application name my-Invalid-AppName123- contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
+        String actual = ""
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: 'my-Invalid-AppName123-'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars should work'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: 'myValidAppName123'
+            ],
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertTrue(loggingRule.log.contains("cfAppName=myValidAppName123"))
+    }
+
+    @Test
+    void 'appName with alpha-numeric chars and dash should work'() {
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
+                appName: 'my-Valid-AppName123'
+            ],
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
+        ])
+
+        assertTrue(loggingRule.log.contains("cfAppName=my-Valid-AppName123"))
+    }
+
+    @Test
+    void testMtaExtensionDescriptor() {
+        fileExistsRule.existingFiles.addAll(
+            'globalMtaDescriptor.mtaext',
+        )
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace'
+            ],
+            mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString("-e globalMtaDescriptor.mtaext")))
+    }
+
+    @Test
+    void testTargetMtaExtensionDescriptor() {
+        fileExistsRule.existingFiles.addAll(
+            'targetMtaDescriptor.mtaext',
+        )
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext'
+            ],
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+        assertThat(shellRule.shell, hasItem(containsString("-e targetMtaDescriptor.mtaext")))
+    }
+
+    @Test
+    void testMtaExtensionCredentials() {
+        fileExistsRule.existingFiles.addAll(
+            'mtaext.mtaext',
+        )
+        credentialsRule.withCredentials("mtaExtCredTest","token")
+
+        helper.registerAllowedMethod('readFile', [String], {file ->
+            if (file == 'mtaext.mtaext') {
+                return '_schema-version: \'3.1\'\n' +
+                    'ID: test.ext\n' +
+                    'extends: test\n' +
+                    '\n' +
+                    'parameters:\n' +
+                    '  test-credentials: "<%= testCred %>"'
+            }
+            return ''
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
+            mtaExtensionCredentials: [
+                testCred: 'mtaExtCredTest'
+            ]
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString('cp mtaext.mtaext mtaext.mtaext.original')))
+        assertThat(shellRule.shell, hasItem(containsString('mv --force mtaext.mtaext.original mtaext.mtaext')))
+        assertThat(writeFileRule.files['mtaext.mtaext'], is('_schema-version: \'3.1\'\n' +
+            'ID: test.ext\n' +
+            'extends: test\n' +
+            '\n' +
+            'parameters:\n' +
+            '  test-credentials: "token"'))
+    }
+
+    @Test
+    void testMtaExtensionDescriptorNotFound() {
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryDeploy] The mta extension descriptor file mtaext.mtaext does not exist at the configured location.')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext"
+        ])
+    }
+
+    @Test
+    void testMtaExtensionDescriptorReadFails() {
+        fileExistsRule.existingFiles.addAll(
+            'mtaext.mtaext',
+        )
+
+        thrown.expect(Exception)
+        thrown.expectMessage('[cloudFoundryDeploy] Unable to read mta extension file mtaext.mtaext.')
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
+            mtaExtensionCredentials: [
+                testCred: 'mtaExtCredTest'
+            ],
+        ])
+    }
 }

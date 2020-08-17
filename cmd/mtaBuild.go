@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -39,7 +40,7 @@ modules:
       build-result: dist`
 
 // for mocking
-var getSettingsFile = maven.GetSettingsFile
+var downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 
 // MTABuildTarget ...
 type MTABuildTarget int
@@ -84,7 +85,7 @@ func mtaBuild(config mtaBuildOptions,
 	httpClient := piperhttp.Client{}
 	e := command.Command{}
 
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: &e}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
@@ -97,7 +98,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e execRunner,
+	e command.ExecRunner,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader,
 	npmExecutor npm.Executor) error {
@@ -152,6 +153,7 @@ func runMtaBuild(config mtaBuildOptions,
 		buildTarget, err := ValueOfBuildTarget(config.BuildTarget)
 
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 
@@ -164,6 +166,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 		platform, err := ValueOfBuildTarget(config.Platform)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 
@@ -175,6 +178,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	default:
 
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("Unknown mta build tool: \"%s\"", config.MtaBuildTool)
 	}
 
@@ -182,20 +186,39 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	if len(config.M2Path) > 0 {
+		absolutePath, err := p.Abs(config.M2Path)
+		if err != nil {
+			return err
+		}
+		e.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
+	}
+
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	if err := e.RunExecutable(call[0], call[1:]...); err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
 
 	commonPipelineEnvironment.mtarFilePath = mtarName
 
-	err = installMavenArtifacts(e, config)
-
+	if config.InstallArtifacts {
+		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
+		err = installMavenArtifacts(e, config)
+		if err != nil {
+			return err
+		}
+		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
+		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
-func installMavenArtifacts(e execRunner, config mtaBuildOptions) error {
+func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
@@ -220,7 +243,7 @@ func getMarJarName(config mtaBuildOptions) string {
 	return mtaJar
 }
 
-func addNpmBinToPath(e execRunner) error {
+func addNpmBinToPath(e command.ExecRunner) error {
 	dir, _ := os.Getwd()
 	newPath := path.Join(dir, "node_modules", ".bin")
 	oldPath := os.Getenv("PATH")
@@ -241,10 +264,12 @@ func getMtarName(config mtaBuildOptions, mtaYamlFile string, p piperutils.FileUt
 		mtaID, err := getMtaID(mtaYamlFile, p)
 
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", err
 		}
 
 		if len(mtaID) == 0 {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return "", fmt.Errorf("Invalid mtar ID. Was empty")
 		}
 
@@ -270,6 +295,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 	if strings.Contains(mtaYamlStr, timestampVar) {
 
 		if err := p.FileWrite(mtaYamlFile, []byte(strings.ReplaceAll(mtaYamlStr, timestampVar, getTimestamp())), 0644); err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return err
 		}
 		log.Entry().Infof("Timestamp replaced in \"%s\"", mtaYamlFile)
@@ -330,28 +356,7 @@ func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	if len(config.ProjectSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.ProjectSettingsFile, config.ProjectSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-
-	} else {
-
-		log.Entry().Debugf("Project settings file not provided via configuration.")
-	}
-
-	if len(config.GlobalSettingsFile) > 0 {
-
-		if err := getSettingsFile(maven.GlobalSettingsFile, config.GlobalSettingsFile, p, httpClient); err != nil {
-			return err
-		}
-	} else {
-
-		log.Entry().Debugf("Global settings file not provided via configuration.")
-	}
-
-	return nil
+	return downloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
 }
 
 func generateMta(id, applicationName, version string) (string, error) {

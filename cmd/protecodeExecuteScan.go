@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -51,7 +53,7 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 
-	correctDockerConfigEnvVar()
+	correctDockerConfigEnvVar(config)
 
 	var fileName, filePath string
 	//create client for sending api request
@@ -200,6 +202,20 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	log.Entry().Debug("Write report to filesystem")
 	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
 
+	// write reports JSON
+	reports := []StepResults.Path{
+		{Target: config.ReportFileName, Mandatory: true},
+		{Target: "protecodeExecuteScan.json", Mandatory: true},
+		{Target: "protecodescan_vulns.json", Mandatory: true},
+	}
+	// write links JSON
+	links := []StepResults.Path{
+		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
+	}
+
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
+
 	return parsedResult
 }
 
@@ -333,12 +349,15 @@ var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	return err
 }
 
-func correctDockerConfigEnvVar() {
-	path := os.Getenv("DOCKER_CONFIG")
+func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
+	path := config.DockerConfigJSON
 	if len(path) > 0 {
+		log.Entry().Infof("Docker credentials configuration: %v", path)
 		path, _ := filepath.Abs(path)
+		// use parent directory
 		path = filepath.Dir(path)
-		fmt.Println("DOCKER_CONFIG: use parent directory")
 		os.Setenv("DOCKER_CONFIG", path)
+	} else {
+		log.Entry().Info("Docker credentials configuration: NONE")
 	}
 }

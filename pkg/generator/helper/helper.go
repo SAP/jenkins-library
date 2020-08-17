@@ -86,7 +86,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
@@ -97,6 +97,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			{{- range $key, $value := .StepSecrets }}
@@ -109,7 +110,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -217,7 +218,8 @@ func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *tel
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -245,17 +247,17 @@ func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, doc
 			checkError(err)
 
 			step := stepTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
 			checkError(err)
 
 			test := stepTestTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
 			checkError(err)
 
-			exists, _ := piperutils.FileExists(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name))
+			exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
 			if !exists {
 				impl := stepImplementation(myStepInfo)
-				err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name), impl, 0644)
+				err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
 				checkError(err)
 			}
 		} else {

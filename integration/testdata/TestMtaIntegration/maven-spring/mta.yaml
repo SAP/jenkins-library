@@ -1,0 +1,11 @@
+_schema-version: "3.1"
+ID: foo
+version: 0.0.1
+
+modules:
+  - name: foo
+    type: java
+    path: app
+    build-parameters:
+      builder: maven
+      build-result: target/*.jar

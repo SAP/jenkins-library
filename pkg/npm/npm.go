@@ -7,8 +7,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -22,8 +22,9 @@ type Execute struct {
 // Executor interface to enable mocking for testing
 type Executor interface {
 	FindPackageJSONFiles() []string
+	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
-	RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error
+	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
 }
@@ -31,7 +32,6 @@ type Executor interface {
 // ExecutorOptions holds common parameters for functions of Executor
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
-	SapNpmRegistry     string
 	ExecRunner         ExecRunner
 }
 
@@ -83,39 +83,29 @@ func (u *utilsBundle) GetExecRunner() ExecRunner {
 // CAUTION: This will change the npm configuration in the user's home directory.
 func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
-	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
-	configurableRegistries := []string{npmRegistry, sapRegistry}
-	for _, registry := range configurableRegistries {
-		var buffer bytes.Buffer
-		execRunner.Stdout(&buffer)
-		err := execRunner.RunExecutable("npm", "config", "get", registry)
-		execRunner.Stdout(log.Writer())
+
+	var buffer bytes.Buffer
+	execRunner.Stdout(&buffer)
+	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry)
+	execRunner.Stdout(log.Writer())
+	if err != nil {
+		return err
+	}
+	preConfiguredRegistry := buffer.String()
+
+	if registryIsNonEmpty(preConfiguredRegistry) {
+		log.Entry().Info("Discovered pre-configured npm registry " + npmRegistry + " with value " + preConfiguredRegistry)
+	}
+
+	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
+		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
+		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
 		if err != nil {
 			return err
 		}
-		preConfiguredRegistry := buffer.String()
-
-		if registryIsNonEmpty(preConfiguredRegistry) {
-			log.Entry().Info("Discovered pre-configured npm registry " + registry + " with value " + preConfiguredRegistry)
-		}
-
-		if registry == npmRegistry && exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.Options.DefaultNpmRegistry)
-			if err != nil {
-				return err
-			}
-		}
-
-		if registry == sapRegistry && exec.Options.SapNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://npm.sap.com") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.Options.SapNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.Options.SapNpmRegistry)
-			if err != nil {
-				return err
-			}
-		}
 	}
+
 	return nil
 }
 
@@ -128,8 +118,12 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
-func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
-	packageJSONFiles := exec.FindPackageJSONFiles()
+func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
+	packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes(excludeList)
+	if err != nil {
+		return err
+	}
+
 	execRunner := exec.Utils.GetExecRunner()
 
 	if virtualFrameBuffer {
@@ -153,7 +147,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 		}
 
 		for _, packageJSON := range packagesWithScript {
-			err = exec.executeScript(packageJSON, script, runOptions)
+			err = exec.executeScript(packageJSON, script, runOptions, scriptOptions)
 			if err != nil {
 				return err
 			}
@@ -162,7 +156,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 	return nil
 }
 
-func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string) error {
+func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string, scriptOptions []string) error {
 	execRunner := exec.Utils.GetExecRunner()
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
@@ -188,6 +182,11 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 		npmRunArgs = append(npmRunArgs, runOptions...)
 	}
 
+	if len(scriptOptions) > 0 {
+		npmRunArgs = append(npmRunArgs, "--")
+		npmRunArgs = append(npmRunArgs, scriptOptions...)
+	}
+
 	err = execRunner.RunExecutable("npm", npmRunArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to run npm script %s: %w", script, err)
@@ -200,25 +199,42 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 	return nil
 }
 
-// FindPackageJSONFiles returns a list of all package.json fileUtils of the project excluding node_modules and gen/ directories
+// FindPackageJSONFiles returns a list of all package.json files of the project excluding node_modules and gen/ directories
 func (exec *Execute) FindPackageJSONFiles() []string {
+	packageJSONFiles, _ := exec.FindPackageJSONFilesWithExcludes([]string{})
+	return packageJSONFiles
+}
+
+// FindPackageJSONFilesWithExcludes returns a list of all package.json files of the project excluding node_modules, gen/ and directories/patterns defined by excludeList
+func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error) {
 	unfilteredListOfPackageJSONFiles, _ := exec.Utils.Glob("**/package.json")
+
+	nodeModulesExclude := "**/node_modules/**"
+	genExclude := "**/gen/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
 	var packageJSONFiles []string
 
 	for _, file := range unfilteredListOfPackageJSONFiles {
-		if strings.Contains(file, "node_modules") {
-			continue
+		excludePackage := false
+		for _, exclude := range excludeList {
+			matched, err := doublestar.PathMatch(exclude, file)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
+			}
+			if matched {
+				excludePackage = true
+				break
+			}
 		}
-
-		if strings.HasPrefix(file, "gen"+string(os.PathSeparator)) || strings.Contains(file, string(os.PathSeparator)+"gen"+string(os.PathSeparator)) {
+		if excludePackage {
 			continue
 		}
 
 		packageJSONFiles = append(packageJSONFiles, file)
 		log.Entry().Info("Discovered package.json file " + file)
 	}
-	return packageJSONFiles
+	return packageJSONFiles, nil
 }
 
 // FindPackageJSONFilesWithScript returns a list of package.json fileUtils that contain the script
