@@ -42,7 +42,7 @@ nav:
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
-        - abapEnvironmentAssembly: steps/abapEnvironmentAssembly.md
+        - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
