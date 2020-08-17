@@ -194,7 +194,7 @@ spec:
         type: '[]string'
         description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
         longDescription: |-
-          **DEPRECATEED**<br />
+          **DEPRECATED**<br />
           List of ingress hosts to be exposed via helm deployment.<br />
           Host names are passed to helm template via ingress configuration.<br />
           This requires a modification to the default helm template, thus it is not recommended.
