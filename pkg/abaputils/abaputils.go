@@ -3,9 +3,11 @@ package abaputils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +25,8 @@ import (
 AbapUtils Struct
 */
 type AbapUtils struct {
-	Exec command.ExecRunner
+	Exec      command.ExecRunner
+	Intervall time.Duration
 }
 
 /*
@@ -30,6 +34,7 @@ Communication for defining function used for communication
 */
 type Communication interface {
 	GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error)
+	GetPollIntervall() time.Duration
 }
 
 // GetAbapCommunicationArrangementInfo function fetches the communcation arrangement information in SAP CP ABAP Environment
@@ -105,7 +110,17 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	return abapServiceKey, nil
 }
 
-// GetHTTPResponse returns a HTTP response or its corresponding error
+/*
+GetPollIntervall returns the specified intervall from AbapUtils or a default value of 10 seconds
+*/
+func (abaputils *AbapUtils) GetPollIntervall() time.Duration {
+	if abaputils.Intervall != 0 {
+		return abaputils.Intervall
+	}
+	return 10 * time.Second
+}
+
+// GetHTTPResponse wraps the SendRequest function of piperhttp
 func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
 	header := make(map[string][]string)
@@ -153,6 +168,39 @@ func ConvertTime(logTimeStamp string) time.Time {
 	}
 	t := time.Unix(n, 0).UTC()
 	return t
+}
+
+// ReadAddonDescriptor parses AddonDescriptor YAML file
+func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
+
+	var addonDescriptor AddonDescriptor
+	var addonYAMLFile []byte
+	filelocation, err := filepath.Glob(FileName)
+
+	if err != nil || len(filelocation) != 1 {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v.", FileName))
+	}
+	filename, err := filepath.Abs(filelocation[0])
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v.", FileName))
+	}
+	addonYAMLFile, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v.", FileName))
+	}
+
+	var jsonBytes []byte
+	jsonBytes, err = yaml.YAMLToJSON(addonYAMLFile)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v.", FileName))
+	}
+
+	err = json.Unmarshal(jsonBytes, &addonDescriptor)
+	if err != nil {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v.", FileName))
+	}
+
+	return addonDescriptor, nil
 }
 
 /*******************************
@@ -247,6 +295,35 @@ type AbapBinding struct {
 	Env     string `json:"env"`
 }
 
+// AddonDescriptor contains fields about the addonProduct
+type AddonDescriptor struct {
+	AddonProduct    string      `json:"addonProduct"`
+	AddonVersion    string      `json:"addonVersion"`
+	AddonUniqueID   string      `json:"addonUniqueID"`
+	CustomerID      interface{} `json:"customerID"`
+	AddonSpsLevel   string
+	AddonPatchLevel string
+	TargetVectorID  string
+	Repositories    []Repository `json:"repositories"`
+}
+
+// Repository contains fields for the repository/component version
+type Repository struct {
+	Name                string `json:"name"`
+	Tag                 string `json:"tag"`
+	Branch              string `json:"branch"`
+	Version             string `json:"version"`
+	VersionOtherFormat  string
+	PackageName         string
+	PackageType         string
+	SpsLevel            string
+	PatchLevel          string
+	PredecessorCommitID string
+	Status              string
+	Namespace           string
+	SarXMLFilePath      string
+}
+
 /********************************
  *	Testing with a client mock  *
  ********************************/
@@ -292,6 +369,11 @@ type AUtilsMock struct {
 // GetAbapCommunicationArrangementInfo mock
 func (autils *AUtilsMock) GetAbapCommunicationArrangementInfo(options AbapEnvironmentOptions, oDataURL string) (ConnectionDetailsHTTP, error) {
 	return autils.ReturnedConnectionDetailsHTTP, autils.ReturnedError
+}
+
+// GetPollIntervall mock
+func (autils *AUtilsMock) GetPollIntervall() time.Duration {
+	return 1 * time.Microsecond
 }
 
 // Cleanup to reset AUtilsMock
