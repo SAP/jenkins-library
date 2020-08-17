@@ -1,8 +1,10 @@
 metadata:
   name: detectExecuteScan
-  description: Executes Synopsis Detect scan
-  longDescription: |-
-    This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.
+  description: Executes Synopsys Detect scan
+  longDescription: |
+    This step executes [Synopsys Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.
+    Synopsys Detect command line utlity can be used to run various scans including BlackDuck and Polaris scans. This step allows users to run BlackDuck scans by default.
+    Please configure your BlackDuck server Url using the serverUrl parameter and the API token of your user using the apiToken parameter for this step.
 spec:
   inputs:
     resources:
@@ -86,7 +88,6 @@ spec:
         - --blackduck.signature.scanner.memory=4096
         - --blackduck.timeout=6000
         - --blackduck.trust.cert=true
-        - --detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR
         - --detect.report.timeout=4800
         - --logging.level.com.synopsys.integration=DEBUG
         scope:
@@ -94,11 +95,43 @@ spec:
         - STAGES
         - STEPS
       - name: serverUrl
-        description: Server url to the Synopsis Detect (formerly BlackDuck) Server.
+        description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
           - name: detect/serverUrl
         type: string
+        mandatory: true
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: groups
+        description: Users groups to be assigned for the Project
+        aliases:
+          - name: detect/groups
+        type: '[]string'
         mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: failOn
+        description: Mark the current build as fail based on the policy categories applied.
+        longDescription: |
+          A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
+          The list of accepted valed can be found at https://blackducksoftware.github.io/synopsys-detect/latest/properties/configuration/project/#fail-on-policy-violation-severities
+        aliases:
+          - name: detect/failOn
+        type: '[]string'
+        mandatory: false
+        default:
+        - BLOCKER
+        possibleValues:
+        - ALL
+        - BLOCKER
+        - CRITICAL
+        - MAJOR
+        - MINOR
+        - NONE
         scope:
         - PARAMETERS
         - STAGES
@@ -139,6 +172,39 @@ spec:
           - major-minor
           - semantic
           - full
+      - name: projectSettingsFile
+        type: string
+        description: "Path or url to the mvn settings file that should be used as project settings file."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: "Path or url to the mvn settings file that should be used as global settings file"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: Path to the location of the local repository that should be used.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: false
+        aliases:
+          - name: maven/m2Path
   containers:
     - name: openjdk
       image: openjdk:11
