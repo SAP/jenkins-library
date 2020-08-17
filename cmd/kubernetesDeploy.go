@@ -108,7 +108,6 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
-		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
 
 		var dockerRegistrySecretData struct {
 			Kind string `json:"kind"`
@@ -122,6 +121,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		}
 		// make sure that secret is hidden in log output
 		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
+
+		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
 
 		// pass secret in helm default template way and in Piper backward compatible way
 		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)

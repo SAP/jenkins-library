@@ -113,6 +113,17 @@ spec:
         secret: true
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
+        longDescription: |-
+          Name of the container registry secret used for pulling containers from the registry.
+
+          **For `deployTool: helm/helm3`:**<br />
+          If `containerRegistryUser` and `containerRegistryPassword` are provided a secret is created on the fly and the information is passed to the helm template.<br />
+          Note: the secret will not be persisted in the Kubernetes cluster.
+
+          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
+
+          **For `deployTool: kubectl`:**<br />
+          If `createDockerRegistrySecret: true` and `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster unless a secret with the name already exists.
         type: string
         scope:
           - PARAMETERS
@@ -121,7 +132,7 @@ spec:
         default: regsecret
       - name: createDockerRegistrySecret
         type: bool
-        description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.
+        description: "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation."
         scope:
           - PARAMETERS
           - STAGES
@@ -175,6 +186,20 @@ spec:
       - name: ingressHosts
         type: '[]string'
         description: List of ingress hosts to be exposed via helm deployment.
+        longDescription: |-
+          List of ingress hosts to be exposed via helm deployment.<br />
+          Host names are passed to helm template via ingress configuration
+
+          Assumption is the default format of the helm template. Example from `values.yaml`:
+
+          ```
+          ingress:
+            enabled: true
+            annotations: {}
+            hosts:
+              - host: chart-example.local
+                paths: []
+          ```
         mandatory: false
         scope:
           - PARAMETERS
