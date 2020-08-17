@@ -8,47 +8,69 @@ class TemporaryCredentialsUtils implements Serializable {
         this.script = script
     }
 
-    void handleTemporaryCredentials(List credentialItems, String credentialsDirectory, Closure body) {
+    void handleTemporaryCredentials(List credentialItems, List credentialsDirectories, Closure body) {
         final String credentialsFileName = 'credentials.json'
 
-        if (!credentialsDirectory) {
-            script.error("This should not happen: Directory for credentials file not specified.")
+        if (!credentialsDirectories) {
+            script.error("This should not happen: Directories for credentials files not specified.")
         }
 
         final boolean useCredentials = credentialItems
         try {
             if (useCredentials) {
-                writeCredentials(credentialItems, credentialsDirectory, credentialsFileName)
+                writeCredentials(credentialItems, credentialsDirectories, credentialsFileName)
             }
             body()
         }
         finally {
             if (useCredentials) {
-                deleteCredentials(credentialsDirectory, credentialsFileName)
+                deleteCredentials(credentialsDirectories, credentialsFileName)
             }
         }
     }
 
-    private void writeCredentials(List credentialItems, String credentialsDirectory, String credentialsFileName) {
+    private void writeCredentials(List credentialItems, List credentialsDirectories, String credentialsFileName) {
         if (!credentialItems) {
             script.echo "Not writing any credentials."
             return
         }
 
-        assertSystemsFileExists(credentialsDirectory)
+        Boolean systemsFileFound = false
+        for (int i = 0; i < credentialsDirectories.size(); i++) {
+            if (!credentialsDirectories[i]) {
+                continue
+            }
+            if (!credentialsDirectories[i].endsWith("/")) {
+                credentialsDirectories[i] += '/'
+            }
+            if (script.fileExists("${credentialsDirectories[i]}systems.yml") || script.fileExists("${credentialsDirectories[i]}systems.yaml") || script.fileExists("${credentialsDirectories[i]}systems.json")) {
+                String credentialJson = returnCredentialsAsJSON(credentialItems)
 
-        String credentialJson = returnCredentialsAsJSON(credentialItems)
+                script.echo "Writing credentials file with ${credentialItems.size()} items to ${credentialsDirectories[i]}."
+                script.writeFile file: credentialsDirectories[i] + credentialsFileName, text: credentialJson
 
-        script.echo "Writing credentials file with ${credentialItems.size()} items."
-        script.dir(credentialsDirectory) {
-            script.writeFile file: credentialsFileName, text: credentialJson
+                systemsFileFound = true
+            }
+        }
+        if (!systemsFileFound) {
+            script.error("None of the directories ${credentialsDirectories} contains any of the files systems.yml, systems.yaml or systems.json. " +
+                "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
+                "Please add the file as explained in the SAP Cloud SDK documentation.")
         }
     }
 
-    private void deleteCredentials(String credentialsDirectory, String credentialsFileName) {
-        script.echo "Deleting credentials file."
-        script.dir(credentialsDirectory) {
-            script.sh "rm -f ${credentialsFileName}"
+    private void deleteCredentials(List credentialsDirectories, String credentialsFileName) {
+        for (int i = 0; i < credentialsDirectories.size(); i++) {
+            if (!credentialsDirectories[i]) {
+                continue
+            }
+            if(!credentialsDirectories[i].endsWith('/'))
+                credentialsDirectories[i] += '/'
+
+            if (script.fileExists(credentialsDirectories[i] + credentialsFileName)) {
+                script.echo "Deleting credentials file in ${credentialsDirectories[i]}."
+                script.sh "rm -f ${credentialsDirectories[i] + credentialsFileName}"
+            }
         }
     }
 
@@ -67,15 +89,5 @@ class TemporaryCredentialsUtils implements Serializable {
             }
         }
         return new JsonUtils().groovyObjectToJsonString(credentialCollection)
-    }
-
-    private assertSystemsFileExists(String credentialsDirectory){
-        script.dir(credentialsDirectory) {
-            if (!script.fileExists("systems.yml") && !script.fileExists("systems.yaml") && !script.fileExists("systems.json")) {
-                script.error("The directory ${credentialsDirectory} does not contain any of the files systems.yml, systems.yaml or systems.json. " +
-                    "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
-                    "Please add the file as explained in the SAP Cloud SDK documentation.")
-            }
-        }
     }
 }
