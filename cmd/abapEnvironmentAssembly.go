@@ -41,7 +41,7 @@ func abapEnvironmentAssembly(config abapEnvironmentAssemblyOptions, telemetryDat
 // TODO Move
 
 //TODO check if failed => damit pipeline auf failed gesetzt werden kann
-func polling(builds []buildWithRepo, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
 	for {
@@ -65,13 +65,13 @@ func polling(builds []buildWithRepo, maxRuntimeInMinutes time.Duration, pollInte
 	}
 }
 
-type buildWithRepo struct {
+type buildWithRepository struct {
 	build build
 	repo  abaputils.Repository
 }
 
-// TODO move und rename
-func (b *buildWithRepo) start() error {
+// TODO move
+func (b *buildWithRepository) start() error {
 	valuesInput := values{
 		Values: []value{
 			{
@@ -112,13 +112,13 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 	}
 	var repos []abaputils.Repository
 	json.Unmarshal([]byte(config.Repositories), &repos)
-	var builds []buildWithRepo
+	var builds []buildWithRepository
+	// starting
 	for _, repo := range repos {
 		assemblyBuild := build{
 			connector: *conn,
 		}
-		// TODO Err?
-		buildRepo := buildWithRepo{
+		buildRepo := buildWithRepository{
 			build: assemblyBuild,
 			repo:  repo,
 		}
@@ -128,9 +128,9 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 		}
 		builds = append(builds, buildRepo)
 	}
-
+	// polling
 	polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
-
+	// checking if something failed
 	var buildFailed bool = false
 	for _, bR := range builds {
 		b := bR.build
@@ -144,19 +144,17 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 		return errors.New("At least the assembly of one package failed")
 	}
 
-	// TODO das muss ich noch einbauen
+	// Download SAR_XML
 	var reposBackToCPE []abaputils.Repository
 	resultName := "SAR_XML"
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 	for i, b := range builds {
 		resultSARXML, err := b.build.getResult(resultName)
-		// TODO error?
 		if err != nil {
 			return err
 		}
 		downloadPath := filepath.Join(envPath, path.Base(resultName))
 		err = resultSARXML.download(downloadPath)
-		// TODO error?
 		if err != nil {
 			return err
 		}
@@ -311,20 +309,6 @@ func (b *build) start(phase string, inputValues values) error {
 	return nil
 }
 
-// TODO Delete
-// func (b *build) startPollLog(phase string, inputValues values, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-// 	if err := b.start(phase, inputValues); err != nil {
-// 		return err
-// 	}
-// 	if err := b.poll(maxRuntimeInMinutes, pollIntervalsInSeconds); err != nil {
-// 		return err
-// 	}
-// 	if err := b.printLogs(); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func (b *build) get() error {
 	appendum := "/builds('" + b.BuildID + "')"
 	body, err := b.connector.get(appendum)
@@ -448,24 +432,6 @@ func (b *build) getResult(name string) (result, error) {
 		return returnResult, errors.New("More than one result with the name " + name + " was found")
 	}
 }
-
-// TODO delete
-// func (b *build) poll(maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-// 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-// 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
-// 	for {
-// 		select {
-// 		case <-timeout:
-// 			return errors.New("Timed out")
-// 		case <-ticker:
-// 			b.get()
-// 			ok, err := b.IsFinished()
-// 			if ok {
-// 				return err
-// 			}
-// 		}
-// 	}
-// }
 
 func (b *build) IsFinished() bool {
 	if b.RunState == finished || b.RunState == failed {
