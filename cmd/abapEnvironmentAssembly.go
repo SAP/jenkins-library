@@ -96,7 +96,7 @@ func runAbapEnvironmentAssembly(config *abapEnvironmentAssemblyOptions, telemetr
 			return err
 		}
 		builds[i].repo.SarXMLFilePath = downloadPath
-		reposBackToCPE = append(reposBackToCPE, b.repo)
+		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 	}
 	backToCPE, _ := json.Marshal(reposBackToCPE)
 	cpe.abap.repositories = string(backToCPE)
