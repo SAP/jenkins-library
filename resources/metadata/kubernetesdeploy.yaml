@@ -119,7 +119,6 @@ spec:
           - STAGES
           - STEPS
         default: regsecret
-        secret: true
       - name: createDockerRegistrySecret
         type: bool
         description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.

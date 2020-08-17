@@ -16,12 +16,21 @@ import (
 func TestRunKubernetesDeploy(t *testing.T) {
 
 	t.Run("test helm", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("failed to get temporary directory")
+		}
+		err = ioutil.WriteFile(filepath.Join(dir, "values.yaml"), []byte("ingress:\n  hosts:\n    - host: <tbd>"), 0644)
+		if err != nil {
+			t.Fatal("failed to write values.yaml")
+		}
+		defer os.RemoveAll(dir) // clean up
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:      "https://my.registry:55555",
 			ContainerRegistryUser:     "registryUser",
 			ContainerRegistryPassword: "********",
 			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
+			ChartPath:                 dir,
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm",
 			HelmDeployWaitSeconds:     400,
@@ -54,13 +63,13 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
-			"path/to/chart",
+			dir,
 			"--install",
 			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0].host=ingress.host1,ingress.hosts[1].host=ingress.host2",
 			"--wait",
 			"--timeout",
 			"400",
@@ -72,12 +81,21 @@ func TestRunKubernetesDeploy(t *testing.T) {
 	})
 
 	t.Run("test helm v3", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("failed to get temporary directory")
+		}
+		err = ioutil.WriteFile(filepath.Join(dir, "values.yaml"), []byte("ingress:\n  hosts:\n    - host: <tbd>"), 0644)
+		if err != nil {
+			t.Fatal("failed to write values.yaml")
+		}
+		defer os.RemoveAll(dir) // clean up
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:      "https://my.registry:55555",
 			ContainerRegistryUser:     "registryUser",
 			ContainerRegistryPassword: "********",
 			ContainerRegistrySecret:   "testSecret",
-			ChartPath:                 "path/to/chart",
+			ChartPath:                 dir,
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm3",
 			HelmDeployWaitSeconds:     400,
@@ -107,13 +125,13 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
-			"path/to/chart",
+			dir,
 			"--install",
 			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0].host=ingress.host1,ingress.hosts[1].host=ingress.host2",
 			"--atomic",
 			"--timeout",
 			"400s",
@@ -132,7 +150,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DeploymentName:          "deploymentName",
 			DeployTool:              "helm3",
 			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{"ingress.host1", "ingress.host2"},
+			IngressHosts:            []string{},
 			Image:                   "path/to/Image:latest",
 			AdditionalParameters:    []string{"--testParam", "testValue"},
 			KubeContext:             "testCluster",
@@ -154,7 +172,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret",
 			"--atomic",
 			"--timeout",
 			"400s",
@@ -324,6 +342,31 @@ spec:
 			opts.AppTemplate,
 		}, e.Calls[0].Params, "kubectl parameters incorrect")
 	})
+}
+
+func TestIngressHosts(t *testing.T) {
+
+	oldIngressValues := map[string]interface{}{"ingress": map[string]interface{}{"hosts": []string{"tbd"}}}
+	newIngressValues := map[string]interface{}{"ingress": map[string]interface{}{"hosts": []map[string]string{{"host": "tbd"}}}}
+
+	tt := []struct {
+		description        string
+		ingressHostsConfig []string
+		helmValues         map[string]interface{}
+		expected           string
+	}{
+		{description: "no helm values", ingressHostsConfig: []string{}, helmValues: nil, expected: ""},
+		{description: "no helm ingress", ingressHostsConfig: []string{"ingress1"}, helmValues: map[string]interface{}{}, expected: ""},
+		{description: "no ingress defined - backward compatibility", ingressHostsConfig: []string{}, helmValues: oldIngressValues, expected: ""},
+		{description: "one ingress - backward compatibility", ingressHostsConfig: []string{"ingress1"}, helmValues: oldIngressValues, expected: ",ingress.hosts[0]=ingress1"},
+		{description: "multiple ingress - backward compatibility", ingressHostsConfig: []string{"ingress1", "ingress2"}, helmValues: oldIngressValues, expected: ",ingress.hosts[0]=ingress1,ingress.hosts[1]=ingress2"},
+		{description: "no ingress defined - helm default", ingressHostsConfig: []string{}, helmValues: newIngressValues, expected: ""},
+		{description: "one ingress - helm default", ingressHostsConfig: []string{"ingress1"}, helmValues: newIngressValues, expected: ",ingress.hosts[0].host=ingress1"},
+		{description: "multiple ingress - helm default", ingressHostsConfig: []string{"ingress1", "ingress2"}, helmValues: newIngressValues, expected: ",ingress.hosts[0].host=ingress1,ingress.hosts[1].host=ingress2"},
+	}
+	for _, test := range tt {
+		assert.Equalf(t, test.expected, ingressHosts(test.ingressHostsConfig, test.helmValues), test.description)
+	}
 }
 
 func TestSplitRegistryURL(t *testing.T) {

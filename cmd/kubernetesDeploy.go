@@ -6,13 +6,17 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
@@ -71,10 +75,19 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		}
 	}
 
+	// read values.yaml in order to better influence parameter setting behavior
+	var helmValues map[string]interface{}
+	if err := readHelmValues(filepath.Join(config.ChartPath, "values.yaml"), &helmValues); err != nil {
+		// error should not break the step since this only influences the behavior of setting values via helm
+		log.Entry().Infof("failed to read values.yaml, error: %v", err)
+	}
+
 	var secretsData string
 	if len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No container registry credentials provided or credentials incomplete: skipping secret creation")
-		secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+		if len(config.ContainerRegistrySecret) > 0 {
+			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
@@ -114,10 +127,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
 	}
 
-	ingressHosts := ""
-	for i, h := range config.IngressHosts {
-		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
-	}
+	ingressHostSettings := ingressHosts(config.IngressHosts, helmValues)
 
 	upgradeParams := []string{
 		"upgrade",
@@ -127,7 +137,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		"--force",
 		"--namespace", config.Namespace,
 		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
+		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHostSettings),
 	}
 
 	if config.DeployTool == "helm" {
@@ -230,6 +240,48 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
+}
+
+func readHelmValues(filePath string, helmValues *map[string]interface{}) error {
+	valuesContent, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to read helm values file")
+	}
+
+	err = yaml.Unmarshal(valuesContent, &helmValues)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse helm values file")
+	}
+	return nil
+}
+
+func ingressHosts(ingressHostsConfig []string, helmValues map[string]interface{}) string {
+	ingressHosts := ""
+	if helmValues == nil {
+		return ingressHosts
+	}
+	if helmValues["ingress"] != nil {
+		ingressSettings, ok := helmValues["ingress"].(map[string]interface{})
+		if ok {
+			switch ingressSettings["hosts"].(type) {
+			case []string:
+				// backward compatibility when hosts only contains list of ingress names
+				for i, h := range ingressHostsConfig {
+					ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
+				}
+			default:
+				// standard behavior (= based on default helm template)
+				for i, h := range ingressHostsConfig {
+					ingressHosts += fmt.Sprintf(",ingress.hosts[%v].host=%v", i, h)
+				}
+			}
+		}
+	} else {
+		if len(ingressHostsConfig) > 0 {
+			log.Entry().Info("no ingress setting in values.yaml: ingressHosts configuration not passed to helm")
+		}
+	}
+	return ingressHosts
 }
 
 func splitRegistryURL(registryURL string) (protocol, registry string, err error) {

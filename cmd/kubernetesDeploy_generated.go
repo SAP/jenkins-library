@@ -80,7 +80,6 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			}
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
-			log.RegisterSecret(stepConfig.ContainerRegistrySecret)
 			log.RegisterSecret(stepConfig.KubeToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
