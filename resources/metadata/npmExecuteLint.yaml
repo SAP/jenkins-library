@@ -29,18 +29,6 @@ spec:
         mandatory: false
         aliases:
           - name: npm/defaultNpmRegistry
-      - name: sapNpmRegistry
-        type: string
-        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
-        scope:
-          - PARAMETERS
-          - GENERAL
-          - STAGES
-          - STEPS
-        mandatory: false
-        default: https://npm.sap.com
-        aliases:
-          - name: npm/sapNpmRegistry
   containers:
     - name: node
       image: node:12-buster-slim

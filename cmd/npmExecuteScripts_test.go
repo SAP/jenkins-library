@@ -175,7 +175,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Test integration with npm pkg", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build"}}
 
-		options := npm.ExecutorOptions{SapNpmRegistry: config.SapNpmRegistry, DefaultNpmRegistry: config.DefaultNpmRegistry}
+		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
@@ -186,11 +186,10 @@ func TestNpmExecuteScripts(t *testing.T) {
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 6, len(utils.execRunner.Calls)) {
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "@sap:registry"}}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[5])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
 			}
 		}
 	})

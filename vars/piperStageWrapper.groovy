@@ -32,6 +32,12 @@ void call(Map parameters = [:], body) {
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
         List environment = []
+        if (stageName && stageName != env.STAGE_NAME) {
+            // Avoid two sources of truth with regards to stageName.
+            // env.STAGE_NAME is filled from stage('Display name') {, it only serves the purpose of
+            // easily getting to the stage name from steps.
+            environment.add("STAGE_NAME=${stageName}")
+        }
         if (config.sidecarImage) {
             echo "sidecarImage configured for stage '${stageName}': '${config.sidecarImage}'"
             environment.add("SIDECAR_IMAGE=${config.sidecarImage}")

@@ -150,7 +150,8 @@ public class CommonStepsTest extends BasePiperTest{
         'containerSaveImage', //implementing new golang pattern without fields
         'cloudFoundryCreateService',
         'detectExecuteScan', //implementing new golang pattern without fields
-        'kanikoExecute' //implementing new golang pattern without fields
+        'kanikoExecute', //implementing new golang pattern without fields
+        'abapEnvironmentCheckoutBranch' //implementing new golang pattern without fields
     ]
 
     @Test
