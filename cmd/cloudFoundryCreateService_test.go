@@ -115,31 +115,10 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		assert.EqualError(t, error, "Error while logging in: Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
 	})
 
-	t.Run("Create service: variable substitution", func(t *testing.T) {
-		defer cfMockCleanup(m)
-		var manifestVariables = []string{"name1=Test1", "name2=Test2"}
-		config := cloudFoundryCreateServiceOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			Username:          "testUser",
-			Password:          "testPassword",
-			ServiceManifest:   "testManifest",
-			ManifestVariables: manifestVariables,
-		}
-		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
-		if assert.NoError(t, error) {
-			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "testManifest", "--var", "name1=Test1", "--var", "name2=Test2"}},
-				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
-				m.Calls)
-		}
-	})
-
-	t.Run("Create service: variable substitution with manifest file", func(t *testing.T) {
+	t.Run("Create service: variable substitution in-line", func(t *testing.T) {
 		defer cfMockCleanup(m)
 
-		dir, err := ioutil.TempDir("", "test get result ATC run")
+		dir, err := ioutil.TempDir("", "test variable substitution")
 		if err != nil {
 			t.Fatal("Failed to create temporary directory")
 		}
@@ -150,26 +129,97 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			_ = os.Chdir(oldCWD)
 			_ = os.RemoveAll(dir)
 		}()
-		bodyString := `name: test1
-		name2: test2`
-		body := []byte(bodyString)
-		err = ioutil.WriteFile("file.test", body, 0644)
-		err = ioutil.WriteFile("file2.test", body, 0644)
 
-		var manifestVariablesFiles = []string{"file.test", "file2.test"}
+		manifestFileString := `  
+		---
+		create-services:
+		- name:   ((name))
+		  broker: "xsuaa"
+		  plan:   "application"
+		
+		- name:   ((name2))
+		  broker: "xsuaa"
+		  plan:   "application"
+		
+		- name:   "test3"
+		  broker: "xsuaa"
+		  plan:   "application"`
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+
+		var manifestVariables = []string{"name1=Test1", "name2=Test2"}
+
+		config := cloudFoundryCreateServiceOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			Username:          "testUser",
+			Password:          "testPassword",
+			ServiceManifest:   "manifestTest.yml",
+			ManifestVariables: manifestVariables,
+		}
+		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
+		if assert.NoError(t, error) {
+			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
+				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--var", "name1=Test1", "--var", "name2=Test2"}},
+				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
+				m.Calls)
+		}
+	})
+
+	t.Run("Create service: variable substitution with variable substitution manifest file", func(t *testing.T) {
+		defer cfMockCleanup(m)
+
+		dir, err := ioutil.TempDir("", "test variable substitution")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+		varsFileString := `name: test1
+		name2: test2`
+
+		manifestFileString := `  
+		---
+		create-services:
+		- name:   ((name))
+		  broker: "xsuaa"
+		  plan:   "application"
+		
+		- name:   ((name2))
+		  broker: "xsuaa"
+		  plan:   "application"
+		
+		- name:   "test3"
+		  broker: "xsuaa"
+		  plan:   "application"`
+
+		varsFileStringBody := []byte(varsFileString)
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("varsTest.yml", varsFileStringBody, 0644)
+		err = ioutil.WriteFile("varsTest2.yml", varsFileStringBody, 0644)
+		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
+
+		var manifestVariablesFiles = []string{"varsTest.yml", "varsTest2.yml"}
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:          "https://api.endpoint.com",
 			CfOrg:                  "testOrg",
 			CfSpace:                "testSpace",
 			Username:               "testUser",
 			Password:               "testPassword",
-			ServiceManifest:        "testManifest",
+			ServiceManifest:        "manifestTest.yml",
 			ManifestVariablesFiles: manifestVariablesFiles,
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "testManifest", "--vars-file", "file.test", "--vars-file", "file2.test"}},
+				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--vars-file", "varsTest.yml", "--vars-file", "varsTest2.yml"}},
 				mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
