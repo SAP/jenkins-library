@@ -176,7 +176,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Map CONFIG_KEY_COMPATIBILITY = [
     productName                        : 'whitesourceProductName',
     productToken                       : 'whitesourceProductToken',
+    projectName                        : 'whitesourceProjectName',
     projectNames                       : 'whitesourceProjectNames',
+    productVersion                     : 'whitesourceProductVersion',
     userTokenCredentialsId             : 'whitesourceUserTokenCredentialsId',
     serviceUrl                         : 'whitesourceServiceUrl',
     agentDownloadUrl                   : 'fileAgentDownloadUrl',
@@ -186,6 +188,7 @@ import static com.sap.piper.Prerequisites.checkScript
         orgToken                                : 'orgToken',
         productName                             : 'productName',
         productToken                            : 'productToken',
+        projectName                             : 'projectName',
         projectNames                            : 'projectNames',
         productVersion                          : 'productVersion',
         serviceUrl                              : 'serviceUrl',
