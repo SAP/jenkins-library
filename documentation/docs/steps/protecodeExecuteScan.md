@@ -7,24 +7,8 @@
 1. Create a Username / Password credential with the Protecode user in your Jenkins credential store
 1. Lookup your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
 
-## Example
-
-Usage of pipeline step:
-
-Workspace based:
-```groovy
-executeProtecodeScan script: this, filePath: 'dockerImage.tar'
-```
-
-Fetch URL:
-```groovy
-executeProtecodeScan script: this, fetchUrl: 'https://nexusrel.wdf.sap.corp:8443/nexus/service/local/repositories/build.releases.3rd-party.proxy.2018.04.13/content/org/alfresco/surf/spring-cmis-framework/6.11/spring-cmis-framework-6.11.jar'
-```
-
-Docker image:
-```groovy
-executeProtecodeScan script: this, dockerRegistryUrl: 'https://docker.wdf.sap.corp:50000', dockerImage: 'piper/yeoman:1.0-20180321110554'
-```
+If the image is on a protected registry you can provide a Docker `config.json` file containing the credential information for the registry.
+You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
 
 ## ${docGenParameters}
 
@@ -32,14 +16,10 @@ executeProtecodeScan script: this, dockerRegistryUrl: 'https://docker.wdf.sap.co
 
 * The Protecode scan step is able to send a file addressed via parameter `filePath` to the backend for scanning it for known vulnerabilities.
 * Alternatively an HTTP URL can be specified via `fetchUrl`. Protecode will then download the artifact from there and scan it.
-* To support docker image scanning please provide `dockerImage` with a docker like URL poiting to the image tag within the docker registry being used. Our step uses [skopeo](https://github.com/containers/skopeo) to download the image and sends it to Protecode for scanning.
+* To support docker image scanning please provide `scanImage` with a docker like URL poiting to the image tag within the docker registry being used.
 * To receive the result it polls until the job completes.
 * Once the job has completed a PDF report is pulled from the backend and archived in the build
-* Finally the scan result is being analysed for critical findings with a CVSS v3 score >= 7.0 and if such findings are detected the build is failed based on the configuration setting `protecodeFailOnSevereVulnerabilities`.
-* During the analysis all CVEs which are either triaged in the Protecode backend or which are excluded via configuration parameter `protecodeExcludeCVEs` are ignored and will not provoke the build to fail.
-
-### FAQs
-
-* In case of `dockerImage` and the step still tries to pull and save it via docker daemon, please make sure your JaaS environment has the variable `ON_K8S` declared and set to `true`.
+* Finally the scan result is being analysed for critical findings with a CVSS v3 score >= 7.0 and if such findings are detected the build is failed based on the configuration setting `failOnSevereVulnerabilities`.
+* During the analysis all CVEs which are triaged are ignored and will not provoke the build to fail.
 
 ## ${docGenConfiguration}
