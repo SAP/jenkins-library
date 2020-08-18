@@ -31,6 +31,56 @@ func TestAddRootFlags(t *testing.T) {
 
 }
 
+func TestAdoptStageNameFromParametersJSON(t *testing.T) {
+	tt := []struct {
+		name          string
+		stageNameArg  string
+		stageNameEnv  string
+		stageNameJSON string
+	}{
+		{name: "no stage name", stageNameArg: "", stageNameEnv: "", stageNameJSON: ""},
+		{name: "stage name arg+env", stageNameArg: "arg", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name env", stageNameArg: "", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name json", stageNameArg: "", stageNameEnv: "", stageNameJSON: "json"},
+		{name: "stage name arg", stageNameArg: "arg", stageNameEnv: "", stageNameJSON: "json"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			// init
+			GeneralConfig.StageName = test.stageNameArg
+
+			resetValue := os.Getenv(stageNameEnvKey)
+			defer func() { _ = os.Setenv(stageNameEnvKey, resetValue) }()
+
+			err := os.Setenv(stageNameEnvKey, test.stageNameEnv)
+			if err != nil {
+				t.Fatalf("could not set env var %s", stageNameEnvKey)
+			}
+
+			if test.stageNameJSON != "" {
+				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageNameJSON)
+			} else {
+				GeneralConfig.ParametersJSON = "{}"
+			}
+			// test
+			initStageName(false)
+
+			// assert
+			// Order of if-clauses reflects wanted precedence.
+			if test.stageNameArg != "" {
+				assert.Equal(t, test.stageNameArg, GeneralConfig.StageName)
+			} else if test.stageNameJSON != "" {
+				assert.Equal(t, test.stageNameJSON, GeneralConfig.StageName)
+			} else if test.stageNameEnv != "" {
+				assert.Equal(t, test.stageNameEnv, GeneralConfig.StageName)
+			} else {
+				assert.Equal(t, "", GeneralConfig.StageName)
+			}
+		})
+	}
+}
+
 func TestPrepareConfig(t *testing.T) {
 	defaultsBak := GeneralConfig.DefaultConfig
 	GeneralConfig.DefaultConfig = []string{"testDefaults.yml"}
@@ -73,7 +123,7 @@ func TestPrepareConfig(t *testing.T) {
 			}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.NoError(t, err, "no error expected but error occured")
+			assert.NoError(t, err, "no error expected but error occurred")
 
 			//assert config
 			assert.Equal(t, "testValue", testOptions.TestParam, "wrong value retrieved from config")
@@ -93,7 +143,7 @@ func TestPrepareConfig(t *testing.T) {
 			metadata := config.StepData{}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.Error(t, err, "error expected but none occured")
+			assert.Error(t, err, "error expected but none occurred")
 		})
 	})
 }
