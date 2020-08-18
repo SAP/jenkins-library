@@ -14,7 +14,7 @@ type testExecuteUtils interface {
 	FileExists(filename string) (bool, error)
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The {{.StepName}}Utils interface should be descriptive of your runtime dependencies,
+	// The testExecuteUtils interface should be descriptive of your runtime dependencies,
 	// i.e. include everything you need to be able to mock in tests.
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 }
@@ -63,10 +63,10 @@ func runTestExecute(config *testExecuteOptions, telemetryData *telemetry.CustomD
 	// Example of calling methods from external dependencies directly on utils:
 	exists, err := utils.FileExists("file.txt")
 	if err != nil {
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
 		// It is good practice to set an error category.
 		// Most likely you want to do this at the place where enough context is known.
 		log.SetErrorCategory(log.ErrorConfiguration)
+		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
 	if !exists {
