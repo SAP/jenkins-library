@@ -304,7 +304,7 @@ repositories:
 
 	t.Run("Test: file does not exist", func(t *testing.T) {
 		_, err := ReadAddonDescriptor("filename.yaml")
-		assert.EqualError(t, err, fmt.Sprintf("Could not find %v.", "filename.yaml"))
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", "filename.yaml"))
 	})
 }
 

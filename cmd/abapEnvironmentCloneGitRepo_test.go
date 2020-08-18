@@ -99,7 +99,6 @@ repositories:
 			Password:          "testPassword",
 			RepositoryName:    "testRepo1",
 			BranchName:        "testBranch1",
-			Repositories:      "filename.yaml",
 		}
 
 		client := &abaputils.ClientMock{
@@ -112,7 +111,10 @@ repositories:
 		}
 
 		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
-		assert.Error(t, err, "Expected error")
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+		}
+
 	})
 }
 
@@ -222,5 +224,42 @@ func TestCloneStepErrorMessages(t *testing.T) {
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
+	})
+
+	t.Run("Missing file error", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCloneGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			RepositoryName:    "testRepo1",
+			BranchName:        "testBranch1",
+			Repositories:      "filename.yaml",
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : {} }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "Could not find filename.yaml", err.Error(), "Expected different error message")
+		}
+
 	})
 }

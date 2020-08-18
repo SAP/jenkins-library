@@ -63,7 +63,10 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		Password:           connectionDetails.Password,
 	})
 
-	repositories := getRepositories(config)
+	repositories, errGetRepos := getRepositories(config)
+	if errGetRepos != nil {
+		return errGetRepos
+	}
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
@@ -149,18 +152,19 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 	return uriConnectionDetails, nil
 }
 
-func getRepositories(config *abapEnvironmentCloneGitRepoOptions) []abaputils.Repository {
+func getRepositories(config *abapEnvironmentCloneGitRepoOptions) ([]abaputils.Repository, error) {
 	var repositories = make([]abaputils.Repository, 0)
 	if config.Repositories != "" {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
-		if err == nil {
-			repositories = descriptor.Repositories
+		if err != nil {
+			return nil, err
 		}
+		repositories = descriptor.Repositories
 	}
 	if config.RepositoryName != "" && config.BranchName != "" {
 		repositories = append(repositories, abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName})
 	}
-	return repositories
+	return repositories, nil
 }
 
 func convertConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {

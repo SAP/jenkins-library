@@ -178,26 +178,26 @@ func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 	filelocation, err := filepath.Glob(FileName)
 
 	if err != nil || len(filelocation) != 1 {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v", FileName))
 	}
 	filename, err := filepath.Abs(filelocation[0])
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v", FileName))
 	}
 	addonYAMLFile, err = ioutil.ReadFile(filename)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v", FileName))
 	}
 
 	var jsonBytes []byte
 	jsonBytes, err = yaml.YAMLToJSON(addonYAMLFile)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v", FileName))
 	}
 
 	err = json.Unmarshal(jsonBytes, &addonDescriptor)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
 
 	return addonDescriptor, nil
