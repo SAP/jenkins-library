@@ -134,16 +134,16 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		---
 		create-services:
 		- name:   ((name))
-		  broker: "xsuaa"
-		  plan:   "application"
+		  broker: "testBroker"
+		  plan:   "testPlan"
 		
 		- name:   ((name2))
-		  broker: "xsuaa"
-		  plan:   "application"
+		  broker: "testBroker"
+		  plan:   "testPlan"
 		
 		- name:   "test3"
-		  broker: "xsuaa"
-		  plan:   "application"`
+		  broker: "testBroker"
+		  plan:   "testPlan"`
 
 		manifestFileStringBody := []byte(manifestFileString)
 		err = ioutil.WriteFile("manifestTest.yml", manifestFileStringBody, 0644)
@@ -189,16 +189,16 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		---
 		create-services:
 		- name:   ((name))
-		  broker: "xsuaa"
-		  plan:   "application"
+		  broker: "testBroker"
+		  plan:   "testPlan"
 		
 		- name:   ((name2))
-		  broker: "xsuaa"
-		  plan:   "application"
+		  broker: "testBroker"
+		  plan:   "testPlan"
 		
 		- name:   "test3"
-		  broker: "xsuaa"
-		  plan:   "application"`
+		  broker: "testBroker"
+		  plan:   "testPlan"`
 
 		varsFileStringBody := []byte(varsFileString)
 		manifestFileStringBody := []byte(manifestFileString)
