@@ -83,7 +83,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 			return errors.Wrapf(errorPollEntity, "Clone of '%s' with branch '%s' failed on the ABAP System", repo.Name, repo.Branch)
 		}
 		if status == "E" {
-			return errors.New("Clone of " + repo.Name + " with branch " + repo.Branch + " failed on the ABAP System")
+			return errors.New("Clone of '" + repo.Name + "' with branch '" + repo.Branch + "' failed on the ABAP System")
 		}
 
 		log.Entry().Info(repo.Name + " with branch  " + repo.Branch + " was cloned successfully")
