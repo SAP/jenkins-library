@@ -74,7 +74,9 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	var secretsData string
 	if len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No container registry credentials provided or credentials incomplete: skipping secret creation")
-		secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+		if len(config.ContainerRegistrySecret) > 0 {
+			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+		}
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
@@ -95,7 +97,6 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
-		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
 
 		var dockerRegistrySecretData struct {
 			Kind string `json:"kind"`
@@ -110,10 +111,18 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		// make sure that secret is hidden in log output
 		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
 
+		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+
 		// pass secret in helm default template way and in Piper backward compatible way
 		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
 	}
 
+	// Deprecated functionality
+	// only for backward compatible handling of ingress.hosts
+	// this requires an adoption of the default ingress.yaml template
+	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
+	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
+	// Recommended way is to use a custom values file which contains the appropriate data
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {
 		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
@@ -123,12 +132,20 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		"upgrade",
 		config.DeploymentName,
 		config.ChartPath,
+	}
+
+	for _, v := range config.HelmValues {
+		upgradeParams = append(upgradeParams, "--values", v)
+	}
+
+	upgradeParams = append(
+		upgradeParams,
 		"--install",
 		"--force",
 		"--namespace", config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
-	}
+	)
 
 	if config.DeployTool == "helm" {
 		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
