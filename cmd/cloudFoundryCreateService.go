@@ -42,20 +42,18 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 		return fmt.Errorf("Error while logging in: %w", err)
 	}
 
-	if err == nil {
-		err = cloudFoundryCreateServiceRequest(config, telemetryData, c)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Service creation failed: %w", err)
-	}
-
 	defer func() {
 		logoutErr := cf.Logout()
 		if logoutErr != nil {
 			err = fmt.Errorf("Error while logging out occured: %w", logoutErr)
 		}
 	}()
+
+	err = cloudFoundryCreateServiceRequest(config, telemetryData, c)
+
+	if err != nil {
+		return fmt.Errorf("Service creation failed: %w", err)
+	}
 
 	log.Entry().Info("Service creation completed successfully")
 
@@ -78,8 +76,9 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 	if config.CfServiceTags != "" {
 		cfCreateServiceScript = append(cfCreateServiceScript, "-t", config.CfServiceTags)
 	}
-	if config.ServiceManifest != "" {
+	if config.ServiceManifest != "" && fileExists(config.ServiceManifest) {
 		var varPart []string
+
 		cfCreateServiceScript = []string{"create-service-push", "--no-push", "--service-manifest", config.ServiceManifest}
 
 		if len(config.ManifestVariablesFiles) >= 0 {
