@@ -20,6 +20,7 @@ type abapEnvironmentAssemblePackagesOptions struct {
 	CfOrg               string `json:"cfOrg,omitempty"`
 	CfSpace             string `json:"cfSpace,omitempty"`
 	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName    string `json:"cfServiceKeyName,omitempty"`
 	Host                string `json:"host,omitempty"`
 	Username            string `json:"username,omitempty"`
 	Password            string `json:"password,omitempty"`
@@ -118,6 +119,7 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
@@ -171,6 +173,14 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+					},
+					{
+						Name:        "cfServiceKeyName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 					{
 						Name:        "host",

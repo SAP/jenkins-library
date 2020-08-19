@@ -2,7 +2,7 @@ metadata:
     name: abapEnvironmentAssemblePackages
     description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
     longDescription: |
-        Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system      
+      Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system      
 spec:
   inputs:
     secrets:
@@ -57,6 +57,16 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Parameter of CloudFoundry Service Key to be created
+        scope:
+        - STEPS
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
       - name: host
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
         type: string
@@ -113,3 +123,4 @@ spec:
     - name: cf
       image: ppiper/cf-cli
       imagePullPolicy: Never
+      
