@@ -47,8 +47,6 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
 
-        script.commonPipelineEnvironment.useTechnicalStageNames = parameters.useTechnicalStageNames == true
-
         String configFile = parameters.get('configFile')
         loadConfigurationFromFile(script, configFile)
 
