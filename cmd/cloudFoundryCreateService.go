@@ -22,10 +22,7 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 
 }
 
-func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) error {
-
-	var err error
-
+func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) (err error) {
 	var c = cf.Exec
 
 	loginOptions := cloudfoundry.LoginOptions{
