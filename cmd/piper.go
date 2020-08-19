@@ -97,11 +97,6 @@ func Execute() {
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
-	rootCmd.AddCommand(AbapEnvironmentAssemblyCommand())
-	rootCmd.AddCommand(AAKaaSCheckPVCommand())
-	rootCmd.AddCommand(AAKaaSCheckCVsCommand())
-	rootCmd.AddCommand(AbapEnvironmentReadAddonDescriptorCommand())
-	// rootCmd.AddCommand(AAKaaSReserveNextPackageCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 
 	addRootFlags(rootCmd)
