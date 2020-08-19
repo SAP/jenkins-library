@@ -89,7 +89,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'docker.includes', value: /.*.tar/, force: true],
                     [name: 'ignoreSourceFiles', value: true, force: true],
                     [name: 'python.resolveGlobalPackages', value: true, force: true],
-                    [name: 'resolveAllDependencies', value: true, force: true],
+                    [name: 'resolveAllDependencies', value: true, force: false],
                     [name: 'updateType', value: 'OVERRIDE', force: true],
                 ]
             case 'dub':
