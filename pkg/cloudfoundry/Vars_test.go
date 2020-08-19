@@ -21,14 +21,14 @@ func TestVarsFiles(t *testing.T) {
 	_fileUtils = &filesMock
 
 	t.Run("All vars files found", func(t *testing.T) {
-		opts, err := GetVarFileOptions([]string{"varsA.yml", "varsB.yml"})
+		opts, err := GetVarsFileOptions([]string{"varsA.yml", "varsB.yml"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"--vars-file", "varsA.yml", "--vars-file", "varsB.yml"}, opts)
 		}
 	})
 
 	t.Run("Some vars files missing", func(t *testing.T) {
-		opts, err := GetVarFileOptions([]string{"varsA.yml", "varsC.yml", "varsD.yml"})
+		opts, err := GetVarsFileOptions([]string{"varsA.yml", "varsC.yml", "varsD.yml"})
 		if assert.EqualError(t, err, "Some vars files could not be found: [varsC.yml varsD.yml]") {
 			assert.IsType(t, &VarsFilesNotFoundError{}, err)
 			assert.Equal(t, []string{"--vars-file", "varsA.yml"}, opts)
@@ -36,9 +36,9 @@ func TestVarsFiles(t *testing.T) {
 	})
 
 	t.Run("Var files combined with vars", func(t *testing.T) {
-		opts, err :=GetVars([]string {"varsA.yml"}, []string{"a"})
+		opts, err := GetVars([]string{"varsA.yml"}, []string{"a"})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string {"--vars-file", "varsA.yml", "--var", "a"}, opts)
+			assert.Equal(t, []string{"--vars-file", "varsA.yml", "--var", "a"}, opts)
 		}
 	})
 }
