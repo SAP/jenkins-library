@@ -46,3 +46,12 @@ func GetVarFileOptions(varsFiles []string) ([]string, error) {
 	}
 	return varsFilesOpts, err
 }
+
+//GetVarsOptions Returns the vars as valid var option string slice
+func GetVarsOptions(vars []string) []string {
+	varOptions := []string{}
+	for _, v := range vars {
+		varOptions = append(varOptions, "--var", v)
+	}
+	return varOptions
+}

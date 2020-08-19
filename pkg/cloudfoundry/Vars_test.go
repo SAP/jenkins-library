@@ -35,3 +35,16 @@ func TestVarsFiles(t *testing.T) {
 		}
 	})
 }
+
+func TestVars(t *testing.T) {
+
+	t.Run("Empty vars", func(t *testing.T) {
+		opts := GetVarsOptions([]string{})
+		assert.Equal(t, []string{}, opts)
+	})
+
+	t.Run("Some vars", func(t *testing.T) {
+		opts := GetVarsOptions([]string{"a", "b"})
+		assert.Equal(t, []string{"--var", "a", "--var", "b"}, opts)
+	})
+}
