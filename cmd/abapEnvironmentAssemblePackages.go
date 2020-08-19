@@ -184,7 +184,7 @@ func (conn *connector) init(config *abapEnvironmentAssemblePackagesOptions, com 
 	subOptions := abaputils.AbapEnvironmentOptions{}
 	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
 	subOptions.CfServiceInstance = config.CfServiceInstance
-	subOptions.CfServiceKeyName = "SAP_COM_0582"
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
 	subOptions.CfOrg = config.CfOrg
 	subOptions.CfSpace = config.CfSpace
 	subOptions.Host = config.Host
