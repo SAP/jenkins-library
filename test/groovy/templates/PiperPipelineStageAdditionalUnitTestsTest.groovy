@@ -34,7 +34,7 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
     @Before
     void init()  {
 
-        binding.variables.env.STAGE_NAME = 'Additional Unit Tests'
+        nullScript.env.STAGE_NAME = 'Additional Unit Tests'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Additional Unit Tests'))
