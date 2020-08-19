@@ -33,6 +33,8 @@ var _cfLogin = cfLogin
 var _cfLogout = cfLogout
 var _getManifest = getManifest
 var _replaceVariables = yaml.Substitute
+var _getVarsOptions = cloudfoundry.GetVarsOptions
+var _getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 var fileUtils cfFileUtil = piperutils.Files{}
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
@@ -537,14 +539,20 @@ func handleLegacyCfManifest(manifestFile string) error {
 func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, []string, error) {
 
 	deployOptions := []string{}
-	varOptions, err := getVarOptions(config.ManifestVariables)
+	varOptions, err := _getVarsOptions(config.ManifestVariables)
 	if err != nil {
 		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
 	}
 
-	varFileOptions, err := getVarFileOptions(config.ManifestVariablesFiles)
+	varFileOptions, err := _getVarsFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
-		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+		if e, ok := err.(*cloudfoundry.VarsFilesNotFoundError); ok {
+			for _, missingVarFile := range e.MissingFiles {
+				log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", missingVarFile)
+			}
+		} else {
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+		}
 	}
 
 	deployOptions = append(deployOptions, varOptions...)

@@ -827,9 +827,17 @@ func TestCfDeployment(t *testing.T) {
 
 		defer func() {
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			return []string{"--var", "appName=testApplicationFromVarsList"}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
+
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
@@ -887,10 +895,11 @@ func TestCfDeployment(t *testing.T) {
 			filesMock.FileRemove("test-manifest.yml")
 			filesMock.FileRemove("vars.yaml")
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
 			return manifestMock{
@@ -905,6 +914,13 @@ func TestCfDeployment(t *testing.T) {
 		}
 
 		s := mock.ExecMockRunner{}
+
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			return []string{}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
 
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
