@@ -91,6 +91,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceCommand())
 	rootCmd.AddCommand(CloudFoundryDeployCommand())
 	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
