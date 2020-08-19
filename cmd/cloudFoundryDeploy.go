@@ -582,54 +582,6 @@ func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]inte
 
 	return out, err
 }
-func getVarOptions(vars []string) ([]string, error) {
-
-	varsMap, err := toParameterMap(vars)
-	if err != nil {
-		return []string{}, err
-	}
-
-	varsResult := []string{}
-
-	for _, key := range varsMap.Keys() {
-		val, _ := varsMap.Get(key)
-		if v, ok := val.(string); ok {
-			varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, v))
-		} else {
-			return []string{}, fmt.Errorf("Cannot cast '%v' to string", val)
-		}
-	}
-	return varsResult, nil
-}
-
-func getVarFileOptions(manifestVariableFiles []string) ([]string, error) {
-
-	varFiles, err := validateManifestVariablesFiles(manifestVariableFiles)
-	if err != nil {
-		return []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", manifestVariableFiles)
-	}
-
-	varFilesResult := []string{}
-
-	for _, varFile := range varFiles {
-		fExists, err := fileUtils.FileExists(varFile)
-		if err != nil {
-			return []string{}, err
-		}
-
-		if !fExists {
-			log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", varFile)
-			continue
-		}
-
-		varFilesResult = append(varFilesResult, "--vars-file", varFile)
-	}
-
-	if len(varFilesResult) > 0 {
-		log.Entry().Infof("We will add the following string to the cf push call: '%s'", strings.Join(varFilesResult, " "))
-	}
-	return varFilesResult, nil
-}
 
 func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
 
