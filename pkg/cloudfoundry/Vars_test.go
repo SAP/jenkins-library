@@ -30,6 +30,7 @@ func TestVarsFiles(t *testing.T) {
 	t.Run("Some vars files missing", func(t *testing.T) {
 		opts, err := GetVarFileOptions([]string{"varsA.yml", "varsC.yml", "varsD.yml"})
 		if assert.EqualError(t, err, "Some vars files could not be found: [varsC.yml varsD.yml]") {
+			assert.IsType(t, &VarsFilesNotFoundError{}, err)
 			assert.Equal(t, []string{"--vars-file", "varsA.yml"}, opts)
 		}
 	})
