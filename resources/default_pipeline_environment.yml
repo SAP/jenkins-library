@@ -38,6 +38,7 @@ general:
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
     jnlpAgent: 'ppiper/jenkins-agent-k8s:v8'
     securityContext:
@@ -163,7 +164,6 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     apiParameters: ''
     loginParameters: ''
-    deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
     cfNativeDeployParameters: ''
@@ -181,6 +181,16 @@ steps:
     mtaDeployPlugin:
       dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
+    mta:
+      deployTool: 'mtaDeployPlugin'
+    maven:
+      deployTool: 'cf_native'
+    npm:
+      deployTool: 'cf_native'
+    docker:
+      deployTool: 'cf_native'
+    kaniko:
+      deployTool: 'cf_native'
   containerExecuteStructureTests:
     containerCommand: '/busybox/tail -f /dev/null'
     containerShell: '/busybox/sh'
@@ -190,40 +200,11 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateService:
-    cloudFoundry:
-      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
-      serviceManifest: 'service-manifest.yml'
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
-    stashContent:
-      - 'deployDescriptor'
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
   debugReportArchive:
     shareConfidentialInformation: false
-  detectExecuteScan:
-    detect:
-      projectVersion: '1'
-      scanners:
-        - signature
-      scanPaths:
-        - '.'
-      scanProperties:
-        - '--blackduck.signature.scanner.memory=4096'
-        - '--blackduck.timeout=6000'
-        - '--blackduck.trust.cert=true'
-        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
-        - '--detect.report.timeout=4800'
-        - '--logging.level.com.synopsys.integration=DEBUG'
-    stashContent:
-      - 'buildDescriptor'
-      - 'checkmarx'
-    # buildTool specific settings
-    golang:
-      dockerImage: 'golang:1.12-stretch'
-      dockerWorkspace: ''
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -302,15 +283,6 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: ''
-  kanikoExecute:
-    containerBuildOptions: '--skip-tls-verify-pull'
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerPreparationCommand: 'rm /kaniko/.docker/config.json'
-    containerShell: '/busybox/sh'
-    customTlsCertificateLinks: []
-    dockerfile: Dockerfile
-    dockerImage: 'gcr.io/kaniko-project/executor:debug'
-    dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
       'node:lts-stretch':
@@ -340,24 +312,23 @@ steps:
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
-  mtaBuild:
-    buildTarget: 'NEO'
-    mtaBuildTool: cloudMbt
-    platform: 'cf'
-    mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-    classic:
-      dockerImage: 'ppiper/mta-archive-builder'
-    cloudMbt:
-      dockerImage: 'devxci/mbtci:1.0.10'
+  buildExecute:
+    npmInstall: true
+    npmRunScripts: []
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     extensions: []
+    mavenDeploymentModule: '.'
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
-
+  multicloudDeploy:
+    cfTargets: []
+    neoTargets: []
+    enableZeroDowntimeDeployment: false
+    parallelExecution: false
   newmanExecute:
     dockerImage: 'node:lts-stretch'
     failOnError: true
@@ -567,10 +538,16 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+    cucumber:
+      pattern: '**/e2e/*.json'
+      allowEmptyResults: true
+      archive: false
+      active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
   tmsUpload:
     namedUser: 'Piper-Pipeline'
+    mtaVersion: '*'
     stashContent:
       - 'buildResult'
   transportRequestCreate:
@@ -593,11 +570,14 @@ steps:
       - 'tests'
     testOptions: ''
     runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
+  writeTemporaryCredentials:
+    credentialsDirectories:
+      - './'
+      - 'integration-tests/src/test/resources'
 
   #defaults for stage wrapper
   piperStageWrapper:
     projectExtensionsDirectory: '.pipeline/extensions/'
-    globalExtensionsDirectory: ''
     stageLocking: true
     nodeLabel: ''
     stashContent:

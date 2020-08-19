@@ -40,9 +40,12 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 
 	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
-		log.Entry().Debugf("Project %v exists...", projectName)
+		log.Entry().Infof("Project %v exists...", projectName)
+		if len(config.Preset) > 0 {
+			setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+		}
 	} else {
-		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
+		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
 	}
 
@@ -93,7 +96,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 
 func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 	zipFileName := filepath.Join(workspace, "workspace.zip")
-	patterns := strings.Split(filterPattern, ",")
+	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
@@ -109,7 +112,6 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
 	if sourceCodeUploaded {
 		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
-		zipFile.Close()
 		err := os.Remove(zipFile.Name())
 		if err != nil {
 			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
@@ -188,7 +190,8 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 	for true {
 		stepDetail := "..."
 		stageDetail := "..."
-		status, detail := sys.GetScanStatusAndDetail(scan.ID)
+		var detail checkmarx.ScanStatusDetail
+		status, detail = sys.GetScanStatusAndDetail(scan.ID)
 		if status == "Finished" || status == "Canceled" || status == "Failed" {
 			break
 		}
@@ -323,18 +326,18 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 		}
 	}
 	if config.VulnerabilityThresholdUnit == "absolute" {
-		unit = "findings"
+		unit = " findings"
 		if highValue > cxHighThreshold {
 			insecure = true
-			highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
+			highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
 		}
 		if mediumValue > cxMediumThreshold {
 			insecure = true
-			mediumViolation = fmt.Sprintf("<-- %v %v deviation", mediumValue-cxMediumThreshold, unit)
+			mediumViolation = fmt.Sprintf("<-- %v%v deviation", mediumValue-cxMediumThreshold, unit)
 		}
 		if lowValue > cxLowThreshold {
 			insecure = true
-			lowViolation = fmt.Sprintf("<-- %v %v deviation", lowValue-cxLowThreshold, unit)
+			lowViolation = fmt.Sprintf("<-- %v%v deviation", lowValue-cxLowThreshold, unit)
 		}
 	}
 
@@ -351,17 +354,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
 	if ok {
 		if len(presetValue) > 0 {
-			ok, preset := loadPreset(sys, presetValue)
-			if ok {
-				configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, engineConfiguration)
-				if configurationUpdated {
-					log.Entry().Debugf("Configuration of project %v updated", projectName)
-				} else {
-					log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
-				}
-			} else {
-				log.Entry().Fatalf("Preset %v not found, creation of project %v failed", presetValue, projectName)
-			}
+			setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
 		} else {
 			log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectName)
 		}
@@ -376,6 +369,8 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	return checkmarx.Project{}
 }
 
+// loadPreset finds a checkmarx.Preset that has either the ID or Name given by presetValue.
+// presetValue is not expected to be empty.
 func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
@@ -391,10 +386,31 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 	}
 
 	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
-		log.Entry().Debugf("Loaded preset %v", preset.Name)
+		log.Entry().Infof("Loaded preset %v", preset.Name)
 		return true, preset
 	}
+
+	log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
+	for _, prs := range presets {
+		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
+	}
 	return false, checkmarx.Preset{}
+}
+
+// setPresetForProject is only called when it has already been established that the preset needs to be set.
+// It will exit via the logging framework in case the preset could be found, or the project could not be updated.
+func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) {
+	ok, preset := loadPreset(sys, presetValue)
+	if ok {
+		configurationUpdated := sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+		if configurationUpdated {
+			log.Entry().Debugf("Configuration of project %v updated", projectName)
+		} else {
+			log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
+		}
+	} else {
+		log.Entry().Fatalf("Preset %v not found, configuration of project %v failed", presetValue, projectName)
+	}
 }
 
 func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {
@@ -515,6 +531,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 		baseDir = filepath.Base(source)
 	}
 
+	fileCount := 0
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -554,17 +571,17 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		fileCount++
 		return err
 	})
-
+	log.Entry().Infof("Zipped %d files", fileCount)
 	return err
 }
 
 func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
-	for index := 0; index < len(patterns); index++ {
-		pattern := patterns[index]
+	for _, pattern := range patterns {
 		negative := false
-		if strings.Index(pattern, "!") == 0 {
+		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
 			negative = true
 		}

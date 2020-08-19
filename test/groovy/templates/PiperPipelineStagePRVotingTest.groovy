@@ -10,6 +10,8 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
+import static org.hamcrest.Matchers.anyOf
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
@@ -75,7 +77,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
         jsr.step.piperPipelineStagePRVoting(script: nullScript, juStabUtils: utils)
 
         assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'testsPublishResults'))
-        assertThat(stepsCalled, not(hasItems('karmaExecuteTests', 'whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(anyOf(hasItem('karmaExecuteTests'), hasItem('whitesourceExecuteScan'))))
         assertThat(stepParameters.buildExecute.buildTool, is('maven'))
         assertThat(stepParameters.buildExecute.dockerRegistryUrl, nullValue())
     }

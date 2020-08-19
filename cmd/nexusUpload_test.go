@@ -2,86 +2,44 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
-	"github.com/bmatcuk/doublestar"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
-	"sort"
+	"strings"
 	"testing"
 )
 
 type mockUtilsBundle struct {
-	mta          bool
-	maven        bool
-	npm          bool
-	files        map[string][]byte
-	removedFiles map[string][]byte
-	properties   map[string]map[string]string
-	cpe          map[string]string
-	execRunner   mock.ExecMockRunner
+	*mock.FilesMock
+	mta        bool
+	maven      bool
+	npm        bool
+	properties map[string]map[string]string
+	cpe        map[string]string
+	execRunner mock.ExecMockRunner
 }
 
 func newMockUtilsBundle(usesMta, usesMaven, usesNpm bool) mockUtilsBundle {
-	utils := mockUtilsBundle{mta: usesMta, maven: usesMaven, npm: usesNpm}
-	utils.files = map[string][]byte{}
-	utils.removedFiles = map[string][]byte{}
+	utils := mockUtilsBundle{FilesMock: &mock.FilesMock{}, mta: usesMta, maven: usesMaven, npm: usesNpm}
 	utils.properties = map[string]map[string]string{}
 	utils.cpe = map[string]string{}
 	return utils
 }
 
-func (m *mockUtilsBundle) usesMta() bool {
+func (m *mockUtilsBundle) UsesMta() bool {
 	return m.mta
 }
 
-func (m *mockUtilsBundle) usesMaven() bool {
+func (m *mockUtilsBundle) UsesMaven() bool {
 	return m.maven
 }
 
-func (m *mockUtilsBundle) usesNpm() bool {
+func (m *mockUtilsBundle) UsesNpm() bool {
 	return m.npm
-}
-
-func (m *mockUtilsBundle) fileExists(path string) (bool, error) {
-	content := m.files[path]
-	if content == nil {
-		return false, fmt.Errorf("'%s': %w", path, os.ErrNotExist)
-	}
-	return true, nil
-}
-
-func (m *mockUtilsBundle) fileRead(path string) ([]byte, error) {
-	content := m.files[path]
-	if content == nil {
-		return nil, fmt.Errorf("could not read '%s'", path)
-	}
-	return content, nil
-}
-
-func (m *mockUtilsBundle) fileWrite(path string, content []byte, _ os.FileMode) error {
-	m.files[path] = content
-	return nil
-}
-
-func (m *mockUtilsBundle) fileRemove(path string) {
-	contents := m.files[path]
-	m.files[path] = nil
-	if contents != nil {
-		m.removedFiles[path] = contents
-	}
-}
-
-func (m *mockUtilsBundle) dirExists(path string) (bool, error) {
-	for file := range m.files {
-		dir := filepath.Dir(file)
-		if dir == path {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
@@ -89,11 +47,14 @@ func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 	return m.cpe[path]
 }
 
-func (m *mockUtilsBundle) getExecRunner() execRunner {
+func (m *mockUtilsBundle) getExecRunner() command.ExecRunner {
 	return &m.execRunner
 }
 
 func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
+	pomFile = strings.ReplaceAll(pomFile, "/", string(os.PathSeparator))
+	pomFile = strings.ReplaceAll(pomFile, "\\", string(os.PathSeparator))
+
 	pom := m.properties[pomFile]
 	if pom == nil {
 		pom = map[string]string{}
@@ -102,46 +63,19 @@ func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
 	pom[expression] = value
 }
 
-func (m *mockUtilsBundle) evaluate(pomFile, expression string) (string, error) {
-	pom := m.properties[pomFile]
+func (m *mockUtilsBundle) evaluate(options *maven.EvaluateOptions, expression string) (string, error) {
+	pom := m.properties[options.PomPath]
 	if pom == nil {
-		return "", fmt.Errorf("pom file '%s' not found", pomFile)
+		return "", fmt.Errorf("pom file '%s' not found", options.PomPath)
 	}
 	value := pom[expression]
 	if value == "<empty>" {
 		return "", nil
 	}
 	if value == "" {
-		return "", fmt.Errorf("property '%s' not found in '%s'", expression, pomFile)
+		return "", fmt.Errorf("property '%s' not found in '%s'", expression, options.PomPath)
 	}
 	return value, nil
-}
-
-type byLen []string
-
-func (a byLen) Len() int {
-	return len(a)
-}
-
-func (a byLen) Less(i, j int) bool {
-	return len(a[i]) < len(a[j])
-}
-
-func (a byLen) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (m *mockUtilsBundle) glob(pattern string) ([]string, error) {
-	var matches []string
-	for path := range m.files {
-		matched, _ := doublestar.Match(pattern, path)
-		if matched {
-			matches = append(matches, path)
-		}
-	}
-	// The order in m.files is not deterministic, this would result in flaky tests.
-	sort.Sort(byLen(matches))
-	return matches, nil
 }
 
 type mockUploader struct {
@@ -205,9 +139,10 @@ var testPackageJson = []byte(`{
 `)
 
 func TestUploadMTAProjects(t *testing.T) {
+	t.Parallel()
 	t.Run("Uploading MTA project without groupId parameter fails", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = testMtaYml
+		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -220,8 +155,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project without artifactId parameter works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = testMtaYml
-		utils.files["test.mtar"] = []byte("contentsOfMtar")
+		utils.AddFile("mta.yaml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -246,7 +181,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project fails due to garbage YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = []byte("garbage")
+		utils.AddFile("mta.yaml", []byte("garbage"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -259,7 +194,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Uploading MTA project fails due invalid version in YAML content", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = []byte(testMtaYmlNoVersion)
+		utils.AddFile("mta.yaml", []byte(testMtaYmlNoVersion))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -272,7 +207,7 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yaml project fails due to missing mtar file", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = testMtaYml
+		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -293,8 +228,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yaml"] = testMtaYml
-		utils.files["test.mtar"] = []byte("contentsOfMtar")
+		utils.AddFile("mta.yaml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -316,8 +251,8 @@ func TestUploadMTAProjects(t *testing.T) {
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
 		utils := newMockUtilsBundle(true, false, false)
-		utils.files["mta.yml"] = testMtaYml
-		utils.files["test.mtar"] = []byte("contentsOfMtar")
+		utils.AddFile("mta.yml", testMtaYml)
+		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
 		options := createOptions()
@@ -340,6 +275,7 @@ func TestUploadMTAProjects(t *testing.T) {
 }
 
 func TestUploadArtifacts(t *testing.T) {
+	t.Parallel()
 	t.Run("Uploading MTA project fails without info", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
@@ -422,7 +358,7 @@ func TestUploadArtifacts(t *testing.T) {
 func TestUploadNpmProjects(t *testing.T) {
 	t.Run("Test uploading simple npm project", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, false, true)
-		utils.files["package.json"] = testPackageJson
+		utils.AddFile("package.json", testPackageJson)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.User = "admin"
@@ -439,6 +375,7 @@ func TestUploadNpmProjects(t *testing.T) {
 }
 
 func TestUploadMavenProjects(t *testing.T) {
+	t.Parallel()
 	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
@@ -455,7 +392,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -477,8 +414,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/dummy"] = []byte("contentsOfJar") // causes "target" folder to exist
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddDir("target")
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -493,8 +430,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -509,7 +446,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -520,8 +457,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "<empty>")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -535,7 +472,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -545,7 +482,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.GroupID = "awesome.group"
@@ -570,8 +507,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.groupId", "awesome.group")
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "jar")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["target/my-app-1.0.jar"] = []byte("contentsOfJar")
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("target", "my-app-1.0.jar"), []byte("contentsOfJar"))
 		uploader := mockUploader{}
 		options := createOptions()
 
@@ -587,7 +524,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		if assert.Equal(t, 2, len(artifacts)) {
 			assert.Equal(t, "pom.xml", artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
-			assert.Equal(t, "target/my-app-1.0.jar", artifacts[1].File)
+			assert.Equal(t, filepath.Join("target", "my-app-1.0.jar"), artifacts[1].File)
 			assert.Equal(t, "jar", artifacts[1].Type)
 		}
 	})
@@ -617,45 +554,49 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("performance-tests/pom.xml", "project.groupId", "com.mycompany.app")
 		utils.setProperty("performance-tests/pom.xml", "project.artifactId", "my-app-app")
 		utils.setProperty("performance-tests/pom.xml", "project.packaging", "")
-		utils.files["pom.xml"] = testPomXml
-		utils.files["application/pom.xml"] = testPomXml
-		utils.files["application/target/final-artifact.war"] = []byte("contentsOfJar")
-		utils.files["application/target/final-artifact-classes.jar"] = []byte("contentsOfClassesJar")
-		utils.files["integration-tests/pom.xml"] = testPomXml
-		utils.files["integration-tests/target/final-artifact-integration-tests.jar"] = []byte("contentsOfJar")
-		utils.files["unit-tests/pom.xml"] = testPomXml
-		utils.files["unit-tests/target/final-artifact-unit-tests.jar"] = []byte("contentsOfJar")
-		utils.files["performance-tests/pom.xml"] = testPomXml
+		utils.AddFile("pom.xml", testPomXml)
+		utils.AddFile(filepath.Join("application", "pom.xml"), testPomXml)
+		utils.AddFile("application/target/final-artifact.war", []byte("contentsOfJar"))
+		utils.AddFile("application/target/final-artifact-classes.jar", []byte("contentsOfClassesJar"))
+		utils.AddFile("integration-tests/pom.xml", testPomXml)
+		utils.AddFile("integration-tests/target/final-artifact-integration-tests.jar", []byte("contentsOfJar"))
+		utils.AddFile("unit-tests/pom.xml", testPomXml)
+		utils.AddFile("unit-tests/target/final-artifact-unit-tests.jar", []byte("contentsOfJar"))
+		utils.AddFile("performance-tests/pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected upload of maven project with application module to succeed")
 		assert.Equal(t, "1.0", uploader.GetArtifactsVersion())
-		assert.Equal(t, "my-app-app", uploader.GetArtifactsID())
+		assert.Equal(t, "my-app", uploader.GetArtifactsID())
 
 		artifacts := uploader.uploadedArtifacts
 		if assert.Equal(t, 4, len(artifacts)) {
-			assert.Equal(t, "pom.xml", artifacts[0].File)
+			assert.Equal(t, filepath.Join("application", "pom.xml"), artifacts[0].File)
 			assert.Equal(t, "pom", artifacts[0].Type)
 
-			assert.Equal(t, "application/pom.xml", artifacts[1].File)
-			assert.Equal(t, "pom", artifacts[1].Type)
+			assert.Equal(t, filepath.Join("application", "target", "final-artifact.war"), artifacts[1].File)
+			assert.Equal(t, "war", artifacts[1].Type)
 
-			assert.Equal(t, "application/target/final-artifact.war", artifacts[2].File)
-			assert.Equal(t, "war", artifacts[2].Type)
+			assert.Equal(t, filepath.Join("application", "target", "final-artifact-classes.jar"), artifacts[2].File)
+			assert.Equal(t, "jar", artifacts[2].Type)
 
-			assert.Equal(t, "application/target/final-artifact-classes.jar", artifacts[3].File)
-			assert.Equal(t, "jar", artifacts[3].Type)
+			assert.Equal(t, "pom.xml", artifacts[3].File)
+			assert.Equal(t, "pom", artifacts[3].Type)
+
 		}
 		if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
 			expectedParameters1 := []string{
 				"-Durl=http://localhost:8081/repository/maven-releases/",
 				"-DgroupId=com.mycompany.app",
 				"-Dversion=1.0",
-				"-DartifactId=my-app",
-				"-Dfile=pom.xml",
+				"-DartifactId=my-app-app",
+				"-Dfile=" + filepath.Join("application", "pom.xml"),
 				"-Dpackaging=pom",
+				"-Dfiles=" + filepath.Join("application", "target", "final-artifact.war") + "," + filepath.Join("application", "target", "final-artifact-classes.jar"),
+				"-Dclassifiers=,classes",
+				"-Dtypes=war,jar",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
@@ -666,12 +607,9 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Durl=http://localhost:8081/repository/maven-releases/",
 				"-DgroupId=com.mycompany.app",
 				"-Dversion=1.0",
-				"-DartifactId=my-app-app",
-				"-Dfile=application/pom.xml",
+				"-DartifactId=my-app",
+				"-Dfile=pom.xml",
 				"-Dpackaging=pom",
-				"-Dfiles=application/target/final-artifact.war,application/target/final-artifact-classes.jar",
-				"-Dclassifiers=,classes",
-				"-Dtypes=war,jar",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
@@ -686,7 +624,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
 		utils.setProperty("pom.xml", "project.packaging", "pom")
 		utils.setProperty("pom.xml", "project.build.finalName", "my-app-1.0")
-		utils.files["pom.xml"] = testPomXml
+		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
 		options.User = "admin"
@@ -716,8 +654,8 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, 2, len(utils.execRunner.Env))
 		assert.Equal(t, expectedEnv, utils.execRunner.Env)
 
-		assert.Nil(t, utils.files[settingsPath])
-		assert.NotNil(t, utils.removedFiles[settingsPath])
+		assert.False(t, utils.HasFile(settingsPath))
+		assert.True(t, utils.HasRemovedFile(settingsPath))
 	})
 }
 
@@ -734,5 +672,5 @@ func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
 	assert.Equal(t, expectedEnv, utils.execRunner.Env)
 
 	assert.True(t, settingsPath != "")
-	assert.NotNil(t, utils.files[settingsPath])
+	assert.True(t, utils.HasFile(settingsPath))
 }

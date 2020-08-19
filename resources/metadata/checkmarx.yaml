@@ -83,6 +83,10 @@ spec:
       - STAGES
       - STEPS
       secret: true
+      resourceRef:
+        - name: checkmarxCredentialsId
+          type: secret
+          param: password
     - name: preset
       type: string
       description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`
@@ -95,6 +99,8 @@ spec:
     - name: projectName
       aliases:
         - name: checkmarxProject
+        - name: checkMarxProjectName
+          deprecated: true
       type: string
       description: The name of the Checkmarx project to scan into
       mandatory: true
@@ -133,6 +139,8 @@ spec:
     - name: teamId
       aliases:
         - name: checkmarxGroupId
+        - name: groupId
+          deprecated: true
       type: string
       description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
       mandatory: false
@@ -157,6 +165,10 @@ spec:
       - STAGES
       - STEPS
       secret: true
+      resourceRef:
+        - name: checkmarxCredentialsId
+          type: secret
+          param: username
     - name: vulnerabilityThresholdEnabled
       type: bool
       description: Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded

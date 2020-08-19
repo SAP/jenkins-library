@@ -87,10 +87,10 @@ def call(Map parameters) {
 
     mavenExecute(
         script: parameters.script,
-        flags: '--batch-mode',
+        flags: ['--batch-mode'],
         pomPath: 'application/pom.xml',
         m2Path: s4SdkGlobals.m2Directory,
-        goals: 'checkstyle:checkstyle',
+        goals: ['checkstyle:checkstyle'],
     )
 
     recordIssues blameDisabled: true,
@@ -105,7 +105,7 @@ return this
 This code snippet has three components, let's see what is happening here:
 
 Firstly, we run the original stage.
-This runs the SAP UI5 Best Practices linter as this is a standard feature of SAP Cloud SDK pipeline.
+This runs ESLint on JavaScript/TypeScript source files as this is a standard feature of SAP Cloud SDK pipeline.
 
 Secondly, we run the checkstyle maven plugin using the `mavenExecute` Jenkins library step as provided by project "Piper".
 This serves as an example for how flexible you can re-use what project "Piper" already provides in your extension.

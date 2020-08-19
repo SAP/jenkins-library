@@ -1,0 +1,85 @@
+metadata:
+  name: mavenExecuteIntegration
+  aliases:
+    - name: mavenExecute
+      deprecated: false
+  description: "This step will execute backend integration tests via the Jacoco Maven-plugin."
+  longDescription: |
+    If the project contains a Maven module named "integration-tests", this step will execute
+    the integration tests via the Jacoco Maven-plugin.
+spec:
+  inputs:
+    params:
+      - name: retry
+        type: int
+        description: "The number of times that integration tests will be retried before failing the step.
+          Note: This will consume more time for the step execution."
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        default: 1
+      - name: forkCount
+        type: string
+        description: "The number of JVM processes that are spawned to run the tests in parallel in case of
+          using a maven based project structure.
+          For more details visit the Surefire documentation at
+          https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount."
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        default: "1C"
+
+      # Global maven settings, should be added to all maven steps
+      - name: projectSettingsFile
+        type: string
+        description: "Path to the mvn settings file that should be used as project settings file."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/projectSettingsFile
+      - name: globalSettingsFile
+        type: string
+        description: "Path to the mvn settings file that should be used as global settings file."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/globalSettingsFile
+      - name: m2Path
+        type: string
+        description: "Path to the location of the local repository that should be used."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/m2Path
+      - name: logSuccessfulMavenTransfers
+        type: bool
+        description: "Configures maven to log successful downloads.
+          This is set to `false` by default to reduce the noise in build logs."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: maven/logSuccessfulMavenTransfers
+
+  containers:
+    - name: mvn
+      image: maven:3.6-jdk-8
+      imagePullPolicy: Never
+
+  # This declaration is necessary in order to return any sidecar configuration in the context config.
+  sidecars:
+    - name: ''
