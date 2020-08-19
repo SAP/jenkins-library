@@ -34,6 +34,13 @@ func TestVarsFiles(t *testing.T) {
 			assert.Equal(t, []string{"--vars-file", "varsA.yml"}, opts)
 		}
 	})
+
+	t.Run("Var files combined with vars", func(t *testing.T) {
+		opts, err :=GetVars([]string {"varsA.yml"}, []string{"a"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string {"--vars-file", "varsA.yml", "--var", "a"}, opts)
+		}
+	})
 }
 
 func TestVars(t *testing.T) {

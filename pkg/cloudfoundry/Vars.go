@@ -55,3 +55,12 @@ func GetVarsOptions(vars []string) []string {
 	}
 	return varOptions
 }
+
+//GetVars Returns the combined vars files and vars. Vars file first.
+func GetVars(varsFiles, vars []string) ([]string, error) {
+	varOpts := []string{}
+	varFileOpts, err := GetVarFileOptions(varsFiles)
+	varOpts = append(varOpts, varFileOpts...)
+	varOpts = append(varOpts , GetVarsOptions(vars)...)
+	return varOpts, err
+}
