@@ -1,10 +1,12 @@
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String STAGE_NAME = 'artifactDeployment'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STAGE_STEP_KEYS = []
@@ -16,8 +18,10 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateStageDocumentation(defaultStageName = 'artifactDeployment')
 void call(Map parameters = [:]) {
-    String stageName = 'artifactDeployment'
     final script = checkScript(this, parameters) ?: this
+    def utils = parameters.juStabUtils ?: new Utils()
+
+    def stageName = utils.getStageName(script, parameters, STAGE_NAME)
 
     piperStageWrapper(stageName: stageName, script: script) {
 

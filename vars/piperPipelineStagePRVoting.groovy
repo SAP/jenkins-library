@@ -6,6 +6,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String STAGE_NAME = 'pullRequestVoting'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -71,7 +72,7 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = utils.getStageName(script, parameters, STAGE_NAME)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()

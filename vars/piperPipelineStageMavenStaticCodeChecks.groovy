@@ -8,6 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
+@Field String STAGE_NAME = 'mavenExecuteStaticCodeChecks'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
@@ -19,8 +20,9 @@ import groovy.transform.Field
  */
 @GenerateStageDocumentation(defaultStageName = 'mavenExecuteStaticCodeChecks')
 void call(Map parameters = [:]) {
-    String stageName = 'mavenExecuteStaticCodeChecks'
     final script = checkScript(this, parameters) ?: null
+
+    def stageName = utils.getStageName(script, parameters, STAGE_NAME)
 
     piperStageWrapper(stageName: stageName, script: script) {
         mavenExecuteStaticCodeChecks(script: script)
