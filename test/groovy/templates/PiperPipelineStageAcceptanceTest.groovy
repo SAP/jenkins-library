@@ -17,7 +17,6 @@ import static org.junit.Assert.assertThat
 class PiperPipelineStageAcceptanceTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain rules = Rules
@@ -25,7 +24,6 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(jlr)
         .around(jsr)
-        .around(envRule)
 
     private List stepsCalled = []
     private Map stepParameters = [:]
