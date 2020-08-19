@@ -3,6 +3,7 @@ package cloudfoundry
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"regexp"
 )
 
 // VarsFilesNotFoundError ...
@@ -47,20 +48,44 @@ func GetVarsFileOptions(varsFiles []string) ([]string, error) {
 	return varsFilesOpts, err
 }
 
-//GetVarsOptions Returns the vars as valid var option string slice
-func GetVarsOptions(vars []string) []string {
+// GetVarsOptions Returns the vars as valid var option string slice
+// InvalidVars are reported via error.
+func GetVarsOptions(vars []string) ([]string, error) {
+	invalidVars := []string{}
 	varOptions := []string{}
+	var err error
 	for _, v := range vars {
+		valid, e := validateVar(v)
+		if e != nil {
+			return []string{}, fmt.Errorf("Cannot validate var '%s': %w", v, e)
+		}
+		if !valid {
+			invalidVars = append(invalidVars, v)
+			continue
+		}
 		varOptions = append(varOptions, "--var", v)
 	}
-	return varOptions
+
+	if len(invalidVars) > 0 {
+		return []string{}, fmt.Errorf("Invalid vars: %v", invalidVars)
+	}
+	return varOptions, err
 }
 
-//GetVars Returns the combined vars files and vars. Vars file first.
+func validateVar(v string) (bool, error) {
+	return regexp.MatchString(`\S{1,}=\S{1,}`, v)
+}
+
+// GetVars Returns the combined vars files and vars. Vars file first.
+// For handling of non exisitng var files see GetVarsFileOptions.
 func GetVars(varsFiles, vars []string) ([]string, error) {
-	varOpts := []string{}
-	varFileOpts, err := GetVarsFileOptions(varsFiles)
-	varOpts = append(varOpts, varFileOpts...)
-	varOpts = append(varOpts, GetVarsOptions(vars)...)
-	return varOpts, err
+	combinedVarOpts := []string{}
+	varFileOpts, errVarFiles := GetVarsFileOptions(varsFiles)
+	varOpts, errVars := GetVarsOptions(vars)
+	if errVars != nil {
+		return []string{}, errVars
+	}
+	combinedVarOpts = append(combinedVarOpts, varFileOpts...)
+	combinedVarOpts = append(combinedVarOpts, varOpts...)
+	return combinedVarOpts, errVarFiles
 }
