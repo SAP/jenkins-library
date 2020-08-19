@@ -336,6 +336,10 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			log.SetErrorCategory(log.ErrorConfiguration)
 		case strings.Contains(errText, "Permission"):
 			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "authorization failed"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "authentication required"):
+			log.SetErrorCategory(log.ErrorConfiguration)
 		case strings.Contains(errText, "knownhosts: illegal base64"):
 			err = errors.Wrap(err, "known_hosts file seems invalid")
 			log.SetErrorCategory(log.ErrorConfiguration)
