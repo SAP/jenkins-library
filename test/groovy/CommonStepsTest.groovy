@@ -106,7 +106,7 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
-        'abapEnvironmentAssembly', // abap assembly step
+        'abapEnvironmentAssemblePackages', // abap assembly step
         'abapEnvironmentPipeline', // special step (infrasturcture)
         'artifactPrepareVersion',
         'durationMeasure', // only expects parameters via signature
@@ -150,7 +150,8 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
-        'kanikoExecute' //implementing new golang pattern without fields
+        'kanikoExecute', //implementing new golang pattern without fields
+        'abapEnvironmentCheckoutBranch' //implementing new golang pattern without fields
 
     ]
 

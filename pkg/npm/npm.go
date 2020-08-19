@@ -32,7 +32,6 @@ type Executor interface {
 // ExecutorOptions holds common parameters for functions of Executor
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
-	SapNpmRegistry     string
 	ExecRunner         ExecRunner
 }
 
@@ -84,39 +83,29 @@ func (u *utilsBundle) GetExecRunner() ExecRunner {
 // CAUTION: This will change the npm configuration in the user's home directory.
 func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
-	const sapRegistry = "@sap:registry"
 	const npmRegistry = "registry"
-	configurableRegistries := []string{npmRegistry, sapRegistry}
-	for _, registry := range configurableRegistries {
-		var buffer bytes.Buffer
-		execRunner.Stdout(&buffer)
-		err := execRunner.RunExecutable("npm", "config", "get", registry)
-		execRunner.Stdout(log.Writer())
+
+	var buffer bytes.Buffer
+	execRunner.Stdout(&buffer)
+	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry)
+	execRunner.Stdout(log.Writer())
+	if err != nil {
+		return err
+	}
+	preConfiguredRegistry := buffer.String()
+
+	if registryIsNonEmpty(preConfiguredRegistry) {
+		log.Entry().Info("Discovered pre-configured npm registry " + npmRegistry + " with value " + preConfiguredRegistry)
+	}
+
+	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
+		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
+		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
 		if err != nil {
 			return err
 		}
-		preConfiguredRegistry := buffer.String()
-
-		if registryIsNonEmpty(preConfiguredRegistry) {
-			log.Entry().Info("Discovered pre-configured npm registry " + registry + " with value " + preConfiguredRegistry)
-		}
-
-		if registry == npmRegistry && exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.Options.DefaultNpmRegistry)
-			if err != nil {
-				return err
-			}
-		}
-
-		if registry == sapRegistry && exec.Options.SapNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://npm.sap.com") {
-			log.Entry().Info("npm registry " + registry + " was not configured, setting it to " + exec.Options.SapNpmRegistry)
-			err = execRunner.RunExecutable("npm", "config", "set", registry, exec.Options.SapNpmRegistry)
-			if err != nil {
-				return err
-			}
-		}
 	}
+
 	return nil
 }
 

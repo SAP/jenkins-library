@@ -529,9 +529,9 @@ func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, f
 	scan := Scan{}
 	jsonData := map[string]interface{}{
 		"projectId":     projectID,
-		"isIncremental": false,
-		"isPublic":      true,
-		"forceScan":     true,
+		"isIncremental": isIncremental,
+		"isPublic":      isPublic,
+		"forceScan":     forceScan,
 		"comment":       "Scan From Golang Script",
 	}
 
