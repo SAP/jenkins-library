@@ -6,7 +6,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field String STAGE_NAME = 'backendIntegrationTests'
+@Field String STAGE_NAME = 'integrationTests'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
