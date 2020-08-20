@@ -101,7 +101,7 @@ type pckg struct {
 
 func (p *pckg) reserveNext() error {
 	p.connector.getToken()
-	appendum := "/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
+	appendum := "/odata/aas_ocs_package/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (p *pckg) reserveNext() error {
 }
 
 func (p *pckg) get() error {
-	appendum := "/OcsPackageSet('" + p.PackageName + "')"
+	appendum := "/odata/aas_ocs_package/OcsPackageSet('" + p.PackageName + "')"
 	body, err := p.connector.get(appendum)
 	if err != nil {
 		return err

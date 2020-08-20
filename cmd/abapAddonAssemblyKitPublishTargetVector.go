@@ -36,7 +36,7 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 	json.Unmarshal([]byte(config.AddonProduct), &product)
 
 	conn.getToken()
-	appendum := "/PublishTargetVector?Id='" + product.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
+	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + product.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
 	_, err := conn.post(appendum, "")
 	if err != nil {
 		return err

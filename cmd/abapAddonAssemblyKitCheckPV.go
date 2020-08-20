@@ -107,7 +107,7 @@ type pv struct {
 }
 
 func (p *pv) validate() error {
-	appendum := "/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
+	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.get(appendum)
 	if err != nil {
 		return err

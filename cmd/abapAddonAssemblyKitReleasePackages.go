@@ -47,7 +47,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 
 func (p *pckg) release() error {
 	p.connector.getToken()
-	appendum := "/ReleasePackage?Name='" + p.PackageName + "'"
+	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
 	_, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err

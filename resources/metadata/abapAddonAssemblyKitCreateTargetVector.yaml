@@ -19,7 +19,7 @@ spec:
         - STEPS
         - GENERAL
         mandatory: true
-        default: https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package
+        default: https://w7q.dmzwdf.sap.corp
       - name: username
         type: string
         description: User

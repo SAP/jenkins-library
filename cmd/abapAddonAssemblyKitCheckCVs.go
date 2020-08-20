@@ -53,8 +53,24 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
+func (c *cv) init(repo abaputils.Repository, conn connector) {
+	c.connector = conn
+	c.Name = repo.Name
+	c.VersionYAML = repo.Version
+}
+
+func (c *cv) convert() abaputils.Repository {
+	var repo abaputils.Repository
+	repo.Name = c.Name
+	repo.Version = c.VersionYAML
+	repo.VersionOtherFormat = c.Version
+	repo.SpsLevel = c.SpsLevel
+	repo.PatchLevel = c.PatchLevel
+	return repo
+}
+
 func (c *cv) validate() error {
-	appendum := "/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
+	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
 	body, err := c.connector.get(appendum)
 	if err != nil {
 		return err
@@ -68,60 +84,15 @@ func (c *cv) validate() error {
 	return nil
 }
 
-// *******************************************************************************************************************************
-// ************************************************************ REUSE ************************************************************
-// *******************************************************************************************************************************
-
-// TODO echt alles übertragen?
-func (c *cv) init(repo abaputils.Repository, conn connector) {
-	c.connector = conn
-	c.Name = repo.Name
-	c.VersionYAML = repo.Version
-	c.Version = repo.VersionOtherFormat
-	c.SpsLevel = repo.SpsLevel
-	c.PatchLevel = repo.PatchLevel
-	c.PredecessorCommitID = repo.PredecessorCommitID
-	c.Status = repo.Status
-	c.Namespace = repo.Namespace
-	c.SarXMLFilePath = repo.SarXMLFilePath
-}
-
-func (c *cv) convert() abaputils.Repository {
-	var repo abaputils.Repository
-	repo.Name = c.Name
-	repo.Version = c.VersionYAML
-	repo.VersionOtherFormat = c.Version
-	repo.SpsLevel = c.SpsLevel
-	repo.PatchLevel = c.PatchLevel
-	repo.PredecessorCommitID = c.PredecessorCommitID
-	repo.Status = c.Status
-	repo.Namespace = c.Namespace
-	repo.SarXMLFilePath = c.SarXMLFilePath
-	return repo
-}
-
 type jsonCV struct {
 	CV *cv `json:"d"`
 }
 
 type cv struct {
 	connector
-	Name                string `json:"Name"`
-	VersionYAML         string
-	Version             string `json:"Version"`
-	SpsLevel            string `json:"SpLevel"`
-	PatchLevel          string `json:"PatchLevel"`
-	PredecessorCommitID string
-	Status              string
-	Namespace           string
-	SarXMLFilePath      string
+	Name        string `json:"Name"`
+	VersionYAML string
+	Version     string `json:"Version"`
+	SpsLevel    string `json:"SpLevel"`
+	PatchLevel  string `json:"PatchLevel"`
 }
-
-// 	Version             string `json:"Version"`
-// 	SpsLevel            string `json:"SpLevel"`
-// 	PatchLevel          string `json:"PatchLevel"`
-// 	PredecessorCommitID string
-// 	Status              string
-// 	Namespace           string
-// 	SarXMLFilePath      string
-// }

@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -54,38 +52,35 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	// 	}
 	// }
 
-	conn.Header["Content-Type"] = []string{"application/zip"}
 	for _, repo := range repos {
 		//
 		filename := filepath.Base(repo.SarXMLFilePath)
 		fmt.Println("filename " + filename)
-		var contDisp string
+		// var contDisp string
 		// TODO nimmt er das mit den ' statt " ?
-		contDisp = "form-data; name='file'; filename='" + filename + "'"
-		fmt.Println("content-disposition " + contDisp)
-		conn.Header["Content-Disposition"] = []string{contDisp}
+		// contDisp = "form-data; name='file'; filename='" + filename + "'"
+		// fmt.Println("content-disposition " + contDisp)
+		// conn.Header["Content-Disposition"] = []string{contDisp}
+
+		conn.Header["Content-Filename"] = []string{filename}
 		sarFile, err := ioutil.ReadFile(repo.SarXMLFilePath)
 		if err != nil {
 			return err
 		}
-		// ##################
-		fileSize := binary.Size(sarFile)
-		value := "bytes " + strconv.Itoa(0) + "-" + strconv.Itoa(fileSize) + "/" + strconv.Itoa(fileSize)
-		fmt.Println("range " + value)
-		conn.Header["Content-Range"] = []string{value}
-		// #############
 		url := "https://w7q.dmzwdf.sap.corp/odata/aas_file_upload"
 		_, err = conn.uploadSarFile(url, sarFile)
 		if err != nil {
 			return err
 		}
 	}
+
+	// TODO register nach upload! am besten den connector nochmal neu aufsetzen
 	return nil
 }
 
 func (p *pckg) register() error {
 	p.connector.getToken()
-	appendum := "/RegisterPackage?Name='" + p.PackageName + "'"
+	appendum := "/odata/aas_ocs_package/RegisterPackage?Name='" + p.PackageName + "'"
 	_, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
@@ -94,8 +89,9 @@ func (p *pckg) register() error {
 	return nil
 }
 
+// TODO error messages
 func (conn connector) uploadSarFile(url string, sarFile []byte) ([]byte, error) {
-	response, err := conn.Client.SendRequest("POST", url, bytes.NewBuffer(sarFile), conn.Header, nil)
+	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
 	if err != nil {
 		if response == nil {
 			return nil, errors.Wrap(err, "Post failed")
