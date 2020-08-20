@@ -9,10 +9,6 @@ class ConfigurationHelper implements Serializable {
         new ConfigurationHelper(step, config)
     }
 
-    ConfigurationHelper loadStepDefaults(String stageName) {
-        return loadStepDefaults([:], stageName)
-    }
-
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:], String stageName = step.env.STAGE_NAME) {
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
