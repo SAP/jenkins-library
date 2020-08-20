@@ -98,5 +98,4 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
-      workingDir: '/home/piper'
       imagePullPolicy: Never
