@@ -1,3 +1,5 @@
+import com.sap.piper.ConfigurationLoader
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -62,15 +64,10 @@ void call(Map parameters = [:]) {
         String stageName = parameters.stageName ?: env.STAGE_NAME
         echo "pulling config from stage: '$stageName'"
 
-        Map stageConfig = ConfigurationHelper.newInstance(this)
-            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
-            .use()
-        echo "stage config is: '$stageConfig'"
-
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .loadStepDefaults([:], stageName)
+            .mixinGeneralConfig(sript.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
