@@ -98,6 +98,12 @@ func Execute() {
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

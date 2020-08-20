@@ -15,29 +15,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type aAKaaSCheckPVOptions struct {
-	AAKaaSEndpoint string `json:"aAKaaSEndpoint,omitempty"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
-	AddonProduct   string `json:"addonProduct,omitempty"`
-	AddonVersion   string `json:"addonVersion,omitempty"`
+type abapAddonAssemblyKitCreateTargetVectorOptions struct {
+	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	Repositories                 string `json:"repositories,omitempty"`
+	AddonProduct                 string `json:"addonProduct,omitempty"`
 }
 
-type aAKaaSCheckPVCommonPipelineEnvironment struct {
-	PVersion    string
-	PSpspLevel  string
-	PPatchLevel string
+type abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment struct {
+	abap struct {
+		addonProduct string
+	}
 }
 
-func (p *aAKaaSCheckPVCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
 		value    string
 	}{
-		{category: "", name: "PVersion", value: p.PVersion},
-		{category: "", name: "PSpspLevel", value: p.PSpspLevel},
-		{category: "", name: "PPatchLevel", value: p.PPatchLevel},
+		{category: "abap", name: "addonProduct", value: p.abap.addonProduct},
 	}
 
 	errCount := 0
@@ -53,19 +51,19 @@ func (p *aAKaaSCheckPVCommonPipelineEnvironment) persist(path, resourceName stri
 	}
 }
 
-// AAKaaSCheckPVCommand Check Product Version
-func AAKaaSCheckPVCommand() *cobra.Command {
-	const STEP_NAME = "aAKaaSCheckPV"
+// AbapAddonAssemblyKitCreateTargetVectorCommand TODO
+func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitCreateTargetVector"
 
-	metadata := aAKaaSCheckPVMetadata()
-	var stepConfig aAKaaSCheckPVOptions
+	metadata := abapAddonAssemblyKitCreateTargetVectorMetadata()
+	var stepConfig abapAddonAssemblyKitCreateTargetVectorOptions
 	var startTime time.Time
-	var commonPipelineEnvironment aAKaaSCheckPVCommonPipelineEnvironment
+	var commonPipelineEnvironment abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment
 
-	var createAAKaaSCheckPVCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitCreateTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Check Product Version",
-		Long:  `Check Product Version`,
+		Short: "TODO",
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -101,42 +99,42 @@ func AAKaaSCheckPVCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			aAKaaSCheckPV(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapAddonAssemblyKitCreateTargetVector(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAAKaaSCheckPVFlags(createAAKaaSCheckPVCmd, &stepConfig)
-	return createAAKaaSCheckPVCmd
+	addAbapAddonAssemblyKitCreateTargetVectorFlags(createAbapAddonAssemblyKitCreateTargetVectorCmd, &stepConfig)
+	return createAbapAddonAssemblyKitCreateTargetVectorCmd
 }
 
-func addAAKaaSCheckPVFlags(cmd *cobra.Command, stepConfig *aAKaaSCheckPVOptions) {
-	cmd.Flags().StringVar(&stepConfig.AAKaaSEndpoint, "aAKaaSEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "AAKaaS Endpoint")
+func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCreateTargetVectorOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
 	cmd.Flags().StringVar(&stepConfig.AddonProduct, "addonProduct", os.Getenv("PIPER_addonProduct"), "addonProduct")
-	cmd.Flags().StringVar(&stepConfig.AddonVersion, "addonVersion", os.Getenv("PIPER_addonVersion"), "addonVersion")
 
-	cmd.MarkFlagRequired("aAKaaSEndpoint")
+	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("repositories")
 	cmd.MarkFlagRequired("addonProduct")
-	cmd.MarkFlagRequired("addonVersion")
 }
 
 // retrieve step metadata
-func aAKaaSCheckPVMetadata() config.StepData {
+func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "aAKaaSCheckPV",
+			Name:    "abapAddonAssemblyKitCreateTargetVector",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "aAKaaSEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -160,17 +158,17 @@ func aAKaaSCheckPVMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "addonProduct",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "addonVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Name:        "addonProduct",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonProduct"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

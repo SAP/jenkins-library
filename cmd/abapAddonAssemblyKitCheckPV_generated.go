@@ -15,29 +15,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type aAKaaSCheckCVOptions struct {
-	AAKaaSEndpoint        string `json:"aAKaaSEndpoint,omitempty"`
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	AddonComponent        string `json:"addonComponent,omitempty"`
-	AddonComponentVersion string `json:"addonComponentVersion,omitempty"`
+type abapAddonAssemblyKitCheckPVOptions struct {
+	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
 }
 
-type aAKaaSCheckCVCommonPipelineEnvironment struct {
-	CVersion    string
-	CSpspLevel  string
-	CPatchLevel string
+type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
+	abap struct {
+		addonProduct string
+	}
 }
 
-func (p *aAKaaSCheckCVCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
 		value    string
 	}{
-		{category: "", name: "CVersion", value: p.CVersion},
-		{category: "", name: "CSpspLevel", value: p.CSpspLevel},
-		{category: "", name: "CPatchLevel", value: p.CPatchLevel},
+		{category: "abap", name: "addonProduct", value: p.abap.addonProduct},
 	}
 
 	errCount := 0
@@ -53,19 +50,19 @@ func (p *aAKaaSCheckCVCommonPipelineEnvironment) persist(path, resourceName stri
 	}
 }
 
-// AAKaaSCheckCVCommand Check Component Version
-func AAKaaSCheckCVCommand() *cobra.Command {
-	const STEP_NAME = "aAKaaSCheckCV"
+// AbapAddonAssemblyKitCheckPVCommand TODO
+func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitCheckPV"
 
-	metadata := aAKaaSCheckCVMetadata()
-	var stepConfig aAKaaSCheckCVOptions
+	metadata := abapAddonAssemblyKitCheckPVMetadata()
+	var stepConfig abapAddonAssemblyKitCheckPVOptions
 	var startTime time.Time
-	var commonPipelineEnvironment aAKaaSCheckCVCommonPipelineEnvironment
+	var commonPipelineEnvironment abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
 
-	var createAAKaaSCheckCVCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitCheckPVCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Check Component Version",
-		Long:  `Check Component Version`,
+		Short: "TODO",
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -101,42 +98,40 @@ func AAKaaSCheckCVCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			aAKaaSCheckCV(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapAddonAssemblyKitCheckPV(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAAKaaSCheckCVFlags(createAAKaaSCheckCVCmd, &stepConfig)
-	return createAAKaaSCheckCVCmd
+	addAbapAddonAssemblyKitCheckPVFlags(createAbapAddonAssemblyKitCheckPVCmd, &stepConfig)
+	return createAbapAddonAssemblyKitCheckPVCmd
 }
 
-func addAAKaaSCheckCVFlags(cmd *cobra.Command, stepConfig *aAKaaSCheckCVOptions) {
-	cmd.Flags().StringVar(&stepConfig.AAKaaSEndpoint, "aAKaaSEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "AAKaaS Endpoint")
+func addAbapAddonAssemblyKitCheckPVFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckPVOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonComponent, "addonComponent", os.Getenv("PIPER_addonComponent"), "addonComponent")
-	cmd.Flags().StringVar(&stepConfig.AddonComponentVersion, "addonComponentVersion", os.Getenv("PIPER_addonComponentVersion"), "addonComponentVersion")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `.pipeline/addon.yml`, "File name of the YAML descriptor")
 
-	cmd.MarkFlagRequired("aAKaaSEndpoint")
+	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("addonComponent")
-	cmd.MarkFlagRequired("addonComponentVersion")
+	cmd.MarkFlagRequired("addonDescriptorFileName")
 }
 
 // retrieve step metadata
-func aAKaaSCheckCVMetadata() config.StepData {
+func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "aAKaaSCheckCV",
+			Name:    "abapAddonAssemblyKitCheckPV",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "aAKaaSEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -160,17 +155,9 @@ func aAKaaSCheckCVMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "addonComponent",
+						Name:        "addonDescriptorFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "addonComponentVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Scope:       []string{},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

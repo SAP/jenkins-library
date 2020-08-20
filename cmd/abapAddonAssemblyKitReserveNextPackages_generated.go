@@ -15,31 +15,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type aAKaaSReserveNextPackageOptions struct {
-	AAKaaSEndpoint        string `json:"aAKaaSEndpoint,omitempty"`
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	AddonComponent        string `json:"addonComponent,omitempty"`
-	AddonComponentVersion string `json:"addonComponentVersion,omitempty"`
+type abapAddonAssemblyKitReserveNextPackagesOptions struct {
+	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	Repositories                 string `json:"repositories,omitempty"`
 }
 
-type aAKaaSReserveNextPackageCommonPipelineEnvironment struct {
-	PackageName            string
-	PackageType            string
-	PreviousDeliveryCommit string
-	Namespace              string
+type abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment struct {
+	abap struct {
+		repositories string
+	}
 }
 
-func (p *aAKaaSReserveNextPackageCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
 		value    string
 	}{
-		{category: "", name: "PackageName", value: p.PackageName},
-		{category: "", name: "PackageType", value: p.PackageType},
-		{category: "", name: "PreviousDeliveryCommit", value: p.PreviousDeliveryCommit},
-		{category: "", name: "Namespace", value: p.Namespace},
+		{category: "abap", name: "repositories", value: p.abap.repositories},
 	}
 
 	errCount := 0
@@ -55,19 +50,19 @@ func (p *aAKaaSReserveNextPackageCommonPipelineEnvironment) persist(path, resour
 	}
 }
 
-// AAKaaSReserveNextPackageCommand Reserve next package
-func AAKaaSReserveNextPackageCommand() *cobra.Command {
-	const STEP_NAME = "aAKaaSReserveNextPackage"
+// AbapAddonAssemblyKitReserveNextPackagesCommand TODO
+func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitReserveNextPackages"
 
-	metadata := aAKaaSReserveNextPackageMetadata()
-	var stepConfig aAKaaSReserveNextPackageOptions
+	metadata := abapAddonAssemblyKitReserveNextPackagesMetadata()
+	var stepConfig abapAddonAssemblyKitReserveNextPackagesOptions
 	var startTime time.Time
-	var commonPipelineEnvironment aAKaaSReserveNextPackageCommonPipelineEnvironment
+	var commonPipelineEnvironment abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment
 
-	var createAAKaaSReserveNextPackageCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitReserveNextPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Reserve next package",
-		Long:  `Reserve next package`,
+		Short: "TODO",
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -103,42 +98,40 @@ func AAKaaSReserveNextPackageCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			aAKaaSReserveNextPackage(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapAddonAssemblyKitReserveNextPackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAAKaaSReserveNextPackageFlags(createAAKaaSReserveNextPackageCmd, &stepConfig)
-	return createAAKaaSReserveNextPackageCmd
+	addAbapAddonAssemblyKitReserveNextPackagesFlags(createAbapAddonAssemblyKitReserveNextPackagesCmd, &stepConfig)
+	return createAbapAddonAssemblyKitReserveNextPackagesCmd
 }
 
-func addAAKaaSReserveNextPackageFlags(cmd *cobra.Command, stepConfig *aAKaaSReserveNextPackageOptions) {
-	cmd.Flags().StringVar(&stepConfig.AAKaaSEndpoint, "aAKaaSEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "AAKaaS Endpoint")
+func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitReserveNextPackagesOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonComponent, "addonComponent", os.Getenv("PIPER_addonComponent"), "addonComponent")
-	cmd.Flags().StringVar(&stepConfig.AddonComponentVersion, "addonComponentVersion", os.Getenv("PIPER_addonComponentVersion"), "addonComponentVersion")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
 
-	cmd.MarkFlagRequired("aAKaaSEndpoint")
+	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("addonComponent")
-	cmd.MarkFlagRequired("addonComponentVersion")
+	cmd.MarkFlagRequired("repositories")
 }
 
 // retrieve step metadata
-func aAKaaSReserveNextPackageMetadata() config.StepData {
+func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "aAKaaSReserveNextPackage",
+			Name:    "abapAddonAssemblyKitReserveNextPackages",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "aAKaaSEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -162,17 +155,9 @@ func aAKaaSReserveNextPackageMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "addonComponent",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "addonComponentVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

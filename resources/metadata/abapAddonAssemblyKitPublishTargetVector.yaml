@@ -1,18 +1,18 @@
 metadata:
-    name: aAKaaSCheckCVs
-    description: Check Component Version
+    name: abapAddonAssemblyKitPublishTargetVector
+    description: TODO
     longDescription: |
-        Check Component Version      
+        TODO    
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Credential for AAKaaS System
+        description: Credential for AbapAddonAssemblyKit System
         type: jenkins
     params:
-      - name: aAKaaSEndpoint
+      - name: AbapAddonAssemblyKitEndpoint
         type: string
-        description: AAKaaS Endpoint
+        description: TODO
         scope:
         - PARAMETERS
         - STAGES
@@ -38,16 +38,24 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: repositories
+      - name: scopeTV
         type: string
-        description: repositories
+        description: TODO
+        possibleValues:
+          - T
+          - P
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: addonProduct
+        type: string
+        description: addonProduct
         mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: abap/repositories
-  outputs:
-    resources:
-      - name: commonPipelineEnvironment
-        type: piperEnvironment
-        params:
-          - name: abap/repositories
+            param: abap/addonProduct

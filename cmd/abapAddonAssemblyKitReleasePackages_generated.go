@@ -13,25 +13,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type aAKaaSRegisterDeliveryTransportOptions struct {
-	AAKaaSEndpoint string `json:"aAKaaSEndpoint,omitempty"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
-	PackageName    string `json:"PackageName,omitempty"`
+type abapAddonAssemblyKitReleasePackagesOptions struct {
+	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	Repositories                 string `json:"repositories,omitempty"`
 }
 
-// AAKaaSRegisterDeliveryTransportCommand aAKaaSRegisterDeliveryTransport
-func AAKaaSRegisterDeliveryTransportCommand() *cobra.Command {
-	const STEP_NAME = "aAKaaSRegisterDeliveryTransport"
+// AbapAddonAssemblyKitReleasePackagesCommand TODO
+func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitReleasePackages"
 
-	metadata := aAKaaSRegisterDeliveryTransportMetadata()
-	var stepConfig aAKaaSRegisterDeliveryTransportOptions
+	metadata := abapAddonAssemblyKitReleasePackagesMetadata()
+	var stepConfig abapAddonAssemblyKitReleasePackagesOptions
 	var startTime time.Time
 
-	var createAAKaaSRegisterDeliveryTransportCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitReleasePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "aAKaaSRegisterDeliveryTransport",
-		Long:  `aAKaaSRegisterDeliveryTransport`,
+		Short: "TODO",
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -66,40 +66,40 @@ func AAKaaSRegisterDeliveryTransportCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			aAKaaSRegisterDeliveryTransport(stepConfig, &telemetryData)
+			abapAddonAssemblyKitReleasePackages(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAAKaaSRegisterDeliveryTransportFlags(createAAKaaSRegisterDeliveryTransportCmd, &stepConfig)
-	return createAAKaaSRegisterDeliveryTransportCmd
+	addAbapAddonAssemblyKitReleasePackagesFlags(createAbapAddonAssemblyKitReleasePackagesCmd, &stepConfig)
+	return createAbapAddonAssemblyKitReleasePackagesCmd
 }
 
-func addAAKaaSRegisterDeliveryTransportFlags(cmd *cobra.Command, stepConfig *aAKaaSRegisterDeliveryTransportOptions) {
-	cmd.Flags().StringVar(&stepConfig.AAKaaSEndpoint, "aAKaaSEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "AAKaaS Endpoint")
+func addAbapAddonAssemblyKitReleasePackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitReleasePackagesOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.PackageName, "PackageName", os.Getenv("PIPER_PackageName"), "PackageName")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
 
-	cmd.MarkFlagRequired("aAKaaSEndpoint")
+	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("PackageName")
+	cmd.MarkFlagRequired("repositories")
 }
 
 // retrieve step metadata
-func aAKaaSRegisterDeliveryTransportMetadata() config.StepData {
+func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "aAKaaSRegisterDeliveryTransport",
+			Name:    "abapAddonAssemblyKitReleasePackages",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "aAKaaSEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -123,9 +123,9 @@ func aAKaaSRegisterDeliveryTransportMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "PackageName",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "PackageName"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

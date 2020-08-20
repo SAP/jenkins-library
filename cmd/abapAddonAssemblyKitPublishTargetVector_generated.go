@@ -5,64 +5,34 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
-type aAKaaSCheckCVsOptions struct {
-	AAKaaSEndpoint string `json:"aAKaaSEndpoint,omitempty"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password,omitempty"`
-	Repositories   string `json:"repositories,omitempty"`
+type abapAddonAssemblyKitPublishTargetVectorOptions struct {
+	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	ScopeTV                      string `json:"scopeTV,omitempty"`
+	AddonProduct                 string `json:"addonProduct,omitempty"`
 }
 
-type aAKaaSCheckCVsCommonPipelineEnvironment struct {
-	abap struct {
-		repositories string
-	}
-}
+// AbapAddonAssemblyKitPublishTargetVectorCommand TODO
+func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitPublishTargetVector"
 
-func (p *aAKaaSCheckCVsCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    string
-	}{
-		{category: "abap", name: "repositories", value: p.abap.repositories},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
-	}
-}
-
-// AAKaaSCheckCVsCommand Check Component Version
-func AAKaaSCheckCVsCommand() *cobra.Command {
-	const STEP_NAME = "aAKaaSCheckCVs"
-
-	metadata := aAKaaSCheckCVsMetadata()
-	var stepConfig aAKaaSCheckCVsOptions
+	metadata := abapAddonAssemblyKitPublishTargetVectorMetadata()
+	var stepConfig abapAddonAssemblyKitPublishTargetVectorOptions
 	var startTime time.Time
-	var commonPipelineEnvironment aAKaaSCheckCVsCommonPipelineEnvironment
 
-	var createAAKaaSCheckCVsCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Check Component Version",
-		Long:  `Check Component Version`,
+		Short: "TODO",
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -91,47 +61,47 @@ func AAKaaSCheckCVsCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			aAKaaSCheckCVs(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapAddonAssemblyKitPublishTargetVector(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAAKaaSCheckCVsFlags(createAAKaaSCheckCVsCmd, &stepConfig)
-	return createAAKaaSCheckCVsCmd
+	addAbapAddonAssemblyKitPublishTargetVectorFlags(createAbapAddonAssemblyKitPublishTargetVectorCmd, &stepConfig)
+	return createAbapAddonAssemblyKitPublishTargetVectorCmd
 }
 
-func addAAKaaSCheckCVsFlags(cmd *cobra.Command, stepConfig *aAKaaSCheckCVsOptions) {
-	cmd.Flags().StringVar(&stepConfig.AAKaaSEndpoint, "aAKaaSEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "AAKaaS Endpoint")
+func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitPublishTargetVectorOptions) {
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp/odata/aas_ocs_package`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
+	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "TODO")
+	cmd.Flags().StringVar(&stepConfig.AddonProduct, "addonProduct", os.Getenv("PIPER_addonProduct"), "addonProduct")
 
-	cmd.MarkFlagRequired("aAKaaSEndpoint")
+	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repositories")
+	cmd.MarkFlagRequired("addonProduct")
 }
 
 // retrieve step metadata
-func aAKaaSCheckCVsMetadata() config.StepData {
+func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "aAKaaSCheckCVs",
+			Name:    "abapAddonAssemblyKitPublishTargetVector",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "aAKaaSEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -155,9 +125,17 @@ func aAKaaSCheckCVsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repositories",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
-						Scope:       []string{},
+						Name:        "scopeTV",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "addonProduct",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonProduct"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

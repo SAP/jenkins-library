@@ -29,44 +29,50 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 	}
 }
 
-// type Repository struct {
-// 	Name                string `json:"name"`
-// 	Tag                 string `json:"tag"`
-// 	Branch              string `json:"branch"`
-// 	Version             string `json:"version"`
-// 	VersionOtherFormat  string
-// 	PackageName         string
-// 	PackageType         string
-// 	SpsLevel            string
-// 	PatchLevel          string
-// 	PredecessorCommitID string
-// 	Status              string
-// 	Namespace           string
-// 	SarXMLFilePath      string
-// }
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return nil
 	}
-
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
 	var repos []abaputils.Repository
 	repos = addonDescriptor.Repositories
 	for i, repo := range repos {
-		c := cv{
-			connector: *conn,
-			Name:      repo.Name,
+		var c cv
+		c.init(repo, *conn)
+		err := c.validate()
+		if err != nil {
+			return err
 		}
-		c.validate()
 		repos[i] = c.convert()
 	}
-
+	toCPE, _ := json.Marshal(repos)
+	cpe.abap.repositories = string(toCPE)
 	return nil
 }
 
+func (c *cv) validate() error {
+	appendum := "/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
+	body, err := c.connector.get(appendum)
+	if err != nil {
+		return err
+	}
+	var jCV jsonCV
+	json.Unmarshal(body, &jCV)
+	c.Name = jCV.CV.Name
+	c.Version = jCV.CV.Version
+	c.SpsLevel = jCV.CV.SpsLevel
+	c.PatchLevel = jCV.CV.PatchLevel
+	return nil
+}
+
+// *******************************************************************************************************************************
+// ************************************************************ REUSE ************************************************************
+// *******************************************************************************************************************************
+
+// TODO echt alles übertragen?
 func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.connector = conn
 	c.Name = repo.Name
@@ -109,19 +115,4 @@ type cv struct {
 	Status              string
 	Namespace           string
 	SarXMLFilePath      string
-}
-
-func (c *cv) validate() error {
-	appendum := "/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
-	body, err := c.connector.get(appendum)
-	if err != nil {
-		return err
-	}
-	var jCV jsonCV
-	json.Unmarshal(body, &jCV)
-	c.Name = jCV.CV.Name
-	c.Version = jCV.CV.Version
-	c.SpsLevel = jCV.CV.SpsLevel
-	c.PatchLevel = jCV.CV.PatchLevel
-	return nil
 }

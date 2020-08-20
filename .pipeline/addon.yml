@@ -1,11 +1,8 @@
-addonProduct: /DMO/myAddonProduct
-addonVersion: 3.1.4
+addonProduct: /DRNMSPC/PRD01
+addonVersion: 1.0.0
 addonUniqueID: myAddonId
 customerID: $ID
 repositories:
-   - name: /DMO/REPO_A
-     tag: v-1.0.1-build-0001
-     version: 1.0.1
-   - name: /DMO/REPO_B
-     tag: rel-2.1.1-build-0001
-     version: 2.1.1
+   - name: /DRNMSPC/COMP01
+     tag: whatever
+     version: 1.0.0

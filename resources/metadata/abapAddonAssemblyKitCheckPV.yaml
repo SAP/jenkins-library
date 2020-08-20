@@ -1,18 +1,18 @@
 metadata:
-    name: aAKaaSReserveNextPackage
-    description: Reserve next package
+    name: abapAddonAssemblyKitCheckPV
+    description: TODO
     longDescription: |
-        Reserve next package     
+        TODO    
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Credential for AAKaaS System
+        description: Credential for AbapAddonAssemblyKit System
         type: jenkins
     params:
-      - name: aAKaaSEndpoint
+      - name: AbapAddonAssemblyKitEndpoint
         type: string
-        description: AAKaaS Endpoint
+        description: TODO
         scope:
         - PARAMETERS
         - STAGES
@@ -38,30 +38,14 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: addonComponent
+      - name: addonDescriptorFileName
         type: string
-        description: addonComponent
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+        description: File name of the YAML descriptor
         mandatory: true
-      - name: addonComponentVersion
-        type: string
-        description: addonComponentVersion
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
-        mandatory: true
+        default: .pipeline/addon.yml
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: PackageName
-          - name: PackageType
-          - name: PreviousDeliveryCommit
-          - name: Namespace
+          - name: abap/addonProduct

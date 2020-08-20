@@ -1,18 +1,18 @@
 metadata:
-    name: aAKaaSRegisterDeliveryTransport
-    description: aAKaaSRegisterDeliveryTransport
+    name: abapAddonAssemblyKitReserveNextPackages
+    description: TODO
     longDescription: |
-      aAKaaSRegisterDeliveryTransport     
+        TODO    
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Credential for AAKaaS System
+        description: Credential for AbapAddonAssemblyKit System
         type: jenkins
     params:
-      - name: aAKaaSEndpoint
+      - name: AbapAddonAssemblyKitEndpoint
         type: string
-        description: AAKaaS Endpoint
+        description: TODO
         scope:
         - PARAMETERS
         - STAGES
@@ -38,15 +38,20 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: PackageName
+      - name: repositories
         type: string
-        description: PackageName
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+        description: repositories
         mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: PackageName
+            param: abap/repositories
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/repositories
