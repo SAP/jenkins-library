@@ -62,6 +62,11 @@ void call(Map parameters = [:]) {
         String stageName = parameters.stageName ?: env.STAGE_NAME
         echo "pulling config from stage: '$stageName'"
 
+        Map stageConfig = ConfigurationHelper.newInstance(this)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+            .use()
+        echo "stage config is: '$stageConfig'"
+
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
