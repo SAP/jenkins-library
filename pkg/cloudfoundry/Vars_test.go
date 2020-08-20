@@ -34,31 +34,6 @@ func TestVarsFiles(t *testing.T) {
 			assert.Equal(t, []string{"--vars-file", "varsA.yml"}, opts)
 		}
 	})
-
-	t.Run("Var files combined with vars, vars file found", func(t *testing.T) {
-		opts, err := GetVars([]string{"varsA.yml"}, []string{"a=b"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--vars-file", "varsA.yml", "--var", "a=b"}, opts)
-		}
-	})
-
-	t.Run("Var files combined with vars, vars file not found", func(t *testing.T) {
-		opts, err := GetVars([]string{"varsA.yml", "varsX.yml"}, []string{"a=b"})
-		if assert.EqualError(t, err, "Some vars files could not be found: [varsX.yml]") {
-			assert.Equal(t, []string{"--vars-file", "varsA.yml", "--var", "a=b"}, opts)
-		}
-	})
-
-	t.Run("Var files combined with vars, vars file not found and invalid var", func(t *testing.T) {
-		opts, err := GetVars([]string{"varsA.yml", "varsX.yml"}, []string{"a"})
-		if assert.EqualError(t, err, "Invalid vars: [a]") {
-			// in case of an invalid var we return empty opts since in this case it doesn't make sense anyway
-			// to continue. Caller should fix the invalid var. In contrast to that it might make sense to continue
-			// on missing var files, hence we return in that case (see test above) the opts, but without the
-			// missing var file, which is reported via the error.
-			assert.Empty(t, opts)
-		}
-	})
 }
 
 func TestVars(t *testing.T) {

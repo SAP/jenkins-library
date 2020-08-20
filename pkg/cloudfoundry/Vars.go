@@ -75,17 +75,3 @@ func GetVarsOptions(vars []string) ([]string, error) {
 func validateVar(v string) (bool, error) {
 	return regexp.MatchString(`\S{1,}=\S{1,}`, v)
 }
-
-// GetVars Returns the combined vars files and vars. Vars file first.
-// For handling of non exisitng var files see GetVarsFileOptions.
-func GetVars(varsFiles, vars []string) ([]string, error) {
-	combinedVarOpts := []string{}
-	varFileOpts, errVarFiles := GetVarsFileOptions(varsFiles)
-	varOpts, errVars := GetVarsOptions(vars)
-	if errVars != nil {
-		return []string{}, errVars
-	}
-	combinedVarOpts = append(combinedVarOpts, varFileOpts...)
-	combinedVarOpts = append(combinedVarOpts, varOpts...)
-	return combinedVarOpts, errVarFiles
-}
