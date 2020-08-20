@@ -18,6 +18,9 @@ spec:
     - name: checkmarxCredentialsId
       description: The technical user/password credential used to communicate with the Checkmarx backend
       type: jenkins
+    resources:
+      - name: checkmarx
+        type: stash
     params:
     - name: avoidDuplicateProjectScans
       type: bool
