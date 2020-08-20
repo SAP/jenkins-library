@@ -37,8 +37,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
-	var repos []abaputils.Repository
-	repos = addonDescriptor.Repositories
+	repos := addonDescriptor.Repositories
 	for i, repo := range repos {
 		var c cv
 		c.init(repo, *conn)
@@ -46,7 +45,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		if err != nil {
 			return err
 		}
-		repos[i] = c.convert()
+		repos[i] = c.addFields(repos[i])
 	}
 	toCPE, _ := json.Marshal(repos)
 	cpe.abap.repositories = string(toCPE)
@@ -59,10 +58,9 @@ func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.VersionYAML = repo.Version
 }
 
-func (c *cv) convert() abaputils.Repository {
+func (c *cv) addFields(initialRepo abaputils.Repository) abaputils.Repository {
 	var repo abaputils.Repository
-	repo.Name = c.Name
-	repo.Version = c.VersionYAML
+	repo = initialRepo
 	repo.VersionOtherFormat = c.Version
 	repo.SpsLevel = c.SpsLevel
 	repo.PatchLevel = c.PatchLevel

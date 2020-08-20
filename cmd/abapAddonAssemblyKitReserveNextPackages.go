@@ -128,26 +128,3 @@ func (p *pckg) get() error {
 	p.Namespace = jPck.Package.Namespace
 	return nil
 }
-
-//TODO das sollte irgendwie zum reuse gepackt werden und auch mit dem post von dem assembly step zusammengeführt werden
-// func (conn connector) post2(appendum string, importBody string) ([]byte, error) {
-// 	url := conn.Baseurl + appendum
-// 	var response *http.Response
-// 	var err error
-// 	if importBody == "" {
-// 		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
-// 	} else {
-// 		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
-// 	}
-// 	if err != nil {
-// 		if response == nil {
-// 			return nil, errors.Wrap(err, "Post failed")
-// 		}
-// 		defer response.Body.Close()
-// 		errorbody, _ := ioutil.ReadAll(response.Body)
-// 		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
-// 	}
-// 	defer response.Body.Close()
-// 	body, err := ioutil.ReadAll(response.Body)
-// 	return body, err
-// }

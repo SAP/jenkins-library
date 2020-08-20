@@ -75,9 +75,6 @@ func (p *pv) init(desc abaputils.AddonDescriptor, conn connector) {
 	p.connector = conn
 	p.Name = desc.AddonProduct
 	p.VersionYAML = desc.AddonVersion
-	p.SpsLevel = desc.AddonSpsLevel
-	p.PatchLevel = desc.AddonPatchLevel
-	p.TargetVectorID = desc.TargetVectorID
 }
 
 // TODO auf die verschiedenen versions achten!
@@ -89,6 +86,20 @@ func (p *pv) convert() abaputils.AddonDescriptor {
 	desc.AddonPatchLevel = p.PatchLevel
 	desc.TargetVectorID = p.TargetVectorID
 	return desc
+}
+func (p *pv) validate() error {
+	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
+	body, err := p.connector.get(appendum)
+	if err != nil {
+		return err
+	}
+	var jPV jsonPV
+	json.Unmarshal(body, &jPV)
+	p.Name = jPV.PV.Name
+	p.Version = jPV.PV.Version
+	p.SpsLevel = jPV.PV.SpsLevel
+	p.PatchLevel = jPV.PV.PatchLevel
+	return nil
 }
 
 type jsonPV struct {
@@ -104,19 +115,4 @@ type pv struct {
 	SpsLevel       string `json:"SpsLevel"`
 	PatchLevel     string `json:"PatchLevel"`
 	TargetVectorID string
-}
-
-func (p *pv) validate() error {
-	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
-	body, err := p.connector.get(appendum)
-	if err != nil {
-		return err
-	}
-	var jPV jsonPV
-	json.Unmarshal(body, &jPV)
-	p.Name = jPV.PV.Name
-	p.Version = jPV.PV.Version
-	p.SpsLevel = jPV.PV.SpsLevel
-	p.PatchLevel = jPV.PV.PatchLevel
-	return nil
 }
