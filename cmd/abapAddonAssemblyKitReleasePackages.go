@@ -48,7 +48,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 func (p *pckg) release() error {
 	p.connector.getToken()
 	appendum := "/ReleasePackage?Name='" + p.PackageName + "'"
-	_, err := p.connector.post2(appendum, "")
+	_, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 
 	conn.getToken()
 	appendum := "/PublishTargetVector?Id='" + product.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
-	_, err := conn.post2(appendum, "")
+	_, err := conn.post(appendum, "")
 	if err != nil {
 		return err
 	}

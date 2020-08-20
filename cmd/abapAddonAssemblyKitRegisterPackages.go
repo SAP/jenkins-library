@@ -86,7 +86,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 func (p *pckg) register() error {
 	p.connector.getToken()
 	appendum := "/RegisterPackage?Name='" + p.PackageName + "'"
-	_, err := p.connector.post2(appendum, "")
+	_, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
 	}

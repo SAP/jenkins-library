@@ -1,17 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
@@ -106,7 +102,7 @@ type pckg struct {
 func (p *pckg) reserveNext() error {
 	p.connector.getToken()
 	appendum := "/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
-	body, err := p.connector.post2(appendum, "")
+	body, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
 	}
@@ -134,24 +130,24 @@ func (p *pckg) get() error {
 }
 
 //TODO das sollte irgendwie zum reuse gepackt werden und auch mit dem post von dem assembly step zusammengeführt werden
-func (conn connector) post2(appendum string, importBody string) ([]byte, error) {
-	url := conn.Baseurl + appendum
-	var response *http.Response
-	var err error
-	if importBody == "" {
-		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
-	} else {
-		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
-	}
-	if err != nil {
-		if response == nil {
-			return nil, errors.Wrap(err, "Post failed")
-		}
-		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
-	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	return body, err
-}
+// func (conn connector) post2(appendum string, importBody string) ([]byte, error) {
+// 	url := conn.Baseurl + appendum
+// 	var response *http.Response
+// 	var err error
+// 	if importBody == "" {
+// 		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
+// 	} else {
+// 		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
+// 	}
+// 	if err != nil {
+// 		if response == nil {
+// 			return nil, errors.Wrap(err, "Post failed")
+// 		}
+// 		defer response.Body.Close()
+// 		errorbody, _ := ioutil.ReadAll(response.Body)
+// 		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
+// 	}
+// 	defer response.Body.Close()
+// 	body, err := ioutil.ReadAll(response.Body)
+// 	return body, err
+// }

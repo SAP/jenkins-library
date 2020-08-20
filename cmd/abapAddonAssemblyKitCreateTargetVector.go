@@ -61,7 +61,7 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 		return err
 	}
 	appendum := "/TargetVectorSet"
-	body, err := conn.post2(appendum, string(tvJson))
+	body, err := conn.post(appendum, string(tvJson))
 	if err != nil {
 		return err
 	}

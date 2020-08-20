@@ -116,3 +116,12 @@ type cv struct {
 	Namespace           string
 	SarXMLFilePath      string
 }
+
+// 	Version             string `json:"Version"`
+// 	SpsLevel            string `json:"SpLevel"`
+// 	PatchLevel          string `json:"PatchLevel"`
+// 	PredecessorCommitID string
+// 	Status              string
+// 	Namespace           string
+// 	SarXMLFilePath      string
+// }
