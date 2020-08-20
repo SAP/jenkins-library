@@ -85,7 +85,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	// Download SAR_XML
 	var reposBackToCPE []abaputils.Repository
 	resultName := "SAR_XML"
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
 	for i, b := range builds {
 		resultSARXML, err := b.build.getResult(resultName)
 		if err != nil {
