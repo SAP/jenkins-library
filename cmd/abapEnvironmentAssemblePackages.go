@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/http/cookiejar"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -90,7 +91,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		if err != nil {
 			return err
 		}
-		sarPackage := resultName + "_" + builds[i].repo.PackageName
+		sarPackage := resultSARXML.AdditionalInfo
 		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
 		err = resultSARXML.download(downloadPath)
 		if err != nil {
@@ -248,9 +249,15 @@ func (conn connector) get(appendum string) ([]byte, error) {
 	return body, err
 }
 
-func (conn connector) post(importBody string) ([]byte, error) {
-	url := conn.Baseurl + "/builds"
-	response, err := conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
+func (conn connector) post(appendum string, importBody string) ([]byte, error) {
+	url := conn.Baseurl + appendum
+	var response *http.Response
+	var err error
+	if importBody == "" {
+		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
+	} else {
+		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
+	}
 	if err != nil {
 		if response == nil {
 			return nil, errors.Wrap(err, "Post failed")
@@ -282,7 +289,7 @@ func (b *build) start(phase string, inputValues values) error {
 		values: inputValues,
 	}.String()
 
-	body, err := b.connector.post(importBody)
+	body, err := b.connector.post("/builds", importBody)
 	if err != nil {
 		return err
 	}
