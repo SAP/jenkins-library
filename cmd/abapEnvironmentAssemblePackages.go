@@ -50,25 +50,52 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 	var repos []abaputils.Repository
 	json.Unmarshal([]byte(config.Repositories), &repos)
-	var builds []buildWithRepository
-	// starting
-	for _, repo := range repos {
-		assemblyBuild := build{
-			connector: *conn,
-		}
-		buildRepo := buildWithRepository{
-			build: assemblyBuild,
-			repo:  repo,
-		}
-		err := buildRepo.start()
-		if err != nil {
-			return err
-		}
-		builds = append(builds, buildRepo)
+	builds, buildsAlreadyReleased, err := starting(repos, *conn)
+	if err != nil {
+		return err
 	}
-	// polling
-	polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
-	// checking if something failed
+	err = polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
+	if err != nil {
+		return err
+	}
+	err = checkIfFailed(builds)
+	if err != nil {
+		return err
+	}
+	reposBackToCPE, err := downloadSARXML(builds)
+	if err != nil {
+		return err
+	}
+	// also write the already released packages back to cpe
+	for _, b := range buildsAlreadyReleased {
+		reposBackToCPE = append(reposBackToCPE, b.repo)
+	}
+	backToCPE, _ := json.Marshal(reposBackToCPE)
+	cpe.abap.repositories = string(backToCPE)
+	return nil
+}
+
+func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
+	var reposBackToCPE []abaputils.Repository
+	resultName := "SAR_XML"
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+	for i, b := range builds {
+		resultSARXML, err := b.build.getResult(resultName)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		sarPackage := resultSARXML.AdditionalInfo
+		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
+		err = resultSARXML.download(downloadPath)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		builds[i].repo.SarXMLFilePath = downloadPath
+		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
+	}
+	return reposBackToCPE, nil
+}
+func checkIfFailed(builds []buildWithRepository) error {
 	var buildFailed bool = false
 	for _, bR := range builds {
 		b := bR.build
@@ -81,28 +108,56 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
 	}
-
-	// Download SAR_XML
-	var reposBackToCPE []abaputils.Repository
-	resultName := "SAR_XML"
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
-	for i, b := range builds {
-		resultSARXML, err := b.build.getResult(resultName)
-		if err != nil {
-			return err
-		}
-		sarPackage := resultSARXML.AdditionalInfo
-		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
-		err = resultSARXML.download(downloadPath)
-		if err != nil {
-			return err
-		}
-		builds[i].repo.SarXMLFilePath = downloadPath
-		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
-	}
-	backToCPE, _ := json.Marshal(reposBackToCPE)
-	cpe.abap.repositories = string(backToCPE)
 	return nil
+}
+
+func starting(repos []abaputils.Repository, conn connector) ([]buildWithRepository, []buildWithRepository, error) {
+	var builds []buildWithRepository
+	var buildsAlreadyReleased []buildWithRepository
+	for _, repo := range repos {
+		assemblyBuild := build{
+			connector: conn,
+		}
+		buildRepo := buildWithRepository{
+			build: assemblyBuild,
+			repo:  repo,
+		}
+		if repo.Status == "P" {
+			err := buildRepo.start()
+			if err != nil {
+				return builds, buildsAlreadyReleased, err
+			}
+			builds = append(builds, buildRepo)
+		} else {
+			log.Entry().Infof("Packages %s is already released. No need to run the assembly.", repo.PackageName)
+			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
+		}
+	}
+	return builds, buildsAlreadyReleased, nil
+}
+
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for _, b := range builds {
+				if !b.build.IsFinished() {
+					b.build.get()
+					if !b.build.IsFinished() {
+						allFinished = false
+					}
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
 }
 
 func (b *buildWithRepository) start() error {
@@ -133,30 +188,6 @@ func (b *buildWithRepository) start() error {
 	}
 	phase := "BUILD_" + b.repo.PackageType
 	return b.build.start(phase, valuesInput)
-}
-
-func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
-	for {
-		select {
-		case <-timeout:
-			return errors.New("Timed out")
-		case <-ticker:
-			var allFinished bool = true
-			for _, b := range builds {
-				if !b.build.IsFinished() {
-					b.build.get()
-					if !b.build.IsFinished() {
-						allFinished = false
-					}
-				}
-			}
-			if allFinished {
-				return nil
-			}
-		}
-	}
 }
 
 type buildWithRepository struct {
