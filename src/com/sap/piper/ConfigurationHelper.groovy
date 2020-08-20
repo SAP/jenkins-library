@@ -9,12 +9,17 @@ class ConfigurationHelper implements Serializable {
         new ConfigurationHelper(step, config)
     }
 
+    ConfigurationHelper loadStepDefaults(String stageName) {
+        return loadStepDefaults([:], stageName)
+    }
+
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:], String stageName = step.env.STAGE_NAME) {
         DefaultValueCache.prepare(step)
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
         mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, compatibleParameters)
+        return this
     }
 
     private Map config
