@@ -1,4 +1,4 @@
-package com.sap.qod.groovydemo
+package com.sap.piper.analytics
 
 import com.cloudbees.groovy.cps.NonCPS
 
@@ -10,16 +10,12 @@ import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Query;
 
-import java.util.Date
-
 class InfluxdbQueryer implements Serializable {
 
-    //private static Script script
     private static InfluxDB influxDB
 
     InfluxdbQueryer(String targetName) {
 
-        //this.script = script
         def target = getInfluxdbTarget(targetName)
         if (target == null) {
             throw new RuntimeException("Target was null!");
