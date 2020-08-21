@@ -51,6 +51,9 @@ type whitesourceUtils interface {
 	FileExists(path string) (bool, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
+	FileRename(oldPath, newPath string) error
+
+	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
 
 	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
 }
@@ -70,6 +73,10 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (ve
 	return artifact.GetCoordinates()
 }
 
+func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
 func newUtils() *whitesourceUtilsBundle {
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
@@ -82,7 +89,7 @@ func newUtils() *whitesourceUtilsBundle {
 	return &utils
 }
 
-func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData) {
+func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
 	utils := newUtils()
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
 	if err := resolveProjectIdentifiers(&config, utils, sys); err != nil {
@@ -91,20 +98,20 @@ func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData)
 
 	// Generate a vulnerability report for all projects with version = config.ProjectVersion
 	if config.AggregateVersionWideReport {
-		if err := aggregateVersionWideLibraries(&config, sys); err != nil {
+		if err := aggregateVersionWideLibraries(&config, utils, sys); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide libraries")
 		}
-		if err := aggregateVersionWideVulnerabilities(&config, sys); err != nil {
+		if err := aggregateVersionWideVulnerabilities(&config, utils, sys); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide vulnerabilities")
 		}
 	} else {
-		if err := runWhitesourceScan(&config, sys, telemetry, utils); err != nil {
+		if err := runWhitesourceScan(&config, utils, sys); err != nil {
 			log.Entry().WithError(err).Fatal("step execution failed on executing whitesource scan")
 		}
 	}
 }
 
-func runWhitesourceScan(config *ScanOptions, sys whitesource, _ *telemetry.CustomData, utils whitesourceUtils) error {
+func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	// Start the scan
 	if err := executeScan(config, utils); err != nil {
 		return err
@@ -518,12 +525,12 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) 
 	}
 
 	// Rename generated config file to config.ConfigFilePath parameter
-	if err := os.Rename("wss-generated-file.config", config.ConfigFilePath); err != nil {
+	if err := utils.FileRename("wss-generated-file.config", config.ConfigFilePath); err != nil {
 		return err
 	}
 
 	// Append aggregateModules=true parameter to config file (consolidates multi-module projects into one)
-	f, err := os.OpenFile(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := utils.FileOpen(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
@@ -550,7 +557,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) 
 	return nil
 }
 
-func aggregateVersionWideLibraries(config *ScanOptions, sys whitesource) error {
+func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -571,13 +578,13 @@ func aggregateVersionWideLibraries(config *ScanOptions, sys whitesource) error {
 			versionWideLibraries[projectName] = libs
 		}
 	}
-	if err := newLibraryCSVReport(versionWideLibraries, config); err != nil {
+	if err := newLibraryCSVReport(versionWideLibraries, config, utils); err != nil {
 		return err
 	}
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(config *ScanOptions, sys whitesource) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -603,14 +610,14 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, sys whitesource) e
 	if err := ioutil.WriteFile("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
 		return err
 	}
-	if err := newVulnerabilityExcelReport(versionWideAlerts, config); err != nil {
+	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
 		return err
 	}
 	return nil
 }
 
 // outputs an slice of alerts to an excel file
-func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions) error {
+func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
 	file := excelize.NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	if err != nil {
@@ -653,7 +660,6 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions) error {
 		return err
 	}
 
-	utils := piperutils.Files{}
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return err
 	}
@@ -666,7 +672,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions) error {
 }
 
 // outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
-func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions) error {
+func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
@@ -676,7 +682,6 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions)
 	}
 
 	// Ensure reporting directory exists
-	utils := piperutils.Files{}
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return err
 	}
