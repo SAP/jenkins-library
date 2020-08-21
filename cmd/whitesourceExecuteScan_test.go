@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -53,6 +54,13 @@ func (m *whitesourceSystemMock) GetProjectRiskReport(projectToken string) ([]byt
 }
 
 func (m *whitesourceSystemMock) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
+	_, err := m.GetProjectByToken(projectToken)
+	if err != nil {
+		return nil, err
+	}
+	if m.vulnerabilityReport == nil {
+		return nil, fmt.Errorf("no report available")
+	}
 	return m.vulnerabilityReport, nil
 }
 
@@ -140,6 +148,8 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versionin
 
 func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
+		FilesMock:      &mock.FilesMock{},
+		ExecMockRunner: &mock.ExecMockRunner{},
 		coordinates: coordinatesMock{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
@@ -194,11 +204,11 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := ScanOptions{
+		config := &ScanOptions{
 			ProjectToken: systemMock.projects[0].Token,
 		}
 		// test
-		err = blockUntilProjectIsUpdated(&config, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
+		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -211,14 +221,56 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := ScanOptions{
+		config := &ScanOptions{
 			ProjectToken: systemMock.projects[0].Token,
 		}
 		// test
-		err = blockUntilProjectIsUpdated(&config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
 		}
+	})
+}
+
+func TestDownloadReports(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProjectToken:              "mock-project-token",
+			ProjectName:               "mock-project",
+			ReportDirectoryName:       "report-dir",
+			VulnerabilityReportFormat: "txt",
+		}
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		// test
+		paths, err := downloadReports(config, utils, system)
+		// assert
+		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
+			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
+			assert.True(t, utils.HasWrittenFile(vPath))
+			vContent, _ := utils.FileRead(vPath)
+			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
+
+			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
+			assert.True(t, utils.HasWrittenFile(rPath))
+			rContent, _ := utils.FileRead(rPath)
+			assert.Equal(t, []byte("mock-risk-report"), rContent)
+		}
+	})
+	t.Run("invalid project token", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProjectToken: "<invalid>",
+		}
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		// test
+		path, err := downloadReports(config, utils, system)
+		// assert
+		assert.EqualError(t, err, "no project with token '<invalid>' found in Whitesource")
+		assert.Nil(t, path)
 	})
 }

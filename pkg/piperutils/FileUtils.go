@@ -202,6 +202,11 @@ func (f Files) FileRename(oldPath, newPath string) error {
 	return os.Rename(oldPath, newPath)
 }
 
+// FileOpen is a wrapper for os.OpenFile().
+func (f *Files) FileOpen(name string, flag int, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
 // MkdirAll is a wrapper for os.MkdirAll().
 func (f Files) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)

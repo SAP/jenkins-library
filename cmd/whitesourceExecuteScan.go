@@ -73,10 +73,6 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (ve
 	return artifact.GetCoordinates()
 }
 
-func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (*os.File, error) {
-	return os.OpenFile(name, flag, perm)
-}
-
 func newUtils() *whitesourceUtilsBundle {
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
@@ -129,6 +125,11 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 	log.Entry().Info("-----------------------------------------------------")
 
 	if config.Reporting {
+		// Project was scanned, we need to wait for Whitesource backend to propagate the changes
+		// before downloading any reports.
+		if err := pollProjectStatus(config, sys); err != nil {
+			return err
+		}
 		paths, err := downloadReports(config, utils, sys)
 		if err != nil {
 			return err
@@ -444,12 +445,7 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys whitesource, currentTim
 
 // downloadReports downloads a project's risk and vulnerability reports
 func downloadReports(config *ScanOptions, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
-	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
-	if err := pollProjectStatus(config, sys); err != nil {
-		return nil, err
-	}
-
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+	if err := utils.MkdirAll(config.ReportDirectoryName, os.ModePerm); err != nil {
 		return nil, err
 	}
 	vulnPath, err := downloadVulnerabilityReport(config, utils, sys)
@@ -464,10 +460,6 @@ func downloadReports(config *ScanOptions, utils whitesourceUtils, sys whitesourc
 }
 
 func downloadVulnerabilityReport(config *ScanOptions, utils whitesourceUtils, sys whitesource) (*piperutils.Path, error) {
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
-		return nil, err
-	}
-
 	reportBytes, err := sys.GetProjectVulnerabilityReport(config.ProjectToken, config.VulnerabilityReportFormat)
 	if err != nil {
 		return nil, err
