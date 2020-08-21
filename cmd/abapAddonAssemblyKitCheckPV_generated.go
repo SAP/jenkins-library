@@ -20,6 +20,7 @@ type abapAddonAssemblyKitCheckPVOptions struct {
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
 	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
 type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
@@ -113,6 +114,7 @@ func addAbapAddonAssemblyKitCheckPVFlags(cmd *cobra.Command, stepConfig *abapAdd
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `.pipeline/addon.yml`, "File name of the YAML descriptor")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
 
 	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -160,6 +162,14 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 						Scope:       []string{},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

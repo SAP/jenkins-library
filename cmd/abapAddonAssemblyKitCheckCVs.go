@@ -30,7 +30,12 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 }
 
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+	var addonDescriptorFromCPE abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
+
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
+	addonDescriptor = transferProductFromCPE(addonDescriptor, addonDescriptorFromCPE)
+
 	if err != nil {
 		return nil
 	}
@@ -49,6 +54,18 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
+}
+
+// TODO sobald abaputils geändert wurde muss das hier auch geändert werden!
+func transferProductFromCPE(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+	addonDescriptor.AddonProduct = addonDescriptorFromCPE.AddonProduct
+	addonDescriptor.AddonVersion = addonDescriptorFromCPE.AddonVersion
+	addonDescriptor.AddonUniqueID = addonDescriptorFromCPE.AddonUniqueID
+	addonDescriptor.CustomerID = addonDescriptorFromCPE.CustomerID
+	addonDescriptor.AddonSpsLevel = addonDescriptorFromCPE.AddonSpsLevel
+	addonDescriptor.AddonPatchLevel = addonDescriptorFromCPE.AddonPatchLevel
+	addonDescriptor.TargetVectorID = addonDescriptorFromCPE.TargetVectorID
+	return addonDescriptor
 }
 
 func (c *cv) init(repo abaputils.Repository, conn connector) {

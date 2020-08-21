@@ -32,11 +32,11 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	var product abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonProduct), &product)
+	var addonDescriptor abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	conn.getToken()
-	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + product.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
+	conn.getToken("/odata/aas_ocs_package")
+	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + addonDescriptor.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
 	_, err := conn.post(appendum, "")
 	if err != nil {
 		return err

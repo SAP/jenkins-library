@@ -38,9 +38,9 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: repositories
+      - name: addonDescriptor
         type: string
-        description: repositories
+        description: AddonDescriptor
         mandatory: true
         scope:
           - PARAMETERS
@@ -48,4 +48,4 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: abap/repositories
+            param: abap/addonDescriptor

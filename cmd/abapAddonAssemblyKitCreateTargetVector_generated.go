@@ -19,13 +19,12 @@ type abapAddonAssemblyKitCreateTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	Repositories                 string `json:"repositories,omitempty"`
-	AddonProduct                 string `json:"addonProduct,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
 type abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment struct {
 	abap struct {
-		addonProduct string
+		addonDescriptor string
 	}
 }
 
@@ -35,7 +34,7 @@ func (p *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) persis
 		name     string
 		value    string
 	}{
-		{category: "abap", name: "addonProduct", value: p.abap.addonProduct},
+		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
 
 	errCount := 0
@@ -113,14 +112,12 @@ func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConf
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp`, "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
-	cmd.Flags().StringVar(&stepConfig.AddonProduct, "addonProduct", os.Getenv("PIPER_addonProduct"), "addonProduct")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
 
 	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repositories")
-	cmd.MarkFlagRequired("addonProduct")
+	cmd.MarkFlagRequired("addonDescriptor")
 }
 
 // retrieve step metadata
@@ -158,16 +155,8 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repositories",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "addonProduct",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonProduct"}},
+						Name:        "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

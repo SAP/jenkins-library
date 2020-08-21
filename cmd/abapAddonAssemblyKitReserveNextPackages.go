@@ -32,13 +32,11 @@ func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveN
 func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	// var repos []abaputils.Repository
-	// json.Unmarshal([]byte(config.Repositories), &repos)
+
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	var addonDescriptorBackToCPE abaputils.AddonDescriptor
-	for _, repo := range addonDescriptor.Repositories {
+	for i, repo := range addonDescriptor.Repositories {
 		var p pckg
 		p.init(repo, *conn)
 		// TODO soll danach gepollt werden? glaub nicht..
@@ -52,10 +50,9 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 			return err
 		}
 		// TODO status L => Fehler, da es nicht auftreten sollte
-		repoBack := p.addFields(repo)
-		addonDescriptorBackToCPE.Repositories = append(addonDescriptorBackToCPE.Repositories, repoBack)
+		addonDescriptor.Repositories[i] = p.addFields(repo)
 	}
-	backToCPE, _ := json.Marshal(addonDescriptorBackToCPE)
+	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
@@ -81,7 +78,7 @@ func (p *pckg) addFields(initialRepo abaputils.Repository) abaputils.Repository 
 }
 
 func (p *pckg) reserveNext() error {
-	p.connector.getToken()
+	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.post(appendum, "")
 	if err != nil {

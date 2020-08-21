@@ -33,13 +33,15 @@ func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTar
 func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	var repos []abaputils.Repository
-	json.Unmarshal([]byte(config.Repositories), &repos)
-	var product abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonProduct), &product)
+	// var repos []abaputils.Repository
+	// json.Unmarshal([]byte(config.Repositories), &repos)
+	// var product abaputils.AddonDescriptor
+	// json.Unmarshal([]byte(config.AddonProduct), &product)
+	var addonDescriptor abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	var tv targetVector
-	tv.init(repos, product)
+	tv.init(addonDescriptor)
 
 	err := tv.createTargetVector(*conn)
 	if err != nil {
@@ -48,14 +50,14 @@ func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreat
 	fmt.Println("after creation")
 	fmt.Println(tv.ID)
 	// TODO id zurück ins CPE
-	product.TargetVectorID = tv.ID
-	toCPE, _ := json.Marshal(product)
-	cpe.abap.addonProduct = string(toCPE)
+	addonDescriptor.TargetVectorID = tv.ID
+	toCPE, _ := json.Marshal(addonDescriptor)
+	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 
 func (tv *targetVector) createTargetVector(conn connector) error {
-	conn.getToken()
+	conn.getToken("/odata/aas_ocs_package")
 	tvJson, err := json.Marshal(tv)
 	if err != nil {
 		return err
@@ -72,15 +74,15 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 	return nil
 }
 
-func (tv *targetVector) init(repos []abaputils.Repository, product abaputils.AddonDescriptor) {
-	tv.ProductName = product.AddonProduct
-	tv.ProductVersion = product.AddonVersion
-	tv.SpsLevel = product.AddonSpsLevel
-	tv.PatchLevel = product.AddonPatchLevel
+func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
+	tv.ProductName = addonDescriptor.AddonProduct
+	tv.ProductVersion = addonDescriptor.AddonVersion
+	tv.SpsLevel = addonDescriptor.AddonSpsLevel
+	tv.PatchLevel = addonDescriptor.AddonPatchLevel
 
 	var tvCVs []targetVectorCV
 	var tvCV targetVectorCV
-	for _, repo := range repos {
+	for _, repo := range addonDescriptor.Repositories {
 		tvCV.ScName = repo.Name
 		tvCV.ScVersion = repo.VersionOtherFormat
 		tvCV.DeliveryPackage = repo.PackageName

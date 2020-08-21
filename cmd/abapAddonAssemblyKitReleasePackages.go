@@ -31,10 +31,10 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	var repos []abaputils.Repository
-	json.Unmarshal([]byte(config.Repositories), &repos)
+	var addonDescriptor abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	for _, repo := range repos {
+	for _, repo := range addonDescriptor.Repositories {
 		if repo.Status == "P" {
 			var p pckg
 			p.init(repo, *conn)
@@ -48,7 +48,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 }
 
 func (p *pckg) release() error {
-	p.connector.getToken()
+	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
 	_, err := p.connector.post(appendum, "")
 	if err != nil {

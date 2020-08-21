@@ -48,9 +48,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: addonProduct
+      - name: addonDescriptor
         type: string
-        description: addonProduct
+        description: AddonDescriptor
         mandatory: true
         scope:
           - PARAMETERS
@@ -58,4 +58,4 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: abap/addonProduct
+            param: abap/addonDescriptor

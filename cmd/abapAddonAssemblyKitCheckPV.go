@@ -31,7 +31,10 @@ func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, tele
 }
 
 func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
+	var addonDescriptorFromCPE abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
+	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
 	if err != nil {
 		return nil
 	}

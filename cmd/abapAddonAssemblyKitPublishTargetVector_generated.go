@@ -18,7 +18,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
 	ScopeTV                      string `json:"scopeTV,omitempty"`
-	AddonProduct                 string `json:"addonProduct,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
 // AbapAddonAssemblyKitPublishTargetVectorCommand TODO
@@ -82,12 +82,12 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
 	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.AddonProduct, "addonProduct", os.Getenv("PIPER_addonProduct"), "addonProduct")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
 
 	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("addonProduct")
+	cmd.MarkFlagRequired("addonDescriptor")
 }
 
 // retrieve step metadata
@@ -133,8 +133,8 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "addonProduct",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonProduct"}},
+						Name:        "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

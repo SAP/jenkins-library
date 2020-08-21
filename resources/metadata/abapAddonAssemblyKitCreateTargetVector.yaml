@@ -38,9 +38,9 @@ spec:
         - STEPS
         mandatory: true
         secret: true
-      - name: repositories
+      - name: addonDescriptor
         type: string
-        description: repositories
+        description: AddonDescriptor
         mandatory: true
         scope:
           - PARAMETERS
@@ -48,21 +48,10 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: abap/repositories
-      - name: addonProduct
-        type: string
-        description: addonProduct
-        mandatory: true
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: abap/addonProduct
+            param: abap/addonDescriptor
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: abap/addonProduct
+          - name: abap/addonDescriptor
