@@ -23,7 +23,7 @@ import (
 
 /*
 AbapUtils Struct
-*//
+*/
 type AbapUtils struct {
 	Exec      command.ExecRunner
 	Intervall time.Duration
