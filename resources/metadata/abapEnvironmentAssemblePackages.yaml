@@ -113,14 +113,96 @@ inputs:
         - PARAMETERS
         - STAGES
         - STEPS
-outputs:
-  resources:
-    - name: commonPipelineEnvironment
-      type: piperEnvironment
-      params:
-        - name: abap/repositories
-containers:
-  - name: cf
-    image: ppiper/cf-cli
-    imagePullPolicy: Never
-    
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/space
+      - name: cfServiceInstance
+        type: string
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Parameter of CloudFoundry Service Key to be created
+        scope:
+        - STEPS
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
+      - name: host
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        type: string
+        mandatory: false
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: User Password for CF User
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        secret: true
+      - name: addonDescriptor
+        type: string
+        description: AddonDescriptor
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
+      - name: maxRuntimeInMinutes
+        type: int
+        description: maximal runtime of the step
+        mandatory: true
+        default: 360
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/addonDescriptor
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never
+      
