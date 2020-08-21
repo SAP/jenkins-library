@@ -71,13 +71,13 @@ func transferProductFromCPE(addonDescriptor abaputils.AddonDescriptor, addonDesc
 func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.connector = conn
 	c.Name = repo.Name
-	c.VersionYAML = repo.Version
+	c.VersionYAML = repo.VersionYAML
 }
 
 func (c *cv) addFields(initialRepo abaputils.Repository) abaputils.Repository {
 	var repo abaputils.Repository
 	repo = initialRepo
-	repo.VersionOtherFormat = c.Version
+	repo.Version = c.Version
 	repo.SpsLevel = c.SpsLevel
 	repo.PatchLevel = c.PatchLevel
 	return repo

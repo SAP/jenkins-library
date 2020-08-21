@@ -84,7 +84,7 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
 	var tvCV targetVectorCV
 	for _, repo := range addonDescriptor.Repositories {
 		tvCV.ScName = repo.Name
-		tvCV.ScVersion = repo.VersionOtherFormat
+		tvCV.ScVersion = repo.Version
 		tvCV.DeliveryPackage = repo.PackageName
 		tvCV.SpLevel = repo.SpsLevel
 		tvCV.PatchLevel = repo.PatchLevel

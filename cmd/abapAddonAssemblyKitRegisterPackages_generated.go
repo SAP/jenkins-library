@@ -15,12 +15,10 @@ import (
 
 type abapAddonAssemblyKitRegisterPackagesOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	AddonDescriptor string `json:"addonDescriptor,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
-
-
 
 // AbapAddonAssemblyKitRegisterPackagesCommand TODO
 func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
@@ -33,7 +31,7 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitRegisterPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "TODO",
-		Long: `TODO`,
+		Long:  `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -101,36 +99,36 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "AbapAddonAssemblyKitEndpoint",
+						Name:        "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "addonDescriptor",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
