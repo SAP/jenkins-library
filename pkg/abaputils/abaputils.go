@@ -297,14 +297,15 @@ type AbapBinding struct {
 
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
-	AddonProduct    string      `json:"addonProduct"`
-	AddonVersion    string      `json:"addonVersion"`
-	AddonUniqueID   string      `json:"addonUniqueID"`
-	CustomerID      interface{} `json:"customerID"`
-	AddonSpsLevel   string
-	AddonPatchLevel string
-	TargetVectorID  string
-	Repositories    []Repository `json:"repositories"`
+	AddonProduct     string      `json:"addonProduct"`
+	AddonVersionYAML string      `json:"addonVersion"`
+	AddonVersion     string
+	AddonUniqueID    string      `json:"addonUniqueID"`
+	CustomerID       interface{} `json:"customerID"`
+	AddonSpsLevel    string
+	AddonPatchLevel  string
+	TargetVectorID   string
+	Repositories     []Repository `json:"repositories"`
 }
 
 // Repository contains fields for the repository/component version
@@ -312,8 +313,8 @@ type Repository struct {
 	Name                string `json:"name"`
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
-	Version             string `json:"version"`
-	VersionOtherFormat  string
+	VersionYAML         string `json:"version"`
+	VersionYAML			string
 	PackageName         string
 	PackageType         string
 	SpsLevel            string
