@@ -245,9 +245,10 @@ func (conn *connector) init(config *abapEnvironmentAssemblePackagesOptions, com 
 
 // ******** technical communication calls ********
 
-func (conn *connector) getToken() error {
+func (conn *connector) getToken(appendum string) error {
+	url := conn.Baseurl + appendum
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
-	response, err := conn.Client.SendRequest("HEAD", conn.Baseurl, nil, conn.Header, nil)
+	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
@@ -312,7 +313,7 @@ func (conn connector) download(appendum string, downloadPath string) error {
 // ******** BUILD logic ********
 
 func (b *build) start(phase string, inputValues values) error {
-	if err := b.getToken(); err != nil {
+	if err := b.getToken(""); err != nil {
 		return err
 	}
 	importBody := inputForPost{
