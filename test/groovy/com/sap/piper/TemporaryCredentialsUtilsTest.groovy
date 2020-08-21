@@ -56,77 +56,96 @@ class TemporaryCredentialsUtilsTest extends BasePiperTest {
     }
 
     @Test
-    void credentialsFileWritten() {
+    void singleCredentialsFileWritten() {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
-        def directory = './'
+        def directories = ['./', 'integration-tests/src/test/resources']
         def filename = 'credentials.json'
-        fileExistsRule.registerExistingFile('systems.yml')
+        fileExistsRule.registerExistingFile('./systems.yml')
 
-        credUtils.writeCredentials([credential], directory, filename )
+        credUtils.writeCredentials([credential], directories, filename )
 
-        assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(writeFileRule.files['./credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+    }
+
+    @Test
+    void twoCredentialsFilesWritten() {
+        def credential = [alias: 'ERP', credentialId: 'erp-credentials']
+        def directories = ['./', 'integration-tests/src/test/resources']
+        def filename = 'credentials.json'
+        fileExistsRule.registerExistingFile('./systems.yml')
+        fileExistsRule.registerExistingFile('integration-tests/src/test/resources/systems.yml')
+
+        credUtils.writeCredentials([credential], directories, filename )
+
+        assertThat(writeFileRule.files["./credentials.json"], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(writeFileRule.files["integration-tests/src/test/resources/credentials.json"], containsString('"alias":"ERP","username":"test_user","password":"********"'))
     }
 
     @Test
     void credentialsFileNotWrittenWithEmptyList() {
-        def directory = './'
+        def directories = ['./', 'integration-tests/src/test/resources']
         def filename = 'credentials.json'
         fileExistsRule.registerExistingFile('systems.yml')
 
-        credUtils.writeCredentials([], directory, filename )
+        credUtils.writeCredentials([], directories, filename )
 
         loggingRule.expect('Not writing any credentials.')
     }
 
     @Test
-    void credentialsFileDeleted() {
-        def directory = './'
-        def filename = 'credentials.json'
-        fileExistsRule.registerExistingFile('systems.yml')
-
-        credUtils.deleteCredentials(directory, filename )
-
-        assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
-    }
-
-    @Test
     void systemsFileNotExists() {
-        def directory = './'
+        def credential = [alias: 'ERP', credentialId: 'erp-credentials']
+        def directories = ['./', 'integration-tests/src/test/resources']
+        def filename = 'credentials.json'
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("The directory ${directory} does not contain any of the files systems.yml, systems.yaml or systems.json. " +
+        thrown.expectMessage("None of the directories [./, integration-tests/src/test/resources/] contains any of the files systems.yml, systems.yaml or systems.json. " +
             "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
             "Please add the file as explained in the SAP Cloud SDK documentation.")
 
-        credUtils.assertSystemsFileExists(directory)
+        credUtils.writeCredentials([credential], directories, filename )
+    }
+
+    @Test
+    void credentialsFileDeleted() {
+        def directories = ['./', 'integration-tests/src/test/resources']
+        def filename = 'credentials.json'
+        fileExistsRule.registerExistingFile('systems.yml')
+        fileExistsRule.registerExistingFile('./credentials.json')
+
+        credUtils.deleteCredentials(directories, filename )
+
+        assertThat(shellRule.shell, hasItem('rm -f ./credentials.json'))
     }
 
     @Test
     void handleTemporaryCredentials() {
         def credential = [alias: 'ERP', credentialId: 'erp-credentials']
-        def directory = './'
-        fileExistsRule.registerExistingFile('systems.yml')
+        def directories = ['./', 'integration-tests/src/test/resources']
+        fileExistsRule.registerExistingFile('./systems.yml')
+        fileExistsRule.registerExistingFile('./credentials.json')
 
-        credUtils.handleTemporaryCredentials([credential], directory) {
+        credUtils.handleTemporaryCredentials([credential], directories) {
             bodyExecuted = true
         }
         assertTrue(bodyExecuted)
-        assertThat(writeFileRule.files['credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
-        assertThat(shellRule.shell, hasItem('rm -f credentials.json'))
+        assertThat(writeFileRule.files['./credentials.json'], containsString('"alias":"ERP","username":"test_user","password":"********"'))
+        assertThat(shellRule.shell, hasItem('rm -f ./credentials.json'))
     }
 
     @Test
-    void handleTemporaryCredentialsNoDirectory() {
+    void handleTemporaryCredentialsNoDirectories() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("This should not happen: Directory for credentials file not specified.")
+        thrown.expectMessage("This should not happen: Directories for credentials files not specified.")
 
-        credUtils.handleTemporaryCredentials([], ""){
+        credUtils.handleTemporaryCredentials([], []){
             bodyExecuted = true
         }
     }
 
     @Test
     void handleTemporaryCredentialsNoCredentials() {
-        credUtils.handleTemporaryCredentials([], "./"){
+        def directories = ['./', 'integration-tests/src/test/resources']
+        credUtils.handleTemporaryCredentials([], directories){
             bodyExecuted = true
         }
         assertTrue(bodyExecuted)
