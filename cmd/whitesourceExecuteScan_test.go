@@ -7,6 +7,7 @@ import (
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
@@ -127,6 +128,10 @@ type whitesourceUtilsMock struct {
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
 	w.downloadedFiles = append(w.downloadedFiles, downloadedFile{sourceURL: url, filePath: filename})
 	return nil
+}
+
+func (w *whitesourceUtilsMock) FileOpen(name string, flag int, perm os.FileMode) (*os.File, error) {
+	return nil, fmt.Errorf("FileOpen() is unsupported by the mock implementation")
 }
 
 func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versioning.Coordinates, error) {
