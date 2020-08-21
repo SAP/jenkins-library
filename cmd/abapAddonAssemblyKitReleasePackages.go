@@ -35,11 +35,13 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	json.Unmarshal([]byte(config.Repositories), &repos)
 
 	for _, repo := range repos {
-		var p pckg
-		p.init(repo, *conn)
-		err := p.release()
-		if err != nil {
-			return err
+		if repo.Status == "P" {
+			var p pckg
+			p.init(repo, *conn)
+			err := p.release()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -52,6 +54,6 @@ func (p *pckg) release() error {
 	if err != nil {
 		return err
 	}
-	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler?
+	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler? vielleicht ändert sich der status? dann müsste es zurück ins cpe
 	return nil
 }

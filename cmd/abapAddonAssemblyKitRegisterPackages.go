@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -35,46 +34,38 @@ func abapAddonAssemblyKitRegisterPackages(config abapAddonAssemblyKitRegisterPac
 }
 
 func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
-	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	var repos []abaputils.Repository
 	json.Unmarshal([]byte(config.Repositories), &repos)
 
-	//TODO https://wiki.wdf.sap.corp/wiki/pages/viewpage.action?spaceKey=A4H&title=Build+Pipeline+for+Partner+Addons da steht noch was von upload file, ist dass das sar file?
-	// Wie sieht der aufruf genau aus?
-	// dann müsste ich als input für den schritt noch das sarfile dazu fügen
-	// for _, repo := range repos {
-	// 	var p pckg
-	// 	p.init(repo, *conn)
-	// 	err := p.register()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
+	conn := new(connector)
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	for _, repo := range repos {
-		//
-		filename := filepath.Base(repo.SarXMLFilePath)
-		fmt.Println("filename " + filename)
-		// var contDisp string
-		// TODO nimmt er das mit den ' statt " ?
-		// contDisp = "form-data; name='file'; filename='" + filename + "'"
-		// fmt.Println("content-disposition " + contDisp)
-		// conn.Header["Content-Disposition"] = []string{contDisp}
-
-		conn.Header["Content-Filename"] = []string{filename}
-		sarFile, err := ioutil.ReadFile(repo.SarXMLFilePath)
-		if err != nil {
-			return err
-		}
-		url := "https://w7q.dmzwdf.sap.corp/odata/aas_file_upload"
-		_, err = conn.uploadSarFile(url, sarFile)
-		if err != nil {
-			return err
+		if repo.Status == "P" {
+			filename := filepath.Base(repo.SarXMLFilePath)
+			conn.Header["Content-Filename"] = []string{filename}
+			sarFile, err := ioutil.ReadFile(repo.SarXMLFilePath)
+			if err != nil {
+				return err
+			}
+			err = conn.uploadSarFile("/odata/aas_file_upload", sarFile)
+			if err != nil {
+				return err
+			}
 		}
 	}
-
-	// TODO register nach upload! am besten den connector nochmal neu aufsetzen
+	// we need a second connector without the added Header
+	conn2 := new(connector)
+	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	for _, repo := range repos {
+		if repo.Status == "P" {
+			var p pckg
+			p.init(repo, *conn2)
+			err := p.register()
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -85,22 +76,21 @@ func (p *pckg) register() error {
 	if err != nil {
 		return err
 	}
-	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler?
+	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler? vielleicht ändert sich der status? dann müsste es zurück ins cpe
 	return nil
 }
 
-// TODO error messages
-func (conn connector) uploadSarFile(url string, sarFile []byte) ([]byte, error) {
+func (conn connector) uploadSarFile(appendum string, sarFile []byte) error {
+	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
 	if err != nil {
 		if response == nil {
-			return nil, errors.Wrap(err, "Post failed")
+			return errors.Wrap(err, "Upload of SAR file failed")
 		}
 		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
+		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	return body, err
+	return nil
 }

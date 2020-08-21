@@ -37,18 +37,17 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
-	repos := addonDescriptor.Repositories
-	for i, repo := range repos {
+	for i, repo := range addonDescriptor.Repositories {
 		var c cv
 		c.init(repo, *conn)
 		err := c.validate()
 		if err != nil {
 			return err
 		}
-		repos[i] = c.addFields(repos[i])
+		addonDescriptor.Repositories[i] = c.addFields(addonDescriptor.Repositories[i])
 	}
-	toCPE, _ := json.Marshal(repos)
-	cpe.abap.repositories = string(toCPE)
+	toCPE, _ := json.Marshal(addonDescriptor)
+	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 

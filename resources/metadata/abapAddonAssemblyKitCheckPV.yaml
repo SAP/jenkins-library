@@ -48,4 +48,4 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: abap/addonProduct
+          - name: abap/addonDescriptor

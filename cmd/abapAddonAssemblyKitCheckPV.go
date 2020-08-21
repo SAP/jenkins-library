@@ -47,7 +47,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	}
 	addonDescriptor = p.convert()
 	toCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonProduct = string(toCPE)
+	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 

@@ -24,7 +24,7 @@ type abapAddonAssemblyKitCheckCVsOptions struct {
 
 type abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment struct {
 	abap struct {
-		repositories string
+		addonDescriptor string
 	}
 }
 
@@ -34,7 +34,7 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 		name     string
 		value    string
 	}{
-		{category: "abap", name: "repositories", value: p.abap.repositories},
+		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
 
 	errCount := 0

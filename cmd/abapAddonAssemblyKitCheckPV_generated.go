@@ -24,7 +24,7 @@ type abapAddonAssemblyKitCheckPVOptions struct {
 
 type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
 	abap struct {
-		addonProduct string
+		addonDescriptor string
 	}
 }
 
@@ -34,7 +34,7 @@ func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, res
 		name     string
 		value    string
 	}{
-		{category: "abap", name: "addonProduct", value: p.abap.addonProduct},
+		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
 
 	errCount := 0

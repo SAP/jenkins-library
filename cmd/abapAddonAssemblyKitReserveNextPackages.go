@@ -32,29 +32,31 @@ func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveN
 func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	var repos []abaputils.Repository
-	json.Unmarshal([]byte(config.Repositories), &repos)
+	// var repos []abaputils.Repository
+	// json.Unmarshal([]byte(config.Repositories), &repos)
+	var addonDescriptor abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	// //TODO soll hier gepollt werden auf den status? ist bei dem ersten reserve next package und dann get das get leer?
-	// //TODO laut Dirk soll wenn das Paket nicht status P hat der Assembly schritt nicht ausgeführt werden => soll ich diese info per commonEnv weitergeben und der assembly step dann
-	// // nicht ausgeführt werden? oder soll das irgendwie in dieser großen pipeline auseinander gesteuert werden
-	var reposBackToCPE []abaputils.Repository
-	for _, repo := range repos {
+	var addonDescriptorBackToCPE abaputils.AddonDescriptor
+	for _, repo := range addonDescriptor.Repositories {
 		var p pckg
 		p.init(repo, *conn)
+		// TODO soll danach gepollt werden? glaub nicht..
 		err := p.reserveNext()
 		if err != nil {
 			return err
 		}
+		// TODO kann gelöscht werden nachdem Dirk die Änderungen gemacht hat
 		err = p.get()
 		if err != nil {
 			return err
 		}
+		// TODO status L => Fehler, da es nicht auftreten sollte
 		repoBack := p.addFields(repo)
-		reposBackToCPE = append(reposBackToCPE, repoBack)
+		addonDescriptorBackToCPE.Repositories = append(addonDescriptorBackToCPE.Repositories, repoBack)
 	}
-	backToCPE, _ := json.Marshal(reposBackToCPE)
-	cpe.abap.repositories = string(backToCPE)
+	backToCPE, _ := json.Marshal(addonDescriptorBackToCPE)
+	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
@@ -66,37 +68,16 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.PackageName = repo.PackageName
 }
 
-// TODO change name
-func (p *pckg) addFields(repo2 abaputils.Repository) abaputils.Repository {
+// TODO genug?
+func (p *pckg) addFields(initialRepo abaputils.Repository) abaputils.Repository {
 	var repo abaputils.Repository
-	repo = repo2
+	repo = initialRepo
 	repo.PackageName = p.PackageName
 	repo.PackageType = p.Type
 	repo.PredecessorCommitID = p.PredecessorCommitID
 	repo.Status = p.Status
 	repo.Namespace = p.Namespace
 	return repo
-}
-
-type jsonPackage struct {
-	DeterminePackage struct {
-		Package *pckg `json:"DeterminePackageForScv"`
-	} `json:"d"`
-}
-
-type jsonPackageFromGet struct {
-	Package *pckg `json:"d"`
-}
-
-type pckg struct {
-	connector
-	ComponentName       string
-	PackageName         string `json:"Name"`
-	VersionYAML         string
-	Type                string `json:"Type"`
-	PredecessorCommitID string `json:"PredecessorCommitId"`
-	Status              string `json:"Status"`
-	Namespace           string `json:"Namespace"`
 }
 
 func (p *pckg) reserveNext() error {
@@ -127,4 +108,25 @@ func (p *pckg) get() error {
 	p.Status = jPck.Package.Status
 	p.Namespace = jPck.Package.Namespace
 	return nil
+}
+
+type jsonPackage struct {
+	DeterminePackage struct {
+		Package *pckg `json:"DeterminePackageForScv"`
+	} `json:"d"`
+}
+
+type jsonPackageFromGet struct {
+	Package *pckg `json:"d"`
+}
+
+type pckg struct {
+	connector
+	ComponentName       string
+	PackageName         string `json:"Name"`
+	VersionYAML         string
+	Type                string `json:"Type"`
+	PredecessorCommitID string `json:"PredecessorCommitId"`
+	Status              string `json:"Status"`
+	Namespace           string `json:"Namespace"`
 }
