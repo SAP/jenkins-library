@@ -132,12 +132,17 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repositories",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "repositories",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "abap/repositories",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "repositoryName",

@@ -226,15 +226,21 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
+	log.Entry().Errorf("Before Vault")
+	stepConfig.mixIn(c.General, []string{"vaultAddress", "vaultToken", "vaultNamespace", "vaultBasePath", "vaultPipelineName"})
 	// fetch secrets from vault
 	vaultClient, err := getVaultClientFromConfig(stepConfig)
 	if err != nil {
+		log.Entry().Errorf("vault-debug creating vault client failed %v", err)
 		return StepConfig{}, err
 	}
 	err = addVaultCredentials(&stepConfig, vaultClient, parameters)
 	if err != nil {
+		log.Entry().Errorf("vault-debug reading vault secrets failed %v", err)
 		return StepConfig{}, err
 	}
+
+	log.Entry().Error("After vault")
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {

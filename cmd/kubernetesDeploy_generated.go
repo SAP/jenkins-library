@@ -191,12 +191,17 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "containerRegistryUrl",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "dockerRegistryUrl"}},
+						Name: "containerRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
 						Name:        "containerRegistryUser",
@@ -255,12 +260,17 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "image",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "deployImage"}},
+						Name: "image",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTag",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "deployImage"}},
 					},
 					{
 						Name:        "ingressHosts",

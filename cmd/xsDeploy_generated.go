@@ -167,12 +167,17 @@ func xsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
-						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "mtaPath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "mtaPath",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "action",
@@ -191,12 +196,17 @@ func xsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "operationId",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "operationId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "operationId",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "apiUrl",

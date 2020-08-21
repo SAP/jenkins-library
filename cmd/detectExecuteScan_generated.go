@@ -119,12 +119,18 @@ func detectExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "apiToken",
-						ResourceRef: []config.ResourceReference{{Name: "detectTokenCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "detect/apiToken"}},
+						Name: "apiToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "detectTokenCredentialsId",
+								Param: "",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "detect/apiToken"}},
 					},
 					{
 						Name:        "codeLocation",
@@ -191,12 +197,17 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 					},
 					{
-						Name:        "version",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
+						Name: "version",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
 					},
 					{
 						Name:        "versioningModel",

@@ -41,6 +41,8 @@ func resolveString(str string, lookupMap map[string]interface{}, n int) (string,
 		property := match[captureGroups["property"]]
 		if propVal, ok := lookupMap[property]; ok {
 			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), propVal.(string))
+		} else {
+			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), "")
 		}
 	}
 	return resolveString(str, lookupMap, n+1)
