@@ -3,6 +3,8 @@ package config
 import (
 	"path"
 
+	"github.com/SAP/jenkins-library/pkg/config/interpolation"
+
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 )
@@ -48,6 +50,13 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 			basePath := ""
 			var ok bool
 			p, ok := config.Config["vaultBasePath"].(string)
+			var err error
+			p, err = interpolation.ResolveString(p, config.Config)
+
+			if err != nil {
+				return err
+			}
+
 			if ok {
 				basePath = p
 			}

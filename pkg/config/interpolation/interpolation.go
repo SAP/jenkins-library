@@ -19,7 +19,7 @@ var (
 func ResolveMap(config map[string]interface{}) error {
 	for key, value := range config {
 		if str, ok := value.(string); ok {
-			resolvedStr, err := ResolveString(str, config, 0)
+			resolvedStr, err := ResolveString(str, config)
 			if err != nil {
 				return err
 			}
@@ -29,9 +29,7 @@ func ResolveMap(config map[string]interface{}) error {
 	return nil
 }
 
-// ResolveString takes a string and replaces all references inside of it whith values from the given lookupMap.
-// This is being done recursively until the maxLookupDepth is reached.
-func ResolveString(str string, lookupMap map[string]interface{}, n int) (string, error) {
+func resolveString(str string, lookupMap map[string]interface{}, n int) (string, error) {
 	matches := lookupRegex.FindAllStringSubmatch(str, -1)
 	if len(matches) == 0 {
 		return str, nil
@@ -45,7 +43,13 @@ func ResolveString(str string, lookupMap map[string]interface{}, n int) (string,
 			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), propVal.(string))
 		}
 	}
-	return ResolveString(str, lookupMap, n+1)
+	return resolveString(str, lookupMap, n+1)
+}
+
+// ResolveString takes a string and replaces all references inside of it whith values from the given lookupMap.
+// This is being done recursively until the maxLookupDepth is reached.
+func ResolveString(str string, lookupMap map[string]interface{}) (string, error) {
+	return resolveString(str, lookupMap, 0)
 }
 
 func setupCaptureGroups(captureGroupsList []string) map[string]int {
