@@ -23,7 +23,7 @@ import (
 
 /*
 AbapUtils Struct
-*/
+*//
 type AbapUtils struct {
 	Exec      command.ExecRunner
 	Intervall time.Duration
@@ -295,7 +295,7 @@ type AbapBinding struct {
 	Env     string `json:"env"`
 }
 
-// AddonDescriptor contains fields about the addonProduct
+// AddonDescriptor contains fields about the addonProduct and the corresponding Repositories
 type AddonDescriptor struct {
 	AddonProduct     string      `json:"addonProduct"`
 	AddonVersionYAML string      `json:"addonVersion"`
