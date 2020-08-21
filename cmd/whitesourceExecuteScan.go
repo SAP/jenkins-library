@@ -495,7 +495,7 @@ func downloadRiskReport(config *ScanOptions, utils whitesourceUtils, sys whiteso
 	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
 }
 
-// downloadAgent: Downloads the unified agent jar file if one does not exist
+// downloadAgent downloads the unified agent jar file if one does not exist
 func downloadAgent(config *ScanOptions, utils whitesourceUtils) error {
 	agentFile := config.AgentFileName
 	if !fileExists(agentFile) {
