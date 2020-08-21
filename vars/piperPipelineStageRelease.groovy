@@ -65,25 +65,25 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_cf_duration') {
-                    cloudFoundryDeploy script: script, stageName: stageName
+                    cloudFoundryDeploy script: script
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
-                    neoDeploy script: script, stageName: stageName
+                    neoDeploy script: script
                 }
             }
         }
 
         if (config.tmsUpload) {
             durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
-                tmsUpload script: script, stageName: stageName
+                tmsUpload script: script
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script, stageName: stageName
+            healthExecuteCheck script: script
         }
 
         if (config.npmExecuteEndToEndTests) {
@@ -93,7 +93,7 @@ void call(Map parameters = [:]) {
         }
 
         if (config.githubPublishRelease) {
-            githubPublishRelease script: script, stageName: stageName
+            githubPublishRelease script: script
         }
 
     }

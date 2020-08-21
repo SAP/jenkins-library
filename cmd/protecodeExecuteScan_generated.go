@@ -20,10 +20,10 @@ type protecodeExecuteScanOptions struct {
 	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
+	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
 	CleanupMode                 string `json:"cleanupMode,omitempty"`
 	FilePath                    string `json:"filePath,omitempty"`
 	IncludeLayers               bool   `json:"includeLayers,omitempty"`
-	AddSideBarLink              bool   `json:"addSideBarLink,omitempty"`
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
 	ServerURL                   string `json:"serverUrl,omitempty"`
 	ReportFileName              string `json:"reportFileName,omitempty"`
@@ -109,6 +109,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -145,10 +146,10 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&stepConfig.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.CleanupMode, "cleanupMode", `binary`, "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
 	cmd.Flags().BoolVar(&stepConfig.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
-	cmd.Flags().BoolVar(&stepConfig.AddSideBarLink, "addSideBarLink", true, "Whether to create a side bar link pointing to the report produced by Protecode or not")
 	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", `60`, "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", `protecode_report.pdf`, "The file name of the report to be created")
@@ -209,6 +210,14 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "dockerConfigJSON",
+						ResourceRef: []config.ResourceReference{{Name: "dockerConfigJsonCredentialsId", Param: ""}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "cleanupMode",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -226,14 +235,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "includeLayers",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "addSideBarLink",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

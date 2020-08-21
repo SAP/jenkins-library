@@ -21,9 +21,12 @@ In this stage, the pipeline is initialized. Nothing to see here.
 
 ## Prepare System
 
-In this stage, the ABAP Environment system is created. This is done with the cloudFoundryCreateService step. As some parts of the system configuration is done after the Cloud Foundry instance was created, the following workaround is currently necessary:
+In this stage, the ABAP Environment system is created. This is done with the cloudFoundryCreateService step.
 
-An authorized user has to manually confirm that the ABAP Environment system is ready. This is the case when the email has been received by the initially provided administrator (as configured in the file `manifest.yml` - as described in [configuration](configuration.md)).
+!!! caution "Limitation"
+    As some parts of the system configuration is done after the Cloud Foundry instance was created, the following workaround is currently necessary:
+    An authorized user has to manually confirm that the ABAP Environment system is ready. This is the case when the email has been received by the initially provided administrator (as configured in the file `manifest.yml` - as described in [configuration](configuration.md)).
+    Redefining the "Prepare System" stage via an extension could circumvent the manual confirmation and replace it with an optimistic wait statement - this, however, may lead to a failing pipeline in case the system is not ready in time.
 
 After the confirmation, the Communication Arrangement SAP_COM_0510 (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
 

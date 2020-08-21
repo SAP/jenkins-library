@@ -334,7 +334,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "checkmarxProject"}},
+						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName"}},
 					},
 					{
 						Name:        "pullRequestName",
@@ -366,7 +366,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}},
+						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId"}},
 					},
 					{
 						Name:        "teamName",

@@ -62,16 +62,21 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 
 func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
-	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioning.Options{}, command)
+	versioningOptions := versioning.Options{
+		M2Path:              config.M2Path,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		ProjectSettingsFile: config.ProjectSettingsFile,
+	}
+	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions, command)
 	if err != nil {
 		return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	gav, err := artifact.GetCoordinates()
+	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	log.Entry().Debugf("determined project coordinates %v", gav)
-	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, gav)
+	log.Entry().Debugf("determined project coordinates %v", coordinates)
+	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, coordinates)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
 		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
@@ -152,7 +157,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	}
 
 	// Ensure latest FPR is processed
-	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet, 0)
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
+		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -375,15 +381,17 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	return data, nil
 }
 
-func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, artifact *models.Artifact, numInvokes int) error {
-	numInvokes++
+var errProcessing = errors.New("artifact still processing")
+
+func checkArtifactStatus(config fortifyExecuteScanOptions, projectVersionID int64, filterSet *models.FilterSet, artifact *models.Artifact, retries int, pollingDelay, timeout time.Duration) error {
 	if "PROCESSING" == artifact.Status || "SCHED_PROCESSING" == artifact.Status {
-		if numInvokes >= (config.PollingMinutes * 6) {
-			return fmt.Errorf("Terminating after %v minutes since artifact for Project Version %v is still in status %v", config.PollingMinutes, projectVersionID, artifact.Status)
+		pollingTime := time.Duration(retries) * pollingDelay
+		if pollingTime >= timeout {
+			return fmt.Errorf("terminating after %v since artifact for Project Version %v is still in status %v", timeout, projectVersionID, artifact.Status)
 		}
 		log.Entry().Infof("Most recent artifact uploaded on %v of Project Version %v is still in status %v...", artifact.UploadDate, projectVersionID, artifact.Status)
-		time.Sleep(10 * time.Second)
-		return verifyScanResultsFinishedUploading(config, sys, projectVersionID, buildLabel, filterSet, numInvokes)
+		time.Sleep(pollingDelay)
+		return errProcessing
 	}
 	if "REQUIRE_AUTH" == artifact.Status {
 		// verify no manual issue approval needed
@@ -395,34 +403,31 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, sys fortify.System, p
 	return nil
 }
 
-func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, numInvokes int) error {
+func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fortify.System, projectVersionID int64, buildLabel string, filterSet *models.FilterSet, pollingDelay, timeout time.Duration) error {
 	log.Entry().Debug("Verifying scan results have finished uploading and processing")
 	var artifacts []*models.Artifact
 	var relatedUpload *models.Artifact
+	var err error
+	retries := 0
 	for relatedUpload == nil {
-		artifacts, err := sys.GetArtifactsOfProjectVersion(projectVersionID)
+		artifacts, err = sys.GetArtifactsOfProjectVersion(projectVersionID)
 		log.Entry().Debugf("Received %v artifacts for project version ID %v", len(artifacts), projectVersionID)
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("Failed to fetch artifacts of project version ID %v", projectVersionID)
+			return fmt.Errorf("failed to fetch artifacts of project version ID %v", projectVersionID)
 		}
-		if len(artifacts) > 0 {
-			latest := artifacts[0]
-			if err := checkArtifactStatus(config, sys, projectVersionID, buildLabel, filterSet, latest, numInvokes); err != nil {
-				return err
-			}
-			notFound := true
-			for _, artifact := range artifacts {
-				if len(buildLabel) > 0 && artifact.Embed != nil && artifact.Embed.Scans != nil && len(artifact.Embed.Scans) > 0 {
-					scan := artifact.Embed.Scans[0]
-					if notFound && scan != nil && strings.HasSuffix(scan.BuildLabel, buildLabel) {
-						relatedUpload = artifact
-						notFound = false
-					}
-				}
-			}
-		} else {
-			return fmt.Errorf("No uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)
+		if len(artifacts) == 0 {
+			return fmt.Errorf("no uploaded artifacts for assessment detected for project version with ID %v", projectVersionID)
 		}
+		latest := artifacts[0]
+		err = checkArtifactStatus(config, projectVersionID, filterSet, latest, retries, pollingDelay, timeout)
+		if err != nil {
+			if err == errProcessing {
+				retries++
+				continue
+			}
+			return err
+		}
+		relatedUpload = findArtifactByBuildLabel(artifacts, buildLabel)
 		if relatedUpload == nil {
 			log.Entry().Warn("Unable to identify artifact based on the build label, will consider most recent artifact as related to the scan")
 			relatedUpload = artifacts[0]
@@ -432,16 +437,28 @@ func verifyScanResultsFinishedUploading(config fortifyExecuteScanOptions, sys fo
 	differenceInSeconds := calculateTimeDifferenceToLastUpload(relatedUpload.UploadDate, projectVersionID)
 	// Use the absolute value for checking the time difference
 	if differenceInSeconds > float64(60*config.DeltaMinutes) {
-		return errors.New("No recent upload detected on Project Version")
+		return errors.New("no recent upload detected on Project Version")
 	}
-	warn := false
 	for _, upload := range artifacts {
 		if upload.Status == "ERROR_PROCESSING" {
-			warn = true
+			log.Entry().Warn("Previous uploads detected that failed processing, please ensure that your scans are properly configured")
+			break
 		}
 	}
-	if warn {
-		log.Entry().Warn("Previous uploads detected that failed processing, please ensure that your scans are properly configured")
+	return nil
+}
+
+func findArtifactByBuildLabel(artifacts []*models.Artifact, buildLabel string) *models.Artifact {
+	if len(buildLabel) == 0 {
+		return nil
+	}
+	for _, artifact := range artifacts {
+		if len(buildLabel) > 0 && artifact.Embed != nil && artifact.Embed.Scans != nil && len(artifact.Embed.Scans) > 0 {
+			scan := artifact.Embed.Scans[0]
+			if scan != nil && strings.HasSuffix(scan.BuildLabel, buildLabel) {
+				return artifact
+			}
+		}
 	}
 	return nil
 }

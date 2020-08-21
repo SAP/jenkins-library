@@ -85,7 +85,7 @@ func mtaBuild(config mtaBuildOptions,
 	httpClient := piperhttp.Client{}
 	e := command.Command{}
 
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: &e}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
