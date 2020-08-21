@@ -81,7 +81,7 @@ type system struct {
 }
 
 // NewSystem constructs a new system instance
-func NewSystem(serverURL, orgToken, userToken string) System {
+func NewSystem(serverURL, orgToken, userToken string) *system {
 	return &system{
 		serverURL:  serverURL,
 		orgToken:   orgToken,

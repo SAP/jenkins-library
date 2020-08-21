@@ -20,12 +20,24 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/SAP/jenkins-library/pkg/whitesource"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 )
 
 // just to make the lines less long
 type ScanOptions = whitesourceExecuteScanOptions
-type System = whitesource.System
+
+// whitesource defines the functions that are expected by the step implementation to
+// be available from the whitesource system.
+type whitesource interface {
+	GetProductByName(productName string) (ws.Product, error)
+	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
+	GetProjectToken(productToken, projectName string) (string, error)
+	GetProjectByToken(projectToken string) (ws.Project, error)
+	GetProjectRiskReport(projectToken string) ([]byte, error)
+	GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error)
+	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
+	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
+}
 
 type whitesourceUtils interface {
 	SetDir(path string)
@@ -72,7 +84,7 @@ func newUtils() *whitesourceUtilsBundle {
 
 func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData) {
 	utils := newUtils()
-	sys := whitesource.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
 	if err := resolveProjectIdentifiers(&config, utils, sys); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
 	}
@@ -92,9 +104,9 @@ func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData)
 	}
 }
 
-func runWhitesourceScan(config *ScanOptions, sys System, _ *telemetry.CustomData, utils whitesourceUtils) error {
+func runWhitesourceScan(config *ScanOptions, sys whitesource, _ *telemetry.CustomData, utils whitesourceUtils) error {
 	// Start the scan
-	if err := triggerWhitesourceScan(config, utils); err != nil {
+	if err := executeScan(config, utils); err != nil {
 		return err
 	}
 
@@ -126,7 +138,7 @@ func runWhitesourceScan(config *ScanOptions, sys System, _ *telemetry.CustomData
 	return nil
 }
 
-func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys System) error {
+func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	if config.ProjectName == "" || config.ProductVersion == "" {
 		coordinates, err := utils.GetArtifactCoordinates(config)
 		if err != nil {
@@ -174,7 +186,9 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 	return nil
 }
 
-func triggerWhitesourceScan(config *ScanOptions, utils whitesourceUtils) error {
+// executeScan executes different types of scans depending on the scanType parameter.
+// The default is to download the Unified Agent and use it to perform the scan.
+func executeScan(config *ScanOptions, utils whitesourceUtils) error {
 	switch config.ScanType {
 	case "mta":
 		// Execute scan for maven and all npm modules
@@ -336,7 +350,7 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkSecurityViolations(config *ScanOptions, sys System) error {
+func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
 	severeVulnerabilities := 0
 
 	// convert config.CvssSeverityLimit to float64
@@ -385,7 +399,7 @@ func checkSecurityViolations(config *ScanOptions, sys System) error {
 }
 
 // pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
-func pollProjectStatus(config *ScanOptions, sys System) error {
+func pollProjectStatus(config *ScanOptions, sys whitesource) error {
 	return blockUntilProjectIsUpdated(config, sys, time.Now(), 10*time.Second, 5*time.Second, 300*time.Second)
 }
 
@@ -393,7 +407,7 @@ const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
 
 // blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
 // or no older than maxAge relative to the given time stamp.
-func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
+func blockUntilProjectIsUpdated(config *ScanOptions, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
 	startTime := time.Now()
 	for {
 		project, err := sys.GetProjectByToken(config.ProjectToken)
@@ -422,7 +436,7 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys System, currentTime tim
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, utils whitesourceUtils, sys System) ([]piperutils.Path, error) {
+func downloadReports(config *ScanOptions, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
 	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
 	if err := pollProjectStatus(config, sys); err != nil {
 		return nil, err
@@ -442,7 +456,7 @@ func downloadReports(config *ScanOptions, utils whitesourceUtils, sys System) ([
 	return []piperutils.Path{*vulnPath, *riskPath}, nil
 }
 
-func downloadVulnerabilityReport(config *ScanOptions, utils whitesourceUtils, sys System) (*piperutils.Path, error) {
+func downloadVulnerabilityReport(config *ScanOptions, utils whitesourceUtils, sys whitesource) (*piperutils.Path, error) {
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return nil, err
 	}
@@ -464,7 +478,7 @@ func downloadVulnerabilityReport(config *ScanOptions, utils whitesourceUtils, sy
 	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
 }
 
-func downloadRiskReport(config *ScanOptions, utils whitesourceUtils, sys System) (*piperutils.Path, error) {
+func downloadRiskReport(config *ScanOptions, utils whitesourceUtils, sys whitesource) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
 	if err != nil {
 		return nil, err
@@ -536,7 +550,7 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) 
 	return nil
 }
 
-func aggregateVersionWideLibraries(config *ScanOptions, sys System) error {
+func aggregateVersionWideLibraries(config *ScanOptions, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -544,7 +558,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, sys System) error {
 		return err
 	}
 
-	versionWideLibraries := map[string][]whitesource.Library{} // maps project name to slice of libraries
+	versionWideLibraries := map[string][]ws.Library{} // maps project name to slice of libraries
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		projectName := strings.Split(project.Name, " - ")[0]
@@ -563,7 +577,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, sys System) error {
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(config *ScanOptions, sys System) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -571,8 +585,8 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, sys System) error 
 		return err
 	}
 
-	var versionWideAlerts []whitesource.Alert // all alerts for a given project version
-	projectNames := ``                        // holds all project tokens considered a part of the report for debugging
+	var versionWideAlerts []ws.Alert // all alerts for a given project version
+	projectNames := ``               // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.ProductVersion {
@@ -596,7 +610,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, sys System) error 
 }
 
 // outputs an slice of alerts to an excel file
-func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions) error {
+func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions) error {
 	file := excelize.NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	if err != nil {
@@ -652,7 +666,7 @@ func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions
 }
 
 // outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
-func newLibraryCSVReport(libraries map[string][]whitesource.Library, config *ScanOptions) error {
+func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/SAP/jenkins-library/pkg/whitesource"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
@@ -13,28 +13,24 @@ import (
 
 type whitesourceSystemMock struct {
 	productName         string
-	products            []whitesource.Product
-	projects            []whitesource.Project
-	alerts              []whitesource.Alert
-	libraries           []whitesource.Library
+	products            []ws.Product
+	projects            []ws.Project
+	alerts              []ws.Alert
+	libraries           []ws.Library
 	riskReport          []byte
 	vulnerabilityReport []byte
 }
 
-func (m *whitesourceSystemMock) GetProductsMetaInfo() ([]whitesource.Product, error) {
-	return m.products, nil
-}
-
-func (m *whitesourceSystemMock) GetProductByName(productName string) (whitesource.Product, error) {
+func (m *whitesourceSystemMock) GetProductByName(productName string) (ws.Product, error) {
 	for _, product := range m.products {
 		if product.Name == productName {
 			return product, nil
 		}
 	}
-	return whitesource.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
+	return ws.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
 }
 
-func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]whitesource.Project, error) {
+func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]ws.Project, error) {
 	return m.projects, nil
 }
 
@@ -42,25 +38,13 @@ func (m *whitesourceSystemMock) GetProjectToken(productToken, projectName string
 	return "mock-project-token", nil
 }
 
-func (m *whitesourceSystemMock) GetProjectByToken(projectToken string) (whitesource.Project, error) {
+func (m *whitesourceSystemMock) GetProjectByToken(projectToken string) (ws.Project, error) {
 	for _, project := range m.projects {
 		if project.Token == projectToken {
 			return project, nil
 		}
 	}
-	return whitesource.Project{}, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
-}
-
-func (m *whitesourceSystemMock) GetProjectByName(productToken, projectName string) (whitesource.Project, error) {
-	return m.projects[0], nil
-}
-
-func (m *whitesourceSystemMock) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
-	return []string{"mock-project-token-1", "mock-project-token-2"}, nil
-}
-
-func (m *whitesourceSystemMock) GetProductName(productToken string) (string, error) {
-	return m.productName, nil
+	return ws.Project{}, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
 }
 
 func (m *whitesourceSystemMock) GetProjectRiskReport(projectToken string) ([]byte, error) {
@@ -71,15 +55,15 @@ func (m *whitesourceSystemMock) GetProjectVulnerabilityReport(projectToken strin
 	return m.vulnerabilityReport, nil
 }
 
-func (m *whitesourceSystemMock) GetProjectAlerts(projectToken string) ([]whitesource.Alert, error) {
+func (m *whitesourceSystemMock) GetProjectAlerts(projectToken string) ([]ws.Alert, error) {
 	return m.alerts, nil
 }
 
-func (m *whitesourceSystemMock) GetProjectLibraryLocations(projectToken string) ([]whitesource.Library, error) {
+func (m *whitesourceSystemMock) GetProjectLibraryLocations(projectToken string) ([]ws.Library, error) {
 	return m.libraries, nil
 }
 
-var mockLibrary = whitesource.Library{
+var mockLibrary = ws.Library{
 	Name:     "mock-library",
 	Filename: "mock-library-file",
 	Version:  "mock-library-version",
@@ -89,7 +73,7 @@ var mockLibrary = whitesource.Library{
 func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 	return &whitesourceSystemMock{
 		productName: "mock-product",
-		products: []whitesource.Product{
+		products: []ws.Product{
 			{
 				Name:           "mock-product",
 				Token:          "mock-product-token",
@@ -97,7 +81,7 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 				LastUpdateDate: lastUpdateDate,
 			},
 		},
-		projects: []whitesource.Project{
+		projects: []ws.Project{
 			{
 				ID:             42,
 				Name:           "mock-project",
@@ -108,15 +92,15 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 				LastUpdateDate: lastUpdateDate,
 			},
 		},
-		alerts: []whitesource.Alert{
+		alerts: []ws.Alert{
 			{
-				Vulnerability: whitesource.Vulnerability{},
+				Vulnerability: ws.Vulnerability{},
 				Library:       mockLibrary,
 				Project:       "mock-project",
 				CreationDate:  "last-thursday",
 			},
 		},
-		libraries:           []whitesource.Library{mockLibrary},
+		libraries:           []ws.Library{mockLibrary},
 		riskReport:          []byte("mock-risk-report"),
 		vulnerabilityReport: []byte("mock-vulnerability-report"),
 	}
