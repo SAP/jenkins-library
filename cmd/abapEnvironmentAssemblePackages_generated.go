@@ -24,13 +24,13 @@ type abapEnvironmentAssemblePackagesOptions struct {
 	Host                string `json:"host,omitempty"`
 	Username            string `json:"username,omitempty"`
 	Password            string `json:"password,omitempty"`
-	Repositories        string `json:"repositories,omitempty"`
+	AddonDescriptor     string `json:"addonDescriptor,omitempty"`
 	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
 }
 
 type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
 	abap struct {
-		repositories string
+		addonDescriptor string
 	}
 }
 
@@ -40,7 +40,7 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 		name     string
 		value    string
 	}{
-		{category: "abap", name: "repositories", value: p.abap.repositories},
+		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
 
 	errCount := 0
@@ -123,12 +123,12 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
-	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "repositories")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repositories")
+	cmd.MarkFlagRequired("addonDescriptor")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
 }
 
@@ -207,8 +207,8 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repositories",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
+						Name:        "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

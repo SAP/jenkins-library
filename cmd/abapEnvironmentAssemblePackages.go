@@ -48,9 +48,9 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return err
 	}
-	var repos []abaputils.Repository
-	json.Unmarshal([]byte(config.Repositories), &repos)
-	builds, buildsAlreadyReleased, err := starting(repos, *conn)
+	var addonDescriptor abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,9 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	for _, b := range buildsAlreadyReleased {
 		reposBackToCPE = append(reposBackToCPE, b.repo)
 	}
-	backToCPE, _ := json.Marshal(reposBackToCPE)
-	cpe.abap.repositories = string(backToCPE)
+	addonDescriptor.Repositories = reposBackToCPE
+	backToCPE, _ := json.Marshal(addonDescriptor)
+	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
