@@ -61,7 +61,7 @@ type Project struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
-// Request defines a request object to be sent to the WhiteSource system
+// Request defines a request object to be sent to the WhiteSource System
 type Request struct {
 	RequestType  string `json:"requestType,omitempty"`
 	UserKey      string `json:"userKey,omitempty"`
@@ -72,17 +72,17 @@ type Request struct {
 	Format       string `json:"format,omitempty"`
 }
 
-// system defines a WhiteSource system including respective tokens (e.g. org token, user token)
-type system struct {
+// System defines a WhiteSource System including respective tokens (e.g. org token, user token)
+type System struct {
 	httpClient piperhttp.Sender
 	orgToken   string
 	serverURL  string
 	userToken  string
 }
 
-// NewSystem constructs a new system instance
-func NewSystem(serverURL, orgToken, userToken string) *system {
-	return &system{
+// NewSystem constructs a new System instance
+func NewSystem(serverURL, orgToken, userToken string) *System {
+	return &System{
 		serverURL:  serverURL,
 		orgToken:   orgToken,
 		userToken:  userToken,
@@ -91,7 +91,7 @@ func NewSystem(serverURL, orgToken, userToken string) *system {
 }
 
 // GetProductsMetaInfo retrieves meta information for all WhiteSource products a user has access to
-func (s *system) GetProductsMetaInfo() ([]Product, error) {
+func (s *System) GetProductsMetaInfo() ([]Product, error) {
 	wsResponse := struct {
 		ProductVitals []Product `json:"productVitals"`
 	}{
@@ -116,7 +116,7 @@ func (s *system) GetProductsMetaInfo() ([]Product, error) {
 }
 
 // GetProductByName retrieves meta information for a specific WhiteSource product
-func (s *system) GetProductByName(productName string) (Product, error) {
+func (s *System) GetProductByName(productName string) (Product, error) {
 	products, err := s.GetProductsMetaInfo()
 	if err != nil {
 		return Product{}, errors.Wrap(err, "failed to retrieve WhiteSource products")
@@ -132,7 +132,7 @@ func (s *system) GetProductByName(productName string) (Product, error) {
 }
 
 // GetProjectsMetaInfo retrieves meta information for a specific WhiteSource product
-func (s *system) GetProjectsMetaInfo(productToken string) ([]Project, error) {
+func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -158,7 +158,7 @@ func (s *system) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 }
 
 // GetProjectToken returns the project token for a project with a given name
-func (s *system) GetProjectToken(productToken, projectName string) (string, error) {
+func (s *System) GetProjectToken(productToken, projectName string) (string, error) {
 	project, err := s.GetProjectByName(productToken, projectName)
 	if err != nil {
 		return "", err
@@ -168,7 +168,7 @@ func (s *system) GetProjectToken(productToken, projectName string) (string, erro
 }
 
 // GetProjectByToken returns project meta info given a project token
-func (s *system) GetProjectByToken(projectToken string) (Project, error) {
+func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -197,7 +197,7 @@ func (s *system) GetProjectByToken(projectToken string) (Project, error) {
 }
 
 // GetProjectByName fetches all projects and returns the one matching the given projectName, or none, if not found
-func (s *system) GetProjectByName(productToken, projectName string) (Project, error) {
+func (s *System) GetProjectByName(productToken, projectName string) (Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
 		return Project{}, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
@@ -214,7 +214,7 @@ func (s *system) GetProjectByName(productToken, projectName string) (Project, er
 }
 
 // GetProjectTokens returns the project tokens matching a given a slice of project names
-func (s *system) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
+func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
 	projectTokens := []string{}
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
@@ -232,7 +232,7 @@ func (s *system) GetProjectTokens(productToken string, projectNames []string) ([
 }
 
 // GetProductName returns the product name for a given product token
-func (s *system) GetProductName(productToken string) (string, error) {
+func (s *System) GetProductName(productToken string) (string, error) {
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
 	}{
@@ -262,7 +262,7 @@ func (s *system) GetProductName(productToken string) (string, error) {
 }
 
 // GetProjectRiskReport
-func (s *system) GetProjectRiskReport(projectToken string) ([]byte, error) {
+func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 	req := Request{
 		RequestType:  "getProjectRiskReport",
 		ProjectToken: projectToken,
@@ -277,7 +277,7 @@ func (s *system) GetProjectRiskReport(projectToken string) ([]byte, error) {
 }
 
 // GetProjectVulnerabilityReport
-func (s *system) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
+func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
 
 	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
@@ -294,7 +294,7 @@ func (s *system) GetProjectVulnerabilityReport(projectToken string, format strin
 }
 
 // GetProjectAlerts
-func (s *system) GetProjectAlerts(projectToken string) ([]Alert, error) {
+func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	wsResponse := struct {
 		Alerts []Alert `json:"alerts"`
 	}{
@@ -320,7 +320,7 @@ func (s *system) GetProjectAlerts(projectToken string) ([]Alert, error) {
 }
 
 // GetProjectLibraryLocations
-func (s *system) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
+func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
 	wsResponse := struct {
 		Libraries []Library `json:"libraryLocations"`
 	}{
@@ -345,7 +345,7 @@ func (s *system) GetProjectLibraryLocations(projectToken string) ([]Library, err
 	return wsResponse.Libraries, nil
 }
 
-func (s *system) sendRequest(req Request) ([]byte, error) {
+func (s *System) sendRequest(req Request) ([]byte, error) {
 	var responseBody []byte
 	if req.UserKey == "" {
 		req.UserKey = s.userToken
