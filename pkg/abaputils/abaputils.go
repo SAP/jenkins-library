@@ -21,9 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-AbapUtils Struct
-*/
+// AbapUtils Struct
 type AbapUtils struct {
 	Exec      command.ExecRunner
 	Intervall time.Duration
@@ -297,14 +295,15 @@ type AbapBinding struct {
 
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
-	AddonProduct    string      `json:"addonProduct"`
-	AddonVersion    string      `json:"addonVersion"`
-	AddonUniqueID   string      `json:"addonUniqueID"`
-	CustomerID      interface{} `json:"customerID"`
-	AddonSpsLevel   string
-	AddonPatchLevel string
-	TargetVectorID  string
-	Repositories    []Repository `json:"repositories"`
+	AddonProduct            string `json:"addonProduct"`
+	AddonVersion            string `json:"addonVersion"`
+	AddonVersionOtherFormat string
+	AddonUniqueID           string      `json:"addonUniqueID"`
+	CustomerID              interface{} `json:"customerID"`
+	AddonSpsLevel           string
+	AddonPatchLevel         string
+	TargetVectorID          string
+	Repositories            []Repository `json:"repositories"`
 }
 
 // Repository contains fields for the repository/component version
