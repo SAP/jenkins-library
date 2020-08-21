@@ -17,10 +17,11 @@ import (
 
 type abapAddonAssemblyKitReserveNextPackagesOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	AddonDescriptor string `json:"addonDescriptor,omitempty"`
 }
+
 
 type abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment struct {
 	abap struct {
@@ -29,10 +30,10 @@ type abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment struct {
 }
 
 func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
+	content := []struct{
 		category string
-		name     string
-		value    string
+		name string
+		value string
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -50,6 +51,7 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 	}
 }
 
+
 // AbapAddonAssemblyKitReserveNextPackagesCommand TODO
 func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitReserveNextPackages"
@@ -62,7 +64,7 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitReserveNextPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "TODO",
-		Long:  `TODO`,
+		Long: `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -131,36 +133,36 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "AbapAddonAssemblyKitEndpoint",
+						Name:      "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "username",
+						Name:      "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
+						Name:      "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "addonDescriptor",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name:      "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"},},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

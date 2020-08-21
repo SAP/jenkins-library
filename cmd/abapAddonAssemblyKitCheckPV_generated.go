@@ -17,11 +17,12 @@ import (
 
 type abapAddonAssemblyKitCheckPVOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	AddonDescriptorFileName string `json:"addonDescriptorFileName,omitempty"`
+	AddonDescriptor string `json:"addonDescriptor,omitempty"`
 }
+
 
 type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
 	abap struct {
@@ -30,10 +31,10 @@ type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
 }
 
 func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
+	content := []struct{
 		category string
-		name     string
-		value    string
+		name string
+		value string
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -51,6 +52,7 @@ func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, res
 	}
 }
 
+
 // AbapAddonAssemblyKitCheckPVCommand TODO
 func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCheckPV"
@@ -63,7 +65,7 @@ func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitCheckPVCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "TODO",
-		Long:  `TODO`,
+		Long: `TODO`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -133,44 +135,44 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "AbapAddonAssemblyKitEndpoint",
+						Name:      "AbapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS","GENERAL",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "username",
+						Name:      "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
+						Name:      "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "addonDescriptorFileName",
+						Name:      "addonDescriptorFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "addonDescriptor",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "addonDescriptor",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/addonDescriptor"},},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
