@@ -314,7 +314,7 @@ type Repository struct {
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
 	VersionYAML         string `json:"version"`
-	Version  			string
+	Version  			      string
 	PackageName         string
 	PackageType         string
 	SpsLevel            string
