@@ -359,20 +359,21 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
 func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
-	severeVulnerabilities := 0
-
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
 	if err != nil {
-		return err
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
 
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlerts(config.ProjectToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
 	}
 
+	severeVulnerabilities := 0
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L537
 	for _, alert := range alerts {
 		vuln := alert.Vulnerability
