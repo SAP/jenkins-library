@@ -200,14 +200,6 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateService:
-    cloudFoundry:
-      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
-      serviceManifest: 'service-manifest.yml'
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
-    stashContent:
-      - 'deployDescriptor'
   cloudFoundryCreateServiceKey:
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
