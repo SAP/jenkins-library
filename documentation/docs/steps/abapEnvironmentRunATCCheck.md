@@ -123,3 +123,14 @@ atcobjects:
     - name: "TestComponent"
     - name: "TestComponent2"
 ```
+
+The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options:
+
+```yaml
+checkvariant: "TestCheckVariant"
+configuration: "TestConfiguration"
+atcobjects:
+  softwarecomponent:
+    - name: "TestComponent"
+    - name: "TestComponent2"
+```
