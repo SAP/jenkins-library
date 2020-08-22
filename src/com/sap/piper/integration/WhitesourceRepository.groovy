@@ -167,7 +167,6 @@ class WhitesourceRepository implements Serializable {
         return parsedResponse
     }
 
-    @NonCPS
     protected def httpWhitesource(requestBody, acceptType = 'APPLICATION_JSON', customHeaders = null, outputFile = null) {
         handleAdditionalRequestParameters(requestBody)
         def serializedBody = new JsonUtils().groovyObjectToPrettyJsonString(requestBody)
