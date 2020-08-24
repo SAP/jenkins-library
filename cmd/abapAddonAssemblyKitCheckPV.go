@@ -48,12 +48,13 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	if err != nil {
 		return err
 	}
-	addonDescriptor = p.addFields(addonDescriptor)
+	p.addFields(&addonDescriptor)
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 
+//TODO change name
 func combineYAMLPrpductWithCPERepositories(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
 	return addonDescriptor
@@ -84,11 +85,10 @@ func (p *pv) init(desc abaputils.AddonDescriptor, conn connector) {
 	p.VersionYAML = desc.AddonVersionYAML
 }
 
-func (p *pv) addFields(initialAddonDescriptor abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+func (p *pv) addFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
 	initialAddonDescriptor.AddonVersion = p.Version
 	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
 	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
-	return initialAddonDescriptor
 }
 
 func (p *pv) validate() error {

@@ -47,7 +47,6 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		if err != nil {
 			return err
 		}
-		// addonDescriptor.Repositories[i] = c.addFields(addonDescriptor.Repositories[i])
 		c.addFields(&addonDescriptor.Repositories[i])
 	}
 	toCPE, _ := json.Marshal(addonDescriptor)
@@ -55,6 +54,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
+//TODO change name
 //take the product part from CPE and the repositories part from the YAML file
 func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
@@ -67,15 +67,9 @@ func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.VersionYAML = repo.VersionYAML
 }
 
-// func (c *cv) addFields(initialRepo *abaputils.Repository) abaputils.Repository {
-// 	initialRepo.Version = c.Version
-// 	initialRepo.SpsLevel = c.SpsLevel
-// 	initialRepo.PatchLevel = c.PatchLevel
-// 	return initialRepo
-// }
 func (c *cv) addFields(initialRepo *abaputils.Repository) {
 	initialRepo.Version = c.Version
-	initialRepo.SpsLevel = c.SpsLevel
+	initialRepo.SpLevel = c.SpLevel
 	initialRepo.PatchLevel = c.PatchLevel
 }
 
@@ -89,7 +83,7 @@ func (c *cv) validate() error {
 	json.Unmarshal(body, &jCV)
 	c.Name = jCV.CV.Name
 	c.Version = jCV.CV.Version
-	c.SpsLevel = jCV.CV.SpsLevel
+	c.SpLevel = jCV.CV.SpLevel
 	c.PatchLevel = jCV.CV.PatchLevel
 	return nil
 }
@@ -103,6 +97,6 @@ type cv struct {
 	Name        string `json:"Name"`
 	VersionYAML string
 	Version     string `json:"Version"`
-	SpsLevel    string `json:"SpLevel"`
+	SpLevel     string `json:"SpLevel"`
 	PatchLevel  string `json:"PatchLevel"`
 }

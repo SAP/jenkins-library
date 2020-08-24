@@ -86,7 +86,7 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
 		tvCV.ScName = repo.Name
 		tvCV.ScVersion = repo.Version
 		tvCV.DeliveryPackage = repo.PackageName
-		tvCV.SpLevel = repo.SpsLevel
+		tvCV.SpLevel = repo.SpLevel
 		tvCV.PatchLevel = repo.PatchLevel
 		tvCVs = append(tvCVs, tvCV)
 	}
