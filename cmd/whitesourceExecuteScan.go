@@ -355,7 +355,7 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 		"projectName": "%s",
 		"productVer": "%s",
 		"devDep": %v,
-		"ignoreNpmLsErrors"": true
+		"ignoreNpmLsErrors": true
 	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion,
 		devDependencies))
 

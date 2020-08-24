@@ -142,6 +142,10 @@ func (w *whitesourceUtilsMock) FileOpen(name string, flag int, perm os.FileMode)
 	return nil, fmt.Errorf("FileOpen() is unsupported by the mock implementation")
 }
 
+func (w *whitesourceUtilsMock) RemoveAll(path string) error {
+	return nil
+}
+
 func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versioning.Coordinates, error) {
 	return w.coordinates, nil
 }
@@ -272,5 +276,36 @@ func TestDownloadReports(t *testing.T) {
 		// assert
 		assert.EqualError(t, err, "no project with token '<invalid>' found in Whitesource")
 		assert.Nil(t, path)
+	})
+}
+
+func TestWriteWhitesourceConfigJSON(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProjectName:    "mock-project",
+			ProductVersion: "42",
+		}
+		utils := newWhitesourceUtilsMock()
+		// test
+		err := writeWhitesourceConfigJSON(config, utils, true)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
+			contents, _ := utils.FileRead(whiteSourceConfig)
+			expected := `{
+		"apiKey": "org-token",
+		"userKey": "user-token",
+		"checkPolicies": true,
+		"productName": "mock-product",
+		"projectName": "mock-project",
+		"productVer": "42",
+		"devDep": true,
+		"ignoreNpmLsErrors": true
+	}`
+			assert.Equal(t, expected, string(contents))
+		}
 	})
 }
