@@ -14,8 +14,6 @@ spec:
       - name: dockerCredentialsId
         description: "Jenkins credentials ID containing user and password to authenticate to the Docker registry"
         type: jenkins
-        aliases:
-          - name: cloudFoundry/credentialsId
     params:
       - name: apiEndpoint
         type: string
