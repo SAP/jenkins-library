@@ -156,15 +156,14 @@ import static com.sap.piper.Prerequisites.checkScript
      * this defines the credentials to be used.
      */
     'dockerCredentialsId',
-]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
      * Activates using the new go-implementation of the step. Off by default.
      * @possibleValues true, false
      */
     'useGoStep',
-])
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
     cloudFoundry: [
