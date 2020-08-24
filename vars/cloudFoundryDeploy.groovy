@@ -206,15 +206,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateDocumentation
 void call(Map parameters = [:]) {
 
-    if (parameters.useGoStep == true) {
-        List credentials = [
-            [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
-            [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
-        ]
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
-        return
-    }
-
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def utils = parameters.juStabUtils ?: new Utils()
@@ -236,6 +227,15 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+            ]
+            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,
