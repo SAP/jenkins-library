@@ -212,6 +212,11 @@ func (f Files) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
 
+// RemoveAll is a wrapper for os.RemoveAll().
+func (f Files) RemoveAll(path string) error {
+	return os.RemoveAll(path)
+}
+
 // Glob is a wrapper for doublestar.Glob().
 func (f Files) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
