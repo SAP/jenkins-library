@@ -50,7 +50,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 			return err
 		}
 		// TODO status L => Fehler, da es nicht auftreten sollte
-		addonDescriptor.Repositories[i] = p.addFields(repo)
+		p.addFields(&addonDescriptor.Repositories[i])
 	}
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
@@ -61,20 +61,17 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.connector = conn
 	p.ComponentName = repo.Name
-	p.VersionYAML = repo.Version
+	p.VersionYAML = repo.VersionYAML
 	p.PackageName = repo.PackageName
 }
 
 // TODO genug?
-func (p *pckg) addFields(initialRepo abaputils.Repository) abaputils.Repository {
-	var repo abaputils.Repository
-	repo = initialRepo
-	repo.PackageName = p.PackageName
-	repo.PackageType = p.Type
-	repo.PredecessorCommitID = p.PredecessorCommitID
-	repo.Status = p.Status
-	repo.Namespace = p.Namespace
-	return repo
+func (p *pckg) addFields(initialRepo *abaputils.Repository) {
+	initialRepo.PackageName = p.PackageName
+	initialRepo.PackageType = p.Type
+	initialRepo.PredecessorCommitID = p.PredecessorCommitID
+	initialRepo.Status = p.Status
+	initialRepo.Namespace = p.Namespace
 }
 
 func (p *pckg) reserveNext() error {

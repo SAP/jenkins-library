@@ -33,10 +33,6 @@ func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTar
 func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	// var repos []abaputils.Repository
-	// json.Unmarshal([]byte(config.Repositories), &repos)
-	// var product abaputils.AddonDescriptor
-	// json.Unmarshal([]byte(config.AddonProduct), &product)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
@@ -62,15 +58,17 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(tvJson))
 	appendum := "/odata/aas_ocs_package/TargetVectorSet"
 	body, err := conn.post(appendum, string(tvJson))
 	if err != nil {
 		return err
 	}
-	var jTV targetVector
+	var jTV jsontargetVector
 	json.Unmarshal(body, &jTV)
-	fmt.Println(jTV.ID)
-	tv.ID = jTV.ID
+	fmt.Println(jTV)
+	fmt.Println(jTV.Tv.ID)
+	tv.ID = jTV.Tv.ID
 	return nil
 }
 
@@ -91,6 +89,10 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
 		tvCVs = append(tvCVs, tvCV)
 	}
 	tv.Content.TargetVectorCVs = tvCVs
+}
+
+type jsontargetVector struct {
+	Tv *targetVector `json:"d"`
 }
 
 type targetVector struct {

@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +22,34 @@ type abapAddonAssemblyKitReleasePackagesOptions struct {
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
+type abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment struct {
+	abap struct {
+		addonDescriptor string
+	}
+}
+
+func (p *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    string
+	}{
+		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
 // AbapAddonAssemblyKitReleasePackagesCommand TODO
 func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitReleasePackages"
@@ -27,6 +57,7 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 	metadata := abapAddonAssemblyKitReleasePackagesMetadata()
 	var stepConfig abapAddonAssemblyKitReleasePackagesOptions
 	var startTime time.Time
+	var commonPipelineEnvironment abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
 
 	var createAbapAddonAssemblyKitReleasePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -60,13 +91,14 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			abapAddonAssemblyKitReleasePackages(stepConfig, &telemetryData)
+			abapAddonAssemblyKitReleasePackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},

@@ -106,6 +106,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
