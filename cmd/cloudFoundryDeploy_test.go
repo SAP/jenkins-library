@@ -1004,7 +1004,7 @@ func TestManifestVariableFiles(t *testing.T) {
 		}
 	})
 
-	t.Run("no var filesprovided", func(t *testing.T) {
+	t.Run("no var files provided", func(t *testing.T) {
 		varOpts, err := getVarFileOptions([]string{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{}, varOpts)
