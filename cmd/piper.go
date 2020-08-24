@@ -32,6 +32,8 @@ type GeneralConfigOptions struct {
 	StepName             string
 	Verbose              bool
 	LogFormat            string
+	VaultApproleID       string
+	VaultApproleSecretID string
 	HookConfig           HookConfiguration
 }
 
@@ -188,11 +190,22 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-
 	flagValues := config.AvailableFlagValues(cmd, &filters)
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	if GeneralConfig.VaultApproleID == "" {
+		GeneralConfig.VaultApproleID = os.Getenv("PIPER_vaultApproleID")
+	}
+
+	if GeneralConfig.VaultApproleSecretID == "" {
+		GeneralConfig.VaultApproleSecretID = os.Getenv("PIPER_vaultApproleSecretID")
+	}
+
+	myConfig.SetVaultCredentials(GeneralConfig.VaultApproleID, GeneralConfig.VaultApproleSecretID)
+
+	log.Entry().Infof("myConfig is %#v", myConfig)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

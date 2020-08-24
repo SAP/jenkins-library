@@ -145,7 +145,7 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 								Name: "{{- .Name }}",
 								Param: "{{ .Param }}",
 								{{- if  gt (len .Paths) 0 }}
-								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}}
+								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
 								{{- end }}
 								{{- if .Type }}
 								Type: "{{ .Type }}",

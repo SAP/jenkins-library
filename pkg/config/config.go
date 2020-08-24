@@ -19,14 +19,15 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults []string                          `json:"customDefaults,omitempty"`
-	General        map[string]interface{}            `json:"general"`
-	Stages         map[string]map[string]interface{} `json:"stages"`
-	Steps          map[string]map[string]interface{} `json:"steps"`
-	Hooks          *json.RawMessage                  `json:"hooks,omitempty"`
-	defaults       PipelineDefaults
-	initialized    bool
-	openFile       func(s string) (io.ReadCloser, error)
+	CustomDefaults   []string                          `json:"customDefaults,omitempty"`
+	General          map[string]interface{}            `json:"general"`
+	Stages           map[string]map[string]interface{} `json:"stages"`
+	Steps            map[string]map[string]interface{} `json:"steps"`
+	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	defaults         PipelineDefaults
+	initialized      bool
+	openFile         func(s string) (io.ReadCloser, error)
+	vaultCredentials VaultCredentials
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -226,21 +227,19 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
-	log.Entry().Errorf("Before Vault")
-	stepConfig.mixIn(c.General, []string{"vaultAddress", "vaultToken", "vaultNamespace", "vaultBasePath", "vaultPipelineName"})
+	stepConfig.mixIn(c.General, vaultFilter)
 	// fetch secrets from vault
-	vaultClient, err := getVaultClientFromConfig(stepConfig)
+	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
 	if err != nil {
-		log.Entry().Errorf("vault-debug creating vault client failed %v", err)
-		return StepConfig{}, err
-	}
-	err = addVaultCredentials(&stepConfig, vaultClient, parameters)
-	if err != nil {
-		log.Entry().Errorf("vault-debug reading vault secrets failed %v", err)
 		return StepConfig{}, err
 	}
 
-	log.Entry().Error("After vault")
+	if vaultClient != nil {
+		err = addVaultCredentials(&stepConfig, vaultClient, parameters)
+		if err != nil {
+			return StepConfig{}, err
+		}
+	}
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
@@ -258,6 +257,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 	return stepConfig, nil
+}
+
+// SetVaultCredentials sets the appRoleID and the appRoleSecretID to load additional configuration from vault
+func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string) {
+	c.vaultCredentials = VaultCredentials{
+		AppRoleID:       appRoleID,
+		AppRoleSecretID: appRoleSecretID,
+	}
 }
 
 // GetStepConfigWithJSON provides merged step configuration using a provided stepConfigJSON with additional flags provided
