@@ -251,7 +251,9 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 	}
 
 	resetDir, err := utils.Getwd()
-	defer func() { _ = utils.Chdir(resetDir) }()
+	if err != nil {
+		return fmt.Errorf("failed to obtain current directory: %w", err)
+	}
 
 	// TODO: Pass npm related options from config (download cache setup, registries)
 	npmExecutor := npm.NewExecutor(npm.ExecutorOptions{})
@@ -259,6 +261,7 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 	for _, module := range modules {
 		log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", module)
 		dir := filepath.Dir(module)
+
 		err := utils.Chdir(dir)
 		if err != nil {
 			return fmt.Errorf("failed to change into directory '%s': %w", dir, err)
@@ -266,6 +269,10 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 		err = executeNpmScan(config, utils)
 		if err != nil {
 			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
+		}
+		err = utils.Chdir(resetDir)
+		if err != nil {
+			return fmt.Errorf("failed to reset into directory '%s': %w", resetDir, err)
 		}
 	}
 
