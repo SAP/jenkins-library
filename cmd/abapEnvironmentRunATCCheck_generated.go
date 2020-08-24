@@ -36,10 +36,6 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 	var createAbapEnvironmentRunATCCheckCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs an ATC Check",
-<<<<<<< HEAD
-		Long:  `Run ATC Check`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-=======
 		Long: `This step is for triggering an ATC test run on an SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
@@ -49,7 +45,6 @@ Please provide either of the following options:
 
 Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -60,10 +55,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
-<<<<<<< HEAD
-=======
 				log.SetErrorCategory(log.ErrorConfiguration)
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 				return err
 			}
 
@@ -74,11 +66,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 
 			return nil
 		},
-<<<<<<< HEAD
-		Run: func(cmd *cobra.Command, args []string) {
-=======
 		Run: func(_ *cobra.Command, _ []string) {
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -90,10 +78,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-<<<<<<< HEAD
-=======
 			log.Entry().Info("SUCCESS")
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 		},
 	}
 
@@ -165,11 +150,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-<<<<<<< HEAD
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyName"}},
-=======
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 					},
 					{
 						Name:        "cfSpace",
@@ -198,11 +179,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-<<<<<<< HEAD
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-=======
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
->>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
