@@ -96,27 +96,27 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testNoTool() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [
-                camSystemRole  : 'testRole',
+                camSystemRole: 'testRole',
                 cfCredentialsId: 'test_cfCredentialsId'
             ],
-            stages : [
+            stages: [
                 acceptance: [
-                    cfOrg     : 'testOrg',
-                    cfSpace   : 'testSpace',
+                    cfOrg: 'testOrg',
+                    cfSpace: 'testSpace',
                     deployUser: 'testUser',
                 ]
             ],
-            steps  : [
+            steps: [
                 cloudFoundryDeploy: []
             ]
         ]
         nullScript.commonPipelineEnvironment.setBuildTool('mta')
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            mtaPath         : 'target/test.mtar',
-            stageName       : 'acceptance',
+            mtaPath: 'target/test.mtar',
+            stageName: 'acceptance',
         ])
         // asserts
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=mtaDeployPlugin, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=test_cfCredentialsId'))
@@ -130,27 +130,28 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ],
             stages: [
                 acceptance: [
-                    cfOrg     : 'testOrg',
-                    cfSpace   : 'testSpace',
+                    cfOrg: 'testOrg',
+                    cfSpace: 'testSpace',
                     deployUser: 'testUser',
                 ]
             ],
-            steps : [
+            steps: [
                 cloudFoundryDeploy: []
             ]
         ]
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'notAvailable',
-            stageName       : 'acceptance'
+            deployTool: 'notAvailable',
+            stageName: 'acceptance'
         ])
         // asserts
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=notAvailable, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds'))
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
     }
+
 
 
     @Test
@@ -161,15 +162,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
         // asserts
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -188,16 +189,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfApiEndpoint   : 'https://customApi',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfApiEndpoint: 'https://customApi',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
         // asserts
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://customApi -o "testOrg" -s "testSpace"')))
@@ -211,16 +212,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cloudFoundry    : [
-                org          : 'testOrg',
-                space        : 'testSpace',
+            deployTool: 'cf_native',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName      : 'testAppName',
-                manifest     : 'test.yml'
+                appName: 'testAppName',
+                manifest: 'test.yml'
             ]
         ])
         // asserts
@@ -242,16 +243,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script           : nullScript,
-            juStabUtils      : utils,
-            jenkinsUtilsStub : new JenkinsUtilsMock(),
-            deployTool       : 'cf_native',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
             deployDockerImage: 'repo/image:tag',
-            cloudFoundry     : [
-                org          : 'testOrg',
-                space        : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName      : 'testAppName'
+                appName: 'testAppName'
             ]
         ])
 
@@ -270,17 +271,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            deployTool         : 'cf_native',
-            deployDockerImage  : 'repo/image:tag',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployDockerImage: 'repo/image:tag',
             dockerCredentialsId: 'test_cfDockerCredentialsId',
-            cloudFoundry       : [
-                org          : 'testOrg',
-                space        : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName      : 'testAppName'
+                appName: 'testAppName'
             ]
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
@@ -302,17 +303,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            deployTool         : 'cf_native',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
             dockerCredentialsId: 'test_cfDockerCredentialsId',
-            cloudFoundry       : [
-                org          : 'testOrg',
-                space        : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName      : 'testAppName',
-                manifest     : 'manifest.yml'
+                appName: 'testAppName',
+                manifest: 'manifest.yml'
             ]
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
@@ -334,18 +335,18 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            deployTool         : 'cf_native',
-            deployType         : 'blue-green',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
             dockerCredentialsId: 'test_cfDockerCredentialsId',
-            cloudFoundry       : [
-                org          : 'testOrg',
-                space        : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName      : 'testAppName',
-                manifest     : 'manifest.yml'
+                appName: 'testAppName',
+                manifest: 'manifest.yml'
             ]
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
@@ -364,14 +365,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfManifest: 'test.yml'
         ])
         // asserts
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -391,14 +392,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: No appName available in manifest test.yml.')
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfManifest: 'test.yml'
         ])
     }
 
@@ -408,16 +409,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -435,17 +436,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            keepOldInstance : false,
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            keepOldInstance: false,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -464,17 +465,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            keepOldInstance : true,
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            keepOldInstance: true,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -496,16 +497,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage("[cloudFoundryDeploy] Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application.")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
     }
 
@@ -515,23 +516,23 @@ class CloudFoundryDeployTest extends BasePiperTest {
         fileExistsRule.registerExistingFile('test.yml')
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
     }
 
     @Test
-    void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError() {
+    void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
 
         helper.registerAllowedMethod("sh", [String], { cmd ->
@@ -545,17 +546,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage("[cloudFoundryDeploy] ERROR: Could not stop application testAppName-old. Error: any error message")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            keepOldInstance : true,
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            keepOldInstance: true,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -572,17 +573,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [{}]")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'standard',
-            keepOldInstance : true,
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'standard',
+            keepOldInstance: true,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &>"))))
@@ -598,15 +599,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)')
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            deployType      : 'blue-green',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfManifest: 'test.yml'
         ])
     }
 
@@ -626,15 +627,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: The execution of the deploy command failed, see the log for details.')
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -646,14 +647,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testMta() {
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            deployTool      : 'mtaDeployPlugin',
-            mtaPath         : 'target/test.mtar'
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar'
         ])
         // asserts
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
@@ -668,13 +669,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
         environmentRule.env.mtarFilePath = 'target/test.mtar'
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            deployTool      : 'mtaDeployPlugin'
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin'
         ])
         // asserts
         assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
@@ -684,15 +685,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testMtaBlueGreen() {
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            deployTool      : 'mtaDeployPlugin',
-            deployType      : 'blue-green',
-            mtaPath         : 'target/test.mtar'
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
         ])
 
         assertThat(shellRule.shell, hasItem(stringContainsInOrder(["cf login -u \"test_cf\"", 'cf bg-deploy', '-f', '--no-confirm'])))
@@ -707,19 +708,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
         // asserts
         assertThat(writeInfluxMap.customDataMap.deployment_data.artifactUrl, is('n/a'))
-        assertThat(writeInfluxMap.customDataMap.deployment_data.deployTime, containsString(new Date().format('MMM dd, yyyy')))
+        assertThat(writeInfluxMap.customDataMap.deployment_data.deployTime, containsString(new Date().format( 'MMM dd, yyyy')))
         assertThat(writeInfluxMap.customDataMap.deployment_data.jobTrigger, is('USER'))
 
         assertThat(writeInfluxMap.customDataMapTags.deployment_data.artifactVersion, is('1.2.3'))
@@ -737,15 +738,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         fileExistsRule.registerExistingFile('vars.yml')
 
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariablesFiles: ['vars.yml']
         ])
 
@@ -755,8 +756,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf push testAppName --vars-file 'vars.yml' -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
-        assertThat(loggingRule.log, containsString("We will add the following string to the cf push call: --vars-file 'vars.yml' !"))
-        assertThat(loggingRule.log, not(containsString("We will add the following string to the cf push call:  !")))
+        assertThat(loggingRule.log,containsString("We will add the following string to the cf push call: --vars-file 'vars.yml' !"))
+        assertThat(loggingRule.log,not(containsString("We will add the following string to the cf push call:  !")))
     }
 
     @Test
@@ -765,15 +766,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         fileExistsRule.registerExistingFile('test.yml')
 
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariablesFiles: ['vars.yml']
         ])
 
@@ -785,18 +786,18 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsList() {
         readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
-        List varsList = [["appName": "testApplicationFromVarsList"]]
+        List varsList = [["appName" : "testApplicationFromVarsList"]]
 
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            deployTool         : 'cf_native',
-            cfOrg              : 'testOrg',
-            cfSpace            : 'testSpace',
-            cfCredentialsId    : 'test_cfCredentialsId',
-            cfAppName          : 'testAppName',
-            cfManifest         : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariables: varsList
         ])
 
@@ -807,8 +808,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf push testAppName --var appName='testApplicationFromVarsList' -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
-        assertThat(loggingRule.log, containsString("We will add the following string to the cf push call: --var appName='testApplicationFromVarsList' !"))
-        assertThat(loggingRule.log, not(containsString("We will add the following string to the cf push call:  !")))
+        assertThat(loggingRule.log,containsString("We will add the following string to the cf push call: --var appName='testApplicationFromVarsList' !"))
+        assertThat(loggingRule.log,not(containsString("We will add the following string to the cf push call:  !")))
     }
 
     @Test
@@ -819,15 +820,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
 
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            deployTool         : 'cf_native',
-            cfOrg              : 'testOrg',
-            cfSpace            : 'testSpace',
-            cfCredentialsId    : 'test_cfCredentialsId',
-            cfAppName          : 'testAppName',
-            cfManifest         : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariables: 'notAList'
         ])
 
@@ -836,21 +837,21 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsListAndVarsFile() {
         readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
-        List varsList = [["appName": "testApplicationFromVarsList"]]
+        List varsList = [["appName" : "testApplicationFromVarsList"]]
         fileExistsRule.registerExistingFile('vars.yml')
 
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariablesFiles: ['vars.yml'],
-            cfManifestVariables     : varsList
+            cfManifestVariables: varsList
         ])
 
         // asserts
@@ -867,15 +868,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            deployTool      : 'cf_native',
-            cfOrg           : 'testOrg',
-            cfSpace         : 'testSpace',
-            cfCredentialsId : 'test_cfCredentialsId',
-            cfAppName       : 'testAppName',
-            cfManifest      : 'test.yml'
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         // asserts
@@ -906,16 +907,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            deployType              : 'blue-green',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariablesFiles: ['vars.yml']
         ])
 
@@ -936,7 +937,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testCfBlueGreenDeploymentWithVariableSubstitutionFromVarsList() {
         readYamlRule.registerYaml('test.yml', "applications: [{name: '((appName))'}]")
         readYamlRule.registerYaml('vars.yml', "[appName: 'testApplication']")
-        List varsList = [["appName": "testApplicationFromVarsList"]]
+        List varsList = [["appName" : "testApplicationFromVarsList"]]
 
         fileExistsRule.registerExistingFile("test.yml")
         fileExistsRule.registerExistingFile("vars.yml")
@@ -951,18 +952,18 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            deployType              : 'blue-green',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
             cfManifestVariablesFiles: ['vars.yml'],
-            cfManifestVariables     : varsList
+            cfManifestVariables: varsList
         ])
 
         // asserts
@@ -990,17 +991,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org     : 'testOrg',
-                space   : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 manifest: 'test.yml',
-            ],
-            deployTool      : 'cf_native',
-            cfCredentialsId : 'test_cfCredentialsId',
-            verbose         : true
+                ],
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
         ])
 
         assertThat(loggingRule.log, allOf(
@@ -1018,17 +1019,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         readYamlRule.registerYaml('test.yml', "applications: [{name: 'manifestAppName'}]")
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org     : 'testOrg',
-                space   : 'testSpace',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 manifest: 'test.yml',
-            ],
-            deployTool      : 'cf_native',
-            cfCredentialsId : 'test_cfCredentialsId',
-            verbose         : true
+                ],
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
         ])
 
         assertThat(loggingRule.log, containsString('No trace file found'))
@@ -1044,17 +1045,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
         stepRule.step.cloudFoundryDeploy([
-            script                  : nullScript,
-            juStabUtils             : utils,
-            jenkinsUtilsStub        : new JenkinsUtilsMock(),
-            deployTool              : 'cf_native',
-            cfOrg                   : 'testOrg',
-            cfSpace                 : 'testSpace',
-            loginParameters         : '--some-login-opt value',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            loginParameters: '--some-login-opt value',
             cfNativeDeployParameters: '--some-deploy-opt cf-value',
-            cfCredentialsId         : 'test_cfCredentialsId',
-            cfAppName               : 'testAppName',
-            cfManifest              : 'test.yml'
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
         ])
 
         assertThat(shellRule.shell, hasItem(
@@ -1068,20 +1069,20 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testAdditionMtaOpts() {
 
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            cloudFoundry       : [
-                org  : 'testOrg',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
                 space: 'testSpace',
             ],
-            apiParameters      : '--some-api-opt value',
-            loginParameters    : '--some-login-opt value',
+            apiParameters: '--some-api-opt value',
+            loginParameters: '--some-login-opt value',
             mtaDeployParameters: '--some-deploy-opt mta-value',
-            cfCredentialsId    : 'test_cfCredentialsId',
-            deployTool         : 'mtaDeployPlugin',
-            deployType         : 'blue-green',
-            mtaPath            : 'target/test.mtar'
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
         ])
 
         assertThat(shellRule.shell, hasItem(
@@ -1097,19 +1098,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
         String expected = "Your application name my_invalid_app_name contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\n" +
             "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
         String actual = ""
-        helper.registerAllowedMethod('error', [String.class], { s -> actual = s })
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org    : 'irrelevant',
-                space  : 'irrelevant',
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'my_invalid_app_name'
             ],
-            cfCredentialsId : 'test_cfCredentialsId',
-            mtaPath         : 'irrelevant'
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
         ])
 
         assertEquals(expected, actual)
@@ -1119,19 +1120,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void 'appName with alpha-numeric chars and leading dash should throw an error'() {
         String expected = "Your application name -my-Invalid-AppName123 contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
         String actual = ""
-        helper.registerAllowedMethod('error', [String.class], { s -> actual = s })
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org    : 'irrelevant',
-                space  : 'irrelevant',
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: '-my-Invalid-AppName123'
             ],
-            cfCredentialsId : 'test_cfCredentialsId',
-            mtaPath         : 'irrelevant'
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
         ])
 
         assertEquals(expected, actual)
@@ -1141,19 +1142,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void 'appName with alpha-numeric chars and trailing dash should throw an error'() {
         String expected = "Your application name my-Invalid-AppName123- contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement.\nFor more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings."
         String actual = ""
-        helper.registerAllowedMethod('error', [String.class], { s -> actual = s })
+        helper.registerAllowedMethod('error', [String.class], {s -> actual = s})
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org    : 'irrelevant',
-                space  : 'irrelevant',
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'my-Invalid-AppName123-'
             ],
-            cfCredentialsId : 'test_cfCredentialsId',
-            mtaPath         : 'irrelevant'
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
         ])
 
         assertEquals(expected, actual)
@@ -1162,17 +1163,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void 'appName with alpha-numeric chars should work'() {
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org    : 'irrelevant',
-                space  : 'irrelevant',
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'myValidAppName123'
             ],
-            deployTool      : 'cf_native',
-            cfCredentialsId : 'test_cfCredentialsId',
-            mtaPath         : 'irrelevant'
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
         ])
 
         assertTrue(loggingRule.log.contains("cfAppName=myValidAppName123"))
@@ -1181,17 +1182,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void 'appName with alpha-numeric chars and dash should work'() {
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            cloudFoundry    : [
-                org    : 'irrelevant',
-                space  : 'irrelevant',
+            cloudFoundry: [
+                org: 'irrelevant',
+                space: 'irrelevant',
                 appName: 'my-Valid-AppName123'
             ],
-            deployTool      : 'cf_native',
-            cfCredentialsId : 'test_cfCredentialsId',
-            mtaPath         : 'irrelevant'
+            deployTool: 'cf_native',
+            cfCredentialsId: 'test_cfCredentialsId',
+            mtaPath: 'irrelevant'
         ])
 
         assertTrue(loggingRule.log.contains("cfAppName=my-Valid-AppName123"))
@@ -1203,19 +1204,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
             'globalMtaDescriptor.mtaext',
         )
         stepRule.step.cloudFoundryDeploy([
-            script                : nullScript,
-            juStabUtils           : utils,
-            jenkinsUtilsStub      : new JenkinsUtilsMock(),
-            cloudFoundry          : [
-                org  : 'testOrg',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
                 space: 'testSpace'
             ],
             mtaExtensionDescriptor: 'globalMtaDescriptor.mtaext',
-            mtaDeployParameters   : '--some-deploy-opt mta-value',
-            cfCredentialsId       : 'test_cfCredentialsId',
-            deployTool            : 'mtaDeployPlugin',
-            deployType            : 'blue-green',
-            mtaPath               : 'target/test.mtar'
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
         ])
 
         assertThat(shellRule.shell, hasItem(containsString("-e globalMtaDescriptor.mtaext")))
@@ -1227,19 +1228,19 @@ class CloudFoundryDeployTest extends BasePiperTest {
             'targetMtaDescriptor.mtaext',
         )
         stepRule.step.cloudFoundryDeploy([
-            script             : nullScript,
-            juStabUtils        : utils,
-            jenkinsUtilsStub   : new JenkinsUtilsMock(),
-            cloudFoundry       : [
-                org                   : 'testOrg',
-                space                 : 'testSpace',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
                 mtaExtensionDescriptor: 'targetMtaDescriptor.mtaext'
             ],
             mtaDeployParameters: '--some-deploy-opt mta-value',
-            cfCredentialsId    : 'test_cfCredentialsId',
-            deployTool         : 'mtaDeployPlugin',
-            deployType         : 'blue-green',
-            mtaPath            : 'target/test.mtar'
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
         ])
         assertThat(shellRule.shell, hasItem(containsString("-e targetMtaDescriptor.mtaext")))
     }
@@ -1249,9 +1250,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         fileExistsRule.existingFiles.addAll(
             'mtaext.mtaext',
         )
-        credentialsRule.withCredentials("mtaExtCredTest", "token")
+        credentialsRule.withCredentials("mtaExtCredTest","token")
 
-        helper.registerAllowedMethod('readFile', [String], { file ->
+        helper.registerAllowedMethod('readFile', [String], {file ->
             if (file == 'mtaext.mtaext') {
                 return '_schema-version: \'3.1\'\n' +
                     'ID: test.ext\n' +
@@ -1264,15 +1265,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script                 : nullScript,
-            juStabUtils            : utils,
-            jenkinsUtilsStub       : new JenkinsUtilsMock(),
-            cfOrg                  : 'testOrg',
-            cfSpace                : 'testSpace',
-            cfCredentialsId        : 'test_cfCredentialsId',
-            deployTool             : 'mtaDeployPlugin',
-            mtaPath                : 'target/test.mtar',
-            mtaExtensionDescriptor : "mtaext.mtaext",
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
             mtaExtensionCredentials: [
                 testCred: 'mtaExtCredTest'
             ]
@@ -1294,14 +1295,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] The mta extension descriptor file mtaext.mtaext does not exist at the configured location.')
 
         stepRule.step.cloudFoundryDeploy([
-            script                : nullScript,
-            juStabUtils           : utils,
-            jenkinsUtilsStub      : new JenkinsUtilsMock(),
-            cfOrg                 : 'testOrg',
-            cfSpace               : 'testSpace',
-            cfCredentialsId       : 'test_cfCredentialsId',
-            deployTool            : 'mtaDeployPlugin',
-            mtaPath               : 'target/test.mtar',
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
             mtaExtensionDescriptor: "mtaext.mtaext"
         ])
     }
@@ -1316,22 +1317,20 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expectMessage('[cloudFoundryDeploy] Unable to read mta extension file mtaext.mtaext.')
 
         stepRule.step.cloudFoundryDeploy([
-            script                 : nullScript,
-            juStabUtils            : utils,
-            jenkinsUtilsStub       : new JenkinsUtilsMock(),
-            cfOrg                  : 'testOrg',
-            cfSpace                : 'testSpace',
-            cfCredentialsId        : 'test_cfCredentialsId',
-            deployTool             : 'mtaDeployPlugin',
-            mtaPath                : 'target/test.mtar',
-            mtaExtensionDescriptor : "mtaext.mtaext",
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            mtaPath: 'target/test.mtar',
+            mtaExtensionDescriptor: "mtaext.mtaext",
             mtaExtensionCredentials: [
                 testCred: 'mtaExtCredTest'
             ],
         ])
-    }
-
-    @Test
+    }    @Test
     void testGoStepFeatureToggleOn() {
         String calledStep = ''
         String usedMetadataFile = ''
@@ -1343,14 +1342,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            useGoStep       : true,
-            deployTool      : 'irrelevant',
-            cfOrg           : 'irrelevant',
-            cfSpace         : 'irrelevant',
-            cfCredentialsId : 'irrelevant',
+            useGoStep: true,
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
         ])
 
         assertEquals('cloudFoundryDeploy', calledStep)
@@ -1369,14 +1368,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
         })
 
         stepRule.step.cloudFoundryDeploy([
-            script          : nullScript,
-            juStabUtils     : utils,
+            script: nullScript,
+            juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
-            useGoStep       : 'false',
-            deployTool      : 'irrelevant',
-            cfOrg           : 'irrelevant',
-            cfSpace         : 'irrelevant',
-            cfCredentialsId : 'irrelevant',
+            useGoStep: 'false',
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
         ])
 
         assertEquals('', calledStep)
