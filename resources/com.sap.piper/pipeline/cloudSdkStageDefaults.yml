@@ -52,3 +52,7 @@ stages:
           - 'runScripts'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  frontendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScript: 'ci-it-frontend'

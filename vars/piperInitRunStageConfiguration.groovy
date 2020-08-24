@@ -96,6 +96,18 @@ void call(Map parameters = [:]) {
                             stepActive = true
                         }
                         break
+                    case 'npmScript':
+                        def packages = findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+                        for (int i = 0; i < packages.size(); i++) {
+                            String packageJsonPath = packages[i].path
+                            Map packageJson = readJSON file: packageJsonPath
+                            Map npmScripts = packageJson.scripts ?: [:]
+                            if (npmScripts[condition.getValue()]) {
+                                stepActive = true
+                            }
+                            break
+                        }
+                        break
                 }
             }
             script.commonPipelineEnvironment.configuration.runStep."${stage.getKey()}"."${step.getKey()}" = stepActive
