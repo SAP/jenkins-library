@@ -73,7 +73,7 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (ve
 	return artifact.GetCoordinates()
 }
 
-func newUtils() *whitesourceUtilsBundle {
+func newWhitesourceUtils() *whitesourceUtilsBundle {
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
 		Command: &command.Command{},
@@ -86,7 +86,7 @@ func newUtils() *whitesourceUtilsBundle {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
-	utils := newUtils()
+	utils := newWhitesourceUtils()
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
 	if err := resolveProjectIdentifiers(&config, utils, sys); err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
