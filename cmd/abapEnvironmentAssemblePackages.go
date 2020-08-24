@@ -58,7 +58,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return err
 	}
-	err = checkIfFailed(builds)
+	err = checkIfFailedAndPrintLogs(builds)
 	if err != nil {
 		return err
 	}
@@ -73,6 +73,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	addonDescriptor.Repositories = reposBackToCPE
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
+
 	return nil
 }
 
@@ -96,7 +97,7 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 	}
 	return reposBackToCPE, nil
 }
-func checkIfFailed(builds []buildWithRepository) error {
+func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	var buildFailed bool = false
 	for _, bR := range builds {
 		b := bR.build
@@ -146,10 +147,10 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 			return errors.New("Timed out")
 		case <-ticker:
 			var allFinished bool = true
-			for _, b := range builds {
-				if !b.build.IsFinished() {
-					b.build.get()
-					if !b.build.IsFinished() {
+			for i := range builds {
+				if !builds[i].build.IsFinished() {
+					builds[i].build.get()
+					if !builds[i].build.IsFinished() {
 						allFinished = false
 					}
 				}
@@ -162,6 +163,9 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 }
 
 func (b *buildWithRepository) start() error {
+	if b.repo.Name == "" || b.repo.Version == "" || b.repo.SpLevel == "" || b.repo.Namespace == "" || b.repo.PackageType == "" || b.repo.PackageName == "" {
+		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename ")
+	}
 	valuesInput := values{
 		Values: []value{
 			{
@@ -540,14 +544,7 @@ func (vs values) String() string {
 }
 
 func (in inputForPost) String() string {
-	return fmt.Sprintf(
-		`{ "phase": "%s",
-		   "values": [ 
-			   %s
-		   ]
-		   }`,
-		in.phase,
-		in.values.String())
+	return fmt.Sprintf(`{ "phase": "%s", "values": [%s]}`, in.phase, in.values.String())
 }
 
 // *********************************************************************
