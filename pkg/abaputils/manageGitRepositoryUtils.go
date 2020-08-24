@@ -118,6 +118,20 @@ type BranchEntity struct {
 	LastCommitOn  string       `json:"last_commit_on"`
 }
 
+// CloneEntity struct for the Clone entity A4C_A2G_GHA_SC_CLONE
+type CloneEntity struct {
+	Metadata          AbapMetadata `json:"__metadata"`
+	ScName            string       `json:"sc_name"`
+	BranchName        string       `json:"branch_name"`
+	ImportType        string       `json:"import_type"`
+	Namespace         string       `json:"namepsace"`
+	Status            string       `json:"status"`
+	StatusDescription string       `json:"status_descr"`
+	StartedByUser     string       `json:"user_name"`
+	StartTime         string       `json:"start_time"`
+	ChangeTime        string       `json:"change_time"`
+}
+
 // AbapLogs struct for ABAP logs
 type AbapLogs struct {
 	Results []LogResults `json:"results"`

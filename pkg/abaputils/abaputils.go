@@ -21,9 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-AbapUtils Struct
-*/
+// AbapUtils Struct
 type AbapUtils struct {
 	Exec      command.ExecRunner
 	Intervall time.Duration
@@ -178,26 +176,26 @@ func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 	filelocation, err := filepath.Glob(FileName)
 
 	if err != nil || len(filelocation) != 1 {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not find %v", FileName))
 	}
 	filename, err := filepath.Abs(filelocation[0])
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not get path of %v", FileName))
 	}
 	addonYAMLFile, err = ioutil.ReadFile(filename)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not read %v", FileName))
 	}
 
 	var jsonBytes []byte
 	jsonBytes, err = yaml.YAMLToJSON(addonYAMLFile)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v", FileName))
 	}
 
 	err = json.Unmarshal(jsonBytes, &addonDescriptor)
 	if err != nil {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v.", FileName))
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
 
 	return addonDescriptor, nil
@@ -297,14 +295,15 @@ type AbapBinding struct {
 
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
-	AddonProduct    string      `json:"addonProduct"`
-	AddonVersion    string      `json:"addonVersion"`
-	AddonUniqueID   string      `json:"addonUniqueID"`
-	CustomerID      interface{} `json:"customerID"`
-	AddonSpsLevel   string
-	AddonPatchLevel string
-	TargetVectorID  string
-	Repositories    []Repository `json:"repositories"`
+	AddonProduct     string `json:"addonProduct"`
+	AddonVersionYAML string `json:"addonVersion"`
+	AddonVersion     string
+	AddonUniqueID    string      `json:"addonUniqueID"`
+	CustomerID       interface{} `json:"customerID"`
+	AddonSpsLevel    string
+	AddonPatchLevel  string
+	TargetVectorID   string
+	Repositories     []Repository `json:"repositories"`
 }
 
 // Repository contains fields for the repository/component version
@@ -312,8 +311,8 @@ type Repository struct {
 	Name                string `json:"name"`
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
-	Version             string `json:"version"`
-	VersionOtherFormat  string
+	VersionYAML         string `json:"version"`
+	Version             string
 	PackageName         string
 	PackageType         string
 	SpsLevel            string
