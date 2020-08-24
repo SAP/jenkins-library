@@ -148,7 +148,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "helm", e.Calls[1].Exec, "Wrong upgrade command")
+		assert.Equal(t, 1, len(e.Calls), "Wrong number of upgrade commands")
+		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
@@ -166,7 +167,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"testCluster",
 			"--testParam",
 			"testValue",
-		}, e.Calls[1].Params, "Wrong upgrade parameters")
+		}, e.Calls[0].Params, "Wrong upgrade parameters")
 	})
 
 	t.Run("test kubectl - create secret/kubeconfig", func(t *testing.T) {
