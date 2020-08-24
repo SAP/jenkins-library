@@ -315,16 +315,21 @@ func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
 }
 
 func TestExecuteProtecodeScan(t *testing.T) {
+	testDataFile := filepath.Join("testData", "TestProtecode", "protecode_result_violations.json")
+	violationsAbsPath, err := filepath.Abs(testDataFile)
+	if err != nil {
+		t.Fatalf("failed to obtain absolute path to test data with violations: %v", err)
+	}
+
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
 		var b bytes.Buffer
 
 		if requestURI == "/api/product/4711/" {
-			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
-			byteContent, err := ioutil.ReadFile(violations)
+			byteContent, err := ioutil.ReadFile(violationsAbsPath)
 			if err != nil {
-				t.Fatalf("failed reading %v", violations)
+				t.Fatalf("failed reading %v", violationsAbsPath)
 			}
 			response := protecode.ResultData{}
 			err = json.Unmarshal(byteContent, &response)
@@ -358,13 +363,6 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		{false, "binary", "group1", "/api/fetch/", 4711},
 	}
 
-	testDataPath := filepath.Join("testData", "TestProtecode")
-	testDataFile := filepath.Join(testDataPath, "protecode_result_violations.json")
-	testData, err := ioutil.ReadFile(testDataFile)
-	if err != nil {
-		t.Fatalf("failed to read protecode testdata")
-	}
-
 	resetDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get current directory: %v", err)
@@ -385,16 +383,6 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		err = os.Chdir(dir)
 		if err != nil {
 			t.Fatalf("Failed to change into temporary directory: %v", err)
-		}
-
-		err = os.MkdirAll(testDataPath, os.ModePerm)
-		if err != nil {
-			t.Fatalf("Failed to make protecode testdata sub-folder: %v", err)
-		}
-
-		err = ioutil.WriteFile(testDataFile, testData, 0644)
-		if err != nil {
-			t.Fatalf("Failed to write protecode testdata: %v", err)
 		}
 
 		reportPath = dir
