@@ -65,7 +65,7 @@ type ResourceReference struct {
 	Name    string   `json:"name"`
 	Type    string   `json:"type,omitempty"`
 	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"path,omitempty"`
+	Paths   []string `json:"paths,omitempty"`
 	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
