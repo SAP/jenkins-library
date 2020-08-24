@@ -9,6 +9,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/cloudFoundryDeploy.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     'buildTool',
@@ -157,7 +158,13 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerCredentialsId',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * Activates using the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
+])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
     cloudFoundry: [
@@ -199,6 +206,15 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
+
+    if (parameters.useGoStep == true) {
+        List credentials = [
+            [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+            [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+        ]
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+        return
+    }
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
