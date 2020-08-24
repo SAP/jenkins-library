@@ -156,7 +156,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
     /**
-     * Activates using the new go-implementation of the step. Off by default.
+     * Toggle to activate the new go-implementation of the step. Off by default.
      * @possibleValues true, false
      */
     'useGoStep',
