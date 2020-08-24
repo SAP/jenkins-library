@@ -315,7 +315,7 @@ func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
 }
 
 func TestExecuteProtecodeScan(t *testing.T) {
-	testDataFile := filepath.Join("testData", "TestProtecode", "protecode_result_violations.json")
+	testDataFile := filepath.Join("testdata", "TestProtecode", "protecode_result_violations.json")
 	violationsAbsPath, err := filepath.Abs(testDataFile)
 	if err != nil {
 		t.Fatalf("failed to obtain absolute path to test data with violations: %v", err)
