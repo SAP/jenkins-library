@@ -1330,7 +1330,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 testCred: 'mtaExtCredTest'
             ],
         ])
-    }    @Test
+    }
+
+    @Test
     void testGoStepFeatureToggleOn() {
         String calledStep = ''
         String usedMetadataFile = ''
