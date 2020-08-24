@@ -9,7 +9,6 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/cloudFoundryDeploy.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     'buildTool',
@@ -233,7 +232,7 @@ void call(Map parameters = [:]) {
                 [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
                 [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
             ]
-            piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
             return
         }
 
