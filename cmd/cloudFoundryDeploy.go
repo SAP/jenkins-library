@@ -80,6 +80,17 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 		return err
 	}
 
+	if config.DeployTool == "" && config.BuildTool != "" {
+		switch config.BuildTool {
+		case "mta":
+			config.DeployTool = "mtaDeployPlugin"
+		default:
+			config.DeployTool = "cf_native"
+		}
+		log.Entry().Infof("Deploy tool unspecified. Using '%s' for buildTool '%s'.",
+			config.DeployTool, config.BuildTool)
+	}
+
 	var deployTriggered bool
 
 	if config.DeployTool == "mtaDeployPlugin" {

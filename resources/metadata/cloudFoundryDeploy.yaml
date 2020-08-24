@@ -104,7 +104,20 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        mandatory: true
+      - name: buildTool
+        type: string
+        description: "Defines the tool which is used for building the artifact.
+          If provided, `deployTool` is automatically derived from it.
+          For MTA projects, `deployTool` defaults to `mtaDeployPlugin`.
+          For other projects `cf_native` will be used."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: buildTool
       - name: deployType
         type: string
         description: "Defines the type of deployment, either `standard` deployment which results in a system
@@ -300,7 +313,6 @@ spec:
           - name: cfSpace
           - name: cloudFoundry/space
         mandatory: true
-        secret: false
       - name: username
         type: string
         description: "User"
