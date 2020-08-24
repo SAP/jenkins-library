@@ -87,8 +87,8 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 		default:
 			config.DeployTool = "cf_native"
 		}
-		log.Entry().Infof("Deploy tool unspecified. Using '%s' for buildTool '%s'.",
-			config.DeployTool, config.BuildTool)
+		log.Entry().Infof("Parameter deployTool not specified - deriving from buildTool '%s': '%s'",
+			config.BuildTool, config.DeployTool)
 	}
 
 	var deployTriggered bool
