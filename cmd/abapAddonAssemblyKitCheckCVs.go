@@ -32,13 +32,11 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
-
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
-	addonDescriptor = transferProductFromCPE(addonDescriptor, addonDescriptorFromCPE)
-
 	if err != nil {
 		return nil
 	}
+	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
@@ -49,23 +47,18 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		if err != nil {
 			return err
 		}
-		addonDescriptor.Repositories[i] = c.addFields(addonDescriptor.Repositories[i])
+		// addonDescriptor.Repositories[i] = c.addFields(addonDescriptor.Repositories[i])
+		c.addFields(&addonDescriptor.Repositories[i])
 	}
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 
-// TODO sobald abaputils geändert wurde muss das hier auch geändert werden!
-func transferProductFromCPE(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
-	addonDescriptor.AddonProduct = addonDescriptorFromCPE.AddonProduct
-	addonDescriptor.AddonVersion = addonDescriptorFromCPE.AddonVersion
-	addonDescriptor.AddonUniqueID = addonDescriptorFromCPE.AddonUniqueID
-	addonDescriptor.CustomerID = addonDescriptorFromCPE.CustomerID
-	addonDescriptor.AddonSpsLevel = addonDescriptorFromCPE.AddonSpsLevel
-	addonDescriptor.AddonPatchLevel = addonDescriptorFromCPE.AddonPatchLevel
-	addonDescriptor.TargetVectorID = addonDescriptorFromCPE.TargetVectorID
-	return addonDescriptor
+//take the product part from CPE and the repositories part from the YAML file
+func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
+	return addonDescriptorFromCPE
 }
 
 func (c *cv) init(repo abaputils.Repository, conn connector) {
@@ -74,13 +67,16 @@ func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.VersionYAML = repo.VersionYAML
 }
 
-func (c *cv) addFields(initialRepo abaputils.Repository) abaputils.Repository {
-	var repo abaputils.Repository
-	repo = initialRepo
-	repo.Version = c.Version
-	repo.SpsLevel = c.SpsLevel
-	repo.PatchLevel = c.PatchLevel
-	return repo
+// func (c *cv) addFields(initialRepo *abaputils.Repository) abaputils.Repository {
+// 	initialRepo.Version = c.Version
+// 	initialRepo.SpsLevel = c.SpsLevel
+// 	initialRepo.PatchLevel = c.PatchLevel
+// 	return initialRepo
+// }
+func (c *cv) addFields(initialRepo *abaputils.Repository) {
+	initialRepo.Version = c.Version
+	initialRepo.SpsLevel = c.SpsLevel
+	initialRepo.PatchLevel = c.PatchLevel
 }
 
 func (c *cv) validate() error {

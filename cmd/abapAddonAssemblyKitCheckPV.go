@@ -34,7 +34,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
-	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
+	addonDescriptor = combineYAMLPrpductWithCPERepositories(addonDescriptor, addonDescriptorFromCPE)
 	if err != nil {
 		return nil
 	}
@@ -48,10 +48,15 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	if err != nil {
 		return err
 	}
-	addonDescriptor = p.convert()
+	addonDescriptor = p.addFields(addonDescriptor)
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
+}
+
+func combineYAMLPrpductWithCPERepositories(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
+	return addonDescriptor
 }
 
 // *******************************************************************************************************************************
@@ -73,23 +78,19 @@ func (conn *connector) initAAK(aAKaaSEndpoint string, username string, password 
 	conn.Baseurl = aAKaaSEndpoint
 }
 
-// TODO nochmal checken wie das mit dem verschiedenen Versionen ist => hab leider kein feld in das abaputils dafür eingebaut, geht es auch so?
 func (p *pv) init(desc abaputils.AddonDescriptor, conn connector) {
 	p.connector = conn
 	p.Name = desc.AddonProduct
-	p.VersionYAML = desc.AddonVersion
+	p.VersionYAML = desc.AddonVersionYAML
 }
 
-// TODO auf die verschiedenen versions achten!
-func (p *pv) convert() abaputils.AddonDescriptor {
-	var desc abaputils.AddonDescriptor
-	desc.AddonProduct = p.Name
-	desc.AddonVersion = p.Version
-	desc.AddonSpsLevel = p.SpsLevel
-	desc.AddonPatchLevel = p.PatchLevel
-	desc.TargetVectorID = p.TargetVectorID
-	return desc
+func (p *pv) addFields(initialAddonDescriptor abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+	initialAddonDescriptor.AddonVersion = p.Version
+	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
+	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
+	return initialAddonDescriptor
 }
+
 func (p *pv) validate() error {
 	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.get(appendum)
