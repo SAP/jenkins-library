@@ -52,6 +52,7 @@ type whitesourceUtils interface {
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
+	RemoveAll(path string) error
 
 	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
 
@@ -327,10 +328,18 @@ func executeMavenScanForPomFile(config *ScanOptions, utils whitesourceUtils, pom
 	return err
 }
 
-// executeNpmScan generates a configuration file whitesource.config.json with appropriate values from config,
-// installs whitesource yarn plugin and executes the scan.
-func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
-	const whiteSourceConfig = "whitesource.config.json"
+const whiteSourceConfig = "whitesource.config.json"
+
+func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, devDependencies bool) error {
+	exists, _ := utils.FileExists(whiteSourceConfig)
+	if exists {
+		log.Entry().Errorf(
+			"The file '%s' already exists in the project. "+
+				"Please delete it and only use the file .pipeline/config.yml to configure WhiteSource.",
+			whiteSourceConfig)
+		return fmt.Errorf("file '%s' already exists", whiteSourceConfig)
+	}
+
 	npmConfig := []byte(fmt.Sprintf(`{
 		"apiKey": "%s",
 		"userKey": "%s",
@@ -338,10 +347,55 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 		"productName": "%s",
 		"projectName": "%s",
 		"productVer": "%s",
-		"devDep": true,
+		"devDep": %v,
 		"ignoreNpmLsErrors"": true
-	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion))
-	if err := utils.FileWrite(whiteSourceConfig, npmConfig, 0644); err != nil {
+	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion,
+		devDependencies))
+
+	err := utils.FileWrite(whiteSourceConfig, npmConfig, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to generate '%s': %w", whiteSourceConfig, err)
+	}
+	return nil
+}
+
+// executeNpmScan generates a configuration file whitesource.config.json with appropriate values from config,
+// installs whitesource yarn plugin and executes the scan.
+func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
+	if err := writeWhitesourceConfigJSON(config, utils, false); err != nil {
+		return err
+	}
+	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
+
+	if err := reinstallNodeModulesIfLsFails(utils); err != nil {
+		return err
+	}
+
+	return utils.RunExecutable("npx", "whitesource", "run")
+}
+
+func reinstallNodeModulesIfLsFails(utils whitesourceUtils) error {
+	// TODO: Use npm.Executor in order to use Download Cache.
+	err := utils.RunExecutable("npm", "ls")
+	if err == nil {
+		return nil
+	}
+	log.Entry().Warnf("'npm ls' failed. Re-installing NPM Node Modules")
+	err = utils.RemoveAll("node_modules")
+	if err != nil {
+		return fmt.Errorf("failed to remove node_modules directory: %w", err)
+	}
+	err = utils.MkdirAll("node_modules", os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to recreate node_modules directory: %w", err)
+	}
+	return utils.RunExecutable("npm", "install")
+}
+
+// executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
+// installs whitesource yarn plugin and executes the scan.
+func executeYarnScan(config *ScanOptions, utils whitesourceUtils) error {
+	if err := writeWhitesourceConfigJSON(config, utils, true); err != nil {
 		return err
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
