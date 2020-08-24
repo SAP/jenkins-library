@@ -40,13 +40,14 @@ type whitesource interface {
 }
 
 type whitesourceUtils interface {
-	SetDir(path string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(executable string, params ...string) error
 
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
+	Chdir(path string) error
+	Getwd() (string, error)
 	MkdirAll(path string, perm os.FileMode) error
 	FileExists(path string) (bool, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
@@ -249,14 +250,20 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 		return err
 	}
 
+	resetDir, err := utils.Getwd()
+	defer func() { _ = utils.Chdir(resetDir) }()
+
 	// TODO: Pass npm related options from config (download cache setup, registries)
 	npmExecutor := npm.NewExecutor(npm.ExecutorOptions{})
 	modules := npmExecutor.FindPackageJSONFiles()
 	for _, module := range modules {
 		log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", module)
 		dir := filepath.Dir(module)
-		utils.SetDir(dir)
-		err := executeNpmScan(config, utils)
+		err := utils.Chdir(dir)
+		if err != nil {
+			return fmt.Errorf("failed to change into directory '%s': %w", dir, err)
+		}
+		err = executeNpmScan(config, utils)
 		if err != nil {
 			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
 		}
@@ -388,6 +395,13 @@ func reinstallNodeModulesIfLsFails(utils whitesourceUtils) error {
 	err = utils.MkdirAll("node_modules", os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to recreate node_modules directory: %w", err)
+	}
+	exists, _ := utils.FileExists("package-lock.json")
+	if exists {
+		err = utils.FileRemove("package-lock.json")
+		if err != nil {
+			return fmt.Errorf("failed to remove package-lock.json: %w", err)
+		}
 	}
 	return utils.RunExecutable("npm", "install")
 }
