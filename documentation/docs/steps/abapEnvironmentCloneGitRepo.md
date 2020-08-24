@@ -54,10 +54,10 @@ and the configuration file `repositories.yml` would look like this:
 
 ```yaml
 repositories:
-  - name: /DMO/GIT_REPOSITORY
-    branch: master
-  - name: /DMO/SOFTWARE_COMPONENT
-    branch: feature
+  - name: '/DMO/GIT_REPOSITORY'
+    branch: 'master'
+  - name: '/DMO/SOFTWARE_COMPONENT'
+    branch: 'feature'
 ```
 
 ## Example: Configuration in the Jenkinsfile
