@@ -170,7 +170,7 @@ func (b *buildWithRepository) start() error {
 			},
 			{
 				ValueID: "CVERS",
-				Value:   b.repo.Name + "." + b.repo.Version + "." + b.repo.SpsLevel,
+				Value:   b.repo.Name + "." + b.repo.Version + "." + b.repo.SpLevel,
 			},
 			{
 				ValueID: "NAMESPACE",
