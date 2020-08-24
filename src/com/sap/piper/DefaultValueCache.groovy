@@ -39,26 +39,21 @@ class DefaultValueCache implements Serializable {
 
     static void prepare(Script steps, Map parameters = [:]) {
         if (parameters == null) parameters = [:]
-        if (!getInstance() || parameters.customDefaults) {
+        if (!getInstance() || parameters.customDefaults || parameters.customDefaultsFromFiles) {
             List defaultsFromResources = ['default_pipeline_environment.yml']
             List customDefaults = Utils.appendParameterToStringList(
                 [], parameters, 'customDefaults')
             defaultsFromResources.addAll(customDefaults)
             List defaultsFromFiles = Utils.appendParameterToStringList(
                 [], parameters, 'customDefaultsFromFiles')
-            List defaultsFromConfig = Utils.appendParameterToStringList(
-                [], parameters, 'customDefaultsFromConfig')
 
             Map defaultValues = [:]
             defaultValues = addDefaultsFromLibraryResources(steps, defaultValues, defaultsFromResources)
             defaultValues = addDefaultsFromFiles(steps, defaultValues, defaultsFromFiles)
-            defaultValues = addDefaultsFromFiles(steps, defaultValues, defaultsFromConfig)
 
             // The "customDefault" parameter is used for storing which extra defaults need to be
             // passed to piper-go. The library resource 'default_pipeline_environment.yml' shall
             // be excluded, since the go steps have their own in-built defaults in their yaml files.
-            // And 'customDefaultsFromConfig' shall also be excluded, since piper-go handles this
-            // config parameter itself.
             createInstance(defaultValues, customDefaults + defaultsFromFiles)
         }
     }
@@ -86,8 +81,8 @@ class DefaultValueCache implements Serializable {
                     "that the response body only contains valid YAML. " +
                     "If you use a file from a GitHub repository, make sure you've used the 'raw' link, " +
                     "for example https://my.github.local/raw/someorg/shared-config/master/backend-service.yml\n" +
-                    "File path: ${configFileName}\n" +
-                    "Content: ${steps.readFile file: configFileName}\n" +
+                    "File path: .pipeline/${configFileName}\n" +
+                    "Content: ${steps.readFile file: ".pipeline/${configFileName}"}\n" +
                     "Exeption message: ${e.getMessage()}\n" +
                     "Exception stacktrace: ${Arrays.toString(e.getStackTrace())}"
             }

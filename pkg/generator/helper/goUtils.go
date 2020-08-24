@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/ghodss/yaml"
 )
 
@@ -64,16 +65,13 @@ func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
 	return m
 }
 
-func readContextDefaultDescription(contextDefaultPath string) map[string]interface{} {
-	//read context default description
-	var ContextDefaultData ContextDefaultData
-
-	contextDefaultFile, err := os.Open(contextDefaultPath)
+func readContextInformation(contextDetailsPath string, contextDetails *config.StepData) {
+	contextDetailsFile, err := os.Open(contextDetailsPath)
 	checkError(err)
-	defer contextDefaultFile.Close()
+	defer contextDetailsFile.Close()
 
-	ContextDefaultData.readPipelineContextDefaultData(contextDefaultFile)
-	return ContextDefaultData.readContextDefaultMap()
+	err = contextDetails.ReadPipelineStepData(contextDetailsFile)
+	checkError(err)
 }
 
 func checkError(err error) {

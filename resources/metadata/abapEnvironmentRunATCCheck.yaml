@@ -2,7 +2,18 @@ metadata:
   name: abapEnvironmentRunATCCheck
   description: Runs an ATC Check
   longDescription: |
+<<<<<<< HEAD
     Run ATC Check
+=======
+    This step is for triggering an ATC test run on an SAP Cloud Platform ABAP Environment system.
+    Please provide either of the following options:
+
+    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+
+    Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 spec:
   inputs:
     secrets:
@@ -63,7 +74,13 @@ spec:
         - GENERAL
         mandatory: false
         aliases:
+<<<<<<< HEAD
           - name: cloudFoundry/serviceKeyName
+=======
+          - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
       - name: cfSpace
         type: string
         description: CF Space
@@ -98,9 +115,16 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+<<<<<<< HEAD
+=======
+        - GENERAL
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
         mandatory: false
   containers:
     - name: cf
       image: ppiper/cf-cli
+<<<<<<< HEAD
       dockerWorkspace: '/home/piper'
+=======
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
       imagePullPolicy: Never

@@ -141,3 +141,8 @@ func (d *Docker) versionFromBaseImageTag() string {
 	}
 	return ""
 }
+
+// GetCoordinates returns the coordinates
+func (d *Docker) GetCoordinates() (Coordinates, error) {
+	return nil, nil
+}

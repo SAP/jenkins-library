@@ -8,6 +8,9 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/stretchr/testify/assert"
 )
 
 //based on https://golang.org/src/os/exec/exec_test.go
@@ -49,16 +52,18 @@ func TestShellRun(t *testing.T) {
 
 func TestExecutableRun(t *testing.T) {
 
-	t.Run("test shell", func(t *testing.T) {
+	t.Run("test executable", func(t *testing.T) {
 		ExecCommand = helperCommand
 		defer func() { ExecCommand = exec.Command }()
 		stdout := new(bytes.Buffer)
 		stderr := new(bytes.Buffer)
 
-		ex := Command{stdout: stdout, stderr: stderr}
-		ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
-
 		t.Run("success case", func(t *testing.T) {
+			ex := Command{stdout: stdout, stderr: stderr}
+			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
+
+			assert.Equal(t, 0, ex.GetExitCode())
+
 			t.Run("stdin", func(t *testing.T) {
 				expectedOut := "foo bar baz\n"
 				if oStr := stdout.String(); oStr != expectedOut {
@@ -72,6 +77,22 @@ func TestExecutableRun(t *testing.T) {
 				}
 			})
 		})
+
+		t.Run("success case - log parsing", func(t *testing.T) {
+			log.SetErrorCategory(log.ErrorUndefined)
+			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"command echo"}}}
+			ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
+			assert.Equal(t, log.ErrorConfiguration, log.GetErrorCategory())
+		})
+
+		t.Run("success case - log parsing long line", func(t *testing.T) {
+			log.SetErrorCategory(log.ErrorUndefined)
+			ex := Command{stdout: stdout, stderr: stderr, ErrorCategoryMapping: map[string][]string{"config": {"aaaa"}}}
+			ex.RunExecutable("long", []string{"foo bar", "baz"}...)
+			assert.Equal(t, log.ErrorUndefined, log.GetErrorCategory())
+		})
+
+		log.SetErrorCategory(log.ErrorUndefined)
 	})
 }
 
@@ -103,13 +124,13 @@ func TestPrepareOut(t *testing.T) {
 
 	t.Run("os", func(t *testing.T) {
 		s := Command{}
-		_out, _err := prepareOut(s.stdout, s.stderr)
+		s.prepareOut()
 
-		if _out != os.Stdout {
+		if s.stdout != os.Stdout {
 			t.Errorf("expected out to be os.Stdout")
 		}
 
-		if _err != os.Stderr {
+		if s.stderr != os.Stderr {
 			t.Errorf("expected err to be os.Stderr")
 		}
 	})
@@ -118,12 +139,12 @@ func TestPrepareOut(t *testing.T) {
 		o := bytes.NewBufferString("")
 		e := bytes.NewBufferString("")
 		s := Command{stdout: o, stderr: e}
-		_out, _err := prepareOut(s.stdout, s.stderr)
+		s.prepareOut()
 
 		expectOut := "Test out"
 		expectErr := "Test err"
-		_out.Write([]byte(expectOut))
-		_err.Write([]byte(expectErr))
+		s.stdout.Write([]byte(expectOut))
+		s.stderr.Write([]byte(expectErr))
 
 		t.Run("out", func(t *testing.T) {
 			if o.String() != expectOut {
@@ -136,6 +157,53 @@ func TestPrepareOut(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestParseConsoleErrors(t *testing.T) {
+	cmd := Command{
+		ErrorCategoryMapping: map[string][]string{
+			"config": {"configuration error 1", "configuration error 2"},
+			"build":  {"build failed"},
+		},
+	}
+
+	tt := []struct {
+		consoleLine      string
+		expectedCategory log.ErrorCategory
+	}{
+		{consoleLine: "this is an error", expectedCategory: log.ErrorUndefined},
+		{consoleLine: "this is configuration error 2", expectedCategory: log.ErrorConfiguration},
+		{consoleLine: "the build failed", expectedCategory: log.ErrorBuild},
+	}
+
+	for _, test := range tt {
+		log.SetErrorCategory(log.ErrorUndefined)
+		cmd.parseConsoleErrors(test.consoleLine)
+		assert.Equal(t, test.expectedCategory, log.GetErrorCategory(), test.consoleLine)
+	}
+	log.SetErrorCategory(log.ErrorUndefined)
+}
+
+func TestMatchPattern(t *testing.T) {
+	tt := []struct {
+		text     string
+		pattern  string
+		expected bool
+	}{
+		{text: "", pattern: "", expected: true},
+		{text: "simple test", pattern: "", expected: false},
+		{text: "simple test", pattern: "no", expected: false},
+		{text: "simple test", pattern: "simple", expected: true},
+		{text: "simple test", pattern: "test", expected: true},
+		{text: "advanced pattern test", pattern: "advanced * test", expected: true},
+		{text: "advanced pattern failed", pattern: "advanced * test", expected: false},
+		{text: "advanced pattern with multiple placeholders", pattern: "advanced * with * placeholders", expected: true},
+		{text: "advanced pattern lacking multiple placeholders", pattern: "advanced * with * placeholders", expected: false},
+	}
+
+	for _, test := range tt {
+		assert.Equalf(t, test.expected, matchPattern(test.text, test.pattern), test.text)
+	}
 }
 
 func TestCmdPipes(t *testing.T) {
@@ -203,6 +271,12 @@ func TestHelperProcess(*testing.T) {
 		for _, e := range os.Environ() {
 			fmt.Println(e)
 		}
+	case "long":
+		b := []byte("a")
+		size := 64000
+		b = bytes.Repeat(b, size)
+
+		fmt.Fprint(os.Stderr, b)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
 		os.Exit(2)

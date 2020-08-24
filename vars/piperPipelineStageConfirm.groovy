@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .use()
 
-    String unstableStepNames = script.commonPipelineEnvironment.getValue('unstableSteps') ? "${script.commonPipelineEnvironment.getValue('unstableSteps').join(':\n------\n')}:" : ''
+    String unstableStepNames = script.commonPipelineEnvironment.getValue('unstableSteps') ? "${script.commonPipelineEnvironment.getValue('unstableSteps').join(', ')}" : ''
 
     boolean approval = false
     def userInput
@@ -51,31 +51,51 @@ void call(Map parameters = [:]) {
         time: config.manualConfirmationTimeout
     ){
         if (currentBuild.result == 'UNSTABLE') {
+            def minReasonLength = 10
+            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
+            def reasonDescription = "Please provide a reason for overruling the failed steps ${unstableStepNames}, with ${minReasonLength} characters or more:".toString()
+            def acknowledgementDescription = "${acknowledgementText}:".toString()
             while(!approval) {
                 userInput = input(
                     message: 'Approve continuation of pipeline, although some steps failed.',
                     ok: 'Approve',
                     parameters: [
                         text(
-                            defaultValue: unstableStepNames,
-                            description: 'Please provide a reason for overruling following failed steps:',
+                            defaultValue: '',
+                            description: reasonDescription,
                             name: 'reason'
                         ),
                         booleanParam(
                             defaultValue: false,
-                            description: 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id:',
+                            description: acknowledgementDescription,
                             name: 'acknowledgement'
                         )
                     ]
                 )
-                approval = userInput.acknowledgement && userInput.reason?.length() > (unstableStepNames.length() + 10)
+                approval = validateApproval(userInput.reason, minReasonLength, userInput.acknowledgement, acknowledgementText, unstableStepNames)
             }
-            echo "Reason:\n-------------\n${userInput.reason}"
-            echo "Acknowledged:\n-------------\n${userInput.acknowledgement}"
         } else {
             input message: config.manualConfirmationMessage
         }
 
     }
 
+}
+
+private boolean validateApproval(reason, minReasonLength, acknowledgement, acknowledgementText, unstableStepNames) {
+    def reasonIsLongEnough = reason?.length() >= minReasonLength
+    approved = acknowledgement && reasonIsLongEnough
+    if (approved) {
+        echo "Failed steps\n------------\n${unstableStepNames}"
+        echo "Reason\n------\n${reason}"
+        echo "Acknowledgement\n---------------\n☑ ${acknowledgementText}"
+    } else {
+        if (!acknowledgement) {
+            echo "Rejected the approval because the user didn't acknowledge that his user name or id is logged"
+        }
+        if (!reasonIsLongEnough) {
+            echo "Rejected the approval because the provided reason has less than ${minReasonLength} characters"
+        }
+    }
+    return approved
 }

@@ -70,7 +70,7 @@ func XsDeployCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Performs xs deployment",
 		Long:  `Performs xs deployment`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -81,6 +81,7 @@ func XsDeployCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.User)
@@ -93,7 +94,7 @@ func XsDeployCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -106,6 +107,7 @@ func XsDeployCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			xsDeploy(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -115,10 +117,10 @@ func XsDeployCommand() *cobra.Command {
 
 func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.DeployOpts, "deployOpts", os.Getenv("PIPER_deployOpts"), "Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
-	cmd.Flags().StringVar(&stepConfig.OperationIDLogPattern, "operationIdLogPattern", "^.*xs bg-deploy -i (.*) -a.*$", "Regex pattern for retrieving the ID of the operation from the xs log.")
+	cmd.Flags().StringVar(&stepConfig.OperationIDLogPattern, "operationIdLogPattern", `^.*xs bg-deploy -i (.*) -a.*$`, "Regex pattern for retrieving the ID of the operation from the xs log.")
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
-	cmd.Flags().StringVar(&stepConfig.Action, "action", "NONE", "Used for finalizing the blue-green deployment.")
-	cmd.Flags().StringVar(&stepConfig.Mode, "mode", "DEPLOY", "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
+	cmd.Flags().StringVar(&stepConfig.Action, "action", `NONE`, "Used for finalizing the blue-green deployment.")
+	cmd.Flags().StringVar(&stepConfig.Mode, "mode", `DEPLOY`, "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
 	cmd.Flags().StringVar(&stepConfig.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")

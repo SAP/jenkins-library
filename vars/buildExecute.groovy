@@ -3,7 +3,6 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
-import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -22,7 +21,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
 
-    /** Only for Docker builds on the local deamon: Defines the build options for the build.*/
+    /** Only for Docker builds on the local daemon: Defines the build options for the build.*/
     'containerBuildOptions',
     /** For custom build types: Defines the command to be executed within the `dockerImage` in order to execute the build. */
     'dockerCommand',
@@ -30,6 +29,10 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerImage',
     /** For Docker builds only (mandatory): tag of the image to be built. */
     'dockerImageTag',
+    /** For buildTool npm: Execute npm install (boolean, default 'true') */
+    'npmInstall',
+    /** For buildTool npm: List of npm run scripts to execute */
+    'npmRunScripts'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -61,6 +64,7 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('dockerImageTag', script.commonPipelineEnvironment.getArtifactVersion())
+            .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .use()
 
         // telemetry reporting
@@ -68,13 +72,17 @@ void call(Map parameters = [:]) {
 
         switch(config.buildTool){
             case 'maven':
-                mavenExecute script: script
+                mavenBuild script: script
+                // in case node_modules exists we assume npm install was executed by maven clean install
+                if (fileExists('package.json') && !fileExists('node_modules')) {
+                    npmExecuteScripts script: script, install: true
+                }
                 break
             case 'mta':
                 mtaBuild script: script
                 break
             case 'npm':
-                npmExecute script: script
+                npmExecuteScripts script: script, install: config.npmInstall, runScripts: config.npmRunScripts
                 break
             case ['docker', 'kaniko']:
                 DockerUtils dockerUtils = new DockerUtils(script)

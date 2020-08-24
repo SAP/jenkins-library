@@ -57,6 +57,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/space
@@ -67,6 +68,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -77,9 +79,12 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         aliases:
+          - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
       - name: cfServiceKeyConfig
         type: string
         description: Path to JSON config file path or JSON in-line string for Cloud Foundry Service Key creation
@@ -93,5 +98,4 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
-      dockerWorkspace: '/home/piper'
       imagePullPolicy: Never

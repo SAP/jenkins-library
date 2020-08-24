@@ -43,6 +43,7 @@ import groovy.transform.Field
      * For example in multi branch pipelines, where every build is named after the branch built and thus you have different builds called 'master' that report different metrics.
      */
     'influxPrefix',
+    'sonarTokenCredentialsId',
     /**
      * Defines if a dedicated node/executor should be created in the pipeline run.
      * This is especially relevant when running the step in a declarative `POST` stage where by default no executor is available.
@@ -138,6 +139,7 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
         def influxPluginVersion = jenkinsUtils.getPluginVersion('influxdb')
 
         try {
+            def credentialList = []
             def influxParams = [
                 selectedTarget: config.influxServer,
                 customPrefix: config.influxPrefix,
@@ -146,12 +148,19 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
                 customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
                 customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
             ]
-
-            if (!influxPluginVersion || influxPluginVersion.startsWith('1.')) {
-                influxParams['$class'] = 'InfluxDbPublisher'
-                step(influxParams)
-            } else {
-                influxDbPublisher(influxParams)
+            if(config.sonarTokenCredentialsId){
+                credentialList.add(string(
+                    credentialsId: config.sonarTokenCredentialsId,
+                    variable: 'SONAR_AUTH_TOKEN'
+                ))
+            }
+            withCredentials(credentialList){
+                if (!influxPluginVersion || influxPluginVersion.startsWith('1.')) {
+                    influxParams['$class'] = 'InfluxDbPublisher'
+                    step(influxParams)
+                } else {
+                    influxDbPublisher(influxParams)
+                }
             }
 
         } catch (NullPointerException e){

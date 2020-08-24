@@ -39,7 +39,7 @@ spec:
         mandatory: true
       - name: host
         type: string
-        description: Specifies the protocol and host adress, including the port. Please provide in the format '<protocol>://<host>:<port>'
+        description: Specifies the protocol and host adress, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
         - PARAMETERS
         - STAGES

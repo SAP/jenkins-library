@@ -72,9 +72,9 @@ class ConfigurationHelper implements Serializable {
                     configSubMap = configSubMap?.get(key)
                 }
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
-                    def value = configMap[entry.getValue()]
+                    def value = getConfigPropertyNested(configMap, entry.getValue())
                     if(null == value)
-                        value = newConfigMap[entry.getValue()]
+                        value = getConfigPropertyNested(newConfigMap, entry.getValue())
                     if (value != null) {
                         newConfig[entry.getKey()] = value
                         def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()

@@ -45,7 +45,7 @@ class PiperPipelineStagePostTest extends BasePiperTest {
         jsr.step.piperPipelineStagePost(script: nullScript, juStabUtils: utils)
 
         assertThat(stepsCalled, hasItems('influxWriteData','mailSendNotification','piperPublishWarnings'))
-        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(stepsCalled, not(hasItem('slackSendNotification')))
     }
 
     @Test

@@ -12,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
+var stepParameterNames []string
+
 // generates the step documentation and replaces the template with the generated documentation
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
@@ -22,7 +24,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	if docTemplate != nil {
 		defer docTemplate.Close()
 	}
-	//check if there is an error during opening the template (true : skip docu generation for this meta data file)
+	// check if there is an error during opening the template (true : skip docu generation for this meta data file)
 	if err != nil {
 		return fmt.Errorf("error occured: %v", err)
 	}
@@ -42,52 +44,21 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	tmpl, err := template.New("doc").Funcs(funcMap).Parse(content)
 	checkError(err)
 
-	//add general options like script, verbose, etc.
-	appendGeneralOptionsToParameters(&stepData)
-
-	setDefaultStepParameters(&stepData)
 	// add secrets, context defaults to the step parameters
 	handleStepParameters(&stepData)
 
-	//write executed template data to the previously opened file
+	// write executed template data to the previously opened file
 	var docContent bytes.Buffer
-	err = tmpl.Execute(&docContent, stepData)
+	err = tmpl.Execute(&docContent, &stepData)
 	checkError(err)
 
-	//overwrite existing file
+	// overwrite existing file
 	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
 	checkError(err)
 
 	fmt.Printf("Documentation generation complete for: %v\n", stepData.Metadata.Name)
 
 	return nil
-}
-
-func setDefaultStepParameters(stepData *config.StepData) {
-	for k, param := range stepData.Spec.Inputs.Parameters {
-		if param.Default == nil {
-			switch param.Type {
-			case "bool":
-				param.Default = "`false`"
-				param.PossibleValues = append(param.PossibleValues, true, false)
-			case "int":
-				param.Default = "`0`"
-			}
-		} else {
-			switch param.Type {
-			case "[]string":
-				param.Default = fmt.Sprintf("`%v`", param.Default)
-			case "string":
-				param.Default = fmt.Sprintf("`%v`", param.Default)
-			case "bool":
-				param.Default = fmt.Sprintf("`%v`", param.Default)
-				param.PossibleValues = append(param.PossibleValues, true, false)
-			case "int":
-				param.Default = fmt.Sprintf("`%v`", param.Default)
-			}
-		}
-		stepData.Spec.Inputs.Parameters[k] = param
-	}
 }
 
 func readAndAdjustTemplate(docFile io.ReadCloser) string {
@@ -107,144 +78,326 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 }
 
 // Replaces the docGenStepName placeholder with the content from the yaml
-func docGenStepName(stepData config.StepData) string {
-	return stepData.Metadata.Name
+func docGenStepName(stepData *config.StepData) string {
+	return stepData.Metadata.Name + "\n\n" + stepData.Metadata.Description + "\n"
 }
 
 // Replaces the docGenDescription placeholder with content from the yaml
-func docGenDescription(stepData config.StepData) string {
-	return "Description\n\n" + stepData.Metadata.LongDescription
+func docGenDescription(stepData *config.StepData) string {
+	description := ""
+
+	description += "Description\n\n" + stepData.Metadata.LongDescription + "\n\n"
+
+	description += "## Usage\n\n"
+	description += "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the [command line](../cli/index.md).\n\n"
+	description += "### Jenkins pipelines\n\n```groovy\n"
+	description += fmt.Sprintf("%v script: this\n```\n", stepData.Metadata.Name)
+	description += "### Command line\n\n```\n"
+	description += fmt.Sprintf("piper %v\n```\n\n", stepData.Metadata.Name)
+	description += stepOutputs(stepData)
+	return description
+}
+
+func stepOutputs(stepData *config.StepData) string {
+	if len(stepData.Spec.Outputs.Resources) == 0 {
+		return ""
+	}
+
+	stepOutput := "\n## Outputs\n\n"
+	stepOutput += "| Output type | Details |\n"
+	stepOutput += "| ----------- | ------- |\n"
+
+	for _, res := range stepData.Spec.Outputs.Resources {
+		//handle commonPipelineEnvironment output
+		if res.Type == "piperEnvironment" {
+			stepOutput += fmt.Sprintf("| %v | <ul>", res.Name)
+			for _, param := range res.Parameters {
+				stepOutput += fmt.Sprintf("<li>%v</li>", param["name"])
+			}
+			stepOutput += "</ul> |\n"
+		}
+
+		//handle Influx output
+		if res.Type == "influx" {
+			stepOutput += fmt.Sprintf("| %v | ", res.Name)
+			for _, param := range res.Parameters {
+				stepOutput += fmt.Sprintf("measurement `%v`<br /><ul>", param["name"])
+				fields, _ := param["fields"].([]interface{})
+				for _, field := range fields {
+					fieldMap, _ := field.(map[string]interface{})
+					stepOutput += fmt.Sprintf("<li>%v</li>", fieldMap["name"])
+				}
+			}
+			stepOutput += "</ul> |\n"
+		}
+
+	}
+
+	return stepOutput
+
 }
 
 // Replaces the docGenParameters placeholder with the content from the yaml
-func docGenParameters(stepData config.StepData) string {
-	var parameters = ""
-	//create step parameter table
-	parameters += createParametersTable(stepData.Spec.Inputs.Parameters) + "\n"
-	//create parameters detail section
-	parameters += createParametersDetail(stepData.Spec.Inputs.Parameters)
-	return "Parameters\n\n" + parameters
+func docGenParameters(stepData *config.StepData) string {
+
+	var parameters = "Parameters\n\n"
+
+	// sort parameters alphabetically with mandatory parameters first
+	sortStepParameters(stepData, true)
+	parameters += "### Overview\n\n"
+	parameters += createParameterOverview(stepData)
+
+	// sort parameters alphabetically
+	sortStepParameters(stepData, false)
+	parameters += "### Details\n\n"
+	parameters += createParameterDetails(stepData)
+
+	return parameters
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
-func docGenConfiguration(stepData config.StepData) string {
-	var configuration = "We recommend to define values of step parameters via [config.yml file](../configuration.md).\n\n"
-	configuration += "In following sections of the config.yml the configuration is possible:\n\n"
-	// create step configuration table
-	configuration += createConfigurationTable(stepData.Spec.Inputs.Parameters)
-	return "Step Configuration\n\n" + configuration
+func docGenConfiguration(stepData *config.StepData) string {
+	//not used anymore -> part of Parameters section
+	return ""
 }
 
-func createParametersTable(parameters []config.StepParameters) string {
-	var table = "| name | mandatory | default | possible values |\n"
-	table += "| ---- | --------- | ------- | --------------- |\n"
+func createParameterOverview(stepData *config.StepData) string {
+	var table = "| Name | Mandatory | Additional information |\n"
+	table += "| ---- | --------- | ---------------------- |\n"
 
-	m := combineEqualParametersTogether(parameters)
-
-	for _, param := range parameters {
-		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf("| `%v` | %v | %v | %v |\n", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), ifThenElse(v == "<nil>", "", v), possibleValuesToString(param.PossibleValues))
-			delete(m, param.Name)
-		}
+	for _, param := range stepData.Spec.Inputs.Parameters {
+		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
 	}
+
+	table += "\n"
+
 	return table
 }
 
-func createParametersDetail(parameters []config.StepParameters) string {
-	var details = ""
-	var m map[string]bool = make(map[string]bool)
-	for _, param := range parameters {
-		if _, ok := m[param.Name]; !ok {
-			if len(param.Description) > 0 {
-				details += fmt.Sprintf(" * `%v`: %v\n", param.Name, param.Description)
-				m[param.Name] = true
+func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
+
+	// handle general parameters
+	// ToDo: add special handling once we have more than one general parameter to consider
+	if paramName == "verbose" {
+		return "activates debug output"
+	}
+
+	if paramName == "script" {
+		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) reference to Jenkins main pipeline script"
+	}
+
+	// handle Jenkins-specific parameters
+	if !contains(stepParameterNames, paramName) {
+		for _, secret := range stepData.Spec.Inputs.Secrets {
+			if paramName == secret.Name && secret.Type == "jenkins" {
+				return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
 			}
 		}
+		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)"
 	}
+
+	// handle Secrets
+	for _, param := range stepData.Spec.Inputs.Parameters {
+		if paramName == param.Name {
+			if param.Secret {
+				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
+				for _, res := range param.ResourceRef {
+					if res.Type == "secret" {
+						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
+					}
+				}
+				return secretInfo
+			}
+			return ""
+		}
+	}
+	return ""
+}
+
+func createParameterDetails(stepData *config.StepData) string {
+
+	details := ""
+
+	//jenkinsParameters := append(jenkinsParameters(stepData), "script")
+
+	for _, param := range stepData.Spec.Inputs.Parameters {
+		details += fmt.Sprintf("#### %v\n\n", param.Name)
+
+		if !contains(stepParameterNames, param.Name) {
+			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
+		}
+
+		if len(param.LongDescription) > 0 {
+			details += param.LongDescription + "\n\n"
+		} else {
+			details += param.Description + "\n\n"
+		}
+
+		details += "[back to overview](#parameters)\n\n"
+
+		details += "| Scope | Details |\n"
+		details += "| ---- | --------- |\n"
+
+		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
+		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
+		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(param.Mandatory && param.Default == nil, "**yes**", "no"))
+		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames))
+		if param.PossibleValues != nil {
+			details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues))
+		}
+		details += fmt.Sprintf("| Secret | %v |\n", ifThenElse(param.Secret, "**yes**", "no"))
+		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(param.Scope))
+		details += fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(param.ResourceRef))
+
+		details += "\n\n"
+	}
+
 	return details
 }
 
-//combines equal parameters and the values
-func combineEqualParametersTogether(parameters []config.StepParameters) map[string]string {
-	var m map[string]string = make(map[string]string)
-
-	for _, param := range parameters {
-		m[param.Name] = fmt.Sprintf("%v", param.Default)
-
-		if _, ok := m[param.Name]; ok {
-			addExistingParameterWithCondition(param, m)
-		} else {
-			addNewParameterWithCondition(param, m)
+func formatDefault(param config.StepParameters, stepParameterNames []string) string {
+	if param.Default == nil {
+		// Return environment variable for all step parameters (not for Jenkins-specific parameters) in case no default is available
+		if contains(stepParameterNames, param.Name) {
+			return fmt.Sprintf("`$PIPER_%v` (if set)", param.Name)
 		}
+		return ""
 	}
-	return m
-}
-
-func addExistingParameterWithCondition(param config.StepParameters, m map[string]string) {
-	if param.Conditions != nil {
-		for _, con := range param.Conditions {
-			if con.Params != nil {
-				for _, p := range con.Params {
-					m[param.Name] = fmt.Sprintf("%v<br>%v=`%v`: `%v` ", m[param.Name], p.Name, p.Value, param.Default)
-				}
+	//first consider conditional defaults
+	switch v := param.Default.(type) {
+	case []conditionDefault:
+		defaults := []string{}
+		for _, condDef := range v {
+			//ToDo: add type-specific handling of default
+			defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+		}
+		return strings.Join(defaults, "<br />")
+	case []interface{}:
+		// handle for example stashes which possibly contain a mixture of fix and conditional values
+		defaults := []string{}
+		for _, def := range v {
+			if condDef, ok := def.(conditionDefault); ok {
+				defaults = append(defaults, fmt.Sprintf("%v=`%v`: `%v`", condDef.key, condDef.value, condDef.def))
+			} else {
+				defaults = append(defaults, fmt.Sprintf("- `%v`", def))
 			}
 		}
+		return strings.Join(defaults, "<br />")
+	case map[string]string:
+		defaults := []string{}
+		for key, def := range v {
+			defaults = append(defaults, fmt.Sprintf("`%v`: `%v`", key, def))
+		}
+		return strings.Join(defaults, "<br />")
+	case string:
+		if len(v) == 0 {
+			return "`''`"
+		}
+		return fmt.Sprintf("`%v`", v)
+	default:
+		return fmt.Sprintf("`%v`", param.Default)
 	}
 }
 
-func addNewParameterWithCondition(param config.StepParameters, m map[string]string) {
-	if param.Conditions != nil {
-		m[param.Name] = ""
-		for _, con := range param.Conditions {
-			if con.Params != nil {
-				for _, p := range con.Params {
-					m[param.Name] += fmt.Sprintf("%v=`%v`: `%v` ", p.Name, p.Value, param.Default)
-				}
+func aliasList(aliases []config.Alias) string {
+	switch len(aliases) {
+	case 0:
+		return "-"
+	case 1:
+		alias := fmt.Sprintf("`%v`", aliases[0].Name)
+		if aliases[0].Deprecated {
+			alias += " (**deprecated**)"
+		}
+		return alias
+	default:
+		aList := make([]string, len(aliases))
+		for i, alias := range aliases {
+			aList[i] = fmt.Sprintf("- `%v`", alias.Name)
+			if alias.Deprecated {
+				aList[i] += " (**deprecated**)"
 			}
 		}
+		return strings.Join(aList, "<br />")
 	}
 }
 
-func createConfigurationTable(parameters []config.StepParameters) string {
-	var table = "| parameter | general | step/stage |\n"
-	table += "| --------- | ------- | ---------- |\n"
+func possibleValueList(possibleValues []interface{}) string {
+	if len(possibleValues) == 0 {
+		return ""
+	}
 
-	for _, param := range parameters {
-		if len(param.Scope) > 0 {
-			general := contains(param.Scope, "GENERAL")
-			step := contains(param.Scope, "STEPS")
+	pList := make([]string, len(possibleValues))
+	for i, possibleValue := range possibleValues {
+		pList[i] = fmt.Sprintf("- `%v`", fmt.Sprint(possibleValue))
+	}
+	return strings.Join(pList, "<br />")
+}
 
-			table += fmt.Sprintf("| `%v` | %v | %v |\n", param.Name, ifThenElse(general, "X", ""), ifThenElse(step, "X", ""))
+func scopeDetails(scope []string) string {
+	scopeDetails := "<ul>"
+	scopeDetails += fmt.Sprintf("<li>%v parameter</li>", ifThenElse(contains(scope, "PARAMETERS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v general</li>", ifThenElse(contains(scope, "GENERAL"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v steps</li>", ifThenElse(contains(scope, "STEPS"), "&#9746;", "&#9744;"))
+	scopeDetails += fmt.Sprintf("<li>%v stages</li>", ifThenElse(contains(scope, "STAGES"), "&#9746;", "&#9744;"))
+	scopeDetails += "</ul>"
+	return scopeDetails
+}
+
+func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
+
+	if len(resourceRef) == 0 {
+		return "none"
+	}
+
+	resourceDetails := ""
+	for _, resource := range resourceRef {
+		if resource.Name == "commonPipelineEnvironment" {
+			resourceDetails += "_commonPipelineEnvironment_:<br />"
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
+			continue
+		}
+
+		if resource.Type == "secret" {
+			resourceDetails += "Jenkins credential id:<br />"
+			for i, alias := range resource.Aliases {
+				if i == 0 {
+					resourceDetails += "&nbsp;&nbsp;aliases:<br />"
+				}
+				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;- `%v`%v<br />", alias.Name, ifThenElse(alias.Deprecated, " (**Deprecated**)", ""))
+			}
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: `%v`<br />", resource.Name)
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
+			continue
 		}
 	}
-	return table
+
+	return resourceDetails
 }
 
 func handleStepParameters(stepData *config.StepData) {
+
+	stepParameterNames = stepData.GetParameterFilters().All
+
+	//add general options like script, verbose, etc.
+	//ToDo: add to context.yaml
+	appendGeneralOptionsToParameters(stepData)
+
 	//add secrets to step parameters
 	appendSecretsToParameters(stepData)
 
+	//consolidate conditional parameters:
+	//- remove duplicate parameter entries
+	//- combine defaults (consider conditions)
+	consolidateConditionalParameters(stepData)
+
 	//get the context defaults
-	context := getDocuContextDefaults(stepData)
-	if len(context) > 0 {
-		contextDefaultPath := "pkg/generator/helper/piper-context-defaults.yaml"
-		mCD := readContextDefaultDescription(contextDefaultPath)
-		//fmt.Printf("ContextDefault Map: %v \n", context)
-		//create StepParemeters items for context defaults
-		for k, v := range context {
-			if len(v) > 0 {
-				//containerName only for Step: dockerExecuteOnKubernetes
-				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
-					if mCD[k] != nil {
-						cdp := mCD[k].(ContextDefaultParameters)
-						stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: cdp.Description, Scope: cdp.Scope})
-					}
-				}
-			}
-		}
-	}
-	//Sort Parameters
-	sortStepParameters(stepData)
+	appendContextParameters(stepData)
+
+	//consolidate context defaults:
+	//- combine defaults (consider conditions)
+	consolidateContextDefaults(stepData)
+
+	setDefaultAndPossisbleValues(stepData)
 }
 
 func appendGeneralOptionsToParameters(stepData *config.StepData) {
@@ -253,7 +406,7 @@ func appendGeneralOptionsToParameters(stepData *config.StepData) {
 		Description: "The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` for retrieving, e.g. configuration parameters.",
 	}
 	verbose := config.StepParameters{
-		Name: "verbose", Type: "bool", Mandatory: false, Default: false, Scope: []string{"GENERAL"},
+		Name: "verbose", Type: "bool", Mandatory: false, Default: false, Scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"},
 		Description: "verbose output",
 	}
 	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
@@ -263,230 +416,222 @@ func appendSecretsToParameters(stepData *config.StepData) {
 	secrets := stepData.Spec.Inputs.Secrets
 	if secrets != nil {
 		for _, secret := range secrets {
-			item := config.StepParameters{Name: secret.Name, Type: secret.Type, Description: secret.Description, Mandatory: true}
+			item := config.StepParameters{Name: secret.Name, Type: "string", Scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, Description: secret.Description, Mandatory: true}
 			stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, item)
 		}
 	}
 }
 
-func getDocuContextDefaults(step *config.StepData) map[string]string {
-	var result map[string]string = make(map[string]string)
+type paramConditionDefaults map[string]*conditionDefaults
 
-	//creates the context defaults for containers
-	addDefaultContainerContent(step, result)
-	//creates the context defaults for sidecars
-	addDefaultSidecarContent(step, result)
-	//creates the context defaults for resources
-	addStashContent(step, result)
-
-	return result
+type conditionDefaults struct {
+	equal []conditionDefault
 }
 
-func addDefaultContainerContent(m *config.StepData, result map[string]string) {
-	//creates the context defaults for containers
-	if len(m.Spec.Containers) > 0 {
-		keys := map[string][]string{}
-		resources := map[string][]string{}
-		bEmptyKey := true
-		for _, container := range m.Spec.Containers {
+type conditionDefault struct {
+	key   string
+	value string
+	def   interface{}
+}
 
-			addContainerValues(container, bEmptyKey, resources, keys)
+func consolidateConditionalParameters(stepData *config.StepData) {
+	newParamList := []config.StepParameters{}
+
+	paramConditions := paramConditionDefaults{}
+
+	for _, param := range stepData.Spec.Inputs.Parameters {
+		if param.Conditions == nil || len(param.Conditions) == 0 {
+			newParamList = append(newParamList, param)
+			continue
 		}
-		createDefaultContainerEntries(keys, resources, result)
-	}
-}
 
-func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string, m map[string][]string) {
-	//create keys
-	key := ""
-	if len(container.Conditions) > 0 {
-		key = fmt.Sprintf("%v=`%v`", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
-	}
-
-	//only add the key ones
-	if bEmptyKey || len(key) > 0 {
-
-		if len(container.Command) > 0 {
-			m["containerCommand"] = append(m["containerCommand"], key+"_containerCommand")
+		if _, ok := paramConditions[param.Name]; !ok {
+			newParamList = append(newParamList, param)
+			paramConditions[param.Name] = &conditionDefaults{}
 		}
-		m["containerName"] = append(m["containerName"], key+"_containerName")
-		m["containerShell"] = append(m["containerShell"], key+"_containerShell")
-		m["dockerEnvVars"] = append(m["dockerEnvVars"], key+"_dockerEnvVars")
-		m["dockerImage"] = append(m["dockerImage"], key+"_dockerImage")
-		m["dockerName"] = append(m["dockerName"], key+"_dockerName")
-		m["dockerPullImage"] = append(m["dockerPullImage"], key+"_dockerPullImage")
-		m["dockerOptions"] = append(m["dockerOptions"], key+"_dockerOptions")
-		m["dockerWorkspace"] = append(m["dockerWorkspace"], key+"_dockerWorkspace")
+		for _, cond := range param.Conditions {
+			if cond.ConditionRef == "strings-equal" {
+				for _, condParam := range cond.Params {
+					paramConditions[param.Name].equal = append(paramConditions[param.Name].equal, conditionDefault{key: condParam.Name, value: condParam.Value, def: param.Default})
+				}
+			}
+		}
 	}
 
-	if len(container.Conditions) == 0 {
-		bEmptyKey = false
+	for i, param := range newParamList {
+		if _, ok := paramConditions[param.Name]; ok {
+			newParamList[i].Conditions = nil
+			sortConditionalDefaults(paramConditions[param.Name].equal)
+			newParamList[i].Default = paramConditions[param.Name].equal
+		}
 	}
 
-	//add values
-	addValuesToMap(container, key, resources)
+	stepData.Spec.Inputs.Parameters = newParamList
 }
 
-func addValuesToMap(container config.Container, key string, resources map[string][]string) {
-	if len(container.Name) > 0 {
-		resources[key+"_containerName"] = append(resources[key+"_containerName"], "`"+container.Name+"`")
-	}
-	//ContainerShell > 0
-	if len(container.Shell) > 0 {
-		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], "`"+container.Shell+"`")
-	}
-	if len(container.Name) > 0 {
-		resources[key+"_dockerName"] = append(resources[key+"_dockerName"], "`"+container.Name+"`")
-	}
+func appendContextParameters(stepData *config.StepData) {
+	contextParameterNames := stepData.GetContextParameterFilters().All
+	if len(contextParameterNames) > 0 {
+		contextDetailsPath := "pkg/generator/helper/piper-context-defaults.yaml"
 
-	//ContainerCommand > 0
-	if len(container.Command) > 0 {
-		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], "`"+container.Command[0]+"`")
-	}
-	//ImagePullPolicy > 0
-	if len(container.ImagePullPolicy) > 0 {
-		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("`%v`", container.ImagePullPolicy != "Never")}
-	}
-	//Different when key is set (Param.Name + Param.Value)
-	workingDir := ifThenElse(len(container.WorkingDir) > 0, "`"+container.WorkingDir+"`", "\\<empty\\>")
-	if len(key) > 0 {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v: `%v`", key, container.Image))
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v: `[%v]`", key, strings.Join(optionsAsStringSlice(container.Options), "")))
-		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v: %v", key, workingDir))
-	} else {
-		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("`[%v]`", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], "`"+container.Image+"`")
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("`[%v]`", strings.Join(optionsAsStringSlice(container.Options), "")))
-		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
+		contextDetails := config.StepData{}
+		readContextInformation(contextDetailsPath, &contextDetails)
+
+		for _, contextParam := range contextDetails.Spec.Inputs.Parameters {
+			if contains(contextParameterNames, contextParam.Name) {
+				stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, contextParam)
+			}
+		}
 	}
 }
 
-func createDefaultContainerEntries(keys map[string][]string, resources map[string][]string, result map[string]string) {
-	//loop over keys map, key is the description of the parameter for example : dockerEnvVars, ...
-	for k, p := range keys {
-		if p != nil {
-			//loop over key array to get the values from the resources
-			for _, key := range p {
-				doLineBreak := !strings.HasPrefix(key, "_")
+func consolidateContextDefaults(stepData *config.StepData) {
+	paramConditions := paramConditionDefaults{}
+	for _, container := range stepData.Spec.Containers {
+		containerParams := getContainerParameters(container, false)
 
-				if len(strings.Join(resources[key], ", ")) > 1 {
-					result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
-					if doLineBreak {
-						result[k] += "<br>"
-					}
-				} else if len(strings.Join(resources[key], ", ")) == 1 {
-					if _, ok := result[k]; !ok {
-						result[k] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
-					} else {
-						result[k] += fmt.Sprintf("%v", strings.Join(resources[key], ", "))
-						if doLineBreak {
-							result[k] += "<br>"
+		if container.Conditions != nil && len(container.Conditions) > 0 {
+			for _, cond := range container.Conditions {
+				if cond.ConditionRef == "strings-equal" {
+					for _, condParam := range cond.Params {
+						for paramName, val := range containerParams {
+							if _, ok := paramConditions[paramName]; !ok {
+								paramConditions[paramName] = &conditionDefaults{}
+							}
+							paramConditions[paramName].equal = append(paramConditions[paramName].equal, conditionDefault{key: condParam.Name, value: condParam.Value, def: val})
 						}
 					}
 				}
 			}
 		}
 	}
-}
 
-func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
-	//creates the context defaults for sidecars
-	if len(m.Spec.Sidecars) > 0 {
-		if len(m.Spec.Sidecars[0].Command) > 0 {
-			result["sidecarCommand"] += m.Spec.Sidecars[0].Command[0]
-		}
-		result["sidecarEnvVars"] = strings.Join(envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars), "")
-		result["sidecarImage"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Image)
-		result["sidecarName"] = fmt.Sprintf("`%s`", m.Spec.Sidecars[0].Name)
-		if len(m.Spec.Sidecars[0].ImagePullPolicy) > 0 {
-			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
-		}
-		result["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		result["sidecarOptions"] = strings.Join(optionsAsStringSlice(m.Spec.Sidecars[0].Options), "")
-		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-	}
-}
-
-func addStashContent(m *config.StepData, result map[string]string) {
-	//creates the context defaults for resources
-	if len(m.Spec.Inputs.Resources) > 0 {
-		keys := []string{}
-		resources := map[string][]string{}
-
-		//fill the map with the key (condition) and the values (resource.Name) to combine the conditions under the resource.Name
-		for _, resource := range m.Spec.Inputs.Resources {
-			if resource.Type == "stash" {
-				key := ""
-				if len(resource.Conditions) > 0 {
-					key = fmt.Sprintf("%v=%v", resource.Conditions[0].Params[0].Name, resource.Conditions[0].Params[0].Value)
-				}
-				if resources[key] == nil {
-					keys = append(keys, key)
-					resources[key] = []string{}
-				}
-				resources[key] = append(resources[key], resource.Name)
-			}
-		}
-
-		for _, key := range keys {
-			//more than one key when there are conditions
-			if len(key) > 0 {
-				result["stashContent"] += fmt.Sprintf("%v: `[%v]` <br>", key, strings.Join(resources[key], ", "))
+	stashes := []interface{}{}
+	conditionalStashes := []conditionDefault{}
+	for _, res := range stepData.Spec.Inputs.Resources {
+		//consider only resources of type stash, others not relevant for conditions yet
+		if res.Type == "stash" {
+			if res.Conditions == nil || len(res.Conditions) == 0 {
+				stashes = append(stashes, res.Name)
 			} else {
-				//single entry for stash content (no condition)
-				result["stashContent"] += fmt.Sprintf("`[%v]`", strings.Join(resources[key], ", "))
+				for _, cond := range res.Conditions {
+					if cond.ConditionRef == "strings-equal" {
+						for _, condParam := range cond.Params {
+							conditionalStashes = append(conditionalStashes, conditionDefault{key: condParam.Name, value: condParam.Value, def: res.Name})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	sortConditionalDefaults(conditionalStashes)
+
+	for _, conditionalStash := range conditionalStashes {
+		stashes = append(stashes, conditionalStash)
+	}
+
+	for key, param := range stepData.Spec.Inputs.Parameters {
+		if param.Name == "stashContent" {
+			stepData.Spec.Inputs.Parameters[key].Default = stashes
+		}
+
+		for containerParam, paramDefault := range paramConditions {
+			if param.Name == containerParam {
+				sortConditionalDefaults(paramConditions[param.Name].equal)
+				stepData.Spec.Inputs.Parameters[key].Default = paramDefault.equal
 			}
 		}
 	}
 }
 
-func envVarsAsStringSlice(envVars []config.EnvVar) []string {
-	e := []string{}
-	c := len(envVars) - 1
-	for k, v := range envVars {
-		if k < c {
-			e = append(e, fmt.Sprintf("%v=%v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
-		} else {
-			e = append(e, fmt.Sprintf("%v=%v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+func setDefaultAndPossisbleValues(stepData *config.StepData) {
+	for k, param := range stepData.Spec.Inputs.Parameters {
+
+		//fill default id not set
+		if param.Default == nil {
+			switch param.Type {
+			case "bool":
+				param.Default = false
+			case "int":
+				param.Default = 0
+			}
 		}
+
+		//add possible values where known for certain types
+		switch param.Type {
+		case "bool":
+			if param.PossibleValues == nil {
+				param.PossibleValues = []interface{}{true, false}
+			}
+		}
+
+		stepData.Spec.Inputs.Parameters[k] = param
 	}
-	return e
 }
 
-func optionsAsStringSlice(options []config.Option) []string {
-	e := []string{}
-	c := len(options) - 1
-	for k, v := range options {
-		if k < c {
-			e = append(e, fmt.Sprintf("%v %v ", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
-		} else {
-			e = append(e, fmt.Sprintf("%v %v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+func getContainerParameters(container config.Container, sidecar bool) map[string]interface{} {
+	containerParams := map[string]interface{}{}
+
+	if len(container.Command) > 0 {
+		containerParams[ifThenElse(sidecar, "sidecarCommand", "containerCommand")] = container.Command[0]
+	}
+	if len(container.EnvVars) > 0 {
+		containerParams[ifThenElse(sidecar, "sidecarEnvVars", "dockerEnvVars")] = config.EnvVarsAsMap(container.EnvVars)
+	}
+	containerParams[ifThenElse(sidecar, "sidecarImage", "dockerImage")] = container.Image
+	containerParams[ifThenElse(sidecar, "sidecarPullImage", "dockerPullImage")] = container.ImagePullPolicy != "Never"
+	if len(container.Name) > 0 {
+		containerParams[ifThenElse(sidecar, "sidecarName", "containerName")] = container.Name
+		containerParams["dockerName"] = container.Name
+	}
+	if len(container.Options) > 0 {
+		containerParams[ifThenElse(sidecar, "sidecarOptions", "dockerOptions")] = container.Options
+	}
+	if len(container.WorkingDir) > 0 {
+		containerParams[ifThenElse(sidecar, "sidecarWorkspace", "dockerWorkspace")] = container.WorkingDir
+	}
+
+	if sidecar {
+		if len(container.ReadyCommand) > 0 {
+			containerParams["sidecarReadyCommand"] = container.ReadyCommand
+		}
+	} else {
+		if len(container.Shell) > 0 {
+			containerParams["containerShell"] = container.Shell
 		}
 	}
-	return e
+
+	//ToDo? add dockerVolumeBind, sidecarVolumeBind -> so far not part of config.Container
+
+	return containerParams
 }
 
-func sortStepParameters(stepData *config.StepData) {
+func sortStepParameters(stepData *config.StepData, considerMandatory bool) {
 	if stepData.Spec.Inputs.Parameters != nil {
 		parameters := stepData.Spec.Inputs.Parameters
 
-		sort.Slice(parameters[:], func(i, j int) bool {
-			return parameters[i].Name < parameters[j].Name
-		})
+		if considerMandatory {
+			sort.SliceStable(parameters[:], func(i, j int) bool {
+				if parameters[i].Mandatory == parameters[j].Mandatory {
+					return strings.Compare(parameters[i].Name, parameters[j].Name) < 0
+				} else if parameters[i].Mandatory {
+					return true
+				}
+				return false
+			})
+		} else {
+			sort.SliceStable(parameters[:], func(i, j int) bool {
+				return strings.Compare(parameters[i].Name, parameters[j].Name) < 0
+			})
+		}
 	}
 }
 
-func possibleValuesToString(in []interface{}) (out string) {
-	if len(in) == 0 {
-		return
-	}
-	out = fmt.Sprintf("`%v`", in[0])
-	if len(in) == 1 {
-		return
-	}
-	for _, value := range in[1:] {
-		out += fmt.Sprintf(", `%v`", value)
-	}
-	return
+func sortConditionalDefaults(conditionDefaults []conditionDefault) {
+	sort.SliceStable(conditionDefaults[:], func(i int, j int) bool {
+		keyLess := strings.Compare(conditionDefaults[i].key, conditionDefaults[j].key) < 0
+		valLess := strings.Compare(conditionDefaults[i].value, conditionDefaults[j].value) < 0
+		return keyLess || keyLess && valLess
+	})
 }

@@ -18,7 +18,7 @@ func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, te
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command command.ExecRunner) error {
 	var defines []string
 	var goals []string
 
@@ -72,7 +72,7 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes spotbugs goal first and fails the build if any bugs were found
-		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"},
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"},
 		Defines: defines,
 	}
 

@@ -25,6 +25,9 @@ consumer-test/**/workspace
 /piper.exe
 .factorypath
 
+debug.test
 /cache/protecode
 
 *errorDetails.json
+*_links.json
+*_reports.json

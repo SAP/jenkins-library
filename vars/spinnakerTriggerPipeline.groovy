@@ -165,7 +165,7 @@ void call(Map parameters = [:]) {
         }
         if (pipelineStatusResponseObj.status != 'SUCCEEDED') {
             if (config.verbose) {
-                echo "[${STEP_NAME}] Full Spinnaker response = ${new JsonUtils().groovyObjectToPrettyJsonString(pipelineStatusResponse)}"
+                echo "[${STEP_NAME}] Full Spinnaker response = ${new JsonUtils().groovyObjectToPrettyJsonString(pipelineStatusResponseObj)}"
             }
             error "[${STEP_NAME}] Spinnaker pipeline failed with ${pipelineStatusResponseObj.status}"
         }

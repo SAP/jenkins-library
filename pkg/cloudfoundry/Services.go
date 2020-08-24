@@ -2,6 +2,7 @@ package cloudfoundry
 
 import (
 	"bytes"
+<<<<<<< HEAD
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,12 +19,31 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 
 	//Logging into Cloud Foundry
 	config := LoginOptions{
+=======
+	"fmt"
+	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+)
+
+// ReadServiceKey reads a cloud foundry service key based on provided service instance and service key name parameters
+func (cf *CFUtils) ReadServiceKey(options ServiceKeyOptions) (string, error) {
+
+	_c := cf.Exec
+
+	if _c == nil {
+		_c = &command.Command{}
+	}
+	cfconfig := LoginOptions{
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 		CfAPIEndpoint: options.CfAPIEndpoint,
 		CfOrg:         options.CfOrg,
 		CfSpace:       options.CfSpace,
 		Username:      options.Username,
 		Password:      options.Password,
 	}
+<<<<<<< HEAD
 
 	err = Login(config)
 	var serviceKeyBytes bytes.Buffer
@@ -71,6 +91,40 @@ func ReadServiceKeyAbapEnvironment(options ServiceKeyOptions, cfLogoutOption boo
 		}
 	}
 	return abapServiceKey, nil
+=======
+	err := cf.Login(cfconfig)
+
+	if err != nil {
+		// error while trying to run cf login
+		return "", fmt.Errorf("Login to Cloud Foundry failed: %w", err)
+	}
+	var serviceKeyBytes bytes.Buffer
+	_c.Stdout(&serviceKeyBytes)
+
+	// we are logged in --> read service key
+	log.Entry().WithField("cfServiceInstance", options.CfServiceInstance).WithField("cfServiceKey", options.CfServiceKeyName).Info("Read service key for service instance")
+	cfReadServiceKeyScript := []string{"service-key", options.CfServiceInstance, options.CfServiceKeyName}
+	err = _c.RunExecutable("cf", cfReadServiceKeyScript...)
+
+	if err != nil {
+		// error while reading service key
+		return "", fmt.Errorf("Reading service key failed: %w", err)
+	}
+
+	// parse and return service key
+	var serviceKeyJSON string
+	if len(serviceKeyBytes.String()) > 0 {
+		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
+		serviceKeyJSON = strings.Join(lines[2:], "")
+	}
+
+	err = cf.Logout()
+	if err != nil {
+		return serviceKeyJSON, fmt.Errorf("Logout of Cloud Foundry failed: %w", err)
+	}
+
+	return serviceKeyJSON, err
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee
 }
 
 //ServiceKeyOptions for reading CF Service Key
@@ -79,6 +133,7 @@ type ServiceKeyOptions struct {
 	CfOrg             string
 	CfSpace           string
 	CfServiceInstance string
+<<<<<<< HEAD
 	CfServiceKey      string
 	Username          string
 	Password          string
@@ -108,3 +163,9 @@ type AbapBinding struct {
 	Type    string `json:"type"`
 	Version string `json:"version"`
 }
+=======
+	CfServiceKeyName  string
+	Username          string
+	Password          string
+}
+>>>>>>> 67feb87b800243c559aacd67191796e9f39bfeee

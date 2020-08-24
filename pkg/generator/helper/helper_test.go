@@ -85,7 +85,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
 	docuHelperData := DocuHelperData{IsGenerateDocu: false}
-	ProcessMetaFiles([]string{"test.yaml"}, stepHelperData, docuHelperData)
+	ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData, docuHelperData)
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -93,8 +93,9 @@ func TestProcessMetaFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, string(expected), string(files["cmd/testStep_generated.go"]))
-		t.Log(string(files["cmd/testStep_generated.go"]))
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		assert.Equal(t, string(expected), string(files[resultFilePath]))
+		t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -103,20 +104,22 @@ func TestProcessMetaFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, string(expected), string(files["cmd/testStep_generated_test.go"]))
+		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
+		assert.Equal(t, string(expected), string(files[resultFilePath]))
 	})
 
 	t.Run("custom step code", func(t *testing.T) {
 		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
-		ProcessMetaFiles([]string{"test.yaml"}, stepHelperData, docuHelperData)
+		ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData, docuHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
 		expected, err := ioutil.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		assert.Equal(t, string(expected), string(files["cmd/testStep_generated.go"]))
-		t.Log(string(files["cmd/testStep_generated.go"]))
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		assert.Equal(t, string(expected), string(files[resultFilePath]))
+		t.Log(string(files[resultFilePath]))
 	})
 }
 
@@ -145,11 +148,11 @@ func TestSetDefaultParameters(t *testing.T) {
 		}
 
 		expected := []string{
-			"\"val0\"",
+			"`val0`",
 			"os.Getenv(\"PIPER_param1\")",
 			"true",
 			"false",
-			"[]string{\"val4_1\", \"val4_2\"}",
+			"[]string{`val4_1`, `val4_2`}",
 			"[]string{}",
 			"0",
 			"1",

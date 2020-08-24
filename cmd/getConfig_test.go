@@ -54,8 +54,7 @@ func TestConfigCommand(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			configOptions.openFile = configOpenFileMock
-			err := cmd.RunE(cmd, []string{})
-			assert.NoError(t, err, "error occured but none expected")
+			cmd.Run(cmd, []string{})
 		})
 	})
 }
@@ -92,19 +91,22 @@ func TestDefaultsAndFilters(t *testing.T) {
 func TestApplyContextConditions(t *testing.T) {
 
 	tt := []struct {
+		name     string
 		metadata config.StepData
 		conf     config.StepConfig
 		expected map[string]interface{}
 	}{
 		{
+			name:     "no context conditions",
 			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{}}},
 			conf:     config.StepConfig{Config: map[string]interface{}{}},
 			expected: map[string]interface{}{},
 		},
 		{
+			name: "context condition not met",
 			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
 				{
-					Image: "myTestImage:latest",
+					Image: "myDefaultImage:latest",
 					Conditions: []config.Condition{
 						{
 							ConditionRef: "strings-equal",
@@ -125,9 +127,10 @@ func TestApplyContextConditions(t *testing.T) {
 			},
 		},
 		{
+			name: "context condition met",
 			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
 				{
-					Image: "myTestImage:latest",
+					Image: "myDefaultImage:latest",
 					Conditions: []config.Condition{
 						{
 							ConditionRef: "strings-equal",
@@ -148,6 +151,81 @@ func TestApplyContextConditions(t *testing.T) {
 			},
 		},
 		{
+			name: "context condition met - root defined already",
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myDefaultImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "myTestImage:latest",
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "myTestImage:latest",
+			},
+		},
+		{
+			name: "context condition met - root defined and deep value defined",
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myDefaultImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1":      "val1",
+				"val1":        map[string]interface{}{"dockerImage": "mySubTestImage:latest"},
+				"dockerImage": "myTestImage:latest",
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "myTestImage:latest",
+			},
+		},
+		{
+			name: "context condition met - root defined as empty",
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myDefaultImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "",
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "",
+			},
+		},
+		//ToDo: Sidecar behavior not properly working, expects sidecarImage, ... parameters and not dockerImage
+		{
+			name: "sidecar context condition met",
 			metadata: config.StepData{Spec: config.StepSpec{Sidecars: []config.Container{
 				{
 					Image: "myTestImage:latest",
@@ -173,7 +251,9 @@ func TestApplyContextConditions(t *testing.T) {
 	}
 
 	for run, test := range tt {
-		applyContextConditions(test.metadata, &test.conf)
-		assert.Equalf(t, test.expected, test.conf.Config, fmt.Sprintf("Run %v failed", run))
+		t.Run(test.name, func(t *testing.T) {
+			applyContextConditions(test.metadata, &test.conf)
+			assert.Equalf(t, test.expected, test.conf.Config, fmt.Sprintf("Run %v failed", run))
+		})
 	}
 }
