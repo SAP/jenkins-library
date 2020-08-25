@@ -514,7 +514,7 @@ func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
 
 // pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
 func pollProjectStatus(config *ScanOptions, sys whitesource) error {
-	return blockUntilProjectIsUpdated(config, sys, time.Now(), 10*time.Second, 5*time.Second, 300*time.Second)
+	return blockUntilProjectIsUpdated(config, sys, time.Now(), 20*time.Second, 20*time.Second, 15*time.Minute)
 }
 
 const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
