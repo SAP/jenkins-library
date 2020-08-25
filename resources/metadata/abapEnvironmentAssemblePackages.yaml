@@ -1,7 +1,9 @@
 metadata:
     name: abapEnvironmentAssemblePackages
     description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
-    longDescription: Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system      
+    longDescription: |
+      This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud
+      Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.
 spec:
   inputs:
     secrets:
@@ -122,4 +124,3 @@ spec:
     - name: cf
       image: ppiper/cf-cli
       imagePullPolicy: Never
-      
