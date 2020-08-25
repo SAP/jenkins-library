@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 
@@ -23,6 +24,77 @@ func testSetup(client piperhttp.Sender, buildID string) build {
 	}
 	return b
 }
+
+func TestStarting(t *testing.T) {
+	t.Run("Run starting", func(t *testing.T) {
+		client := &clMock{
+			Token: "MyToken",
+		}
+		conn := new(connector)
+		conn.Client = client
+		conn.Header = make(map[string][]string)
+		var repos []abaputils.Repository
+		repo := abaputils.Repository{
+			Name:        "RepoA",
+			Version:     "0001",
+			PackageName: "Package",
+			PackageType: "AOI",
+			SpLevel:     "0000",
+			PatchLevel:  "0000",
+			Status:      "P",
+			Namespace:   "/DEMO/",
+		}
+		repos = append(repos, repo)
+		repo.Status = "R"
+		repos = append(repos, repo)
+
+		builds, buildsAlreadyReleased, err := starting(repos, *conn)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(builds))
+		assert.Equal(t, 1, len(buildsAlreadyReleased))
+		assert.Equal(t, accepted, builds[0].build.RunState)
+		assert.Equal(t, runState(""), buildsAlreadyReleased[0].build.RunState)
+	})
+}
+
+func TestStartingInvalidInput(t *testing.T) {
+	t.Run("Run starting", func(t *testing.T) {
+		client := &clMock{
+			Token: "MyToken",
+		}
+		conn := new(connector)
+		conn.Client = client
+		conn.Header = make(map[string][]string)
+		var repos []abaputils.Repository
+		repo := abaputils.Repository{
+			Name:   "RepoA",
+			Status: "P",
+		}
+		repos = append(repos, repo)
+		_, _, err := starting(repos, *conn)
+		assert.Error(t, err)
+	})
+}
+
+func TestPolling(t *testing.T) {
+	t.Run("Run polling", func(t *testing.T) {
+		var repo abaputils.Repository
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		var buildsWithRepo []buildWithRepository
+		bWR := buildWithRepository{
+			build: b,
+			repo:  repo,
+		}
+		buildsWithRepo = append(buildsWithRepo, bWR)
+		err := polling(buildsWithRepo, 600, 1)
+		assert.NoError(t, err)
+		assert.Equal(t, finished, buildsWithRepo[0].build.RunState)
+	})
+}
+
+// *******************************************************************************************************************************
+// ************************************************* Tests for REUSE Part ********************************************************
+// *******************************************************************************************************************************
 
 func TestSTart(t *testing.T) {
 	t.Run("Run start", func(t *testing.T) {
