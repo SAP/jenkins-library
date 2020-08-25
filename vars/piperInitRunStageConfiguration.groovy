@@ -65,48 +65,28 @@ void call(Map parameters = [:]) {
                 Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
-                        if (condition.getValue() instanceof Map) {
-                            condition.getValue().each {configCondition ->
-                                if (MapUtils.getByPath(stepConfig, configCondition.getKey()) in configCondition.getValue()) {
-                                    stepActive = true
-                                }
-                            }
-                        } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
+                        if (checkConfig(condition, stepConfig)) {
                             stepActive = true
                         }
                         break
                     case 'configKeys':
-                        if (condition.getValue() instanceof List) {
-                            condition.getValue().each {configKey ->
-                                if (MapUtils.getByPath(stepConfig, configKey)) {
-                                    stepActive = true
-                                }
-                            }
-                        } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
+                        if (checkConfigKeys(condition, stepConfig)) {
                             stepActive = true
                         }
                         break
                     case 'filePatternFromConfig':
-                        def conditionValue = MapUtils.getByPath(stepConfig, condition.getValue())
-                        if (conditionValue && findFiles(glob: conditionValue)) {
+                        if (checkForFilesWithPatternFromConfig(condition, stepConfig)) {
                             stepActive = true
                         }
                         break
                     case 'filePattern':
-                        if (findFiles(glob: condition.getValue())) {
+                        if (checkForFilesWithPattern(condition)) {
                             stepActive = true
                         }
                         break
-                    case 'npmScript':
-                        def packages = findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
-                        for (int i = 0; i < packages.size(); i++) {
-                            String packageJsonPath = packages[i].path
-                            Map packageJson = readJSON file: packageJsonPath
-                            Map npmScripts = packageJson.scripts ?: [:]
-                            if (npmScripts[condition.getValue()]) {
-                                stepActive = true
-                            }
-                            break
+                    case 'npmScripts':
+                        if (checkForNpmScriptsInPackages(condition)) {
+                            stepActive = true
                         }
                         break
                 }
@@ -145,4 +125,74 @@ private static boolean extensionExists(Script script, Map config, def stageName)
     def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
     def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
     return script.fileExists(projectInterceptorFile) || script.fileExists(globalInterceptorFile)
+}
+
+private static boolean checkConfig(def condition, Map stepConfig) {
+    if (condition.getValue() instanceof Map) {
+        condition.getValue().each {configCondition ->
+            if (MapUtils.getByPath(stepConfig, configCondition.getKey()) in configCondition.getValue()) {
+                return true
+            }
+        }
+    } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
+        return true
+    }
+    return false
+}
+
+private static boolean checkConfigKeys(def condition, Map stepConfig) {
+    if (condition.getValue() instanceof List) {
+        condition.getValue().each { configKey ->
+            if (MapUtils.getByPath(stepConfig, configKey)) {
+                return true
+            }
+        }
+    } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
+        return true
+    }
+    return false
+}
+
+private static boolean checkForFilesWithPatternFromConfig (def condition, Map stepConfig) {
+    def conditionValue = MapUtils.getByPath(stepConfig, condition.getValue())
+    if (conditionValue && findFiles(glob: conditionValue)) {
+        return true
+    }
+    return false
+}
+
+private static boolean checkForFilesWithPattern (def condition) {
+    if (condition.getValue() instanceof List) {
+        condition.getValue().each {configKey ->
+            if (findFiles(glob: configKey)) {
+                return true
+            }
+        }
+    } else {
+        if (findFiles(glob: condition.getValue())) {
+            return true
+        }
+    }
+    return false
+}
+
+private static boolean checkForNpmScriptsInPackages (def condition) {
+    def packages = findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+    for (int i = 0; i < packages.size(); i++) {
+        String packageJsonPath = packages[i].path
+        Map packageJson = readJSON file: packageJsonPath
+        Map npmScripts = packageJson.scripts ?: [:]
+        if (condition.getValue() instanceof List) {
+            condition.getValue().each { configKey ->
+                if (npmScripts[configKey]) {
+                    return true
+                }
+            }
+        } else {
+            if (npmScripts[condition.getValue()]) {
+                return true
+            }
+        }
+        break
+    }
 }
