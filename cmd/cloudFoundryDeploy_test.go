@@ -985,6 +985,32 @@ func TestCfDeployment(t *testing.T) {
 	})
 }
 
+func TestValidateDeployTool(t *testing.T) {
+	testCases := []struct {
+		runName            string
+		deployToolGiven    string
+		buildTool          string
+		deployToolExpected string
+	}{
+		{"no params", "", "", ""},
+		{"build tool MTA", "", "mta", "mtaDeployPlugin"},
+		{"build tool other", "", "other", "cf_native"},
+		{"deploy and build tool given", "given", "unknown", "given"},
+		{"only deploy tool given", "given", "", "given"},
+	}
+
+	t.Parallel()
+
+	for _, test := range testCases {
+		t.Run(test.runName, func(t *testing.T) {
+			config := cloudFoundryDeployOptions{BuildTool: test.buildTool, DeployTool: test.deployToolGiven}
+			validateDeployTool(&config)
+			assert.Equal(t, test.deployToolExpected, config.DeployTool,
+				"expected different deployTool result")
+		})
+	}
+}
+
 func TestManifestVariableFiles(t *testing.T) {
 
 	defer func() {
