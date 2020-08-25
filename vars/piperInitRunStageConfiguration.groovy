@@ -57,7 +57,8 @@ void call(Map parameters = [:]) {
         //-------------------------------------------------------------------------------
         //detailed handling of step and stage activation based on conditions
         script.commonPipelineEnvironment.configuration.runStep[stage.getKey()] = [:]
-        def currentStage = stage.getKey()
+        String currentStage = stage.getKey()
+        boolean anyStepConditionTrue = false
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
             step.getValue().each {condition ->
@@ -108,17 +109,20 @@ void call(Map parameters = [:]) {
                             break
                         }
                         break
-                    case 'extensionExists':
-                        stepActive = stepActive || extensionExists(script as Script, config, condition.getValue())
-                        break
                 }
             }
-            script.commonPipelineEnvironment.configuration.runStep."${stage.getKey()}"."${step.getKey()}" = stepActive
+            script.commonPipelineEnvironment.configuration.runStep."${currentStage}"."${step.getKey()}" = stepActive
 
-            //make sure that also related stage is activated if steps are active
-            if (stepActive) script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
+            if (stepActive) {
+                anyStepConditionTrue = true
+            }
 
         }
+        boolean runStage = anyStepConditionTrue
+        if (stage.getValue().extensionExists) {
+            runStage = runStage || extensionExists(script as Script, config, stage.getValue().extensionExists)
+        }
+        script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
     }
 
     if (config.verbose) {
