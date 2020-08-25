@@ -113,14 +113,12 @@ void call(Map parameters = [:]) {
             }
             script.commonPipelineEnvironment.configuration.runStep."${currentStage}"."${step.getKey()}" = stepActive
 
-            if (stepActive) {
-                anyStepConditionTrue = true
-            }
+            anyStepConditionTrue |= stepActive
 
         }
         boolean runStage = anyStepConditionTrue
         if (stage.getValue().extensionExists) {
-            runStage = runStage || extensionExists(script as Script, config, stage.getValue().extensionExists)
+            runStage |= extensionExists(script as Script, config, stage.getValue().extensionExists)
         }
         script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
     }
