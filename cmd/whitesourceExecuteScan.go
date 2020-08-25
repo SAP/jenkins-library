@@ -58,12 +58,15 @@ type whitesourceUtils interface {
 	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
 
 	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
+
+	GetNpmExecutor(config *ScanOptions) npm.Executor
 }
 
 type whitesourceUtilsBundle struct {
 	*piperhttp.Client
 	*command.Command
 	*piperutils.Files
+	npmExecutor npm.Executor
 }
 
 func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error) {
@@ -73,6 +76,13 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (ve
 		return nil, err
 	}
 	return artifact.GetCoordinates()
+}
+
+func (w *whitesourceUtilsBundle) GetNpmExecutor(config *ScanOptions) npm.Executor {
+	if w.npmExecutor == nil {
+		w.npmExecutor = npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
+	}
+	return w.npmExecutor
 }
 
 func newWhitesourceUtils() *whitesourceUtilsBundle {
@@ -211,8 +221,13 @@ func executeScan(config *ScanOptions, utils whitesourceUtils) error {
 			return err
 		}
 	case "npm":
-		// Execute scan with whitesource yarn plugin
+		// Execute scan with in each npm module using npm.Executor
 		if err := executeNpmScan(config, utils); err != nil {
+			return err
+		}
+	case "yarn":
+		// Execute scan with whitesource yarn plugin
+		if err := executeYarnScan(config, utils); err != nil {
 			return err
 		}
 	default:
@@ -250,33 +265,7 @@ func executeMTAScan(config *ScanOptions, utils whitesourceUtils) error {
 		return err
 	}
 
-	resetDir, err := utils.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to obtain current directory: %w", err)
-	}
-
-	// TODO: Pass npm related options from config (download cache setup, registries)
-	npmExecutor := npm.NewExecutor(npm.ExecutorOptions{})
-	modules := npmExecutor.FindPackageJSONFiles()
-	for _, module := range modules {
-		log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", module)
-		dir := filepath.Dir(module)
-
-		err := utils.Chdir(dir)
-		if err != nil {
-			return fmt.Errorf("failed to change into directory '%s': %w", dir, err)
-		}
-		err = executeNpmScan(config, utils)
-		if err != nil {
-			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
-		}
-		err = utils.Chdir(resetDir)
-		if err != nil {
-			return fmt.Errorf("failed to reset into directory '%s': %w", resetDir, err)
-		}
-	}
-
-	return nil
+	return executeNpmScan(config, utils)
 }
 
 // executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
@@ -373,23 +362,57 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 	return nil
 }
 
-// executeNpmScan generates a configuration file whitesource.config.json with appropriate values from config,
-// installs whitesource yarn plugin and executes the scan.
+// executeNpmScan iterates over all found npm modules and performs a scan in each one.
 func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
+	npmExecutor := utils.GetNpmExecutor(config)
+	modules := npmExecutor.FindPackageJSONFiles()
+	if len(modules) == 0 {
+		log.Entry().Info("Found no NPM modules to scan.")
+		return nil
+	}
+	for _, module := range modules {
+		err := executeNpmScanForModule(module, config, utils, npmExecutor)
+		if err != nil {
+			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
+		}
+	}
+	return nil
+}
+
+// executeNpmScanForModule generates a configuration file whitesource.config.json with appropriate values from config,
+// installs all dependencies if necessary, and executes the scan via "npx whitesource run".
+func executeNpmScanForModule(modulePath string, config *ScanOptions, utils whitesourceUtils, executor npm.Executor) error {
+	log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", modulePath)
+
+	resetDir, err := utils.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to obtain current directory: %w", err)
+	}
+
+	dir := filepath.Dir(modulePath)
+	if err := utils.Chdir(dir); err != nil {
+		return fmt.Errorf("failed to change into directory '%s': %w", dir, err)
+	}
+	defer func() {
+		err = utils.Chdir(resetDir)
+		if err != nil {
+			log.Entry().Errorf("Failed to reset into directory '%s': %v", resetDir, err)
+		}
+	}()
+
 	if err := writeWhitesourceConfigJSON(config, utils, false); err != nil {
 		return err
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
-	if err := reinstallNodeModulesIfLsFails(utils); err != nil {
+	if err := reinstallNodeModulesIfLsFails(modulePath, utils, executor); err != nil {
 		return err
 	}
 
 	return utils.RunExecutable("npx", "whitesource", "run")
 }
 
-func reinstallNodeModulesIfLsFails(utils whitesourceUtils) error {
-	// TODO: Use npm.Executor in order to use Download Cache.
+func reinstallNodeModulesIfLsFails(modulePath string, utils whitesourceUtils, executor npm.Executor) error {
 	err := utils.RunExecutable("npm", "ls")
 	if err == nil {
 		return nil
@@ -410,7 +433,7 @@ func reinstallNodeModulesIfLsFails(utils whitesourceUtils) error {
 			return fmt.Errorf("failed to remove package-lock.json: %w", err)
 		}
 	}
-	return utils.RunExecutable("npm", "install")
+	return executor.InstallAllDependencies([]string{modulePath})
 }
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,

@@ -269,7 +269,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip"]
+      possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
     - name: cvssSeverityLimit
       type: string
       description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
