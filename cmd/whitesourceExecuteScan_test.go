@@ -143,6 +143,7 @@ func (w *whitesourceUtilsMock) FileOpen(name string, flag int, perm os.FileMode)
 }
 
 func (w *whitesourceUtilsMock) RemoveAll(path string) error {
+	// TODO: Implement in FS Mock
 	return nil
 }
 
