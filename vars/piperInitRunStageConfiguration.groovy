@@ -153,34 +153,34 @@ private static boolean checkConfigKeys(def condition, Map stepConfig) {
     return false
 }
 
-private static boolean checkForFilesWithPatternFromConfig (def condition, Map stepConfig) {
+private static boolean checkForFilesWithPatternFromConfig (Script script, def condition, Map stepConfig) {
     def conditionValue = MapUtils.getByPath(stepConfig, condition.getValue())
-    if (conditionValue && findFiles(glob: conditionValue)) {
+    if (conditionValue && script.findFiles(glob: conditionValue)) {
         return true
     }
     return false
 }
 
-private static boolean checkForFilesWithPattern (def condition) {
+private static boolean checkForFilesWithPattern (Script script, def condition) {
     if (condition.getValue() instanceof List) {
         condition.getValue().each {configKey ->
-            if (findFiles(glob: configKey)) {
+            if (script.findFiles(glob: configKey)) {
                 return true
             }
         }
     } else {
-        if (findFiles(glob: condition.getValue())) {
+        if (script.findFiles(glob: condition.getValue())) {
             return true
         }
     }
     return false
 }
 
-private static boolean checkForNpmScriptsInPackages (def condition) {
-    def packages = findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+private static boolean checkForNpmScriptsInPackages (Script script, def condition) {
+    def packages = script.findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
     for (int i = 0; i < packages.size(); i++) {
         String packageJsonPath = packages[i].path
-        Map packageJson = readJSON file: packageJsonPath
+        Map packageJson = script.readJSON file: packageJsonPath
         Map npmScripts = packageJson.scripts ?: [:]
         if (condition.getValue() instanceof List) {
             condition.getValue().each { configKey ->
@@ -195,4 +195,5 @@ private static boolean checkForNpmScriptsInPackages (def condition) {
         }
         break
     }
+    return false
 }
