@@ -59,20 +59,23 @@ steps:
 "AddonPatchLevel":"",
 "TargetVectorID":"",
 "repositories":[
-  {"name":"/DMO/REPO_A",
-   "tag":"",
-   "branch":"",
-   "version":"",
-   "versionAAK":"0001",
-   "PackageName":"SAPK001001REPOA",
-   "PackageType":"CPK",
-   "SpLevel":"0000",
-   "PatchLevel":"0001",
-   "PredecessorCommitID":"cbb834e9e03cde177d2f109a6676901972983fbc",
-   "Status":"P",
-   "Namespace":"/DMO/",
-   "SarXMLFilePath":""},
-  {"name":"/DMO/REPO_B",
+  {
+    "name":"/DMO/REPO_A",
+    "tag":"",
+    "branch":"",
+    "version":"",
+    "versionAAK":"0001",
+    "PackageName":"SAPK001001REPOA",
+    "PackageType":"CPK",
+    "SpLevel":"0000",
+    "PatchLevel":"0001",
+    "PredecessorCommitID":"cbb834e9e03cde177d2f109a6676901972983fbc",
+    "Status":"P",
+    "Namespace":"/DMO/",
+    "SarXMLFilePath":""
+  },
+  {
+    "name":"/DMO/REPO_B",
     "tag":"",
     "branch":"",
     "version":"",
@@ -84,6 +87,7 @@ steps:
     "PredecessorCommitID":"2f7d43923c041a07a76c8adc859c737ad772ef26",
     "Status":"P",
     "Namespace":"/DMO/",
-    "SarXMLFilePath":""}
-   ]}
+    "SarXMLFilePath":""
+  }
+]}
 ```
