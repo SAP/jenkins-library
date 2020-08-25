@@ -108,6 +108,9 @@ void call(Map parameters = [:]) {
                             break
                         }
                         break
+                    case 'extensionExists':
+                        stepActive = stepActive || extensionExists(script as Script, config, condition.getValue())
+                        break
                 }
             }
             script.commonPipelineEnvironment.configuration.runStep."${stage.getKey()}"."${step.getKey()}" = stepActive
@@ -122,4 +125,22 @@ void call(Map parameters = [:]) {
         echo "[${STEP_NAME}] Debug - Run Stage Configuration: ${script.commonPipelineEnvironment.configuration.runStage}"
         echo "[${STEP_NAME}] Debug - Run Step Configuration: ${script.commonPipelineEnvironment.configuration.runStep}"
     }
+}
+
+private static boolean extensionExists(Script script, Map config, def stageName) {
+    if (!stageName || !(stageName in CharSequence)) {
+        return false
+    }
+    if (!script.piperStageWrapper.allowExtensions(script)) {
+        return false
+    }
+    // NOTE: These keys exist in "config" if they are configured in the general section of the project
+    // config or the defaults. However, in piperStageWrapper, these keys could also be configured for
+    // the step "piperStageWrapper" to be effective. Don't know if this should be considered here for consistency.
+    if (!config.globalExtensionsDirectory && !config.projectExtensionsDirectory) {
+        return false
+    }
+    def projectInterceptorFile = "${config.projectExtensionsDirectory}${stageName}.groovy"
+    def globalInterceptorFile = "${config.globalExtensionsDirectory}${stageName}.groovy"
+    return script.fileExists(projectInterceptorFile) || script.fileExists(globalInterceptorFile)
 }
