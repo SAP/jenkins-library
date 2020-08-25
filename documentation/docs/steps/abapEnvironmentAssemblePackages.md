@@ -47,7 +47,7 @@ steps:
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',
 ```
-## Input via the CommonPipelineEnvironment
+### Input via the CommonPipelineEnvironment
 
 ```yaml
 {"addonProduct":"",
@@ -80,11 +80,10 @@ steps:
     "PackageName":"SAPK002001REPOB",
     "PackageType":"CPK",
     "SpLevel":"0001",
-      "PatchLevel":"0001",
-      "PredecessorCommitID":"2f7d43923c041a07a76c8adc859c737ad772ef26",
-      "Status":"P",
-      "Namespace":"/DMO/",
-      "SarXMLFilePath":""}
+    "PatchLevel":"0001",
+    "PredecessorCommitID":"2f7d43923c041a07a76c8adc859c737ad772ef26",
+    "Status":"P",
+    "Namespace":"/DMO/",
+    "SarXMLFilePath":""}
    ]}
 ```
-
