@@ -68,7 +68,8 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long:  `Assembly of of a list of installations, support packages or patches in SAP Cloud Platform ABAP Environment system`,
+		Long: `This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud 
+Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
