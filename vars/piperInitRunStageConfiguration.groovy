@@ -17,7 +17,16 @@ import groovy.transform.Field
     /**
      * The branch used as productive branch, defaults to master.
      */
-    'productiveBranch'
+    'productiveBranch',
+    /**
+     * Location for individual stage extensions.
+     */
+    'projectExtensionsDirectory',
+    /**
+     * Location for global extensions.
+     */
+    'globalExtensionsDirectory'
+
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -102,13 +111,13 @@ void call(Map parameters = [:]) {
         }
         boolean runStage = anyStepConditionTrue
         if (stage.getValue().extensionExists) {
-            runStage |= extensionExists(script as Script, config, stage.getValue().extensionExists)
+            runStage |= extensionExists(script as Script, config, currentStage)
         }
 
         if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
         }
-        
+
         script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
     }
 
