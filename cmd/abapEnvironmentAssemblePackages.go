@@ -88,6 +88,7 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 		}
 		sarPackage := resultSARXML.AdditionalInfo
 		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
+		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
 		err = resultSARXML.download(downloadPath)
 		if err != nil {
 			return reposBackToCPE, err
@@ -97,6 +98,7 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 	}
 	return reposBackToCPE, nil
 }
+
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	var buildFailed bool = false
 	for _, bR := range builds {
@@ -131,7 +133,7 @@ func starting(repos []abaputils.Repository, conn connector) ([]buildWithReposito
 			}
 			builds = append(builds, buildRepo)
 		} else {
-			log.Entry().Infof("Packages %s is already released. No need to run the assembly.", repo.PackageName)
+			log.Entry().Infof("Packages %s is already released. No need to run the assembly", repo.PackageName)
 			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
 	}
@@ -151,6 +153,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 				if !builds[i].build.IsFinished() {
 					builds[i].build.get()
 					if !builds[i].build.IsFinished() {
+						log.Entry().Infof("Assembly of %s is not yet finished, check again in %02d seconds", builds[i].repo.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					}
 				}
@@ -164,7 +167,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 
 func (b *buildWithRepository) start() error {
 	if b.repo.Name == "" || b.repo.Version == "" || b.repo.SpLevel == "" || b.repo.Namespace == "" || b.repo.PackageType == "" || b.repo.PackageName == "" {
-		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename ")
+		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
 	}
 	valuesInput := values{
 		Values: []value{
@@ -192,6 +195,7 @@ func (b *buildWithRepository) start() error {
 				Value: b.repo.PredecessorCommitID})
 	}
 	phase := "BUILD_" + b.repo.PackageType
+	log.Entry().Infof("Starting assembly of package %s", b.repo.PackageName)
 	return b.build.start(phase, valuesInput)
 }
 
