@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -54,16 +53,12 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 func (p *pckg) release() error {
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
-	fmt.Println("send to " + appendum)
 	body, err := p.connector.post(appendum, "")
 	if err != nil {
-		fmt.Println("error occured")
 		return err
 	}
 	var jPck jsonPackageFromGet
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
-	fmt.Println(p.Status)
-	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler? vielleicht ändert sich der status? dann müsste es zurück ins cpe
 	return nil
 }

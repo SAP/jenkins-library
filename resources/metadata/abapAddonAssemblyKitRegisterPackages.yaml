@@ -6,11 +6,11 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: abapCredentialsId
+      - name: abapAddonAssemblyKitCredentialsId
         description: Credential for AbapAddonAssemblyKit System
         type: jenkins
     params:
-      - name: AbapAddonAssemblyKitEndpoint
+      - name: abapAddonAssemblyKitEndpoint
         type: string
         description: TODO
         scope:
@@ -19,7 +19,6 @@ spec:
         - STEPS
         - GENERAL
         mandatory: true
-        default: https://w7q.dmzwdf.sap.corp
       - name: username
         type: string
         description: User

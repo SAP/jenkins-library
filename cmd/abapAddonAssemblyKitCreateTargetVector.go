@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -43,8 +42,6 @@ func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreat
 	if err != nil {
 		return err
 	}
-	fmt.Println("after creation")
-	fmt.Println(tv.ID)
 	// TODO id zurück ins CPE
 	addonDescriptor.TargetVectorID = tv.ID
 	toCPE, _ := json.Marshal(addonDescriptor)
@@ -58,7 +55,6 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(tvJson))
 	appendum := "/odata/aas_ocs_package/TargetVectorSet"
 	body, err := conn.post(appendum, string(tvJson))
 	if err != nil {
@@ -66,8 +62,6 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 	}
 	var jTV jsontargetVector
 	json.Unmarshal(body, &jTV)
-	fmt.Println(jTV)
-	fmt.Println(jTV.Tv.ID)
 	tv.ID = jTV.Tv.ID
 	return nil
 }

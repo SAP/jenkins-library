@@ -14,7 +14,7 @@ import (
 )
 
 type abapAddonAssemblyKitPublishTargetVectorOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"AbapAddonAssemblyKitEndpoint,omitempty"`
+	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
 	ScopeTV                      string `json:"scopeTV,omitempty"`
@@ -78,13 +78,13 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitPublishTargetVectorOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "AbapAddonAssemblyKitEndpoint", `https://w7q.dmzwdf.sap.corp`, "TODO")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
 	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "TODO")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
 
-	cmd.MarkFlagRequired("AbapAddonAssemblyKitEndpoint")
+	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
@@ -101,7 +101,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "AbapAddonAssemblyKitEndpoint",
+						Name:        "abapAddonAssemblyKitEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",

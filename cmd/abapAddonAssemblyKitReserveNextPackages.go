@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
@@ -36,28 +38,75 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	for i, repo := range addonDescriptor.Repositories {
-		var p pckg
-		p.init(repo, *conn)
-		// TODO soll danach gepollt werden? glaub nicht..
-		err := p.reserveNext()
-		if err != nil {
-			return err
-		}
-		// TODO kann gelöscht werden nachdem Dirk die Änderungen gemacht hat
-		err = p.get()
-		if err != nil {
-			return err
-		}
-		// TODO status L => Fehler, da es nicht auftreten sollte
-		p.addFields(&addonDescriptor.Repositories[i])
+	packagesWithRepos, err := reservePackages(addonDescriptor.Repositories, *conn)
+	if err != nil {
+		return err
 	}
+	//TODO zeiten anpassen
+	err = pollReserveNextPackages(packagesWithRepos, 60, 60)
+	addonDescriptor.Repositories = addFieldsToRepository(packagesWithRepos)
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
+func addFieldsToRepository(pckgWR []packagesWithRepository) []abaputils.Repository {
+	var repos []abaputils.Repository
+	for i := range pckgWR {
+		pckgWR[i].p.addFields(&pckgWR[i].repo)
+		repos = append(repos, pckgWR[i].repo)
+	}
+	return repos
+}
 
-// TODO noch mehr übertragen?
+func pollReserveNextPackages(pckgWR []packagesWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for i := range pckgWR {
+				err := pckgWR[i].p.get()
+				// if there is an error, reservation is not yet finished
+				if err != nil {
+					allFinished = false
+				} else {
+					switch pckgWR[i].p.Status {
+					case "L":
+						//TODO bessere error meldung
+						return errors.New("Invalid status L of package")
+					case "C":
+						allFinished = false
+					}
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
+}
+
+func reservePackages(repositories []abaputils.Repository, conn connector) ([]packagesWithRepository, error) {
+	var packagesWithRepos []packagesWithRepository
+	for i := range repositories {
+		var p pckg
+		p.init(repositories[i], conn)
+		err := p.reserveNext()
+		if err != nil {
+			return packagesWithRepos, err
+		}
+		pWR := packagesWithRepository{
+			p:    p,
+			repo: repositories[i],
+		}
+		packagesWithRepos = append(packagesWithRepos, pWR)
+	}
+	return packagesWithRepos, nil
+}
+
 func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.connector = conn
 	p.ComponentName = repo.Name
@@ -65,7 +114,6 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.PackageName = repo.PackageName
 }
 
-// TODO genug?
 func (p *pckg) addFields(initialRepo *abaputils.Repository) {
 	initialRepo.PackageName = p.PackageName
 	initialRepo.PackageType = p.Type
@@ -123,4 +171,9 @@ type pckg struct {
 	PredecessorCommitID string `json:"PredecessorCommitId"`
 	Status              string `json:"Status"`
 	Namespace           string `json:"Namespace"`
+}
+
+type packagesWithRepository struct {
+	p    pckg
+	repo abaputils.Repository
 }
