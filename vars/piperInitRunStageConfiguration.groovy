@@ -75,17 +75,17 @@ void call(Map parameters = [:]) {
                         }
                         break
                     case 'filePatternFromConfig':
-                        if (checkForFilesWithPatternFromConfig(condition, stepConfig)) {
+                        if (checkForFilesWithPatternFromConfig(script, condition, stepConfig)) {
                             stepActive = true
                         }
                         break
                     case 'filePattern':
-                        if (checkForFilesWithPattern(condition)) {
+                        if (checkForFilesWithPattern(script, condition)) {
                             stepActive = true
                         }
                         break
                     case 'npmScripts':
-                        if (checkForNpmScriptsInPackages(condition)) {
+                        if (checkForNpmScriptsInPackages(script, condition)) {
                             stepActive = true
                         }
                         break
