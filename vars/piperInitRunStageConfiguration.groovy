@@ -13,7 +13,11 @@ import groovy.transform.Field
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
-    'verbose'
+    'verbose',
+    /**
+     * The branch used as productive branch, defaults to master.
+     */
+    'productiveBranch'
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -100,6 +104,11 @@ void call(Map parameters = [:]) {
         if (stage.getValue().extensionExists) {
             runStage |= extensionExists(script as Script, config, stage.getValue().extensionExists)
         }
+
+        if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
+            runStage = false
+        }
+        
         script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
     }
 
