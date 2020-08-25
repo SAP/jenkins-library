@@ -32,7 +32,7 @@ type whitesourceExecuteScanOptions struct {
 	UserToken                            string   `json:"userToken,omitempty"`
 	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty"`
 	AgentFileName                        string   `json:"agentFileName,omitempty"`
-	EmailAddressesOfInitialProductAdmins string   `json:"emailAddressesOfInitialProductAdmins,omitempty"`
+	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	ProductVersion                       string   `json:"productVersion,omitempty"`
 	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
 	ProductName                          string   `json:"productName,omitempty"`
@@ -49,6 +49,7 @@ type whitesourceExecuteScanOptions struct {
 	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
 	M2Path                               string   `json:"m2Path,omitempty"`
+	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
 }
 
 // WhitesourceExecuteScanCommand BETA
@@ -131,14 +132,14 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.AggregateVersionWideReport, "aggregateVersionWideReport", false, "This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFormat, "vulnerabilityReportFormat", `xlsx`, "Format of the file the vulnerability report is written to.")
 	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", `15`, "Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
-	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`.")
+	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource server API used for communication.")
-	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{``}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.OrgToken, "orgToken", os.Getenv("PIPER_orgToken"), "WhiteSource token identifying your organization.")
 	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying the user executing the scan")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "Whether license compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.AgentFileName, "agentFileName", `wss-unified-agent.jar`, "Locally used name for the Unified Agent jar file after download.")
-	cmd.Flags().StringVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", `[]`, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
+	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringVar(&stepConfig.ProductVersion, "productVersion", os.Getenv("PIPER_productVersion"), "Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", os.Getenv("PIPER_jreDownloadUrl"), "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.ProductName, "productName", os.Getenv("PIPER_productName"), "Name of the WhiteSource product to be created and used for results aggregation.")
@@ -147,14 +148,15 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportTitle, "vulnerabilityReportTitle", `WhiteSource Security Vulnerability Report`, "Title of vulnerability report written during the assessment phase.")
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution.")
-	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
-	cmd.Flags().StringVar(&stepConfig.Includes, "includes", `**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts`, "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed")
+	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
+	cmd.Flags().StringVar(&stepConfig.Includes, "includes", `**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts`, "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed.")
 	cmd.Flags().StringVar(&stepConfig.Excludes, "excludes", `tests/**/*.py **/src/test/**/*.java`, "Space separated list of file path patterns to exclude in the scan")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
-	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", ``, "Additional parameters passed to the Unified Agent command line.")
+	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", os.Getenv("PIPER_agentParameters"), "Additional parameters passed to the Unified Agent command line.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 
 	cmd.MarkFlagRequired("orgToken")
 	cmd.MarkFlagRequired("userToken")
@@ -180,57 +182,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "defaultVersioningModel",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -367,7 +321,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "emailAddressesOfInitialProductAdmins",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -498,6 +452,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "defaultNpmRegistry",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 				},
 			},

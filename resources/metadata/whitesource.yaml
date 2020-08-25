@@ -22,158 +22,72 @@ spec:
     params:
     - name: buildDescriptorFile
       type: string
-      description: Explicit path to the build descriptor file.
+      description: "Explicit path to the build descriptor file."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: golang
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./pom.xml
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: maven
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: mta
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./package.json
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: npm
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./setup.py
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: pip
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./build.sbt
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: sbt
-    - name: buildDescriptorFile
-      type: string
-      description: Explicit path to the build descriptor file.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./dub.json
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: scanType
-          value: dub
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: defaultVersioningModel
       type: string
-      description: The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`
+      description: "The default project versioning model used in case `projectVersion` parameter is
+        empty for creating the version based on the build descriptor version to report results in
+        Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`"
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        - GENERAL
       default: 'major'
     - name: createProductFromPipeline
       type: bool
-      description: Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.
+      description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
+        configuration."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: securityVulnerabilities
       type: bool
-      description: Whether security compliance is considered and reported as part of the assessment.
+      description: "Whether security compliance is considered and reported as part of the assessment."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: timeout
       type: string
-      description: Timeout in seconds until a HTTP call is forcefully terminated.
+      description: "Timeout in seconds until a HTTP call is forcefully terminated."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 0
     - name: agentDownloadUrl
       type: string
-      description: URL used to download the latest version of the WhiteSource Unified Agent.
+      description: "URL used to download the latest version of the WhiteSource Unified Agent."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
     - name: configFilePath
       type: string
-      description: Explicit path to the WhiteSource Unified Agent configuration file.
+      description: "Explicit path to the WhiteSource Unified Agent configuration file."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: ./wss-generated-file.config
     - name: reportDirectoryName
       type: string
-      description: Name of the directory to save vulnerability/risk reports to
+      description: "Name of the directory to save vulnerability/risk reports to"
       mandatory: false
       scope:
         - PARAMETERS
@@ -182,7 +96,8 @@ spec:
       default: "whitesource-reports"
     - name: aggregateVersionWideReport
       type: bool
-      description: 'This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion'
+      description: 'This does not run a scan, instead just generated a report for all projects with
+        projectVersion = config.ProductVersion'
       mandatory: false
       scope:
         - PARAMETERS
@@ -191,7 +106,7 @@ spec:
       default: false
     - name: vulnerabilityReportFormat
       type: string
-      description: Format of the file the vulnerability report is written to.
+      description: "Format of the file the vulnerability report is written to."
       mandatory: false
       possibleValues: [xlsx, json, xml]
       scope:
@@ -205,115 +120,110 @@ spec:
         ''mta''` based scenarios, defaults to `15`.'
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: 15
     - name: reporting
       type: bool
-      description: Whether assessment is being done at all, defaults to `true`.
+      description: "Whether assessment is being done at all, defaults to `true`"
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: serviceUrl
       type: string
-      description: URL to the WhiteSource server API used for communication.
+      description: "URL to the WhiteSource server API used for communication."
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: https://saas.whitesourcesoftware.com/api
     - name: buildDescriptorExcludeList
       type: '[]string'
-      description: List of build descriptors and therefore modules to exclude from the scan and assessment activities.
+      description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: []
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: orgToken
       type: string
-      description: WhiteSource token identifying your organization.
-      mandatory: true
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-    - name: userToken
-      type: string
-      description: WhiteSource token identifying the user executing the scan
+      description: "WhiteSource token identifying your organization."
       mandatory: true
       scope:
         - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
-      default: null
+    - name: userToken
+      type: string
+      description: "WhiteSource token identifying the user executing the scan"
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: licensingVulnerabilities
       type: bool
-      description: Whether license compliance is considered and reported as part of the assessment.
+      description: "Whether license compliance is considered and reported as part of the assessment."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: true
     - name: agentFileName
       type: string
-      description: Locally used name for the Unified Agent jar file after download.
+      description: "Locally used name for the Unified Agent jar file after download."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: wss-unified-agent.jar
     - name: emailAddressesOfInitialProductAdmins
-      type: string
-      description: The list of email addresses to assign as product admins for newly created WhiteSource products.
+      type: "[]string"
+      description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: []
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: productVersion
       type: string
-      description: Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+      description: "Version of the WhiteSource product to be created and used for results aggregation,
+        usually determined automatically."
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: jreDownloadUrl
       type: string
-      description: URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.
+      description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
+        WhiteSource Unified Agent."
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: productName
       type: string
-      description: Name of the WhiteSource product to be created and used for results aggregation.
+      description: "Name of the WhiteSource product to be created and used for results aggregation."
       mandatory: true
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: projectName
       aliases:
         - name: whitesourceProjectName
@@ -333,48 +243,46 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      default: null
     - name: vulnerabilityReportTitle
       type: string
-      description: Title of vulnerability report written during the assessment phase.
+      description: "Title of vulnerability report written during the assessment phase."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+        - PARAMETERS
+        - STAGES
+        - STEPS
       default: WhiteSource Security Vulnerability Report
     - name: installCommand
       type: string
-      description: Install command that can be used to populate the default docker image for some scenarios.
+      description: "Install command that can be used to populate the default docker image for some scenarios."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: scanType
       type: string
-      description: Type of development stack used to implement the solution.
+      description: "Type of development stack used to implement the solution."
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-      possibleValues: ["golang", "npm", "gradle", "pip"]
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip"]
     - name: cvssSeverityLimit
       type: string
-      description: Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.
+      description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
+        defaults to  `-1`."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: -1
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      default: "-1"
     - name: includes
       type: string
-      description: Space separated list of file path patterns to include in the scan, slashes must be escaped for sed
+      description: "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed."
       mandatory: false
       scope:
         - PARAMETERS
@@ -392,28 +300,27 @@ spec:
       default: 'tests/**/*.py **/src/test/**/*.java'
     - name: productToken
       type: string
-      description: Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+      description: "Token of the WhiteSource product to be created and used for results aggregation,
+        usually determined automatically."
       mandatory: false
       scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: agentParameters
       type: string
-      description: Additional parameters passed to the Unified Agent command line.
+      description: "Additional parameters passed to the Unified Agent command line."
       mandatory: false
       scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ''
+        - PARAMETERS
+        - STAGES
+        - STEPS
 
       # Global maven settings, should be added to all maven steps
     - name: projectSettingsFile
       type: string
-      description: Path to the mvn settings file that should be used as project settings file.
+      description: "Path to the mvn settings file that should be used as project settings file."
       scope:
         - GENERAL
         - STEPS
@@ -423,7 +330,7 @@ spec:
         - name: maven/projectSettingsFile
     - name: globalSettingsFile
       type: string
-      description: Path to the mvn settings file that should be used as global settings file.
+      description: "Path to the mvn settings file that should be used as global settings file."
       scope:
         - GENERAL
         - STEPS
@@ -433,7 +340,7 @@ spec:
         - name: maven/globalSettingsFile
     - name: m2Path
       type: string
-      description: Path to the location of the local repository that should be used.
+      description: "Path to the location of the local repository that should be used."
       scope:
         - GENERAL
         - STEPS
@@ -441,6 +348,18 @@ spec:
         - PARAMETERS
       aliases:
         - name: maven/m2Path
+
+    # Global npm settings, should be added to all npm steps
+    - name: defaultNpmRegistry
+      type: string
+      description: "URL of the npm registry to use. Defaults to https://registry.npmjs.org/"
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+      aliases:
+        - name: npm/defaultNpmRegistry
 
     secrets:
     - name: userTokenCredentialsId
