@@ -106,6 +106,13 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'abapAddonAssemblyKitCheckPV',
+        'abapAddonAssemblyKitCheckCVs',
+        'abapAddonAssemblyKitReserveNextPackages',
+        'abapAddonAssemblyKitRegisterPackages ',
+        'abapAddonAssemblyKitCreateTargetVector',
+        'abapAddonAssemblyKitPublishTargetVector',
+        'abapAddonAssemblyKitReleasePackages',
         'abapEnvironmentAssemblePackages', // abap assembly step
         'abapEnvironmentPipeline', // special step (infrasturcture)
         'artifactPrepareVersion',
