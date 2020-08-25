@@ -47,6 +47,7 @@ steps:
     cfServiceInstance: 'myServiceInstance',
     cfServiceKeyName: 'myServiceKey',
 ```
+
 ### Input via the CommonPipelineEnvironment
 
 ```yaml
