@@ -39,6 +39,13 @@ nav:
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
     - Extensibility: extensibility.md
     - 'Library steps':
+        - abapAddonAssemblyKitCheckPV: steps/abapAddonAssemblyKitCheckPV.md
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
+        - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
+        - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
+        - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
+        - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
