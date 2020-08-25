@@ -209,6 +209,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 }
 
 func TestBlockUntilProjectIsUpdated(t *testing.T) {
+	t.Parallel()
 	t.Run("already new enough", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
