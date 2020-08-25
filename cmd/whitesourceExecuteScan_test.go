@@ -150,6 +150,15 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versionin
 	return w.coordinates, nil
 }
 
+func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) []string {
+	matches, _ := w.Glob("**/package.json")
+	return matches
+}
+
+func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []string) error {
+	return nil
+}
+
 func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
 		FilesMock:      &mock.FilesMock{},

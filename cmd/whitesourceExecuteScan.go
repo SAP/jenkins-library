@@ -54,12 +54,12 @@ type whitesourceUtils interface {
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
 	RemoveAll(path string) error
-
 	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
 
 	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
 
-	GetNpmExecutor(config *ScanOptions) npm.Executor
+	FindPackageJSONFiles(config *ScanOptions) []string
+	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
 }
 
 type whitesourceUtilsBundle struct {
@@ -78,11 +78,19 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (ve
 	return artifact.GetCoordinates()
 }
 
-func (w *whitesourceUtilsBundle) GetNpmExecutor(config *ScanOptions) npm.Executor {
+func (w *whitesourceUtilsBundle) getNpmExecutor(config *ScanOptions) npm.Executor {
 	if w.npmExecutor == nil {
 		w.npmExecutor = npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
 	}
 	return w.npmExecutor
+}
+
+func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) []string {
+	return w.getNpmExecutor(config).FindPackageJSONFiles()
+}
+
+func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error {
+	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
 }
 
 func newWhitesourceUtils() *whitesourceUtilsBundle {
@@ -364,14 +372,13 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 
 // executeNpmScan iterates over all found npm modules and performs a scan in each one.
 func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
-	npmExecutor := utils.GetNpmExecutor(config)
-	modules := npmExecutor.FindPackageJSONFiles()
+	modules := utils.FindPackageJSONFiles(config)
 	if len(modules) == 0 {
 		log.Entry().Info("Found no NPM modules to scan.")
 		return nil
 	}
 	for _, module := range modules {
-		err := executeNpmScanForModule(module, config, utils, npmExecutor)
+		err := executeNpmScanForModule(module, config, utils)
 		if err != nil {
 			return fmt.Errorf("failed to scan NPM module '%s': %w", module, err)
 		}
@@ -381,7 +388,7 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 
 // executeNpmScanForModule generates a configuration file whitesource.config.json with appropriate values from config,
 // installs all dependencies if necessary, and executes the scan via "npx whitesource run".
-func executeNpmScanForModule(modulePath string, config *ScanOptions, utils whitesourceUtils, executor npm.Executor) error {
+func executeNpmScanForModule(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", modulePath)
 
 	resetDir, err := utils.Getwd()
@@ -405,14 +412,14 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, utils white
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
-	if err := reinstallNodeModulesIfLsFails(modulePath, utils, executor); err != nil {
+	if err := reinstallNodeModulesIfLsFails(modulePath, config, utils); err != nil {
 		return err
 	}
 
 	return utils.RunExecutable("npx", "whitesource", "run")
 }
 
-func reinstallNodeModulesIfLsFails(modulePath string, utils whitesourceUtils, executor npm.Executor) error {
+func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
 	err := utils.RunExecutable("npm", "ls")
 	if err == nil {
 		return nil
@@ -433,7 +440,7 @@ func reinstallNodeModulesIfLsFails(modulePath string, utils whitesourceUtils, ex
 			return fmt.Errorf("failed to remove package-lock.json: %w", err)
 		}
 	}
-	return executor.InstallAllDependencies([]string{modulePath})
+	return utils.InstallAllNPMDependencies(config, []string{modulePath})
 }
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
