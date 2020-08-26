@@ -543,4 +543,68 @@ steps: {}
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
 
     }
+
+    @Test
+    void testConditionOnlyProductiveBranchOnNonProductiveBranch() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    onlyProductiveBranch: true
+    stepConditions:
+      firstStep:
+        filePattern: \'**/conf.js\'
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        binding.variables.env.BRANCH_NAME = 'test'
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml',
+            productiveBranch: 'master'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(false))
+    }
+
+    @Test
+    void testConditionOnlyProductiveBranchOnProductiveBranch() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    onlyProductiveBranch: true
+    stepConditions:
+      firstStep:
+        filePattern: \'**/conf.js\'
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        binding.variables.env.BRANCH_NAME = 'test'
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml',
+            productiveBranch: 'test'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+    }
 }
