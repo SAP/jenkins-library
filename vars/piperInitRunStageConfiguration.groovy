@@ -29,14 +29,14 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    String stageName = parameters.stageName ?: env.STAGE_NAME
 
     script.commonPipelineEnvironment.configuration.runStage = [:]
     script.commonPipelineEnvironment.configuration.runStep = [:]
 
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
+        .loadStepDefaults([:], stageName)
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
