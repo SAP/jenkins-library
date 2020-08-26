@@ -350,4 +350,24 @@ func TestHandleHTTPError(t *testing.T) {
 		assert.EqualError(t, err, fmt.Sprintf("%s", errorValue))
 		log.Entry().Info(err.Error())
 	})
+
+	t.Run("Different JSON Error", func(t *testing.T) {
+
+		errorValue := "Received Error"
+		bodyString := `{"abap" : { "key" : "value" } }`
+		body := []byte(bodyString)
+
+		resp := http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: 400,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.Error(t, err, "Error was expected")
+		assert.EqualError(t, err, fmt.Sprintf("%s", errorValue))
+		log.Entry().Info(err.Error())
+	})
 }
