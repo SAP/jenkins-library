@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -17,12 +18,45 @@ import (
 func testSetup(client piperhttp.Sender, buildID string) build {
 	conn := new(connector)
 	conn.Client = client
+	conn.DownloadClient = &downloadClientMock{}
 	conn.Header = make(map[string][]string)
 	b := build{
 		connector: *conn,
 		BuildID:   buildID,
 	}
 	return b
+}
+
+func TestCheckIfFailedAndPrintLogsWithError(t *testing.T) {
+	t.Run("checkIfFailedAndPrintLogs with failed build", func(t *testing.T) {
+		var repo abaputils.Repository
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		b.RunState = failed
+		var buildsWithRepo []buildWithRepository
+		bWR := buildWithRepository{
+			build: b,
+			repo:  repo,
+		}
+		buildsWithRepo = append(buildsWithRepo, bWR)
+		err := checkIfFailedAndPrintLogs(buildsWithRepo)
+		assert.Error(t, err)
+	})
+}
+
+func TestCheckIfFailedAndPrintLogs(t *testing.T) {
+	t.Run("checkIfFailedAndPrintLogs", func(t *testing.T) {
+		var repo abaputils.Repository
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		b.RunState = finished
+		var buildsWithRepo []buildWithRepository
+		bWR := buildWithRepository{
+			build: b,
+			repo:  repo,
+		}
+		buildsWithRepo = append(buildsWithRepo, bWR)
+		err := checkIfFailedAndPrintLogs(buildsWithRepo)
+		assert.NoError(t, err)
+	})
 }
 
 func TestStarting(t *testing.T) {
@@ -89,6 +123,23 @@ func TestPolling(t *testing.T) {
 		err := polling(buildsWithRepo, 600, 1)
 		assert.NoError(t, err)
 		assert.Equal(t, finished, buildsWithRepo[0].build.RunState)
+	})
+}
+
+func TestDownloadSARXML(t *testing.T) {
+	t.Run("Run downloadSARXML", func(t *testing.T) {
+		var repo abaputils.Repository
+		b := testSetup(&clMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		var buildsWithRepo []buildWithRepository
+		bWR := buildWithRepository{
+			build: b,
+			repo:  repo,
+		}
+		buildsWithRepo = append(buildsWithRepo, bWR)
+		repos, err := downloadSARXML(buildsWithRepo)
+		assert.NoError(t, err)
+		downloadPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap", "SAPK-001AAINITAPC1.SAR")
+		assert.Equal(t, downloadPath, repos[0].SarXMLFilePath)
 	})
 }
 
@@ -181,15 +232,23 @@ func TestGetResults(t *testing.T) {
 		assert.Equal(t, 0, len(b.Tasks[0].Results))
 		assert.Equal(t, 2, len(b.Tasks[1].Results))
 		assert.Equal(t, "image/jpeg", b.Tasks[1].Results[0].Mimetype)
-		assert.Equal(t, "text/plain", b.Tasks[1].Results[1].Mimetype)
+		assert.Equal(t, "application/octet-stream", b.Tasks[1].Results[1].Mimetype)
 
 		_, err = b.getResult("does_not_exist")
 		assert.Error(t, err)
-		r, err := b.getResult("2times_hello")
-		assert.Equal(t, "text/plain", r.Mimetype)
+		r, err := b.getResult("SAR_XML")
+		assert.Equal(t, "application/octet-stream", r.Mimetype)
 		assert.NoError(t, err)
 	})
 }
+
+type downloadClientMock struct{}
+
+func (dc *downloadClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return nil
+}
+
+func (dc *downloadClientMock) SetOptions(opts piperhttp.ClientOptions) {}
 
 type clMock struct {
 	Token      string
@@ -456,9 +515,9 @@ var responseGetResults1 = `{
                 },
                 "build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
                 "task_id": 1,
-                "name": "2times_hello",
-                "additional_info": "",
-                "mimetype": "text/plain"
+                "name": "SAR_XML",
+                "additional_info": "/usr/sap/trans/tmp/SAPK-001AAINITAPC1.SAR",
+                "mimetype": "application/octet-stream"
             }
         ]
     }

@@ -50,7 +50,7 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-```yaml
+```json
 {"addonProduct":"",
 "addonVersion":"",
 "addonVersionAAK":"",
