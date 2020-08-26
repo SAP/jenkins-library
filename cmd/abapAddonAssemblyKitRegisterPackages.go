@@ -61,17 +61,19 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	conn2 := new(connector)
 	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	for i := range addonDescriptor.Repositories {
+		var p pckg
+		p.init(addonDescriptor.Repositories[i], *conn2)
 		if addonDescriptor.Repositories[i].Status == "P" {
-			var p pckg
-			p.init(addonDescriptor.Repositories[i], *conn2)
 			err := p.register()
 			if err != nil {
 				return err
 			}
 			p.changeStatus(&addonDescriptor.Repositories[i])
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot register this package", p.PackageName, p.Status)
 		}
 	}
-	log.Entry().Info("Writing changed package status to CommonPipelineEnvironment")
+	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil

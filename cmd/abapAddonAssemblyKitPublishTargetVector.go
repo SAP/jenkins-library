@@ -40,10 +40,10 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 		return errors.New("Parameter missing. Please provide the target vector id")
 	}
 
-	if config.ScopeTV == "P" {
+	if config.ScopeTV == "T" {
 		log.Entry().Infof("Publish target vector %s to test SPC", addonDescriptor.TargetVectorID)
 	}
-	if config.ScopeTV == "T" {
+	if config.ScopeTV == "P" {
 		log.Entry().Infof("Publish target vector %s to SPC", addonDescriptor.TargetVectorID)
 	}
 	conn.getToken("/odata/aas_ocs_package")

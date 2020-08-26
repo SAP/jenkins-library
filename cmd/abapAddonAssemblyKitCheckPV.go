@@ -34,7 +34,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
-	addonDescriptor = combineYAMLPrpductWithCPERepositories(addonDescriptor, addonDescriptorFromCPE)
+	addonDescriptor = combineYAMLProductWithCPERepositories(addonDescriptor, addonDescriptorFromCPE)
 	if err != nil {
 		return nil
 	}
@@ -49,13 +49,13 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 		return err
 	}
 	p.addFields(&addonDescriptor)
+	log.Entry().Info("Write the resolved version to the CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
 }
 
-//TODO change name
-func combineYAMLPrpductWithCPERepositories(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
+func combineYAMLProductWithCPERepositories(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
 	return addonDescriptor
 }
@@ -92,6 +92,7 @@ func (p *pv) addFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
 }
 
 func (p *pv) validate() error {
+	log.Entry().Infof("Validate product %s version %s and resolve version", p.Name, p.VersionYAML)
 	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.get(appendum)
 	if err != nil {
@@ -103,6 +104,7 @@ func (p *pv) validate() error {
 	p.Version = jPV.PV.Version
 	p.SpsLevel = jPV.PV.SpsLevel
 	p.PatchLevel = jPV.PV.PatchLevel
+	log.Entry().Infof("Resolved version %s, spslevel %s, patchlevel %s", p.Version, p.SpsLevel, p.PatchLevel)
 	return nil
 }
 
@@ -110,7 +112,6 @@ type jsonPV struct {
 	PV *pv `json:"d"`
 }
 
-// TODO TargetVectorID json string
 type pv struct {
 	connector
 	Name           string `json:"Name"`

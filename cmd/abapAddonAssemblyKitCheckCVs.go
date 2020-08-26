@@ -49,6 +49,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		}
 		c.addFields(&addonDescriptor.Repositories[i])
 	}
+	log.Entry().Info("Write the resolved versions to the CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
@@ -74,6 +75,7 @@ func (c *cv) addFields(initialRepo *abaputils.Repository) {
 }
 
 func (c *cv) validate() error {
+	log.Entry().Infof("Validate component %s version %s and resolve version", c.Name, c.VersionYAML)
 	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
 	body, err := c.connector.get(appendum)
 	if err != nil {
@@ -85,6 +87,7 @@ func (c *cv) validate() error {
 	c.Version = jCV.CV.Version
 	c.SpLevel = jCV.CV.SpLevel
 	c.PatchLevel = jCV.CV.PatchLevel
+	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
 	return nil
 }
 

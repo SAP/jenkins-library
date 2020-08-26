@@ -46,7 +46,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	//TODO zeiten anpassen
 	err = pollReserveNextPackages(packagesWithRepos, 60, 60)
 	addonDescriptor.Repositories = addFieldsToRepository(packagesWithRepos)
-	log.Entry().Info("Writing package names, types, status and predecessor commit id to CommonPipelineEnvironment")
+	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
@@ -86,6 +86,7 @@ func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes
 				}
 			}
 			if allFinished {
+				log.Entry().Infof("Reservation of package(s) was succesful")
 				return nil
 			}
 		}
@@ -115,6 +116,7 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.ComponentName = repo.Name
 	p.VersionYAML = repo.VersionYAML
 	p.PackageName = repo.PackageName
+	p.Status = repo.Status
 }
 
 func (p *pckg) addFields(initialRepo *abaputils.Repository) {
@@ -123,6 +125,7 @@ func (p *pckg) addFields(initialRepo *abaputils.Repository) {
 	initialRepo.PredecessorCommitID = p.PredecessorCommitID
 	initialRepo.Status = p.Status
 	initialRepo.Namespace = p.Namespace
+	log.Entry().Infof("Package name %s, type %s, status %s, namespace %s, predecessorCommitID %s", p.PackageName, p.Type, p.Status, p.Namespace, p.PredecessorCommitID)
 }
 
 func (p *pckg) reserveNext() error {
@@ -144,10 +147,6 @@ func (p *pckg) reserveNext() error {
 	p.Status = jPck.DeterminePackage.Package.Status
 	p.Namespace = jPck.DeterminePackage.Package.Namespace
 	log.Entry().Infof("Reservation of package %s started", p.PackageName)
-	log.Entry().Infof("Package type %s ", p.Type)
-	log.Entry().Infof("Package status %s", p.Status)
-	log.Entry().Infof("Namespace %s", p.Namespace)
-	log.Entry().Infof("PredecessorCommitID %s", p.PredecessorCommitID)
 	return nil
 }
 

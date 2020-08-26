@@ -8,6 +8,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) {
@@ -35,22 +36,29 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	for i := range addonDescriptor.Repositories {
+		var p pckg
+		p.init(addonDescriptor.Repositories[i], *conn)
 		if addonDescriptor.Repositories[i].Status == "L" {
-			var p pckg
-			p.init(addonDescriptor.Repositories[i], *conn)
 			err := p.release()
 			if err != nil {
 				return err
 			}
 			p.changeStatus(&addonDescriptor.Repositories[i])
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot release this package", p.PackageName, p.Status)
 		}
 	}
+	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
 func (p *pckg) release() error {
+	if p.PackageName == "" {
+		return errors.New("Parameter missing. Please provide the name of the package which should be released")
+	}
+	log.Entry().Infof("Release package %s", p.PackageName)
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
 	body, err := p.connector.post(appendum, "")
