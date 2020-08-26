@@ -443,7 +443,7 @@ steps: {}
     }
 
     @Test
-    void testConditionNpmScriptsWithList() {
+    void testConditionNpmScripts() {
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
             if(s == 'testDefault.yml') {
                 return '''
@@ -451,9 +451,7 @@ stages:
   testStage1:
     stepConditions:
       firstStep:
-        filePattern:
-         - \'**/conf.js\'
-         - \'myCollection.json\'
+        npmScripts: \'npmScript\'
       secondStep:
         filePattern: \'**/conf.jsx\'
 
@@ -463,6 +461,75 @@ stages:
 general: {}
 steps: {}
 '''
+            }
+        })
+
+        helper.registerAllowedMethod('findFiles', [Map], {m ->
+            if(m.glob == '**/package.json') {
+                return [new File("package.json")].toArray()
+            } else {
+                return []
+            }
+        })
+
+        helper.registerAllowedMethod('readJSON', [Map], { m ->
+            if (m.file == 'package.json') {
+                return [scripts: [npmScript: "echo test",
+                                  npmScript2: "echo test"]]
+            } else {
+                return [:]
+            }
+        })
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+
+    }
+
+    @Test
+    void testConditionNpmScriptsWithList() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+                    if(s == 'testDefault.yml') {
+                        return '''
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        npmScripts:
+         - \'npmScript\'
+         - \'npmScript2\'
+      secondStep:
+        filePattern: \'**/conf.jsx\'
+
+'''
+                    } else {
+                        return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        helper.registerAllowedMethod('findFiles', [Map], {m ->
+            if(m.glob == '**/package.json') {
+                return [new File("package.json")].toArray()
+            } else {
+                return []
+            }
+        })
+
+        helper.registerAllowedMethod('readJSON', [Map], { m ->
+            if (m.file == 'package.json') {
+                return [scripts: [npmScript: "echo test",
+                                  npmScript2: "echo test"]]
+            } else {
+                return [:]
             }
         })
 
