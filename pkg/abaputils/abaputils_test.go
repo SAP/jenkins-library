@@ -327,7 +327,7 @@ func TestHandleHTTPError(t *testing.T) {
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.Error(t, err, "Error was expected")
-		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", errorValue, abapErrorCode, abapErrorMessage))
+		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
 		log.Entry().Info(err.Error())
 	})
 
@@ -347,7 +347,7 @@ func TestHandleHTTPError(t *testing.T) {
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.Error(t, err, "Error was expected")
-		assert.EqualError(t, err, fmt.Sprintf("%s", errorValue))
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
 
@@ -367,7 +367,7 @@ func TestHandleHTTPError(t *testing.T) {
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
 		assert.Error(t, err, "Error was expected")
-		assert.EqualError(t, err, fmt.Sprintf("%s", errorValue))
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
 }
