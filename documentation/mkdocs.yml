@@ -40,6 +40,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
+        - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
