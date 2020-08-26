@@ -70,13 +70,14 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('mtaPath', script.commonPipelineEnvironment.mtarFilePath)
             //mandatory parameters
