@@ -64,14 +64,15 @@ void call(Map parameters = [:]) {
     config.stages.each {stage ->
 
         String currentStage = stage.getKey()
-        //-------------------------------------------------------------------------------
-        //detailed handling of step and stage activation based on conditions
         script.commonPipelineEnvironment.configuration.runStep[currentStage] = [:]
+
+        // Always test step conditions in order to fill runStep[currentStage] map
         boolean anyStepConditionTrue = false
         stage.getValue().stepConditions.each {step ->
             boolean stepActive = false
+            String stepName = step.getKey()
             step.getValue().each {condition ->
-                Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
+                Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(stepName, currentStage)
                 switch(condition.getKey()) {
                     case 'config':
                         stepActive = stepActive || checkConfig(condition, stepConfig)
@@ -90,7 +91,7 @@ void call(Map parameters = [:]) {
                         break
                 }
             }
-            script.commonPipelineEnvironment.configuration.runStep."${currentStage}"."${step.getKey()}" = stepActive
+            script.commonPipelineEnvironment.configuration.runStep[currentStage][stepName] = stepActive
 
             anyStepConditionTrue = anyStepConditionTrue || stepActive
         }
