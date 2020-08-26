@@ -76,15 +76,9 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                containsInAnyOrder(
-                    'testStage2',
-                    'testStage3'
-                ),
-                hasSize(2)
-            )
-        )
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
     }
 
 
@@ -126,17 +120,6 @@ steps: {}
             script: nullScript,
             juStabUtils: utils,
             stageConfigResource: 'testDefault.yml'
-        )
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                containsInAnyOrder(
-                    'testStage1',
-                    'testStage2',
-                    'testStage3'
-                ),
-                hasSize(3)
-            )
         )
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
@@ -192,16 +175,6 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                containsInAnyOrder(
-                    'testStage1',
-                    'testStage3'
-                ),
-                hasSize(2)
-            )
-        )
-
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
@@ -251,16 +224,6 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                containsInAnyOrder(
-                    'testStage1',
-                    'testStage3'
-                ),
-                hasSize(2)
-            )
-        )
-
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
@@ -301,6 +264,41 @@ steps: {}
                 contains('testStage1'),
                 hasSize(1)
             )
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+
+    }
+
+    @Test
+    void testConditionFilePatternWithList() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        filePattern:
+         - \'**/conf.js\'
+         - \'myCollection.json\'
+      secondStep:
+        filePattern: \'**/conf.jsx\'
+
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
         )
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
@@ -397,15 +395,8 @@ steps: {}
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
-            allOf(
-                containsInAnyOrder(
-                    'Acceptance',
-                    'Integration'
-                ),
-                hasSize(2)
-            )
-        )
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Integration, is(true))
 
     }
 
@@ -448,6 +439,41 @@ steps: {}
         )
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
+
+    }
+
+    @Test
+    void testConditionNpmScriptsWithList() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        filePattern:
+         - \'**/conf.js\'
+         - \'myCollection.json\'
+      secondStep:
+        filePattern: \'**/conf.jsx\'
+
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
 
     }
 }
