@@ -122,7 +122,7 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
-        def utils = parameters?.juStabUtils ?: new Utils()
+        def utils = parameters.juStabUtils ?: new Utils()
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
