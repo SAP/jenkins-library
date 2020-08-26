@@ -108,7 +108,9 @@ void call(Map parameters = [:]) {
             runStage = false
         }
 
-        script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
+        if (runStage) {
+            script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
+        }
     }
 
     if (config.verbose) {
