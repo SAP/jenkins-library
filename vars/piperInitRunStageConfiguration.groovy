@@ -101,7 +101,7 @@ void call(Map parameters = [:]) {
         }
         boolean runStage = anyStepConditionTrue
         if (stage.getValue().extensionExists) {
-            runStage |= extensionExists(script as Script, config, currentStage)
+            runStage |= checkExtensionExists(script as Script, config, currentStage)
         }
 
         if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
@@ -117,10 +117,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-private static boolean extensionExists(Script script, Map config, def stageName) {
-    if (!stageName || !(stageName in CharSequence)) {
-        return false
-    }
+private static boolean checkExtensionExists(Script script, Map config, String stageName) {
     if (!script.piperStageWrapper.allowExtensions(script)) {
         return false
     }
