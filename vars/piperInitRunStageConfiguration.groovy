@@ -146,29 +146,31 @@ private static boolean extensionExists(Script script, Map config, def stageName)
 }
 
 private static boolean checkConfig(def condition, Map stepConfig) {
+    Boolean configExists = false
     if (condition.getValue() instanceof Map) {
         condition.getValue().each {configCondition ->
             if (MapUtils.getByPath(stepConfig, configCondition.getKey()) in configCondition.getValue()) {
-                return true
+                configExists = true
             }
         }
     } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
-        return true
+        configExists = true
     }
-    return false
+    return configExists
 }
 
 private static boolean checkConfigKeys(def condition, Map stepConfig) {
+    Boolean configKeyExists = false
     if (condition.getValue() instanceof List) {
         condition.getValue().each { configKey ->
             if (MapUtils.getByPath(stepConfig, configKey)) {
-                return true
+                configKeyExists = true
             }
         }
     } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
-        return true
+        configKeyExists = true
     }
-    return false
+    return configKeyExists
 }
 
 private static boolean checkForFilesWithPatternFromConfig (Script script, def condition, Map stepConfig) {
@@ -180,22 +182,24 @@ private static boolean checkForFilesWithPatternFromConfig (Script script, def co
 }
 
 private static boolean checkForFilesWithPattern (Script script, def condition) {
+    Boolean filesExist = false
     if (condition.getValue() instanceof List) {
         condition.getValue().each {configKey ->
             if (script.findFiles(glob: configKey)) {
-                return true
+                filesExist = true
             }
         }
     } else {
         if (script.findFiles(glob: condition.getValue())) {
-            return true
+            filesExist = true
         }
     }
-    return false
+    return filesExist
 }
 
 private static boolean checkForNpmScriptsInPackages (Script script, def condition) {
     def packages = script.findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+    Boolean npmScriptExists = false
     for (int i = 0; i < packages.size(); i++) {
         String packageJsonPath = packages[i].path
         Map packageJson = script.readJSON file: packageJsonPath
@@ -203,15 +207,14 @@ private static boolean checkForNpmScriptsInPackages (Script script, def conditio
         if (condition.getValue() instanceof List) {
             condition.getValue().each { configKey ->
                 if (npmScripts[configKey]) {
-                    return true
+                    npmScriptExists = true
                 }
             }
         } else {
             if (npmScripts[condition.getValue()]) {
-                return true
+                npmScriptExists = true
             }
         }
-        break
     }
-    return false
+    return npmScriptExists
 }
