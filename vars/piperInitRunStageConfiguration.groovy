@@ -69,7 +69,7 @@ void call(Map parameters = [:]) {
         script.commonPipelineEnvironment.configuration.runStep[currentStage] = [:]
         boolean anyStepConditionTrue = false
         stage.getValue().stepConditions.each {step ->
-            def stepActive = false
+            boolean stepActive = false
             step.getValue().each {condition ->
                 Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
@@ -93,8 +93,8 @@ void call(Map parameters = [:]) {
             script.commonPipelineEnvironment.configuration.runStep."${currentStage}"."${step.getKey()}" = stepActive
 
             anyStepConditionTrue = anyStepConditionTrue || stepActive
-
         }
+
         boolean runStage
         if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
