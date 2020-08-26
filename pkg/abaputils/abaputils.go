@@ -130,14 +130,12 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 	return req, err
 }
 
-/* HandleHTTPError handles ABAP error messages which can occur when using OData services
-
-The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
-Further error details may be present in the response body of the HTTP response.
-If the response body is parseable, the included details are wrapped arround the original error from the HTTP repsponse.
-If this is not possible, the original error is returned.
-
-*/
+// HandleHTTPError handles ABAP error messages which can occur when using OData services
+//
+// The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
+// Further error details may be present in the response body of the HTTP response.
+// If the response body is parseable, the included details are wrapped arround the original error from the HTTP repsponse.
+// If this is not possible, the original error is returned.
 func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
 	if resp == nil {
 		// Response is nil in case of a timeout
