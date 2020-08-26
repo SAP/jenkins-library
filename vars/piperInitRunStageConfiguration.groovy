@@ -63,14 +63,10 @@ void call(Map parameters = [:]) {
     //handling of stage and step activation
     config.stages.each {stage ->
 
-        //activate stage if stage configuration is available
-        if (ConfigurationLoader.stageConfiguration(script, stage.getKey())) {
-            script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
-        }
+        String currentStage = stage.getKey()
         //-------------------------------------------------------------------------------
         //detailed handling of step and stage activation based on conditions
-        script.commonPipelineEnvironment.configuration.runStep[stage.getKey()] = [:]
-        String currentStage = stage.getKey()
+        script.commonPipelineEnvironment.configuration.runStep[currentStage] = [:]
         boolean anyStepConditionTrue = false
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
@@ -99,16 +95,19 @@ void call(Map parameters = [:]) {
             anyStepConditionTrue = anyStepConditionTrue || stepActive
 
         }
-        boolean runStage = anyStepConditionTrue
+        boolean runStage
         if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
+        } else if (ConfigurationLoader.stageConfiguration(script, currentStage)) {
+            //activate stage if stage configuration is available
+            runStage = true
         } else if (stage.getValue().extensionExists) {
-            runStage = runStage || checkExtensionExists(script as Script, config, currentStage)
+            runStage = anyStepConditionTrue || checkExtensionExists(script as Script, config, currentStage)
+        } else {
+            runStage = anyStepConditionTrue
         }
 
-        if (runStage) {
-            script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
-        }
+        script.commonPipelineEnvironment.configuration.runStage[currentStage] = runStage
     }
 
     if (config.verbose) {
