@@ -607,4 +607,63 @@ steps: {}
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
     }
+
+    @Test
+    void testStageExtensionExists() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    extensionExists: true
+  testStage2:
+    extensionExists: true
+  testStage3:
+    extensionExists: false
+  testStage4:
+    extensionExists: 'false'
+  testStage5:
+    dummy: true
+'''
+            } else {
+                return '''
+general:
+  projectExtensionsDirectory: './extensions/'
+steps: {}
+'''
+            }
+        })
+
+        helper.registerAllowedMethod('fileExists', [String], {path ->
+            switch (path) {
+                case './extensions/testStage1.groovy':
+                    return true
+                case './extensions/testStage2.groovy':
+                    return false
+                case './extensions/testStage3.groovy':
+                    return true
+                case './extensions/testStage4.groovy':
+                    return true
+                case './extensions/testStage5.groovy':
+                    return true
+                default:
+                    return false
+            }
+        })
+
+        nullScript.piperStageWrapper = [:]
+        nullScript.piperStageWrapper.allowExtensions = {script -> return true}
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage4, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage5, is(false))
+    }
 }

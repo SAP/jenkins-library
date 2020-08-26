@@ -68,7 +68,7 @@ void call(Map parameters = [:]) {
 
         // Always test step conditions in order to fill runStep[currentStage] map
         boolean anyStepConditionTrue = false
-        stage.getValue().stepConditions.each {step ->
+        stage.getValue().stepConditions?.each {step ->
             boolean stepActive = false
             String stepName = step.getKey()
             step.getValue().each {condition ->
@@ -102,8 +102,8 @@ void call(Map parameters = [:]) {
         } else if (ConfigurationLoader.stageConfiguration(script, currentStage)) {
             //activate stage if stage configuration is available
             runStage = true
-        } else if (stage.getValue().extensionExists) {
-            runStage = anyStepConditionTrue || checkExtensionExists(script as Script, config, currentStage)
+        } else if (stage.getValue().extensionExists == true) {
+            runStage = anyStepConditionTrue || checkExtensionExists(script, config, currentStage)
         } else {
             runStage = anyStepConditionTrue
         }
