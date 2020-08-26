@@ -185,7 +185,7 @@ func parseATCResult(body []byte, atcResultFileName string) (err error) {
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
 	s := string(body)
-	if strings.Contains(s, "<html>") {
+	if strings.HasPrefix(s, "<html>") {
 		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned succesfully on the system")
 	}
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
