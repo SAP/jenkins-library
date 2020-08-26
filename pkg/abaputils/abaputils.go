@@ -136,6 +136,7 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
+		defer resp.Body.Close()
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 
 		// Include the error message of the ABAP Environment system, if available
@@ -157,7 +158,6 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 				err = errors.Wrap(abapError, err.Error())
 			}
 		}
-		resp.Body.Close()
 	}
 	return err
 }
