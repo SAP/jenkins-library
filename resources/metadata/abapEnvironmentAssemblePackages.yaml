@@ -62,7 +62,10 @@ spec:
         type: string
         description: Parameter of CloudFoundry Service Key to be created
         scope:
+        - PARAMETERS
+        - STAGES
         - STEPS
+        - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceKey

@@ -178,7 +178,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 					{
 						Name:        "cfServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
