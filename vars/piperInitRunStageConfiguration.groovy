@@ -78,34 +78,32 @@ void call(Map parameters = [:]) {
                 Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
-                        stepActive |= checkConfig(condition, stepConfig)
+                        stepActive = stepActive || checkConfig(condition, stepConfig)
                         break
                     case 'configKeys':
-                        stepActive |= checkConfigKeys(condition, stepConfig)
+                        stepActive = stepActive || checkConfigKeys(condition, stepConfig)
                         break
                     case 'filePatternFromConfig':
-                        stepActive |= checkForFilesWithPatternFromConfig(script, condition, stepConfig)
+                        stepActive = stepActive || checkForFilesWithPatternFromConfig(script, condition, stepConfig)
                         break
                     case 'filePattern':
-                        stepActive |= checkForFilesWithPattern(script, condition)
+                        stepActive = stepActive || checkForFilesWithPattern(script, condition)
                         break
                     case 'npmScripts':
-                        stepActive |= checkForNpmScriptsInPackages(script, condition)
+                        stepActive = stepActive || checkForNpmScriptsInPackages(script, condition)
                         break
                 }
             }
             script.commonPipelineEnvironment.configuration.runStep."${currentStage}"."${step.getKey()}" = stepActive
 
-            anyStepConditionTrue |= stepActive
+            anyStepConditionTrue = anyStepConditionTrue || stepActive
 
         }
         boolean runStage = anyStepConditionTrue
-        if (stage.getValue().extensionExists) {
-            runStage |= checkExtensionExists(script as Script, config, currentStage)
-        }
-
         if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
+        } else if (stage.getValue().extensionExists) {
+            runStage = runStage || checkExtensionExists(script as Script, config, currentStage)
         }
 
         if (runStage) {
