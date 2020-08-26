@@ -142,10 +142,13 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		var abapErrorResponse AbapError
 		bodyText, readError := ioutil.ReadAll(resp.Body)
 		if readError != nil {
-			return readError
+			return errors.Wrap(readError, err.Error())
 		}
 		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
+		errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+		if errUnmarshal != nil {
+			return errors.Wrap(errUnmarshal, err.Error())
+		}
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
 		if (AbapError{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
