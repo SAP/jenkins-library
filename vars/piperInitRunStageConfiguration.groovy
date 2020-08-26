@@ -127,10 +127,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-private static boolean extensionExists(Script script, Map config, def stageName) {
-    if (!stageName || !(stageName in CharSequence)) {
-        return false
-    }
+private static boolean extensionExists(Script script, Map config, String stageName) {
     if (!script.piperStageWrapper.allowExtensions(script)) {
         return false
     }
