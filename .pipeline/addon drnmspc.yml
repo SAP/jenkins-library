@@ -1,8 +1,8 @@
-addonProduct: /ITAPC1/I_CURRENCZPRODUCT
+addonProduct: /DRNMSPC/PRD01
 addonVersion: 1.0.0
 addonUniqueID: myAddonId
 customerID: $ID
 repositories:
-   - name: /ITAPC1/I_CURRENCZ
+   - name: /DRNMSPC/COMP01
      tag: whatever
      version: 1.0.0

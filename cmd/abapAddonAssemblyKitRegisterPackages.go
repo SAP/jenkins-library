@@ -39,14 +39,18 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	for _, repo := range addonDescriptor.Repositories {
-		if repo.Status == "P" {
-			filename := filepath.Base(repo.SarXMLFilePath)
+	for i := range addonDescriptor.Repositories {
+		if addonDescriptor.Repositories[i].Status == "P" {
+			if addonDescriptor.Repositories[i].SarXMLFilePath == "" {
+				return errors.New("Parameter missing. Please provide the path to the SAR file")
+			}
+			filename := filepath.Base(addonDescriptor.Repositories[i].SarXMLFilePath)
 			conn.Header["Content-Filename"] = []string{filename}
-			sarFile, err := ioutil.ReadFile(repo.SarXMLFilePath)
+			sarFile, err := ioutil.ReadFile(addonDescriptor.Repositories[i].SarXMLFilePath)
 			if err != nil {
 				return err
 			}
+			log.Entry().Infof("Upload SAR file %s", filename)
 			err = conn.uploadSarFile("/odata/aas_file_upload", sarFile)
 			if err != nil {
 				return err
@@ -67,6 +71,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 			p.changeStatus(&addonDescriptor.Repositories[i])
 		}
 	}
+	log.Entry().Info("Writing changed package status to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
@@ -77,16 +82,21 @@ func (p *pckg) changeStatus(initialRepo *abaputils.Repository) {
 }
 
 func (p *pckg) register() error {
+	if p.PackageName == "" {
+		return errors.New("Parameter missing. Please provide the name of the package which should be registered")
+	}
+	log.Entry().Infof("Register package %s", p.PackageName)
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/RegisterPackage?Name='" + p.PackageName + "'"
 	body, err := p.connector.post(appendum, "")
 	if err != nil {
 		return err
 	}
-	//TODO was kommt als return zurück? interessiert mich der return überhapt jenseits von fehler/kein fehler? vielleicht ändert sich der status? dann müsste es zurück ins cpe
+
 	var jPck jsonPackageFromGet
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
+	log.Entry().Infof("Package status %s", p.Status)
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) {
@@ -36,14 +37,19 @@ func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreat
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	var tv targetVector
-	tv.init(addonDescriptor)
-
-	err := tv.createTargetVector(*conn)
+	err := tv.init(addonDescriptor)
 	if err != nil {
 		return err
 	}
-	// TODO id zurück ins CPE
+	log.Entry().Infof("Create target vector for product %s version %s", addonDescriptor.AddonProduct, addonDescriptor.AddonVersionYAML)
+	err = tv.createTargetVector(*conn)
+	if err != nil {
+		return err
+	}
+
+	log.Entry().Infof("Created target vector %s", tv.ID)
 	addonDescriptor.TargetVectorID = tv.ID
+	log.Entry().Info("Write target vector to CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
@@ -51,12 +57,12 @@ func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreat
 
 func (tv *targetVector) createTargetVector(conn connector) error {
 	conn.getToken("/odata/aas_ocs_package")
-	tvJson, err := json.Marshal(tv)
+	tvJSON, err := json.Marshal(tv)
 	if err != nil {
 		return err
 	}
 	appendum := "/odata/aas_ocs_package/TargetVectorSet"
-	body, err := conn.post(appendum, string(tvJson))
+	body, err := conn.post(appendum, string(tvJSON))
 	if err != nil {
 		return err
 	}
@@ -66,7 +72,11 @@ func (tv *targetVector) createTargetVector(conn connector) error {
 	return nil
 }
 
-func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
+func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) error {
+	if addonDescriptor.AddonProduct == "" || addonDescriptor.AddonVersion == "" || addonDescriptor.AddonSpsLevel == "" || addonDescriptor.AddonPatchLevel == "" {
+		return errors.New("Parameters missing. Please provide product name, version, spslevel and patchlevel")
+	}
+
 	tv.ProductName = addonDescriptor.AddonProduct
 	tv.ProductVersion = addonDescriptor.AddonVersion
 	tv.SpsLevel = addonDescriptor.AddonSpsLevel
@@ -74,15 +84,20 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) {
 
 	var tvCVs []targetVectorCV
 	var tvCV targetVectorCV
-	for _, repo := range addonDescriptor.Repositories {
-		tvCV.ScName = repo.Name
-		tvCV.ScVersion = repo.Version
-		tvCV.DeliveryPackage = repo.PackageName
-		tvCV.SpLevel = repo.SpLevel
-		tvCV.PatchLevel = repo.PatchLevel
+	for i := range addonDescriptor.Repositories {
+		if addonDescriptor.Repositories[i].Name == "" || addonDescriptor.Repositories[i].Version == "" || addonDescriptor.Repositories[i].SpLevel == "" ||
+			addonDescriptor.Repositories[i].PatchLevel == "" || addonDescriptor.Repositories[i].PackageName == "" {
+			return errors.New("Parameters missing. Please provide software component name, version, splevel, patchlevel and packagename")
+		}
+		tvCV.ScName = addonDescriptor.Repositories[i].Name
+		tvCV.ScVersion = addonDescriptor.Repositories[i].Version
+		tvCV.DeliveryPackage = addonDescriptor.Repositories[i].PackageName
+		tvCV.SpLevel = addonDescriptor.Repositories[i].SpLevel
+		tvCV.PatchLevel = addonDescriptor.Repositories[i].PatchLevel
 		tvCVs = append(tvCVs, tvCV)
 	}
 	tv.Content.TargetVectorCVs = tvCVs
+	return nil
 }
 
 type jsontargetVector struct {

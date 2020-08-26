@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -45,11 +46,12 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	//TODO zeiten anpassen
 	err = pollReserveNextPackages(packagesWithRepos, 60, 60)
 	addonDescriptor.Repositories = addFieldsToRepository(packagesWithRepos)
+	log.Entry().Info("Writing package names, types, status and predecessor commit id to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
-func addFieldsToRepository(pckgWR []packagesWithRepository) []abaputils.Repository {
+func addFieldsToRepository(pckgWR []packageWithRepository) []abaputils.Repository {
 	var repos []abaputils.Repository
 	for i := range pckgWR {
 		pckgWR[i].p.addFields(&pckgWR[i].repo)
@@ -58,7 +60,7 @@ func addFieldsToRepository(pckgWR []packagesWithRepository) []abaputils.Reposito
 	return repos
 }
 
-func pollReserveNextPackages(pckgWR []packagesWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
 	for {
@@ -71,13 +73,14 @@ func pollReserveNextPackages(pckgWR []packagesWithRepository, maxRuntimeInMinute
 				err := pckgWR[i].p.get()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
 					allFinished = false
 				} else {
 					switch pckgWR[i].p.Status {
 					case "L":
-						//TODO bessere error meldung
-						return errors.New("Invalid status L of package")
+						return fmt.Errorf("Package %s has invalid status L", pckgWR[i].p)
 					case "C":
+						log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
 						allFinished = false
 					}
 				}
@@ -89,8 +92,8 @@ func pollReserveNextPackages(pckgWR []packagesWithRepository, maxRuntimeInMinute
 	}
 }
 
-func reservePackages(repositories []abaputils.Repository, conn connector) ([]packagesWithRepository, error) {
-	var packagesWithRepos []packagesWithRepository
+func reservePackages(repositories []abaputils.Repository, conn connector) ([]packageWithRepository, error) {
+	var packagesWithRepos []packageWithRepository
 	for i := range repositories {
 		var p pckg
 		p.init(repositories[i], conn)
@@ -98,7 +101,7 @@ func reservePackages(repositories []abaputils.Repository, conn connector) ([]pac
 		if err != nil {
 			return packagesWithRepos, err
 		}
-		pWR := packagesWithRepository{
+		pWR := packageWithRepository{
 			p:    p,
 			repo: repositories[i],
 		}
@@ -123,6 +126,10 @@ func (p *pckg) addFields(initialRepo *abaputils.Repository) {
 }
 
 func (p *pckg) reserveNext() error {
+	if p.ComponentName == "" || p.VersionYAML == "" {
+		return errors.New("Parameters missing. Please provide the name and version of the component")
+	}
+	log.Entry().Infof("Reserve package for %s version %s", p.ComponentName, p.VersionYAML)
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/DeterminePackageForScv?Name='" + p.ComponentName + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.connector.post(appendum, "")
@@ -136,6 +143,11 @@ func (p *pckg) reserveNext() error {
 	p.PredecessorCommitID = jPck.DeterminePackage.Package.PredecessorCommitID
 	p.Status = jPck.DeterminePackage.Package.Status
 	p.Namespace = jPck.DeterminePackage.Package.Namespace
+	log.Entry().Infof("Reservation of package %s started", p.PackageName)
+	log.Entry().Infof("Package type %s ", p.Type)
+	log.Entry().Infof("Package status %s", p.Status)
+	log.Entry().Infof("Namespace %s", p.Namespace)
+	log.Entry().Infof("PredecessorCommitID %s", p.PredecessorCommitID)
 	return nil
 }
 
@@ -173,7 +185,7 @@ type pckg struct {
 	Namespace           string `json:"Namespace"`
 }
 
-type packagesWithRepository struct {
+type packageWithRepository struct {
 	p    pckg
 	repo abaputils.Repository
 }

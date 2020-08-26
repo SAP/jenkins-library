@@ -4,7 +4,8 @@
 
 ## Prerequisites
 
-* werte aus der pipeline
+* werte aus der pipeline: package name, sar file und path to sarfile
+* schritte vorher: Reserve next packages, assembly
 
 ## ${docGenParameters}
 
@@ -32,10 +33,9 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-TODO
-ich glaub package name und sar file?
+Mandatory fields:
 
-```yaml
+```json
 {"addonProduct":"",
 "addonVersion":"",
 "addonVersionAAK":"",
@@ -46,34 +46,34 @@ ich glaub package name und sar file?
 "TargetVectorID":"",
 "repositories":[
   {
-    "name":"/DMO/REPO_A",
+    "name":,
     "tag":"",
     "branch":"",
-    "version":"1.0.1",
+    "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK001001REPOA",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
     "Status":"",
     "Namespace":"",
-    "SarXMLFilePath":""
+    "SarXMLFilePath":".pipeline/commonPipelineEnvironment/SAPK001001REPOA.SAR"
   },
   {
-    "name":"/DMO/REPO_B",
+    "name":"",
     "tag":"",
     "branch":"",
-    "version":"2.1.1",
+    "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK002001REPOB",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
     "Status":"",
     "Namespace":"",
-    "SarXMLFilePath":""
+    "SarXMLFilePath":".pipeline/commonPipelineEnvironment/SAPK002001REPOB.SAR"
   }
 ]}
 ```

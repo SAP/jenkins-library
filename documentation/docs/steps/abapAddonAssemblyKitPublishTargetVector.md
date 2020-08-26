@@ -4,7 +4,8 @@
 
 ## Prerequisites
 
-* werte aus pipeline
+* werte aus pipeline: target vector id 
+* scope
 
 ## ${docGenParameters}
 
@@ -33,9 +34,9 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-TODO
-ich glaub targetvectorId
-```yaml
+Mandatory fields: 
+
+```json
 {"addonProduct":"",
 "addonVersion":"",
 "addonVersionAAK":"",
@@ -43,13 +44,13 @@ ich glaub targetvectorId
 "customerID":"",
 "AddonSpsLevel":"",
 "AddonPatchLevel":"",
-"TargetVectorID":"",
+"TargetVectorID":"W7Q00207512600000188",
 "repositories":[
   {
-    "name":"/DMO/REPO_A",
+    "name":"",
     "tag":"",
     "branch":"",
-    "version":"1.0.1",
+    "version":"",
     "versionAAK":"",
     "PackageName":"",
     "PackageType":"",
@@ -61,10 +62,10 @@ ich glaub targetvectorId
     "SarXMLFilePath":""
   },
   {
-    "name":"/DMO/REPO_B",
+    "name":"",
     "tag":"",
     "branch":"",
-    "version":"2.1.1",
+    "version":"",
     "versionAAK":"",
     "PackageName":"",
     "PackageType":"",

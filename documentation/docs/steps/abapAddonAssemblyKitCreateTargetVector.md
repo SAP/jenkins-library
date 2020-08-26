@@ -4,7 +4,9 @@
 
 ## Prerequisites
 
-* werte aus pipeline
+* werte aus pipeline: fürs product: Please provide product name, version, spslevel and patchlevel"
+* für swc: Please provide software component name, version, splevel, patchlevel and packagename
+* was muss vorher gelaufen sein: check PV, check SCV, reserve next Packages -> vermutlich sonst auch noch register?
 
 ## ${docGenParameters}
 
@@ -32,28 +34,26 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-TODO
-da brauchts glaub viel....
-```yaml
-{"addonProduct":"",
+```json
+{"addonProduct":"/DMO/myAddonProduct",
 "addonVersion":"",
-"addonVersionAAK":"",
+"addonVersionAAK":"0003",
 "addonUniqueID":"",
 "customerID":"",
-"AddonSpsLevel":"",
-"AddonPatchLevel":"",
+"AddonSpsLevel":"0001",
+"AddonPatchLevel":"0004",
 "TargetVectorID":"",
 "repositories":[
   {
     "name":"/DMO/REPO_A",
     "tag":"",
     "branch":"",
-    "version":"1.0.1",
-    "versionAAK":"",
-    "PackageName":"",
+    "version":"",
+    "versionAAK":"0001",
+    "PackageName":"SAPK001001REPOA",
     "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
+    "SpLevel":"0000",
+    "PatchLevel":"0001",
     "PredecessorCommitID":"",
     "Status":"",
     "Namespace":"",
@@ -63,12 +63,12 @@ da brauchts glaub viel....
     "name":"/DMO/REPO_B",
     "tag":"",
     "branch":"",
-    "version":"2.1.1",
-    "versionAAK":"",
-    "PackageName":"",
+    "version":"",
+    "versionAAK":"0002",
+    "PackageName":"SAPK002001REPOB",
     "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
+    "SpLevel":"0001",
+    "PatchLevel":"0001",
     "PredecessorCommitID":"",
     "Status":"",
     "Namespace":"",

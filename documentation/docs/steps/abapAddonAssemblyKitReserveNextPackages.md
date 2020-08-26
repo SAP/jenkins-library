@@ -4,7 +4,8 @@
 
 ## Prerequisites
 
-* werte aus pipeline
+* werte aus pipeline ->comp name und version(also 1.1.0)
+* schritte vorher: checkCVs
 
 ## ${docGenParameters}
 
@@ -32,7 +33,9 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-```yaml
+Mandatory fields:
+
+```json
 {"addonProduct":"",
 "addonVersion":"",
 "addonVersionAAK":"",

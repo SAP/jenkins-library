@@ -8,6 +8,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData) {
@@ -35,6 +36,16 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
+	if addonDescriptor.TargetVectorID == "" {
+		return errors.New("Parameter missing. Please provide the target vector id")
+	}
+
+	if config.ScopeTV == "P" {
+		log.Entry().Infof("Publish target vector %s to test SPC", addonDescriptor.TargetVectorID)
+	}
+	if config.ScopeTV == "T" {
+		log.Entry().Infof("Publish target vector %s to SPC", addonDescriptor.TargetVectorID)
+	}
 	conn.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + addonDescriptor.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
 	_, err := conn.post(appendum, "")

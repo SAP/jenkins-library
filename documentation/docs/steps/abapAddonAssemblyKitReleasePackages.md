@@ -4,7 +4,8 @@
 
 ## Prerequisites
 
-* werte aus der pipeline
+* werte aus der pipeline: package name
+* steps vorher -> unklar, package name krieg ich aus reserve next, aber muss es zb eventuell im status L sein um released zu werden? dann müsste register gelaufen sein, eigentlich muss natürlich auch die assembly gelaufen sein
 
 ## ${docGenParameters}
 
@@ -32,10 +33,9 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-TODO
-ich glaub package name
+Mandatory fields:
 
-```yaml
+```json
 {"addonProduct":"",
 "addonVersion":"",
 "addonVersionAAK":"",
@@ -46,12 +46,12 @@ ich glaub package name
 "TargetVectorID":"",
 "repositories":[
   {
-    "name":"/DMO/REPO_A",
+    "name":"",
     "tag":"",
     "branch":"",
-    "version":"1.0.1",
+    "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK001001REPOA",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
@@ -61,12 +61,12 @@ ich glaub package name
     "SarXMLFilePath":""
   },
   {
-    "name":"/DMO/REPO_B",
+    "name":"",
     "tag":"",
     "branch":"",
-    "version":"2.1.1",
+    "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK002001REPOB",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
