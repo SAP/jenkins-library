@@ -1,5 +1,3 @@
-import com.sap.piper.ConfigurationLoader
-
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
