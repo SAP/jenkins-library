@@ -89,6 +89,10 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -111,6 +115,10 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
         longDescription: |-
@@ -214,6 +222,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
+        resourceRef:
+          - name: kubeConfigFileCredentialsId
+            type: secret
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -231,6 +243,9 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: kubeTokenCredentialsId
+            type: secret
       - name: namespace
         aliases:
           - name: helmDeploymentNamespace
