@@ -155,6 +155,11 @@ import static com.sap.piper.Prerequisites.checkScript
      * this defines the credentials to be used.
      */
     'dockerCredentialsId',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -221,6 +226,15 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+            ]
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,
