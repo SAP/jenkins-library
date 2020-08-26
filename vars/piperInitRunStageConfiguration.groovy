@@ -78,29 +78,19 @@ void call(Map parameters = [:]) {
                 Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
-                        if (checkConfig(condition, stepConfig)) {
-                            stepActive = true
-                        }
+                        stepActive |= checkConfig(condition, stepConfig)
                         break
                     case 'configKeys':
-                        if (checkConfigKeys(condition, stepConfig)) {
-                            stepActive = true
-                        }
+                        stepActive |= checkConfigKeys(condition, stepConfig)
                         break
                     case 'filePatternFromConfig':
-                        if (checkForFilesWithPatternFromConfig(script, condition, stepConfig)) {
-                            stepActive = true
-                        }
+                        stepActive |= checkForFilesWithPatternFromConfig(script, condition, stepConfig)
                         break
                     case 'filePattern':
-                        if (checkForFilesWithPattern(script, condition)) {
-                            stepActive = true
-                        }
+                        stepActive |= checkForFilesWithPattern(script, condition)
                         break
                     case 'npmScripts':
-                        if (checkForNpmScriptsInPackages(script, condition)) {
-                            stepActive = true
-                        }
+                        stepActive |= checkForNpmScriptsInPackages(script, condition)
                         break
                 }
             }
