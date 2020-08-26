@@ -54,7 +54,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	client.SetOptions(clientOptions)
 
 	var details abaputils.ConnectionDetailsHTTP
-	var abapEndpoint string
 	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
 		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
@@ -62,7 +61,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	var resp *http.Response
 	//Fetch Xcrsf-Token
 	if err == nil {
-		abapEndpoint = details.URL
 		credentialsOptions := piperhttp.ClientOptions{
 			Username:  details.User,
 			Password:  details.Password,
@@ -72,10 +70,10 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
-		resp, err = triggerATCrun(options, details, &client, abapEndpoint)
+		resp, err = triggerATCrun(options, details, &client)
 	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, abapEndpoint, options.AtcResultsFileName)
+		err = handleATCresults(resp, details, &client, options.AtcResultsFileName)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -84,8 +82,10 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed succesfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string, atcResultFileName string) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string) error {
 	var err error
+	var abapEndpoint string
+	abapEndpoint = details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollATCRun(details, nil, client)
@@ -108,8 +108,9 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	return nil
 }
 
-func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
+func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
 	var atcConfigyamlFile []byte
+	abapEndpoint := details.URL
 	filelocation, err := filepath.Glob(config.AtcConfig)
 	//Parse YAML ATC run configuration as body for ATC run trigger
 	if err == nil {
