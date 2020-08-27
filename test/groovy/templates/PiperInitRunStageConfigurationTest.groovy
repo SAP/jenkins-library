@@ -122,6 +122,10 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
+
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2.secondStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
@@ -175,6 +179,10 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
+
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
@@ -223,6 +231,10 @@ steps: {}
             juStabUtils: utils,
             stageConfigResource: 'testDefault.yml'
         )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage1, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage2, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.testStage3, is(true))
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
