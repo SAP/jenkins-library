@@ -154,6 +154,5 @@ void call(Map parameters = [:]) {
             index++
         }
         runClosures(script, e2ETests, config.parallelExecution, "end to end tests")
-
     }
 }
