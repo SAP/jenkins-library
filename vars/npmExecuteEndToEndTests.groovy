@@ -88,69 +88,72 @@ void call(Map parameters = [:]) {
             error "[${STEP_NAME}] No runScript was defined."
         }
 
-        if ((config.onlyRunInProductiveBranch && (config.productiveBranch == env.BRANCH_NAME)) || !config.onlyRunInProductiveBranch ) {
-            for (int i = 0; i < config.appUrls.size(); i++) {
-                List credentials = []
-                def appUrl = config.appUrls[i]
-
-                if (!(appUrl instanceof Map)) {
-                    error "[${STEP_NAME}] The element ${appUrl} is not of type map. Please provide appUrls as a list of maps. For example:\n" +
-                        "appUrls: \n" + "  - url: 'https://my-url.com'\n" + "    credentialId: myCreds"
-                }
-                if (!appUrl.url) {
-                    error "[${STEP_NAME}] No url property was defined for the following element in appUrls: ${appUrl}"
-                }
-                if (appUrl.credentialId) {
-                    credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
-                }
-
-                Closure e2eTest = {
-                    Utils utils = new Utils()
-                    utils.unstashStageFiles(script, stageName)
-                    try {
-                        withCredentials(credentials) {
-                            List scriptOptions = ["--launchUrl=${appUrl.url}"]
-                            if (appUrl.parameters) {
-                                if (appUrl.parameters instanceof List) {
-                                    scriptOptions = scriptOptions + appUrl.parameters
-                                } else {
-                                    error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
-                                }
-                            }
-                            npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
-                        }
-
-                    } catch (Exception e) {
-                        error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
-                    } finally {
-                        List cucumberFiles = findFiles(glob: "**/e2e/*.json")
-                        List junitFiles = findFiles(glob: "**/e2e/*.xml")
-
-                        if (cucumberFiles.size() > 0) {
-                            testsPublishResults script: script, cucumber: [active: true, archive: true]
-                        } else if (junitFiles.size() > 0) {
-                            testsPublishResults script: script, junit: [active: true, archive: true]
-                        } else {
-                            echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
-                        }
-
-                        utils.stashStageFiles(script, stageName)
-                    }
-                }
-                e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
-                    if (env.POD_NAME) {
-                        dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
-                            e2eTest.call()
-                        }
-                    } else {
-                        node(env.NODE_NAME) {
-                            e2eTest.call()
-                        }
-                    }
-                }
-                index++
-            }
-            runClosures(script, e2ETests, config.parallelExecution, "end to end tests")
+        if (config.onlyRunInProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
+            return
         }
+
+        for (int i = 0; i < config.appUrls.size(); i++) {
+            List credentials = []
+            def appUrl = config.appUrls[i]
+
+            if (!(appUrl instanceof Map)) {
+                error "[${STEP_NAME}] The element ${appUrl} is not of type map. Please provide appUrls as a list of maps. For example:\n" +
+                    "appUrls: \n" + "  - url: 'https://my-url.com'\n" + "    credentialId: myCreds"
+            }
+            if (!appUrl.url) {
+                error "[${STEP_NAME}] No url property was defined for the following element in appUrls: ${appUrl}"
+            }
+            if (appUrl.credentialId) {
+                credentials.add(usernamePassword(credentialsId: appUrl.credentialId, passwordVariable: 'e2e_password', usernameVariable: 'e2e_username'))
+            }
+
+            Closure e2eTest = {
+                Utils utils = new Utils()
+                utils.unstashStageFiles(script, stageName)
+                try {
+                    withCredentials(credentials) {
+                        List scriptOptions = ["--launchUrl=${appUrl.url}"]
+                        if (appUrl.parameters) {
+                            if (appUrl.parameters instanceof List) {
+                                scriptOptions = scriptOptions + appUrl.parameters
+                            } else {
+                                error "[${STEP_NAME}] The parameters property is not of type list. Please provide parameters as a list of strings."
+                            }
+                        }
+                        npmExecuteScripts(script: script, parameters: npmParameters, install: false, virtualFrameBuffer: true, runScripts: [config.runScript], scriptOptions: scriptOptions, buildDescriptorExcludeList: config.buildDescriptorExcludeList)
+                    }
+
+                } catch (Exception e) {
+                    error "[${STEP_NAME}] The execution failed with error: ${e.getMessage()}"
+                } finally {
+                    List cucumberFiles = findFiles(glob: "**/e2e/*.json")
+                    List junitFiles = findFiles(glob: "**/e2e/*.xml")
+
+                    if (cucumberFiles.size() > 0) {
+                        testsPublishResults script: script, cucumber: [active: true, archive: true]
+                    } else if (junitFiles.size() > 0) {
+                        testsPublishResults script: script, junit: [active: true, archive: true]
+                    } else {
+                        echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
+                    }
+
+                    utils.stashStageFiles(script, stageName)
+                }
+            }
+            e2ETests["E2E Tests ${index > 1 ? index : ''}"] = {
+                if (env.POD_NAME) {
+                    dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+                        e2eTest.call()
+                    }
+                } else {
+                    node(env.NODE_NAME) {
+                        e2eTest.call()
+                    }
+                }
+            }
+            index++
+        }
+        runClosures(script, e2ETests, config.parallelExecution, "end to end tests")
+
     }
 }
