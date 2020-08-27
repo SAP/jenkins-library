@@ -95,7 +95,7 @@ func (a Action) String() string {
 }
 
 const loginScript = `#!/bin/bash
-xs login -a {{.APIURL}} -u {{.User}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
+xs login -a {{.APIURL}} -u {{.Username}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
 `
 
 const logoutScript = `#!/bin/bash
