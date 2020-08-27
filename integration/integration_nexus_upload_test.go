@@ -132,7 +132,7 @@ func TestNexus2Upload(t *testing.T) {
 		"nexusUpload",
 		"--groupId=mygroup",
 		"--artifactId=mymta",
-		"--user=admin",
+		"--username=admin",
 		"--password=admin123",
 		"--mavenRepository=releases",
 		"--version=nexus2",
