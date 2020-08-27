@@ -1,5 +1,5 @@
 stages:
-  staticCodeChecks:
+  mavenStaticCodeChecks:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'

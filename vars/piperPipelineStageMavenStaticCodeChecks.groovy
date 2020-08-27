@@ -23,7 +23,7 @@ import groovy.transform.Field
  * Execute static code checks for Maven based projects. This stage enforces SAP Cloud SDK specific PND rulesets as well as SpotBugs include filter.
  *
  */
-@GenerateStageDocumentation(defaultStageName = 'mavenExecuteStaticCodeChecks')
+@GenerateStageDocumentation(defaultStageName = 'mavenStaticCodeChecks')
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
 
