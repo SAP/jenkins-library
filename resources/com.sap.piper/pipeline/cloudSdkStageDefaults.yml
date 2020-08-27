@@ -132,12 +132,6 @@ stages:
       artifactDeployment:
         configKeys:
           - 'nexus'
-  sendNotification:
-    stepConditions:
-      sendNotification:
-        config:
-          enabled:
-            - true
   postPipelineHook:
     stepConditions:
       postPipelineHook:
