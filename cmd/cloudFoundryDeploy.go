@@ -80,6 +80,8 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 		return err
 	}
 
+	validateDeployTool(config)
+
 	var deployTriggered bool
 
 	if config.DeployTool == "mtaDeployPlugin" {
@@ -97,6 +99,21 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	}
 
 	return err
+}
+
+func validateDeployTool(config *cloudFoundryDeployOptions) {
+	if config.DeployTool != "" || config.BuildTool == "" {
+		return
+	}
+
+	switch config.BuildTool {
+	case "mta":
+		config.DeployTool = "mtaDeployPlugin"
+	default:
+		config.DeployTool = "cf_native"
+	}
+	log.Entry().Infof("Parameter deployTool not specified - deriving from buildTool '%s': '%s'",
+		config.BuildTool, config.DeployTool)
 }
 
 func validateAppName(appName string) error {

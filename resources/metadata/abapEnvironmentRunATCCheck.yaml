@@ -109,6 +109,15 @@ spec:
         - STEPS
         - GENERAL
         mandatory: false
+      - name: atcResultsFileName
+        type: string
+        description: Specifies output file name for the results from the ATC run
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default: 'ATCResults.xml'
   containers:
     - name: cf
       image: ppiper/cf-cli
