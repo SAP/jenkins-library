@@ -110,7 +110,7 @@ spec:
           - STEPS
         aliases:
           - name: maven/m2Path
-      - name: user
+      - name: username
         type: string
         description: Username for accessing the Nexus endpoint.
         scope:
