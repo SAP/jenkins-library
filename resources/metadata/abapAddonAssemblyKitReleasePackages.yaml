@@ -26,6 +26,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         secret: true
       - name: password
@@ -35,6 +36,7 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        - GENERAL
         mandatory: true
         secret: true
       - name: addonDescriptor

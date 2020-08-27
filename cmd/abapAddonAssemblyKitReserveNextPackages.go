@@ -44,7 +44,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 	//TODO zeiten anpassen
-	err = pollReserveNextPackages(packagesWithRepos, 60, 60)
+	err = pollReserveNextPackages(packagesWithRepos, 30, 5)
 	addonDescriptor.Repositories = addFieldsToRepository(packagesWithRepos)
 	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
