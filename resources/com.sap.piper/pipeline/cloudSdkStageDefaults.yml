@@ -48,7 +48,10 @@ stages:
   backendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
-        configKeys:
-          - 'runScripts'
+        npmScripts: 'ci-it-backend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  frontendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts: 'ci-it-frontend'

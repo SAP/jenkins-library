@@ -131,30 +131,56 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 }
 
 // HandleHTTPError handles ABAP error messages which can occur when using OData services
+//
+// The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
+// Further error details may be present in the response body of the HTTP response.
+// If the response body is parseable, the included details are wrapped arround the original error from the HTTP repsponse.
+// If this is not possible, the original error is returned.
 func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
 	if resp == nil {
 		// Response is nil in case of a timeout
 		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
 	} else {
+
+		defer resp.Body.Close()
+
 		log.Entry().WithField("StatusCode", resp.Status).Error(message)
 
-		// Include the error message of the ABAP Environment system, if available
-		var abapErrorResponse AbapError
-		bodyText, readError := ioutil.ReadAll(resp.Body)
-		if readError != nil {
-			return readError
+		errorDetails, parsingError := getErrorDetailsFromResponse(resp)
+		if parsingError != nil {
+			return err
 		}
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
+		abapError := errors.New(errorDetails)
+		err = errors.Wrap(abapError, err.Error())
+
+	}
+	return err
+}
+
+func getErrorDetailsFromResponse(resp *http.Response) (errorString string, err error) {
+
+	// Include the error message of the ABAP Environment system, if available
+	var abapErrorResponse AbapError
+	bodyText, readError := ioutil.ReadAll(resp.Body)
+	if readError != nil {
+		return errorString, readError
+	}
+	var abapResp map[string]*json.RawMessage
+	errUnmarshal := json.Unmarshal(bodyText, &abapResp)
+	if errUnmarshal != nil {
+		return errorString, errUnmarshal
+	}
+	if _, ok := abapResp["error"]; ok {
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
 		if (AbapError{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
-			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
-			err = errors.Wrap(abapError, err.Error())
+			errorString = fmt.Sprintf("%s - %s", abapErrorResponse.Code, abapErrorResponse.Message.Value)
+			return errorString, nil
 		}
-		resp.Body.Close()
 	}
-	return err
+
+	return errorString, errors.New("Could not parse the JSON error response")
+
 }
 
 // ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
