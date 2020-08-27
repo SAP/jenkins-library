@@ -298,8 +298,8 @@ repositories:
 		assert.Equal(t, `branchB`, addonDescriptor.Repositories[1].Branch)
 		assert.Equal(t, `1.0.1`, addonDescriptor.Repositories[0].VersionYAML)
 		assert.Equal(t, `2.1.1`, addonDescriptor.Repositories[1].VersionYAML)
-		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpsLevel)
-		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpsLevel)
+		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpLevel)
+		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpLevel)
 	})
 
 	t.Run("Test: file does not exist", func(t *testing.T) {
