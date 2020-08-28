@@ -4,7 +4,6 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Telemetry
 import groovy.text.GStringTemplateEngine
 
-import java.lang.reflect.Field
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
