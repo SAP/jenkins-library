@@ -71,8 +71,6 @@ class commonPipelineEnvironment implements Serializable {
 
         buildTool = null
 
-        useTechnicalStageNames = false
-
         configuration = [:]
         containerProperties = [:]
 
