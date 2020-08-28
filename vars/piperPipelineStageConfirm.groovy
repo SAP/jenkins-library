@@ -1,7 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.StageNameProvider
-import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -35,7 +34,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateStageDocumentation(defaultStageName = 'Confirm')
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-    def utils = parameters.juStabUtils ?: new Utils()
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
