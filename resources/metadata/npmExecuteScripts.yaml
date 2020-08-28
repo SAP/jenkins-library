@@ -33,17 +33,6 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
-      - name: sapNpmRegistry
-        type: string
-        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
-        scope:
-          - PARAMETERS
-          - GENERAL
-          - STAGES
-          - STEPS
-        default: https://npm.sap.com
-        aliases:
-          - name: npm/sapNpmRegistry
       - name: virtualFrameBuffer
         type: bool
         description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.

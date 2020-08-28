@@ -53,6 +53,17 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
+    - name: dockerConfigJSON
+      type: string
+      description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      secret: true
+      resourceRef:
+        - name: dockerConfigJsonCredentialsId
+          type: secret
     - name: cleanupMode
       type: string
       description: Decides which parts are removed from the Protecode backend after the scan
@@ -144,6 +155,10 @@ spec:
         - STAGES
         - STEPS
       secret: true
+      resourceRef:
+        - name: protecodeCredentialsId
+          type: secret
+          param: username
     - name: password
       type: string
       description: Password which is used for the user
@@ -153,6 +168,10 @@ spec:
         - STAGES
         - STEPS
       secret: true
+      resourceRef:
+        - name: protecodeCredentialsId
+          type: secret
+          param: password
     - name: artifactVersion
       type: string
       description: The version of the artifact to allow identification in protecode backend
@@ -173,8 +192,11 @@ spec:
     secrets:
     - name: protecodeCredentialsId
       type: jenkins
-    - name: dockerCredentialsId
+    - name: dockerConfigJsonCredentialsId
       type: jenkins
+      aliases:
+        - name: dockerCredentialsId
+          deprecated: true
   outputs:
     resources:
       - name: influx

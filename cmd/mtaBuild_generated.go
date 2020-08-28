@@ -24,7 +24,6 @@ type mtaBuildOptions struct {
 	Platform            string `json:"platform,omitempty"`
 	ApplicationName     string `json:"applicationName,omitempty"`
 	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
-	SapNpmRegistry      string `json:"sapNpmRegistry,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
 	M2Path              string `json:"m2Path,omitempty"`
@@ -122,7 +121,6 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
-	cmd.Flags().StringVar(&stepConfig.SapNpmRegistry, "sapNpmRegistry", `https://npm.sap.com`, "Url to the sap npm registry that should be used for installing npm dependencies prefixed with @sap.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -203,14 +201,6 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
-					},
-					{
-						Name:        "sapNpmRegistry",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/sapNpmRegistry"}},
 					},
 					{
 						Name:        "projectSettingsFile",
