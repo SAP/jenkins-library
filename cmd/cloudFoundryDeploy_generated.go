@@ -279,7 +279,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "dockerPassword",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -287,7 +287,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "dockerUsername",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -367,7 +367,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -399,7 +399,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

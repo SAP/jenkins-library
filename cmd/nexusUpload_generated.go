@@ -190,7 +190,7 @@ func nexusUploadMetadata() config.StepData {
 					},
 					{
 						Name:        "user",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "nexusCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -198,7 +198,7 @@ func nexusUploadMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "nexusCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
