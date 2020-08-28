@@ -120,7 +120,8 @@ spec:
             param: buildTool
       - name: deployType
         type: string
-        description: "Defines the type of deployment, either `standard` deployment which results in a system
+        description:
+          "Defines the type of deployment, either `standard` deployment which results in a system
           downtime or a zero-downtime `blue-green` deployment.If 'cf_native' as deployType and 'blue-green'
           as deployTool is used in combination, your manifest.yaml may only contain one application.
           If this application has the option 'no-route' active the deployType will be changed to 'standard'."
@@ -133,7 +134,8 @@ spec:
         default: "standard"
       - name: dockerPassword
         type: string
-        description: "If the specified image in `deployDockerImage` is contained in a Docker registry,
+        description:
+          "If the specified image in `deployDockerImage` is contained in a Docker registry,
           which requires authorization, this defines the password to be used."
         secret: true
         scope:
@@ -143,7 +145,8 @@ spec:
         mandatory: false
       - name: dockerUsername
         type: string
-        description: "If the specified image in `deployDockerImage` is contained in a Docker registry,
+        description:
+          "If the specified image in `deployDockerImage` is contained in a Docker registry,
           which requires authorization, this defines the username to be used."
         scope:
           - PARAMETERS
@@ -152,7 +155,8 @@ spec:
         mandatory: false
       - name: keepOldInstance
         type: bool
-        description: "In case of a `blue-green` deployment the old instance will be deleted by default.
+        description:
+          "In case of a `blue-green` deployment the old instance will be deleted by default.
           If this option is set to true the old instance will remain stopped in the Cloud Foundry space."
         scope:
           - PARAMETERS
@@ -161,7 +165,8 @@ spec:
         mandatory: false
       - name: loginParameters
         type: string
-        description: "Addition command line options for cf login command. No escaping/quoting is performed.
+        description:
+          "Addition command line options for cf login command. No escaping/quoting is performed.
           Not recommended for productive environments."
         scope:
           - PARAMETERS
@@ -183,7 +188,8 @@ spec:
           - name: cloudFoundry/manifest
       - name: manifestVariables
         type: "[]string"
-        description: "Defines a list of variables as key-value Map objects used for variable substitution
+        description:
+          "Defines a list of variables as key-value Map objects used for variable substitution
           within the file given by manifest. Defaults to an empty list, if not specified otherwise.
           This can be used to set variables like it is provided by 'cf push --var key=value'.
           The order of the maps of variables given in the list is relevant in case there are conflicting
@@ -208,7 +214,8 @@ spec:
           - name: cloudFoundry/manifestVariables
       - name: manifestVariablesFiles
         type: "[]string"
-        description: "path(s) of the Yaml file(s) containing the variable values to use as a
+        description:
+          "path(s) of the Yaml file(s) containing the variable values to use as a
           replacement in the manifest file. The order of the files is relevant in case there are
           conflicting variable names and values within variable files.
           In such a case, the values of the last file win."
@@ -279,7 +286,8 @@ spec:
         secret: true
       - name: smokeTestScript
         type: string
-        description: "Allows to specify a script which performs a check during blue-green deployment.
+        description:
+          "Allows to specify a script which performs a check during blue-green deployment.
           The script gets the FQDN as parameter and returns `exit code 0` in case check returned
           `smokeTestStatusCode`.
           More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use).
@@ -343,4 +351,3 @@ spec:
               - name: cfApiEndpoint
               - name: cfOrg
               - name: cfSpace
-

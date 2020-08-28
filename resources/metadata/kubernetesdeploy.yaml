@@ -45,7 +45,7 @@ spec:
       - name: additionalParameters
         aliases:
           - name: helmDeploymentParameters
-        type: '[]string'
+        type: "[]string"
         description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
         scope:
           - PARAMETERS
@@ -95,8 +95,8 @@ spec:
         type: string
         description: http(s) url of the Container registry where the image to deploy is located.
         resourceRef:
-        - name: commonPipelineEnvironment
-          param: container/registryUrl
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
         scope:
           - GENERAL
           - PARAMETERS
@@ -171,7 +171,7 @@ spec:
           - STEPS
         default: 300
       - name: helmValues
-        type: '[]string'
+        type: "[]string"
         description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
         scope:
           - PARAMETERS
@@ -191,7 +191,7 @@ spec:
           - STAGES
           - STEPS
       - name: ingressHosts
-        type: '[]string'
+        type: "[]string"
         description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
         longDescription: |-
           **DEPRECATED**<br />
@@ -252,33 +252,33 @@ spec:
           - STAGES
           - STEPS
   containers:
-  - image: dtzar/helm-kubectl:3.1.2
-    workingDir: /config
-    options:
-      - name: -u
-        value: '0'
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: helm3
-  - image: dtzar/helm-kubectl:2.12.1
-    workingDir: /config
-    options:
-      - name: -u
-        value: '0'
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: helm
-  - image: dtzar/helm-kubectl:2.12.1
-    workingDir: /config
-    options:
-      - name: -u
-        value: '0'
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: kubectl
+    - image: dtzar/helm-kubectl:3.1.2
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: helm3
+    - image: dtzar/helm-kubectl:2.12.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: helm
+    - image: dtzar/helm-kubectl:2.12.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: kubectl

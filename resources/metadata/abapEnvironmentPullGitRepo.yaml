@@ -23,84 +23,84 @@ spec:
         type: string
         description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
       - name: password
         type: string
         description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
       - name: repositoryNames
-        type: '[]string'
+        type: "[]string"
         description: Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: host
         type: string
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
         type: string
         description: Cloud Foundry target organization
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cloudFoundry/org
       - name: cfSpace
         type: string
         description: Cloud Foundry target space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cloudFoundry/space
       - name: cfServiceInstance
         type: string
         description: Cloud Foundry Service Instance
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cloudFoundry/serviceInstance
       - name: cfServiceKeyName
         type: string
         description: Cloud Foundry Service Key
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
