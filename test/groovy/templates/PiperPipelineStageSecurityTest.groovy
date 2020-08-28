@@ -29,7 +29,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Security'
+        nullScript.env.STAGE_NAME = 'Security'
 
         helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->

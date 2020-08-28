@@ -141,7 +141,7 @@ func kanikoExecuteMetadata() config.StepData {
 					},
 					{
 						Name:        "dockerConfigJSON",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "dockerConfigJsonCredentialsId", Param: ""}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,

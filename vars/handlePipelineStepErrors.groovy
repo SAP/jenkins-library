@@ -52,11 +52,12 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 void call(Map parameters = [:], body) {
     // load default & individual configuration
     def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
+    String stageName = parameters.stepParameters?.stageName ?: env.STAGE_NAME
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
+        .loadStepDefaults([:], stageName)
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
         .mixinStepConfig(cpe, STEP_CONFIG_KEYS)
-        .mixinStageConfig(cpe, parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+        .mixinStageConfig(cpe, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .withMandatoryProperty('stepParameters')
         .withMandatoryProperty('stepName')

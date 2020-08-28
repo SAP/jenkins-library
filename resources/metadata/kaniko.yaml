@@ -60,6 +60,9 @@ spec:
         - STAGES
         - STEPS
       secret: true
+      resourceRef:
+        - name: dockerConfigJsonCredentialsId
+          type: secret
     - name: dockerfilePath
       aliases:
         - name: dockerfile

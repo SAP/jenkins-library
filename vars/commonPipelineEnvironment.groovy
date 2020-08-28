@@ -180,6 +180,7 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
@@ -201,7 +202,7 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
+                if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
@@ -212,7 +213,7 @@ class commonPipelineEnvironment implements Serializable {
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
+                if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)

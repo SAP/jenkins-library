@@ -240,23 +240,31 @@ spec:
     - name: orgToken
       type: string
       description: WhiteSource token identifying your organization.
-      mandatory: true
       scope:
       - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
       default: null
+      secret: true
+      mandatory: true
+      resourceRef:
+        - name: orgAdminUserTokenCredentialsId
+          type: secret
     - name: userToken
       type: string
       description: WhiteSource token identifying the user executing the scan
-      mandatory: true
       scope:
         - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
       default: null
+      secret: true
+      mandatory: true
+      resourceRef:
+        - name: userTokenCredentialsId
+          type: secret
     - name: licensingVulnerabilities
       type: bool
       description: Whether license compliance is considered and reported as part of the assessment.

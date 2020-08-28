@@ -33,10 +33,10 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stageName ?: env.STAGE_NAME
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
