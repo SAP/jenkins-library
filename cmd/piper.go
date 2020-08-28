@@ -73,6 +73,7 @@ func Execute() {
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
+	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
@@ -98,6 +99,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
+	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
