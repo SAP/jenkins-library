@@ -28,7 +28,6 @@ spec:
         - STEPS
         - GENERAL
         mandatory: true
-        secret: true
       - name: password
         type: string
         description: User Password
@@ -38,7 +37,6 @@ spec:
         - STEPS
         - GENERAL
         mandatory: true
-        secret: true
       - name: addonDescriptor
         type: string
         description: AddonDescriptor

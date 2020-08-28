@@ -50,6 +50,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+
 	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn)
 	if err != nil {
 		return err
@@ -101,13 +102,12 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	var buildFailed bool = false
-	for _, bR := range builds {
-		b := bR.build
-		if b.RunState == failed {
-			log.Entry().Errorf("Assembly of %s failed", b.BuildID)
+	for i := range builds {
+		if builds[i].build.RunState == failed {
+			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
-		b.printLogs()
+		builds[i].build.printLogs()
 	}
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
@@ -133,7 +133,7 @@ func starting(repos []abaputils.Repository, conn connector) ([]buildWithReposito
 			}
 			builds = append(builds, buildRepo)
 		} else {
-			log.Entry().Infof("Packages %s is already released. No need to run the assembly", repo.PackageName)
+			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
 			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
 	}
@@ -150,12 +150,10 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 		case <-ticker:
 			var allFinished bool = true
 			for i := range builds {
+				builds[i].build.get()
 				if !builds[i].build.IsFinished() {
-					builds[i].build.get()
-					if !builds[i].build.IsFinished() {
-						log.Entry().Infof("Assembly of %s is not yet finished, check again in %02d seconds", builds[i].repo.PackageName, pollIntervalsInSeconds)
-						allFinished = false
-					}
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %02d seconds", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					allFinished = false
 				}
 			}
 			if allFinished {

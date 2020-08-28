@@ -42,6 +42,11 @@ spec:
         description: File name of the YAML descriptor
         mandatory: true
         default: .pipeline/addon.yml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: addonDescriptor
         type: string
         description: AddonDescriptor

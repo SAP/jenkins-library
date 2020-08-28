@@ -40,9 +40,9 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
-	for i, repo := range addonDescriptor.Repositories {
+	for i := range addonDescriptor.Repositories {
 		var c cv
-		c.init(repo, *conn)
+		c.init(addonDescriptor.Repositories[i], *conn)
 		err := c.validate()
 		if err != nil {
 			return err

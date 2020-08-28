@@ -51,10 +51,11 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
+
 func addFieldsToRepository(pckgWR []packageWithRepository) []abaputils.Repository {
 	var repos []abaputils.Repository
 	for i := range pckgWR {
-		pckgWR[i].p.addFields(&pckgWR[i].repo)
+		pckgWR[i].p.copyFieldsToRepo(&pckgWR[i].repo)
 		repos = append(repos, pckgWR[i].repo)
 	}
 	return repos
@@ -78,10 +79,16 @@ func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes
 				} else {
 					switch pckgWR[i].p.Status {
 					case "L":
-						return fmt.Errorf("Package %s has invalid status L", pckgWR[i].p)
+						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].p)
 					case "C":
-						log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
+						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
 						allFinished = false
+					case "P":
+						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].p)
+					case "R":
+						log.Entry().Infof("Reservation of %s not needed, package is already in status 'released'", pckgWR[i].p)
+					default:
+						return fmt.Errorf("Package %s has unknown status '%s'", pckgWR[i].p, pckgWR[i].p.Status)
 					}
 				}
 			}
@@ -119,7 +126,8 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.Status = repo.Status
 }
 
-func (p *pckg) addFields(initialRepo *abaputils.Repository) {
+//TODO namen bei CV und PV auch ändern addFields zu dem
+func (p *pckg) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.PackageName = p.PackageName
 	initialRepo.PackageType = p.Type
 	initialRepo.PredecessorCommitID = p.PredecessorCommitID
