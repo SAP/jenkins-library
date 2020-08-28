@@ -30,7 +30,7 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Acceptance'
+        nullScript.env.STAGE_NAME = 'Acceptance'
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Acceptance'))
             return body()
