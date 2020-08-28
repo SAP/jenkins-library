@@ -100,6 +100,10 @@ spec:
         - STEPS
         secret: true
         mandatory: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password
@@ -109,6 +113,10 @@ spec:
         - STEPS
         secret: true
         mandatory: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: password
       - name: org
         type: string
         description: The org
