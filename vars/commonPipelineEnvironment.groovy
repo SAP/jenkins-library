@@ -19,9 +19,6 @@ class commonPipelineEnvironment implements Serializable {
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
 
-    //Stores a feature toggle for defaulting to technical names in stages
-    boolean useTechnicalStageNames
-
     //stores the gitCommitId as well as additional git information for the build during pipeline run
     String gitCommitId
     String gitCommitMessage

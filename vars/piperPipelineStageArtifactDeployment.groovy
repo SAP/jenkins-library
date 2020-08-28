@@ -1,5 +1,6 @@
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.ReportAggregator
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -20,7 +21,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = utils.getStageName(script, parameters, this)
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper(stageName: stageName, script: script) {
 

@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -25,7 +26,7 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = utils.getStageName(script, parameters, this)
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()

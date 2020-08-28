@@ -176,24 +176,3 @@ static List appendParameterToStringList(List list, Map parameters, String paramN
     }
     return result
 }
-
-static String getStageName(Script script, Map parameters, Script step) {
-    if (parameters.stageName in CharSequence) {
-        return parameters.stageName
-    }
-    if (script.commonPipelineEnvironment.useTechnicalStageNames) {
-        String technicalStageName = getTechnicalStageName(step)
-        if (technicalStageName) {
-            return technicalStageName
-        }
-    }
-    return script.env.STAGE_NAME
-}
-
-static String getTechnicalStageName(Script step) {
-    try {
-        return step.TECHNICAL_STAGE_NAME
-    } catch (Throwable ignored) {
-    }
-    return null
-}

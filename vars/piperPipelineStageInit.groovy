@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -44,7 +45,7 @@ void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = utils.getStageName(script, parameters, this)
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
