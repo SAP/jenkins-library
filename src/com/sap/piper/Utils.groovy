@@ -4,6 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Telemetry
 import groovy.text.GStringTemplateEngine
 
+import java.lang.reflect.Field
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
@@ -176,12 +177,23 @@ static List appendParameterToStringList(List list, Map parameters, String paramN
     return result
 }
 
-static String getStageName(Script script, Map parameters, String technicalStageName) {
+static String getStageName(Script script, Map parameters, Script step) {
     if (parameters.stageName in CharSequence) {
         return parameters.stageName
     }
-    if (technicalStageName && script.commonPipelineEnvironment.useTechnicalStageNames) {
-        return technicalStageName
+    if (script.commonPipelineEnvironment.useTechnicalStageNames) {
+        String technicalStageName = getTechnicalStageName(step)
+        if (technicalStageName) {
+            return technicalStageName
+        }
     }
     return script.env.STAGE_NAME
+}
+
+static String getTechnicalStageName(Script step) {
+    try {
+        return step.TECHNICAL_STAGE_NAME
+    } catch (Throwable ignored) {
+    }
+    return null
 }

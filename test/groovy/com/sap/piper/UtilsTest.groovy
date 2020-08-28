@@ -76,4 +76,56 @@ class UtilsTest extends BasePiperTest {
         List result = Utils.appendParameterToStringList(['string'], parameters, 'param')
         assertEquals(['string'], result)
     }
+
+    @Test
+    void testGetStageNameFromEnv() {
+        File stageScript = new File('vars', 'piperPipelineStageMavenStaticCodeChecks.groovy')
+        Script step = loadScript(stageScript.getPath())
+
+        nullScript.env = ['STAGE_NAME': 'stageNameFromEnv']
+        nullScript.commonPipelineEnvironment.useTechnicalStageNames = false
+
+        String result = Utils.getStageName(nullScript, [:], step)
+        assertEquals('stageNameFromEnv', result)
+    }
+
+    @Test
+    void testGetStageNameFromField() {
+        File stageScript = new File('vars', 'piperPipelineStageMavenStaticCodeChecks.groovy')
+        Script step = loadScript(stageScript.getPath())
+
+        nullScript.env = ['STAGE_NAME': 'stageNameFromEnv']
+        nullScript.commonPipelineEnvironment.useTechnicalStageNames = true
+
+        String result = Utils.getStageName(nullScript, [:], step)
+        assertEquals('mavenExecuteStaticCodeChecks', result)
+    }
+
+    @Test
+    void testGetStageNameFromParametersTechnical() {
+        File stageScript = new File('vars', 'piperPipelineStageMavenStaticCodeChecks.groovy')
+        Script step = loadScript(stageScript.getPath())
+
+        nullScript.env = ['STAGE_NAME': 'stageNameFromEnv']
+        nullScript.commonPipelineEnvironment.useTechnicalStageNames = true
+
+        Map parameters = ['stageName': 'stageNameFromParams']
+
+        String result = Utils.getStageName(nullScript, parameters, step)
+        assertEquals('stageNameFromParams', result)
+    }
+
+    @Test
+    void testGetStageNameFromParametersEnv() {
+        File stageScript = new File('vars', 'piperPipelineStageMavenStaticCodeChecks.groovy')
+        Script step = loadScript(stageScript.getPath())
+
+        nullScript.env = ['STAGE_NAME': 'stageNameFromEnv']
+        nullScript.commonPipelineEnvironment.useTechnicalStageNames = false
+
+        Map parameters = ['stageName': 'stageNameFromParams']
+
+        String result = Utils.getStageName(nullScript, parameters, step)
+        assertEquals('stageNameFromParams', result)
+    }
 }

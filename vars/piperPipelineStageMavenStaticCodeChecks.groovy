@@ -7,7 +7,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field String STAGE_NAME = 'mavenExecuteStaticCodeChecks'
+@Field String TECHNICAL_STAGE_NAME = 'mavenExecuteStaticCodeChecks'
 
 @Field STAGE_STEP_KEYS = [
     /** Executes static code checks for Maven based projects. The plugins SpotBugs and PMD are used. */
@@ -25,7 +25,7 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = utils.getStageName(script, parameters, STAGE_NAME)
+    def stageName = utils.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()

@@ -6,7 +6,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field String STAGE_NAME = 'postPipelineHook'
+@Field String TECHNICAL_STAGE_NAME = 'postPipelineHook'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = []
@@ -27,9 +27,10 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = utils.getStageName(script, parameters, STAGE_NAME)
+    def stageName = utils.getStageName(script, parameters, this)
     // ease handling extension
     stageName = stageName.replace('Declarative: ', '')
+
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
