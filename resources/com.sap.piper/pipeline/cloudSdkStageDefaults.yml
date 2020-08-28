@@ -1,5 +1,5 @@
 stages:
-  mavenStaticCodeChecks:
+  mavenExecuteStaticCodeChecks:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
@@ -89,7 +89,7 @@ stages:
   fortifyScan:
     onlyProductiveBranch: true
     stepConditions:
-      fortifyScan:
+      fortifyExecuteScan:
         configKeys:
           - 'fortifyCredentialsId'
   detectScan:
