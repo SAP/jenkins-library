@@ -39,6 +39,9 @@ spec:
         - STEPS
       mandatory: true
       secret: true
+      resourceRef:
+        - name: fortifyCredentialsId
+          type: secret
     - name: githubToken
       description: "GitHub personal access token as per
         https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -49,6 +52,9 @@ spec:
         - STEPS
       type: string
       secret: true
+      resourceRef:
+        - name: githubTokenCredentialsId
+          type: secret
     - name: autoCreate
       type: bool
       description: "Whether Fortify project and project version shall be implicitly auto created in case they
