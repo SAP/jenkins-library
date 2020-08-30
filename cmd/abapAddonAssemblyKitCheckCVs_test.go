@@ -27,7 +27,7 @@ func TestCheckCVs(t *testing.T) {
 		assert.Equal(t, "1.2.3", c.VersionYAML)
 		err := c.validate()
 		assert.NoError(t, err)
-		c.addFields(&repo)
+		c.copyFieldsToRepo(&repo)
 		assert.Equal(t, "0001", repo.Version)
 		assert.Equal(t, "0002", repo.SpLevel)
 		assert.Equal(t, "0003", repo.PatchLevel)

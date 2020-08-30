@@ -36,35 +36,79 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
-	log.Entry().Info(config.Username)
-	log.Entry().Info(config.Password)
-	var u string
-	var p string
-	u = config.Username
-	p = config.Password
-	log.Entry().Info(u)
-	log.Entry().Info(p)
-
-	for i := range addonDescriptor.Repositories {
-		var p pckg
-		p.init(addonDescriptor.Repositories[i], *conn)
-		if addonDescriptor.Repositories[i].Status == "L" {
-			err := p.release()
-			if err != nil {
-				return err
-			}
-			p.changeStatus(&addonDescriptor.Repositories[i])
-		} else {
-			log.Entry().Infof("Package %s has status %s, cannot release this package", p.PackageName, p.Status)
-		}
+	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
+	packagesWithReposLocked, err := releaseAndPoll(packagesWithReposLocked, 5, 30)
+	if err != nil {
+		return err
 	}
+	addonDescriptor.Repositories = sortingBack(packagesWithReposLocked, packagesWithReposNotLocked)
 	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
-// TODO loop wieder ausbauen
+func sortingBack(packagesWithReposLocked []packageWithRepository, packagesWithReposNotLocked []packageWithRepository) []abaputils.Repository {
+	var combinedRepos []abaputils.Repository
+	for i := range packagesWithReposLocked {
+		packagesWithReposLocked[i].p.changeStatus(&packagesWithReposLocked[i].repo)
+		combinedRepos = append(combinedRepos, packagesWithReposLocked[i].repo)
+	}
+	for i := range packagesWithReposNotLocked {
+		combinedRepos = append(combinedRepos, packagesWithReposNotLocked[i].repo)
+	}
+	return combinedRepos
+}
+
+func sortByStatus(repos []abaputils.Repository, conn connector) ([]packageWithRepository, []packageWithRepository) {
+	var packagesWithReposLocked []packageWithRepository
+	var packagesWithReposNotLocked []packageWithRepository
+	for i := range repos {
+		var p pckg
+		p.init(repos[i], conn)
+		pWR := packageWithRepository{
+			p:    p,
+			repo: repos[i],
+		}
+		if p.Status == "L" {
+			packagesWithReposLocked = append(packagesWithReposLocked, pWR)
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot release this package", p.PackageName, p.Status)
+			packagesWithReposNotLocked = append(packagesWithReposNotLocked, pWR)
+		}
+	}
+	return packagesWithReposLocked, packagesWithReposNotLocked
+}
+
+// TODO status wird nicht richtig zurück geschrieben ins cpe!
+func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]packageWithRepository, error) {
+	timeout := time.After(maxRuntimeInMinutes * time.Minute)
+	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return pckgWR, errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for i := range pckgWR {
+				if pckgWR[i].p.Status != "R" {
+					err := pckgWR[i].p.release()
+					// if there is an error, release is not yet finished
+					if err != nil {
+						log.Entry().Infof("Release of %s is not yet finished, check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+						allFinished = false
+					}
+				}
+			}
+			if allFinished {
+				log.Entry().Infof("Release of package(s) was succesful")
+				return pckgWR, nil
+			}
+		}
+	}
+}
+
 func (p *pckg) release() error {
 	var body []byte
 	var err error
@@ -72,25 +116,13 @@ func (p *pckg) release() error {
 		return errors.New("Parameter missing. Please provide the name of the package which should be released")
 	}
 	log.Entry().Infof("Release package %s", p.PackageName)
-
-	isReleased := false
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
-	tryAgain := 0
-	for !isReleased {
-		body, err = p.connector.post(appendum, "")
-		if err != nil {
-			tryAgain = tryAgain + 1
-			if tryAgain == 5 {
-				return err
-			}
-			log.Entry().Info("Release did not work, let's try again in 15s")
-			time.Sleep(15 * time.Second)
-		} else {
-			isReleased = true
-		}
+	body, err = p.connector.post(appendum, "")
+	if err != nil {
+		return err
 	}
-	var jPck jsonPackageFromGet
+	var jPck jsonPackage
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
 	return nil

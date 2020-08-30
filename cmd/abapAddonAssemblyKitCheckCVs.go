@@ -17,19 +17,16 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
@@ -47,7 +44,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		if err != nil {
 			return err
 		}
-		c.addFields(&addonDescriptor.Repositories[i])
+		c.copyFieldsToRepo(&addonDescriptor.Repositories[i])
 	}
 	log.Entry().Info("Write the resolved versions to the CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
@@ -55,7 +52,6 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	return nil
 }
 
-//TODO change name
 //take the product part from CPE and the repositories part from the YAML file
 func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
 	addonDescriptorFromCPE.Repositories = addonDescriptor.Repositories
@@ -68,7 +64,7 @@ func (c *cv) init(repo abaputils.Repository, conn connector) {
 	c.VersionYAML = repo.VersionYAML
 }
 
-func (c *cv) addFields(initialRepo *abaputils.Repository) {
+func (c *cv) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.Version = c.Version
 	initialRepo.SpLevel = c.SpLevel
 	initialRepo.PatchLevel = c.PatchLevel

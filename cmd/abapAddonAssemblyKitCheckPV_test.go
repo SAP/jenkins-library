@@ -27,7 +27,7 @@ func TestCheckPV(t *testing.T) {
 		assert.Equal(t, "3.2.1", p.VersionYAML)
 		err := p.validate()
 		assert.NoError(t, err)
-		p.addFields(&addonDescriptor)
+		p.copyFieldsToRepo(&addonDescriptor)
 		assert.Equal(t, "0003", addonDescriptor.AddonVersion)
 		assert.Equal(t, "0002", addonDescriptor.AddonSpsLevel)
 		assert.Equal(t, "0001", addonDescriptor.AddonPatchLevel)

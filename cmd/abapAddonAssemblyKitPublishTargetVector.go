@@ -18,19 +18,16 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &autils, &client)
+	err := runAbapAddonAssemblyKitPublishTargetVector(&config, telemetryData, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	var addonDescriptor abaputils.AddonDescriptor

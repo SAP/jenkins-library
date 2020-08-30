@@ -21,32 +21,49 @@ func abapAddonAssemblyKitRegisterPackages(config abapAddonAssemblyKitRegisterPac
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitRegisterPackages(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapAddonAssemblyKitRegisterPackages(&config, telemetryData, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) error {
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	for i := range addonDescriptor.Repositories {
-		if addonDescriptor.Repositories[i].Status == "P" {
-			if addonDescriptor.Repositories[i].SarXMLFilePath == "" {
+	err := uploadSarFiles(addonDescriptor.Repositories, *conn)
+	if err != nil {
+		return err
+	}
+
+	// we need a second connector without the added Header
+	conn2 := new(connector)
+	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	addonDescriptor.Repositories, err = registerPackages(addonDescriptor.Repositories, *conn2)
+	if err != nil {
+		return err
+	}
+
+	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
+	backToCPE, _ := json.Marshal(addonDescriptor)
+	cpe.abap.addonDescriptor = string(backToCPE)
+	return nil
+}
+
+func uploadSarFiles(repos []abaputils.Repository, conn connector) error {
+	for i := range repos {
+		if repos[i].Status == "P" {
+			if repos[i].SarXMLFilePath == "" {
 				return errors.New("Parameter missing. Please provide the path to the SAR file")
 			}
-			filename := filepath.Base(addonDescriptor.Repositories[i].SarXMLFilePath)
+			filename := filepath.Base(repos[i].SarXMLFilePath)
 			conn.Header["Content-Filename"] = []string{filename}
-			sarFile, err := ioutil.ReadFile(addonDescriptor.Repositories[i].SarXMLFilePath)
+			sarFile, err := ioutil.ReadFile(repos[i].SarXMLFilePath)
 			if err != nil {
 				return err
 			}
@@ -57,26 +74,24 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 			}
 		}
 	}
-	// we need a second connector without the added Header
-	conn2 := new(connector)
-	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	for i := range addonDescriptor.Repositories {
+	return nil
+}
+
+func registerPackages(repos []abaputils.Repository, conn connector) ([]abaputils.Repository, error) {
+	for i := range repos {
 		var p pckg
-		p.init(addonDescriptor.Repositories[i], *conn2)
-		if addonDescriptor.Repositories[i].Status == "P" {
+		p.init(repos[i], conn)
+		if repos[i].Status == "P" {
 			err := p.register()
 			if err != nil {
-				return err
+				return repos, err
 			}
-			p.changeStatus(&addonDescriptor.Repositories[i])
+			p.changeStatus(&repos[i])
 		} else {
 			log.Entry().Infof("Package %s has status %s, cannot register this package", p.PackageName, p.Status)
 		}
 	}
-	log.Entry().Info("Writing package status to CommonPipelineEnvironment")
-	backToCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(backToCPE)
-	return nil
+	return repos, nil
 }
 
 func (p *pckg) changeStatus(initialRepo *abaputils.Repository) {
@@ -95,7 +110,7 @@ func (p *pckg) register() error {
 		return err
 	}
 
-	var jPck jsonPackageFromGet
+	var jPck jsonPackage
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)

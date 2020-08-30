@@ -18,19 +18,16 @@ func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTar
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCreateTargetVector(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapAddonAssemblyKitCreateTargetVector(&config, telemetryData, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	var addonDescriptor abaputils.AddonDescriptor
@@ -52,23 +49,6 @@ func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreat
 	log.Entry().Info("Write target vector to CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
-	return nil
-}
-
-func (tv *targetVector) createTargetVector(conn connector) error {
-	conn.getToken("/odata/aas_ocs_package")
-	tvJSON, err := json.Marshal(tv)
-	if err != nil {
-		return err
-	}
-	appendum := "/odata/aas_ocs_package/TargetVectorSet"
-	body, err := conn.post(appendum, string(tvJSON))
-	if err != nil {
-		return err
-	}
-	var jTV jsontargetVector
-	json.Unmarshal(body, &jTV)
-	tv.ID = jTV.Tv.ID
 	return nil
 }
 
@@ -97,6 +77,23 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) error {
 		tvCVs = append(tvCVs, tvCV)
 	}
 	tv.Content.TargetVectorCVs = tvCVs
+	return nil
+}
+
+func (tv *targetVector) createTargetVector(conn connector) error {
+	conn.getToken("/odata/aas_ocs_package")
+	tvJSON, err := json.Marshal(tv)
+	if err != nil {
+		return err
+	}
+	appendum := "/odata/aas_ocs_package/TargetVectorSet"
+	body, err := conn.post(appendum, string(tvJSON))
+	if err != nil {
+		return err
+	}
+	var jTV jsontargetVector
+	json.Unmarshal(body, &jTV)
+	tv.ID = jTV.Tv.ID
 	return nil
 }
 

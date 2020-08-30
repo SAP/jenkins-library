@@ -43,16 +43,16 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	if err != nil {
 		return err
 	}
-	//TODO zeiten anpassen
-	err = pollReserveNextPackages(packagesWithRepos, 30, 5)
-	addonDescriptor.Repositories = addFieldsToRepository(packagesWithRepos)
+
+	err = pollReserveNextPackages(packagesWithRepos, 5, 30)
+	addonDescriptor.Repositories = copyFieldsToRepositories(packagesWithRepos)
 	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 	return nil
 }
 
-func addFieldsToRepository(pckgWR []packageWithRepository) []abaputils.Repository {
+func copyFieldsToRepositories(pckgWR []packageWithRepository) []abaputils.Repository {
 	var repos []abaputils.Repository
 	for i := range pckgWR {
 		pckgWR[i].p.copyFieldsToRepo(&pckgWR[i].repo)
@@ -61,6 +61,7 @@ func addFieldsToRepository(pckgWR []packageWithRepository) []abaputils.Repositor
 	return repos
 }
 
+//TODO ändert er dann wirklich den status -> addondescriptor checken
 func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
@@ -74,21 +75,21 @@ func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes
 				err := pckgWR[i].p.get()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
-					log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 					allFinished = false
 				} else {
 					switch pckgWR[i].p.Status {
 					case "L":
-						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].p)
+						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].p.PackageName)
 					case "C":
-						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %02d seconds", pckgWR[i].p, pollIntervalsInSeconds)
+						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					case "P":
-						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].p)
+						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].p.PackageName)
 					case "R":
-						log.Entry().Infof("Reservation of %s not needed, package is already in status 'released'", pckgWR[i].p)
+						log.Entry().Infof("Reservation of %s not needed, package is already in status 'released'", pckgWR[i].p.PackageName)
 					default:
-						return fmt.Errorf("Package %s has unknown status '%s'", pckgWR[i].p, pckgWR[i].p.Status)
+						return fmt.Errorf("Package %s has unknown status '%s'", pckgWR[i].p.PackageName, pckgWR[i].p.Status)
 					}
 				}
 			}
@@ -126,7 +127,6 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.Status = repo.Status
 }
 
-//TODO namen bei CV und PV auch ändern addFields zu dem
 func (p *pckg) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.PackageName = p.PackageName
 	initialRepo.PackageType = p.Type
@@ -147,7 +147,7 @@ func (p *pckg) reserveNext() error {
 	if err != nil {
 		return err
 	}
-	var jPck jsonPackage
+	var jPck jsonPackageDeterminePackageForScv
 	json.Unmarshal(body, &jPck)
 	p.PackageName = jPck.DeterminePackage.Package.PackageName
 	p.Type = jPck.DeterminePackage.Package.Type
@@ -164,20 +164,20 @@ func (p *pckg) get() error {
 	if err != nil {
 		return err
 	}
-	var jPck jsonPackageFromGet
+	var jPck jsonPackage
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
 	p.Namespace = jPck.Package.Namespace
 	return nil
 }
 
-type jsonPackage struct {
+type jsonPackageDeterminePackageForScv struct {
 	DeterminePackage struct {
 		Package *pckg `json:"DeterminePackageForScv"`
 	} `json:"d"`
 }
 
-type jsonPackageFromGet struct {
+type jsonPackage struct {
 	Package *pckg `json:"d"`
 }
 

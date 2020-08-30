@@ -18,19 +18,16 @@ func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, tele
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	var autils = abaputils.AbapUtils{
-		Exec: &c,
-	}
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, &autils, &client, cpe)
+	err := runAbapAddonAssemblyKitCheckPV(&config, telemetryData, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) error {
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
@@ -38,7 +35,6 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	if err != nil {
 		return nil
 	}
-
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 
@@ -48,7 +44,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	if err != nil {
 		return err
 	}
-	p.addFields(&addonDescriptor)
+	p.copyFieldsToRepo(&addonDescriptor)
 	log.Entry().Info("Write the resolved version to the CommonPipelineEnvironment")
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
@@ -59,10 +55,6 @@ func combineYAMLProductWithCPERepositories(addonDescriptor abaputils.AddonDescri
 	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
 	return addonDescriptor
 }
-
-// *******************************************************************************************************************************
-// ************************************************************ REUSE ************************************************************
-// *******************************************************************************************************************************
 
 func (conn *connector) initAAK(aAKaaSEndpoint string, username string, password string, inputclient piperhttp.Sender) {
 	conn.Client = inputclient
@@ -85,7 +77,7 @@ func (p *pv) init(desc abaputils.AddonDescriptor, conn connector) {
 	p.VersionYAML = desc.AddonVersionYAML
 }
 
-func (p *pv) addFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
+func (p *pv) copyFieldsToRepo(initialAddonDescriptor *abaputils.AddonDescriptor) {
 	initialAddonDescriptor.AddonVersion = p.Version
 	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
 	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
