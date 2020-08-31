@@ -1,6 +1,6 @@
 module github.com/SAP/jenkins-library
 
-go 1.13
+go 1.15
 
 require (
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.2.0
