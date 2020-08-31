@@ -14,11 +14,9 @@ import (
 )
 
 type npmExecuteLintOptions struct {
-	FailOnError bool `json:"failOnError,omitempty"`
+	FailOnError        bool   `json:"failOnError,omitempty"`
 	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
 }
-
-
 
 // NpmExecuteLintCommand Execute ci-lint script on all npm packages in a project or execute default linting
 func NpmExecuteLintCommand() *cobra.Command {
@@ -86,26 +84,26 @@ func npmExecuteLintMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "npmExecuteLint",
-			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false},},
+			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "failOnError",
+						Name:        "failOnError",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "defaultNpmRegistry",
+						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","GENERAL","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "npm/defaultNpmRegistry"},},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 				},
 			},

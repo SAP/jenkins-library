@@ -14,19 +14,17 @@ import (
 )
 
 type nexusUploadOptions struct {
-	Version string `json:"version,omitempty"`
-	Url string `json:"url,omitempty"`
-	MavenRepository string `json:"mavenRepository,omitempty"`
-	NpmRepository string `json:"npmRepository,omitempty"`
-	GroupID string `json:"groupId,omitempty"`
-	ArtifactID string `json:"artifactId,omitempty"`
+	Version            string `json:"version,omitempty"`
+	Url                string `json:"url,omitempty"`
+	MavenRepository    string `json:"mavenRepository,omitempty"`
+	NpmRepository      string `json:"npmRepository,omitempty"`
+	GroupID            string `json:"groupId,omitempty"`
+	ArtifactID         string `json:"artifactId,omitempty"`
 	GlobalSettingsFile string `json:"globalSettingsFile,omitempty"`
-	M2Path string `json:"m2Path,omitempty"`
-	User string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
+	M2Path             string `json:"m2Path,omitempty"`
+	User               string `json:"user,omitempty"`
+	Password           string `json:"password,omitempty"`
 }
-
-
 
 // NexusUploadCommand Upload artifacts to Nexus Repository Manager
 func NexusUploadCommand() *cobra.Command {
@@ -121,90 +119,90 @@ func nexusUploadMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "nexusUpload",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false},},
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "version",
+						Name:        "version",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "nexus/version"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "nexus/version"}},
 					},
 					{
-						Name:      "url",
+						Name:        "url",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "nexus/url"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "nexus/url"}},
 					},
 					{
-						Name:      "mavenRepository",
+						Name:        "mavenRepository",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "nexus/mavenRepository"},{Name: "nexus/repository"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository"}},
 					},
 					{
-						Name:      "npmRepository",
+						Name:        "npmRepository",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "nexus/npmRepository"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "nexus/npmRepository"}},
 					},
 					{
-						Name:      "groupId",
+						Name:        "groupId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "nexus/groupId"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "nexus/groupId"}},
 					},
 					{
-						Name:      "artifactId",
+						Name:        "artifactId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "globalSettingsFile",
+						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
-						Name:      "m2Path",
+						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/m2Path"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
-						Name:      "user",
+						Name:        "user",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

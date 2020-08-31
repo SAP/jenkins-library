@@ -16,30 +16,29 @@ import (
 )
 
 type mtaBuildOptions struct {
-	BuildTarget string `json:"buildTarget,omitempty"`
-	MtaBuildTool string `json:"mtaBuildTool,omitempty"`
-	MtarName string `json:"mtarName,omitempty"`
-	MtaJarLocation string `json:"mtaJarLocation,omitempty"`
-	Extensions string `json:"extensions,omitempty"`
-	Platform string `json:"platform,omitempty"`
-	ApplicationName string `json:"applicationName,omitempty"`
-	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
+	BuildTarget         string `json:"buildTarget,omitempty"`
+	MtaBuildTool        string `json:"mtaBuildTool,omitempty"`
+	MtarName            string `json:"mtarName,omitempty"`
+	MtaJarLocation      string `json:"mtaJarLocation,omitempty"`
+	Extensions          string `json:"extensions,omitempty"`
+	Platform            string `json:"platform,omitempty"`
+	ApplicationName     string `json:"applicationName,omitempty"`
+	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile string `json:"globalSettingsFile,omitempty"`
-	M2Path string `json:"m2Path,omitempty"`
-	InstallArtifacts bool `json:"installArtifacts,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
+	InstallArtifacts    bool   `json:"installArtifacts,omitempty"`
 }
-
 
 type mtaBuildCommonPipelineEnvironment struct {
 	mtarFilePath string
 }
 
 func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct{
+	content := []struct {
 		category string
-		name string
-		value string
+		name     string
+		value    string
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 	}
@@ -57,7 +56,6 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	}
 }
 
-
 // MtaBuildCommand Performs an mta build
 func MtaBuildCommand() *cobra.Command {
 	const STEP_NAME = "mtaBuild"
@@ -70,7 +68,7 @@ func MtaBuildCommand() *cobra.Command {
 	var createMtaBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Performs an mta build",
-		Long: `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
+		Long:  `Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -141,100 +139,100 @@ func mtaBuildMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "buildTarget",
+						Name:        "buildTarget",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "mtaBuildTool",
+						Name:        "mtaBuildTool",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "mtarName",
+						Name:        "mtarName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "mtaJarLocation",
+						Name:        "mtaJarLocation",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "extensions",
+						Name:        "extensions",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "extension"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "extension"}},
 					},
 					{
-						Name:      "platform",
+						Name:        "platform",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "applicationName",
+						Name:        "applicationName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "defaultNpmRegistry",
+						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "npm/defaultNpmRegistry"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
-						Name:      "projectSettingsFile",
+						Name:        "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/projectSettingsFile"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
-						Name:      "globalSettingsFile",
+						Name:        "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
-						Name:      "m2Path",
+						Name:        "m2Path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/m2Path"},},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
-						Name:      "installArtifacts",
+						Name:        "installArtifacts",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

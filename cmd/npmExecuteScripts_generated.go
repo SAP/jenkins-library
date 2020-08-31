@@ -14,15 +14,13 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
-	Install bool `json:"install,omitempty"`
-	RunScripts []string `json:"runScripts,omitempty"`
-	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
-	VirtualFrameBuffer bool `json:"virtualFrameBuffer,omitempty"`
-	ScriptOptions []string `json:"scriptOptions,omitempty"`
+	Install                    bool     `json:"install,omitempty"`
+	RunScripts                 []string `json:"runScripts,omitempty"`
+	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty"`
+	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty"`
+	ScriptOptions              []string `json:"scriptOptions,omitempty"`
 	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty"`
 }
-
-
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
 func NpmExecuteScriptsCommand() *cobra.Command {
@@ -35,7 +33,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Execute npm run scripts on all npm packages in a project",
-		Long: `Execute npm run scripts in all package json files, if they implement the scripts.`,
+		Long:  `Execute npm run scripts in all package json files, if they implement the scripts.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -93,58 +91,58 @@ func npmExecuteScriptsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "npmExecuteScripts",
-			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false},},
+			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "install",
+						Name:        "install",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "runScripts",
+						Name:        "runScripts",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "defaultNpmRegistry",
+						Name:        "defaultNpmRegistry",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","GENERAL","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "npm/defaultNpmRegistry"},},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
-						Name:      "virtualFrameBuffer",
+						Name:        "virtualFrameBuffer",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "scriptOptions",
+						Name:        "scriptOptions",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "buildDescriptorExcludeList",
+						Name:        "buildDescriptorExcludeList",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

@@ -16,31 +16,30 @@ import (
 )
 
 type xsDeployOptions struct {
-	DeployOpts string `json:"deployOpts,omitempty"`
+	DeployOpts            string `json:"deployOpts,omitempty"`
 	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
-	MtaPath string `json:"mtaPath,omitempty"`
-	Action string `json:"action,omitempty"`
-	Mode string `json:"mode,omitempty"`
-	OperationID string `json:"operationId,omitempty"`
-	APIURL string `json:"apiUrl,omitempty"`
-	User string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
-	Org string `json:"org,omitempty"`
-	Space string `json:"space,omitempty"`
-	LoginOpts string `json:"loginOpts,omitempty"`
-	XsSessionFile string `json:"xsSessionFile,omitempty"`
+	MtaPath               string `json:"mtaPath,omitempty"`
+	Action                string `json:"action,omitempty"`
+	Mode                  string `json:"mode,omitempty"`
+	OperationID           string `json:"operationId,omitempty"`
+	APIURL                string `json:"apiUrl,omitempty"`
+	User                  string `json:"user,omitempty"`
+	Password              string `json:"password,omitempty"`
+	Org                   string `json:"org,omitempty"`
+	Space                 string `json:"space,omitempty"`
+	LoginOpts             string `json:"loginOpts,omitempty"`
+	XsSessionFile         string `json:"xsSessionFile,omitempty"`
 }
-
 
 type xsDeployCommonPipelineEnvironment struct {
 	operationID string
 }
 
 func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct{
+	content := []struct {
 		category string
-		name string
-		value string
+		name     string
+		value    string
 	}{
 		{category: "", name: "operationId", value: p.operationID},
 	}
@@ -58,7 +57,6 @@ func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
 	}
 }
 
-
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
 	const STEP_NAME = "xsDeploy"
@@ -71,7 +69,7 @@ func XsDeployCommand() *cobra.Command {
 	var createXsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Performs xs deployment",
-		Long: `Performs xs deployment`,
+		Long:  `Performs xs deployment`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -153,108 +151,108 @@ func xsDeployMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "deployOpts",
+						Name:        "deployOpts",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "operationIdLogPattern",
+						Name:        "operationIdLogPattern",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "deployIdLogPattern"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
-						Name:      "mtaPath",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "mtaPath",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "action",
+						Name:        "action",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "mode",
+						Name:        "mode",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "operationId",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "operationId",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "apiUrl",
+						Name:        "apiUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "user",
+						Name:        "user",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "org",
+						Name:        "org",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "space",
+						Name:        "space",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "loginOpts",
+						Name:        "loginOpts",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "xsSessionFile",
+						Name:        "xsSessionFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
