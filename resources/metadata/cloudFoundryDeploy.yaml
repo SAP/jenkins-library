@@ -141,6 +141,10 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
       - name: dockerUsername
         type: string
         description: "If the specified image in `deployDockerImage` is contained in a Docker registry,
@@ -150,6 +154,10 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
       - name: keepOldInstance
         type: bool
         description: "In case of a `blue-green` deployment the old instance will be deleted by default.
@@ -277,6 +285,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
       - name: smokeTestScript
         type: string
         description: "Allows to specify a script which performs a check during blue-green deployment.
@@ -322,6 +334,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli
