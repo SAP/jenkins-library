@@ -36,6 +36,12 @@ type protecodeData struct {
 	Vulnerabilities             []protecode.Vuln `json:"Vulnerabilities,omitempty"`
 }
 
+const (
+	webReportPath  = "%s/products/%v/"
+	scanResultFile = "protecodescan_vulns.json"
+	stepResultFile = "protecodeExecuteScan.json"
+)
+
 var reportPath = "./"
 var cachePath = "./cache"
 var cacheProtecodeImagePath = "/protecode/Image"
@@ -175,7 +181,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	result := client.PollForResult(productID, config.TimeoutMinutes)
 
 	jsonData, _ := json.Marshal(result)
-	filePath := filepath.Join(reportPath, "protecodescan_vulns.json")
+	filePath := filepath.Join(reportPath, scanResultFile)
 	ioutil.WriteFile(filePath, jsonData, 0644)
 
 	//check if result is ok else notify
@@ -205,12 +211,12 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	// write reports JSON
 	reports := []StepResults.Path{
 		{Target: config.ReportFileName, Mandatory: true},
-		{Target: "protecodeExecuteScan.json", Mandatory: true},
-		{Target: "protecodescan_vulns.json", Mandatory: true},
+		{Target: stepResultFile, Mandatory: true},
+		{Target: scanResultFile, Mandatory: true},
 	}
 	// write links JSON
 	links := []StepResults.Path{
-		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+		{Name: "Protecode WebUI", Target: fmt.Sprintf(webReportPath, config.ServerURL, productID)},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
 
@@ -220,7 +226,6 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-
 	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
 	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
@@ -251,7 +256,7 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
 		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
 
-	filePath := filepath.Join(reportPath, "protecodeExecuteScan.json")
+	filePath := filepath.Join(reportPath, stepResultFile)
 	writeToFile(filePath, jsonData, 0644)
 }
 
@@ -292,14 +297,12 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 }
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
-
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
 	if !hasExisting(productID, config.ReuseExisting) {
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
 			productID = resultData.Result.ProductID
-
 		} else {
 			log.Entry().Debugf("Upload file path: %v", config.FilePath)
 			if len(config.FilePath) <= 0 {
@@ -319,7 +322,6 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			productID = resultData.Result.ProductID
 		}
 	}
-
 	return productID
 }
 
