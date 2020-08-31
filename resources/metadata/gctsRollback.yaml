@@ -25,6 +25,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password to authenticate to the ABAP system
@@ -34,6 +38,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: password
       - name: repository
         type: string
         description: Specifies the name (ID) of the local repsitory on the ABAP system
@@ -73,3 +81,6 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: githubPersonalAccessTokenId
+            type: secret

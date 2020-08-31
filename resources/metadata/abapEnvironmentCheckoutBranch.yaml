@@ -28,6 +28,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
@@ -37,6 +41,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: password
       - name: repositoryName
         type: string
         description: Specifies a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system

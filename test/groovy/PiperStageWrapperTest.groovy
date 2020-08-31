@@ -264,7 +264,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         })
 
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
-        binding.setVariable('env', [PIPER_DISABLE_EXTENSIONS: 'true'])
+        nullScript.env = [PIPER_DISABLE_EXTENSIONS: 'true']
         stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,

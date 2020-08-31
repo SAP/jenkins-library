@@ -143,6 +143,10 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
       - name: dockerUsername
         type: string
         description:
@@ -153,6 +157,10 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
       - name: keepOldInstance
         type: bool
         description:
@@ -284,6 +292,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
       - name: smokeTestScript
         type: string
         description:
@@ -330,6 +342,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli

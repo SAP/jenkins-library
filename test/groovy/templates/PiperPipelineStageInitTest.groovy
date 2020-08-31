@@ -31,7 +31,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Before
     void init() {
 
-        binding.variables.env.STAGE_NAME = 'Init'
+        nullScript.env.STAGE_NAME = 'Init'
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 

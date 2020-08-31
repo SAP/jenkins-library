@@ -40,8 +40,12 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        secret: true
         mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password for Cloud Foundry User
@@ -51,6 +55,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
       - name: cfOrg
         type: string
         description: Cloud Foundry org
