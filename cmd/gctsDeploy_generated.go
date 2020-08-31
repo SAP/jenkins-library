@@ -14,15 +14,13 @@ import (
 )
 
 type gctsDeployOptions struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Password   string `json:"password,omitempty"`
 	Repository string `json:"repository,omitempty"`
-	Host string `json:"host,omitempty"`
-	Client string `json:"client,omitempty"`
-	Commit string `json:"commit,omitempty"`
+	Host       string `json:"host,omitempty"`
+	Client     string `json:"client,omitempty"`
+	Commit     string `json:"commit,omitempty"`
 }
-
-
 
 // GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
 func GctsDeployCommand() *cobra.Command {
@@ -35,7 +33,7 @@ func GctsDeployCommand() *cobra.Command {
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Pulls a commit from the remote Git repository to a local repository",
-		Long: `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
+		Long:  `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -106,52 +104,52 @@ func gctsDeployMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "repository",
+						Name:        "repository",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "host",
+						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "client",
+						Name:        "client",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "commit",
+						Name:        "commit",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

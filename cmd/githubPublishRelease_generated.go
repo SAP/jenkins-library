@@ -14,24 +14,22 @@ import (
 )
 
 type githubPublishReleaseOptions struct {
-	AddClosedIssues bool `json:"addClosedIssues,omitempty"`
-	AddDeltaToLastRelease bool `json:"addDeltaToLastRelease,omitempty"`
-	APIURL string `json:"apiUrl,omitempty"`
-	AssetPath string `json:"assetPath,omitempty"`
-	Commitish string `json:"commitish,omitempty"`
-	ExcludeLabels []string `json:"excludeLabels,omitempty"`
-	Labels []string `json:"labels,omitempty"`
-	Owner string `json:"owner,omitempty"`
-	PreRelease bool `json:"preRelease,omitempty"`
-	ReleaseBodyHeader string `json:"releaseBodyHeader,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	ServerURL string `json:"serverUrl,omitempty"`
-	Token string `json:"token,omitempty"`
-	UploadURL string `json:"uploadUrl,omitempty"`
-	Version string `json:"version,omitempty"`
+	AddClosedIssues       bool     `json:"addClosedIssues,omitempty"`
+	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty"`
+	APIURL                string   `json:"apiUrl,omitempty"`
+	AssetPath             string   `json:"assetPath,omitempty"`
+	Commitish             string   `json:"commitish,omitempty"`
+	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
+	Labels                []string `json:"labels,omitempty"`
+	Owner                 string   `json:"owner,omitempty"`
+	PreRelease            bool     `json:"preRelease,omitempty"`
+	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
+	Repository            string   `json:"repository,omitempty"`
+	ServerURL             string   `json:"serverUrl,omitempty"`
+	Token                 string   `json:"token,omitempty"`
+	UploadURL             string   `json:"uploadUrl,omitempty"`
+	Version               string   `json:"version,omitempty"`
 }
-
-
 
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
@@ -134,124 +132,124 @@ func githubPublishReleaseMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "addClosedIssues",
+						Name:        "addClosedIssues",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "addDeltaToLastRelease",
+						Name:        "addDeltaToLastRelease",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "apiUrl",
+						Name:        "apiUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubApiUrl"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
-						Name:      "assetPath",
+						Name:        "assetPath",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "commitish",
+						Name:        "commitish",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "excludeLabels",
+						Name:        "excludeLabels",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "labels",
+						Name:        "labels",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "owner",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg"},},
+						Name:        "owner",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubOrg"}},
 					},
 					{
-						Name:      "preRelease",
+						Name:        "preRelease",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "releaseBodyHeader",
+						Name:        "releaseBodyHeader",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "repository",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo"},},
+						Name:        "repository",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubRepo"}},
 					},
 					{
-						Name:      "serverUrl",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubServerUrl"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
-						Name:      "token",
+						Name:        "token",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubToken"}},
 					},
 					{
-						Name:      "uploadUrl",
+						Name:        "uploadUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubUploadUrl"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubUploadUrl"}},
 					},
 					{
-						Name:      "version",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "version",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

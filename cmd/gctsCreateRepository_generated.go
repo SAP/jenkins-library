@@ -14,18 +14,16 @@ import (
 )
 
 type gctsCreateRepositoryOptions struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host string `json:"host,omitempty"`
-	Client string `json:"client,omitempty"`
+	Username            string `json:"username,omitempty"`
+	Password            string `json:"password,omitempty"`
+	Repository          string `json:"repository,omitempty"`
+	Host                string `json:"host,omitempty"`
+	Client              string `json:"client,omitempty"`
 	RemoteRepositoryURL string `json:"remoteRepositoryURL,omitempty"`
-	Role string `json:"role,omitempty"`
-	VSID string `json:"vSID,omitempty"`
-	Type string `json:"type,omitempty"`
+	Role                string `json:"role,omitempty"`
+	VSID                string `json:"vSID,omitempty"`
+	Type                string `json:"type,omitempty"`
 }
-
-
 
 // GctsCreateRepositoryCommand Creates a Git repository on an ABAP system
 func GctsCreateRepositoryCommand() *cobra.Command {
@@ -38,7 +36,7 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 	var createGctsCreateRepositoryCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Creates a Git repository on an ABAP system",
-		Long: `Creates a local Git repository on an ABAP system if it does not already exist.`,
+		Long:  `Creates a local Git repository on an ABAP system if it does not already exist.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -112,76 +110,76 @@ func gctsCreateRepositoryMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "repository",
+						Name:        "repository",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "host",
+						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "client",
+						Name:        "client",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "remoteRepositoryURL",
+						Name:        "remoteRepositoryURL",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "role",
+						Name:        "role",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "vSID",
+						Name:        "vSID",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "type",
+						Name:        "type",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

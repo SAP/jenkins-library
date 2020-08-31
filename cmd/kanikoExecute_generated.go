@@ -14,16 +14,14 @@ import (
 )
 
 type kanikoExecuteOptions struct {
-	BuildOptions []string `json:"buildOptions,omitempty"`
-	ContainerBuildOptions string `json:"containerBuildOptions,omitempty"`
-	ContainerImage string `json:"containerImage,omitempty"`
-	ContainerPreparationCommand string `json:"containerPreparationCommand,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	DockerConfigJSON string `json:"dockerConfigJSON,omitempty"`
-	DockerfilePath string `json:"dockerfilePath,omitempty"`
+	BuildOptions                []string `json:"buildOptions,omitempty"`
+	ContainerBuildOptions       string   `json:"containerBuildOptions,omitempty"`
+	ContainerImage              string   `json:"containerImage,omitempty"`
+	ContainerPreparationCommand string   `json:"containerPreparationCommand,omitempty"`
+	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
+	DockerConfigJSON            string   `json:"dockerConfigJSON,omitempty"`
+	DockerfilePath              string   `json:"dockerfilePath,omitempty"`
 }
-
-
 
 // KanikoExecuteCommand Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 func KanikoExecuteCommand() *cobra.Command {
@@ -36,7 +34,7 @@ func KanikoExecuteCommand() *cobra.Command {
 	var createKanikoExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.",
-		Long: `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.`,
+		Long:  `Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -102,60 +100,60 @@ func kanikoExecuteMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "buildOptions",
+						Name:        "buildOptions",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "containerBuildOptions",
+						Name:        "containerBuildOptions",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "containerImage",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"},},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "containerImageNameAndTag"},},
+						Name:        "containerImage",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"}},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
 					},
 					{
-						Name:      "containerPreparationCommand",
+						Name:        "containerPreparationCommand",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "customTlsCertificateLinks",
+						Name:        "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "dockerConfigJSON",
+						Name:        "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "dockerfilePath",
+						Name:        "dockerfilePath",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "dockerfile"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerfile"}},
 					},
 				},
 			},

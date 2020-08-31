@@ -14,20 +14,18 @@ import (
 )
 
 type githubCreatePullRequestOptions struct {
-	Assignees []string `json:"assignees,omitempty"`
-	Base string `json:"base,omitempty"`
-	Body string `json:"body,omitempty"`
-	APIURL string `json:"apiUrl,omitempty"`
-	Head string `json:"head,omitempty"`
-	Owner string `json:"owner,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	ServerURL string `json:"serverUrl,omitempty"`
-	Title string `json:"title,omitempty"`
-	Token string `json:"token,omitempty"`
-	Labels []string `json:"labels,omitempty"`
+	Assignees  []string `json:"assignees,omitempty"`
+	Base       string   `json:"base,omitempty"`
+	Body       string   `json:"body,omitempty"`
+	APIURL     string   `json:"apiUrl,omitempty"`
+	Head       string   `json:"head,omitempty"`
+	Owner      string   `json:"owner,omitempty"`
+	Repository string   `json:"repository,omitempty"`
+	ServerURL  string   `json:"serverUrl,omitempty"`
+	Title      string   `json:"title,omitempty"`
+	Token      string   `json:"token,omitempty"`
+	Labels     []string `json:"labels,omitempty"`
 }
-
-
 
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
@@ -121,92 +119,92 @@ func githubCreatePullRequestMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "assignees",
+						Name:        "assignees",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "base",
+						Name:        "base",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "body",
+						Name:        "body",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "apiUrl",
+						Name:        "apiUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubApiUrl"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
-						Name:      "head",
+						Name:        "head",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "owner",
+						Name:        "owner",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubOrg"}},
 					},
 					{
-						Name:      "repository",
+						Name:        "repository",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo"},},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubRepo"}},
 					},
 					{
-						Name:      "serverUrl",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubServerUrl"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
-						Name:      "title",
+						Name:        "title",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "token",
+						Name:        "token",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"},},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "githubToken"}},
 					},
 					{
-						Name:      "labels",
+						Name:        "labels",
 						ResourceRef: []config.ResourceReference{},
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
