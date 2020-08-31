@@ -252,6 +252,38 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += "\n\n"
 	}
 
+	for _, secret := range stepData.Spec.Inputs.Secrets {
+		details += fmt.Sprintf("#### %v\n\n", secret.Name)
+
+		if !contains(stepParameterNames, secret.Name) {
+			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
+		}
+
+		// if len(secret.LongDescription) > 0 {
+		// 	details += secret.LongDescription + "\n\n"
+		// } else {
+		details += secret.Description + "\n\n"
+		// }
+
+		details += "[back to overview](#parameters)\n\n"
+
+		details += "| Scope | Details |\n"
+		details += "| ---- | --------- |\n"
+
+		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
+		details += fmt.Sprintf("| Type | `%v` |\n", secret.Type)
+		// details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(secret.Mandatory && secret.Default == nil, "**yes**", "no"))
+		// details += fmt.Sprintf("| Default | %v |\n", formatDefault(secret, stepParameterNames))
+		// if secret.PossibleValues != nil {
+		// 	details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(secret.PossibleValues))
+		// }
+		// details += fmt.Sprintf("| Secret | %v |\n", ifThenElse(secret.Secret, "**yes**", "no"))
+		// details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(secret.Scope))
+		// details += fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(secret.ResourceRef))
+
+		details += "\n\n"
+	}
+
 	return details
 }
 
@@ -383,7 +415,7 @@ func handleStepParameters(stepData *config.StepData) {
 	appendGeneralOptionsToParameters(stepData)
 
 	//add secrets to step parameters
-	appendSecretsToParameters(stepData)
+	//appendSecretsToParameters(stepData)
 
 	//consolidate conditional parameters:
 	//- remove duplicate parameter entries
