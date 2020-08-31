@@ -280,9 +280,9 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 
 	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/pdf-report", productID), "")
 	headers := map[string][]string{
-		"Cache-Control": []string{"no-cache, no-store, must-revalidate"},
-		"Pragma":        []string{"no-cache"},
-		"Outputfile":    []string{reportFileName},
+		"Cache-Control": {"no-cache, no-store, must-revalidate"},
+		"Pragma":        {"no-cache"},
+		"Outputfile":    {reportFileName},
 	}
 
 	readCloser, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
@@ -296,7 +296,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 // UploadScanFile upload the scan file to the protecode server
 func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
+	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 
@@ -316,7 +316,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 // DeclareFetchURL configures the fetch url for the protecode scan
 func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
+	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": []string{"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
@@ -381,7 +381,7 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 
 	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 	headers := map[string][]string{
-		"acceptType": []string{"application/json"},
+		"acceptType": {"application/json"},
 	}
 
 	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
@@ -403,7 +403,7 @@ func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
 
 		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
 		headers := map[string][]string{
-			"acceptType": []string{"application/json"},
+			"acceptType": {"application/json"},
 		}
 
 		response := pc.loadExisting(protecodeURL, headers)
