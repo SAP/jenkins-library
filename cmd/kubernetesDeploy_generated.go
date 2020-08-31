@@ -183,12 +183,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
 					},
 					{
-						Name:        "containerRegistryPassword",
-						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "password"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "containerRegistryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "dockerCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -204,12 +210,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
-						Name:        "containerRegistryUser",
-						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "username"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "containerRegistryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "dockerCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "containerRegistrySecret",
@@ -281,12 +293,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "kubeConfig",
-						ResourceRef: []config.ResourceReference{{Name: "kubeConfigFileCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "kubeConfig",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "kubeConfigFileCredentialsId",
+								Param: "",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "kubeContext",
@@ -297,12 +315,18 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "kubeToken",
-						ResourceRef: []config.ResourceReference{{Name: "kubeTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "kubeToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "kubeTokenCredentialsId",
+								Param: "",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "namespace",
