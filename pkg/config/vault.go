@@ -2,10 +2,9 @@ package config
 
 import (
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 var vaultFilter = []string{
@@ -42,7 +41,6 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 
 	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
 	if err != nil {
-		log.Entry().Errorf("Creating vault client failed")
 		return nil, err
 	}
 

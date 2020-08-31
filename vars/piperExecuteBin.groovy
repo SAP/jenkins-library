@@ -165,7 +165,6 @@ void credentialWrapper(config, List credentialInfo, body) {
                     break
                 case "token":
                     if (config[cred.id]) creds.add(string(credentialsId: config[cred.id], variable: cred.env[0]))
-                    echo "setting $cred.id"
                     break
                 case "usernamePassword":
                     if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))

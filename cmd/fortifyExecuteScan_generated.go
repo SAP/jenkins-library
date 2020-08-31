@@ -254,9 +254,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "authToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "fortifyCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "fortifyCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -268,9 +267,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "githubTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

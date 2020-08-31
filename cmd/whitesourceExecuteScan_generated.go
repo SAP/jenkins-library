@@ -331,9 +331,8 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name: "orgToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "orgAdminUserTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "orgAdminUserTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -345,9 +344,8 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name: "userToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "userTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "userTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

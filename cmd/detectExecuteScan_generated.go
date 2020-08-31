@@ -122,9 +122,8 @@ func detectExecuteScanMetadata() config.StepData {
 						Name: "apiToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "detectTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "detectTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

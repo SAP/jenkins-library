@@ -172,9 +172,8 @@ func gctsRollbackMetadata() config.StepData {
 						Name: "githubPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "githubPersonalAccessTokenId",
-								Param: "",
-								Type:  "secret",
+								Name: "githubPersonalAccessTokenId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

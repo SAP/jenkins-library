@@ -193,9 +193,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "sonarTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "sonarTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
@@ -358,9 +357,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "githubToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "githubTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

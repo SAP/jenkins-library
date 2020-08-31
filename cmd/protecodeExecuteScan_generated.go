@@ -223,9 +223,8 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "dockerConfigJsonCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "dockerConfigJsonCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

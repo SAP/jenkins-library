@@ -195,17 +195,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
+	// add vault credentials so that configuration can be fetched from vault
 	if GeneralConfig.VaultApproleID == "" {
 		GeneralConfig.VaultApproleID = os.Getenv("PIPER_vaultApproleID")
 	}
-
 	if GeneralConfig.VaultApproleSecretID == "" {
 		GeneralConfig.VaultApproleSecretID = os.Getenv("PIPER_vaultApproleSecretID")
 	}
-
 	myConfig.SetVaultCredentials(GeneralConfig.VaultApproleID, GeneralConfig.VaultApproleSecretID)
-
-	log.Entry().Infof("myConfig is %#v", myConfig)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

@@ -233,7 +233,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	if err != nil {
 		return StepConfig{}, err
 	}
-
 	if vaultClient != nil {
 		err = addVaultCredentials(&stepConfig, vaultClient, parameters)
 		if err != nil {

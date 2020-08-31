@@ -194,9 +194,8 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "githubTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

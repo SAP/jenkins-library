@@ -296,9 +296,8 @@ func kubernetesDeployMetadata() config.StepData {
 						Name: "kubeConfig",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "kubeConfigFileCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "kubeConfigFileCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -318,9 +317,8 @@ func kubernetesDeployMetadata() config.StepData {
 						Name: "kubeToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "kubeTokenCredentialsId",
-								Param: "",
-								Type:  "secret",
+								Name: "kubeTokenCredentialsId",
+								Type: "secret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

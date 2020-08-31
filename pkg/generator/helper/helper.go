@@ -143,7 +143,9 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 {{ define "resourceRefs"}}
 							{{ "{" }}
 								Name: "{{- .Name }}",
+								{{- if .Param }}
 								Param: "{{ .Param }}",
+								{{- end }}
 								{{- if  gt (len .Paths) 0 }}
 								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
 								{{- end }}
