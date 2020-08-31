@@ -79,6 +79,7 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 
 			field := secret[param.Name]
 			if field != "" {
+				log.RegisterSecret(field)
 				config.Config[param.Name] = field
 				break
 			}
