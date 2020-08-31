@@ -14,19 +14,21 @@ import (
 )
 
 type mavenExecuteStaticCodeChecksOptions struct {
-	SpotBugs                     bool     `json:"spotBugs,omitempty"`
-	Pmd                          bool     `json:"pmd,omitempty"`
-	MavenModulesExcludes         []string `json:"mavenModulesExcludes,omitempty"`
-	SpotBugsExcludeFilterFile    string   `json:"spotBugsExcludeFilterFile,omitempty"`
-	SpotBugsIncludeFilterFile    string   `json:"spotBugsIncludeFilterFile,omitempty"`
-	SpotBugsMaxAllowedViolations int      `json:"spotBugsMaxAllowedViolations,omitempty"`
-	PmdFailurePriority           int      `json:"pmdFailurePriority,omitempty"`
-	PmdMaxAllowedViolations      int      `json:"pmdMaxAllowedViolations,omitempty"`
-	ProjectSettingsFile          string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty"`
-	M2Path                       string   `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers  bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	SpotBugs bool `json:"spotBugs,omitempty"`
+	Pmd bool `json:"pmd,omitempty"`
+	MavenModulesExcludes []string `json:"mavenModulesExcludes,omitempty"`
+	SpotBugsExcludeFilterFile string `json:"spotBugsExcludeFilterFile,omitempty"`
+	SpotBugsIncludeFilterFile string `json:"spotBugsIncludeFilterFile,omitempty"`
+	SpotBugsMaxAllowedViolations int `json:"spotBugsMaxAllowedViolations,omitempty"`
+	PmdFailurePriority int `json:"pmdFailurePriority,omitempty"`
+	PmdMaxAllowedViolations int `json:"pmdMaxAllowedViolations,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile string `json:"globalSettingsFile,omitempty"`
+	M2Path string `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool `json:"logSuccessfulMavenTransfers,omitempty"`
 }
+
+
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
 func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
@@ -110,106 +112,106 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:    "mavenExecuteStaticCodeChecks",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false},},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "spotBugs",
+						Name:      "spotBugs",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "pmd",
+						Name:      "pmd",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "mavenModulesExcludes",
+						Name:      "mavenModulesExcludes",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "spotBugsExcludeFilterFile",
+						Name:      "spotBugsExcludeFilterFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "spotBugs/excludeFilterFile"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "spotBugs/excludeFilterFile"},},
 					},
 					{
-						Name:        "spotBugsIncludeFilterFile",
+						Name:      "spotBugsIncludeFilterFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "spotBugs/includeFilterFile"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "spotBugs/includeFilterFile"},},
 					},
 					{
-						Name:        "spotBugsMaxAllowedViolations",
+						Name:      "spotBugsMaxAllowedViolations",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "spotBugs/maxAllowedViolations"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "int",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "spotBugs/maxAllowedViolations"},},
 					},
 					{
-						Name:        "pmdFailurePriority",
+						Name:      "pmdFailurePriority",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pmd/failurePriority"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "int",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "pmd/failurePriority"},},
 					},
 					{
-						Name:        "pmdMaxAllowedViolations",
+						Name:      "pmdMaxAllowedViolations",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "int",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "pmd/maxAllowedViolations"},},
 					},
 					{
-						Name:        "projectSettingsFile",
+						Name:      "projectSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "maven/projectSettingsFile"},},
 					},
 					{
-						Name:        "globalSettingsFile",
+						Name:      "globalSettingsFile",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"},},
 					},
 					{
-						Name:        "m2Path",
+						Name:      "m2Path",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "maven/m2Path"},},
 					},
 					{
-						Name:        "logSuccessfulMavenTransfers",
+						Name:      "logSuccessfulMavenTransfers",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Scope:     []string{"GENERAL","STEPS","STAGES","PARAMETERS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"},},
 					},
 				},
 			},

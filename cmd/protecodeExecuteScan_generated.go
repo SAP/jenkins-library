@@ -16,35 +16,36 @@ import (
 )
 
 type protecodeExecuteScanOptions struct {
-	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
-	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
-	ScanImage                   string `json:"scanImage,omitempty"`
-	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
-	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
-	CleanupMode                 string `json:"cleanupMode,omitempty"`
-	FilePath                    string `json:"filePath,omitempty"`
-	IncludeLayers               bool   `json:"includeLayers,omitempty"`
-	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
-	ServerURL                   string `json:"serverUrl,omitempty"`
-	ReportFileName              string `json:"reportFileName,omitempty"`
-	FetchURL                    string `json:"fetchUrl,omitempty"`
-	Group                       string `json:"group,omitempty"`
-	ReuseExisting               bool   `json:"reuseExisting,omitempty"`
-	Username                    string `json:"username,omitempty"`
-	Password                    string `json:"password,omitempty"`
-	ArtifactVersion             string `json:"artifactVersion,omitempty"`
-	PullRequestName             string `json:"pullRequestName,omitempty"`
+	ExcludeCVEs string `json:"excludeCVEs,omitempty"`
+	FailOnSevereVulnerabilities bool `json:"failOnSevereVulnerabilities,omitempty"`
+	ScanImage string `json:"scanImage,omitempty"`
+	DockerRegistryURL string `json:"dockerRegistryUrl,omitempty"`
+	DockerConfigJSON string `json:"dockerConfigJSON,omitempty"`
+	CleanupMode string `json:"cleanupMode,omitempty"`
+	FilePath string `json:"filePath,omitempty"`
+	IncludeLayers bool `json:"includeLayers,omitempty"`
+	TimeoutMinutes string `json:"timeoutMinutes,omitempty"`
+	ServerURL string `json:"serverUrl,omitempty"`
+	ReportFileName string `json:"reportFileName,omitempty"`
+	FetchURL string `json:"fetchUrl,omitempty"`
+	Group string `json:"group,omitempty"`
+	ReuseExisting bool `json:"reuseExisting,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	ArtifactVersion string `json:"artifactVersion,omitempty"`
+	PullRequestName string `json:"pullRequestName,omitempty"`
 }
+
 
 type protecodeExecuteScanInflux struct {
 	protecode_data struct {
 		fields struct {
 			historical_vulnerabilities string
-			triaged_vulnerabilities    string
-			excluded_vulnerabilities   string
-			minor_vulnerabilities      string
-			major_vulnerabilities      string
-			vulnerabilities            string
+			triaged_vulnerabilities string
+			excluded_vulnerabilities string
+			minor_vulnerabilities string
+			major_vulnerabilities string
+			vulnerabilities string
 		}
 		tags struct {
 		}
@@ -52,18 +53,18 @@ type protecodeExecuteScanInflux struct {
 }
 
 func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
-	measurementContent := []struct {
+	measurementContent := []struct{
 		measurement string
 		valType     string
 		name        string
 		value       string
 	}{
-		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data" , name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
 	}
 
 	errCount := 0
@@ -78,6 +79,7 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }
+
 
 // ProtecodeExecuteScanCommand Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.
 func ProtecodeExecuteScanCommand() *cobra.Command {
@@ -178,148 +180,148 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "excludeCVEs",
+						Name:      "excludeCVEs",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "protecodeExcludeCVEs"},},
 					},
 					{
-						Name:        "failOnSevereVulnerabilities",
+						Name:      "failOnSevereVulnerabilities",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"},},
 					},
 					{
-						Name:        "scanImage",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerImage"}},
+						Name:      "scanImage",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"},},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerImage"},},
 					},
 					{
-						Name:        "dockerRegistryUrl",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "dockerRegistryUrl",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"},},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "dockerConfigJSON",
-						ResourceRef: []config.ResourceReference{{Name: "dockerConfigJsonCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "dockerConfigJSON",
+						ResourceRef: []config.ResourceReference{{Name: "dockerConfigJsonCredentialsId", Param: ""},},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "cleanupMode",
+						Name:      "cleanupMode",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "filePath",
+						Name:      "filePath",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "includeLayers",
+						Name:      "includeLayers",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "timeoutMinutes",
+						Name:      "timeoutMinutes",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "protecodeTimeoutMinutes"},},
 					},
 					{
-						Name:        "serverUrl",
+						Name:      "serverUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "protecodeServerUrl"},},
 					},
 					{
-						Name:        "reportFileName",
+						Name:      "reportFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "fetchUrl",
+						Name:      "fetchUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "group",
+						Name:      "group",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "protecodeGroup"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "protecodeGroup"},},
 					},
 					{
-						Name:        "reuseExisting",
+						Name:      "reuseExisting",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "username",
+						Name:      "username",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "user"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "user"},},
 					},
 					{
-						Name:        "password",
+						Name:      "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "artifactVersion",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "artifactVersion",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"},},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "pullRequestName",
+						Name:      "pullRequestName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

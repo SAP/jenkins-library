@@ -4,8 +4,9 @@
 
 ## Prerequisites
 
-* werte aus der pipeline: package name
-* steps vorher -> unklar, package name krieg ich aus reserve next, aber muss es zb eventuell im status L sein um released zu werden? dann müsste register gelaufen sein, eigentlich muss natürlich auch die assembly gelaufen sein
+* This step needs the names of the packages which should be released. The packages needs to be in status "L"ocked. If they are already in status "R"eleased it is fine, then the release will just not be executed. However this step will end with an error if a package has status "P"lanned.
+* The package names are taken from the addonDescriptor in the commonPipelineEnvironment together with the status of the packages.
+* The step [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages) will set the status of the packages to "L"ocked and writes the needed data to the commonPipelineEnvironment
 
 ## ${docGenParameters}
 
@@ -56,7 +57,7 @@ Mandatory fields:
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"L",
     "Namespace":"",
     "SarXMLFilePath":""
   },
@@ -71,7 +72,7 @@ Mandatory fields:
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"R",
     "Namespace":"",
     "SarXMLFilePath":""
   }

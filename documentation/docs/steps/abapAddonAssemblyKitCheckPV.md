@@ -4,7 +4,21 @@
 
 ## Prerequisites
 
-* addon.yml
+* The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories. The addon.yml should look like this:
+
+```yaml
+addonProduct: /DMO/myAddonProduct
+addonVersion: 3.1.4
+addonUniqueID: myAddonId
+customerID: $ID
+repositories:
+   - name: /DMO/REPO_A
+     tag: v-1.0.1-build-0001
+     version: 1.0.1
+   - name: /DMO/REPO_B
+     tag: rel-2.1.1-build-0001
+     version: 2.1.1
+```
 
 ## ${docGenParameters}
 

@@ -16,26 +16,27 @@ import (
 )
 
 type sonarExecuteScanOptions struct {
-	Instance                  string   `json:"instance,omitempty"`
-	Host                      string   `json:"host,omitempty"`
-	Token                     string   `json:"token,omitempty"`
-	Organization              string   `json:"organization,omitempty"`
+	Instance string `json:"instance,omitempty"`
+	Host string `json:"host,omitempty"`
+	Token string `json:"token,omitempty"`
+	Organization string `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	ProjectVersion            string   `json:"projectVersion,omitempty"`
-	Options                   []string `json:"options,omitempty"`
-	BranchName                string   `json:"branchName,omitempty"`
-	ChangeID                  string   `json:"changeId,omitempty"`
-	ChangeBranch              string   `json:"changeBranch,omitempty"`
-	ChangeTarget              string   `json:"changeTarget,omitempty"`
-	PullRequestProvider       string   `json:"pullRequestProvider,omitempty"`
-	Owner                     string   `json:"owner,omitempty"`
-	Repository                string   `json:"repository,omitempty"`
-	GithubToken               string   `json:"githubToken,omitempty"`
-	DisableInlineComments     bool     `json:"disableInlineComments,omitempty"`
-	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
-	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
+	SonarScannerDownloadURL string `json:"sonarScannerDownloadUrl,omitempty"`
+	ProjectVersion string `json:"projectVersion,omitempty"`
+	Options []string `json:"options,omitempty"`
+	BranchName string `json:"branchName,omitempty"`
+	ChangeID string `json:"changeId,omitempty"`
+	ChangeBranch string `json:"changeBranch,omitempty"`
+	ChangeTarget string `json:"changeTarget,omitempty"`
+	PullRequestProvider string `json:"pullRequestProvider,omitempty"`
+	Owner string `json:"owner,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	GithubToken string `json:"githubToken,omitempty"`
+	DisableInlineComments bool `json:"disableInlineComments,omitempty"`
+	LegacyPRHandling bool `json:"legacyPRHandling,omitempty"`
+	GithubAPIURL string `json:"githubApiUrl,omitempty"`
 }
+
 
 type sonarExecuteScanInflux struct {
 	step_data struct {
@@ -48,13 +49,13 @@ type sonarExecuteScanInflux struct {
 }
 
 func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
-	measurementContent := []struct {
+	measurementContent := []struct{
 		measurement string
 		valType     string
 		name        string
 		value       string
 	}{
-		{valType: config.InfluxField, measurement: "step_data", name: "sonar", value: i.step_data.fields.sonar},
+		{valType: config.InfluxField, measurement: "step_data" , name: "sonar", value: i.step_data.fields.sonar},
 	}
 
 	errCount := 0
@@ -70,6 +71,7 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 	}
 }
 
+
 // SonarExecuteScanCommand Executes the Sonar scanner
 func SonarExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "sonarExecuteScan"
@@ -82,7 +84,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 	var createSonarExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes the Sonar scanner",
-		Long:  `The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.`,
+		Long: `The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -162,156 +164,156 @@ func sonarExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "instance",
+						Name:      "instance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "host",
+						Name:      "host",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarServerUrl"}},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "sonarServerUrl"},},
 					},
 					{
-						Name:        "token",
-						ResourceRef: []config.ResourceReference{{Name: "sonarTokenCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarToken"}},
+						Name:      "token",
+						ResourceRef: []config.ResourceReference{{Name: "sonarTokenCredentialsId", Param: ""},},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "sonarToken"},},
 					},
 					{
-						Name:        "organization",
+						Name:      "organization",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "customTlsCertificateLinks",
+						Name:      "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "sonarScannerDownloadUrl",
+						Name:      "sonarScannerDownloadUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "projectVersion",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "projectVersion",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"},},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "options",
+						Name:      "options",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "branchName",
+						Name:      "branchName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "changeId",
+						Name:      "changeId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "changeBranch",
+						Name:      "changeBranch",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "changeTarget",
+						Name:      "changeTarget",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "pullRequestProvider",
+						Name:      "pullRequestProvider",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "owner",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "githubOrg"}},
+						Name:      "owner",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"},},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubOrg"},},
 					},
 					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "githubRepo"}},
+						Name:      "repository",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"},},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubRepo"},},
 					},
 					{
-						Name:        "githubToken",
-						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name:      "githubToken",
+						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""},},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "disableInlineComments",
+						Name:      "disableInlineComments",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "legacyPRHandling",
+						Name:      "legacyPRHandling",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "githubApiUrl",
+						Name:      "githubApiUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

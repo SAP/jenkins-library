@@ -4,8 +4,9 @@
 
 ## Prerequisites
 
-* werte aus pipeline: target vector id 
-* scope
+* This step needs an existing Target Vector as well as the scope where it should be published.
+* The Target Vector ID is taken from the addonDescriptor in the commonPipelineEnvironment.
+* If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector) the Target Vector will be created and its ID will be written to the commonPipelineEnvironment 
 
 ## ${docGenParameters}
 
@@ -16,12 +17,14 @@
 ## Examples
 
 ### Configuration in the config.yml 
-
-TODO scope dazu fügen, 
+ 
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile looks:
 
 ```groovy
-abapAddonAssemblyKitPublishTargetVector script: this
+abapAddonAssemblyKitPublishTargetVector(
+                    scopeTV: 'scopeTV',
+                    script: this,
+                    )
 ```
 The config.yml should look like this:
 

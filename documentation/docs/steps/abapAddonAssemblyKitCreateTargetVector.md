@@ -4,9 +4,11 @@
 
 ## Prerequisites
 
-* werte aus pipeline: fürs product: Please provide product name, version, spslevel and patchlevel"
-* für swc: Please provide software component name, version, splevel, patchlevel and packagename
-* was muss vorher gelaufen sein: check PV, check SCV, reserve next Packages -> vermutlich sonst auch noch register?
+* This step needs the Product Version name and the resolved version(version, spslevel and patchlevel)
+* It also needs for each Software Component Version which should be part of the Target Vector, the name and the resolved version(version, splevel and patchlevel) as well as the Delivery Package
+* The Delivery Packages must exist in the package registry (status "P") or already as physical packages (status "L" or "R")
+* These informations are taken from the addonDescriptor in the commonPipelineEnvironment
+* If you run prior to this step the steps: [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs), [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV) and [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages) you will get the needed information.
 
 ## ${docGenParameters}
 
@@ -55,7 +57,7 @@ steps:
     "SpLevel":"0000",
     "PatchLevel":"0001",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"L",
     "Namespace":"",
     "SarXMLFilePath":""
   },
@@ -70,7 +72,7 @@ steps:
     "SpLevel":"0001",
     "PatchLevel":"0001",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"R",
     "Namespace":"",
     "SarXMLFilePath":""
   }

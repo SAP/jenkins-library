@@ -14,10 +14,12 @@ import (
 )
 
 type jsonApplyPatchOptions struct {
-	Input  string `json:"input,omitempty"`
-	Patch  string `json:"patch,omitempty"`
+	Input string `json:"input,omitempty"`
+	Patch string `json:"patch,omitempty"`
 	Output string `json:"output,omitempty"`
 }
+
+
 
 // JsonApplyPatchCommand Patches a json with a patch file
 func JsonApplyPatchCommand() *cobra.Command {
@@ -95,28 +97,28 @@ func jsonApplyPatchMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "input",
+						Name:      "input",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "patch",
+						Name:      "patch",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "output",
+						Name:      "output",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
