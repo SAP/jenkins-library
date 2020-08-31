@@ -107,6 +107,9 @@ spec:
       type: string
       mandatory: true
       secret: true
+      resourceRef:
+        - name: githubTokenCredentialsId
+          type: secret
     - name: labels
       description: Labels to be added to the pull request.
       scope:

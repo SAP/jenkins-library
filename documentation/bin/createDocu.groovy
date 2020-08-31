@@ -245,6 +245,7 @@ class Helper {
         return  new Script() {
 
             def STEP_NAME = _stepName
+            def env = [:]
 
             def handlePipelineStepErrors(def m, Closure c) {
                 c()
