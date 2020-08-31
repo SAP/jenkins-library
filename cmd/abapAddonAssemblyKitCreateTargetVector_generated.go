@@ -50,7 +50,7 @@ func (p *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) persis
 	}
 }
 
-// AbapAddonAssemblyKitCreateTargetVectorCommand TODO
+// AbapAddonAssemblyKitCreateTargetVectorCommand This step creates a Target Vector for SPC
 func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCreateTargetVector"
 
@@ -61,8 +61,10 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitCreateTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "This step creates a Target Vector for SPC",
+		Long: `This step takes the Product Version and the corresponding list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+With these it creates a Target Vector, which is necessary for executing the software change in ABAP Cloud Platform systems with help of the Software Provider Cockpit (SPC). 
+It describes the software state, which shall be reached in the managed ABAP Cloud Platform system.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -109,10 +111,10 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCreateTargetVectorOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")

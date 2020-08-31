@@ -1,18 +1,20 @@
 metadata:
     name: abapAddonAssemblyKitCreateTargetVector
-    description: TODO
+    description: This step creates a Target Vector for SPC
     longDescription: |
-        TODO    
+      This step takes the Product Version and the corresponding list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+      With these it creates a Target Vector, which is necessary for executing the software change in ABAP Cloud Platform systems with help of the Software Provider Cockpit (SPC). 
+      It describes the software state, which shall be reached in the managed ABAP Cloud Platform system.    
 spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential for AbapAddonAssemblyKit System
+        description: Credential stored in Jenkins for Addon Assembly Kit as a Service System (AAKaaS)
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
         type: string
-        description: TODO
+        description: Base URL to the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -21,7 +23,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User
+        description: User for the Addon Assembly Kit as a Service System (AAKaaS)
         scope: 
         - PARAMETERS
         - STAGES
@@ -30,7 +32,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: User Password
+        description: Password the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -39,7 +41,7 @@ spec:
         secret: true
       - name: addonDescriptor
         type: string
-        description: AddonDescriptor
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
         mandatory: true
         scope:
           - PARAMETERS

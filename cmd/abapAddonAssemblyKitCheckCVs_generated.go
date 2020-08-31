@@ -51,7 +51,7 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 	}
 }
 
-// AbapAddonAssemblyKitCheckCVsCommand TODO
+// AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of Software Component Versions.
 func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCheckCVs"
 
@@ -62,8 +62,9 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitCheckCVsCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "This step checks the validity of Software Component Versions.",
+		Long: `This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
+It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -110,11 +111,11 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckCVsOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `.pipeline/addon.yml`, "File name of the YAML descriptor")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `.pipeline/addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")

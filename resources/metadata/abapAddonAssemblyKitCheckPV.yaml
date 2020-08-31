@@ -1,18 +1,19 @@
 metadata:
     name: abapAddonAssemblyKitCheckPV
-    description: TODO
+    description: This step checks the validity of a Addon Product Version.
     longDescription: |
-        TODO    
+      This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
+      It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.     
 spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential for AbapAddonAssemblyKit System
+        description: Credential stored in Jenkins for Addon Assembly Kit as a Service System (AAKaaS)
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
         type: string
-        description: TODO
+        description: Base URL to the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -21,7 +22,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User
+        description: User for the Addon Assembly Kit as a Service System (AAKaaS)
         scope: 
         - PARAMETERS
         - STAGES
@@ -30,7 +31,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: User Password
+        description: Password the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -39,7 +40,7 @@ spec:
         secret: true
       - name: addonDescriptorFileName
         type: string
-        description: File name of the YAML descriptor
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
         mandatory: true
         default: .pipeline/addon.yml
       - name: addonDescriptor

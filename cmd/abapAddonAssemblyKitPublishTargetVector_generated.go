@@ -21,7 +21,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
-// AbapAddonAssemblyKitPublishTargetVectorCommand TODO
+// AbapAddonAssemblyKitPublishTargetVectorCommand This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope.
 func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitPublishTargetVector"
 
@@ -31,8 +31,9 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope.",
+		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector to the Service Provider Cockpit system.
+With scopeTV "T" the Target Vector will be published to the test SPC and with scopeTV "P" it will be published to public SPC.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -78,11 +79,11 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitPublishTargetVectorOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "Determines whether the Target Vector is published to the public SPC('P') or the test SPC('T')")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")

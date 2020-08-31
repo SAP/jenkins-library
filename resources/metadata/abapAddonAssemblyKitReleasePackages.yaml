@@ -1,18 +1,20 @@
 metadata:
     name: abapAddonAssemblyKitReleasePackages
-    description: TODO
+    description: This step releases the physical Delivery Packages
     longDescription: |
-        TODO    
+      This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+      The physical Delivery Packages in status “L” are released and uploaded to the "ABAP CP" section in the SAP artifactory object 
+      store. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.    
 spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential for AbapAddonAssemblyKit System
+        description: Credential stored in Jenkins for Addon Assembly Kit as a Service System (AAKaaS)
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
         type: string
-        description: TODO
+        description: Base URL to the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -21,7 +23,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User
+        description: User for the Addon Assembly Kit as a Service System (AAKaaS)
         scope: 
         - PARAMETERS
         - STAGES
@@ -30,7 +32,7 @@ spec:
         mandatory: true
       - name: password
         type: string
-        description: User Password
+        description: Password the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -39,7 +41,7 @@ spec:
         mandatory: true
       - name: addonDescriptor
         type: string
-        description: AddonDescriptor
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
         mandatory: true
         scope:
           - PARAMETERS

@@ -50,7 +50,7 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 	}
 }
 
-// AbapAddonAssemblyKitReserveNextPackagesCommand TODO
+// AbapAddonAssemblyKitReserveNextPackagesCommand This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.
 func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitReserveNextPackages"
 
@@ -61,8 +61,13 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitReserveNextPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.",
+		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages 
+If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
+"P": Package was created in the registry; production can be started / continued
+"R": Package exists and is already released; production is not needed and must be skipped
+The steps waits until the status "P" or "R" is achieved.
+The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -109,10 +114,10 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitReserveNextPackagesOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")

@@ -1,18 +1,22 @@
 metadata:
     name: abapAddonAssemblyKitRegisterPackages
-    description: TODO
+    description: This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
     longDescription: |
-        TODO    
+      This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+      For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
+      and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
+      The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.
+      
 spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential for AbapAddonAssemblyKit System
+        description: Credential stored in Jenkins for Addon Assembly Kit as a Service System (AAKaaS)
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
         type: string
-        description: TODO
+        description: Base URL to the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -21,7 +25,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User
+        description: User for the Addon Assembly Kit as a Service System (AAKaaS)
         scope: 
         - PARAMETERS
         - STAGES
@@ -30,7 +34,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: User Password
+        description: Password the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
         - PARAMETERS
         - STAGES
@@ -39,7 +43,7 @@ spec:
         secret: true
       - name: addonDescriptor
         type: string
-        description: AddonDescriptor
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
         mandatory: true
         scope:
           - PARAMETERS

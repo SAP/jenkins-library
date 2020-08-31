@@ -50,7 +50,7 @@ func (p *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) persist(
 	}
 }
 
-// AbapAddonAssemblyKitRegisterPackagesCommand TODO
+// AbapAddonAssemblyKitRegisterPackagesCommand This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
 func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitRegisterPackages"
 
@@ -61,8 +61,11 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitRegisterPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
+		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
+and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
+The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -109,10 +112,10 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 }
 
 func addAbapAddonAssemblyKitRegisterPackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitRegisterPackagesOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "TODO")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
 	cmd.MarkFlagRequired("username")
