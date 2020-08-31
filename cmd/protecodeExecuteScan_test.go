@@ -93,7 +93,8 @@ func TestRunProtecodeScan(t *testing.T) {
 		t.Fatal("Failed to create temporary directory")
 	}
 	// clean up tmp dir
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
+
 	testFile, err := ioutil.TempFile(dir, "t.tar")
 	if err != nil {
 		t.FailNow()
@@ -191,6 +192,7 @@ func TestHandleArtifactVersion(t *testing.T) {
 		assert.Equal(t, c.want, got)
 	}
 }
+
 func TestCreateClient(t *testing.T) {
 	cases := []struct {
 		timeout string
@@ -206,6 +208,7 @@ func TestCreateClient(t *testing.T) {
 		assert.NotNil(t, client, "client should not be empty")
 	}
 }
+
 func TestCreateDockerClient(t *testing.T) {
 	cases := []struct {
 		scanImage         string
@@ -312,16 +315,21 @@ func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
 }
 
 func TestExecuteProtecodeScan(t *testing.T) {
+	testDataFile := filepath.Join("testdata", "TestProtecode", "protecode_result_violations.json")
+	violationsAbsPath, err := filepath.Abs(testDataFile)
+	if err != nil {
+		t.Fatalf("failed to obtain absolute path to test data with violations: %v", err)
+	}
+
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
 		var b bytes.Buffer
 
 		if requestURI == "/api/product/4711/" {
-			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
-			byteContent, err := ioutil.ReadFile(violations)
+			byteContent, err := ioutil.ReadFile(violationsAbsPath)
 			if err != nil {
-				t.Fatalf("failed reading %v", violations)
+				t.Fatalf("failed reading %v", violationsAbsPath)
 			}
 			response := protecode.ResultData{}
 			err = json.Unmarshal(byteContent, &response)
@@ -355,14 +363,28 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		{false, "binary", "group1", "/api/fetch/", 4711},
 	}
 
+	resetDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current directory: %v", err)
+	}
+	defer func() { _ = os.Chdir(resetDir) }()
+
 	for _, c := range cases {
 
 		dir, err := ioutil.TempDir("", "t")
 		if err != nil {
-			t.Fatal("Failed to create temporary directory")
+			t.Fatalf("Failed to create temporary directory: %v", err)
 		}
+
 		// clean up tmp dir
-		defer os.RemoveAll(dir)
+		defer func() { _ = os.RemoveAll(dir) }()
+
+		// change into tmp dir and write test data
+		err = os.Chdir(dir)
+		if err != nil {
+			t.Fatalf("Failed to change into temporary directory: %v", err)
+		}
+
 		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
