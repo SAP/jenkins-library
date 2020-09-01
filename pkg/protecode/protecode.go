@@ -257,22 +257,18 @@ func isSevereCVSS2(vulnerability Vulnerability) bool {
 
 // DeleteScan deletes if configured the scan on the protecode server
 func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
-
 	switch cleanupMode {
 	case "none":
 	case "binary":
-		return
 	case "complete":
 		pc.logger.Info("Deleting scan from server.")
 		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 		headers := map[string][]string{}
 
 		pc.sendAPIRequest("DELETE", protecodeURL, headers)
-		break
 	default:
 		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
 	}
-
 }
 
 // LoadReport loads the report of the protecode scan
@@ -378,12 +374,10 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 }
 
 func (pc *Protecode) pullResult(productID int) (ResultData, error) {
-
 	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 	headers := map[string][]string{
 		"acceptType": {"application/json"},
 	}
-
 	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		return *new(ResultData), err
