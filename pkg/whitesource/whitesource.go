@@ -185,6 +185,8 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 		return Project{}, errors.Wrap(err, "WhiteSource request failed")
 	}
 
+	log.Entry().Debugf("response: %v", string(respBody))
+
 	err = json.Unmarshal(respBody, &wsResponse)
 	if err != nil {
 		return Project{}, errors.Wrap(err, "failed to parse WhiteSource response")
