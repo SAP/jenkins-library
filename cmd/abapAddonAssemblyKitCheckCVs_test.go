@@ -46,7 +46,7 @@ func TestValidateCV(t *testing.T) {
 	})
 }
 
-func TestValidateError(t *testing.T) {
+func TestValidateCVError(t *testing.T) {
 	t.Run("test validate with error", func(t *testing.T) {
 		conn := new(connector)
 		conn.Client = &clMockCheckCVs{}
@@ -62,7 +62,7 @@ func TestValidateError(t *testing.T) {
 	})
 }
 
-func TestCopyFields(t *testing.T) {
+func TestCopyFieldsCV(t *testing.T) {
 	t.Run("test copyFieldsToRepo", func(t *testing.T) {
 		repo := abaputils.Repository{
 			Name:        "/DRNMSPC/COMP01",
