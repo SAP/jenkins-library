@@ -38,7 +38,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: "'major"
+        default: "major"
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
