@@ -529,22 +529,26 @@ func blockUntilProjectIsUpdated(config *ScanOptions, sys whitesource, currentTim
 			return err
 		}
 
-		lastUpdatedTime, err := time.Parse(whitesourceDateTimeLayout, project.LastUpdateDate)
-		if err != nil {
-			return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
-				project.LastUpdateDate, err)
-		}
-		age := currentTime.Sub(lastUpdatedTime)
-		if age < maxAge {
-			//done polling
-			break
+		if project.LastUpdateDate == "" {
+			log.Entry().Infof("last updated time missing from project metadata, retrying")
+		} else {
+			lastUpdatedTime, err := time.Parse(whitesourceDateTimeLayout, project.LastUpdateDate)
+			if err != nil {
+				return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
+					project.LastUpdateDate, err)
+			}
+			age := currentTime.Sub(lastUpdatedTime)
+			if age < maxAge {
+				//done polling
+				break
+			}
+			log.Entry().Infof("time since project was last updated %v > %v, polling status...", age, maxAge)
 		}
 
 		if time.Now().Sub(startTime) > maxWaitTime {
 			return fmt.Errorf("timeout while waiting for Whitesource scan results to be reflected in service")
 		}
 
-		log.Entry().Infof("time since project was last updated %v > %v, polling status...", age, maxAge)
 		time.Sleep(timeBetweenPolls)
 	}
 	return nil

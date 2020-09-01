@@ -246,6 +246,24 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
 		}
 	})
+	t.Run("timeout while polling, no update time", func(t *testing.T) {
+		// init
+		nowString := "2010-05-30 00:15:00 +0100"
+		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		systemMock := newWhitesourceSystemMock("")
+		config := &ScanOptions{
+			ProjectToken: systemMock.projects[0].Token,
+		}
+		// test
+		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		// assert
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "timeout while waiting")
+		}
+	})
 }
 
 func TestDownloadReports(t *testing.T) {
