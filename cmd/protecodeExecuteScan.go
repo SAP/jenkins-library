@@ -200,7 +200,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	err = protecode.WriteReport(protecode.ProtecodeData{
+	err = protecode.WriteReport(protecode.ReportData{
 		ServerURL:                   config.ServerURL,
 		FailOnSevereVulnerabilities: config.FailOnSevereVulnerabilities,
 		ExcludeCVEs:                 config.ExcludeCVEs,

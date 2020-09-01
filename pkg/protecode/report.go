@@ -9,7 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type ProtecodeData struct {
+type ReportData struct {
 	Target                      string `json:"target,omitempty"`
 	Mandatory                   bool   `json:"mandatory,omitempty"`
 	ProductID                   string `json:"productID,omitempty"`
@@ -26,7 +26,7 @@ type ProtecodeData struct {
 }
 
 // WriteReport ...
-func WriteReport(data ProtecodeData, reportPath string, reportFileName string, result map[string]int, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteReport(data ReportData, reportPath string, reportFileName string, result map[string]int, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	data.Mandatory = true
 	data.Count = fmt.Sprintf("%v", result["count"])
 	data.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
