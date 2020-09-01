@@ -174,9 +174,8 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
 	resp := client.LoadReport(config.ReportFileName, productID)
 	//save report to filesystem
-	err := writeReportToFile(*resp, config.ReportFileName)
-	if err != nil {
-		return parsedResult
+	if err := writeReportToFile(*resp, config.ReportFileName); err != nil {
+		log.Entry().Warningf("failed to write report: %s", err)
 	}
 	//clean scan from server
 	log.Entry().Debugf("Delete scan %v for %v", config.CleanupMode, productID)
@@ -187,7 +186,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	err = protecode.WriteReport(
+	if err := protecode.WriteReport(
 		protecode.ReportData{
 			ServerURL:                   config.ServerURL,
 			FailOnSevereVulnerabilities: config.FailOnSevereVulnerabilities,
@@ -195,8 +194,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 			Target:                      config.ReportFileName,
 			Vulnerabilities:             vulns,
 			ProductID:                   fmt.Sprintf("%v", productID),
-		}, reportPath, stepResultFile, parsedResult, ioutil.WriteFile)
-	if err != nil {
+		}, reportPath, stepResultFile, parsedResult, ioutil.WriteFile); err != nil {
 		log.Entry().Warningf("failed to write report: %v", err)
 	}
 
