@@ -241,7 +241,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: '{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}'
       - name: projectToken
         type: string
         description: Project token to execute scan on
