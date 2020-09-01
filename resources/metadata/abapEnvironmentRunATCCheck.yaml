@@ -23,18 +23,18 @@ spec:
         type: string
         description: Path to a YAML configuration file for Packages and/or Software Components to be checked during ATC run
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/apiEndpoint
@@ -42,10 +42,10 @@ spec:
         type: string
         description: CF org
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/org
@@ -53,10 +53,10 @@ spec:
         type: string
         description: Parameter of ServiceInstance Name to delete CloudFoundry Service
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -64,10 +64,10 @@ spec:
         type: string
         description: Parameter of CloudFoundry Service Key to be created
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceKey
@@ -77,10 +77,10 @@ spec:
         type: string
         description: CF Space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/space
@@ -88,9 +88,9 @@ spec:
         type: string
         description: User or E-Mail for CF
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
         resourceRef:
@@ -101,9 +101,9 @@ spec:
         type: string
         description: User Password for CF User
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
         resourceRef:
@@ -114,20 +114,20 @@ spec:
         type: string
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: atcResultsFileName
         type: string
         description: Specifies output file name for the results from the ATC run
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
-        default: 'ATCResults.xml'
+        default: "ATCResults.xml"
   containers:
     - name: cf
       image: ppiper/cf-cli
