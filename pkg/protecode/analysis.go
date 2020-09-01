@@ -6,6 +6,12 @@ const (
 	vulnerabilitySeverityThreshold = 7.0
 )
 
+//HasFailed checks the return status of the provided result
+func HasFailed(result ResultData) bool {
+	//TODO: check this in PollForResult and return error once
+	return len(result.Result.Status) > 0 && result.Result.Status == statusFailed
+}
+
 //HasSevereVulnerabilities checks if any non-historic, non-triaged, non-excluded vulnerability has a CVSS score above the defined threshold
 func HasSevereVulnerabilities(result Result, excludeCVEs string) bool {
 	for _, component := range result.Components {
