@@ -59,16 +59,13 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	}
 
 	log.Entry().Debug("Execute protecode scan")
-	parsedResult := executeProtecodeScan(client, config, fileName, writeReportToFile)
-
-	log.Entry().Debug("Write influx data")
-	setInfluxData(influx, parsedResult)
+	if err := executeProtecodeScan(influx, client, config, fileName, writeReportToFile); err != nil {
+		return err
+	}
 
 	defer os.Remove(config.FilePath)
 
-	deletePath := filepath.Join(cachePath, cacheProtecodePath)
-	err := os.RemoveAll(deletePath)
-	if err != nil {
+	if err := os.RemoveAll(filepath.Join(cachePath, cacheProtecodePath)); err != nil {
 		log.Entry().Warnf("Error during cleanup folder %v", err)
 	}
 
@@ -145,9 +142,7 @@ func tarImage(config *protecodeExecuteScanOptions) (*os.File, string) {
 	return nil, config.ScanImage
 }
 
-func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) map[string]int {
-
-	var parsedResult map[string]int = make(map[string]int)
+func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 	//load existing product by filename
 	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
 	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
@@ -155,7 +150,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 	if productID <= 0 {
-		log.Entry().Fatalf("The product id is not valid (product id %v <= zero)", productID)
+		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
@@ -167,7 +162,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//check if result is ok else notify
 	if protecode.HasFailed(result) {
 		log.SetErrorCategory(log.ErrorService)
-		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
+		return fmt.Errorf("protecode scan failed: %v/products/%v", config.ServerURL, productID)
 	}
 
 	//loadReport
@@ -198,6 +193,9 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		log.Entry().Warningf("failed to write report: %v", err)
 	}
 
+	log.Entry().Debug("Write influx data")
+	setInfluxData(influx, parsedResult)
+
 	// write reports JSON
 	reports := []StepResults.Path{
 		{Target: config.ReportFileName, Mandatory: true},
@@ -213,10 +211,9 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)
-		log.Entry().Fatalf("The product is not compliant. URL: %v/products/%v", config.ServerURL, productID)
+		return fmt.Errorf("the product is not compliant")
 	}
-
-	return parsedResult
+	return nil
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
@@ -255,6 +252,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	return pc
 }
+
 func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Download {
 
 	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.DockerRegistryURL, LocalPath: config.FilePath, IncludeLayers: config.IncludeLayers}

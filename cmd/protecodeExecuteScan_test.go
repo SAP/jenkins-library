@@ -363,15 +363,16 @@ func TestExecuteProtecodeScan(t *testing.T) {
 
 		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		influxData := &protecodeExecuteScanInflux{}
 
-		got := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
+		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
 
-		assert.Equal(t, 1125, got["historical_vulnerabilities"])
-		assert.Equal(t, 0, got["triaged_vulnerabilities"])
-		assert.Equal(t, 1, got["excluded_vulnerabilities"])
-		assert.Equal(t, 129, got["cvss3GreaterOrEqualSeven"])
-		assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
-		assert.Equal(t, 226, got["vulnerabilities"])
+		assert.Equal(t, "1125", influxData.protecode_data.fields.historical_vulnerabilities)
+		assert.Equal(t, "0", influxData.protecode_data.fields.triaged_vulnerabilities)
+		assert.Equal(t, "1", influxData.protecode_data.fields.excluded_vulnerabilities)
+		// assert.Equal(t, 129, got["cvss3GreaterOrEqualSeven"])
+		// assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, "226", influxData.protecode_data.fields.vulnerabilities)
 	}
 }
 
