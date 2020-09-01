@@ -44,19 +44,14 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
-
 	correctDockerConfigEnvVar(config)
-
 	var fileName, filePath string
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
-
 	if len(config.FetchURL) <= 0 {
-
 		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 		fileName, filePath = getDockerImage(dClient, config)
-
 		if len(config.FilePath) <= 0 {
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
@@ -165,27 +160,19 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.TimeoutMinutes)
-
+	// write results to file
 	jsonData, _ := json.Marshal(result)
-	filePath := filepath.Join(reportPath, scanResultFile)
-	ioutil.WriteFile(filePath, jsonData, 0644)
+	ioutil.WriteFile(filepath.Join(reportPath, scanResultFile), jsonData, 0644)
 
 	//check if result is ok else notify
-
 	if protecode.HasFailed(result) {
 		log.SetErrorCategory(log.ErrorService)
 		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
 	}
 
-	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
-		log.SetErrorCategory(log.ErrorCompliance)
-		log.Entry().Fatalf("The product is not compliant. URL: %v/products/%v", config.ServerURL, productID)
-	}
-
 	//loadReport
 	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
 	resp := client.LoadReport(config.ReportFileName, productID)
-
 	//save report to filesystem
 	err := writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
@@ -200,14 +187,15 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	err = protecode.WriteReport(protecode.ReportData{
-		ServerURL:                   config.ServerURL,
-		FailOnSevereVulnerabilities: config.FailOnSevereVulnerabilities,
-		ExcludeCVEs:                 config.ExcludeCVEs,
-		Target:                      config.ReportFileName,
-		Vulnerabilities:             vulns,
-		ProductID:                   fmt.Sprintf("%v", productID),
-	}, reportPath, stepResultFile, parsedResult, ioutil.WriteFile)
+	err = protecode.WriteReport(
+		protecode.ReportData{
+			ServerURL:                   config.ServerURL,
+			FailOnSevereVulnerabilities: config.FailOnSevereVulnerabilities,
+			ExcludeCVEs:                 config.ExcludeCVEs,
+			Target:                      config.ReportFileName,
+			Vulnerabilities:             vulns,
+			ProductID:                   fmt.Sprintf("%v", productID),
+		}, reportPath, stepResultFile, parsedResult, ioutil.WriteFile)
 	if err != nil {
 		log.Entry().Warningf("failed to write report: %v", err)
 	}
@@ -223,8 +211,12 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		{Name: "Protecode WebUI", Target: fmt.Sprintf(webReportPath, config.ServerURL, productID)},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
-
 	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
+
+	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
+		log.SetErrorCategory(log.ErrorCompliance)
+		log.Entry().Fatalf("The product is not compliant. URL: %v/products/%v", config.ServerURL, productID)
+	}
 
 	return parsedResult
 }
