@@ -169,7 +169,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	ioutil.WriteFile(filePath, jsonData, 0644)
 
 	//check if result is ok else notify
-	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
+	if len(result.Result.Status) > 0 && result.Result.Status == protecode.StatusFailed {
 		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
 	}
 	//loadReport

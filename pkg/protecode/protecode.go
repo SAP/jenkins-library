@@ -355,7 +355,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 			i = 0
 			return response
 		}
-		if len(response.Result.Components) > 0 && response.Result.Status != "B" {
+		if len(response.Result.Components) > 0 && response.Result.Status != statusBusy {
 			ticker.Stop()
 			i = 0
 			break
@@ -367,9 +367,9 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 		}
 	}
 
-	if len(response.Result.Components) == 0 || response.Result.Status == "B" {
+	if len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
 		response, err = pc.pullResult(productID)
-		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == "B" {
+		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
 			pc.logger.Fatal("No result after polling")
 		}
 	}
