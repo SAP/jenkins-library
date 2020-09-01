@@ -131,7 +131,7 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
 }
 
-// GetProjectsMetaInfo retrieves meta information for a specific WhiteSource product
+// GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
 func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
