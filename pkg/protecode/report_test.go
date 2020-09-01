@@ -1,6 +1,7 @@
 package protecode
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -24,7 +25,7 @@ func TestWriteReport(t *testing.T) {
 	parsedResult["cvss2GreaterOrEqualSeven"] = 4
 	parsedResult["vulnerabilities"] = 5
 
-	err := WriteReport("DUMMYURL", false, "", "REPORTFILENAME", ".", "", parsedResult, 4711, []Vuln{{"Vulnerability", 2.5, "5.5"}}, writeToFileMock)
+	err := WriteReport(ProtecodeData{ServerURL: "DUMMYURL", FailOnSevereVulnerabilities: false, ExcludeCVEs: "", Target: "REPORTFILENAME", ProductID: fmt.Sprintf("%v", 4711), Vulnerabilities: []Vuln{{"Vulnerability", 2.5, "5.5"}}}, ".", "", parsedResult, writeToFileMock)
 	assert.Equal(t, fileContent, expected, "content should be not empty")
 	assert.NoError(t, err)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type protecodeData struct {
+type ProtecodeData struct {
 	Target                      string `json:"target,omitempty"`
 	Mandatory                   bool   `json:"mandatory,omitempty"`
 	ProductID                   string `json:"productID,omitempty"`
@@ -26,27 +26,20 @@ type protecodeData struct {
 }
 
 // WriteReport ...
-func WriteReport(serverURL string, failOnSevereVulnerabilities bool, excludeCVEs string, scanReportFileName string, reportPath string, reportFileName string, result map[string]int, productID int, vulns []Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) error {
-	protecodeData := protecodeData{
-		ServerURL:                   serverURL,
-		FailOnSevereVulnerabilities: failOnSevereVulnerabilities,
-		ExcludeCVEs:                 excludeCVEs,
-		Target:                      scanReportFileName,
-		Mandatory:                   true,
-		ProductID:                   fmt.Sprintf("%v", productID),
-		Count:                       fmt.Sprintf("%v", result["count"]),
-		Cvss2GreaterOrEqualSeven:    fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"]),
-		Cvss3GreaterOrEqualSeven:    fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"]),
-		ExcludedVulnerabilities:     fmt.Sprintf("%v", result["excluded_vulnerabilities"]),
-		TriagedVulnerabilities:      fmt.Sprintf("%v", result["triaged_vulnerabilities"]),
-		HistoricalVulnerabilities:   fmt.Sprintf("%v", result["historical_vulnerabilities"]),
-		Vulnerabilities:             vulns,
-	}
+func WriteReport(data ProtecodeData, reportPath string, reportFileName string, result map[string]int, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+	data.Mandatory = true
+	data.Count = fmt.Sprintf("%v", result["count"])
+	data.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
+	data.Cvss3GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"])
+	data.ExcludedVulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
+	data.TriagedVulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
+	data.HistoricalVulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 
 	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
-		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
-
-	return writeJSON(reportPath, reportFileName, protecodeData, writeToFile)
+		data.Count, data.Cvss2GreaterOrEqualSeven, data.Cvss3GreaterOrEqualSeven,
+		data.ExcludedVulnerabilities, data.ExcludeCVEs, data.TriagedVulnerabilities,
+		data.HistoricalVulnerabilities, data.Vulnerabilities)
+	return writeJSON(reportPath, reportFileName, data, writeToFile)
 }
 
 func writeJSON(path, name string, data interface{}, writeToFile func(f string, d []byte, p os.FileMode) error) error {
