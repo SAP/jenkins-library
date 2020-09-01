@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+//ReportData is representing the data of the step report JSON
 type ReportData struct {
 	Target                      string `json:"target,omitempty"`
 	Mandatory                   bool   `json:"mandatory,omitempty"`
