@@ -105,7 +105,7 @@ func gctsDeployMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "abapCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -113,7 +113,7 @@ func gctsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "abapCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

@@ -81,6 +81,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			}
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
+			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.KubeToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -183,7 +184,7 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "containerRegistryPassword",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -199,7 +200,7 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "containerRegistryUser",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -271,7 +272,7 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "kubeConfig",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "kubeConfigFileCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -287,7 +288,7 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "kubeToken",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "kubeTokenCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
