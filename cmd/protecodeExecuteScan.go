@@ -31,14 +31,16 @@ var cachePath = "./cache"
 var cacheProtecodeImagePath = "/protecode/Image"
 var cacheProtecodePath = "/protecode"
 
-func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) error {
+func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
-	return runProtecodeScan(&config, influx, dClient)
+	if err := runProtecodeScan(&config, influx, dClient); err != nil {
+		log.Entry().WithError(err).Fatal("Execution failed")
+	}
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
