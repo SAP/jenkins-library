@@ -24,6 +24,7 @@ func TestWriteReport(t *testing.T) {
 	parsedResult["cvss2GreaterOrEqualSeven"] = 4
 	parsedResult["vulnerabilities"] = 5
 
-	WriteReport("DUMMYURL", false, "", "REPORTFILENAME", ".", "", parsedResult, 4711, []Vuln{{"Vulnerability", 2.5, "5.5"}}, writeToFileMock)
+	err := WriteReport("DUMMYURL", false, "", "REPORTFILENAME", ".", "", parsedResult, 4711, []Vuln{{"Vulnerability", 2.5, "5.5"}}, writeToFileMock)
 	assert.Equal(t, fileContent, expected, "content should be not empty")
+	assert.NoError(t, err)
 }

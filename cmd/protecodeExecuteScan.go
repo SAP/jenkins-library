@@ -197,7 +197,10 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	protecode.WriteReport(config.ServerURL, config.FailOnSevereVulnerabilities, config.ExcludeCVEs, config.ReportFileName, reportPath, stepResultFile, parsedResult, productID, vulns, ioutil.WriteFile)
+	err = protecode.WriteReport(config.ServerURL, config.FailOnSevereVulnerabilities, config.ExcludeCVEs, config.ReportFileName, reportPath, stepResultFile, parsedResult, productID, vulns, ioutil.WriteFile)
+	if err != nil {
+		log.Entry().Warningf("failed to write report: %v", err)
+	}
 
 	// write reports JSON
 	reports := []StepResults.Path{

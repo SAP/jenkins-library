@@ -26,7 +26,7 @@ type protecodeData struct {
 }
 
 // WriteReport ...
-func WriteReport(serverURL string, failOnSevereVulnerabilities bool, excludeCVEs string, scanReportFileName string, reportPath string, reportFileName string, result map[string]int, productID int, vulns []Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) {
+func WriteReport(serverURL string, failOnSevereVulnerabilities bool, excludeCVEs string, scanReportFileName string, reportPath string, reportFileName string, result map[string]int, productID int, vulns []Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	protecodeData := protecodeData{
 		ServerURL:                   serverURL,
 		FailOnSevereVulnerabilities: failOnSevereVulnerabilities,
@@ -46,10 +46,13 @@ func WriteReport(serverURL string, failOnSevereVulnerabilities bool, excludeCVEs
 	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
 		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
 
-	writeJSON(reportPath, reportFileName, protecodeData, writeToFile)
+	return writeJSON(reportPath, reportFileName, protecodeData, writeToFile)
 }
 
-func writeJSON(path, name string, data interface{}, writeToFile func(f string, d []byte, p os.FileMode) error) {
-	jsonData, _ := json.Marshal(data)
-	writeToFile(filepath.Join(path, name), jsonData, 0644)
+func writeJSON(path, name string, data interface{}, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return writeToFile(filepath.Join(path, name), jsonData, 0644)
 }
