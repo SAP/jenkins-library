@@ -376,5 +376,15 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 
 	log.Entry().Debugf("response: %v", string(responseBody))
 
+	errorResponse := struct {
+		ErrorCode    string `json:"errorCode"`
+		ErrorMessage string `json:"errorMessage"`
+	}{}
+	err = json.Unmarshal(responseBody, &errorResponse)
+	if err == nil && errorResponse.ErrorCode != "" {
+		return responseBody, fmt.Errorf("invalid request, error code %s, message '%s'",
+			errorResponse.ErrorCode, errorResponse.ErrorMessage)
+	}
+
 	return responseBody, nil
 }
