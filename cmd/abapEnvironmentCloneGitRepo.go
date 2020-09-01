@@ -117,7 +117,7 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 	if repositoryName == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
+	jsonBody := []byte(`{"sc_name":"` + repositoryName + `", "branch_name":"` + branchName + `"}`)
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repositoryName+" with branch "+branchName, uriConnectionDetails)

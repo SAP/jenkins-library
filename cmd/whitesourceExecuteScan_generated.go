@@ -92,6 +92,8 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.OrgToken)
+			log.RegisterSecret(stepConfig.UserToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -287,7 +289,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "orgToken",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "orgAdminUserTokenCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -295,7 +297,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "userToken",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "userTokenCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

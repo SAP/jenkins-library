@@ -32,7 +32,7 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/apiEndpoint
-        default: 'https://api.cf.eu10.hana.ondemand.com'
+        default: "https://api.cf.eu10.hana.ondemand.com"
       - name: username
         type: string
         description: User or E-Mail for CF
@@ -40,8 +40,12 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        secret: true
         mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password for Cloud Foundry User
@@ -51,6 +55,10 @@ spec:
           - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
       - name: cfOrg
         type: string
         description: Cloud Foundry org
@@ -151,9 +159,9 @@ spec:
         aliases:
           - name: cloudFoundry/serviceManifest
           - name: cfServiceManifest
-        default: 'service-manifest.yml'
+        default: "service-manifest.yml"
       - name: manifestVariables
-        type: '[]string'
+        type: "[]string"
         description: Defines a List of variables as key-value Map objects used for variable substitution within the file given by the Manifest. Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided by `cf push --var key=value`. The order of the maps of variables given in the list is relevant in case there are conflicting variable names and values between maps contained within the list. In case of conflicts, the last specified map in the list will win. Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended to stick to one entry per map, and rather declare more maps within the list. The reason is that if a map in the list contains more than one key-value entry, and the entries are conflicting, the conflict resolution behavior is undefined (since map entries have no sequence). Variables defined via `manifestVariables` always win over conflicting variables defined via any file given by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be observed when using `cf push --var` in combination with `cf push --vars-file`
         scope:
           - PARAMETERS
@@ -165,7 +173,7 @@ spec:
           - name: cloudFoundry/manifestVariables
           - name: cfManifestVariables
       - name: manifestVariablesFiles
-        type: '[]string'
+        type: "[]string"
         description: Defines the manifest variables Yaml files to be used to replace variable references in manifest. This parameter is optional and will default to `manifest-variables.yml`. This can be used to set variable files like it is provided by `cf push --vars-file <file>`. If the manifest is present and so are all variable files, a variable substitution will be triggered that uses the `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the Cloud Foundry standard in `https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution`
         scope:
           - PARAMETERS

@@ -11,7 +11,11 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** Executes the deployments in parallel.*/
-    'parallelExecution'
+    'parallelExecution',
+    /**
+     * The branch used as productive branch, defaults to master.
+     */
+    'productiveBranch'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -31,7 +35,13 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Script to be executed from package.json.
      */
-    'runScript'])
+    'runScript',
+    /**
+     * Boolean to indicate whether the step should only be executed in the productive branch or not.
+     * @possibleValues `true`, `false`
+     */
+    'onlyRunInProductiveBranch'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
@@ -43,10 +53,10 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stageName ?: env.STAGE_NAME
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
@@ -76,6 +86,10 @@ void call(Map parameters = [:]) {
         }
         if (!config.runScript) {
             error "[${STEP_NAME}] No runScript was defined."
+        }
+
+        if (config.onlyRunInProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
+            return
         }
 
         for (int i = 0; i < config.appUrls.size(); i++) {
@@ -117,7 +131,7 @@ void call(Map parameters = [:]) {
 
                     if (cucumberFiles.size() > 0) {
                         testsPublishResults script: script, cucumber: [active: true, archive: true]
-                    } else if (junitFiles.size() > 0){
+                    } else if (junitFiles.size() > 0) {
                         testsPublishResults script: script, junit: [active: true, archive: true]
                     } else {
                         echo "[${STEP_NAME}] No JUnit or cucumber report files found, skipping report visualization."
