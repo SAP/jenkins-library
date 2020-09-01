@@ -102,14 +102,9 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 		RequestType: "getOrganizationProductVitals",
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return wsResponse.ProductVitals, errors.Wrap(err, "WhiteSource request failed")
-	}
-
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return wsResponse.ProductVitals, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
 	return wsResponse.ProductVitals, nil
@@ -147,14 +142,9 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 		ProductToken: productToken,
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return nil, errors.Wrap(err, "WhiteSource request failed")
-	}
-
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
 	return wsResponse.ProjectVitals, nil
@@ -186,15 +176,11 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 		ProjectToken: projectToken,
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return Project{}, errors.Wrap(err, "WhiteSource request failed")
 	}
 
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return Project{}, errors.Wrap(err, "failed to parse WhiteSource response")
-	}
 	if len(wsResponse.ProjectVitals) == 0 {
 		return Project{}, errors.Wrapf(err, "no project with token '%s' found in WhiteSource", projectToken)
 	}
@@ -253,14 +239,9 @@ func (s *System) GetProductName(productToken string) (string, error) {
 		ProductToken: productToken,
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return "", errors.Wrap(err, "WhiteSource request failed")
-	}
-
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
 	if len(wsResponse.ProductTags) == 0 {
@@ -323,14 +304,9 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 		ProjectToken: projectToken,
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return nil, errors.Wrap(err, "WhiteSource request failed")
-	}
-
-	err = json.Unmarshal(respBody, &wsResponse)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
 	}
 
 	return wsResponse.Alerts, nil
@@ -352,17 +328,38 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 		ProjectToken: projectToken,
 	}
 
-	respBody, err := s.sendRequest(req)
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
 		return nil, errors.Wrap(err, "WhiteSource request failed")
 	}
 
-	err = json.Unmarshal(respBody, &wsResponse)
+	return wsResponse.Libraries, nil
+}
+
+func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
+	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse WhiteSource response")
+		return errors.Wrap(err, "WhiteSource request failed")
 	}
 
-	return wsResponse.Libraries, nil
+	log.Entry().Debugf("response: %v", string(respBody))
+
+	errorResponse := struct {
+		ErrorCode    string `json:"errorCode"`
+		ErrorMessage string `json:"errorMessage"`
+	}{}
+
+	err = json.Unmarshal(respBody, &errorResponse)
+	if err == nil && errorResponse.ErrorCode != "" {
+		return fmt.Errorf("invalid request, error code %s, message '%s'",
+			errorResponse.ErrorCode, errorResponse.ErrorMessage)
+	}
+
+	err = json.Unmarshal(respBody, result)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse WhiteSource response")
+	}
+	return nil
 }
 
 func (s *System) sendRequest(req Request) ([]byte, error) {
@@ -392,18 +389,6 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 	responseBody, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
-	}
-
-	log.Entry().Debugf("response: %v", string(responseBody))
-
-	errorResponse := struct {
-		ErrorCode    string `json:"errorCode"`
-		ErrorMessage string `json:"errorMessage"`
-	}{}
-	err = json.Unmarshal(responseBody, &errorResponse)
-	if err == nil && errorResponse.ErrorCode != "" {
-		return responseBody, fmt.Errorf("invalid request, error code %s, message '%s'",
-			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}
 
 	return responseBody, nil
