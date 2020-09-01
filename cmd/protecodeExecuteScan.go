@@ -174,6 +174,11 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	if len(result.Result.Status) > 0 && result.Result.Status == protecode.StatusFailed {
 		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
 	}
+
+	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
+		log.Entry().Fatalf("The product is not compliant. URL: %v/products/%v", config.ServerURL, productID)
+	}
+
 	//loadReport
 	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
 	resp := client.LoadReport(config.ReportFileName, productID)

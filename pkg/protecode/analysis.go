@@ -1,0 +1,34 @@
+package protecode
+
+import "strconv"
+
+const (
+	vulnerabilitySeverityThreshold = 7.0
+)
+
+//HasSevereVulnerabilities checks if any non-historic, non-triaged, non-excluded vulnerability has a CVSS score above the defined threshold
+func HasSevereVulnerabilities(result Result, excludeCVEs string) bool {
+	for _, component := range result.Components {
+		for _, vulnerability := range component.Vulns {
+			if isSevere(vulnerability) &&
+				!isTriaged(vulnerability) &&
+				!isExcluded(vulnerability, excludeCVEs) &&
+				isExact(vulnerability) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isSevere(vulnerability Vulnerability) bool {
+	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
+	if cvss3 >= vulnerabilitySeverityThreshold {
+		return true
+	}
+	// CVSS v3 not set, fallback to CVSS v2
+	if cvss3 == 0 && vulnerability.Vuln.Cvss >= vulnerabilitySeverityThreshold {
+		return true
+	}
+	return false
+}
