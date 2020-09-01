@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/docker/docker/pkg/ioutils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -420,6 +421,10 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, utils white
 }
 
 func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
+	// No need to have output from "npm ls" in the log
+	utils.Stdout(&ioutils.NopWriter{})
+	defer utils.Stdout(log.Writer())
+
 	err := utils.RunExecutable("npm", "ls")
 	if err == nil {
 		return nil
