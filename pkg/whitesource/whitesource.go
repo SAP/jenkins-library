@@ -133,6 +133,9 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
 func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
+	if productToken == "" {
+		return nil, errors.New("no productToken provided")
+	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -169,6 +172,9 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 
 // GetProjectByToken returns project meta info given a project token
 func (s *System) GetProjectByToken(projectToken string) (Project, error) {
+	if projectToken == "" {
+		return Project{}, errors.New("no projectToken provided")
+	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -233,6 +239,9 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 
 // GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
+	if productToken == "" {
+		return "", errors.New("no productToken provided")
+	}
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
 	}{
@@ -263,6 +272,9 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 // GetProjectRiskReport
 func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
+	if projectToken == "" {
+		return nil, errors.New("no projectToken provided")
+	}
 	req := Request{
 		RequestType:  "getProjectRiskReport",
 		ProjectToken: projectToken,
@@ -278,7 +290,9 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 
 // GetProjectVulnerabilityReport
 func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-
+	if projectToken == "" {
+		return nil, errors.New("no projectToken provided")
+	}
 	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
 		ProjectToken: projectToken,
@@ -295,6 +309,9 @@ func (s *System) GetProjectVulnerabilityReport(projectToken string, format strin
 
 // GetProjectAlerts
 func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
+	if projectToken == "" {
+		return nil, errors.New("no projectToken provided")
+	}
 	wsResponse := struct {
 		Alerts []Alert `json:"alerts"`
 	}{
@@ -321,6 +338,9 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 // GetProjectLibraryLocations
 func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
+	if projectToken == "" {
+		return nil, errors.New("no projectToken provided")
+	}
 	wsResponse := struct {
 		Libraries []Library `json:"libraryLocations"`
 	}{
