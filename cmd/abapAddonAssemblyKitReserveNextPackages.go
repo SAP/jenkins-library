@@ -75,18 +75,18 @@ func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes
 				err := pckgWR[i].p.get()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
-					log.Entry().Infof("Reservation of %s is not yet finished, check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 					allFinished = false
 				} else {
 					switch pckgWR[i].p.Status {
-					case "L":
+					case locked:
 						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].p.PackageName)
-					case "C":
+					case creationTriggered:
 						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 						allFinished = false
-					case "P":
+					case planned:
 						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].p.PackageName)
-					case "R":
+					case released:
 						log.Entry().Infof("Reservation of %s not needed, package is already in status 'released'", pckgWR[i].p.PackageName)
 					default:
 						return fmt.Errorf("Package %s has unknown status '%s'", pckgWR[i].p.PackageName, pckgWR[i].p.Status)
@@ -124,14 +124,14 @@ func (p *pckg) init(repo abaputils.Repository, conn connector) {
 	p.ComponentName = repo.Name
 	p.VersionYAML = repo.VersionYAML
 	p.PackageName = repo.PackageName
-	p.Status = repo.Status
+	p.Status = packageStatus(repo.Status)
 }
 
 func (p *pckg) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.PackageName = p.PackageName
 	initialRepo.PackageType = p.Type
 	initialRepo.PredecessorCommitID = p.PredecessorCommitID
-	initialRepo.Status = p.Status
+	initialRepo.Status = string(p.Status)
 	initialRepo.Namespace = p.Namespace
 	log.Entry().Infof("Package name %s, type %s, status %s, namespace %s, predecessorCommitID %s", p.PackageName, p.Type, p.Status, p.Namespace, p.PredecessorCommitID)
 }
@@ -171,6 +171,15 @@ func (p *pckg) get() error {
 	return nil
 }
 
+type packageStatus string
+
+const (
+	planned           packageStatus = "P"
+	locked            packageStatus = "L"
+	released          packageStatus = "R"
+	creationTriggered packageStatus = "C"
+)
+
 type jsonPackageDeterminePackageForScv struct {
 	DeterminePackage struct {
 		Package *pckg `json:"DeterminePackageForScv"`
@@ -186,10 +195,10 @@ type pckg struct {
 	ComponentName       string
 	PackageName         string `json:"Name"`
 	VersionYAML         string
-	Type                string `json:"Type"`
-	PredecessorCommitID string `json:"PredecessorCommitId"`
-	Status              string `json:"Status"`
-	Namespace           string `json:"Namespace"`
+	Type                string        `json:"Type"`
+	PredecessorCommitID string        `json:"PredecessorCommitId"`
+	Status              packageStatus `json:"Status"`
+	Namespace           string        `json:"Namespace"`
 }
 
 type packageWithRepository struct {

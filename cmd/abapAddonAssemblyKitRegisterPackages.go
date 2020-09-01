@@ -57,7 +57,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 
 func uploadSarFiles(repos []abaputils.Repository, conn connector) error {
 	for i := range repos {
-		if repos[i].Status == "P" {
+		if repos[i].Status == string(planned) {
 			if repos[i].SarXMLFilePath == "" {
 				return errors.New("Parameter missing. Please provide the path to the SAR file")
 			}
@@ -81,7 +81,7 @@ func registerPackages(repos []abaputils.Repository, conn connector) ([]abaputils
 	for i := range repos {
 		var p pckg
 		p.init(repos[i], conn)
-		if repos[i].Status == "P" {
+		if repos[i].Status == string(planned) {
 			err := p.register()
 			if err != nil {
 				return repos, err
@@ -95,7 +95,7 @@ func registerPackages(repos []abaputils.Repository, conn connector) ([]abaputils
 }
 
 func (p *pckg) changeStatus(initialRepo *abaputils.Repository) {
-	initialRepo.Status = p.Status
+	initialRepo.Status = string(p.Status)
 }
 
 func (p *pckg) register() error {
