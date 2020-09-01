@@ -20,22 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-type protecodeData struct {
-	Target                      string           `json:"target,omitempty"`
-	Mandatory                   bool             `json:"mandatory,omitempty"`
-	ProductID                   string           `json:"productID,omitempty"`
-	ServerURL                   string           `json:"serverUrl,omitempty"`
-	FailOnSevereVulnerabilities bool             `json:"failOnSevereVulnerabilities,omitempty"`
-	ExcludeCVEs                 string           `json:"excludeCVEs,omitempty"`
-	Count                       string           `json:"count,omitempty"`
-	Cvss2GreaterOrEqualSeven    string           `json:"cvss2GreaterOrEqualSeven,omitempty"`
-	Cvss3GreaterOrEqualSeven    string           `json:"cvss3GreaterOrEqualSeven,omitempty"`
-	ExcludedVulnerabilities     string           `json:"excludedVulnerabilities,omitempty"`
-	TriagedVulnerabilities      string           `json:"triagedVulnerabilities,omitempty"`
-	HistoricalVulnerabilities   string           `json:"historicalVulnerabilities,omitempty"`
-	Vulnerabilities             []protecode.Vuln `json:"Vulnerabilities,omitempty"`
-}
-
 const (
 	webReportPath  = "%s/products/%v/"
 	scanResultFile = "protecodescan_vulns.json"
@@ -206,7 +190,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
+	protecode.WriteReport(config.ServerURL, config.FailOnSevereVulnerabilities, config.ExcludeCVEs, config.ReportFileName, reportPath, stepResultFile, parsedResult, productID, vulns, ioutil.WriteFile)
 
 	// write reports JSON
 	reports := []StepResults.Path{
@@ -232,32 +216,6 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
 	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
 	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
-}
-
-func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, vulns []protecode.Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) {
-
-	protecodeData := protecodeData{}
-	protecodeData.ServerURL = config.ServerURL
-	protecodeData.FailOnSevereVulnerabilities = config.FailOnSevereVulnerabilities
-	protecodeData.ExcludeCVEs = config.ExcludeCVEs
-	protecodeData.Target = config.ReportFileName
-	protecodeData.Mandatory = true
-	protecodeData.ProductID = fmt.Sprintf("%v", productID)
-	protecodeData.Count = fmt.Sprintf("%v", result["count"])
-	protecodeData.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
-	protecodeData.Cvss3GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"])
-	protecodeData.ExcludedVulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	protecodeData.TriagedVulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	protecodeData.HistoricalVulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	protecodeData.Vulnerabilities = vulns
-
-	jsonData, _ := json.Marshal(protecodeData)
-
-	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
-		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
-
-	filePath := filepath.Join(reportPath, stepResultFile)
-	writeToFile(filePath, jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
