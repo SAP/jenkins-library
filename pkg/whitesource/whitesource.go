@@ -185,8 +185,6 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 		return Project{}, errors.Wrap(err, "WhiteSource request failed")
 	}
 
-	log.Entry().Debugf("response: %v", string(respBody))
-
 	err = json.Unmarshal(respBody, &wsResponse)
 	if err != nil {
 		return Project{}, errors.Wrap(err, "failed to parse WhiteSource response")
@@ -361,7 +359,7 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 		return responseBody, errors.Wrap(err, "failed to create WhiteSource request")
 	}
 
-	log.Entry().Debug(string(body))
+	log.Entry().Debugf("request: %v", string(body))
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
@@ -375,5 +373,8 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 	if err != nil {
 		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
 	}
+
+	log.Entry().Debugf("response: %v", string(responseBody))
+
 	return responseBody, nil
 }
