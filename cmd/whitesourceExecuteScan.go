@@ -181,7 +181,8 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 			config.ProjectName = pName
 		}
 		if config.ProductVersion == "" {
-			log.Entry().Infof("Resolved project version '%s' from descriptor file", pVer)
+			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'", pVer,
+				config.DefaultVersioningModel)
 			config.ProductVersion = pVer
 		}
 	}
@@ -193,10 +194,11 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		if err != nil {
 			return err
 		}
-		if product.Token != "" {
-			log.Entry().Infof("Resolved product token: '%s'..", product.Token)
-			config.ProductToken = product.Token
+		if product.Token == "" {
+			return fmt.Errorf("failed to resolve product token for '%s'", config.ProductName)
 		}
+		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
+		config.ProductToken = product.Token
 	}
 
 	// Get project token  if user did not specify one at runtime
@@ -207,10 +209,12 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		if err != nil {
 			return err
 		}
-		if projectToken != "" {
-			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
-			config.ProjectToken = projectToken
+		if projectToken == "" {
+			return fmt.Errorf("failed to resolve project token for '%s' and product token %s",
+				fullProjName, config.ProductToken)
 		}
+		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
+		config.ProjectToken = projectToken
 	}
 	return nil
 }
