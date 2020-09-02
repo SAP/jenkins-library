@@ -29,7 +29,7 @@ func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTar
 
 func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
