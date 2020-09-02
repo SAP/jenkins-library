@@ -91,10 +91,10 @@ class commonPipelineEnvironment implements Serializable {
         InfluxData.reset()
     }
 
-    String inferBuildTool() {
-        boolean isMtaProject = fileExists('mta.yaml')
-        def isMaven = fileExists('pom.xml')
-        def isNpm = fileExists('package.json')
+    String inferBuildTool(script) {
+        boolean isMtaProject = script.fileExists('mta.yaml')
+        def isMaven = script.fileExists('pom.xml')
+        def isNpm = script.fileExists('package.json')
 
         if (isMtaProject) {
             this.buildTool = 'mta'
