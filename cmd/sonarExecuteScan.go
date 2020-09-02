@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -40,6 +41,7 @@ var execLookPath = exec.LookPath
 var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
+var glob = doublestar.Glob
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
@@ -84,6 +86,17 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
 		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
 	}
+	if len(config.ProjectKey) > 0 {
+		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
+	}
+	if len(config.M2Path) > 0 {
+		sonar.addOption("sonar.java.libraries=" + filepath.Join(config.M2Path, "**"))
+	}
+	if len(config.CoverageExclusions) > 0 {
+		sonar.addOption("sonar.coverage.exclusions=" + strings.Join(config.CoverageExclusions, ","))
+	}
+	addJavaBinaries()
+	addJacocoReportPaths()
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
@@ -129,6 +142,38 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 	}
 	return nil
+}
+
+func addJacocoReportPaths() {
+	matches, err := glob("**/target/**/*.exec")
+	if err != nil {
+		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
+		return
+	}
+	if len(matches) > 0 {
+		sonar.addOption("sonar.jacoco.reportPaths=" + strings.Join(matches, ","))
+	}
+}
+
+func addJavaBinaries() {
+	pomFiles, err := glob("**/pom.xml")
+	if err != nil {
+		log.Entry().Warnf("failed to glob for pom modules: %v", err)
+		return
+	}
+	var binaries []string
+
+	for _, pomFile := range pomFiles {
+		module := filepath.Dir(pomFile)
+		classesPath := filepath.Join(module, "target", "classes")
+		_, err := os.Stat(classesPath)
+		if err == nil {
+			binaries = append(binaries, classesPath)
+		}
+	}
+	if len(binaries) > 0 {
+		sonar.addOption("sonar.java.binaries=" + strings.Join(binaries, ","))
+	}
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {
