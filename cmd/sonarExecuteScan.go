@@ -84,6 +84,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
 		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
 	}
+	if len(config.ProjectKey) > 0 {
+		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
+	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err

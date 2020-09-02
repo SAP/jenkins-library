@@ -65,6 +65,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: projectKey
+        type: string
+        description: "The project key identifies the project in SonarQube."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: options
         type: "[]string"
         description: A list of options which are passed to the sonar-scanner.
