@@ -250,6 +250,25 @@ func TestParseATCResult(t *testing.T) {
 		err = parseATCResult(body, "ATCResults.xml")
 		assert.Equal(t, nil, err)
 	})
+	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test get result ATC run")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+		</checkstyle>`
+		body := []byte(bodyString)
+		err = parseATCResult(body, "ATCResults.xml")
+		assert.Equal(t, nil, err)
+	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)

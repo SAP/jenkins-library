@@ -229,7 +229,7 @@ func githubPublishReleaseMetadata() config.StepData {
 					},
 					{
 						Name:        "token",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
