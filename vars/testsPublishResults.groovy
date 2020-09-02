@@ -184,12 +184,14 @@ def publishCucumberReport(Map settings = [:]) {
 def publishHtmlReport(Map settings = [:]) {
     if (settings.active) {
         def pattern = settings.get('pattern')
+        def reportDir = settings.get('reportDir')
         def reportName = settings.get('reportName')
         publishHTML(target: [
             allowMissing         : true,
             alwaysLinkToLastBuild: false,
             keepAll              : true,
-            reportDir            : pattern,
+            reportDir            : reportDir,
+            reportFiles          : pattern,
             reportName           : reportName
         ])
     }
