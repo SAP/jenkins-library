@@ -3,7 +3,7 @@ metadata:
     description: This step checks the validity of Software Component Versions.
     longDescription: |
       This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
-      It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.     
+      It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.
 spec:
   inputs:
     secrets:
@@ -23,7 +23,7 @@ spec:
       - name: username
         type: string
         description: User for the Addon Assembly Kit as a Service System (AAKaaS)
-        scope: 
+        scope:
         - PARAMETERS
         - STAGES
         - STEPS
@@ -65,3 +65,4 @@ spec:
         type: piperEnvironment
         params:
           - name: abap/addonDescriptor
+          

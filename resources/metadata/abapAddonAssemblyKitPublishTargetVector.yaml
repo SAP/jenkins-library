@@ -1,9 +1,9 @@
 metadata:
     name: abapAddonAssemblyKitPublishTargetVector
-    description: This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope. 
+    description: This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope.
     longDescription: |
       This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector to the Service Provider Cockpit system.
-      With scopeTV "T" the Target Vector will be published to the test SPC and with scopeTV "P" it will be published to public SPC.   
+      With scopeTV "T" the Target Vector will be published to the test SPC and with scopeTV "P" it will be published to public SPC.
 spec:
   inputs:
     secrets:
@@ -23,7 +23,7 @@ spec:
       - name: username
         type: string
         description: User for the Addon Assembly Kit as a Service System (AAKaaS)
-        scope: 
+        scope:
         - PARAMETERS
         - STAGES
         - STEPS
@@ -59,3 +59,4 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: abap/addonDescriptor
+            

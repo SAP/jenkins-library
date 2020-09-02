@@ -26,6 +26,7 @@ abapAddonAssemblyKitPublishTargetVector(
                     script: this,
                     )
 ```
+
 The config.yml should look like this:
 
 ```yaml
