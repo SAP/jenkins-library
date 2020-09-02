@@ -58,4 +58,3 @@ spec:
         type: piperEnvironment
         params:
           - name: abap/addonDescriptor
-          
