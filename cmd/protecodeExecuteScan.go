@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -101,11 +102,21 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 		log.Entry().Fatalf("Error during get docker image: %v", err)
 	}
 
-	tarFile, fileName := tarImage(config)
-	if tarFile != nil {
-		defer tarFile.Close()
-		err = dClient.TarImage(tarFile, image)
+	var fileName string
+	if util.IsTar(config.ScanImage) {
+		fileName = config.ScanImage
+	} else {
+		fileName = getTarName(config)
+		tarFilePath := filepath.Join(cachePath, fileName)
+		tarFile, err := os.Create(tarFilePath)
 		if err != nil {
+			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
+		}
+		defer tarFile.Close()
+		if err := os.Chmod(tarFilePath, 0644); err != nil {
+			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
+		}
+		if err = dClient.TarImage(tarFile, image); err != nil {
 			log.Entry().WithError(err).Fatal("Error during tar the docker image")
 		}
 	}
@@ -119,30 +130,14 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 	return fileName, resultFilePath
 }
 
-func tarImage(config *protecodeExecuteScanOptions) (*os.File, string) {
-	if filepath.Ext(config.ScanImage) != ".tar" &&
-		filepath.Ext(config.ScanImage) != ".tar.gz" &&
-		filepath.Ext(config.ScanImage) != ".tgz" {
-		// remove original version
-		fileName := strings.TrimSuffix(config.ScanImage, config.ArtifactVersion)
-		// append trimmed version
-		fileName = fileName + handleArtifactVersion(config.ArtifactVersion)
-		// append file extension
-		fileName = fileName + ".tar"
-		// replace unwanted chars
-		fileName = strings.ReplaceAll(fileName, "/", "_")
-		fileName = strings.ReplaceAll(fileName, ":", "_")
-
-		tarFile, err := os.Create(filepath.Join(cachePath, fileName))
-		if err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-		}
-		if err := os.Chmod(filepath.Join(cachePath, fileName), 0644); err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-		}
-		return tarFile, fileName
-	}
-	return nil, config.ScanImage
+func getTarName(config *protecodeExecuteScanOptions) string {
+	// remove original version
+	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	// append trimmed version
+	fileName = fileName + "_" + handleArtifactVersion(config.ArtifactVersion)
+	// replace unwanted chars
+	fileName = strings.ReplaceAll(fileName, "/", "_")
+	return fileName + ".tar"
 }
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
