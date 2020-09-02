@@ -86,19 +86,13 @@ func (c *DockerClientMock) TarImage(writer io.Writer, image pkgutil.Image) error
 }
 
 func TestRunProtecodeScan(t *testing.T) {
-
 	requestURI := ""
 	dir, err := ioutil.TempDir("", "t")
-	if err != nil {
-		t.Fatal("Failed to create temporary directory")
-	}
+	require.NoError(t, err, "Failed to create temporary directory")
 	// clean up tmp dir
 	defer func() { _ = os.RemoveAll(dir) }()
-
 	testFile, err := ioutil.TempFile(dir, "t.tar")
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	fileName := filepath.Base(testFile.Name())
 	path := strings.ReplaceAll(testFile.Name(), fileName, "")
 
@@ -109,9 +103,7 @@ func TestRunProtecodeScan(t *testing.T) {
 		if requestURI == "/api/product/4486/" || requestURI == "/api/product/4711/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
 			byteContent, err := ioutil.ReadFile(violations)
-			if err != nil {
-				t.Fatalf("failed reading %v", violations)
-			}
+			require.NoErrorf(t, err, "failed reading %v", violations)
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
 
@@ -120,9 +112,7 @@ func TestRunProtecodeScan(t *testing.T) {
 		} else if requestURI == "/api/fetch/" {
 			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
 			byteContent, err := ioutil.ReadFile(violations)
-			if err != nil {
-				t.Fatalf("failed reading %v", violations)
-			}
+			require.NoErrorf(t, err, "failed reading %v", violations)
 			response := protecode.ResultData{Result: protecode.Result{ProductID: 4486, ReportURL: requestURI}}
 			err = json.Unmarshal(byteContent, &response)
 
@@ -228,11 +218,9 @@ func TestCreateDockerClient(t *testing.T) {
 }
 
 func TestUploadScanOrDeclareFetch(t *testing.T) {
-
+	// init
 	testFile, err := ioutil.TempFile("", "testFileUpload")
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(testFile.Name()) // clean up
 	fileName := filepath.Base(testFile.Name())
 	path := strings.ReplaceAll(testFile.Name(), fileName, "")
@@ -278,10 +266,10 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}
 
 	for _, c := range cases {
-
+		// test
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
 		got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
-
+		// assert
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -293,9 +281,7 @@ func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
 func TestExecuteProtecodeScan(t *testing.T) {
 	testDataFile := filepath.Join("testdata", "TestProtecode", "protecode_result_violations.json")
 	violationsAbsPath, err := filepath.Abs(testDataFile)
-	if err != nil {
-		t.Fatalf("failed to obtain absolute path to test data with violations: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to obtain absolute path to test data with violations: %v", err)
 
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -304,9 +290,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 
 		if requestURI == "/api/product/4711/" {
 			byteContent, err := ioutil.ReadFile(violationsAbsPath)
-			if err != nil {
-				t.Fatalf("failed reading %v", violationsAbsPath)
-			}
+			require.NoErrorf(t, err, "failed reading %v", violationsAbsPath)
 			response := protecode.ResultData{}
 			err = json.Unmarshal(byteContent, &response)
 
@@ -340,33 +324,24 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	}
 
 	resetDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get current directory: %v", err)
-	}
+	require.NoErrorf(t, err, "Failed to get current directory: %v", err)
 	defer func() { _ = os.Chdir(resetDir) }()
 
 	for _, c := range cases {
-
+		// init
 		dir, err := ioutil.TempDir("", "t")
-		if err != nil {
-			t.Fatalf("Failed to create temporary directory: %v", err)
-		}
-
+		require.NoErrorf(t, err, "Failed to create temporary directory: %v", err)
 		// clean up tmp dir
 		defer func() { _ = os.RemoveAll(dir) }()
-
 		// change into tmp dir and write test data
 		err = os.Chdir(dir)
-		if err != nil {
-			t.Fatalf("Failed to change into temporary directory: %v", err)
-		}
-
+		require.NoErrorf(t, err, "Failed to change into temporary directory: %v", err)
 		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		influxData := &protecodeExecuteScanInflux{}
-
+		// test
 		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
-
+		// assert
 		assert.Equal(t, "1125", influxData.protecode_data.fields.historical_vulnerabilities)
 		assert.Equal(t, "0", influxData.protecode_data.fields.triaged_vulnerabilities)
 		assert.Equal(t, "1", influxData.protecode_data.fields.excluded_vulnerabilities)
@@ -377,7 +352,6 @@ func TestExecuteProtecodeScan(t *testing.T) {
 }
 
 func TestCorrectDockerConfigEnvVar(t *testing.T) {
-
 	t.Run("with credentials", func(t *testing.T) {
 		// init
 		testDirectory, _ := ioutil.TempDir(".", "")
