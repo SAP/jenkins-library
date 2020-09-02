@@ -145,7 +145,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 }
 
 func addJacocoReportPaths() {
-	matches, err := glob("**/target/site/jacoco/jacoco.xml")
+	matches, err := glob("**/jacoco.xml")
 	if err != nil {
 		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
 		return
