@@ -130,16 +130,6 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 	return fileName, resultFilePath
 }
 
-func getTarName(config *protecodeExecuteScanOptions) string {
-	// remove original version
-	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
-	// append trimmed version
-	fileName = fileName + "_" + handleArtifactVersion(config.ArtifactVersion)
-	// replace unwanted chars
-	fileName = strings.ReplaceAll(fileName, "/", "_")
-	return fileName + ".tar"
-}
-
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 	//load existing product by filename
 	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
@@ -326,4 +316,16 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 	} else {
 		log.Entry().Info("Docker credentials configuration: NONE")
 	}
+}
+
+func getTarName(config *protecodeExecuteScanOptions) string {
+	// remove original version
+	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	// append trimmed version
+	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
+		fileName = fileName + "_" + version
+	}
+	// replace unwanted chars
+	fileName = strings.ReplaceAll(fileName, "/", "_")
+	return fileName + ".tar"
 }
