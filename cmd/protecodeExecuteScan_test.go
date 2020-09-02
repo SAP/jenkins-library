@@ -166,7 +166,6 @@ func TestHandleArtifactVersion(t *testing.T) {
 		version string
 		want    string
 	}{
-
 		{"1.0.0-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "1"},
 		{"2.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "2"},
 		{"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "3"},
@@ -177,7 +176,6 @@ func TestHandleArtifactVersion(t *testing.T) {
 	}
 
 	for _, c := range cases {
-
 		got := handleArtifactVersion(c.version)
 		assert.Equal(t, c.want, got)
 	}
@@ -345,8 +343,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		assert.Equal(t, "1125", influxData.protecode_data.fields.historical_vulnerabilities)
 		assert.Equal(t, "0", influxData.protecode_data.fields.triaged_vulnerabilities)
 		assert.Equal(t, "1", influxData.protecode_data.fields.excluded_vulnerabilities)
-		// assert.Equal(t, 129, got["cvss3GreaterOrEqualSeven"])
-		// assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, "142", influxData.protecode_data.fields.major_vulnerabilities)
 		assert.Equal(t, "226", influxData.protecode_data.fields.vulnerabilities)
 	}
 }
