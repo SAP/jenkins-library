@@ -6,7 +6,7 @@
 
 * This step needs an existing Target Vector as well as the scope where it should be published.
 * The Target Vector ID is taken from the addonDescriptor in the commonPipelineEnvironment.
-* If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector) the Target Vector will be created and its ID will be written to the commonPipelineEnvironment 
+* If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector) the Target Vector will be created and its ID will be written to the commonPipelineEnvironment
 
 ## ${docGenParameters}
 
@@ -16,8 +16,8 @@
 
 ## Examples
 
-### Configuration in the config.yml 
- 
+### Configuration in the config.yml
+
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile looks:
 
 ```groovy
@@ -37,7 +37,7 @@ steps:
 
 ### Input via the CommonPipelineEnvironment
 
-Mandatory fields: 
+Mandatory fields:
 
 ```json
 {"addonProduct":"",

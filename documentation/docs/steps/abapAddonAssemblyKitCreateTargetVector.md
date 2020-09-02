@@ -18,7 +18,7 @@
 
 ## Examples
 
-### Configuration in the config.yml 
+### Configuration in the config.yml
 
 The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
