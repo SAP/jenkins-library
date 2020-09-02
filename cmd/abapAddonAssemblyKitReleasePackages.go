@@ -21,20 +21,27 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 
 	client := piperhttp.Client{}
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe)
+	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
+	pollIntervalsInSeconds := time.Duration(30 * time.Second)
+	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
+	err := checkInput(addonDescriptor.Repositories)
+	if err != nil {
+		return err
+	}
 	packagesWithReposLocked, packagesWithReposNotLocked := sortByStatus(addonDescriptor.Repositories, *conn)
-	packagesWithReposLocked, err := releaseAndPoll(packagesWithReposLocked, 5, 30)
+	packagesWithReposLocked, err = releaseAndPoll(packagesWithReposLocked, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		return err
 	}
@@ -55,6 +62,15 @@ func sortingBack(packagesWithReposLocked []packageWithRepository, packagesWithRe
 		combinedRepos = append(combinedRepos, packagesWithReposNotLocked[i].repo)
 	}
 	return combinedRepos
+}
+
+func checkInput(repos []abaputils.Repository) error {
+	for i := range repos {
+		if repos[i].PackageName == "" {
+			return errors.New("Parameter missing. Please provide the name of the package which should be released")
+		}
+	}
+	return nil
 }
 
 func sortByStatus(repos []abaputils.Repository, conn connector) ([]packageWithRepository, []packageWithRepository) {
@@ -78,8 +94,8 @@ func sortByStatus(repos []abaputils.Repository, conn connector) ([]packageWithRe
 }
 
 func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]packageWithRepository, error) {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
 
 	for {
 		select {
@@ -92,7 +108,7 @@ func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Dur
 					err := pckgWR[i].p.release()
 					// if there is an error, release is not yet finished
 					if err != nil {
-						log.Entry().Infof("Release of %s is not yet finished, check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					}
 				}
@@ -108,9 +124,6 @@ func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Dur
 func (p *pckg) release() error {
 	var body []byte
 	var err error
-	if p.PackageName == "" {
-		return errors.New("Parameter missing. Please provide the name of the package which should be released")
-	}
 	log.Entry().Infof("Release package %s", p.PackageName)
 	p.connector.getToken("/odata/aas_ocs_package")
 	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
