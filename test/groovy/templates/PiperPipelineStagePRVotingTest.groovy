@@ -35,6 +35,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
     @Before
     void init()  {
 
+        nullScript.env.STAGE_NAME = 'Pull-Request Voting'
         binding.variables.env = [
             STAGE_NAME: 'Pull-Request Voting',
             BRANCH_NAME: 'PR-1'

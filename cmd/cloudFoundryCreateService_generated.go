@@ -135,7 +135,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 					},
 					{
 						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "username"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
@@ -143,7 +143,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "password"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

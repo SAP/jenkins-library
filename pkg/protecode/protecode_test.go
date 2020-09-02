@@ -31,7 +31,7 @@ func TestMapResponse(t *testing.T) {
 		{`{"product_id": 1}`, new(Result), &Result{ProductID: 1}},
 		{`"{\"product_id\": 4711}"`, new(Result), &Result{ProductID: 4711}},
 		{"{\"results\": {\"product_id\": 1}}", new(ResultData), &ResultData{Result: Result{ProductID: 1}}},
-		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, new(ResultData), &ResultData{Result: Result{ProductID: 209396, Status: "B", ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
+		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, new(ResultData), &ResultData{Result: Result{ProductID: 209396, Status: statusBusy, ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
 		{`{"products": [{"product_id": 1}]}`, new(ProductData), &ProductData{Products: []Product{{ProductID: 1}}}},
 	}
 	pc := Protecode{}
@@ -47,7 +47,7 @@ func TestParseResultSuccess(t *testing.T) {
 	var result Result = Result{
 		ProductID: 4712,
 		ReportURL: "ReportUrl",
-		Status:    "B",
+		Status:    statusBusy,
 		Components: []Component{
 			{Vulns: []Vulnerability{
 				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: 7.2, Cvss3Score: "0.0"}},

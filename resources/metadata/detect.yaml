@@ -30,17 +30,17 @@ spec:
           - name: detectTokenCredentialsId
             type: secret
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: codeLocation
         description: An override for the name Detect will use for the scan file it creates.
         type: string
         mandatory: false
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: projectName
         description: Name of the Synopsis Detect (formerly BlackDuck) project.
         aliases:
@@ -48,52 +48,52 @@ spec:
         type: string
         mandatory: true
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: scanners
         description: List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
         aliases:
           - name: detect/scanners
-        type: '[]string'
+        type: "[]string"
         mandatory: false
         default:
-        - signature
+          - signature
         possibleValues:
-        - signature
-        - source
+          - signature
+          - source
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: scanPaths
         description: List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.
         aliases:
           - name: detect/scanPaths
-        type: '[]string'
+        type: "[]string"
         mandatory: false
         default:
-        - '.'
+          - "."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: scanProperties
         description: Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)
         aliases:
           - name: detect/scanProperties
-        type: '[]string'
+        type: "[]string"
         mandatory: false
         default:
-        - --blackduck.signature.scanner.memory=4096
-        - --blackduck.timeout=6000
-        - --blackduck.trust.cert=true
-        - --detect.report.timeout=4800
-        - --logging.level.com.synopsys.integration=DEBUG
+          - --blackduck.signature.scanner.memory=4096
+          - --blackduck.timeout=6000
+          - --blackduck.trust.cert=true
+          - --detect.report.timeout=4800
+          - --logging.level.com.synopsys.integration=DEBUG
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: serverUrl
         description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
         aliases:
@@ -101,19 +101,19 @@ spec:
         type: string
         mandatory: true
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: groups
         description: Users groups to be assigned for the Project
         aliases:
           - name: detect/groups
-        type: '[]string'
+        type: "[]string"
         mandatory: false
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: failOn
         description: Mark the current build as fail based on the policy categories applied.
         longDescription: |
@@ -121,21 +121,21 @@ spec:
           The list of accepted valed can be found at https://blackducksoftware.github.io/synopsys-detect/latest/properties/configuration/project/#fail-on-policy-violation-severities
         aliases:
           - name: detect/failOn
-        type: '[]string'
+        type: "[]string"
         mandatory: false
         default:
-        - BLOCKER
+          - BLOCKER
         possibleValues:
-        - ALL
-        - BLOCKER
-        - CRITICAL
-        - MAJOR
-        - MINOR
-        - NONE
+          - ALL
+          - BLOCKER
+          - CRITICAL
+          - MAJOR
+          - MINOR
+          - NONE
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: version
         aliases:
           - name: projectVersion
@@ -211,4 +211,4 @@ spec:
       workingDir: /root
       options:
         - name: -u
-          value: '0'
+          value: "0"
