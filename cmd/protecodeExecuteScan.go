@@ -177,7 +177,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	client.DeleteScan(config.CleanupMode, productID)
 
 	//count vulnerabilities
-	log.Entry().Debug("Parse scan reult")
+	log.Entry().Debug("Parse scan result")
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
