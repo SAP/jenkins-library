@@ -28,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String xsDeploymentId
 
-    //GiutHub specific information
+    //GitHub specific information
     String githubOrg
     String githubRepo
 
