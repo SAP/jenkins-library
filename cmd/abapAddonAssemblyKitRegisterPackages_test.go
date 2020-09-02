@@ -15,9 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//uploadSarFiles
-// registerPackages
-
 // ********************* Test uploadSarFiles *******************
 func TestUploadSarFiles(t *testing.T) {
 	t.Run("test uploadSarFiles", func(t *testing.T) {

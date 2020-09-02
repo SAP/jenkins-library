@@ -1,8 +1,0 @@
-addonProduct: /ITAPC1/I_CURRENCZPRODUCT
-addonVersion: 1.0.0
-addonUniqueID: myAddonId
-customerID: $ID
-repositories:
-   - name: /ITAPC1/I_CURRENCZ
-     tag: whatever
-     version: 1.0.0
