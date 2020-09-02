@@ -59,12 +59,18 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
 
+	goals := []string{
+		"org.jacoco:jacoco-maven-plugin:prepare-agent",
+		"test",
+		"org.jacoco:jacoco-maven-plugin:report",
+	}
+
 	mavenOptions := maven.ExecuteOptions{
 		PomPath:             pomPath,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
-		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", "test"},
+		Goals:               goals,
 		Defines:             []string{retryDefine, forkCountDefine},
 	}
 
