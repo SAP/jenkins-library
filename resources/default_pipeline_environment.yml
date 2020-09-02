@@ -543,6 +543,14 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+    htmlPublisher:
+      allowMissing: true
+      alwaysLinkToLastBuild: false
+      keepAll: true
+      reportDir: ""
+      pattern: "**/reports/coverage-reports/**/index.html"
+      reportName: "Results"
+      active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
   tmsUpload:
