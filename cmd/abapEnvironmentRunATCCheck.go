@@ -189,7 +189,7 @@ func parseATCResult(body []byte, atcResultFileName string) (err error) {
 		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned succesfully on the system")
 	}
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
-	if err == nil && len(parsedXML.Files) > 0 {
+	if err == nil {
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)

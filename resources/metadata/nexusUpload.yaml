@@ -36,9 +36,9 @@ spec:
         type: string
         description: The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: nexus3
         possibleValues:
@@ -50,9 +50,9 @@ spec:
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         aliases:
           - name: nexus/url
@@ -80,16 +80,16 @@ spec:
         type: string
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         aliases:
           - name: nexus/groupId
       - name: artifactId
         type: string
         description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
         scope:
-        - PARAMETERS
+          - PARAMETERS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.
@@ -114,7 +114,7 @@ spec:
         type: string
         description: Username for accessing the Nexus endpoint.
         scope:
-        - PARAMETERS
+          - PARAMETERS
         secret: true
         resourceRef:
           - name: nexusCredentialsId
@@ -124,7 +124,7 @@ spec:
         type: string
         description: Password for accessing the Nexus endpoint.
         scope:
-        - PARAMETERS
+          - PARAMETERS
         secret: true
         resourceRef:
           - name: nexusCredentialsId
