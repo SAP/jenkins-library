@@ -39,27 +39,13 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName) {
 
-        Map complianceScanMap = [:]
+        // telemetry reporting
+        utils.pushToSWA([step: STEP_NAME], config)
 
         if (config.sonarExecuteScan) {
-            complianceScanMap['SonarQube'] = {
-                node(config.nodeLabel) {
-                    try {
-                        durationMeasure(script: script, measurementName: 'sonar_duration') {
-                            sonarExecuteScan script: script
-                        }
-                    } finally {
-                        deleteDir()
-                    }
-                }
+            durationMeasure(script: script, measurementName: 'sonar_duration') {
+                sonarExecuteScan script: script
             }
-        }
-
-        if (complianceScanMap.size() > 0) {
-            // telemetry reporting
-            utils.pushToSWA([step: STEP_NAME], config)
-
-            parallel complianceScanMap.plus([failFast: false])
         }
     }
 }
