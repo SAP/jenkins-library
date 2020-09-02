@@ -29,7 +29,8 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 
 func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender) error {
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	//conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
