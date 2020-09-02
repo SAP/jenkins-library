@@ -11,6 +11,8 @@ import util.Rules
 import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.hasItem
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
 import org.junit.After
@@ -32,6 +34,42 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
     @After
     void tearDown() {
         nullScript.metaClass.findFiles = null
+    }
+
+    @Test
+    void inferBuildToolMaven() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "pom.xml"
+        })
+        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        assertEquals('maven', actual)
+    }
+
+    @Test
+    void inferBuildToolMTA() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "mta.yaml"
+        })
+        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        assertEquals('mta', actual)
+    }
+
+    @Test
+    void inferBuildToolNpm() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "package.json"
+        })
+        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        assertEquals('npm', actual)
+    }
+
+    @Test
+    void inferBuildToolNone() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return false
+        })
+        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        assertNull(actual)
     }
 
     @Test
