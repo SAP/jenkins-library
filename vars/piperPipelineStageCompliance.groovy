@@ -44,6 +44,7 @@ void call(Map parameters = [:]) {
 
         if (config.sonarExecuteScan) {
             durationMeasure(script: script, measurementName: 'sonar_duration') {
+                sh "ls -la"
                 sonarExecuteScan script: script
             }
         }
