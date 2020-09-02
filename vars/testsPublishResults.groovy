@@ -32,7 +32,12 @@ import groovy.transform.Field
      * Publishes test results with the [Cucumber plugin](https://plugins.jenkins.io/cucumber-testresult-plugin/).
      * @possibleValues `true`, `false`, `Map`
      */
-    'cucumber'
+    'cucumber',
+    /**
+     * Publishes test results with the [HTML Publisher plugin](https://plugins.jenkins.io/htmlpublisher/).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'htmlPublisher'
 ]
 
 @Field def STEP_NAME = getClass().getName()
@@ -80,6 +85,7 @@ void call(Map parameters = [:]) {
         publishCoberturaReport(configuration.get('cobertura'))
         publishJMeterReport(configuration.get('jmeter'))
         publishCucumberReport(configuration.get('cucumber'))
+        publishHtmlReport(configuration.get('htmlPublisher'))
 
         if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
             script.currentBuild.result = 'FAILURE'
@@ -172,6 +178,20 @@ def publishCucumberReport(Map settings = [:]) {
             testResults: pattern
         )
         archiveResults(settings.get('archive'), pattern, allowEmpty)
+    }
+}
+
+def publishHtmlReport(Map settings = [:]) {
+    if (settings.active) {
+        def pattern = settings.get('pattern')
+        def reportName = settings.get('reportName')
+        publishHTML(target: [
+            allowMissing         : true,
+            alwaysLinkToLastBuild: false,
+            keepAll              : true,
+            reportDir            : pattern,
+            reportName           : reportName
+        ])
     }
 }
 
