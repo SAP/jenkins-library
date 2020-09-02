@@ -61,7 +61,6 @@ func copyFieldsToRepositories(pckgWR []packageWithRepository) []abaputils.Reposi
 	return repos
 }
 
-//TODO ändert er dann wirklich den status -> addondescriptor checken
 func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)

@@ -80,7 +80,6 @@ func sortByStatus(repos []abaputils.Repository, conn connector) ([]packageWithRe
 	return packagesWithReposLocked, packagesWithReposNotLocked
 }
 
-// TODO status wird nicht richtig zurück geschrieben ins cpe!
 func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]packageWithRepository, error) {
 	timeout := time.After(maxRuntimeInMinutes * time.Minute)
 	ticker := time.Tick(pollIntervalsInSeconds * time.Second)

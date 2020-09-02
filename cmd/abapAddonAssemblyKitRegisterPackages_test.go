@@ -5,8 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -15,15 +13,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func mockReader(path string) ([]byte, error) {
+	var file []byte
+	if path == "exists" {
+		return file, nil
+	}
+	return file, errors.New("error reading the file")
+}
+
 // ********************* Test uploadSarFiles *******************
 func TestUploadSarFiles(t *testing.T) {
 	t.Run("test uploadSarFiles", func(t *testing.T) {
-		filePath, err := createTempFile("SAPK-001AAINDRNMSPC.SAR")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		repositories, conn := setupRepos(filePath, planned, clMockRegisterPackages{})
-		err = uploadSarFiles(repositories, conn)
+		repositories, conn := setupRepos("exists", planned, clMockRegisterPackages{})
+		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.NoError(t, err)
 	})
 }
@@ -31,7 +33,7 @@ func TestUploadSarFiles(t *testing.T) {
 func TestUploadSarFilesInvalidInput(t *testing.T) {
 	t.Run("test uploadSarFiles with missing file path", func(t *testing.T) {
 		repositories, conn := setupRepos("", planned, clMockRegisterPackages{})
-		err := uploadSarFiles(repositories, conn)
+		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.Error(t, err)
 	})
 }
@@ -39,7 +41,7 @@ func TestUploadSarFilesInvalidInput(t *testing.T) {
 func TestUploadSarFilesNoFile(t *testing.T) {
 	t.Run("test uploadSarFiles with missing file", func(t *testing.T) {
 		repositories, conn := setupRepos("does_not_exist", planned, clMockRegisterPackages{})
-		err := uploadSarFiles(repositories, conn)
+		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.Error(t, err)
 	})
 }
@@ -49,12 +51,8 @@ func TestUploadSarFilesErrorUploading(t *testing.T) {
 		c := clMockRegisterPackages{
 			err: errors.New("Failure"),
 		}
-		filePath, err := createTempFile("SAPK-001AAINDRNMSPC.SAR")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		repositories, conn := setupRepos(filePath, planned, c)
-		err = uploadSarFiles(repositories, conn)
+		repositories, conn := setupRepos("exists", planned, c)
+		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.Error(t, err)
 	})
 }
@@ -105,26 +103,6 @@ func setupRepos(filePath string, status packageStatus, cl clMockRegisterPackages
 	conn.Client = &cl
 	conn.Header = make(map[string][]string)
 	return repositories, *conn
-}
-
-func createTempFile(sarFileName string) (string, error) {
-	var sarXMLFilePath string
-	dir, err := ioutil.TempDir("", "test_upload_SARfile")
-	if err != nil {
-		return sarXMLFilePath, errors.New("Failed to create temporary directory")
-	}
-	oldCWD, _ := os.Getwd()
-	_ = os.Chdir(dir)
-	// clean up tmp dir
-	defer func() {
-		_ = os.Chdir(oldCWD)
-		_ = os.RemoveAll(dir)
-	}()
-
-	file, _ := os.Create(sarFileName)
-	file.Write([]byte("stuff inside"))
-
-	return filepath.Join(dir, "SAPK-001AAINDRNMSPC.SAR"), nil
 }
 
 // ********************* Mocking *******************
@@ -194,7 +172,6 @@ func (c *clMockRegisterPackages) sendRequestPost() (*http.Response, error) {
 
 // ********************* Testdata *******************
 
-//TODO sobald der service wieder funktioniert den richtigen kopieren
 var responseRegisterPackagesPost = `{
     "d": {
         "__metadata": {

@@ -36,7 +36,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 
 	conn := new(connector)
 	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	err := uploadSarFiles(addonDescriptor.Repositories, *conn)
+	err := uploadSarFiles(addonDescriptor.Repositories, *conn, reader)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegiste
 	return nil
 }
 
-func uploadSarFiles(repos []abaputils.Repository, conn connector) error {
+func uploadSarFiles(repos []abaputils.Repository, conn connector, readFileFunc readFile) error {
 	for i := range repos {
 		if repos[i].Status == string(planned) {
 			if repos[i].SarXMLFilePath == "" {
@@ -63,7 +63,7 @@ func uploadSarFiles(repos []abaputils.Repository, conn connector) error {
 			}
 			filename := filepath.Base(repos[i].SarXMLFilePath)
 			conn.Header["Content-Filename"] = []string{filename}
-			sarFile, err := ioutil.ReadFile(repos[i].SarXMLFilePath)
+			sarFile, err := readFileFunc(repos[i].SarXMLFilePath) //ioutil.ReadFile(repos[i].SarXMLFilePath)
 			if err != nil {
 				return err
 			}
@@ -75,6 +75,12 @@ func uploadSarFiles(repos []abaputils.Repository, conn connector) error {
 		}
 	}
 	return nil
+}
+
+type readFile func(path string) ([]byte, error)
+
+func reader(path string) ([]byte, error) {
+	return ioutil.ReadFile(path)
 }
 
 func registerPackages(repos []abaputils.Repository, conn connector) ([]abaputils.Repository, error) {
