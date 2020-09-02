@@ -34,6 +34,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var goals []string
 
 	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
+	goals = append(goals, "org.jacoco:jacoco-maven-plugin:report")
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
