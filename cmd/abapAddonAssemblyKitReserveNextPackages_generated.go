@@ -62,7 +62,7 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitReserveNextPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.",
-		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages 
+		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages
 If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
 "P": Package was created in the registry; production can be started / continued
 "R": Package exists and is already released; production is not needed and must be skipped

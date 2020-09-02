@@ -63,7 +63,7 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step releases the physical Delivery Packages",
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-The physical Delivery Packages in status “L” are released and uploaded to the "ABAP CP" section in the SAP artifactory object 
+The physical Delivery Packages in status “L” are released and uploaded to the "ABAP CP" section in the SAP artifactory object
 store. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()

@@ -25,6 +25,7 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 ```groovy
 abapAddonAssemblyKitCreateTargetVector script: this
 ```
+
 The config.yml should look like this:
 
 ```yaml
