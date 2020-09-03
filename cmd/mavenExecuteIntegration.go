@@ -79,7 +79,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
-	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report"}
+	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report-aggregate"}
 	mavenOptions.Defines = []string{}
 	_, err = maven.Execute(&mavenOptions, utils)
 	if err != nil {

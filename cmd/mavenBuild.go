@@ -68,7 +68,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	log.Entry().Infof("found .exec files: %v", execFiles)
 
 	// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
-	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report"}
+	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report-aggregate"}
 	mavenOptions.Defines = []string{}
 	_, err = maven.Execute(&mavenOptions, command)
 	if err != nil {
