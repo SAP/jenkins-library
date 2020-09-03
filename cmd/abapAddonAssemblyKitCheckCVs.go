@@ -20,22 +20,23 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &client, cpe)
+	err := runAbapAddonAssemblyKitCheckCVs(&config, telemetryData, &client, cpe, abaputils.ReadAddonDescriptor)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+	cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment, readAdoDescriptor abaputils.ReadAddonDescriptorType) error {
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
-	addonDescriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
+	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
-		return nil
+		return err
 	}
 	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
 	for i := range addonDescriptor.Repositories {
 		var c cv

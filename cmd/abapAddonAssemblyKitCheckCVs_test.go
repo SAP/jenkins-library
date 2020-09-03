@@ -1,24 +1,86 @@
 package cmd
 
 import (
-	"bytes"
-	"io"
-	"net/http"
-	"strings"
+	"encoding/json"
 	"testing"
 
-	"io/ioutil"
-
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
+func mockReadAddonDescriptor(FileName string) (abaputils.AddonDescriptor, error) {
+	var addonDescriptor abaputils.AddonDescriptor
+	var err error
+	switch FileName {
+	case "success":
+		{
+			addonDescriptor = abaputils.AddonDescriptor{
+				AddonProduct:     "/DRNMSPC/PRD01",
+				AddonVersionYAML: "3.2.1",
+				Repositories: []abaputils.Repository{
+					{
+						Name:        "/DRNMSPC/COMP01",
+						VersionYAML: "1.2.3",
+					},
+				},
+			}
+		}
+	case "failing":
+		{
+			err = errors.New("error in ReadAddonDescriptor")
+		}
+	}
+	return addonDescriptor, err
+}
+func TestCheckCVsStep(t *testing.T) {
+	t.Run("step success", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body:       responseCheckCVs,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		var config abapAddonAssemblyKitCheckCVsOptions
+		config.AddonDescriptorFileName = "success"
+		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.NoError(t, err, "Did not expect error")
+
+		var addonDescriptorFinal abaputils.AddonDescriptor
+		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.Equal(t, "0001", addonDescriptorFinal.Repositories[0].Version)
+		assert.Equal(t, "0002", addonDescriptorFinal.Repositories[0].SpLevel)
+		assert.Equal(t, "0003", addonDescriptorFinal.Repositories[0].PatchLevel)
+	})
+	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
+		var config abapAddonAssemblyKitCheckCVsOptions
+		config.AddonDescriptorFileName = "failing"
+		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &abaputils.ClientMock{}, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Did expect error")
+		assert.Equal(t, err.Error(), "error in ReadAddonDescriptor")
+	})
+	t.Run("step error - in validate", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body:       "ErrorBody",
+			Token:      "myToken",
+			StatusCode: 400,
+			Error:      errors.New("error during validation"),
+		}
+
+		var config abapAddonAssemblyKitCheckCVsOptions
+		config.AddonDescriptorFileName = "success"
+		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Did expect error")
+	})
+}
+
 func TestInitCV(t *testing.T) {
 	t.Run("test init", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckCVs{}
+		conn.Client = &abaputils.ClientMock{}
 		repo := abaputils.Repository{
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
@@ -33,7 +95,12 @@ func TestInitCV(t *testing.T) {
 func TestValidateCV(t *testing.T) {
 	t.Run("test validate", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckCVs{}
+		conn.Client = &abaputils.ClientMock{
+			Body:       responseCheckCVs,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
 		var c cv
 		c.connector = *conn
 		c.Name = "/DRNMSPC/COMP01"
@@ -49,10 +116,16 @@ func TestValidateCV(t *testing.T) {
 func TestValidateCVError(t *testing.T) {
 	t.Run("test validate with error", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckCVs{}
+		conn.Client = &abaputils.ClientMock{
+			Body:       "ErrorBody",
+			Token:      "myToken",
+			StatusCode: 400,
+			Error:      errors.New("Validation failed"),
+		}
+
 		var c cv
 		c.connector = *conn
-		c.Name = "ERROR"
+		c.Name = "/DRNMSPC/COMP01"
 		c.VersionYAML = "1.2.3"
 		err := c.validate()
 		assert.Error(t, err)
@@ -79,7 +152,6 @@ func TestCopyFieldsCV(t *testing.T) {
 	})
 }
 
-// combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor
 func TestCombineYAMLRepositoriesWithCPEProduct(t *testing.T) {
 	t.Run("test combineYAMLRepositoriesWithCPEProduct", func(t *testing.T) {
 		addonDescriptor := abaputils.AddonDescriptor{
@@ -106,28 +178,6 @@ func TestCombineYAMLRepositoriesWithCPEProduct(t *testing.T) {
 		assert.Equal(t, "1.2.3", finalAddonDescriptor.Repositories[0].VersionYAML)
 		assert.Equal(t, "3.2.1", finalAddonDescriptor.Repositories[1].VersionYAML)
 	})
-}
-
-type clMockCheckCVs struct {
-	StatusCode int
-	Error      error
-}
-
-func (c *clMockCheckCVs) SetOptions(opts piperhttp.ClientOptions) {}
-
-func (c *clMockCheckCVs) SendRequest(method string, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	var body []byte
-	if strings.HasSuffix(url, "Name='ERROR'&Version='1.2.3'") {
-		return &http.Response{
-			StatusCode: c.StatusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
-		}, errors.New("Validate went wrong")
-	}
-	body = []byte(responseCheckCVs)
-	return &http.Response{
-		StatusCode: c.StatusCode,
-		Body:       ioutil.NopCloser(bytes.NewReader(body)),
-	}, c.Error
 }
 
 var responseCheckCVs = `{

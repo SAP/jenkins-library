@@ -1,44 +1,85 @@
 package cmd
 
 import (
-	"bytes"
-	"io"
-	"net/http"
-	"strings"
+	"encoding/json"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"io/ioutil"
 )
+
+func TestCheckPVStep(t *testing.T) {
+	t.Run("step success", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body:       responseCheckPV,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		var config abapAddonAssemblyKitCheckPVOptions
+		config.AddonDescriptorFileName = "success"
+		var cpe abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.NoError(t, err, "Did not expect error")
+
+		var addonDescriptorFinal abaputils.AddonDescriptor
+		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.Equal(t, "0003", addonDescriptorFinal.AddonVersion)
+		assert.Equal(t, "0002", addonDescriptorFinal.AddonSpsLevel)
+		assert.Equal(t, "0001", addonDescriptorFinal.AddonPatchLevel)
+	})
+	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
+		var config abapAddonAssemblyKitCheckPVOptions
+		config.AddonDescriptorFileName = "failing"
+		var cpe abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, &abaputils.ClientMock{}, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Did expect error")
+		assert.Equal(t, err.Error(), "error in ReadAddonDescriptor")
+	})
+	t.Run("step error - in validate", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body:       "ErrorBody",
+			Token:      "myToken",
+			StatusCode: 400,
+			Error:      errors.New("error during validation"),
+		}
+		var config abapAddonAssemblyKitCheckPVOptions
+		config.AddonDescriptorFileName = "success"
+		var cpe abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
+		err := runAbapAddonAssemblyKitCheckPV(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Did expect error")
+	})
+}
 
 func TestInitPV(t *testing.T) {
 	t.Run("test init", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckPV{}
+		conn.Client = &abaputils.ClientMock{}
 		prodvers := abaputils.AddonDescriptor{
 			AddonProduct:     "/DRNMSPC/PRD01",
-			AddonVersionYAML: "1.2.3",
+			AddonVersionYAML: "3.2.1",
 		}
 
 		var pv pv
 		pv.init(prodvers, *conn)
 		assert.Equal(t, "/DRNMSPC/PRD01", pv.Name)
-		assert.Equal(t, "1.2.3", pv.VersionYAML)
+		assert.Equal(t, "3.2.1", pv.VersionYAML)
 	})
 }
 
 func TestValidatePV(t *testing.T) {
 	t.Run("test validate", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckPV{}
+		conn.Client = &abaputils.ClientMock{
+			Body:       responseCheckPV,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
 		var pv pv
 		pv.connector = *conn
 		pv.Name = "/DRNMSPC/PRD01"
-		pv.VersionYAML = "1.2.3"
+		pv.VersionYAML = "3.2.1"
 		err := pv.validate()
 		assert.NoError(t, err)
 		assert.Equal(t, pv.Version, "0003")
@@ -50,11 +91,16 @@ func TestValidatePV(t *testing.T) {
 func TestValidatePVError(t *testing.T) {
 	t.Run("test validate with error", func(t *testing.T) {
 		conn := new(connector)
-		conn.Client = &clMockCheckPV{}
+		conn.Client = &abaputils.ClientMock{
+			Body:       "ErrorBody",
+			Token:      "myToken",
+			StatusCode: 400,
+			Error:      errors.New("Validation failed"),
+		}
 		var pv pv
 		pv.connector = *conn
-		pv.Name = "ERROR"
-		pv.VersionYAML = "1.2.3"
+		pv.Name = "/DRNMSPC/PRD01"
+		pv.VersionYAML = "3.2.1"
 		err := pv.validate()
 		assert.Error(t, err)
 		assert.Equal(t, pv.Version, "")
@@ -78,28 +124,6 @@ func TestCopyFieldsPV(t *testing.T) {
 		assert.Equal(t, "0002", prodVers.AddonSpsLevel)
 		assert.Equal(t, "0001", prodVers.AddonPatchLevel)
 	})
-}
-
-type clMockCheckPV struct {
-	StatusCode int
-	Error      error
-}
-
-func (c *clMockCheckPV) SetOptions(opts piperhttp.ClientOptions) {}
-
-func (c *clMockCheckPV) SendRequest(method string, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	var body []byte
-	if strings.HasSuffix(url, "Name='ERROR'&Version='1.2.3'") {
-		return &http.Response{
-			StatusCode: c.StatusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
-		}, errors.New("Validate went wrong")
-	}
-	body = []byte(responseCheckPV)
-	return &http.Response{
-		StatusCode: c.StatusCode,
-		Body:       ioutil.NopCloser(bytes.NewReader(body)),
-	}, c.Error
 }
 
 var responseCheckPV = `{

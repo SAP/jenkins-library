@@ -55,7 +55,9 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return err
 	}
-	err = polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
+	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
+	pollIntervalsInSeconds := time.Duration(60 * time.Second)
+	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		return err
 	}
@@ -141,8 +143,8 @@ func starting(repos []abaputils.Repository, conn connector) ([]buildWithReposito
 }
 
 func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
 	for {
 		select {
 		case <-timeout:
@@ -152,7 +154,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 			for i := range builds {
 				builds[i].build.get()
 				if !builds[i].build.IsFinished() {
-					log.Entry().Infof("Assembly of %s is not yet finished, check again in %02d seconds", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
 					allFinished = false
 				}
 			}

@@ -24,26 +24,27 @@ func abapAddonAssemblyKitRegisterPackages(config abapAddonAssemblyKitRegisterPac
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitRegisterPackages(&config, telemetryData, &client, cpe)
+	err := runAbapAddonAssemblyKitRegisterPackages(&config, telemetryData, &client, cpe, reader)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitRegisterPackages(config *abapAddonAssemblyKitRegisterPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+	cpe *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment, fileReader readFile) error {
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
-	err := uploadSarFiles(addonDescriptor.Repositories, *conn, reader)
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	err := uploadSarFiles(addonDescriptor.Repositories, *conn, fileReader)
 	if err != nil {
 		return err
 	}
 
 	// we need a second connector without the added Header
 	conn2 := new(connector)
-	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn2.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	addonDescriptor.Repositories, err = registerPackages(addonDescriptor.Repositories, *conn2)
 	if err != nil {
 		return err
@@ -72,6 +73,8 @@ func uploadSarFiles(repos []abaputils.Repository, conn connector, readFileFunc r
 			if err != nil {
 				return err
 			}
+		} else {
+			log.Entry().Infof("Package %s has status %s, cannot upload the SAR file of this package", repos[i].PackageName, repos[i].Status)
 		}
 	}
 	return nil
@@ -127,9 +130,6 @@ func (conn connector) uploadSarFile(appendum string, sarFile []byte) error {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
 	if err != nil {
-		if response == nil {
-			return errors.Wrap(err, "Upload of SAR file failed")
-		}
 		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
 		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))

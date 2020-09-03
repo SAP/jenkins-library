@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -120,7 +121,9 @@ func TestPolling(t *testing.T) {
 			repo:  repo,
 		}
 		buildsWithRepo = append(buildsWithRepo, bWR)
-		err := polling(buildsWithRepo, 600, 1)
+		timeout := time.Duration(600 * time.Second)
+		pollInterval := time.Duration(1 * time.Second)
+		err := polling(buildsWithRepo, timeout, pollInterval)
 		assert.NoError(t, err)
 		assert.Equal(t, finished, buildsWithRepo[0].build.RunState)
 	})
