@@ -62,7 +62,6 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	goals := []string{
 		"org.jacoco:jacoco-maven-plugin:prepare-agent",
 		"test",
-		"org.jacoco:jacoco-maven-plugin:report",
 	}
 
 	mavenOptions := maven.ExecuteOptions{
@@ -75,8 +74,19 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
+	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report"}
+	mavenOptions.Defines = []string{}
+	_, err = maven.Execute(&mavenOptions, utils)
+	if err != nil {
+		log.Entry().Warnf("failed to generate Jacoco coverage report: %v", err)
+	}
+
+	return nil
 }
 
 func validateForkCount(value string) error {

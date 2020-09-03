@@ -33,8 +33,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var defines []string
 	var goals []string
 
+	// Setup Jacoco coverage recording
 	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-	goals = append(goals, "org.jacoco:jacoco-maven-plugin:report")
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
@@ -59,5 +59,17 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	_, err := maven.Execute(&mavenOptions, command)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
+	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report"}
+	mavenOptions.Defines = []string{}
+	_, err = maven.Execute(&mavenOptions, command)
+	if err != nil {
+		log.Entry().Warnf("failed to generate Jacoco coverage report: %v", err)
+	}
+
+	return nil
 }
