@@ -81,15 +81,13 @@ Please pick the corresponding version for your deployment target and rename it p
 
 #### Frontend Unit Tests
 
-The command `npm run ci-frontend-unit-test` will be executed in this stage.
+For each `package.json` where the script `ci-frontend-unit-test` is defined the command `npm run ci-frontend-unit-test` will be executed in this stage.
 Furthermore, the test results have to be stored in the folder `./s4hana_pipeline/reports/frontend-unit` in the root directory.
 The required format of the test result report is the JUnit format as an `.xml` file.
 The code coverage report can be published as html report and in the cobertura format.
 The cobertura report as html report has to be stored in the directory `./s4hana_pipeline/reports/coverage-reports/frontend-unit/report-html/ut/` as an `index.html` file.
 These coverage reports will then be published in Jenkins.
 Furthermore, if configured in the `.pipeline/config.yml`, the pipeline ensures the configured level of code coverage.
-
-In MTA projects Frontend Unit Tests are executed for every module of type `html5`.
 
 #### Frontend Integration Tests
 
