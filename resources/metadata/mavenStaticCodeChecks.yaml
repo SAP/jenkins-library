@@ -35,7 +35,7 @@ spec:
           - STEPS
       - name: mavenModulesExcludes
         description: Maven modules which should be excluded by the static code checks. By default the modules 'unit-tests' and 'integration-tests' will be excluded.
-        type: '[]string'
+        type: "[]string"
         scope:
           - PARAMETERS
           - STAGES
@@ -58,7 +58,7 @@ spec:
           - STEPS
         aliases:
           - name: spotBugs/includeFilterFile
-      - name : spotBugsMaxAllowedViolations
+      - name: spotBugsMaxAllowedViolations
         description: The maximum number of failures allowed before execution fails.
         type: int
         scope:

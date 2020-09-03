@@ -32,27 +32,22 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, stepNameDoc: 'stashFiles') {
-        def utils = parameters.juStabUtils
-        if (utils == null) {
-            utils = new Utils()
-        }
-
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        def script = checkScript(this, parameters) ?: this
+        def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([
+        utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null

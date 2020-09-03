@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>cloud-sdk-tomee-archetype - Integration Tests</name>
+    <description>cloud-sdk-tomee-archetype - Integration Tests</description>
+
+    <artifactId>cloud-sdk-tomee-archetype-integration-tests</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>mydemo</groupId>
+        <artifactId>cloud-sdk-tomee-archetype</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <properties>
+        <surefire.skipTests>false</surefire.skipTests>
+        <surefire.forkCount>1</surefire.forkCount>
+        <surefire.include>*</surefire.include>
+        <surefire.exclude/>
+        <surefire.groups/>
+        <surefire.excludedGroups/>
+        <surefire.maxMemorySize>1024m</surefire.maxMemorySize>
+        <surefire.logLevel>info</surefire.logLevel>
+
+        <!--
+        Use the argLine property to define the arguments for the JVMs that are forked by the surefire plugin.
+        This avoids the need to use late property evaluation for configuring the jacoco plugin.
+        Relying on late evaluation of properties such as @{argLine} can result in issues with certain IDEs.
+
+        For more details, visit:
+        https://www.eclemma.org/jacoco/trunk/doc/prepare-agent-mojo.html
+        -->
+        <argLine>-Xmx${surefire.maxMemorySize} -Dorg.slf4j.simpleLogger.defaultLogLevel=${surefire.logLevel}</argLine>
+
+        <jacoco.executionDataFile>${project.build.directory}/coverage-reports/jacoco.exec</jacoco.executionDataFile>
+        <jacoco.includes>*</jacoco.includes>
+        <jacoco.excludes>org.apache.*</jacoco.excludes>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>mydemo</groupId>
+            <artifactId>cloud-sdk-tomee-archetype-application</artifactId>
+            <classifier>classes</classifier>
+            <version>1.0.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sap.cloud.sdk.cloudplatform</groupId>
+            <artifactId>scp-cf</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.s4hana</groupId>
+            <artifactId>s4hana-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.testutil</groupId>
+            <artifactId>testutil-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>4.0.0</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <!-- hamcrest libraries excluded here due to dependency conflict with JUnit -->
+                <exclusion>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-library</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tomee</groupId>
+            <artifactId>arquillian-tomee-embedded</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomee</groupId>
+            <artifactId>tomee-embedded</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-jdk14</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomee</groupId>
+            <artifactId>tomee-jaxrs</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.5</version>
+                <configuration>
+                    <destFile>${jacoco.executionDataFile}</destFile>
+                    <dataFile>${jacoco.executionDataFile}</dataFile>
+                    <includes>${jacoco.includes}</includes>
+                    <excludes>${jacoco.excludes}</excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M4</version>
+                <configuration>
+                    <skipTests>${surefire.skipTests}</skipTests>
+                    <includes>
+                        <include>${surefire.include}</include>
+                    </includes>
+                    <excludes>
+                        <exclude>${surefire.exclude}</exclude>
+                    </excludes>
+                    <forkCount>${surefire.forkCount}</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <groups>${surefire.groups}</groups>
+                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                    <systemPropertyVariables>
+                        <surefire.forkDir>${project.build.directory}/surefire-fork/${surefire.forkNumber}/</surefire.forkDir>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

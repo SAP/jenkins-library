@@ -7,7 +7,7 @@ Thanks to highly streamlined components, setting up and delivering your first pr
 
 ## Qualities and Pipeline Features
 
-The SAP Cloud SDK pipeline is based on project "piper" and offers unique features for assuring that your SAP Cloud SDK based application fulfills the highest quality standards.
+The SAP Cloud SDK pipeline is based on project "Piper" and offers unique features for assuring that your SAP Cloud SDK based application fulfills the highest quality standards.
 In conjunction with the SAP Cloud SDK libraries, the pipeline helps you to implement and automatically assure application qualities, for example:
 
 * Functional correctness via:

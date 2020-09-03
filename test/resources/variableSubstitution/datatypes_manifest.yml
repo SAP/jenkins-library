@@ -19,9 +19,10 @@ applications:
     spring.profiles.active: cloud # activate the spring profile named 'cloud'.
     xsuaa-instance-name: ((xsuaa-instance-name))
     db_service_instance_name: ((hana-instance-name))
-    booleanVariable: ((boolean-variable))
+    booleanVariableTrue: ((boolean-variable-true))
+    booleanVariableFalse: ((boolean-variable-false))
     floatVariable: ((float-variable))
     json-variable: ((json-variable))
     object-variable: ((object-variable))
-    string-variable: ((boolean-variable))-((float-variable))-((integer-variable))-((json-variable))
-    single-var-with-string-constants: ((boolean-variable))-with-some-more-text
+    string-variable: ((boolean-variable-true))-((float-variable))-((integer-variable))-((json-variable))
+    single-var-with-string-constants: ((boolean-variable-true))-with-some-more-text

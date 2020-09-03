@@ -30,6 +30,8 @@ class ConfigurationHelperTest {
         def readYaml(Map m) {
            new Yaml().load(m.text)
         }
+
+        def env = [STAGE_NAME: 'test']
     }
 
     @Rule
@@ -253,7 +255,17 @@ class ConfigurationHelperTest {
     }
 
     @Test
-    void testHandleCompatibilityDeep() {
+    void testHandleCompatibilityDeepSource() {
+        def configuration = ConfigurationHelper.newInstance(mockScript)
+            .mixin([features: [parallelTestExecution: true]], null, [parallelExecution: 'features/parallelTestExecution'])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(2))
+        Assert.assertThat(configuration.parallelExecution, is(true))
+    }
+
+    @Test
+    void testHandleCompatibilityDeepDestination() {
         def configuration = ConfigurationHelper.newInstance(mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
             .use()
@@ -458,4 +470,5 @@ class ConfigurationHelperTest {
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }
+
 }

@@ -1,0 +1,27 @@
+metadata:
+  name: jsonApplyPatch
+  description: Patches a json with a patch file
+  longDescription: |-
+    This steps patches a json file with patch file using the json patch standard.
+    This step can, e.g., be used if there is a json schema which needs to be patched.
+spec:
+  inputs:
+    params:
+      - name: input
+        type: string
+        description: File path to the json file which schould be patched.
+        mandatory: true
+        scope:
+          - PARAMETERS
+      - name: patch
+        type: string
+        description: File path to the patch which should be applied to the json file.
+        mandatory: true
+        scope:
+          - PARAMETERS
+      - name: output
+        type: string
+        description: File path to destination of the patched json file.
+        mandatory: true
+        scope:
+          - PARAMETERS

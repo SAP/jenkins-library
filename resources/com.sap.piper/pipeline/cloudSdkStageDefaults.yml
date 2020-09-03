@@ -1,0 +1,144 @@
+stages:
+  mavenExecuteStaticCodeChecks:
+    stepConditions:
+      mavenExecuteStaticCodeChecks:
+        filePattern: 'pom.xml'
+  lint:
+    extensionExists: true
+    stepConditions:
+      lint:
+        filePattern:
+          - '**/*.js'
+          - '**/*.jsx'
+          - '**/*.ts'
+          - '**/*.tsx'
+  backendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-it-backend'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+  frontendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-it-frontend'
+  frontendUnitTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-frontend-unit-test'
+  npmAudit:
+    stepConditions:
+      npmAudit:
+        filePattern: '**/package.json'
+  endToEndTests:
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      newmanExecute:
+        filePatternFromConfig: 'newmanCollection'
+        configKeys:
+          - 'testRepository'
+      uiVeri5ExecuteTests:
+        filePattern: '**/conf.js'
+        configKeys:
+          - 'testRepository'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
+  performanceTests:
+    stepConditions:
+      performanceTests:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+  checkmarxScan:
+    onlyProductiveBranch: true
+    stepConditions:
+      checkmarxScan:
+        configKeys:
+          - 'groupId'
+  sonarQubeScan:
+    stepConditions:
+      sonarQubeScan:
+        configKeys:
+          - 'projectKey'
+          - 'instance'
+  additionalTools:
+    onlyProductiveBranch: true
+    extensionExists: true
+  whitesourceScan:
+    onlyProductiveBranch: true
+    stepConditions:
+      whitesourceScan:
+        configKeys:
+          - 'product'
+          - 'credentialsId'
+  fortifyScan:
+    onlyProductiveBranch: true
+    stepConditions:
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+  detectScan:
+    onlyProductiveBranch: true
+    stepConditions:
+      detectScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+  productionDeployment:
+    onlyProductiveBranch: true
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      neoDeploy:
+        configKeys:
+          - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - 'credentialsId'
+          - 'mtaPath'
+          - 'nodeName'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      npmExecuteEndToEndTests:
+        configKeys:
+          - 'appUrls'
+      githubPublishRelease:
+        configKeys:
+          - 'githubTokenCredentialsId'
+  artifactDeployment:
+    onlyProductiveBranch: true
+    stepConditions:
+      artifactDeployment:
+        configKeys:
+          - 'nexus'
+  postPipelineHook:
+    stepConditions:
+      postPipelineHook:
+        configKeys:
+          - 'enabled'
+  archiveReport:
+    stepConditions:
+      archiveReport:
+        filePattern:
+          - 'mta.yaml'
+          - 'pom.xml'

@@ -12,7 +12,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 'SonarCloud'
+        default: "SonarCloud"
       - name: host
         type: string
         description: The URL to the Sonar backend.
@@ -28,6 +28,9 @@ spec:
         scope:
           - PARAMETERS
         secret: true
+        resourceRef:
+          - name: sonarTokenCredentialsId
+            type: secret
         aliases:
           - name: sonarToken
       - name: organization
@@ -38,8 +41,8 @@ spec:
           - STAGES
           - STEPS
       - name: customTlsCertificateLinks
-        type: string
-        description: List of comma-separated download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+        type: "[]string"
+        description: List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
         scope:
           - PARAMETERS
           - STAGES
@@ -47,15 +50,14 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.3.0.2102-linux.zip
+        default: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: projectVersion
         type: string
-        description:
-          "The project version that is reported to SonarQube."
+        description: "The project version that is reported to SonarQube."
         scope:
           - PARAMETERS
           - STAGES
@@ -99,7 +101,7 @@ spec:
         description: "Pull-Request only: The scm provider."
         default: GitHub
         possibleValues:
-        - GitHub
+          - GitHub
         scope:
           - PARAMETERS
           - STAGES
@@ -137,6 +139,9 @@ spec:
         scope:
           - PARAMETERS
         secret: true
+        resourceRef:
+          - name: githubTokenCredentialsId
+            type: secret
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2"
@@ -167,6 +172,14 @@ spec:
       - name: githubTokenCredentialsId
         type: jenkins
         description: Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Github Server.
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: sonar
   containers:
     - name: sonar
       image: node:lts-stretch

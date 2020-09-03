@@ -29,6 +29,7 @@ type ghRCMock struct {
 	listOpts          *github.ListOptions
 	latestStatusCode  int
 	latestErr         error
+	preRelease        bool
 	uploadID          int64
 	uploadOpts        *github.UploadOptions
 	uploadOwner       string
@@ -107,6 +108,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			AddDeltaToLastRelease: true,
 			Commitish:             "master",
 			Owner:                 "TEST",
+			PreRelease:            true,
 			Repository:            "test",
 			ServerURL:             "https://github.com",
 			ReleaseBodyHeader:     "Header",
@@ -116,6 +118,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		assert.NoError(t, err, "Error occured but none expected.")
 
 		assert.Equal(t, "Header\n", ghRepoClient.release.GetBody())
+		assert.Equal(t, true, ghRepoClient.release.GetPrerelease())
 	})
 
 	t.Run("Success - subsequent releases & with body", func(t *testing.T) {

@@ -22,7 +22,7 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command execRunner, utils piperutils.FileUtils) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, utils piperutils.FileUtils) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")

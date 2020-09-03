@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.QualityCheck
@@ -12,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
     List credentials = []
-    parameters = DownloadCacheUtils.injectDownloadCacheInMavenParameters(script, parameters)
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 
     try {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)

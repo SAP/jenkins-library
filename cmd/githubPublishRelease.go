@@ -81,6 +81,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 		TargetCommitish: &config.Commitish,
 		Name:            &config.Version,
 		Body:            &releaseBody,
+		Prerelease:      &config.PreRelease,
 	}
 
 	createdRelease, _, err := ghRepoClient.CreateRelease(ctx, config.Owner, config.Repository, &release)

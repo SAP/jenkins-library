@@ -7,8 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -56,8 +59,13 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{- range $key, $value := .StepParameters }}
-	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
+	{{- $names := list ""}}
+	{{- range $key, $value := uniqueName .StepParameters }}
+	{{ if ne (has $value.Name $names) true -}}
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
+	{{- else -}}
+	{{- $names = append $names $value.Name }} {{ end -}}
+	{{ end }}
 }
 
 {{ range $notused, $oRes := .OutputResources }}
@@ -78,7 +86,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
@@ -89,6 +97,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			{{- range $key, $value := .StepSecrets }}
@@ -101,7 +110,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -115,6 +124,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -123,7 +133,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 }
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
-	{{- range $key, $value := .StepParameters }}
+	{{- range $key, $value := uniqueName .StepParameters }}
 	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
@@ -208,7 +218,8 @@ func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *tel
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -236,17 +247,17 @@ func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, doc
 			checkError(err)
 
 			step := stepTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
 			checkError(err)
 
 			test := stepTestTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
 			checkError(err)
 
-			exists, _ := piperutils.FileExists(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name))
+			exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
 			if !exists {
 				impl := stepImplementation(myStepInfo)
-				err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name), impl, 0644)
+				err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
 				checkError(err)
 			}
 		} else {
@@ -299,9 +310,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "int":
 				param.Default = fmt.Sprintf("%v", param.Default)
 			case "string":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
+				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
-				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
+				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -431,12 +442,12 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 func stepTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-		"longName":   longName,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["longName"] = longName
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
 	checkError(err)
@@ -450,11 +461,11 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 
 func stepTestTemplate(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"flagType":   flagType,
-		"golangName": golangNameTitle,
-		"title":      strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["flagType"] = flagType
+	funcMap["golangName"] = golangNameTitle
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
 	checkError(err)
@@ -468,9 +479,9 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 func stepImplementation(myStepInfo stepInfo) []byte {
 
-	funcMap := template.FuncMap{
-		"title": strings.Title,
-	}
+	funcMap := sprig.HermeticTxtFuncMap()
+	funcMap["title"] = strings.Title
+	funcMap["uniqueName"] = mustUniqName
 
 	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
 	checkError(err)
@@ -534,4 +545,28 @@ func getStringSliceFromInterface(iSlice interface{}) []string {
 	}
 
 	return s
+}
+
+func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error) {
+	tp := reflect.TypeOf(list).Kind()
+	switch tp {
+	case reflect.Slice, reflect.Array:
+		l2 := reflect.ValueOf(list)
+
+		l := l2.Len()
+		names := []string{}
+		dest := []config.StepParameters{}
+		var item config.StepParameters
+		for i := 0; i < l; i++ {
+			item = l2.Index(i).Interface().(config.StepParameters)
+			if !piperutils.ContainsString(names, item.Name) {
+				names = append(names, item.Name)
+				dest = append(dest, item)
+			}
+		}
+
+		return dest, nil
+	default:
+		return nil, fmt.Errorf("Cannot find uniq on type %s", tp)
+	}
 }

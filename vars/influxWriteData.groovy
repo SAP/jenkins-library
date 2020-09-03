@@ -43,6 +43,7 @@ import groovy.transform.Field
      * For example in multi branch pipelines, where every build is named after the branch built and thus you have different builds called 'master' that report different metrics.
      */
     'influxPrefix',
+    'sonarTokenCredentialsId',
     /**
      * Defines if a dedicated node/executor should be created in the pipeline run.
      * This is especially relevant when running the step in a declarative `POST` stage where by default no executor is available.
@@ -72,17 +73,16 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
-        def script = checkScript(this, parameters)
+        def script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        if (script == null)
-            script = this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin([
                 artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
                 influxPrefix: script.commonPipelineEnvironment.getGithubOrg() && script.commonPipelineEnvironment.getGithubRepo()
@@ -138,6 +138,7 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
         def influxPluginVersion = jenkinsUtils.getPluginVersion('influxdb')
 
         try {
+            def credentialList = []
             def influxParams = [
                 selectedTarget: config.influxServer,
                 customPrefix: config.influxPrefix,
@@ -146,12 +147,19 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
                 customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
                 customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
             ]
-
-            if (!influxPluginVersion || influxPluginVersion.startsWith('1.')) {
-                influxParams['$class'] = 'InfluxDbPublisher'
-                step(influxParams)
-            } else {
-                influxDbPublisher(influxParams)
+            if(config.sonarTokenCredentialsId){
+                credentialList.add(string(
+                    credentialsId: config.sonarTokenCredentialsId,
+                    variable: 'SONAR_AUTH_TOKEN'
+                ))
+            }
+            withCredentials(credentialList){
+                if (!influxPluginVersion || influxPluginVersion.startsWith('1.')) {
+                    influxParams['$class'] = 'InfluxDbPublisher'
+                    step(influxParams)
+                } else {
+                    influxDbPublisher(influxParams)
+                }
             }
 
         } catch (NullPointerException e){
