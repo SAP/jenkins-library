@@ -73,6 +73,11 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void inferBuildToolMaven() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         boolean buildToolCalled = false
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "pom.xml"
@@ -95,6 +100,11 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void inferBuildToolNpm() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         boolean buildToolCalled = false
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "package.json"
