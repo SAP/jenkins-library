@@ -26,9 +26,8 @@ stages:
           - 'ci-it-frontend'
   frontendUnitTests:
     stepConditions:
-      frontendUnitTests:
+      npmExecuteScripts:
         npmScripts:
-          - 'ci-test'
           - 'ci-frontend-unit-test'
   npmAudit:
     stepConditions:
