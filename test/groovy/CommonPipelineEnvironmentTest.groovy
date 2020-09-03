@@ -38,6 +38,11 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void inferBuildToolMaven() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "pom.xml"
         })
@@ -47,6 +52,11 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void inferBuildToolMTA() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "mta.yaml"
         })
@@ -56,6 +66,11 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void inferBuildToolNpm() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "package.json"
         })
@@ -65,6 +80,11 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void inferBuildToolNone() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                inferBuildTool: true
+            ]
+        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return false
         })
