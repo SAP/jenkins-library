@@ -34,14 +34,15 @@ func TestReleasePackagesStep(t *testing.T) {
 		config.AddonDescriptor = string(adoDesc)
 
 		var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, 5, 1)
+		maxRuntimeInMinutes := time.Duration(5 * time.Second)
+		pollIntervalsInSeconds := time.Duration(1 * time.Second)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
 
 		assert.NoError(t, err, "Did not expect error")
 
 		var addonDescriptorFinal abaputils.AddonDescriptor
-		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
-		assert.NoError(t, err, "Did not expect error")
-		// assert.Equal(t, "R", addonDescriptorFinal.Repositories[0].Status)
+		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
+		assert.Equal(t, "R", addonDescriptorFinal.Repositories[0].Status)
 	})
 
 	t.Run("step error - invalid input", func(t *testing.T) {
