@@ -92,19 +92,23 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     String inferBuildTool(script) {
-        boolean isMtaProject = script.fileExists('mta.yaml')
-        def isMaven = script.fileExists('pom.xml')
-        def isNpm = script.fileExists('package.json')
+        boolean inferBuildTool = configuration.get('general')?.inferBuildTool
 
-        if (isMtaProject) {
-            this.buildTool = 'mta'
-        } else if (isMaven) {
-            this.buildTool = 'maven'
-        } else if (isNpm) {
-            this.buildTool = 'npm'
+        if (inferBuildTool) {
+            boolean isMtaProject = script.fileExists('mta.yaml')
+            def isMaven = script.fileExists('pom.xml')
+            def isNpm = script.fileExists('package.json')
+
+            if (isMtaProject) {
+                this.buildTool = 'mta'
+            } else if (isMaven) {
+                this.buildTool = 'maven'
+            } else if (isNpm) {
+                this.buildTool = 'npm'
+            }
+
+            return this.buildTool
         }
-
-        return this.buildTool
     }
 
     def setAppContainerProperty(property, value) {
@@ -188,7 +192,7 @@ class commonPipelineEnvironment implements Serializable {
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
         }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:] as Map, null, defaults)
         config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
