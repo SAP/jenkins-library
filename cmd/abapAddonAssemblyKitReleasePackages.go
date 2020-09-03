@@ -20,9 +20,10 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 	c.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+
 	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
 	pollIntervalsInSeconds := time.Duration(30 * time.Second)
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")

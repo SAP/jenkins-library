@@ -18,14 +18,12 @@ func mockReader(path string) ([]byte, error) {
 }
 
 func TestRegisterPackagesStep(t *testing.T) {
+	var config abapAddonAssemblyKitRegisterPackagesOptions
+	var cpe abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment
 	t.Run("step success", func(t *testing.T) {
 		client := &abaputils.ClientMock{
-			Body:       responseRegisterPackagesPost,
-			Token:      "myToken",
-			StatusCode: 200,
+			BodyList: []string{responseRegisterPackagesPost, "myToken", "dummyResponseUpload"},
 		}
-
-		var config abapAddonAssemblyKitRegisterPackagesOptions
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
@@ -41,8 +39,6 @@ func TestRegisterPackagesStep(t *testing.T) {
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-
-		var cpe abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment
 		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
 
 		assert.NoError(t, err, "Did not expect error")
@@ -51,48 +47,68 @@ func TestRegisterPackagesStep(t *testing.T) {
 		assert.Equal(t, "L", addonDescriptorFinal.Repositories[0].Status)
 	})
 
-	t.Run("step error - invalid input", func(t *testing.T) {
-
+	t.Run("step error - uploadSarFiles", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body:  "ErrorBody",
+			Error: errors.New("Failure during upload of SAR file"),
+		}
+		addonDescriptor := abaputils.AddonDescriptor{
+			Repositories: []abaputils.Repository{
+				{
+					PackageName:    "SAPK-002AAINDRNMSPC",
+					Status:         "P",
+					SarXMLFilePath: "exists",
+				},
+			},
+		}
+		adoDesc, _ := json.Marshal(addonDescriptor)
+		config.AddonDescriptor = string(adoDesc)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		assert.Error(t, err, "Did expect error")
+	})
+	t.Run("step error - registerPackages - invalid input", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			BodyList: []string{"myToken", "dummyResponseUpload"},
+		}
+		addonDescriptor := abaputils.AddonDescriptor{
+			Repositories: []abaputils.Repository{
+				{
+					Status:         "P",
+					SarXMLFilePath: "exists",
+				},
+			},
+		}
+		adoDesc, _ := json.Marshal(addonDescriptor)
+		config.AddonDescriptor = string(adoDesc)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
+		assert.Error(t, err, "Did expect error")
 	})
 }
 
 // ********************* Test uploadSarFiles *******************
 func TestUploadSarFiles(t *testing.T) {
-	t.Run("test uploadSarFiles", func(t *testing.T) {
+	t.Run("test uploadSarFiles - success", func(t *testing.T) {
 		client := abaputils.ClientMock{
-			Body:       "dummy",
-			Token:      "myToken",
-			StatusCode: 200,
+			Body: "dummy",
 		}
 		repositories, conn := setupRepos("exists", planned, client)
 		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.NoError(t, err)
 	})
-}
-
-func TestUploadSarFilesInvalidInput(t *testing.T) {
-	t.Run("test uploadSarFiles with missing file path", func(t *testing.T) {
+	t.Run("test uploadSarFiles - error due to missing file path", func(t *testing.T) {
 		repositories, conn := setupRepos("", planned, abaputils.ClientMock{})
 		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.Error(t, err)
 	})
-}
-
-func TestUploadSarFilesNoFile(t *testing.T) {
-	t.Run("test uploadSarFiles with missing file", func(t *testing.T) {
+	t.Run("test uploadSarFiles - error due to missing file", func(t *testing.T) {
 		repositories, conn := setupRepos("does_not_exist", planned, abaputils.ClientMock{})
 		err := uploadSarFiles(repositories, conn, mockReader)
 		assert.Error(t, err)
 	})
-}
-
-func TestUploadSarFilesErrorUploading(t *testing.T) {
-	t.Run("test uploadSarFiles with error during upload", func(t *testing.T) {
+	t.Run("test uploadSarFiles - error during upload", func(t *testing.T) {
 		client := abaputils.ClientMock{
-			Body:       "ErrorBody",
-			Token:      "myToken",
-			StatusCode: 400,
-			Error:      errors.New("Failure during upload of SAR file"),
+			Body:  "ErrorBody",
+			Error: errors.New("Failure during upload of SAR file"),
 		}
 		repositories, conn := setupRepos("exists", planned, client)
 		err := uploadSarFiles(repositories, conn, mockReader)
@@ -102,35 +118,25 @@ func TestUploadSarFilesErrorUploading(t *testing.T) {
 
 // ********************* Test registerPackages *******************
 func TestRegisterPackages(t *testing.T) {
-	t.Run("test registerPackages", func(t *testing.T) {
+	t.Run("test registerPackages - planned", func(t *testing.T) {
 		client := abaputils.ClientMock{
-			Body:       responseRegisterPackagesPost,
-			Token:      "myToken",
-			StatusCode: 200,
+			Body: responseRegisterPackagesPost,
 		}
 		repositories, conn := setupRepos("Filepath", planned, client)
 		repos, err := registerPackages(repositories, conn)
 		assert.NoError(t, err)
 		assert.Equal(t, string(locked), repos[0].Status)
 	})
-}
-
-func TestRegisterPackagesReleased(t *testing.T) {
-	t.Run("test registerPackages", func(t *testing.T) {
+	t.Run("test registerPackages - released", func(t *testing.T) {
 		repositories, conn := setupRepos("Filepath", released, abaputils.ClientMock{})
 		repos, err := registerPackages(repositories, conn)
 		assert.NoError(t, err)
 		assert.Equal(t, string(released), repos[0].Status)
 	})
-}
-
-func TestRegisterPackagesError(t *testing.T) {
-	t.Run("test registerPackages with error", func(t *testing.T) {
+	t.Run("test registerPackages - with error", func(t *testing.T) {
 		client := abaputils.ClientMock{
-			Body:       "ErrorBody",
-			Token:      "myToken",
-			StatusCode: 400,
-			Error:      errors.New("Failure during registration"),
+			Body:  "ErrorBody",
+			Error: errors.New("Failure during registration"),
 		}
 		repositories, conn := setupRepos("Filepath", planned, client)
 		repos, err := registerPackages(repositories, conn)

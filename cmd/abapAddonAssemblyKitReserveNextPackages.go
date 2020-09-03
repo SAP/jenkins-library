@@ -21,17 +21,19 @@ func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveN
 	c.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
-
+	maxRuntimeInMinutes := time.Duration(5 * time.Minute)
+	pollIntervalsInSeconds := time.Duration(30 * time.Second)
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe)
+	err := runAbapAddonAssemblyKitReserveNextPackages(&config, telemetryData, &client, cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) error {
+func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
+	cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
 	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
+	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
@@ -41,7 +43,10 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 		return err
 	}
 
-	err = pollReserveNextPackages(packagesWithRepos, 5, 30)
+	err = pollReserveNextPackages(packagesWithRepos, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	if err != nil {
+		return err
+	}
 	addonDescriptor.Repositories = copyFieldsToRepositories(packagesWithRepos)
 	log.Entry().Info("Writing package names, types, status, namespace and predecessorCommitID to CommonPipelineEnvironment")
 	backToCPE, _ := json.Marshal(addonDescriptor)
@@ -59,8 +64,8 @@ func copyFieldsToRepositories(pckgWR []packageWithRepository) []abaputils.Reposi
 }
 
 func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
 	for {
 		select {
 		case <-timeout:
@@ -71,14 +76,14 @@ func pollReserveNextPackages(pckgWR []packageWithRepository, maxRuntimeInMinutes
 				err := pckgWR[i].p.get()
 				// if there is an error, reservation is not yet finished
 				if err != nil {
-					log.Entry().Infof("Reservation of %s is not yet finished, check again in %d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+					log.Entry().Infof("Reservation of %s is not yet finished, check again in %s", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 					allFinished = false
 				} else {
 					switch pckgWR[i].p.Status {
 					case locked:
 						return fmt.Errorf("Package %s has invalid status 'locked'", pckgWR[i].p.PackageName)
 					case creationTriggered:
-						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %02d seconds", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					case planned:
 						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].p.PackageName)

@@ -11,13 +11,16 @@ import (
 )
 
 func TestReleasePackagesStep(t *testing.T) {
+	var config abapAddonAssemblyKitReleasePackagesOptions
+	var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
 	client := &abaputils.ClientMock{
 		Body:       responseRelease,
 		Token:      "myToken",
 		StatusCode: 200,
 	}
+	timeout := time.Duration(5 * time.Second)
+	pollInterval := time.Duration(1 * time.Second)
 	t.Run("step success", func(t *testing.T) {
-		var config abapAddonAssemblyKitReleasePackagesOptions
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
@@ -33,20 +36,15 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
-		maxRuntimeInMinutes := time.Duration(5 * time.Second)
-		pollIntervalsInSeconds := time.Duration(1 * time.Second)
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, maxRuntimeInMinutes, pollIntervalsInSeconds)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
 
 		assert.NoError(t, err, "Did not expect error")
-
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
 		assert.Equal(t, "R", addonDescriptorFinal.Repositories[0].Status)
 	})
 
 	t.Run("step error - invalid input", func(t *testing.T) {
-		var config abapAddonAssemblyKitReleasePackagesOptions
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
@@ -57,14 +55,13 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, 5, 1)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, err.Error(), "Parameter missing. Please provide the name of the package which should be released")
 	})
 
 	t.Run("step error - timeout", func(t *testing.T) {
-		var config abapAddonAssemblyKitReleasePackagesOptions
+		client.Error = errors.New("Release not finished")
 		addonDescriptor := abaputils.AddonDescriptor{
 			Repositories: []abaputils.Repository{
 				{
@@ -76,12 +73,8 @@ func TestReleasePackagesStep(t *testing.T) {
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
 
-		client.Error = errors.New("Release not finished")
-
 		timeout := time.Duration(2 * time.Second)
-		polling := time.Duration(1 * time.Second)
-		var cpe abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment
-		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, polling)
+		err := runAbapAddonAssemblyKitReleasePackages(&config, nil, client, &cpe, timeout, pollInterval)
 		assert.Error(t, err, "Did expect error")
 		assert.Equal(t, err.Error(), "Timed out")
 	})

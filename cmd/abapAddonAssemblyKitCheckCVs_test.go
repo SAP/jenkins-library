@@ -33,20 +33,17 @@ func mockReadAddonDescriptor(FileName string) (abaputils.AddonDescriptor, error)
 	}
 	return addonDescriptor, err
 }
-func TestCheckCVsStep(t *testing.T) {
-	t.Run("step success", func(t *testing.T) {
-		client := &abaputils.ClientMock{
-			Body:       responseCheckCVs,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
 
-		var config abapAddonAssemblyKitCheckCVsOptions
+func TestCheckCVsStep(t *testing.T) {
+	var config abapAddonAssemblyKitCheckCVsOptions
+	var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+	client := &abaputils.ClientMock{
+		Body: responseCheckCVs,
+	}
+	t.Run("step success", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
-		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
 		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
 		assert.NoError(t, err, "Did not expect error")
-
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
 		assert.Equal(t, "0001", addonDescriptorFinal.Repositories[0].Version)
@@ -54,26 +51,19 @@ func TestCheckCVsStep(t *testing.T) {
 		assert.Equal(t, "0003", addonDescriptorFinal.Repositories[0].PatchLevel)
 	})
 	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
-		var config abapAddonAssemblyKitCheckCVsOptions
 		config.AddonDescriptorFileName = "failing"
-		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
-		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, &abaputils.ClientMock{}, &cpe, mockReadAddonDescriptor)
-		assert.Error(t, err, "Did expect error")
-		assert.Equal(t, err.Error(), "error in ReadAddonDescriptor")
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Must end with error")
+		assert.Equal(t, "error in ReadAddonDescriptor", err.Error())
 	})
 	t.Run("step error - in validate", func(t *testing.T) {
-		client := &abaputils.ClientMock{
-			Body:       "ErrorBody",
-			Token:      "myToken",
-			StatusCode: 400,
-			Error:      errors.New("error during validation"),
-		}
-
-		var config abapAddonAssemblyKitCheckCVsOptions
 		config.AddonDescriptorFileName = "success"
-		var cpe abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+		client := &abaputils.ClientMock{
+			Body:  "ErrorBody",
+			Error: errors.New("error during validation"),
+		}
 		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
-		assert.Error(t, err, "Did expect error")
+		assert.Error(t, err, "Must end with error")
 	})
 }
 
@@ -93,45 +83,40 @@ func TestInitCV(t *testing.T) {
 }
 
 func TestValidateCV(t *testing.T) {
-	t.Run("test validate", func(t *testing.T) {
-		conn := new(connector)
+	conn := new(connector)
+	t.Run("test validate - success", func(t *testing.T) {
 		conn.Client = &abaputils.ClientMock{
-			Body:       responseCheckCVs,
-			Token:      "myToken",
-			StatusCode: 200,
+			Body: responseCheckCVs,
 		}
-
-		var c cv
-		c.connector = *conn
-		c.Name = "/DRNMSPC/COMP01"
-		c.VersionYAML = "1.2.3"
+		c := cv{
+			connector:   *conn,
+			Name:        "/DRNMSPC/COMP01",
+			VersionYAML: "1.2.3",
+		}
+		conn.Client = &abaputils.ClientMock{
+			Body: responseCheckCVs,
+		}
 		err := c.validate()
 		assert.NoError(t, err)
-		assert.Equal(t, c.Version, "0001")
-		assert.Equal(t, c.SpLevel, "0002")
-		assert.Equal(t, c.PatchLevel, "0003")
+		assert.Equal(t, "0001", c.Version)
+		assert.Equal(t, "0002", c.SpLevel)
+		assert.Equal(t, "0003", c.PatchLevel)
 	})
-}
-
-func TestValidateCVError(t *testing.T) {
-	t.Run("test validate with error", func(t *testing.T) {
-		conn := new(connector)
+	t.Run("test validate - with error", func(t *testing.T) {
 		conn.Client = &abaputils.ClientMock{
-			Body:       "ErrorBody",
-			Token:      "myToken",
-			StatusCode: 400,
-			Error:      errors.New("Validation failed"),
+			Body:  "ErrorBody",
+			Error: errors.New("Validation failed"),
 		}
-
-		var c cv
-		c.connector = *conn
-		c.Name = "/DRNMSPC/COMP01"
-		c.VersionYAML = "1.2.3"
+		c := cv{
+			connector:   *conn,
+			Name:        "/DRNMSPC/COMP01",
+			VersionYAML: "1.2.3",
+		}
 		err := c.validate()
 		assert.Error(t, err)
-		assert.Equal(t, c.Version, "")
-		assert.Equal(t, c.SpLevel, "")
-		assert.Equal(t, c.PatchLevel, "")
+		assert.Equal(t, "", c.Version)
+		assert.Equal(t, "", c.SpLevel)
+		assert.Equal(t, "", c.PatchLevel)
 	})
 }
 
