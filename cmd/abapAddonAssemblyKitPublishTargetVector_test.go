@@ -10,87 +10,56 @@ import (
 )
 
 func TestPublishTargetVectorStep(t *testing.T) {
+	//setup
+	config := abapAddonAssemblyKitPublishTargetVectorOptions{
+		ScopeTV: "P",
+	}
+	addonDescriptor := abaputils.AddonDescriptor{
+		TargetVectorID: "dummy",
+	}
+	adoDesc, _ := json.Marshal(addonDescriptor)
+	config.AddonDescriptor = string(adoDesc)
+
+	client := &abaputils.ClientMock{
+		Body:       "dummy",
+		Token:      "myToken",
+		StatusCode: 200,
+	}
 
 	t.Run("step success prod", func(t *testing.T) {
-
-		config := abapAddonAssemblyKitPublishTargetVectorOptions{
-			ScopeTV: "P",
-		}
-		addonDescriptor := abaputils.AddonDescriptor{
-			TargetVectorID: "dummy",
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
-
-		client := &abaputils.ClientMock{
-			Body:       "dummy",
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
+		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
-
+		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
 
 	t.Run("step success test", func(t *testing.T) {
-
-		config := abapAddonAssemblyKitPublishTargetVectorOptions{
-			ScopeTV: "T",
-		}
-		addonDescriptor := abaputils.AddonDescriptor{
-			TargetVectorID: "dummy",
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
-
-		client := &abaputils.ClientMock{
-			Body:       "dummy",
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
+		//arrange
+		config.ScopeTV = "T"
+		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
-
+		//assert
 		assert.NoError(t, err, "Did not expect error")
 	})
 
 	t.Run("step fail http", func(t *testing.T) {
-
-		config := abapAddonAssemblyKitPublishTargetVectorOptions{
-			ScopeTV: "T",
-		}
-		addonDescriptor := abaputils.AddonDescriptor{
-			TargetVectorID: "dummy",
-		}
-		adoDesc, _ := json.Marshal(addonDescriptor)
-		config.AddonDescriptor = string(adoDesc)
-
+		//arrange
 		client := &abaputils.ClientMock{
-			Body:       "dummy",
-			Error:      errors.New("dummy"),
-			Token:      "myToken",
-			StatusCode: 400,
+			Body:  "dummy",
+			Error: errors.New("dummy"),
 		}
-
+		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
-
+		//assert
 		assert.Error(t, err, "Must end with error")
 	})
 
 	t.Run("step fail no id", func(t *testing.T) {
-
+		//arrange
 		config := abapAddonAssemblyKitPublishTargetVectorOptions{}
-
-		client := &abaputils.ClientMock{
-			Body:       "dummy",
-			Error:      errors.New("dummy"),
-			Token:      "myToken",
-			StatusCode: 400,
-		}
-
+		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
-
+		//assert
 		assert.Error(t, err, "Must end with error")
 	})
 }

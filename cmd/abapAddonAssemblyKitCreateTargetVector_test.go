@@ -5,14 +5,78 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTargetVectorStep(t *testing.T) {
+	//setup
+	config := abapAddonAssemblyKitCreateTargetVectorOptions{}
+	addonDescriptor := abaputils.AddonDescriptor{
+		AddonProduct:    "dummy",
+		AddonVersion:    "dummy",
+		AddonSpsLevel:   "dummy",
+		AddonPatchLevel: "dummy",
+		TargetVectorID:  "dummy",
+		Repositories: []abaputils.Repository{
+			{
+				Name:        "dummy",
+				Version:     "dummy",
+				SpLevel:     "dummy",
+				PatchLevel:  "dummy",
+				PackageName: "dummy",
+			},
+		},
+	}
+	adoDesc, _ := json.Marshal(addonDescriptor)
+	config.AddonDescriptor = string(adoDesc)
+
+	client := &abaputils.ClientMock{
+		Body: responseCreateTargetVector,
+	}
+
+	cpe := abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment{}
 
 	t.Run("step success test", func(t *testing.T) {
+		//act
+		err := runAbapAddonAssemblyKitCreateTargetVector(&config, nil, client, &cpe)
+		//assert
+		assert.NoError(t, err, "Did not expect error")
 
-		config := abapAddonAssemblyKitCreateTargetVectorOptions{}
+		resultAddonDescriptor := abaputils.AddonDescriptor{}
+		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &resultAddonDescriptor)
+		assert.Equal(t, "W7Q00207512600000262", resultAddonDescriptor.TargetVectorID)
+	})
+
+	t.Run("step success test", func(t *testing.T) {
+		//arrange
+		client := &abaputils.ClientMock{
+			Body:  responseCreateTargetVector,
+			Error: errors.New("dummy"),
+		}
+		//act
+		err := runAbapAddonAssemblyKitCreateTargetVector(&config, nil, client, &cpe)
+		//assert
+		assert.Error(t, err, "Must end with error")
+	})
+
+	t.Run("step error init product", func(t *testing.T) {
+		//arrange
+		addonDescriptor := abaputils.AddonDescriptor{
+			Repositories: []abaputils.Repository{
+				{},
+			},
+		}
+		adoDesc, _ := json.Marshal(addonDescriptor)
+		config.AddonDescriptor = string(adoDesc)
+		//act
+		err := runAbapAddonAssemblyKitCreateTargetVector(&config, nil, client, &cpe)
+		//assert
+		assert.Error(t, err, "Must end with error")
+	})
+
+	t.Run("step error init component", func(t *testing.T) {
+		//arrange
 		addonDescriptor := abaputils.AddonDescriptor{
 			AddonProduct:    "dummy",
 			AddonVersion:    "dummy",
@@ -27,28 +91,15 @@ func TestCreateTargetVectorStep(t *testing.T) {
 					PatchLevel:  "dummy",
 					PackageName: "dummy",
 				},
+				{},
 			},
 		}
 		adoDesc, _ := json.Marshal(addonDescriptor)
 		config.AddonDescriptor = string(adoDesc)
-
-		var jTV jsontargetVector
-		jTV.Tv = &targetVector{
-			ID: "dummy",
-		}
-		dummyBody, _ := json.Marshal(jTV)
-
-		client := &abaputils.ClientMock{
-			Body:       string(dummyBody),
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		cpe := abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment{}
-
+		//act
 		err := runAbapAddonAssemblyKitCreateTargetVector(&config, nil, client, &cpe)
-
-		assert.NoError(t, err, "Did not expect error")
+		//assert
+		assert.Error(t, err, "Must end with error")
 	})
 
 }
