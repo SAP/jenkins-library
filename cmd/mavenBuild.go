@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/bmatcuk/doublestar"
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
@@ -62,6 +63,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	if err != nil {
 		return err
 	}
+
+	execFiles, _ := doublestar.Glob("**/*.exec")
+	log.Entry().Infof("found .exec files: %v", execFiles)
 
 	// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
 	mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report"}
