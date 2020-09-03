@@ -44,8 +44,13 @@ void call(Map parameters = [:]) {
 
         if (config.sonarExecuteScan) {
             durationMeasure(script: script, measurementName: 'sonar_duration') {
-                sh "ls -laR"
-                sonarExecuteScan script: script
+                Map stepParams = [
+                    script: script
+                ]
+                if (env.CHANGE_ID) {
+                    stepParams['branchName'] = env.BRANCH_NAME
+                }
+                sonarExecuteScan stepParams
             }
         }
     }
