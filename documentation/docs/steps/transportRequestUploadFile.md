@@ -64,6 +64,22 @@ The properties can also be configured on a per-step basis:
 
 The parameters can also be provided when the step is invoked. For examples see below.
 
+## CTS Uploads
+
+In order to be able to upload the application, it is required to build the application, e.g. via `npmExecute`.
+The content of the app needs to be provided in a folder named `dist` in the root levvel of the project.
+
+For `CTS` related uploads we use a node based toolset. When running in a docker environment a standard node
+image can be used. In this case the required deploytool dependencies will be installed prior to the deploy.
+It is also possible to provide a docker image which already contains the required deploy tool
+dependencies (`config.changeManagement.cts.nodeDocker.image`). In this case an empty list needs to be provided
+as `config.changeManagement.cts.deployToolDependencies`. Using an already pre-configured docker image speeds-up
+the deployment step, but comes with the disadvantage of having
+to maintain and provision the corresponding docker image.
+
+When running in an environment without docker, it is recommanded to install the deploy tools manually on the
+system and to provide an empty list for the deploy tool dependencies (`config.changeManagement.cts.deployToolDependencies`).
+
 ## Exceptions
 
 * `IllegalArgumentException`:
@@ -91,15 +107,15 @@ transportRequestUploadFile(
 )
 // CTS
 
-// NOTE: CTS upload currently not supported!
-
 transportRequestUploadFile(
   script: this,
   transportRequestId: '001', // typically provided via git commit history
-  filePath: '/path',
   changeManagement: [
     type: 'CTS'
-    endpoint: 'https://example.org/cm'
-  ]
+    endpoint: 'https://example.org/cm',
+    client: '099',
+  ],
+  applicationName: 'myApp',
+  abapPackage: 'MYPACKAGE',
 )
 ```
