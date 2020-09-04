@@ -74,7 +74,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * A pattern used for identifying lines holding the transport request id.
          * @parentConfigKey changeManagement
          */
-        'changeManagement/transportRequestLabel'
+        'transportRequestLabel'
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
