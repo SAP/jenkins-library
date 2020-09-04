@@ -87,12 +87,11 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        def bt = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
         stepRule.step.buildExecute(
             script: nullScript,
         )
 
-        assertNotNull(bt)
         assertNotNull(nullScript.commonPipelineEnvironment.getBuildTool())
         assertEquals('maven', nullScript.commonPipelineEnvironment.getBuildTool())
         assertTrue(buildToolCalled)
@@ -100,11 +99,6 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void inferBuildToolNpm() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         boolean buildToolCalled = false
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "package.json"
@@ -114,12 +108,11 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        def bt = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
         stepRule.step.buildExecute(
             script: nullScript,
         )
 
-        assertNotNull(bt)
         assertNotNull(nullScript.commonPipelineEnvironment.getBuildTool())
         assertEquals('npm', nullScript.commonPipelineEnvironment.getBuildTool())
         assertTrue(buildToolCalled)
@@ -135,7 +128,7 @@ class BuildExecuteTest extends BasePiperTest {
         })
 
         // Does nothing because feature toggle is not active
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: false])
 
         stepRule.step.buildExecute(
             script: nullScript,
@@ -163,7 +156,7 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
 
         stepRule.step.buildExecute(
             script: nullScript,
