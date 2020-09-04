@@ -78,9 +78,14 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+       /** The name of the application. `RFC` and `CTS` only. */
         'applicationName', // RFC, CTS
         /** The id of the application. Only for `SOLMAN`.*/
         'applicationId', // SOLMAN
+        /** The application description, `RFC` and `CTS` only. For `CTS`: the desription is only
+            taken into account for a new upload. In case of an update the description will not be
+            updated.
+        */
         'applicationDescription',
         /** The path of the file to upload.*/
         'filePath', // SOLMAN
