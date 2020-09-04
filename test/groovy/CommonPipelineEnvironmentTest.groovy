@@ -9,10 +9,7 @@ import util.JenkinsReadYamlRule
 import util.Rules
 
 import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.hasItem
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
 import org.junit.After
