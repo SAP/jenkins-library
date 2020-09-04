@@ -172,29 +172,139 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequestCTS(
         Map docker,
         String transportRequestId,
-        String filePath,
         String endpoint,
-        String credentialsId,
-        String cmclientOpts = '') {
+        String client,
+        String applicationName,
+        String description,
+        String abapPackage, // "package" would be better, but this is a keyword
+        String osDeployUser,
+        def deployToolDependencies,
+        String deployConfigFile,
+        String credentialsId) {
 
-        def args = [
-                '-tID', transportRequestId,
-                "\"$filePath\""
-            ]
+        def script = this.script
 
-        int rc = executeWithCredentials(
-            BackendType.CTS,
-            docker,
-            endpoint,
-            credentialsId,
-            'upload-file-to-transport',
-            args,
-            false,
-            cmclientOpts) as int
+        def desc = description ?: 'Deployed with Piper based on SAP Fiori tools'
 
-        if(rc != 0) {
-            throw new ChangeManagementException(
-                "Cannot upload file into transport request. Return code from  cm client: $rc.")
+        /*
+            Create the config file
+
+            There are currently pull request for making more (all?) parameters configurable as
+            command line parameters. With that there would be no need for creating this file here.
+            Parameters could be provided via command line in case they are defined. If not, as a fallback,
+            parameters define in the config file can be used.
+            Currently not clear if also the credentials will be made available as command line parameters.
+            If not we have to discuss how to deal wih the credentials. One option would be to parse an existing
+            config file and either to inject the environment variables according what is defined there, or to update
+            the config wrt credentials (credentials can be configured in the config file to be retrieved from
+            environment variables).
+            Also not clear if the config file is fully optional (can be omitted). If not and no config file is present
+            we can either raise an exception (and ask the project owner for adding a config file) or add a dummy config file.
+        */
+        def deployConfig =  ("""|specVersion: '1.0'
+                                |metadata:
+                                |  name: ${applicationName}
+                                |type: application
+                                |builder:
+                                |  customTasks:
+                                |  - name: deploy-to-abap
+                                |    afterTask: replaceVersion
+                                |    configuration:
+                                |      target:
+                                |        client: ${client}
+                                |        auth: basic
+                                |      credentials:
+                                |        username: env:ABAP_USER
+                                |        password: env:ABAP_PASSWORD
+                                |      app:
+                                |        name: ${applicationName}
+                                |        description: ${desc}
+                                |        package: ${abapPackage}
+                                |      exclude:
+                                |      - .*\\.test.js
+                                |      - internal.md
+                                |""" as CharSequence).stripMargin()
+
+        script.writeFile file: deployConfigFile, text: deployConfig, encoding: 'UTF-8'
+
+        if (deployToolDependencies in List) {
+            deployToolDependencies = deployToolDependencies.join(' ')
+        }
+
+        deployToolDependencies = deployToolDependencies.trim()
+
+        /*
+            In case the configuration has been adjusted so that no deployToolDependencies are provided
+            we assume an image is used which contains already all dependencies.
+            In this case we don't invoke npm install and we run the image with the standard user
+            already, since there is no need for being root. Hence we don't need to switch user also
+            in the script.
+         */
+        boolean noInstall = deployToolDependencies.isEmpty()
+
+        Iterable cmd = ['#!/bin/bash -e']
+
+        if (! noInstall) {
+            cmd << "npm install -g ${deployToolDependencies}"
+            cmd << "su ${osDeployUser}"
+        } else {
+            script.echo "[INFO] no deploy dependencies provided. Skipping npm install call. Assuning docker image '${docker?.image}' contains already the dependencies for performing the deployment."
+        }
+
+        Iterable params = []
+
+        if (deployConfigFile) {
+            /*
+                not sure if we will manage to that optional
+                the plan is to make all parameters configurable via command line parameters. In that case it would
+                not be required anymore to have a config file at all. Open questions: credentials, excludes.
+            */
+            params += ['-c', "\"" + deployConfigFile + "\""]
+        }
+        if (transportRequestId) {
+            params += ['-t', transportRequestId]
+        }
+
+        if (endpoint) {
+            params += ['-u', endpoint]
+        }
+
+        // more parameters can be added when they are recognized by the fiori toolset, e.g. abap package.
+
+        params += ['--', '-y'] // -y can be provided like all other params without the double dash in a later release of the fiori tool
+
+        cmd << "fiori deploy ${params.join(' ')}"
+
+        script.withCredentials([script.usernamePassword(
+            credentialsId: credentialsId,
+            passwordVariable: 'password',
+            usernameVariable: 'username')]) {
+
+            /*
+                The config file is configured to read the credentials from the environment,
+                see above in the config file template.
+                After installing the deploy toolset we switch the user. Since we do not su with option '-l' the
+                environment variables are preserved.
+                Not clear of the credentials will also be available as command line parameters.
+            */
+            def dockerEnvVars = docker.envVars ?: [:] + [ABAP_USER: script.username, ABAP_PASSWORD: script.password]
+
+            def dockerOptions = docker.options ?: []
+            if (!noInstall) {
+                // when we install globally we need to be root, after preparing that we can su node` in the bash script.
+                // in case there is already a u provided the latest (... what we set here wins).
+                dockerOptions += ['-u', '0']
+            }
+
+            script.dockerExecute(
+                script: script,
+                dockerImage: docker.image,
+                dockerOptions: dockerOptions,
+                dockerEnvVars: dockerEnvVars,
+                dockerPullImage: docker.pullImage) {
+
+                script.sh script: cmd.join('\n')
+            }
         }
     }
 

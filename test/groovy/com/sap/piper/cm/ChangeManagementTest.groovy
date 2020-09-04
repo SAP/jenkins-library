@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+
 import static org.junit.Assert.assertEquals
 
 import org.hamcrest.Matchers
@@ -22,6 +23,7 @@ import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
+import util.JenkinsWriteFileRule
 import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
 import util.Rules
@@ -35,6 +37,7 @@ public class ChangeManagementTest extends BasePiperTest {
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -43,6 +46,7 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(logging)
         .around(new JenkinsCredentialsRule(this).withCredentials('me','user','password'))
         .around(dockerExecuteRule)
+        .around(writeFileRule)
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -293,24 +297,118 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void testUploadFileToTransportSucceedsCTS() {
 
-        // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
-
         new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
             [
-                image: 'ppiper/cmclient',
+                image: 'node',
                 pullImage: true
              ],
             '002',
-            '/path',
             'https://example.org/cm',
-            'me')
+            '001',
+            'myApp',
+            'the description',
+            'aPackage',
+            'node2',
+            ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            'ui5-deploy.yaml',
+            'me',
+        )
 
-        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
+        def configFileExpected = """|specVersion: '1.0'
+                                    |metadata:
+                                    |  name: myApp
+                                    |type: application
+                                    |builder:
+                                    |  customTasks:
+                                    |  - name: deploy-to-abap
+                                    |    afterTask: replaceVersion
+                                    |    configuration:
+                                    |      target:
+                                    |        client: 001
+                                    |        auth: basic
+                                    |      credentials:
+                                    |        username: env:ABAP_USER
+                                    |        password: env:ABAP_PASSWORD
+                                    |      app:
+                                    |        name: myApp
+                                    |        description: the description
+                                    |        package: aPackage
+                                    |      exclude:
+                                    |      - .*\\.test.js
+                                    |      - internal.md
+                                    |""".stripMargin()
+
+        assert writeFileRule.files['ui5-deploy.yaml'].equals(configFileExpected)
+
+        assert script.shell[0].contains('npm install -g @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs @dummy/foo')
+
+        assert script.shell[0].contains("fiori deploy -c \"ui5-deploy.yaml\" -t 002 -u https://example.org/cm")
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'node'
         assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+        assert dockerExecuteRule.getDockerParams().dockerEnvVars == [ABAP_USER: "user", ABAP_PASSWORD: 'password']
+        // we launch the container as root (uid 0) in order to be able to install
+        // the deploytool. Before deploying we su to another user.
+        assert dockerExecuteRule.getDockerParams().dockerOptions == ['-u', '0']
+    }
 
-        // no assert for the shell command required here, since the regex registered
-        // above to the script rule is an implicit check for the command line.
+    @Test
+    public void testUploadFileToTransportSucceedsEmptyDeployToolDependenciesCTS() {
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'fioriDeployImage',
+                pullImage: true
+             ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'aPackage',
+            'the description',
+            'node2',
+            [],
+            'ui5-deploy.yaml',
+            'me',
+        )
+
+        assert ! script.shell[0].contains('npm install')
+        assert ! script.shell[0].contains('su')
+
+        assert script.shell[0].contains("fiori deploy -c \"ui5-deploy.yaml\"")
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'fioriDeployImage'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+        assert dockerExecuteRule.getDockerParams().dockerEnvVars == [ABAP_USER: "user", ABAP_PASSWORD: 'password']
+        // we don't start with the root user since there is no need to install something (globally)
+        assert dockerExecuteRule.getDockerParams().dockerOptions == []
+    }
+
+    @Test
+    public void testUploadFileToTransportShellFailsCTS() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('script returned exit code 1')
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*fiori deploy.*',
+            { throw new AbortException('script returned exit code 1') })
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'node',
+                pullImage: true
+            ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'aPackage',
+            'the description',
+            'node',
+            '@ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs',
+            'ui5-deploy.yaml',
+            'me',
+        )
     }
 
     @Test
