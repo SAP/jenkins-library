@@ -74,7 +74,40 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * A pattern used for identifying lines holding the transport request id.
          * @parentConfigKey changeManagement
          */
-        'transportRequestLabel'
+        'transportRequestLabel',
+        /**
+         * Some CTS related transport related steps are cm_client based, others are node based.
+         * For the node based steps the docker image is specified here.
+         * @parentConfigKey changeManagement
+         */
+         'cts/nodeDocker/image',
+        /**
+         * The ABAP client. Only for `CTS`
+         * @parentConfigKey changeManagement
+         */
+         'client',
+        /**
+         * By default we use a standard node docker image and prepare some fiori related packages
+         * before performing the deployment. For that we need to launch the image with root privileges.
+         * After that, before actually performing the deployment we swith to a non root user. This user
+         * can be specified here.
+         * @parentConfigKey changeManagement
+         */
+         'cts/osDeployUser',
+        /**
+         * By default we use a standard node docker iamge and prepare some fiori related packages
+         * performing the deployment. The additional dependencies can be provided here. In case you
+         * use an already prepared docker image which contains the required dependencies, the empty
+         * list can be provide here. Caused hereby installing additional dependencies will be skipped.
+         *
+         * @parentConfigKey changeManagement
+         */
+         'cts/deployToolDependencies',
+        /**
+         * The file handed over to `fiori deploy` with flag `-c --config`.
+         * @parentConfigKey changeManagement
+         */
+         'cts/deployConfigFile',
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -87,7 +120,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
             updated.
         */
         'applicationDescription',
-        /** The path of the file to upload.*/
+        /** The path of the file to upload, Only for `SOLMAN`.*/
         'filePath', // SOLMAN
         /** The URL where to find the UI5 package to upload to the transport request.  Only for `RFC`. */
         'applicationUrl', // RFC
