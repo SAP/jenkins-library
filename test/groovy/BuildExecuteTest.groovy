@@ -73,11 +73,6 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void inferBuildToolMaven() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         boolean buildToolCalled = false
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "pom.xml"
@@ -87,7 +82,7 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
         stepRule.step.buildExecute(
             script: nullScript,
         )
@@ -108,13 +103,34 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
         stepRule.step.buildExecute(
             script: nullScript,
         )
 
         assertNotNull(nullScript.commonPipelineEnvironment.getBuildTool())
         assertEquals('npm', nullScript.commonPipelineEnvironment.getBuildTool())
+        assertTrue(buildToolCalled)
+    }
+
+    @Test
+    void inferBuildToolMTA() {
+        boolean buildToolCalled = false
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "mta.yaml"
+        })
+        helper.registerAllowedMethod('mtaBuild', [Map.class], { m ->
+            buildToolCalled = true
+            return
+        })
+
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        stepRule.step.buildExecute(
+            script: nullScript,
+        )
+
+        assertNotNull(nullScript.commonPipelineEnvironment.getBuildTool())
+        assertEquals('mta', nullScript.commonPipelineEnvironment.getBuildTool())
         assertTrue(buildToolCalled)
     }
 
@@ -128,7 +144,7 @@ class BuildExecuteTest extends BasePiperTest {
         })
 
         // Does nothing because feature toggle is not active
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: false])
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: false])
 
         stepRule.step.buildExecute(
             script: nullScript,
@@ -143,11 +159,6 @@ class BuildExecuteTest extends BasePiperTest {
     @Test
     void 'Do infer build tool, do not set build tool, with docker dockerImage and dockerCommand, should run npm'() {
         boolean npmCalled = false
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "package.json"
         })
@@ -156,7 +167,7 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
 
         stepRule.step.buildExecute(
             script: nullScript,

@@ -37,42 +37,6 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void inferBuildToolMaven() {
-        helper.registerAllowedMethod('fileExists', [String.class], { s ->
-            return s == "pom.xml"
-        })
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
-        assertEquals('maven', nullScript.commonPipelineEnvironment.buildTool)
-    }
-
-    @Test
-    void inferBuildToolMTA() {
-        helper.registerAllowedMethod('fileExists', [String.class], { s ->
-            return s == "mta.yaml"
-        })
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
-        assertEquals('mta', nullScript.commonPipelineEnvironment.buildTool)
-    }
-
-    @Test
-    void inferBuildToolNpm() {
-        helper.registerAllowedMethod('fileExists', [String.class], { s ->
-            return s == "package.json"
-        })
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
-        assertEquals('npm', nullScript.commonPipelineEnvironment.buildTool)
-    }
-
-    @Test
-    void inferBuildToolNone() {
-        helper.registerAllowedMethod('fileExists', [String.class], { s ->
-            return false
-        })
-        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
-        assertNull(nullScript.commonPipelineEnvironment.buildTool)
-    }
-
-    @Test
     void testCustomValueList() {
         nullScript.commonPipelineEnvironment.setValue('myList', [])
         nullScript.commonPipelineEnvironment.getValue('myList').add('item1')
