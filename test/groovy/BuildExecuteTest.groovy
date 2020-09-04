@@ -114,7 +114,7 @@ class BuildExecuteTest extends BasePiperTest {
             return
         })
 
-        def bt = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
+        def bt = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
         stepRule.step.buildExecute(
             script: nullScript,
         )

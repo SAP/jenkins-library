@@ -38,58 +38,38 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Test
     void inferBuildToolMaven() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "pom.xml"
         })
-        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
-        assertEquals('maven', actual)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('maven', nullScript.commonPipelineEnvironment.buildTool)
     }
 
     @Test
     void inferBuildToolMTA() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "mta.yaml"
         })
-        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
-        assertEquals('mta', actual)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('mta', nullScript.commonPipelineEnvironment.buildTool)
     }
 
     @Test
     void inferBuildToolNpm() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return s == "package.json"
         })
-        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
-        assertEquals('npm', actual)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('npm', nullScript.commonPipelineEnvironment.buildTool)
     }
 
     @Test
     void inferBuildToolNone() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [
-                inferBuildTool: true
-            ]
-        ]
         helper.registerAllowedMethod('fileExists', [String.class], { s ->
             return false
         })
-        def actual = nullScript.commonPipelineEnvironment.inferBuildTool(nullScript)
-        assertNull(actual)
+        nullScript.commonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertNull(nullScript.commonPipelineEnvironment.buildTool)
     }
 
     @Test

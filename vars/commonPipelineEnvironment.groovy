@@ -93,27 +93,25 @@ class commonPipelineEnvironment implements Serializable {
 
     /**
      * Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
-     * @param script
-     * @return 'mta', 'maven', 'npm' or null
+     * @param script, config
      */
-    String inferBuildTool(script) {
+    void inferBuildTool(script, config) {
         // For backwards compatibility, build tool inference must be enabled via inferBuildTool setting
-        boolean inferBuildTool = configuration.get('general')?.inferBuildTool
+        boolean inferBuildTool = config?.inferBuildTool
 
         if (inferBuildTool) {
             boolean isMtaProject = script.fileExists('mta.yaml')
-            def isMaven = script.fileExists('pom.xml')
-            def isNpm = script.fileExists('package.json')
+            def isMavenProject = script.fileExists('pom.xml')
+            def isNpmProject = script.fileExists('package.json')
 
             if (isMtaProject) {
                 this.buildTool = 'mta'
-            } else if (isMaven) {
+            } else if (isMavenProject) {
                 this.buildTool = 'maven'
-            } else if (isNpm) {
+            } else if (isNpmProject) {
                 this.buildTool = 'npm'
             }
         }
-        return this.buildTool
     }
 
     def setAppContainerProperty(property, value) {

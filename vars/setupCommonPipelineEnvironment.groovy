@@ -14,7 +14,10 @@ import groovy.transform.Field
     'collectTelemetryData',
 
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
-    'customDefaultsCredentialsId'
+    'customDefaultsCredentialsId',
+
+    /** fixme */
+    'inferBuildTool'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -88,6 +91,8 @@ void call(Map parameters = [:]) {
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
+
+        script.commonPipelineEnvironment.inferBuildTool(script, config)
 
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
