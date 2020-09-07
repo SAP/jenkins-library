@@ -267,6 +267,7 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += "| ---- | --------- |\n"
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", "string")
+		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails([]string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}))
 
 		details += "\n\n"
 	}
