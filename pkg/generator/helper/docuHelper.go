@@ -397,7 +397,7 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 				}
 				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;- `%v`%v<br />", alias.Name, ifThenElse(alias.Deprecated, " (**Deprecated**)", ""))
 			}
-			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: `%v`<br />", resource.Name)
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: [`%v`](#%v)<br />", resource.Name, strings.ToLower(resource.Name))
 			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
 			continue
 		}
