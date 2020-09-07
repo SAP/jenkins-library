@@ -97,9 +97,9 @@ void call(Map parameters = [:]) {
         }
 
         Map stageConfig = ConfigurationHelper.newInstance(this)
-              .loadStepDefaults([:], currentStage)
-              .mixinStageConfig(script.commonPipelineEnvironment, currentStage)
-              .use()
+            .loadStepDefaults([:], currentStage)
+            .mixinStageConfig(script.commonPipelineEnvironment, currentStage)
+            .use()
 
         boolean runStage
         if (stageConfig.runInAllBranches != true &&
