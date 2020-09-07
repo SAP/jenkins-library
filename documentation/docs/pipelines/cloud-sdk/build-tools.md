@@ -81,15 +81,13 @@ Please pick the corresponding version for your deployment target and rename it p
 
 #### Frontend Unit Tests
 
-The command `npm run ci-frontend-unit-test` will be executed in this stage.
+For each `package.json` where the script `ci-frontend-unit-test` is defined the command `npm run ci-frontend-unit-test` will be executed in this stage.
 Furthermore, the test results have to be stored in the folder `./s4hana_pipeline/reports/frontend-unit` in the root directory.
 The required format of the test result report is the JUnit format as an `.xml` file.
 The code coverage report can be published as html report and in the cobertura format.
 The cobertura report as html report has to be stored in the directory `./s4hana_pipeline/reports/coverage-reports/frontend-unit/report-html/ut/` as an `index.html` file.
 These coverage reports will then be published in Jenkins.
 Furthermore, if configured in the `.pipeline/config.yml`, the pipeline ensures the configured level of code coverage.
-
-In MTA projects Frontend Unit Tests are executed for every module of type `html5`.
 
 #### Frontend Integration Tests
 
@@ -145,8 +143,7 @@ The required format of the linting results is the checkstyle format as an `xml` 
 The linting results have to be stored in a file named `*cilint.xml`, which may reside in any directory of the project.
 The linting results will then be published in Jenkins.
 
-If no script `ci-lint` is defined, the pipeline will check SAPUI5 components, if present, for the SAPUI5 recommended best practices.
-If none of the scenarios described apply and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
+If no script `ci-lint` is defined and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
 
 If no ESLint configuration files are present in the project directory, a general purpose configuration is used to lint all Javascript and/or Typescript files of the project.
 If, on the other hand, ESLint configuration files exist in the project, they will be used to lint Javascript files in the project.
