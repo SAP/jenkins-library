@@ -47,7 +47,7 @@ void call(Map parameters = [:]) {
                 Map stepParams = [
                     script: script
                 ]
-                if (!isPullRequest()) {
+                if (!isProductiveBranch(script) && !isPullRequest()) {
                     stepParams['branchName'] = env.BRANCH_NAME
                 }
                 sonarExecuteScan stepParams
@@ -56,7 +56,12 @@ void call(Map parameters = [:]) {
     }
 }
 
-private Boolean isPullRequest() {
+private boolean isPullRequest() {
     return env.CHANGE_ID
+}
+
+private boolean isProductiveBranch(Script script) {
+    def productiveBranch = script.commonPipelineEnvironment.getStepConfiguration('', '')?.productiveBranch
+    return env.BRANCH_NAME == productiveBranch
 }
 
