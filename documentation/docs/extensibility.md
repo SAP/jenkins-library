@@ -83,7 +83,7 @@ For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/)
 ```groovy
 def call(Map parameters) {
 
-    parameters.originalStage() // Runs the built-in linters
+    parameters.originalStage() // Runs the build stage with built-in linters
 
     mavenExecute(
         script: parameters.script,
@@ -105,7 +105,7 @@ return this
 This code snippet has three components, let's see what is happening here:
 
 Firstly, we run the original stage.
-This runs ESLint on JavaScript/TypeScript source files as this is a standard feature of SAP Cloud SDK pipeline.
+This builds the application and runs ESLint on JavaScript/TypeScript source files and static checks using PMD and SpotBugs tools as these are standard features of SAP Cloud SDK pipeline.
 
 Secondly, we run the checkstyle maven plugin using the `mavenExecute` Jenkins library step as provided by project "Piper".
 This serves as an example for how flexible you can re-use what project "Piper" already provides in your extension.
