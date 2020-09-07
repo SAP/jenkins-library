@@ -232,6 +232,16 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
+
+	usesVault := false
+	for _, param := range m.Spec.Inputs.Parameters {
+		if param.GetReference("vaultSecret") != nil {
+			usesVault = true
+		}
+	}
+	if usesVault {
+		contextFilters = append(contextFilters, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}...)
+	}
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
 		filters.General = append(filters.General, contextFilters...)
