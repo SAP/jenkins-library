@@ -78,7 +78,7 @@ For a more practical example, you can use extensions in the SAP Cloud SDK pipeli
 
 A linter is a tool that can check the source code for certain stylistic criteria. Many teams choose to use a linter to ensure a common programming style.
 
-For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/) in your codebase, you might use an extension similar to this one in a file called `.pipeline/extensions/lint.groovy` in your project:
+For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/) in your codebase, you might use an extension similar to this one in a file called `.pipeline/extensions/build.groovy` in your project:
 
 ```groovy
 def call(Map parameters) {
