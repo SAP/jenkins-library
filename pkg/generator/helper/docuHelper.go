@@ -259,11 +259,7 @@ func createParameterDetails(stepData *config.StepData) string {
 			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
 		}
 
-		// if len(secret.LongDescription) > 0 {
-		// 	details += secret.LongDescription + "\n\n"
-		// } else {
 		details += secret.Description + "\n\n"
-		// }
 
 		details += "[back to overview](#parameters)\n\n"
 
@@ -272,14 +268,6 @@ func createParameterDetails(stepData *config.StepData) string {
 
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", secret.Type)
-		// details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(secret.Mandatory && secret.Default == nil, "**yes**", "no"))
-		// details += fmt.Sprintf("| Default | %v |\n", formatDefault(secret, stepParameterNames))
-		// if secret.PossibleValues != nil {
-		// 	details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(secret.PossibleValues))
-		// }
-		// details += fmt.Sprintf("| Secret | %v |\n", ifThenElse(secret.Secret, "**yes**", "no"))
-		// details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(secret.Scope))
-		// details += fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(secret.ResourceRef))
 
 		details += "\n\n"
 	}
