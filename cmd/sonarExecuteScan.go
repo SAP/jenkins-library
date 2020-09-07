@@ -51,6 +51,7 @@ const (
 	javaBinaries        = "sonar.java.binaries="
 	javaLibraries       = "sonar.java.libraries="
 	coverageExclusions  = "sonar.coverage.exclusions="
+	jacocoReportGlob    = "**/target/**/jacoco.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
@@ -159,7 +160,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 }
 
 func addJacocoReportPaths() {
-	matches, err := doublestarGlob("**/jacoco.xml")
+	matches, err := doublestarGlob(jacocoReportGlob)
 	if err != nil {
 		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
 		return

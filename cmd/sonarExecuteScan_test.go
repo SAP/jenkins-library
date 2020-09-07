@@ -178,7 +178,7 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		globMatches := make(map[string][]string)
-		globMatches["**/jacoco.xml"] = []string{"target/jacoco.xml", "application/target/jacoco.xml"}
+		globMatches[jacocoReportGlob] = []string{"target/site/jacoco.xml", "application/target/site/jacoco.xml"}
 		doublestarGlob = mockGlob(globMatches)
 		defer func() {
 			fileUtilsExists = FileUtils.FileExists
@@ -189,7 +189,7 @@ func TestRunSonar(t *testing.T) {
 		err = runSonar(options, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
-		assert.Contains(t, sonar.options, "-Dsonar.coverage.jacoco.xmlReportPaths=target/jacoco.xml,application/target/jacoco.xml")
+		assert.Contains(t, sonar.options, "-Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco.xml,application/target/site/jacoco.xml")
 	})
 	t.Run("with binaries option", func(t *testing.T) {
 		// init
