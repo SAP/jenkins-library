@@ -41,7 +41,8 @@ var execLookPath = exec.LookPath
 var fileUtilsExists = FileUtils.FileExists
 var fileUtilsUnzip = FileUtils.Unzip
 var osRename = os.Rename
-var glob = doublestar.Glob
+var osStat = os.Stat
+var doublestarGlob = doublestar.Glob
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
@@ -145,7 +146,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 }
 
 func addJacocoReportPaths() {
-	matches, err := glob("**/jacoco.xml")
+	matches, err := doublestarGlob("**/jacoco.xml")
 	if err != nil {
 		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
 		return
@@ -156,7 +157,7 @@ func addJacocoReportPaths() {
 }
 
 func addJavaBinaries() {
-	pomFiles, err := glob("**/pom.xml")
+	pomFiles, err := doublestarGlob("**/pom.xml")
 	if err != nil {
 		log.Entry().Warnf("failed to glob for pom modules: %v", err)
 		return
@@ -166,7 +167,7 @@ func addJavaBinaries() {
 	for _, pomFile := range pomFiles {
 		module := filepath.Dir(pomFile)
 		classesPath := filepath.Join(module, "target", "classes")
-		_, err := os.Stat(classesPath)
+		_, err := osStat(classesPath)
 		if err == nil {
 			binaries = append(binaries, classesPath)
 		}
