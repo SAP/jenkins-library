@@ -1,9 +1,9 @@
 metadata:
-    name: abapEnvironmentAssemblePackages
-    description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
-    longDescription: |
-      This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud
-      Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.
+  name: abapEnvironmentAssemblePackages
+  description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
+  longDescription: |
+    This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud
+    Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.
 spec:
   inputs:
     secrets:
@@ -18,10 +18,10 @@ spec:
         type: string
         description: Cloud Foundry API endpoint
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/apiEndpoint
@@ -29,10 +29,10 @@ spec:
         type: string
         description: CF org
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/org
@@ -40,10 +40,10 @@ spec:
         type: string
         description: CF Space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/space
@@ -51,10 +51,10 @@ spec:
         type: string
         description: Parameter of ServiceInstance Name to delete CloudFoundry Service
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -62,10 +62,10 @@ spec:
         type: string
         description: Parameter of CloudFoundry Service Key to be created
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/serviceKey
@@ -76,25 +76,25 @@ spec:
         type: string
         mandatory: false
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: username
         type: string
         description: User or E-Mail for CF
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
       - name: password
         type: string
         description: User Password for CF User
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
       - name: addonDescriptor
