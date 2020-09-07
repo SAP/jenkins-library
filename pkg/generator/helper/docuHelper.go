@@ -265,9 +265,8 @@ func createParameterDetails(stepData *config.StepData) string {
 
 		details += "| Scope | Details |\n"
 		details += "| ---- | --------- |\n"
-
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
-		details += fmt.Sprintf("| Type | `%v` |\n", secret.Type)
+		details += fmt.Sprintf("| Type | `%v` |\n", "string")
 
 		details += "\n\n"
 	}
@@ -401,9 +400,6 @@ func handleStepParameters(stepData *config.StepData) {
 	//add general options like script, verbose, etc.
 	//ToDo: add to context.yaml
 	appendGeneralOptionsToParameters(stepData)
-
-	//add secrets to step parameters
-	//appendSecretsToParameters(stepData)
 
 	//consolidate conditional parameters:
 	//- remove duplicate parameter entries
