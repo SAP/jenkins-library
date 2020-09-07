@@ -65,20 +65,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
-      - name: projectKey
-        type: string
-        description: "The project key identifies the project in SonarQube."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: coverageExclusions
-        type: "[]string"
-        description: "A list of patterns that should be excluded from the coverage scan."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: options
         type: "[]string"
         description: A list of options which are passed to the sonar-scanner.
@@ -179,39 +165,6 @@ spec:
           - STAGES
           - STEPS
         default: https://api.github.com
-
-      # Global maven settings, should be added to all maven steps
-      - name: projectSettingsFile
-        type: string
-        description: "Path to the mvn settings file that should be used as project settings file."
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        aliases:
-          - name: maven/projectSettingsFile
-      - name: globalSettingsFile
-        type: string
-        description: "Path to the mvn settings file that should be used as global settings file."
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        aliases:
-          - name: maven/globalSettingsFile
-      - name: m2Path
-        type: string
-        description: "Path to the location of the local repository that should be used."
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
-        aliases:
-          - name: maven/m2Path
-
     secrets:
       - name: sonarTokenCredentialsId
         type: jenkins

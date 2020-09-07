@@ -23,8 +23,6 @@ type sonarExecuteScanOptions struct {
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
 	ProjectVersion            string   `json:"projectVersion,omitempty"`
-	ProjectKey                string   `json:"projectKey,omitempty"`
-	CoverageExclusions        []string `json:"coverageExclusions,omitempty"`
 	Options                   []string `json:"options,omitempty"`
 	BranchName                string   `json:"branchName,omitempty"`
 	ChangeID                  string   `json:"changeId,omitempty"`
@@ -37,9 +35,6 @@ type sonarExecuteScanOptions struct {
 	DisableInlineComments     bool     `json:"disableInlineComments,omitempty"`
 	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
 	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
-	ProjectSettingsFile       string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile        string   `json:"globalSettingsFile,omitempty"`
-	M2Path                    string   `json:"m2Path,omitempty"`
 }
 
 type sonarExecuteScanInflux struct {
@@ -141,8 +136,6 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip`, "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube.")
-	cmd.Flags().StringVar(&stepConfig.ProjectKey, "projectKey", os.Getenv("PIPER_projectKey"), "The project key identifies the project in SonarQube.")
-	cmd.Flags().StringSliceVar(&stepConfig.CoverageExclusions, "coverageExclusions", []string{}, "A list of patterns that should be excluded from the coverage scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.Options, "options", []string{}, "A list of options which are passed to the sonar-scanner.")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request.")
@@ -155,9 +148,6 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().BoolVar(&stepConfig.DisableInlineComments, "disableInlineComments", false, "Pull-Request only: Disables the pull-request decoration with inline comments. DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().BoolVar(&stepConfig.LegacyPRHandling, "legacyPRHandling", false, "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Pull-Request only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in SonarQube < 7.2")
-	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
-	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
-	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 
 }
 
@@ -224,22 +214,6 @@ func sonarExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "projectKey",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "coverageExclusions",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -338,30 +312,6 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "projectSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
-					},
-					{
-						Name:        "globalSettingsFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
-					},
-					{
-						Name:        "m2Path",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 				},
 			},

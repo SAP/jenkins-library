@@ -6,7 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/bmatcuk/doublestar"
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
@@ -34,9 +33,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	var defines []string
 	var goals []string
 
-	// Setup Jacoco coverage recording
 	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
-	//	defines = append(defines, fmt.Sprintf("-Djacoco.classDumpDir=%s", ???))
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
@@ -61,25 +58,5 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	_, err := maven.Execute(&mavenOptions, command)
-	if err != nil {
-		return err
-	}
-
-	execFiles, _ := doublestar.Glob("**/*.exec")
-	log.Entry().Infof("found .exec files: %v", execFiles)
-
-	/*
-		// Generate a Jacoco coverage report in XML format, needed by SonarQube scan
-		mavenOptions.Goals = []string{"org.jacoco:jacoco-maven-plugin:report-aggregate"}
-		mavenOptions.Defines = []string{}
-		_, err = maven.Execute(&mavenOptions, command)
-		if err != nil {
-			log.Entry().Warnf("failed to generate Jacoco coverage report: %v", err)
-		}
-	*/
-
-	reportFiles, _ := doublestar.Glob("**/jacoco*.xml")
-	log.Entry().Infof("found report files: %v", reportFiles)
-
-	return nil
+	return err
 }
