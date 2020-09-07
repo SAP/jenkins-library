@@ -15,8 +15,8 @@ spec:
     params:
       - name: installCommand
         type: string
-        description: The command that is executed to install the test tool.
-        default: npm install --quiet
+        description: The command that is executed to install the uiveri5 test tool.
+        default: npm install @ui5/uiveri5 --global --quiet
         scope:
           - GENERAL
           - PARAMETERS
@@ -32,10 +32,18 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+      - name: confPath
+        type: string
+        description: Define the path of the uiVeri5 conf.js.
+        default: "./conf.js"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: runCommand
         type: string
         description: The command that is executed to start the tests.
-        default: npm run karma
+        default: uiveri5 --seleniumAddress='http://localhost:4444/wd/hub'
         scope:
           - GENERAL
           - PARAMETERS

@@ -14,13 +14,13 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 	c.Stderr(log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runUIVeri5(&config, telemetryData, &c)
+	err := runUIVeri5(&config, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runUIVeri5(config *uiVeri5ExecuteTestsOptions, telemetryData *telemetry.CustomData, command command.ExecRunner) error {
+func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
 	installCommandTokens := tokenize(config.InstallCommand) // strings.Split(command, " ")
 	command.SetDir(config.ModulePath)
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
@@ -30,6 +30,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, telemetryData *telemetry.Cus
 	}
 
 	runCommandTokens := tokenize(config.RunCommand)
+	runCommandTokens = append(runCommandTokens, config.ConfPath)
 	command.SetDir(config.ModulePath)
 	err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 	if err != nil {
