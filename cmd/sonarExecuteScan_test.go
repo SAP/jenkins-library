@@ -229,6 +229,45 @@ func TestRunSonar(t *testing.T) {
 			filepath.Join("target", "classes"),
 			filepath.Join("application", "target", "classes")))
 	})
+	t.Run("with binaries option already given", func(t *testing.T) {
+		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpFolder) }()
+		createTaskReportFile(t, tmpFolder)
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+
+		globMatches := make(map[string][]string)
+		globMatches["**/pom.xml"] = []string{"pom.xml"}
+		doublestarGlob = mockGlob(globMatches)
+
+		existsMap := make(map[string]bool)
+		existsMap[filepath.Join("target", "classes")] = true
+		osStat = mockOsStat(existsMap)
+
+		defer func() {
+			fileUtilsExists = FileUtils.FileExists
+			doublestarGlob = doublestar.Glob
+			osStat = os.Stat
+		}()
+		options := sonarExecuteScanOptions{
+			Options: []string{"-Dsonar.java.binaries=user/provided"},
+		}
+		// test
+		err = runSonar(options, &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
+			filepath.Join("target", "classes")))
+		assert.Contains(t, sonar.options, "-Dsonar.java.binaries=user/provided")
+	})
 	t.Run("projectKey, coverageExclusions, m2Path", func(t *testing.T) {
 		// init
 		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")

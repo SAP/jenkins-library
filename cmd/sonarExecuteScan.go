@@ -35,14 +35,23 @@ func (s *sonarSettings) addEnvironment(element string) {
 
 func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
 
-var sonar sonarSettings
+var (
+	sonar sonarSettings
 
-var execLookPath = exec.LookPath
-var fileUtilsExists = FileUtils.FileExists
-var fileUtilsUnzip = FileUtils.Unzip
-var osRename = os.Rename
-var osStat = os.Stat
-var doublestarGlob = doublestar.Glob
+	execLookPath    = exec.LookPath
+	fileUtilsExists = FileUtils.FileExists
+	fileUtilsUnzip  = FileUtils.Unzip
+	osRename        = os.Rename
+	osStat          = os.Stat
+	doublestarGlob  = doublestar.Glob
+)
+
+const (
+	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
+	javaBinaries        = "sonar.java.binaries="
+	javaLibraries       = "sonar.java.libraries="
+	coverageExclusions  = "sonar.coverage.exclusions="
+)
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
@@ -90,14 +99,18 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
 	}
-	if len(config.M2Path) > 0 {
-		sonar.addOption("sonar.java.libraries=" + filepath.Join(config.M2Path, "**"))
+	if len(config.M2Path) > 0 && !SliceUtils.ContainsStringPart(config.Options, javaLibraries) {
+		sonar.addOption(javaLibraries + filepath.Join(config.M2Path, "**"))
 	}
-	if len(config.CoverageExclusions) > 0 {
-		sonar.addOption("sonar.coverage.exclusions=" + strings.Join(config.CoverageExclusions, ","))
+	if len(config.CoverageExclusions) > 0 && !SliceUtils.ContainsStringPart(config.Options, coverageExclusions) {
+		sonar.addOption(coverageExclusions + strings.Join(config.CoverageExclusions, ","))
 	}
-	addJavaBinaries()
-	addJacocoReportPaths()
+	if !SliceUtils.ContainsStringPart(config.Options, javaBinaries) {
+		addJavaBinaries()
+	}
+	if !SliceUtils.ContainsStringPart(config.Options, coverageReportPaths) {
+		addJacocoReportPaths()
+	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
@@ -152,7 +165,7 @@ func addJacocoReportPaths() {
 		return
 	}
 	if len(matches) > 0 {
-		sonar.addOption("sonar.coverage.jacoco.xmlReportPaths=" + strings.Join(matches, ","))
+		sonar.addOption(coverageReportPaths + strings.Join(matches, ","))
 	}
 }
 
@@ -173,7 +186,7 @@ func addJavaBinaries() {
 		}
 	}
 	if len(binaries) > 0 {
-		sonar.addOption("sonar.java.binaries=" + strings.Join(binaries, ","))
+		sonar.addOption(javaBinaries + strings.Join(binaries, ","))
 	}
 }
 
