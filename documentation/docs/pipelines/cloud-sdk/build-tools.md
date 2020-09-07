@@ -143,8 +143,7 @@ The required format of the linting results is the checkstyle format as an `xml` 
 The linting results have to be stored in a file named `*cilint.xml`, which may reside in any directory of the project.
 The linting results will then be published in Jenkins.
 
-If no script `ci-lint` is defined, the pipeline will check SAPUI5 components, if present, for the SAPUI5 recommended best practices.
-If none of the scenarios described apply and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
+If no script `ci-lint` is defined and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
 
 If no ESLint configuration files are present in the project directory, a general purpose configuration is used to lint all Javascript and/or Typescript files of the project.
 If, on the other hand, ESLint configuration files exist in the project, they will be used to lint Javascript files in the project.

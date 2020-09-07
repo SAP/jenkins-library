@@ -1,12 +1,9 @@
 stages:
-  mavenExecuteStaticCodeChecks:
+  build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
-  lint:
-    extensionExists: true
-    stepConditions:
-      lint:
+      npmExecuteLint:
         filePattern:
           - '**/*.js'
           - '**/*.jsx'
