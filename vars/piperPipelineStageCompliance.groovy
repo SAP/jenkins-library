@@ -64,4 +64,3 @@ private boolean isProductiveBranch(Script script) {
     def productiveBranch = script.commonPipelineEnvironment.getStepConfiguration('', '')?.productiveBranch
     return env.BRANCH_NAME == productiveBranch
 }
-
