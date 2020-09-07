@@ -47,7 +47,7 @@ void call(Map parameters = [:]) {
                 Map stepParams = [
                     script: script
                 ]
-                if (env.CHANGE_ID) {
+                if (!isPullRequest()) {
                     stepParams['branchName'] = env.BRANCH_NAME
                 }
                 sonarExecuteScan stepParams
@@ -55,3 +55,8 @@ void call(Map parameters = [:]) {
         }
     }
 }
+
+private Boolean isPullRequest() {
+    return env.CHANGE_ID
+}
+
