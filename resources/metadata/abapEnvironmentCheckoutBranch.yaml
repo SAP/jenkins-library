@@ -52,7 +52,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
+      - name: repositoryNamesFiles
+        type: "[]string"
+        description: Optional parameter to specify a list of .yml files that each must contain a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
       - name: branchName
         type: string
         description: Specifies a Branch of a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
