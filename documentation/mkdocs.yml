@@ -28,6 +28,7 @@ nav:
                 - 'Release Stage': stages/release.md
         - 'SAP Cloud SDK pipeline':
             - 'Introduction': pipelines/cloud-sdk/introduction.md
+            - 'Configuration': pipelines/cloud-sdk/configuration.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
     - 'Scenarios':
