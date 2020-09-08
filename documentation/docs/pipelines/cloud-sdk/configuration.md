@@ -19,7 +19,7 @@ For more information on how to configure custom default configurations, please r
 | --- | --- | --- | --- |
 | `productiveBranch` | | `master` | The name of your default branch. This branch will be used for deploying your application. Other branches will skip deployment. |
 | `projectName` | | `artifactId` from pom | Name of the project |
-| `collectTelemetryData` | | `true` | No personal data is collected. For details, consult the [analytics documentation](doc/operations/analytics.md). |
+| `collectTelemetryData` | | `true` | No personal data is collected. For details, consult the [analytics documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/operations/analytics.md). |
 | `unsafeMode` | | `false` | Enable unsafe mode to skip checking environment variables for insecure elements. Only use this for demo purposes, **never for productive usage**. |
 | `customDefaultsCredentialsId` | |  | Credentials (username / password) used to download [custom defaults](#customDefaults). |
 
@@ -52,7 +52,7 @@ If the Jenkins is running on a kubernetes cluster as a pod, we can use the dynam
 
 In the Jenkins configuration section under `Manage Jenkins` menu, set the value for your environment variable under `Global properties` section.
 
-![Environment variable configuration](images/k8s-environment-config.jpg)
+![Environment variable configuration](../../images/k8s-environment-config.jpg)
 
 The Jenkins spins up `jnlp` agent nodes on demand. By default, the `jenkins/jnlp-slave` docker image is used. We can also use the custom `jnlp` agent by configuring the same in the `.pipeline/config.yml` file as shown below.
 
@@ -558,7 +558,7 @@ By default, the pipeline will perform automatic versioning of artifacts via the 
 This ensures that multiple builds of a continuously delivered application do not lead to version collisions in Nexus.
 If you are not building a continuously delivered application, you will typically disable automatic versioning.
 To do this, set the value of the parameter `versioningType` to the value `library`.
-Architectural details can be found in [automatic-release.md](doc/architecture/decisions/automatic-release.md).
+Architectural details can be found in [automatic-release.md](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/architecture/decisions/automatic-release.md).
 
 Example:
 
