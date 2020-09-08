@@ -334,9 +334,9 @@ type AddonDescriptor struct {
 
 // Repository contains fields for the repository/component version
 type Repository struct {
-	Name                string `json:"name"`
+	Name                string `json:"name,omitempty"`
 	Tag                 string `json:"tag"`
-	Branch              string `json:"branch"`
+	Branch              string `json:"branch,omitempty"`
 	VersionYAML         string `json:"version"`
 	Version             string `json:"versionAAK"`
 	PackageName         string
