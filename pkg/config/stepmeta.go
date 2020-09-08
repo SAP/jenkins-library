@@ -233,15 +233,10 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	usesVault := false
-	for _, param := range m.Spec.Inputs.Parameters {
-		if param.GetReference("vaultSecret") != nil {
-			usesVault = true
-		}
-	}
-	if usesVault {
+	if m.HasReference("vaultSecret") {
 		contextFilters = append(contextFilters, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}...)
 	}
+
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
 		filters.General = append(filters.General, contextFilters...)
@@ -403,6 +398,16 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 		}
 	}
 	return nil
+}
+
+// HasReference checks whether StepData contains a parameter that has Reference with the given type
+func (m *StepData) HasReference(refType string) bool {
+	for _, param := range m.Spec.Inputs.Parameters {
+		if param.GetReference(refType) != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute
