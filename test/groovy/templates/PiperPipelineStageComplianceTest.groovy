@@ -7,8 +7,6 @@ import org.junit.rules.RuleChain
 import util.*
 
 import static org.hamcrest.Matchers.hasItems
-import static org.hamcrest.Matchers.not
-import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertThat
 
@@ -47,19 +45,5 @@ class PiperPipelineStageComplianceTest extends BasePiperTest {
         )
         assertThat(stepsCalled, hasItems('sonarExecuteScan'))
         assertNotNull(stepParameters.sonarExecuteScan)
-        assertThat(stepParameters.sonarExecuteScan, not(hasItems('branchName')))
-    }
-
-    @Test
-    void testStageNonPullRequestBranch() {
-        binding.variables.env.BRANCH_NAME = 'test-branch'
-        jsr.step.piperPipelineStageCompliance(
-            script: nullScript,
-            juStabUtils: utils,
-            sonarExecuteScan: true
-        )
-        assertThat(stepsCalled, hasItems('sonarExecuteScan'))
-        assertNotNull(stepParameters.sonarExecuteScan)
-        assertEquals('test-branch', stepParameters.sonarExecuteScan.branchName)
     }
 }

@@ -44,23 +44,8 @@ void call(Map parameters = [:]) {
 
         if (config.sonarExecuteScan) {
             durationMeasure(script: script, measurementName: 'sonar_duration') {
-                Map stepParams = [
-                    script: script
-                ]
-                if (!isProductiveBranch(script) && !isPullRequest()) {
-                    stepParams['branchName'] = env.BRANCH_NAME
-                }
-                sonarExecuteScan stepParams
+                sonarExecuteScan script: script
             }
         }
     }
-}
-
-private boolean isPullRequest() {
-    return env.CHANGE_ID
-}
-
-private boolean isProductiveBranch(Script script) {
-    def productiveBranch = script.commonPipelineEnvironment.getStepConfiguration('', '')?.productiveBranch
-    return env.BRANCH_NAME == productiveBranch
 }
