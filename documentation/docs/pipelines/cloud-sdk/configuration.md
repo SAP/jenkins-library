@@ -152,12 +152,12 @@ endToEndTests:
   enableZeroDowntimeDeployment: true
   onlyRunInProductiveBranch: true
   appUrls:
-   - url: <application url>
-     credentialId: e2e-test-user-cf
-     parameters: '--tag scenario1 --NIGHTWATCH_ENV=chrome'
-   - url: <application url 2>
-     credentialId: e2e-test-user-cf
-     parameters: '--tag scenario2 --tag scenario3 --NIGHTWATCH_ENV=firefox'
+    - url: <application url>
+      credentialId: e2e-test-user-cf
+       parameters: '--tag scenario1 --NIGHTWATCH_ENV=chrome'
+    - url: <application url 2>
+      credentialId: e2e-test-user-cf
+      parameters: '--tag scenario2 --tag scenario3 --NIGHTWATCH_ENV=firefox'
 ```
 
 ### npmAudit
@@ -345,15 +345,15 @@ productionDeployment:
    - url: <application url>
      credentialId: e2e-test-user-cf
   cfTargets:
-   - space: 'Prod'
-     org: 'myorg'
-     appName: 'exampleapp'
-     manifest: 'manifest.yml'
-     credentialsId: 'CF-DEPLOY'
-     apiEndpoint: '<Cloud Foundry API endpoint>'
-     mtaExtensionDescriptor: 'path to mta extension description file'
-     mtaExtensionCredentials:
-       brokerCredential: sercretText-id-in-jenkins
+    - space: 'Prod'
+      org: 'myorg'
+      appName: 'exampleapp'
+      manifest: 'manifest.yml'
+      credentialsId: 'CF-DEPLOY'
+      apiEndpoint: '<Cloud Foundry API endpoint>'
+      mtaExtensionDescriptor: 'path to mta extension description file'
+      mtaExtensionCredentials:
+        brokerCredential: sercretText-id-in-jenkins
 ```
 
 ```yaml
@@ -387,15 +387,15 @@ Example:
 ```yaml
 productionDeployment:
   neoTargets:
-  - host: 'eu1.hana.ondemand.com'
-    account: 'myAccount'
-    application: 'exampleapp'
-    credentialsId: 'NEO-DEPLOY-PROD'
-    environment:
+    - host: 'eu1.hana.ondemand.com'
+      account: 'myAccount'
+      application: 'exampleapp'
+      credentialsId: 'NEO-DEPLOY-PROD'
+      environment:
       STAGE: Production
-    vmArguments: '-Dargument1=value1 -Dargument2=value2'
-    runtime: 'neo-javaee6-wp'
-    runtimeVersion: '2'
+      vmArguments: '-Dargument1=value1 -Dargument2=value2'
+      runtime: 'neo-javaee6-wp'
+      runtimeVersion: '2'
 ```
 
 ### artifactDeployment
@@ -762,6 +762,6 @@ postActions:
     enabled: true
     skipFeatureBranches: false
     recipients:
-    - ryan.architect@foobar.com
-    - john.doe@foobar.com
+      - ryan.architect@foobar.com
+      - john.doe@foobar.com
 ```
