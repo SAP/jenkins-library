@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
 
-import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertThat
 
@@ -38,6 +38,15 @@ class PiperPipelineStageComplianceTest extends BasePiperTest {
 
     @Test
     void testStageDefault() {
+        jsr.step.piperPipelineStageCompliance(
+            script: nullScript,
+            juStabUtils: utils,
+        )
+        assertThat(stepsCalled, not(anyOf(hasItems('sonarExecuteScan'))))
+    }
+
+    @Test
+    void testSonarExecuteScan() {
         jsr.step.piperPipelineStageCompliance(
             script: nullScript,
             juStabUtils: utils,
