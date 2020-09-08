@@ -1,5 +1,4 @@
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
@@ -16,7 +15,7 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        piperExecuteBin.prepareExecution(this, utils, parameters)
+        piperExecuteBin.prepareExecution(script, utils, parameters)
         piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
@@ -44,7 +43,7 @@ void call(Map parameters = [:]) {
             echo "Step Config: ${stepConfig}"
 
             List environment = []
-            if(isPullRequest()){
+            if (isPullRequest()) {
                 checkMandatoryParameter(stepConfig, "owner")
                 checkMandatoryParameter(stepConfig, "repository")
                 if(stepConfig.legacyPRHandling) {
@@ -52,7 +51,9 @@ void call(Map parameters = [:]) {
                 }
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
-                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET }")
+                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
+            } else if (!isProductiveBranch(script)) {
+                environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
             try {
                 // load certificates into cacerts file
@@ -97,6 +98,11 @@ private void checkMandatoryParameter(config, key){
 
 private Boolean isPullRequest(){
     return env.CHANGE_ID
+}
+
+private Boolean isProductiveBranch(Script script) {
+    def productiveBranch = script.commonPipelineEnvironment?.getStepConfiguration('', '')?.productiveBranch
+    return env.BRANCH_NAME == productiveBranch
 }
 
 private void loadCertificates(Map config) {

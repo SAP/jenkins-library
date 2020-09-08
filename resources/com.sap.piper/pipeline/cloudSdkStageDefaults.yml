@@ -16,6 +16,14 @@ stages:
           - 'ci-it-backend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  compliance:
+    onlyProductiveBranch: true
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
