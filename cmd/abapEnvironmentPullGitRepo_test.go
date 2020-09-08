@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -113,5 +115,220 @@ func TestTriggerPull(t *testing.T) {
 		_, err := triggerPull(config.RepositoryNames[0], con, client)
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
+}
 
+func TestPullRepoConfig(t *testing.T) {
+	t.Run("Success case: pullGitRepo from file config", func(t *testing.T) {
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pullGitRepo")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+- name: 'testRepo'
+  branch: 'testBranch'
+- name: 'testRepo2'
+  branch: 'testBranch2'
+- name: 'testRepo3'
+  branch: 'testBranch3'`
+		manifestFile2String := `
+- name: 'testRepo4'
+  branch: 'testBranch4'
+- name: 'testRepo5'
+  branch: 'testBranch5'
+- name: 'testRepo6'
+  branch: 'testBranch6'`
+
+		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+		err = ioutil.WriteFile("repositoriesTest2.yml", []byte(manifestFile2String), 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNamesFiles: []string{"repositoriesTest.yml", "repositoriesTest2.yml"},
+		}
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Branches",
+		}
+		err = pullReposFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		assert.NoError(t, err)
+	})
+	t.Run("Failure case: pullGitRepo from wrong file config", func(t *testing.T) {
+		expectedErrorMessage := "Failed to read repository configuration file: Eror in configuration file, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pullGitRepo")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNamesFiles: []string{"repositoriesTest.yml"},
+		}
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Branches",
+		}
+		err = pullReposFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
+	})
+	t.Run("Failure case: pullGitRepo from empty file config", func(t *testing.T) {
+		expectedErrorMessage := "Failed to parse repository configuration file: Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be pulled"
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pullGitRepo")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := ``
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNamesFiles: []string{"repositoriesTest.yml"},
+		}
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Branches",
+		}
+		err = pullReposFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
+	})
+	t.Run("Success case: pullGitRepo from config", func(t *testing.T) {
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNames: []string{"testRepo1", "testRepo2"},
+		}
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Branches",
+		}
+		err := pullReposFromConfig(config.RepositoryNames, con, client, pollIntervall.GetPollIntervall())
+		assert.NoError(t, err)
+	})
+	t.Run("Failure case: pullGitRepo with non-existent config", func(t *testing.T) {
+		expectedErrorMessage := "Failed to read repository configuration: Empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Entity"
+		tokenExpected := "myToken"
+
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      tokenExpected,
+			StatusCode: 200,
+		}
+
+		config := abapEnvironmentPullGitRepoOptions{}
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Branches",
+		}
+		err := pullReposFromConfig(config.RepositoryNames, con, client, pollIntervall.GetPollIntervall())
+		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
+	})
+}
+
+func TestPullConfigChecker(t *testing.T) {
+	t.Run("Success case: check config files", func(t *testing.T) {
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNamesFiles: []string{"test.file", "test2.file"},
+		}
+		err := checkPullRepositoryConfiguration(config)
+		assert.NoError(t, err)
+	})
+	t.Run("Success case: check config", func(t *testing.T) {
+		config := abapEnvironmentPullGitRepoOptions{
+			RepositoryNames: []string{"testRepo", "testRepo2"},
+		}
+		err := checkPullRepositoryConfiguration(config)
+		assert.NoError(t, err)
+	})
+	t.Run("Failure case: empty config", func(t *testing.T) {
+		errorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+		config := abapEnvironmentPullGitRepoOptions{}
+		err := checkPullRepositoryConfiguration(config)
+		assert.Equal(t, errorMessage, err.Error(), "Different error message expected")
+	})
 }
