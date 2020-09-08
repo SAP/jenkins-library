@@ -206,6 +206,7 @@ steps:
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
+    dockerRegistry: ''
     dockerPullImage: true
     sidecarPullImage: true
     stashContent: []
