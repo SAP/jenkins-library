@@ -2,12 +2,12 @@
 
 The SAP Cloud SDK Pipeline can be configured via the `.pipeline/config.yml` file, which needs to reside in the root of a project.
 To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customized on multiple levels. This comprises:
- * the general configuration on the project level,
- * the stage level configurations to set configuration values for specific stages,
- * the step configurations to set default values for steps,
- * and the post action configurations to configure post-build behavior.
+* the general configuration on the project level,
+* the stage level configurations to set configuration values for specific stages,
+* the step configurations to set default values for steps,
+* and the post action configurations to configure post-build behavior.
 
- If a property is configured in a step as well as the stage level, the stage level value takes precedence.
+If a property is configured in a step as well as the stage level, the stage level value takes precedence.
 
 ## customDefaults
 Custom default configurations are user defined default pipeline configurations and can be used to share common configuration among different projects.
@@ -719,7 +719,7 @@ The configuration of the step fortifyExecuteScan is explained in the project "Pi
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
 | `dockerImage` | | `ppiper/mta-archive-builder` | Docker image including Multi-target Application Archive Builder. The default image is `ppiper/mta-archive-builder` for mtaBuildTool `classic`. And it takes `devxci/mbtci:1.0.4` as a default image for mtaBuildTool `cloudMbt`. |
-| `mtaBuildTool` | | `cloudMbt` | Choose which tool is used to build your mta project. The default option is `cloudMbt` which is not backwards compatible with the `classic` tool. For more information on migrating from `classic` to `cloudMbt`, please refer to https://sap.github.io/cloud-mta-build-tool/migration/. |
+| `mtaBuildTool` | | `cloudMbt` | Choose which tool is used to build your mta project. The default option is `cloudMbt` which is not backwards compatible with the `classic` tool. For more information on migrating from `classic` to `cloudMbt`, please refer to [the Cloud MTA Build Tool docs on the topic of "migration"](https://sap.github.io/cloud-mta-build-tool/migration/). |
 
 All configuration parameters as stated in [jenkins-library documentation](https://sap.github.io/jenkins-library/steps/mtaBuild/) are available.
 
