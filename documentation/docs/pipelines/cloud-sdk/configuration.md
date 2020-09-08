@@ -2,6 +2,7 @@
 
 The SAP Cloud SDK Pipeline can be configured via the `.pipeline/config.yml` file, which needs to reside in the root of a project.
 To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customized on multiple levels. This comprises:
+
 * the general configuration on the project level,
 * the stage level configurations to set configuration values for specific stages,
 * the step configurations to set default values for steps,
@@ -10,6 +11,7 @@ To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customiz
 If a property is configured in a step as well as the stage level, the stage level value takes precedence.
 
 ## customDefaults
+
 Custom default configurations are user defined default pipeline configurations and can be used to share common configuration among different projects.
 For more information on how to configure custom default configurations, please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/configuration/#custom-default-configuration).
 
@@ -23,8 +25,8 @@ For more information on how to configure custom default configurations, please r
 | `unsafeMode` | | `false` | Enable unsafe mode to skip checking environment variables for insecure elements. Only use this for demo purposes, **never for productive usage**. |
 | `customDefaultsCredentialsId` | |  | Credentials (username / password) used to download [custom defaults](#customDefaults). |
 
-
 ### features
+
 This section allows to enable or disable certain optional features.
 This concept is known as *Feature Toggles*.
 
@@ -43,8 +45,8 @@ general:
 ```
 
 ### jenkinsKubernetes
-If the Jenkins is running on a kubernetes cluster as a pod, we can use the dynamic scaling feature in the pipeline. In order to enable this, an environment variable `ON_K8S` has to be set to `true` on the jenkins.
 
+If the Jenkins is running on a kubernetes cluster as a pod, we can use the dynamic scaling feature in the pipeline. In order to enable this, an environment variable `ON_K8S` has to be set to `true` on the jenkins.
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -77,6 +79,7 @@ The configuration of the stage has been moved to the step [mavenExecuteStaticCod
 | `credentials` | | | The list of system credentials to be injected during integration tests. The following example will provide the username and password for the systems with the aliases ERP and SFSF. For this, it will use the Jenkins credentials entries erp-credentials and successfactors-credentials. You have to ensure that corresponding credential entries exist in your Jenkins configuration |
 
 Example:
+
 ```yaml
 backendIntegrationTests:
   retry: 2
@@ -100,6 +103,7 @@ To use this optional feature the following configuration values have to be provi
 *Note: To access the container from your tests use the `sidecarName` as hostname on Docker or `localhost:portOfProcess` on Kubernetes.*
 
 Example:
+
 ```yaml
 backendIntegrationTests:
   retry: 2
@@ -147,6 +151,7 @@ This could be used for example to split the entire end-to-end test scenario into
 For example, when using nightwatch-api, these scenarios can be defined via annotations in the test descriptions and can be called with the `--tag` parameter as shown in the example below. Another option is to execute the end to end tests with various web browsers, e.g. chrome or firefox.
 
 Example:
+
 ```yaml
 endToEndTests:
   enableZeroDowntimeDeployment: true
@@ -154,7 +159,7 @@ endToEndTests:
   appUrls:
     - url: <application url>
       credentialId: e2e-test-user-cf
-       parameters: '--tag scenario1 --NIGHTWATCH_ENV=chrome'
+      parameters: '--tag scenario1 --NIGHTWATCH_ENV=chrome'
     - url: <application url 2>
       credentialId: e2e-test-user-cf
       parameters: '--tag scenario2 --tag scenario3 --NIGHTWATCH_ENV=firefox'
@@ -227,6 +232,7 @@ s4SdkQualityChecks:
 ```
 
 ### checkmarxScan
+
 [Checkmarx](https://www.checkmarx.com/) is one of the security analysis tools which is supported by the  pipeline.
 
 | Property | Mandatory | Default Value | Description |
@@ -286,6 +292,7 @@ For a detailed documentation of the indivitual properties please consult the [st
 ** The parameters can either be specified here or for the step `cloudFoundryDeploy` or globally in the general section under the key `cloudFoundry`.
 
 ### cfTargets and neoTargets
+
 You can either specify the property `cfTargets` or `neoTargets`.
 
 For `cfTargets` the following properties can be defined:
@@ -342,8 +349,8 @@ Please note currently only the Jenkins [Sercret text](https://jenkins.io/doc/boo
 #.pipeline/config.yml
 productionDeployment:
   appUrls:
-   - url: <application url>
-     credentialId: e2e-test-user-cf
+    - url: <application url>
+      credentialId: e2e-test-user-cf
   cfTargets:
     - space: 'Prod'
       org: 'myorg'
@@ -366,7 +373,6 @@ parameters:
   broker-credentials: <%= brokerCredential %>
 ```
 
-
 For `neoTargets` the following properties can be defined:
 
 | Property | Mandatory | Default Value | Description |
@@ -380,7 +386,6 @@ For `neoTargets` the following properties can be defined:
 | `size`| | `lite` | Size of the JVM, e.g. `lite`, `pro'`, `prem`, `prem-plus` |
 | `runtime` | X | | Name of the runtime: neo-java-web, neо-javaee6-wp, neо-javaee7-wp. See the [runtime](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/937db4fa204c456f9b7820f83bc87118.html) for more information.|
 | `runtimeVersion` | X | | Version of the runtime. See [runtime-version](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/937db4fa204c456f9b7820f83bc87118.html) for more information.|
-
 
 Example:
 
@@ -401,7 +406,8 @@ productionDeployment:
 ### artifactDeployment
 
 #### nexus
- The deployment of artifacts to nexus can be configured with a map containing the following properties:
+
+The deployment of artifacts to nexus can be configured with a map containing the following properties:
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -411,7 +417,6 @@ productionDeployment:
 | `npmRepository` | | | Name of the nexus repository for NPM artifacts. Ignored if the project does not contain a `package.json` in the project root directory. |
 | `groupId` | | | Common group ID for MTA build artifacts, ignored for Maven projects. |
 | `credentialsId` | | | ID to the credentials which is used to connect to Nexus. Anonymous deployments do not require a `credentialsId`.|
-
 
 ##### Choosing what to deploy into the npm repository
 
@@ -435,6 +440,7 @@ artifactDeployment:
 ```
 
 ### whitesourceScan
+
 Configure credentials for [WhiteSource](https://www.whitesourcesoftware.com/) scans.
 The minimum required Maven WhiteSource plugin version is `18.6.2`, ensure this in the plugins section of the project `pom.xml` file.
 
@@ -571,6 +577,7 @@ steps:
 For more information on how to configure this step, please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/steps/artifactPrepareVersion/).
 
 ### mavenExecute
+
 The mavenExecute step is used for all invocations of the mvn build tool. It is either used directly for executing specific maven phases such as `test`, or indirectly for steps that execute maven plugins such as `checkPmd`.
 
 | Property | Mandatory | Default Value | Description |
@@ -579,9 +586,11 @@ The mavenExecute step is used for all invocations of the mvn build tool. It is e
 | `projectSettingsFile` | | | The project settings.xml to be used for maven builds. You can specify a relative path to your project root or a URL starting with http or https. |
 
 ### mavenExecuteStaticCodeChecks
+
 The mavenExecuteStaticCodeChecks step executes static code checks for maven based projects. The tools SpotBugs and PMD are used. For more information on how to configure this step please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
 
 ### executeNpm
+
 The executeNpm step is used for all invocations of the npm build tool. It is, for example, used for building the frontend and for executing end to end tests.
 
 | Property | Mandatory | Default Value | Description |
@@ -590,6 +599,7 @@ The executeNpm step is used for all invocations of the npm build tool. It is, fo
 | `defaultNpmRegistry` | | | The default npm registry url to be used as the remote mirror. Bypasses the local download cache if specified.  |
 
 ### cloudFoundryDeploy
+
 A step configuration regarding Cloud Foundry deployment. This is required by stages like end-to-end tests, performance tests, and production deployment.
 
 | Property | Mandatory | Default Value | Description |
@@ -598,7 +608,6 @@ A step configuration regarding Cloud Foundry deployment. This is required by sta
 | `smokeTestStatusCode` | | `200` | Expected return code for smoke test success. |
 |`keepOldInstance`| | true | In case of a `blue-green` deployment the old instance will be stopped and will remain in the Cloud Foundry space by default. If this option is set to false, the old instance will be deleted. |
 |`cloudFoundry`| | | A map specifying the Cloud Foundry specific parameters. |
-
 
 The following parameters can be configured for the Cloud Foundry environment.
 
@@ -670,6 +679,7 @@ neoDeploy:
 ```
 
 ### checkGatling
+
 [Gatling](https://gatling.io/) is used as one of the performance tests tool.
 
 | Property | Mandatory | Default Value | Description |
@@ -684,6 +694,7 @@ checkGatling:
 ```
 
 ### checkJMeter
+
 [Apache JMeter](http://jmeter.apache.org/) is executed as part of performance tests of the application. The user is free to choose between JMeter and Gatling or both.
 
 | Property | Mandatory | Default Value | Description |
@@ -724,11 +735,13 @@ The configuration of the step fortifyExecuteScan is explained in the project "Pi
 All configuration parameters as stated in [jenkins-library documentation](https://sap.github.io/jenkins-library/steps/mtaBuild/) are available.
 
 ### tmsUpload
+
 The `tmsUpload` step can be used to upload your app during the production deployment stage using SAP Cloud Platform Transport Management.
 If the step is configured, SAP Cloud Platform Transport Management upload will be executed in the production deployment stage.
 Further information can be found in the [project "Piper" documentation](https://sap.github.io/jenkins-library/steps/tmsUpload/).
 
 ### debugReportArchive
+
 The `debugReportArchive` step can be used to create confidential (instead of redacted) debug reports.
 The difference between the redacted and the confidential debug report is, that potentially confidential information, such as the GitHub repository and branch, global extension repository and shared libraries, are included in the confidential debug report. It is the user's responsibility to make sure that the debug report does not contain any confidential information.
 
@@ -742,9 +755,11 @@ Example:
 debugReportArchive:
   shareConfidentialInformation: true
 ```
+
 ## Post action configuration
 
 ### sendNotification
+
 The `sendNotification` post-build action can be used to send notifications to project members in case of an unsuccessful build outcome or if the build goes back to normal.
 By default, an email is sent to the list of users who committed a change since the last non-broken build. Additionally, a set of recipients can be defined that should always receive notifications.
 
