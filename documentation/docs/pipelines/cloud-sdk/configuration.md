@@ -1,4 +1,4 @@
-# SAP Cloud SDK Pipeline Configuration Docs
+# SAP Cloud SDK Pipeline Configuration
 
 The SAP Cloud SDK Pipeline can be configured via the `.pipeline/config.yml` file, which needs to reside in the root of a project.
 To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customized on multiple levels. This comprises:
