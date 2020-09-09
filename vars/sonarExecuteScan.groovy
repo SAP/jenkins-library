@@ -52,7 +52,7 @@ void call(Map parameters = [:]) {
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
                 environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
-            } else if (!isProductiveBranch(script)) {
+            } else if (!isProductiveBranch(script) && env.BRANCH_NAME) {
                 environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
             try {
