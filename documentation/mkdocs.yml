@@ -29,6 +29,17 @@ nav:
         - 'SAP Cloud SDK pipeline':
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Configuration': pipelines/cloud-sdk/configuration.md
+            - 'Stages':
+                - 'Build and Test': stages/build.md
+                - 'Frontend Unit Tests': stages/additionalunittests.md
+                - 'Backend and Frontend Integration Tests': stages/integration.md
+                # todo static checks, lint, npm audit
+                - 'End to End Tests': stages/acceptance.md
+                #todo perf
+                - 'Security Stage': stages/security.md
+                - 'Performance Stage': stages/performance.md
+                - 'Artifact Deployment': stages/promote.md
+                - 'Production Deployment': stages/release.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
     - 'Scenarios':
