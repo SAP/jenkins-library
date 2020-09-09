@@ -38,7 +38,7 @@ import hudson.AbortException
          * The `resources` property takes precedence.
          * @parentConfigKey jenkinsKubernetes
          */
-         'resources',
+        'resources',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
@@ -172,7 +172,7 @@ import hudson.AbortException
      * for all contains which does not have resources specified otherwise.
      * @parentConfigKey jenkinsKubernetes
      */
-     'resources',
+    'resources',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
