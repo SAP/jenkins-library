@@ -47,6 +47,11 @@ func FileExists(filename string) (bool, error) {
 	return Files{}.FileExists(filename)
 }
 
+// FileRead returns the contents of the file system entry for the given path.
+func FileRead(filename string) ([]byte, error) {
+	return Files{}.FileRead(filename)
+}
+
 // DirExists returns true if the file system entry for the given path exists and is a directory.
 func (f Files) DirExists(path string) (bool, error) {
 	info, err := os.Stat(path)
