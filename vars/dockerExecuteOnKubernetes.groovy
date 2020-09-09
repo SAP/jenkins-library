@@ -33,14 +33,6 @@ import hudson.AbortException
          * @parentConfigKey jenkinsKubernetes
          */
         'inheritFrom',
-        /**
-         * A map containing the resource per container. The key is the
-         * container name. The value is a map defining valid resources.
-         * An entry with key `DEFAULT` can be used for defining resources
-         * for all contains which does not have resources specified otherwise.
-         * Alternate way for providing resources is via `resources` parameter
-         * when calling this step. When provided this way that takes precedence.
-         */
         'resources',
     /**
      * Print more detailed information into the log.
@@ -169,10 +161,13 @@ import hudson.AbortException
      */
     'stashNoDefaultExcludes',
     /**
-     * A map containing the resource per container. The key is the
+     * A map containing the resources per container. The key is the
      * container name. The value is a map defining valid resources.
      * An entry with key `DEFAULT` can be used for defining resources
      * for all contains which does not have resources specified otherwise.
+     * Alternate way for providing resources is via `general/jenkinsKubernetes/resources`
+     * in the project configuration. Providing the resources map as parameter
+     * to the step call takes precedence.
      */
     'resources',
 ])
