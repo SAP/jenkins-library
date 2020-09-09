@@ -34,9 +34,12 @@ import hudson.AbortException
          */
         'inheritFrom',
         /**
-         * Alternate way for providing resources (see `resources` property.
-         * The `resources` property takes precedence.
-         * @parentConfigKey jenkinsKubernetes
+         * A map containing the resource per container. The key is the
+         * container name. The value is a map defining valid resources.
+         * An entry with key `DEFAULT` can be used for defining resources
+         * for all contains which does not have resources specified otherwise.
+         * Alternate way for providing resources is via `resources` parameter
+         * when calling this step. When provided this way that takes precedence.
          */
         'resources',
     /**
@@ -170,7 +173,6 @@ import hudson.AbortException
      * container name. The value is a map defining valid resources.
      * An entry with key `DEFAULT` can be used for defining resources
      * for all contains which does not have resources specified otherwise.
-     * @parentConfigKey jenkinsKubernetes
      */
     'resources',
 ])
