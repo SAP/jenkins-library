@@ -27,13 +27,38 @@ type sonarSettings struct {
 	binary      string
 	environment []string
 	options     []string
+	// sonarProjectProperties contains the contents of the file 'sonar-project.properties', if it exists
+	sonarProjectProperties string
 }
 
 func (s *sonarSettings) addEnvironment(element string) {
 	s.environment = append(s.environment, element)
 }
 
-func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
+func (s *sonarSettings) addOption(element string) {
+	s.options = append(s.options, element)
+}
+
+// hasProjectProperty loads the contents of the file 'sonar-project.properties' if it exists
+// and returns true in case the contents contain the string provided in 'property'.
+// This would falsely return 'true' for the case that the *value* of an unrelated property happens
+// to contain the given property key verbatim.
+func (s *sonarSettings) hasProjectProperty(property string) bool {
+	if s.sonarProjectProperties == "" {
+		contents, err := fileUtilsRead(sonarProjectProperties)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Entry().Warnf("Failed to read contents of %s: %v",
+					sonarProjectProperties, err)
+			}
+			// Prevent trying to load the file again:
+			s.sonarProjectProperties = " "
+		} else {
+			s.sonarProjectProperties = string(contents)
+		}
+	}
+	return strings.Contains(s.sonarProjectProperties, property)
+}
 
 var (
 	sonar sonarSettings
@@ -41,17 +66,19 @@ var (
 	execLookPath    = exec.LookPath
 	fileUtilsExists = FileUtils.FileExists
 	fileUtilsUnzip  = FileUtils.Unzip
+	fileUtilsRead   = FileUtils.FileRead
 	osRename        = os.Rename
 	osStat          = os.Stat
 	doublestarGlob  = doublestar.Glob
 )
 
 const (
-	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
-	javaBinaries        = "sonar.java.binaries="
-	javaLibraries       = "sonar.java.libraries="
-	coverageExclusions  = "sonar.coverage.exclusions="
-	jacocoReportGlob    = "**/target/**/jacoco.xml"
+	sonarProjectProperties = "sonar-project.properties"
+	coverageReportPaths    = "sonar.coverage.jacoco.xmlReportPaths="
+	javaBinaries           = "sonar.java.binaries="
+	javaLibraries          = "sonar.java.libraries="
+	coverageExclusions     = "sonar.coverage.exclusions="
+	jacocoReportGlob       = "**/target/**/jacoco.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
@@ -100,16 +127,16 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
 	}
-	if len(config.M2Path) > 0 && !SliceUtils.ContainsStringPart(config.Options, javaLibraries) {
+	if len(config.M2Path) > 0 && inferProperty(config, javaLibraries) {
 		sonar.addOption(javaLibraries + filepath.Join(config.M2Path, "**"))
 	}
-	if len(config.CoverageExclusions) > 0 && !SliceUtils.ContainsStringPart(config.Options, coverageExclusions) {
+	if len(config.CoverageExclusions) > 0 && inferProperty(config, coverageExclusions) {
 		sonar.addOption(coverageExclusions + strings.Join(config.CoverageExclusions, ","))
 	}
-	if !SliceUtils.ContainsStringPart(config.Options, javaBinaries) {
+	if inferProperty(config, javaBinaries) {
 		addJavaBinaries()
 	}
-	if !SliceUtils.ContainsStringPart(config.Options, coverageReportPaths) {
+	if inferProperty(config, coverageReportPaths) {
 		addJacocoReportPaths()
 	}
 	if err := handlePullRequest(config); err != nil {
@@ -157,6 +184,18 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 	}
 	return nil
+}
+
+// inferProperty returns true, if the given property is not already provided in config.Options or
+// the file 'sonar-project.properties', if that one exists.
+func inferProperty(config sonarExecuteScanOptions, property string) bool {
+	if SliceUtils.ContainsStringPart(config.Options, property) {
+		return false
+	}
+	if sonar.hasProjectProperty(property) {
+		return false
+	}
+	return true
 }
 
 func addJacocoReportPaths() {
