@@ -1,19 +1,6 @@
 # SAP Cloud SDK Pipeline Configuration
 
 The SAP Cloud SDK Pipeline can be configured via the `.pipeline/config.yml` file, which needs to reside in the root of a project.
-To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customized on multiple levels. This comprises:
-
-* the general configuration on the project level,
-* the stage level configurations to set configuration values for specific stages,
-* the step configurations to set default values for steps,
-* and the post action configurations to configure post-build behavior.
-
-If a property is configured in a step as well as the stage level, the stage level value takes precedence.
-
-## customDefaults
-
-Custom default configurations are user defined default pipeline configurations and can be used to share common configuration among different projects.
-For more information on how to configure custom default configurations, please refer to the documentation on [custom default configuration](../../configuration/#custom-default-configuration).
 
 ## General configuration
 
