@@ -33,6 +33,14 @@ import hudson.AbortException
          * @parentConfigKey jenkinsKubernetes
          */
         'inheritFrom',
+        /**
+         * A map containing the resource per container. The key is the
+         * container name. The value is a map defining valid resources.
+         * An entry with key `DEFAULT` can be used for defining resources
+         * for all contains which does not have resources specified otherwise.
+         * @parentConfigKey jenkinsKubernetes
+         */
+         'resources',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
@@ -414,6 +422,12 @@ private List getContainerList(config) {
             }
             containerSpec.ports = ports
         }
+        if (config.resources) {
+            def resources = getResources(imageName, config.resources)
+            if(resources) {
+                containerSpec.resources = resources
+            }
+        }
         result.push(containerSpec)
     }
     if (config.sidecarImage) {
@@ -428,6 +442,14 @@ private List getContainerList(config) {
         result.push(containerSpec)
     }
     return result
+}
+
+private Map getResources(String imageName, Map resources) {
+    Map res = resources.get(imageName)
+    if(! res) {
+        res = resources.get('DEFAULT')
+    }
+    return res
 }
 
 /*
