@@ -298,6 +298,46 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerExecuteOnKubernetesWithSpecificResourcLimitsParametersAreTakingPrecendence() throws Exception {
+
+        // the settings here are expected to be overwritten by the parameters provided via signature
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    mavenexecute: [
+                    requests: [
+                        memory: '2Gi',
+                        cpu: '0.75'
+                    ],
+                    limits: [
+                        memory: '4Gi',
+                        cpu: '2'
+                    ]
+                ]
+            ]
+        ]]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            resources: [
+                    mavenexecute: [
+                    requests: [
+                        memory: '8Gi',
+                        cpu: '2'
+                    ],
+                    limits: [
+                        memory: '16Gi',
+                        cpu: '4'
+                    ]
+                ]
+            ]) {
+                bodyExecuted = true
+            }
+
+        assertEquals(requests: [memory: '8Gi',cpu: '2'],limits: [memory: '16Gi',cpu: '4'], resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testDockerExecuteOnKubernetesWithSpecificResourceLimits() throws Exception {
 
         nullScript.commonPipelineEnvironment.configuration = [general:

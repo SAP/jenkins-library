@@ -34,10 +34,8 @@ import hudson.AbortException
          */
         'inheritFrom',
         /**
-         * A map containing the resource per container. The key is the
-         * container name. The value is a map defining valid resources.
-         * An entry with key `DEFAULT` can be used for defining resources
-         * for all contains which does not have resources specified otherwise.
+         * Alternate way for providing resources (see `resources` property.
+         * The `resources` property takes precedence.
          * @parentConfigKey jenkinsKubernetes
          */
          'resources',
@@ -166,7 +164,15 @@ import hudson.AbortException
      * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
      * @possibleValues `true`, `false`
      */
-    'stashNoDefaultExcludes'
+    'stashNoDefaultExcludes',
+    /**
+     * A map containing the resource per container. The key is the
+     * container name. The value is a map defining valid resources.
+     * An entry with key `DEFAULT` can be used for defining resources
+     * for all contains which does not have resources specified otherwise.
+     * @parentConfigKey jenkinsKubernetes
+     */
+     'resources',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -423,7 +429,7 @@ private List getContainerList(config) {
             containerSpec.ports = ports
         }
         if (config?.jenkinsKubernetes?.resources) {
-            def resources = getResources(containerName, config.jenkinsKubernetes.resources)
+            def resources = getResources(containerName, config)
             if(resources) {
                 containerSpec.resources = resources
             }
@@ -444,7 +450,15 @@ private List getContainerList(config) {
     return result
 }
 
-private Map getResources(String imageName, Map resources) {
+private Map getResources(String imageName, Map config) {
+    Map resources = config.resources
+    if(resources == null) {
+        resources = config?.jenkinsKubernetes.resources
+    }
+    if(resources == null) {
+        System.err << "No resources found at all.\n"
+        return null
+    }
     Map res = resources.get(imageName)
     if(res == null) {
         res = resources.get('DEFAULT')
