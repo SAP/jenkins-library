@@ -422,8 +422,8 @@ private List getContainerList(config) {
             }
             containerSpec.ports = ports
         }
-        if (config.resources) {
-            def resources = getResources(imageName, config.resources)
+        if (config?.jenkinsKubernetes?.resources) {
+            def resources = getResources(containerName, config.jenkinsKubernetes.resources)
             if(resources) {
                 containerSpec.resources = resources
             }
@@ -446,7 +446,7 @@ private List getContainerList(config) {
 
 private Map getResources(String imageName, Map resources) {
     Map res = resources.get(imageName)
-    if(! res) {
+    if(res == null) {
         res = resources.get('DEFAULT')
     }
     return res

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertNull
 
 class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
@@ -64,6 +65,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def securityContext
     def inheritFrom
     def yamlMergeStrategy
+    Map resources =  [:]
     List stashList = []
 
     @Before
@@ -73,6 +75,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         envList = []
         portList = []
         containerCommands = []
+        resources = [:]
         bodyExecuted = false
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         helper.registerAllowedMethod('sh', [Map.class], { return whichDockerReturnValue })
@@ -106,6 +109,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                     containerCommands.add(container.command)
                 }
                 pullImageMap.put(container.image.toString(), container.imagePullPolicy == "Always")
+                resources.put(container.name, container.resources)
             }
             body()
         })
@@ -235,6 +239,98 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
         }
         assertTrue(envList.toString().contains('customEnvKey') && envList.toString().contains('customEnvValue'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesNoResourceLimitsOnEmptyResourcesMap() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    DEFAULT: [
+                        requests: [
+                            memory: '1Gi',
+                            cpu: '0.25'
+                        ],
+                        limits: [
+                            memory: '2Gi',
+                            cpu: '1'
+                        ]
+                    ],
+                    mavenexecute: [:]
+                ]
+            ]
+        ]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'], {
+                bodyExecuted = true
+            })
+
+        assertNull(resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithDefaultResourceLimits() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [DEFAULT: [
+                    requests: [
+                        memory: '1Gi',
+                        cpu: '0.25'
+                    ],
+                    limits: [
+                        memory: '2Gi',
+                        cpu: '1'
+                    ]
+                ]
+            ]
+        ]]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'], {
+                bodyExecuted = true
+            })
+
+        assertEquals(requests: [memory: '1Gi',cpu: '0.25'],limits: [memory: '2Gi',cpu: '1'], resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithSpecificResourceLimits() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    DEFAULT: [
+                        requests: [
+                            memory: '1Gi',
+                            cpu: '0.25'
+                        ],
+                        limits: [
+                            memory: '2Gi',
+                            cpu: '1'
+                        ]
+                    ],
+                    mavenexecute: [
+                    requests: [
+                        memory: '2Gi',
+                        cpu: '0.75'
+                    ],
+                    limits: [
+                        memory: '4Gi',
+                        cpu: '2'
+                    ]
+                ]
+            ]
+        ]]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+                bodyExecuted = true
+            }
+
+        assertEquals(requests: [memory: '2Gi',cpu: '0.75'],limits: [memory: '4Gi',cpu: '2'], resources.mavenexecute)
         assertTrue(bodyExecuted)
     }
 
