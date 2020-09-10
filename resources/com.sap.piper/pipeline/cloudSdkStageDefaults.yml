@@ -5,8 +5,13 @@ stages:
         config:
           pmd:
             - true
+            - 'maxAllowedViolations'
+            - 'failurePriority'
           spotBugs:
             - true
+            - 'excludeFilterFile'
+            - 'includeFilterFile'
+            - 'maxAllowedViolations'
       npmExecuteLint:
         filePattern:
           - '**/*.js'
