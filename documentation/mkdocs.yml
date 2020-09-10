@@ -36,7 +36,7 @@ nav:
                 - 'End to End Tests': stages/acceptance.md
                 - 'Security Stage': stages/security.md
                 - 'Performance Stage': stages/performance.md
-                - 'Artifact Deployment': stages/promote.md
+                - 'Artifact Deployment': stages/artifactDeployment.md
                 - 'Production Deployment': stages/release.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
