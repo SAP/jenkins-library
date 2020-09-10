@@ -164,6 +164,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 // isInOptions returns true, if the given property is already provided in config.Options.
 func isInOptions(config sonarExecuteScanOptions, property string) bool {
+	property = strings.TrimSuffix(property, "=")
 	return SliceUtils.ContainsStringPart(config.Options, property)
 }
 
