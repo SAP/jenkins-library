@@ -55,7 +55,7 @@ void call(Map parameters = [:]) {
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
         stash allowEmpty: true, excludes: '', includes: '**', useDefaultExcludes: false, name: 'INIT'
-        script.commonPipelineEnvironment.configuration.stageStashes[stageName] = [ unstash : ["INIT"]]
+        script.commonPipelineEnvironment.configuration.stageStashes = [ (stageName): [ unstash : ["INIT"]]]
     }
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
