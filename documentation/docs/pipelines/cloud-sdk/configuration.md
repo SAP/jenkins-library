@@ -549,6 +549,15 @@ checkJMeter:
   unstableThreshold: 70
 ```
 
+### executeNpm
+
+The executeNpm step is used for all invocations of the npm build tool. It is, for example, used for building the frontend and for executing end to end tests.
+
+| Property | Mandatory | Default Value | Description |
+| --- | --- | --- | --- |
+| `dockerImage` | | `ppiper/node-browsers:v2` | The image to be used for executing npm commands. |
+| `defaultNpmRegistry` | | | The default npm registry url to be used as the remote mirror. Bypasses the local download cache if specified.  |
+
 ### debugReportArchive
 
 The `debugReportArchive` step can be used to create confidential (instead of redacted) debug reports.
