@@ -97,7 +97,7 @@ In addition to the default checks of those tools, it adds the following SAP Clou
 
 ### Lint
 
-The pipeline automatically checks JavaScript and XML files in SAPUI5 components for the SAPUI5 recommended best practices.
+The pipeline automatically executes linting of JavaScript and Typescript files, either by running a user defined script, or by executing ESLint with a general purpose configuration.
 
 [Custom linters](https://sap.github.io/jenkins-library/extensibility/#practical-example) can be implemented by development teams, if desired.
 

@@ -28,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String xsDeploymentId
 
-    //GiutHub specific information
+    //GitHub specific information
     String githubOrg
     String githubRepo
 
@@ -172,7 +172,7 @@ class commonPipelineEnvironment implements Serializable {
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
         }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:] as Map, null, defaults)
         config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config

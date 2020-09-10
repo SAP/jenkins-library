@@ -12,7 +12,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 'SonarCloud'
+        default: "SonarCloud"
       - name: host
         type: string
         description: The URL to the Sonar backend.
@@ -57,8 +57,7 @@ spec:
           - STEPS
       - name: projectVersion
         type: string
-        description:
-          "The project version that is reported to SonarQube."
+        description: "The project version that is reported to SonarQube."
         scope:
           - PARAMETERS
           - STAGES
@@ -102,7 +101,7 @@ spec:
         description: "Pull-Request only: The scm provider."
         default: GitHub
         possibleValues:
-        - GitHub
+          - GitHub
         scope:
           - PARAMETERS
           - STAGES
