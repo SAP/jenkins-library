@@ -47,10 +47,18 @@ void call(Map parameters = [:]) {
     def utils = parameters.juStabUtils ?: new Utils()
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
+    node(parameters.nodeLabel?:'master') {
+        deleteDir()
+
         def scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+
+        stash allowEmpty: true, excludes: '', includes: '**', useDefaultExcludes: false, name: 'INIT'
+        script.commonPipelineEnvironment.configuration.stageStashes[stageName] = [ unstash : ["INIT"]]
+    }
+
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
