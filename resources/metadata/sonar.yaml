@@ -79,6 +79,23 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: inferJavaBinaries
+        type: bool
+        description: "Find the location of generated Java class files in all modules
+          and pass the option `sonar.java.binaries to the sonar tool."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: inferJavaLibraries
+        type: bool
+        description: "If the parameter `m2Path` is configured for the step `mavenExecute`
+          in the general section of the configuration, pass it as option `sonar.java.libraries`
+          to the sonar tool."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: options
         type: "[]string"
         description: A list of options which are passed to the sonar-scanner.

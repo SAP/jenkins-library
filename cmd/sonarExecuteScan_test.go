@@ -220,7 +220,9 @@ func TestRunSonar(t *testing.T) {
 			doublestarGlob = doublestar.Glob
 			osStat = os.Stat
 		}()
-		options := sonarExecuteScanOptions{}
+		options := sonarExecuteScanOptions{
+			InferJavaBinaries: true,
+		}
 		// test
 		err = runSonar(options, &mockClient, &mockRunner)
 		// assert
@@ -283,7 +285,8 @@ func TestRunSonar(t *testing.T) {
 		}
 		options := sonarExecuteScanOptions{
 			ProjectKey:         "mock-project-key",
-			M2Path:             "my/custom/m2",
+			M2Path:             "my/custom/m2", // assumed to be resolved via alias from mavenExecute
+			InferJavaLibraries: true,
 			CoverageExclusions: []string{"one", "**/two", "three**"},
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
