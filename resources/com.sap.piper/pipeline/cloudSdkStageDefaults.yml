@@ -2,7 +2,11 @@ stages:
   build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
-        filePattern: 'pom.xml'
+        config:
+          pmd:
+            - true
+          spotBugs:
+            - true
       npmExecuteLint:
         filePattern:
           - '**/*.js'
