@@ -178,7 +178,7 @@ func TestRunSonar(t *testing.T) {
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		globMatches := make(map[string][]string)
-		globMatches[jacocoReportGlob] = []string{"target/site/jacoco.xml", "application/target/site/jacoco.xml"}
+		globMatches[jacocoReportPattern] = []string{"target/site/jacoco.xml", "application/target/site/jacoco.xml"}
 		doublestarGlob = mockGlob(globMatches)
 		defer func() {
 			fileUtilsExists = FileUtils.FileExists
@@ -207,7 +207,7 @@ func TestRunSonar(t *testing.T) {
 		fileUtilsExists = mockFileUtilsExists(true)
 
 		globMatches := make(map[string][]string)
-		globMatches["**/pom.xml"] = []string{"pom.xml", "application/pom.xml"}
+		globMatches[pomXMLPattern] = []string{"pom.xml", "application/pom.xml"}
 		doublestarGlob = mockGlob(globMatches)
 
 		existsMap := make(map[string]bool)
@@ -247,7 +247,7 @@ func TestRunSonar(t *testing.T) {
 		fileUtilsExists = mockFileUtilsExists(true)
 
 		globMatches := make(map[string][]string)
-		globMatches["**/pom.xml"] = []string{"pom.xml"}
+		globMatches[pomXMLPattern] = []string{"pom.xml"}
 		doublestarGlob = mockGlob(globMatches)
 
 		existsMap := make(map[string]bool)

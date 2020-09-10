@@ -53,7 +53,8 @@ const (
 	javaBinaries        = "sonar.java.binaries="
 	javaLibraries       = "sonar.java.libraries="
 	coverageExclusions  = "sonar.coverage.exclusions="
-	jacocoReportGlob    = "**/target/**/jacoco.xml"
+	pomXMLPattern       = "**/pom.xml"
+	jacocoReportPattern = "**/target/**/jacoco.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
@@ -167,7 +168,7 @@ func isInOptions(config sonarExecuteScanOptions, property string) bool {
 }
 
 func addJacocoReportPaths() {
-	matches, err := doublestarGlob(jacocoReportGlob)
+	matches, err := doublestarGlob(jacocoReportPattern)
 	if err != nil {
 		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
 		return
@@ -178,7 +179,7 @@ func addJacocoReportPaths() {
 }
 
 func addJavaBinaries() {
-	pomFiles, err := doublestarGlob("**/pom.xml")
+	pomFiles, err := doublestarGlob(pomXMLPattern)
 	if err != nil {
 		log.Entry().Warnf("failed to glob for pom modules: %v", err)
 		return
