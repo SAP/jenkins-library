@@ -138,7 +138,7 @@ If you have multiple npm packages with unit tests the names of the report files 
 
 #### Lint
 
-For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed in this stage.
+For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed as part of the `build` stage.
 The required format of the linting results is the checkstyle format as an `xml` file.
 The linting results have to be stored in a file named `*cilint.xml`, which may reside in any directory of the project.
 The linting results will then be published in Jenkins.

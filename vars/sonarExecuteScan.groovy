@@ -52,8 +52,6 @@ void call(Map parameters = [:]) {
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
                 environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
-            } else if (!isProductiveBranch(script)) {
-                environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
             try {
                 // load certificates into cacerts file
@@ -98,11 +96,6 @@ private void checkMandatoryParameter(config, key){
 
 private Boolean isPullRequest(){
     return env.CHANGE_ID
-}
-
-private Boolean isProductiveBranch(Script script) {
-    def productiveBranch = script.commonPipelineEnvironment?.getStepConfiguration('', '')?.productiveBranch
-    return env.BRANCH_NAME == productiveBranch
 }
 
 private void loadCertificates(Map config) {
