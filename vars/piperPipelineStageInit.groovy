@@ -46,11 +46,12 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
-
+    def scmInfo
+    
     node(parameters.nodeLabel?:'master') {
         deleteDir()
 
-        def scmInfo = checkout scm
+        scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
