@@ -60,7 +60,22 @@ The communication to the ABAP system is done using a Communication Arrangement. 
 
 Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/) for more details.
 
-## 5. Configuration for ATC
+## 5. Configuration for Cloning the repositories
+
+If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switch on. The `repositoriesFilesNames` flag makes use of such a configuration file and helps executing a Pull and checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
+
+```yml
+- name: '/DMO/GIT_REPOSITORY'
+  branch: 'master'
+- name: '/DMO/GIT_REPO'
+  branch: 'master'
+```
+
+Please note that in case that you have specified the `Prepare System` Stage that this stage will be skipped. This due to the use of the abapEnvironmentCloneGitRepo in `Prepare System` Stage which makes the `Clone Repositories` Stage obsolete.
+
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) for more details.
+
+## 6. Configuration for ATC
 
 Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
 
@@ -72,7 +87,7 @@ atcobjects:
 
 Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) for more details.
 
-## 6. Technical Pipeline Configuration
+## 7. Technical Pipeline Configuration
 
 Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
 
@@ -89,7 +104,7 @@ stages:
     cfServiceManifest: 'manifest.yml'
     cfServiceKeyConfig: 'sap_com_0510.json'
   Clone Repositories:
-    repositoryNames: ['/DMO/REPO']
+    repositoryNamesFiles: ['repositories.yml']
   ATC:
     atcConfig: 'atcConfig.yml'
 steps:
@@ -103,7 +118,7 @@ Please make sure the parameters align with the values defined in the other confi
 
 The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP Cloud Platform Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
 
-## 7. Create a Jenkins Pipeline
+## 8. Create a Jenkins Pipeline
 
 On your Jenkinsserver click on `New Item` to create a new pipeline. Provide a name and select the type `Pipeline`.
 On the creation screen for the pipeline, scroll to the section `Pipeline` and select `Pipeline script from SCM`. Provide the URL (and credentials - if required) of the repository, in which you configured the pipeline. Make sure the `Script Path` points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
