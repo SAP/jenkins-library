@@ -26,26 +26,36 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Prepare System'
+        binding.variables.env.STAGE_NAME = 'Clone Repositories'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
-            assertThat(m.stageName, is('Prepare System'))
+            assertThat(m.stageName, is('Clone Repositories'))
             return body()
         })
         helper.registerAllowedMethod('input', [Map], {m -> return null})
-        helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
-        helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
-        helper.registerAllowedMethod('abapEnvironmentCloneGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentCloneGitRepo')})
+        helper.registerAllowedMethod('abapEnvironmentPullGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentPullGitRepo')})
+        helper.registerAllowedMethod('abapEnvironmentCheckoutBranch', [Map.class], {m -> stepsCalled.add('abapEnvironmentCheckoutBranch')})
     }
 
     @Test
-    void testAbapEnvironmentPipelineStagePrepareSystemExecuted() {
+    void testAbapEnvironmentPipelineStageCloneRepositoriesExecuted() {
+
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': false
+        ]
+        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
+
+        assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
+    }
+
+    @Test
+    void testAbapEnvironmentPipelineStageCloneRepositoriesNotExecuted() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
 
-        assertThat(stepsCalled, hasItems('cloudFoundryCreateService', 'cloudFoundryCreateServiceKey', 'abapEnvironmentCloneGitRepo'))
+        assertThat(stepsCalled, not(hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch')))
     }
 }
