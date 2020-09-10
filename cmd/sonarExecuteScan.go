@@ -187,12 +187,16 @@ func addJavaBinaries() {
 	}
 	var binaries []string
 
+	var classesDirs = []string{"classes", "test-classes"}
+
 	for _, pomFile := range pomFiles {
 		module := filepath.Dir(pomFile)
-		classesPath := filepath.Join(module, "target", "classes")
-		_, err := osStat(classesPath)
-		if err == nil {
-			binaries = append(binaries, classesPath)
+		for _, classDir := range classesDirs {
+			classesPath := filepath.Join(module, "target", classDir)
+			_, err := osStat(classesPath)
+			if err == nil {
+				binaries = append(binaries, classesPath)
+			}
 		}
 	}
 	if len(binaries) > 0 {

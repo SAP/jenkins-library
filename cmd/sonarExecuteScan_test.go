@@ -212,6 +212,7 @@ func TestRunSonar(t *testing.T) {
 
 		existsMap := make(map[string]bool)
 		existsMap[filepath.Join("target", "classes")] = true
+		existsMap[filepath.Join("target", "test-classes")] = true
 		existsMap[filepath.Join("application", "target", "classes")] = true
 		osStat = mockOsStat(existsMap)
 
@@ -227,8 +228,9 @@ func TestRunSonar(t *testing.T) {
 		err = runSonar(options, &mockClient, &mockRunner)
 		// assert
 		assert.NoError(t, err)
-		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s",
+		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
 			filepath.Join("target", "classes"),
+			filepath.Join("target", "test-classes"),
 			filepath.Join("application", "target", "classes")))
 	})
 	t.Run("with binaries option already given", func(t *testing.T) {
@@ -260,7 +262,8 @@ func TestRunSonar(t *testing.T) {
 			osStat = os.Stat
 		}()
 		options := sonarExecuteScanOptions{
-			Options: []string{"-Dsonar.java.binaries=user/provided"},
+			Options:           []string{"-Dsonar.java.binaries=user/provided"},
+			InferJavaBinaries: true,
 		}
 		// test
 		err = runSonar(options, &mockClient, &mockRunner)
