@@ -1,20 +1,5 @@
 # SAP Cloud SDK Pipeline Configuration
 
-The SAP Cloud SDK Pipeline can be configured via the `.pipeline/config.yml` file, which needs to reside in the root of a project.
-To adjust the SAP Cloud SDK Pipeline to your project's needs, it can be customized on multiple levels. This comprises:
-
-* the general configuration on the project level,
-* the stage level configurations to set configuration values for specific stages,
-* the step configurations to set default values for steps,
-* and the post action configurations to configure post-build behavior.
-
-If a property is configured in a step as well as the stage level, the stage level value takes precedence.
-
-## customDefaults
-
-Custom default configurations are user defined default pipeline configurations and can be used to share common configuration among different projects.
-For more information on how to configure custom default configurations, please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/configuration/#custom-default-configuration).
-
 ## General configuration
 
 | Property | Mandatory | Default Value | Description |
@@ -523,126 +508,8 @@ Also, the stage (and thus an extension) is only executed if a stage configuratio
 
 ## Step configuration
 
-### artifactPrepareVersion
-
-The pipeline can be configured to store release candidates in a Nexus repository after they passed all stages successfully.
-By default, the pipeline will perform automatic versioning of artifacts via the step `artifactPrepareVersion`.
-This ensures that multiple builds of a continuously delivered application do not lead to version collisions in Nexus.
-If you are not building a continuously delivered application, you will typically disable automatic versioning.
-To do this, set the value of the parameter `versioningType` to the value `library`.
-Architectural details can be found in [automatic-release.md](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/architecture/decisions/automatic-release.md).
-
-Example:
-
-```yaml
-steps:
-  artifactPrepareVersion:
-    versioningType: library
-```
-
-For more information on how to configure this step, please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/steps/artifactPrepareVersion/).
-
-### mavenExecute
-
-The mavenExecute step is used for all invocations of the mvn build tool. It is either used directly for executing specific maven phases such as `test`, or indirectly for steps that execute maven plugins such as `checkPmd`.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `maven:3.6.1-jdk-8-alpine` | The image to be used for executing maven commands. Please note that at least maven 3.6.0 is required. |
-| `projectSettingsFile` | | | The project settings.xml to be used for maven builds. You can specify a relative path to your project root or a URL starting with http or https. |
-
-### mavenExecuteStaticCodeChecks
-
-The mavenExecuteStaticCodeChecks step executes static code checks for maven based projects. The tools SpotBugs and PMD are used. For more information on how to configure this step please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
-
-### executeNpm
-
-The executeNpm step is used for all invocations of the npm build tool. It is, for example, used for building the frontend and for executing end to end tests.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `ppiper/node-browsers:v2` | The image to be used for executing npm commands. |
-| `defaultNpmRegistry` | | | The default npm registry url to be used as the remote mirror. Bypasses the local download cache if specified.  |
-
-### cloudFoundryDeploy
-
-A step configuration regarding Cloud Foundry deployment. This is required by stages like end-to-end tests, performance tests, and production deployment.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `ppiper/cf-cli` | A docker image that contains the Cloud Foundry CLI |
-| `smokeTestStatusCode` | | `200` | Expected return code for smoke test success. |
-|`keepOldInstance`| | true | In case of a `blue-green` deployment the old instance will be stopped and will remain in the Cloud Foundry space by default. If this option is set to false, the old instance will be deleted. |
-|`cloudFoundry`| | | A map specifying the Cloud Foundry specific parameters. |
-
-The following parameters can be configured for the Cloud Foundry environment.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `org` | X** | | The organization where you want to deploy your app |
-| `space` | X** | | The space where you want to deploy your app |
-| `appName` | X** (not for MTA) |  | Name of the application. |
-| `manifest` | X** (not for MTA) |  | Manifest file that needs to be used. |
-| `credentialsId` | X** |  | ID to the credentials that will be used to connect to the Cloud Foundry account. |
-| `apiEndpoint` | | `https://api.cf.eu10.hana.ondemand.com` | URL to the Cloud Foundry endpoint. |
-| `mtaDeployParameters` | | | (**Only for MTA-projects**) Parameters which will be passed to the mta deployment |
-| `mtaExtensionDescriptor` | | | (**Only for MTA-projects**) Path to the mta extension description file. For more information on how to use those extension files please visit the [SAP HANA Developer Guide](https://help.sap.com/viewer/4505d0bdaf4948449b7f7379d24d0f0d/2.0.02/en-US/51ac525c78244282919029d8f5e2e35d.html). |
-
-** Mandatory only if not defined within stage property cfTargets individually for the corresponding stages.
-
-Example:
-
-```yaml
-cloudFoundryDeploy:
-  dockerImage: 'ppiper/cf-cli'
-  smokeTestStatusCode: '200'
-  cloudFoundry:
-    org: 'orgname'
-    space: 'spacename'
-    appName: 'exampleapp'
-    manifest: 'manifest.yml'
-    credentialsId: 'CF-DEPLOY'
-    apiEndpoint: '<Cloud Foundry API endpoint>'
-```
-
-### neoDeploy
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `ppiper/neo-cli` | A docker image that contains the Neo CLI. Example value: `ppiper/neo-cli` |
-| `neo` | X | | A map containing the configuration relevant for the deployment to Neo as listed below |
-
-Please note that the neo tools are distributed under the [SAP DEVELOPER LICENSE](https://tools.hana.ondemand.com/developer-license-3_1.txt).
-
-The map for `neo` can contain the following parameters:
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `host` | X | | Host of the region you want to deploy to, see [Regions](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/350356d1dc314d3199dca15bd2ab9b0e.html#loio350356d1dc314d3199dca15bd2ab9b0e)|
-| `account` | X | | Identifier of the subaccount|
-| `application` | X | | Name of the application in your account |
-| `credentialsId` | | `CI_CREDENTIALS_ID` | ID of the credentials stored in Jenkins and used to deploy to SAP Cloud Platform |
-| `environment` | | | Map of environment variables in the form of KEY: VALUE|
-| `vmArguments` | | | String of VM arguments passed to the JVM|
-| `size`| | `lite` | Size of the JVM, e.g. `lite`, `pro`, `prem`, `prem-plus` |
-| `runtime` | X | | Name of the runtime: neo-java-web, neо-javaee6-wp, neо-javaee7-wp. See the [runtime](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/937db4fa204c456f9b7820f83bc87118.html) for more information.|
-| `runtimeVersion` | X | | Version of the runtime. See [runtime-version](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/937db4fa204c456f9b7820f83bc87118.html) for more information.|
-
-Example:
-
-```yaml
-neoDeploy:
-  neo:
-  - host: 'eu1.hana.ondemand.com'
-    account: 'myAccount'
-    application: 'exampleapp'
-    credentialsId: 'NEO-DEPLOY-PROD'
-    environment:
-      STAGE: Production
-    vmArguments: '-Dargument1=value1 -Dargument2=value2'
-    runtime: 'neo-javaee6-wp'
-    runtimeVersion: '2'
-```
+This section describes the steps that are avialable only in SAP Cloud SDK Pipeline.
+For common project "Piper" steps, please see the _Library steps_ section of the documentation.
 
 ### checkGatling
 
@@ -681,30 +548,6 @@ checkJMeter:
   failThreshold : 80
   unstableThreshold: 70
 ```
-
-### detectExecuteScan
-
-To activate a Synopsys Detect Scan, the step `detectExecuteScan` has to be configured in the steps section.
-Please visit the project "Piper" [documentation](https://sap.github.io/jenkins-library/steps/detectExecuteScan/) for the configuration options of this step.
-
-### fortifyExecuteScan
-
-The configuration of the step fortifyExecuteScan is explained in the project "Piper" [documentation](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/).
-
-### mtaBuild
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `ppiper/mta-archive-builder` | Docker image including Multi-target Application Archive Builder. The default image is `ppiper/mta-archive-builder` for mtaBuildTool `classic`. And it takes `devxci/mbtci:1.0.4` as a default image for mtaBuildTool `cloudMbt`. |
-| `mtaBuildTool` | | `cloudMbt` | Choose which tool is used to build your mta project. The default option is `cloudMbt` which is not backwards compatible with the `classic` tool. For more information on migrating from `classic` to `cloudMbt`, please refer to [the Cloud MTA Build Tool docs on the topic of "migration"](https://sap.github.io/cloud-mta-build-tool/migration/). |
-
-All configuration parameters as stated in [jenkins-library documentation](https://sap.github.io/jenkins-library/steps/mtaBuild/) are available.
-
-### tmsUpload
-
-The `tmsUpload` step can be used to upload your app during the production deployment stage using SAP Cloud Platform Transport Management.
-If the step is configured, SAP Cloud Platform Transport Management upload will be executed in the production deployment stage.
-Further information can be found in the [project "Piper" documentation](https://sap.github.io/jenkins-library/steps/tmsUpload/).
 
 ### debugReportArchive
 
