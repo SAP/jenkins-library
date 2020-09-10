@@ -68,7 +68,8 @@ general:
 
 ### staticCodeChecks
 
-The configuration of the stage has been moved to the step [mavenExecuteStaticCodeChecks](#mavenExecuteStaticCodeChecks). For more information on how to configure this step please refer to the documentation in [project "Piper"](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
+The `staticCodeChecks` stage has been integrated into the `build` stage.
+To configure static code checks, please configure the step `mavenExecuteStaticCodeChecks` as described [here](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
 
 ### backendIntegrationTests
 
@@ -471,45 +472,10 @@ The stage is executed in the productive branch when the parameter `fortifyCreden
 
 ### lint
 
-The lint stage can enforce common coding guidelines within a team.
+The `lint` stage has been integrated into the `build` stage.
+The options for the use of linting tools remain the same and are described in the [build tools section](https://sap.github.io/jenkins-library/pipelines/cloud-sdk/build-tools/#lint).
 
-It provides several options for the use of linting tools.
-The user can define a custom linting script by providing a script called `ci-lint` in any `package.json` file of the project.
-
-If no custom linter is configured, and the project has SAPUI5 components, it makes use of the SAPUI5 best practices linter.
-A component is identified by a `Component.js` file in the directory.
-
-If no custom linter is configured, and the project has no SAPUI5 components, the pipeline uses a general purpose configuration to lint Javascript and/or Typescript files in the project.
-By default, the pipeline does not fail based on lint findings.
-If it is required, the pipeline can be configured to fail based on lint findings, using the `failOnError` configuration option.
-The goal of this lint is to warn of potential errors without insisting on any programming style.
-If you're not satisfied by the default configuration, you can opt-out using that by providing your [own configuration file](https://eslint.org/docs/user-guide/configuring) in your project.
-More details can be found in the [pipeline documentation](https://sap.github.io/jenkins-library/pipelines/cloud-sdk/build-tools/#lint).
-
-Note, the available configuration options when using a custom linting script or when relying on the default linting of the pipeline can be found in the [pipeline documentation](https://sap.github.io/jenkins-library/steps/npmExecuteLint/#parameters).
-These options should be provided as step configuration for the `npmExecuteLint` step.
-
-The configuration for the SAPUI5 best practices linter needs to be placed under `ui5BestPractices` in the Lint stage configuration in `.pipeline/config.yml`.
-
-The following example shows how to enable thresholds for linting, in case the built-in SAPUI5 best practices linter is used:
-
-```yaml
-lint:
-  ui5BestPractices:
-    esLanguageLevel: es2020
-    failThreshold:
-      error: 3
-      warning: 5
-      info: 7
-```
-
-Modern JavaScript language features are not supported by default in the SAPUI5 best practices linter.
-To set a specific level, set `esLanguageLevel` to `es6`, `es2017` (equal to ES8) or `es2020` (equal to ES11).
-See ["Specifying Environments" in the ESLint docs](https://eslint.org/docs/user-guide/configuring#specifying-environments) for background on the related ESLint settings.
-
-Note: In former versions a flag `enableES6` was provided.
-This is is deprecated in favor of `esLanguageLevel` which is more flexible.
-To get the same, please configure `esLanguageLevel: es6`.
+Note, the available configuration options can be found in the related [step documentation](https://sap.github.io/jenkins-library/steps/npmExecuteLint/#parameters).
 
 ### sonarQubeScan
 
