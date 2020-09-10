@@ -84,6 +84,7 @@ nav:
         - malwareExecuteScan: steps/malwareExecuteScan.md
         - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteIntegration: steps/mavenExecuteIntegration.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
