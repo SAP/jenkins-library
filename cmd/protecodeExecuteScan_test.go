@@ -150,13 +150,13 @@ func TestRunProtecodeScan(t *testing.T) {
 	t.Run("With tar as scan image", func(t *testing.T) {
 		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
-		assert.Nil(t, err, "There should be no Error")
+		assert.NoError(t, err)
 	})
 
 	t.Run("Without tar as scan image", func(t *testing.T) {
 		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", FilePath: path, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
-		assert.Nil(t, err, "There should be no Error")
+		assert.NoError(t, err)
 	})
 
 }
@@ -407,4 +407,34 @@ func TestCorrectDockerConfigEnvVar(t *testing.T) {
 		assert.Equal(t, resetValue, os.Getenv("DOCKER_CONFIG"))
 		assert.EqualError(t, err, "the Docker credential config file doesn't exist")
 	})
+}
+
+func TestGetTarName(t *testing.T) {
+	cases := map[string]struct {
+		image   string
+		version string
+		expect  string
+	}{
+		"with version suffix": {
+			"com.sap.piper/sample-k8s-app-multistage:1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
+			"1.11-20200902040158_97a5cc34f1796ad735159f020dd55c0f3670a4cb",
+			"com.sap.piper_sample-k8s-app-multistage_1.tar",
+		},
+		"without version suffix": {
+			"abc",
+			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
+			"abc_3.tar",
+		},
+		"without version ": {
+			"abc",
+			"",
+			"abc.tar",
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))
+		})
+	}
 }
