@@ -24,7 +24,7 @@ require (
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/google/go-cmp v0.5.2
 	github.com/google/go-containerregistry v0.1.2
-	github.com/google/go-github/v28 v28.1.1
+	github.com/google/go-github/v32 v32.1.1-0.20200822031254-5f5296864910
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.7 // indirect
