@@ -73,18 +73,6 @@ spec:
           - STAGES
           - STEPS
         type: int
-      - name: serverUrl
-        aliases:
-          - name: githubServerUrl
-        description: GitHub server url for end-user access.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        default: https://github.com
-        mandatory: true
       - name: token
         aliases:
           - name: githubToken

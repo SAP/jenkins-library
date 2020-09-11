@@ -21,7 +21,6 @@ type githubCheckBranchProtectionOptions struct {
 	RequiredChecks               []string `json:"requiredChecks,omitempty"`
 	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty"`
 	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty"`
-	ServerURL                    string   `json:"serverUrl,omitempty"`
 	Token                        string   `json:"token,omitempty"`
 }
 
@@ -90,14 +89,12 @@ func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubC
 	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to required in the GitHub repository configuration.")
 	cmd.Flags().BoolVar(&stepConfig.RequireEnforceAdmins, "requireEnforceAdmins", false, "Check if 'Include Administrators' option is set in the GitHub repository configuration.")
 	cmd.Flags().IntVar(&stepConfig.RequiredApprovingReviewCount, "requiredApprovingReviewCount", 0, "Check if 'Require pull request reviews before merging' option is set with at least the defined number of reviewers in the GitHub repository configuration.")
-	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url for end-user access.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
 	cmd.MarkFlagRequired("branch")
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
-	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("token")
 }
 
@@ -166,14 +163,6 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "serverUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
 						Name:        "token",
