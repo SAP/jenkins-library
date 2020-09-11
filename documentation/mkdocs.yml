@@ -31,11 +31,11 @@ nav:
             - 'Configuration': pipelines/cloud-sdk/configuration.md
             - 'Stages':
                 - 'Build and Test': stages/build.md
-                - 'Frontend Unit Tests': stages/additionalunittests.md
-                - 'Backend and Frontend Integration Tests': stages/integration.md
+                - 'Additional Unit Tests': stages/additionalunittests.md
+                - 'Integration Tests': stages/integration.md
                 - 'End to End Tests': stages/acceptance.md
-                - 'Security Stage': stages/security.md
-                - 'Performance Stage': stages/performance.md
+                - 'Security': stages/security.md
+                - 'Performance': stages/performance.md
                 - 'Production Deployment': stages/release.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
