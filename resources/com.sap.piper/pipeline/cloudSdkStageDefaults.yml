@@ -2,6 +2,7 @@ stages:
   build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
+        filePattern: 'pom.xml'
         config:
           pmd:
             - true
