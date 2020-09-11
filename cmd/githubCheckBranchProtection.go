@@ -24,7 +24,7 @@ func githubCheckBranchProtection(config githubCheckBranchProtectionOptions, tele
 	}
 }
 
-func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData, ghRepositoriesService piperGithub.GithubRepositoriesService) error {
+func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData, ghRepositoriesService piperGithub.RepositoriesService) error {
 	ghProtection, _, err := ghRepositoriesService.GetBranchProtection(ctx, config.Owner, config.Repository, config.Branch)
 	if err != nil {
 		return errors.Wrap(err, "failed to read branch protection information")

@@ -24,7 +24,7 @@ func githubSetCommitStatus(config githubSetCommitStatusOptions, telemetryData *t
 	}
 }
 
-func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService piperGithub.GithubRepositoriesService) error {
+func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService piperGithub.RepositoriesService) error {
 	status := github.RepoStatus{State: &config.Status, TargetURL: &config.TargetURL}
 	_, _, err := ghRepositoriesService.CreateStatus(ctx, config.Owner, config.Repository, config.CommitID, &status)
 	if err != nil {

@@ -7,8 +7,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// GithubRepositoriesService provides interface for testing
-type GithubRepositoriesService interface {
+// RepositoriesService provides interface for testing
+type RepositoriesService interface {
 	CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 	GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error)
 }
