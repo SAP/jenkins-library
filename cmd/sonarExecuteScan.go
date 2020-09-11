@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -32,14 +33,29 @@ func (s *sonarSettings) addEnvironment(element string) {
 	s.environment = append(s.environment, element)
 }
 
-func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
+func (s *sonarSettings) addOption(element string) {
+	s.options = append(s.options, element)
+}
 
-var sonar sonarSettings
+var (
+	sonar sonarSettings
 
-var execLookPath = exec.LookPath
-var fileUtilsExists = FileUtils.FileExists
-var fileUtilsUnzip = FileUtils.Unzip
-var osRename = os.Rename
+	execLookPath    = exec.LookPath
+	fileUtilsExists = FileUtils.FileExists
+	fileUtilsUnzip  = FileUtils.Unzip
+	osRename        = os.Rename
+	osStat          = os.Stat
+	doublestarGlob  = doublestar.Glob
+)
+
+const (
+	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
+	javaBinaries        = "sonar.java.binaries="
+	javaLibraries       = "sonar.java.libraries="
+	coverageExclusions  = "sonar.coverage.exclusions="
+	pomXMLPattern       = "**/pom.xml"
+	jacocoReportPattern = "**/target/**/jacoco.xml"
+)
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
@@ -83,6 +99,21 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ProjectVersion) > 0 {
 		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
 		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+	}
+	if len(config.ProjectKey) > 0 {
+		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
+	}
+	if len(config.M2Path) > 0 && config.InferJavaLibraries {
+		sonar.addOption(javaLibraries + filepath.Join(config.M2Path, "**"))
+	}
+	if len(config.CoverageExclusions) > 0 && !isInOptions(config, coverageExclusions) {
+		sonar.addOption(coverageExclusions + strings.Join(config.CoverageExclusions, ","))
+	}
+	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
+		addJavaBinaries()
+	}
+	if !isInOptions(config, coverageReportPaths) {
+		addJacocoReportPaths()
 	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -129,6 +160,48 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 	}
 	return nil
+}
+
+// isInOptions returns true, if the given property is already provided in config.Options.
+func isInOptions(config sonarExecuteScanOptions, property string) bool {
+	property = strings.TrimSuffix(property, "=")
+	return SliceUtils.ContainsStringPart(config.Options, property)
+}
+
+func addJacocoReportPaths() {
+	matches, err := doublestarGlob(jacocoReportPattern)
+	if err != nil {
+		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
+		return
+	}
+	if len(matches) > 0 {
+		sonar.addOption(coverageReportPaths + strings.Join(matches, ","))
+	}
+}
+
+func addJavaBinaries() {
+	pomFiles, err := doublestarGlob(pomXMLPattern)
+	if err != nil {
+		log.Entry().Warnf("failed to glob for pom modules: %v", err)
+		return
+	}
+	var binaries []string
+
+	var classesDirs = []string{"classes", "test-classes"}
+
+	for _, pomFile := range pomFiles {
+		module := filepath.Dir(pomFile)
+		for _, classDir := range classesDirs {
+			classesPath := filepath.Join(module, "target", classDir)
+			_, err := osStat(classesPath)
+			if err == nil {
+				binaries = append(binaries, classesPath)
+			}
+		}
+	}
+	if len(binaries) > 0 {
+		sonar.addOption(javaBinaries + strings.Join(binaries, ","))
+	}
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {
