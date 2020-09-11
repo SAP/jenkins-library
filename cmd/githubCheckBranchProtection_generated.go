@@ -83,7 +83,7 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 
 func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubCheckBranchProtectionOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
-	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "The name of the branch for which the ptrotection settings should be checked.")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "The name of the branch for which the protection settings should be checked.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to required in the GitHub repository configuration.")
