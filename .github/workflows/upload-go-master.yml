@@ -25,6 +25,6 @@ jobs:
           stat --printf="File size of piper_master in bytes: %s\n" piper_master
       - uses: SAP/project-piper-action@master
         with:
-          piper-version: master
+          piper-version: latest
           command: githubPublishRelease
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
