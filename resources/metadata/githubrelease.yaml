@@ -79,7 +79,7 @@ spec:
       - name: owner
         aliases:
           - name: githubOrg
-        description: Name of the GitHub organization.
+        description: "Set the GitHub organization."
         resourceRef:
           - name: commonPipelineEnvironment
             param: github/owner
@@ -107,7 +107,7 @@ spec:
       - name: repository
         aliases:
           - name: githubRepo
-        description: Name of the GitHub repository.
+        description: "Set the GitHub repository."
         resourceRef:
           - name: commonPipelineEnvironment
             param: github/repository

@@ -58,7 +58,7 @@ spec:
       - name: owner
         aliases:
           - name: githubOrg
-        description: Name of the GitHub organization.
+        description: Set the GitHub organization.
         scope:
           - PARAMETERS
           - STAGES
@@ -68,7 +68,7 @@ spec:
       - name: repository
         aliases:
           - name: githubRepo
-        description: Name of the GitHub repository.
+        description: Set the GitHub repository.
         scope:
           - PARAMETERS
           - STAGES
