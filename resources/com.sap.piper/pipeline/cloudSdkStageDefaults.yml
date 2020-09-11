@@ -3,17 +3,6 @@ stages:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
-        config:
-          pmd:
-            - true
-          spotBugs:
-            - true
-        configKeys:
-          - 'pmd/maxAllowedViolations'
-          - 'pmd/failurePriority'
-          - 'spotBugs/excludeFilterFile'
-          - 'spotBugs/includeFilterFile'
-          - 'spotBugs/maxAllowedViolations'
       npmExecuteLint:
         filePattern:
           - '**/*.js'
