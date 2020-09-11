@@ -6,16 +6,11 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v32/github"
 
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
-
-type githubRepositoriesService interface {
-	GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error)
-}
 
 func githubCheckBranchProtection(config githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData) {
 	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "")
@@ -29,7 +24,7 @@ func githubCheckBranchProtection(config githubCheckBranchProtectionOptions, tele
 	}
 }
 
-func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData, ghRepositoriesService githubRepositoriesService) error {
+func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData, ghRepositoriesService piperGithub.GithubRepositoriesService) error {
 	ghProtection, _, err := ghRepositoriesService.GetBranchProtection(ctx, config.Owner, config.Repository, config.Branch)
 	if err != nil {
 		return errors.Wrap(err, "failed to read branch protection information")

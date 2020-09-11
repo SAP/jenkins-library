@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type ghRepoService struct {
+type ghSetCommitRepoService struct {
 	serviceError error
 	owner        string
 	ref          string
@@ -19,7 +19,7 @@ type ghRepoService struct {
 	status       *github.RepoStatus
 }
 
-func (g *ghRepoService) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
+func (g *ghSetCommitRepoService) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
 	g.owner = owner
 	g.repo = repo
 	g.ref = ref
@@ -28,13 +28,17 @@ func (g *ghRepoService) CreateStatus(ctx context.Context, owner, repo, ref strin
 	return nil, nil, g.serviceError
 }
 
+func (g *ghSetCommitRepoService) GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error) {
+	return nil, nil, nil
+}
+
 func TestRunGithubSetCommitStatus(t *testing.T) {
 	ctx := context.Background()
 	telemetryData := telemetry.CustomData{}
 
 	t.Run("success case", func(t *testing.T) {
 		config := githubSetCommitStatusOptions{CommitID: "testSha", Owner: "testOrg", Repository: "testRepo", Status: "success", TargetURL: "https://test.url"}
-		ghRepo := ghRepoService{}
+		ghRepo := ghSetCommitRepoService{}
 		err := runGithubSetCommitStatus(ctx, &config, &telemetryData, &ghRepo)
 		expectedStatus := github.RepoStatus{State: &config.Status, TargetURL: &config.TargetURL}
 		assert.NoError(t, err)
@@ -46,7 +50,7 @@ func TestRunGithubSetCommitStatus(t *testing.T) {
 
 	t.Run("error calling GitHub", func(t *testing.T) {
 		config := githubSetCommitStatusOptions{CommitID: "testSha", Owner: "testOrg", Repository: "testRepo", Status: "pending"}
-		ghRepo := ghRepoService{serviceError: fmt.Errorf("gh test error")}
+		ghRepo := ghSetCommitRepoService{serviceError: fmt.Errorf("gh test error")}
 		err := runGithubSetCommitStatus(ctx, &config, &telemetryData, &ghRepo)
 		assert.EqualError(t, err, "failed to set status 'pending' on commitId 'testSha': gh test error")
 	})

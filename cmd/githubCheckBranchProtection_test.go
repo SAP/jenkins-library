@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type ghRepoService struct {
+type ghCheckBranchRepoService struct {
 	protection   github.Protection
 	serviceError error
 	owner        string
@@ -19,12 +19,16 @@ type ghRepoService struct {
 	branch       string
 }
 
-func (g *ghRepoService) GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error) {
+func (g *ghCheckBranchRepoService) GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error) {
 	g.owner = owner
 	g.repo = repo
 	g.branch = branch
 
 	return &g.protection, nil, g.serviceError
+}
+
+func (g *ghCheckBranchRepoService) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
+	return nil, nil, nil
 }
 
 func TestRunGithubCheckBranchProtection(t *testing.T) {
@@ -33,7 +37,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 
 	t.Run("no checks active", func(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{Branch: "testBranch", Owner: "testOrg", Repository: "testRepo"}
-		ghRepo := ghRepoService{}
+		ghRepo := ghCheckBranchRepoService{}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
 		assert.NoError(t, err)
 		assert.Equal(t, config.Branch, ghRepo.branch)
@@ -43,7 +47,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 
 	t.Run("error calling GitHub", func(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{Branch: "testBranch", Owner: "testOrg", Repository: "testRepo"}
-		ghRepo := ghRepoService{serviceError: fmt.Errorf("gh test error")}
+		ghRepo := ghCheckBranchRepoService{serviceError: fmt.Errorf("gh test error")}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
 		assert.EqualError(t, err, "failed to read branch protection information: gh test error")
 	})
@@ -57,7 +61,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 			RequireEnforceAdmins:         true,
 			RequiredApprovingReviewCount: 1,
 		}
-		ghRepo := ghRepoService{protection: github.Protection{
+		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
 			RequiredStatusChecks:       &github.RequiredStatusChecks{Contexts: []string{"check0", "check1", "check2", "check3"}},
 			EnforceAdmins:              &github.AdminEnforcement{Enabled: true},
 			RequiredPullRequestReviews: &github.PullRequestReviewsEnforcement{RequiredApprovingReviewCount: 1},
@@ -73,7 +77,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{
 			RequiredChecks: []string{"check1", "check2"},
 		}
-		ghRepo := ghRepoService{protection: github.Protection{
+		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
 			RequiredStatusChecks: &github.RequiredStatusChecks{Contexts: []string{"check0", "check1"}},
 		}}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
@@ -84,7 +88,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{
 			RequireEnforceAdmins: true,
 		}
-		ghRepo := ghRepoService{protection: github.Protection{
+		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
 			EnforceAdmins: &github.AdminEnforcement{Enabled: false},
 		}}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
@@ -95,7 +99,7 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{
 			RequiredApprovingReviewCount: 2,
 		}
-		ghRepo := ghRepoService{protection: github.Protection{
+		ghRepo := ghCheckBranchRepoService{protection: github.Protection{
 			RequiredPullRequestReviews: &github.PullRequestReviewsEnforcement{RequiredApprovingReviewCount: 1},
 		}}
 		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
