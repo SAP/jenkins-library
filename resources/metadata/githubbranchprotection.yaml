@@ -25,7 +25,7 @@ spec:
         default: https://api.github.com
         mandatory: true
       - name: branch
-        description: The name of the branch for which the ptrotection settings should be checked.
+        description: The name of the branch for which the protection settings should be checked.
         scope:
           - PARAMETERS
           - STAGES
