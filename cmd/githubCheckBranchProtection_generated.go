@@ -13,34 +13,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type githubCreatePullRequestOptions struct {
-	Assignees  []string `json:"assignees,omitempty"`
-	Base       string   `json:"base,omitempty"`
-	Body       string   `json:"body,omitempty"`
-	APIURL     string   `json:"apiUrl,omitempty"`
-	Head       string   `json:"head,omitempty"`
-	Owner      string   `json:"owner,omitempty"`
-	Repository string   `json:"repository,omitempty"`
-	ServerURL  string   `json:"serverUrl,omitempty"`
-	Title      string   `json:"title,omitempty"`
-	Token      string   `json:"token,omitempty"`
-	Labels     []string `json:"labels,omitempty"`
+type githubCheckBranchProtectionOptions struct {
+	APIURL                       string   `json:"apiUrl,omitempty"`
+	Branch                       string   `json:"branch,omitempty"`
+	Owner                        string   `json:"owner,omitempty"`
+	Repository                   string   `json:"repository,omitempty"`
+	RequiredChecks               []string `json:"requiredChecks,omitempty"`
+	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty"`
+	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty"`
+	ServerURL                    string   `json:"serverUrl,omitempty"`
+	Token                        string   `json:"token,omitempty"`
 }
 
-// GithubCreatePullRequestCommand Create a pull request on GitHub
-func GithubCreatePullRequestCommand() *cobra.Command {
-	const STEP_NAME = "githubCreatePullRequest"
+// GithubCheckBranchProtectionCommand Check branch protection of a GitHub branch
+func GithubCheckBranchProtectionCommand() *cobra.Command {
+	const STEP_NAME = "githubCheckBranchProtection"
 
-	metadata := githubCreatePullRequestMetadata()
-	var stepConfig githubCreatePullRequestOptions
+	metadata := githubCheckBranchProtectionMetadata()
+	var stepConfig githubCheckBranchProtectionOptions
 	var startTime time.Time
 
-	var createGithubCreatePullRequestCmd = &cobra.Command{
+	var createGithubCheckBranchProtectionCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Create a pull request on GitHub",
-		Long: `This step allows you to create a pull request on Github.
+		Short: "Check branch protection of a GitHub branch",
+		Long: `This step allows you to check if certain branch protection rules are fulfilled.
 
-It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.`,
+It can for example be used to verify if certain status checks are mandatory. This can be helpful to decide if a certain check needs to be performed again after merging a pull request.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -74,74 +72,45 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			githubCreatePullRequest(stepConfig, &telemetryData)
+			githubCheckBranchProtection(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addGithubCreatePullRequestFlags(createGithubCreatePullRequestCmd, &stepConfig)
-	return createGithubCreatePullRequestCmd
+	addGithubCheckBranchProtectionFlags(createGithubCheckBranchProtectionCmd, &stepConfig)
+	return createGithubCheckBranchProtectionCmd
 }
 
-func addGithubCreatePullRequestFlags(cmd *cobra.Command, stepConfig *githubCreatePullRequestOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{}, "Login names of users to which the PR should be assigned to.")
-	cmd.Flags().StringVar(&stepConfig.Base, "base", os.Getenv("PIPER_base"), "The name of the branch you want the changes pulled into.")
-	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "The description text of the pull request in markdown format.")
+func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubCheckBranchProtectionOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
-	cmd.Flags().StringVar(&stepConfig.Head, "head", os.Getenv("PIPER_head"), "The name of the branch where your changes are implemented.")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "The name of the branch for which the ptrotection settings should be checked.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
+	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to required in the GitHub repository configuration.")
+	cmd.Flags().BoolVar(&stepConfig.RequireEnforceAdmins, "requireEnforceAdmins", false, "Check if 'Include Administrators' option is set in the GitHub repository configuration.")
+	cmd.Flags().IntVar(&stepConfig.RequiredApprovingReviewCount, "requiredApprovingReviewCount", 0, "Check if 'Require pull request reviews before merging' option is set with at least the defined number of reviewers in the GitHub repository configuration.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url for end-user access.")
-	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Title of the pull request.")
-	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to be added to the pull request.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
-	cmd.MarkFlagRequired("base")
-	cmd.MarkFlagRequired("body")
 	cmd.MarkFlagRequired("apiUrl")
-	cmd.MarkFlagRequired("head")
+	cmd.MarkFlagRequired("branch")
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("title")
 	cmd.MarkFlagRequired("token")
 }
 
 // retrieve step metadata
-func githubCreatePullRequestMetadata() config.StepData {
+func githubCheckBranchProtectionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubCreatePullRequest",
+			Name:    "githubCheckBranchProtection",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					{
-						Name:        "assignees",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "base",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "body",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
 					{
 						Name:        "apiUrl",
 						ResourceRef: []config.ResourceReference{},
@@ -151,7 +120,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
-						Name:        "head",
+						Name:        "branch",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -175,6 +144,30 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "githubRepo"}},
 					},
 					{
+						Name:        "requiredChecks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "requireEnforceAdmins",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "requiredApprovingReviewCount",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -183,28 +176,12 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
-						Name:        "title",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "token",
 						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubToken"}},
-					},
-					{
-						Name:        "labels",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
 					},
 				},
 			},
