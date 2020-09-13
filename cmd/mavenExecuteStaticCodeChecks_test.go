@@ -4,8 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -51,16 +49,15 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, expected, execMockRunner.Calls[0])
 	})
-	t.Run("should log fatal if all tools are turned off", func(t *testing.T) {
-		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
+	t.Run("should warn and skip execution if all tools are turned off", func(t *testing.T) {
 		execMockRunner := mock.ExecMockRunner{}
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs: false,
 			Pmd:      false,
 		}
-		_ = runMavenStaticCodeChecks(&config, nil, &execMockRunner)
-		assert.True(t, hasFailed, "expected command to exit with fatal")
+		err := runMavenStaticCodeChecks(&config, nil, &execMockRunner)
+		assert.Nil(t, err)
+		assert.Nil(t, execMockRunner.Calls)
 	})
 }
 

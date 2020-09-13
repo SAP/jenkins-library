@@ -29,6 +29,14 @@ nav:
         - 'SAP Cloud SDK pipeline':
             - 'Introduction': pipelines/cloud-sdk/introduction.md
             - 'Configuration': pipelines/cloud-sdk/configuration.md
+            - 'Stages':
+                - 'Build and Test': stages/build.md
+                - 'Additional Unit Tests': stages/additionalunittests.md
+                - 'Integration Tests': stages/integration.md
+                - 'End to End Tests': stages/acceptance.md
+                - 'Security': stages/security.md
+                - 'Performance': stages/performance.md
+                - 'Production Deployment': stages/release.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
     - 'Scenarios':
@@ -91,6 +99,7 @@ nav:
         - malwareExecuteScan: steps/malwareExecuteScan.md
         - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteIntegration: steps/mavenExecuteIntegration.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md
