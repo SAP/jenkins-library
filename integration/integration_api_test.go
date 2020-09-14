@@ -37,6 +37,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 
 	testAsset := filepath.Join(dir, "test.txt")
 	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
+	assert.NoError(t, err, "Error when writing temporary file")
 
 	//prepare pipeline environment
 	now := time.Now()
