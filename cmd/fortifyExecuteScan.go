@@ -113,62 +113,62 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	if config.VerifyOnly {
 		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 		return verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
-	} else {
-		log.Entry().Infof("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		buildLabel := fmt.Sprintf("%v/repos/%v/%v/commits/%v", config.GithubAPIURL, config.Owner, config.Repository, config.CommitID)
-
-		// Create sourceanalyzer command based on configuration
-		buildID := uuid.New().String()
-		command.SetDir(config.ModulePath)
-		os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
-
-		if config.UpdateRulePack {
-			err := command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
-			if err != nil {
-				log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to update rule pack")
-			}
-			err = command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
-			if err != nil {
-				log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to fetch details of installed rule pack")
-			}
-		}
-
-		triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
-
-		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
-		reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
-
-		var message string
-		if config.UploadResults {
-			log.Entry().Debug("Uploading results")
-			resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
-			err = sys.UploadResultFile(config.FprUploadEndpoint, resultFilePath, projectVersion.ID)
-			message = fmt.Sprintf("Failed to upload result file %v to Fortify SSC at %v", resultFilePath, config.ServerURL)
-		} else {
-			log.Entry().Debug("Generating XML report")
-			xmlReportName := "fortify_result.xml"
-			err = command.RunExecutable("ReportGenerator", "-format", "xml", "-f", xmlReportName, "-source", fmt.Sprintf("%vtarget/result.fpr", config.ModulePath))
-			message = fmt.Sprintf("Failed to generate XML report %v", xmlReportName)
-			if err != nil {
-				reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vfortify_result.xml", config.ModulePath)})
-			}
-		}
-		piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
-		if err != nil {
-			return fmt.Errorf(message+": %w", err)
-		}
-
-		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-		// Ensure latest FPR is processed
-		err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
-			10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
-		if err != nil {
-			return err
-		}
-
-		return verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
 	}
+
+	log.Entry().Infof("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+	buildLabel := fmt.Sprintf("%v/repos/%v/%v/commits/%v", config.GithubAPIURL, config.Owner, config.Repository, config.CommitID)
+
+	// Create sourceanalyzer command based on configuration
+	buildID := uuid.New().String()
+	command.SetDir(config.ModulePath)
+	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
+
+	if config.UpdateRulePack {
+		err := command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
+		if err != nil {
+			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to update rule pack")
+		}
+		err = command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
+		if err != nil {
+			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to fetch details of installed rule pack")
+		}
+	}
+
+	triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
+
+	var reports []piperutils.Path
+	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
+	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
+
+	var message string
+	if config.UploadResults {
+		log.Entry().Debug("Uploading results")
+		resultFilePath := fmt.Sprintf("%vtarget/result.fpr", config.ModulePath)
+		err = sys.UploadResultFile(config.FprUploadEndpoint, resultFilePath, projectVersion.ID)
+		message = fmt.Sprintf("Failed to upload result file %v to Fortify SSC at %v", resultFilePath, config.ServerURL)
+	} else {
+		log.Entry().Debug("Generating XML report")
+		xmlReportName := "fortify_result.xml"
+		err = command.RunExecutable("ReportGenerator", "-format", "xml", "-f", xmlReportName, "-source", fmt.Sprintf("%vtarget/result.fpr", config.ModulePath))
+		message = fmt.Sprintf("Failed to generate XML report %v", xmlReportName)
+		if err != nil {
+			reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vfortify_result.xml", config.ModulePath)})
+		}
+	}
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	if err != nil {
+		return fmt.Errorf(message+": %w", err)
+	}
+
+	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+	// Ensure latest FPR is processed
+	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
+		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	return verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
 }
 
 func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
