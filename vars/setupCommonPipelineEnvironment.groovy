@@ -14,7 +14,12 @@ import groovy.transform.Field
     'collectTelemetryData',
 
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
-    'customDefaultsCredentialsId'
+    'customDefaultsCredentialsId',
+
+    /** Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
+     * If this is set to true, it is not required to set the build tool by hand for those cases.
+     */
+    'inferBuildTool'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -89,6 +94,8 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
+        inferBuildTool(script, config)
+
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
             stepParamKey4: 'customDefaults',
@@ -97,6 +104,27 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
+    }
+}
+
+
+// Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
+private static void inferBuildTool(script, config) {
+    // For backwards compatibility, build tool inference must be enabled via inferBuildTool setting
+    boolean inferBuildTool = config?.inferBuildTool
+
+    if (inferBuildTool) {
+        boolean isMtaProject = script.fileExists('mta.yaml')
+        def isMavenProject = script.fileExists('pom.xml')
+        def isNpmProject = script.fileExists('package.json')
+
+        if (isMtaProject) {
+            script.commonPipelineEnvironment.buildTool = 'mta'
+        } else if (isMavenProject) {
+            script.commonPipelineEnvironment.buildTool = 'maven'
+        } else if (isNpmProject) {
+            script.commonPipelineEnvironment.buildTool = 'npm'
+        }
     }
 }
 

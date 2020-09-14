@@ -96,8 +96,14 @@ void call(Map parameters = [:]) {
             anyStepConditionTrue = anyStepConditionTrue || stepActive
         }
 
+        Map stageConfig = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults([:], currentStage)
+            .mixinStageConfig(script.commonPipelineEnvironment, currentStage)
+            .use()
+
         boolean runStage
-        if (stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
+        if (stageConfig.runInAllBranches != true &&
+            stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
         } else if (ConfigurationLoader.stageConfiguration(script, currentStage)) {
             //activate stage if stage configuration is available
