@@ -27,10 +27,6 @@ func (g *ghCheckBranchRepoService) GetBranchProtection(ctx context.Context, owne
 	return &g.protection, nil, g.serviceError
 }
 
-func (g *ghCheckBranchRepoService) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
-	return nil, nil, nil
-}
-
 func TestRunGithubCheckBranchProtection(t *testing.T) {
 	ctx := context.Background()
 	telemetryData := telemetry.CustomData{}

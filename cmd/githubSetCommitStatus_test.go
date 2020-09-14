@@ -28,10 +28,6 @@ func (g *ghSetCommitRepoService) CreateStatus(ctx context.Context, owner, repo, 
 	return nil, nil, g.serviceError
 }
 
-func (g *ghSetCommitRepoService) GetBranchProtection(ctx context.Context, owner, repo, branch string) (*github.Protection, *github.Response, error) {
-	return nil, nil, nil
-}
-
 func TestRunGithubSetCommitStatus(t *testing.T) {
 	ctx := context.Background()
 	telemetryData := telemetry.CustomData{}
