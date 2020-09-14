@@ -36,7 +36,8 @@ void call(Map parameters = [:]) {
                 config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
                 echo "Context Config: ${config}"
             }
-            // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
+            // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository`
+            // & `legacyPRHandling` & `inferBranchName`
             // writeToDisk needs to be called here as owner and repository may come from the pipeline environment
             script.commonPipelineEnvironment.writeToDisk(script)
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
@@ -52,7 +53,7 @@ void call(Map parameters = [:]) {
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
                 environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
-            } else if (!isProductiveBranch(script)) {
+            } else if (!isProductiveBranch(script) && stepConfig.inferBranchName && env.BRANCH_NAME) {
                 environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
             try {
