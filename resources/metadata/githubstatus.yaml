@@ -87,7 +87,7 @@ spec:
           - success
         mandatory: true
       - name: targetUrl
-        description: Target url to associate the status with.
+        description: Target URL to associate the status with.
         scope:
           - PARAMETERS
           - STAGES
