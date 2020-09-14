@@ -41,7 +41,7 @@ import groovy.transform.Field
      */
     'dockerImage',
     /**
-      * The registry used for pulling the docker image, if left empty we default to the default registry as defined by the `docker-commons-plugin`.
+      * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
       */
     'dockerRegistry',
     /**
