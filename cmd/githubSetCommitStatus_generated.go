@@ -43,7 +43,7 @@ Typically, following information is set:
 
 * state (pending, failure, success)
 * context
-* target url (linkt to details)
+* target URL (link to details)
 
 It can for example be used to create additional check indicators for a pull request which can be evaluated and also be enforced by GitHub configuration.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -90,14 +90,14 @@ It can for example be used to create additional check indicators for a pull requ
 }
 
 func addGithubSetCommitStatusFlags(cmd *cobra.Command, stepConfig *githubSetCommitStatusOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "The commitId for which the status should be set.")
 	cmd.Flags().StringVar(&stepConfig.Context, "context", os.Getenv("PIPER_context"), "Label for the status which will for example show up in a pull request.")
 	cmd.Flags().StringVar(&stepConfig.Description, "description", os.Getenv("PIPER_description"), "Short description of the status.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Status, "status", os.Getenv("PIPER_status"), "Status which should be set on the commitId.")
-	cmd.Flags().StringVar(&stepConfig.TargetURL, "targetUrl", os.Getenv("PIPER_targetUrl"), "Target url to associate the status with.")
+	cmd.Flags().StringVar(&stepConfig.TargetURL, "targetUrl", os.Getenv("PIPER_targetUrl"), "Target URL to associate the status with.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
