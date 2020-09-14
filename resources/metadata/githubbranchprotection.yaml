@@ -53,7 +53,7 @@ spec:
         type: string
         mandatory: true
       - name: requiredChecks
-        description: List of checks which have to be set to required in the GitHub repository configuration.
+        description: List of checks which have to be set to 'required' in the GitHub repository configuration.
         scope:
           - PARAMETERS
           - STAGES

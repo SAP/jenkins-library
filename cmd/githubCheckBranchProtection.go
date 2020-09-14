@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -33,21 +34,20 @@ func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBran
 	// validate required status checks
 	for _, check := range config.RequiredChecks {
 		var found bool
-		for _, context := range ghProtection.GetRequiredStatusChecks().Contexts {
+		foundContexts := ghProtection.GetRequiredStatusChecks().Contexts
+		for _, context := range foundContexts {
 			if check == context {
 				found = true
 			}
 		}
 		if !found {
-			return fmt.Errorf("required status check '%v' not found in branch protection configuration", check)
+			return fmt.Errorf("required status check '%v' not found among '%v' in branch protection configuration", check, strings.Join(foundContexts, ","))
 		}
 	}
 
 	// validate that admins are enforced in checks
-	if config.RequireEnforceAdmins {
-		if !ghProtection.GetEnforceAdmins().Enabled {
-			return fmt.Errorf("admins are not enforced in branch protection configuration")
-		}
+	if config.RequireEnforceAdmins && !ghProtection.GetEnforceAdmins().Enabled {
+		return fmt.Errorf("admins are not enforced in branch protection configuration")
 	}
 
 	// validate number of mandatory reviewers

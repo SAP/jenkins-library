@@ -86,7 +86,7 @@ func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubC
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "The name of the branch for which the protection settings should be checked.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
-	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to required in the GitHub repository configuration.")
+	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to 'required' in the GitHub repository configuration.")
 	cmd.Flags().BoolVar(&stepConfig.RequireEnforceAdmins, "requireEnforceAdmins", false, "Check if 'Include Administrators' option is set in the GitHub repository configuration.")
 	cmd.Flags().IntVar(&stepConfig.RequiredApprovingReviewCount, "requiredApprovingReviewCount", 0, "Check if 'Require pull request reviews before merging' option is set with at least the defined number of reviewers in the GitHub repository configuration.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
