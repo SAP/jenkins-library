@@ -9,7 +9,7 @@ metadata:
 
     * state (pending, failure, success)
     * context
-    * target url (linkt to details)
+    * target URL (linkt to details)
 
     It can for example be used to create additional check indicators for a pull request which can be evaluated and also be enforced by GitHub configuration.
 spec:
