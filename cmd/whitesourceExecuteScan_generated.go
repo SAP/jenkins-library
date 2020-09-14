@@ -385,7 +385,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "scanType",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "buildTool"}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
