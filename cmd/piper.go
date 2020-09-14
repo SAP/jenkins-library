@@ -73,6 +73,7 @@ func Execute() {
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubSetCommitStatusCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
