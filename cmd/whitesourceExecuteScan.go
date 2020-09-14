@@ -175,15 +175,15 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		}
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		pName, pVer := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
+		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
 		if config.ProjectName == "" {
-			log.Entry().Infof("Resolved project name '%s' from descriptor file", pName)
-			config.ProjectName = pName
+			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
+			config.ProjectName = name
 		}
 		if config.ProductVersion == "" {
-			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'", pVer,
-				config.VersioningModel)
-			config.ProductVersion = pVer
+			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
+				version, config.VersioningModel)
+			config.ProductVersion = version
 		}
 	}
 
