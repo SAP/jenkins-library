@@ -15,7 +15,7 @@ import (
 
 type whitesourceExecuteScanOptions struct {
 	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
-	DefaultVersioningModel               string   `json:"defaultVersioningModel,omitempty"`
+	VersioningModel                      string   `json:"versioningModel,omitempty"`
 	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	Timeout                              string   `json:"timeout,omitempty"`
@@ -124,7 +124,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 
 func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
-	cmd.Flags().StringVar(&stepConfig.DefaultVersioningModel, "defaultVersioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
+	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.Timeout, "timeout", `0`, "Timeout in seconds until a HTTP call is forcefully terminated.")
@@ -184,12 +184,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "defaultVersioningModel",
+						Name:        "versioningModel",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
 					},
 					{
 						Name:        "createProductFromPipeline",
@@ -329,7 +329,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "productVersion",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,

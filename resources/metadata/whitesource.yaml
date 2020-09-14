@@ -28,7 +28,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: defaultVersioningModel
+      - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is
           empty for creating the version based on the build descriptor version to report results in
@@ -39,6 +39,8 @@ spec:
           - STEPS
           - GENERAL
         default: "major"
+        aliases:
+          - name: defaultVersioningModel
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
@@ -213,6 +215,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: jreDownloadUrl
         type: string
         description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
