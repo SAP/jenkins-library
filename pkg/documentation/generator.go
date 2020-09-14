@@ -19,7 +19,8 @@ func main() {
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
 	flag.Parse()
 
-	fmt.Printf("metadataDir: %v\n, docuDir: %v\n", metadataPath, docTemplatePath)
+	fmt.Printf("using Metadata Directory: %v", metadataPath)
+	fmt.Printf("using Documentation Directory: %v", docTemplatePath)
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)

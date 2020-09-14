@@ -23,18 +23,21 @@ var stepParameterNames []string
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
 func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
-		var stepData config.StepData
+		stepData := config.StepData{}
 		configFilePath := metadataFiles[key]
 		metadataFile, err := docuHelperData.OpenFile(configFilePath)
 		checkError(err)
 		defer metadataFile.Close()
-		fmt.Printf("Reading file %v\n", configFilePath)
+		fmt.Printf("Reading file: %v\n", configFilePath)
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
-		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
+		fmt.Print("  Generate documentation.. ")
 		err = generateStepDocumentation(stepData, docuHelperData)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			fmt.Println("")
+			fmt.Println(err)
+		} else {
+			fmt.Println("completed")
 		}
 	}
 	return nil
@@ -42,7 +45,6 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 
 // generates the step documentation and replaces the template with the generated documentation
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
-	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
 	//create the file path for the template and open it.
 	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
 	docTemplate, err := docuHelperData.OpenDocTemplateFile(docTemplateFilePath)
@@ -79,8 +81,6 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	// overwrite existing file
 	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
 	checkError(err)
-
-	fmt.Printf("Documentation generation complete for: %v\n", stepData.Metadata.Name)
 
 	return nil
 }
