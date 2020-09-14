@@ -12,8 +12,7 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
-// GitHubCommitStatusRepositoriesService provides interface for testing
-type GitHubCommitStatusRepositoriesService interface {
+type gitHubCommitStatusRepositoriesService interface {
 	CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 }
 
@@ -29,7 +28,7 @@ func githubSetCommitStatus(config githubSetCommitStatusOptions, telemetryData *t
 	}
 }
 
-func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService GitHubCommitStatusRepositoriesService) error {
+func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService gitHubCommitStatusRepositoriesService) error {
 	status := github.RepoStatus{State: &config.Status, TargetURL: &config.TargetURL}
 	_, _, err := ghRepositoriesService.CreateStatus(ctx, config.Owner, config.Repository, config.CommitID, &status)
 	if err != nil {
