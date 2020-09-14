@@ -22,7 +22,7 @@ spec:
       - name: apiUrl
         aliases:
           - name: githubApiUrl
-        description: Set the GitHub API url.
+        description: Set the GitHub API URL.
         scope:
           - GENERAL
           - PARAMETERS
