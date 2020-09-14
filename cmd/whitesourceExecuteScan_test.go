@@ -176,9 +176,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:               "mta",
-			DefaultVersioningModel: "major",
-			ProductName:            "mock-product",
+			ScanType:        "mta",
+			VersioningModel: "major",
+			ProductName:     "mock-product",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
@@ -195,9 +195,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Run("product not found", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:               "mta",
-			DefaultVersioningModel: "major",
-			ProductName:            "does-not-exist",
+			ScanType:        "mta",
+			VersioningModel: "major",
+			ProductName:     "does-not-exist",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
