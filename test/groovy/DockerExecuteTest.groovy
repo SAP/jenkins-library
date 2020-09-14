@@ -159,6 +159,30 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testPullWithCredentials() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                dockerExecute: [
+                    dockerRegistry: 'https://registry.example.org',
+                    dockerRegistryCredentials: 'mySecrets',
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(docker.registry, is('https://registry.example.org'))
+        assertThat(docker.credentialsId, is('mySecrets'))
+        assertThat(docker.imagePullCount, is(1))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
     void testSkipSidecarImagePull() throws Exception {
         stepRule.step.dockerExecute(
             script: nullScript,
@@ -331,6 +355,8 @@ class DockerExecuteTest extends BasePiperTest {
         private int imagePullCount = 0
         private String parameters
         private String sidecarParameters
+        private String registry
+        private String credentialsId
 
         DockerMock image(String imageName) {
             this.imageName = imageName
@@ -340,6 +366,12 @@ class DockerExecuteTest extends BasePiperTest {
         void pull() {
             imagePullCount++
             imagePulled = true
+        }
+
+        void withRegistry(String  registry, String credentialsId, Closure c) {
+            this.registry = registry
+            this.credentialsId = credentialsId
+            c()
         }
 
         void inside(String parameters, body) {
