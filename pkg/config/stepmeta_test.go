@@ -298,7 +298,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter Env")
 	})
 
-	t.Run("Vailt", func(t *testing.T) {
+	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
 		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.All, "incorrect filter All")
 		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.General, "incorrect filter General")
