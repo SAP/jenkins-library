@@ -23,16 +23,51 @@ var stepParameterNames []string
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
 func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
-		stepData := config.StepData{}
+		stepMetadata := config.StepData{}
 		configFilePath := metadataFiles[key]
 		metadataFile, err := docuHelperData.OpenFile(configFilePath)
 		checkError(err)
 		defer metadataFile.Close()
-		fmt.Printf("Reading file: %v\n", configFilePath)
-		err = stepData.ReadPipelineStepData(metadataFile)
+		fmt.Printf("Reading metadata file: %v\n", configFilePath)
+		err = stepMetadata.ReadPipelineStepData(metadataFile)
 		checkError(err)
+
+		//####################################
+		configuration := config.Config{}
+		defaultFiles := []io.ReadCloser{}
+		for _, projectDefaultFile := range []string{
+			"./resources/default_pipeline_environment.yml",
+			"../piper-library/resources/piper-defaults.yml",
+		} {
+			fc, _ := docuHelperData.OpenFile(projectDefaultFile)
+			defer fc.Close()
+			defaultFiles = append(defaultFiles, fc)
+		}
+
+		filters := stepMetadata.GetParameterFilters()
+		// add telemetry parameter "collectTelemetryData" to ALL, GENERAL and PARAMETER filters
+		filters.All = append(filters.All, "collectTelemetryData")
+		filters.General = append(filters.General, "collectTelemetryData")
+		filters.Parameters = append(filters.Parameters, "collectTelemetryData")
+		stepConfiguration, err := configuration.GetStepConfig(
+			map[string]interface{}{},
+			"",
+			nil,
+			defaultFiles,
+			true,
+			filters,
+			stepMetadata.Spec.Inputs.Parameters,
+			stepMetadata.Spec.Inputs.Secrets,
+			map[string]interface{}{},
+			"",
+			stepMetadata.Metadata.Name,
+			stepMetadata.Metadata.Aliases,
+		)
+		checkError(err)
+		//####################################
+
 		fmt.Print("  Generate documentation.. ")
-		err = generateStepDocumentation(stepData, docuHelperData)
+		err = generateStepDocumentation(stepMetadata, stepConfiguration, docuHelperData)
 		if err != nil {
 			fmt.Println("")
 			fmt.Println(err)
@@ -44,7 +79,7 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 }
 
 // generates the step documentation and replaces the template with the generated documentation
-func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
+func generateStepDocumentation(stepData config.StepData, stepConfiguration config.StepConfig, docuHelperData DocuHelperData) error {
 	//create the file path for the template and open it.
 	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
 	docTemplate, err := docuHelperData.OpenDocTemplateFile(docTemplateFilePath)
@@ -71,7 +106,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	checkError(err)
 
 	// add secrets, context defaults to the step parameters
-	handleStepParameters(&stepData)
+	handleStepParameters(&stepData, stepConfiguration)
 
 	// write executed template data to the previously opened file
 	var docContent bytes.Buffer
@@ -131,7 +166,7 @@ func getContainerParameters(container config.Container, sidecar bool) map[string
 	return containerParams
 }
 
-func handleStepParameters(stepData *config.StepData) {
+func handleStepParameters(stepData *config.StepData, stepConfiguration config.StepConfig) {
 
 	stepParameterNames = stepData.GetParameterFilters().All
 
@@ -151,7 +186,19 @@ func handleStepParameters(stepData *config.StepData) {
 	//- combine defaults (consider conditions)
 	consolidateContextDefaults(stepData)
 
+	setDefaults(stepData, stepConfiguration)
+
 	setDefaultAndPossisbleValues(stepData)
+}
+
+func setDefaults(stepData *config.StepData, stepConfiguration config.StepConfig) {
+	for k, param := range stepData.Spec.Inputs.Parameters {
+		if stepConfiguration.Config[param.Name] != nil {
+			param.Default = stepConfiguration.Config[param.Name]
+			stepData.Spec.Inputs.Parameters[k] = param
+			// fmt.Println("CUSTOM DEFAULT: ", stepConfiguration.Config[param.Name])
+		}
+	}
 }
 
 func setDefaultAndPossisbleValues(stepData *config.StepData) {
@@ -191,12 +238,12 @@ func appendGeneralOptionsToParameters(stepData *config.StepData) {
 	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
 }
 
-func appendSecretsToParameters(stepData *config.StepData) {
-	secrets := stepData.Spec.Inputs.Secrets
-	if secrets != nil {
-		for _, secret := range secrets {
-			item := config.StepParameters{Name: secret.Name, Type: "string", Scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, Description: secret.Description, Mandatory: true}
-			stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, item)
-		}
-	}
-}
+// func appendSecretsToParameters(stepData *config.StepData) {
+// 	secrets := stepData.Spec.Inputs.Secrets
+// 	if secrets != nil {
+// 		for _, secret := range secrets {
+// 			item := config.StepParameters{Name: secret.Name, Type: "string", Scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, Description: secret.Description, Mandatory: true}
+// 			stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, item)
+// 		}
+// 	}
+// }
