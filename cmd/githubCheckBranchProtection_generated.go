@@ -165,12 +165,17 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "token",
-						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubToken"}},
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubToken"}},
 					},
 				},
 			},
