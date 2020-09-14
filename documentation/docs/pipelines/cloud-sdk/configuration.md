@@ -452,7 +452,7 @@ Please note that you can not have a `whitesource.config.json` in your project, s
 
 ### fortifyScan
 
-The Fortify scan is configured using the step fortifyExecuteScan.
+The Fortify scan is configured using the step `fortifyExecuteScan.
 The stage is executed in the productive branch when the parameter `fortifyCredentialsId` in the step config of fortifyExecuteScan is defined.
 
 ### lint
@@ -465,6 +465,8 @@ Note, the available configuration options can be found in the related [step docu
 ### compliance
 
 The stage `compliance` currently executes [SonarQube](https://www.sonarqube.org/) scans.
+The stage is executed in the productive branch when configuration for the step `sonarExecuteScane` exists.
+Note, the available configuration options can be found in the related [step documentation](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/#parameters).
 
 This is an optional feature for teams who prefer to use SonarQube.
 Note that it does some scans that are already done by the pipeline by default.
