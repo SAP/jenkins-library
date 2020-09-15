@@ -468,7 +468,6 @@ The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, i
 
 This is an optional feature for teams who prefer to use SonarQube.
 Note that it does some scans that are already done by the pipeline by default.
-By default the stage is only executed for the productive branch, and only if the step [`sonarExecuteScan`](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/#parameters) is configured.
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
