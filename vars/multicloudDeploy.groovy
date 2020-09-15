@@ -38,8 +38,10 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** The source file to deploy to SAP Cloud Platform.*/
-    'source'
+    /** The source file to deploy to SAP Cloud Platform. Only for NEO targets.*/
+    'source',
+    /** Runs all the deployments in the current workspace.*/
+    'runInWorkspace'
 ])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
@@ -104,7 +106,7 @@ void call(parameters = [:]) {
             // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
             // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
             // credentials are inserted in the mtaExtensionDescriptor file.
-            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution) && !config.runInWorkspace
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 
