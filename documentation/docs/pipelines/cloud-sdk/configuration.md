@@ -464,7 +464,7 @@ Note, the available configuration options can be found in the related [step docu
 
 ### compliance
 
-The stage `compliance` currently executes [SonarQube](https://www.sonarqube.org/) scans.
+The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, if the step [sonarExecuteScan](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/) is configured.
 
 This is an optional feature for teams who prefer to use SonarQube.
 Note that it does some scans that are already done by the pipeline by default.
