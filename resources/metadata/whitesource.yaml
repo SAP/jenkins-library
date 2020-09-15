@@ -285,7 +285,7 @@ spec:
           - STEPS
         default: wss-unified-agent.jar
       - name: emailAddressesOfInitialProductAdmins
-        type: string
+        type: "[]string"
         description: The list of email addresses to assign as product admins for newly created WhiteSource products.
         mandatory: false
         scope:
