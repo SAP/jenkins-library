@@ -21,7 +21,7 @@ type DocuHelperData struct {
 var stepParameterNames []string
 
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
-func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelperData) error {
+func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
 		stepMetadata := config.StepData{}
 		configFilePath := metadataFiles[key]
@@ -35,10 +35,7 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 		//####################################
 		configuration := config.Config{}
 		defaultFiles := []io.ReadCloser{}
-		for _, projectDefaultFile := range []string{
-			"./resources/default_pipeline_environment.yml",
-			"../piper-library/resources/piper-defaults.yml",
-		} {
+		for _, projectDefaultFile := range customDefaultFiles {
 			fc, _ := docuHelperData.OpenFile(projectDefaultFile)
 			defer fc.Close()
 			defaultFiles = append(defaultFiles, fc)
@@ -54,7 +51,7 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 			"",
 			nil,
 			defaultFiles,
-			true,
+			false,
 			filters,
 			stepMetadata.Spec.Inputs.Parameters,
 			stepMetadata.Spec.Inputs.Secrets,
