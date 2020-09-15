@@ -39,6 +39,30 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 			assert.Equal(t, []string{"faas", "project", "deploy", "-y", "./deploy/values.yaml"}, execRunner.Calls[1].Params)
 		}
 	})
+
+	
+	t.Run("CF Login Error", func(t *testing.T) {
+		errorMessage := "errorMessage"
+		
+		config := cloudFoundryFaasDeployOptions{
+				CfAPIEndpoint:             "https://api.endpoint.com",
+				CfOrg:                     "testOrg",
+				CfSpace:                   "testSpace",
+				Username:                  "testUser",
+				Password:                  "testPassword",
+				XfsRuntimeServiceInstance: "testInstance",
+				XfsRuntimeServiceKeyName:  "testKey",
+			}
+			execRunner := mock.ExecMockRunner{}
+			cfUtilsMock := cloudfoundry.CfUtilsMock{
+				LoginError: errors.New(errorMessage),
+			}
+			defer cfUtilsMock.Cleanup()
+	
+			error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock)
+			assert.Equal(t, error.Error(), "Error while logging in occured: "+errorMessage, "Wrong error message")
+    })
+
 }
 
 type FaasTestFileUtilsMock struct {
