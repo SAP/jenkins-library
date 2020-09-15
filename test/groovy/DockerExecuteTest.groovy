@@ -159,6 +159,29 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testPullWithoutCredentialsHappensWithoutRegistryCall() {
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                dockerExecute: [
+                    dockerRegistry: 'https://registry.example.org',
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ) {
+            bodyExecuted = true
+        }
+        // from getting null we derive withRegistry has not been called
+        // if it would have been called we would have the registry provided above.
+        assertThat(docker.registry, is(null))
+        assertThat(docker.imagePullCount, is(1))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
     void testPullWithCredentials() throws Exception {
 
         nullScript.commonPipelineEnvironment.configuration =
