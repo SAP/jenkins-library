@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCloudFoundryFaasDeploy(t *testing.T) {
@@ -40,28 +43,74 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 		}
 	})
 
-	
 	t.Run("CF Login Error", func(t *testing.T) {
 		errorMessage := "errorMessage"
-		
+
 		config := cloudFoundryFaasDeployOptions{
-				CfAPIEndpoint:             "https://api.endpoint.com",
-				CfOrg:                     "testOrg",
-				CfSpace:                   "testSpace",
-				Username:                  "testUser",
-				Password:                  "testPassword",
-				XfsRuntimeServiceInstance: "testInstance",
-				XfsRuntimeServiceKeyName:  "testKey",
-			}
-			execRunner := mock.ExecMockRunner{}
-			cfUtilsMock := cloudfoundry.CfUtilsMock{
-				LoginError: errors.New(errorMessage),
-			}
-			defer cfUtilsMock.Cleanup()
-	
-			error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock)
-			assert.Equal(t, error.Error(), "Error while logging in occured: "+errorMessage, "Wrong error message")
-    })
+			CfAPIEndpoint:             "https://api.endpoint.com",
+			CfOrg:                     "testOrg",
+			CfSpace:                   "testSpace",
+			Username:                  "testUser",
+			Password:                  "testPassword",
+			XfsRuntimeServiceInstance: "testInstance",
+			XfsRuntimeServiceKeyName:  "testKey",
+		}
+		execRunner := mock.ExecMockRunner{}
+		cfUtilsMock := cloudfoundry.CfUtilsMock{
+			LoginError: errors.New(errorMessage),
+		}
+		defer cfUtilsMock.Cleanup()
+		npmUtilsMock := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &execRunner}
+
+		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, error, "Error while logging in occured: "+errorMessage, "Wrong error message")
+	})
+
+	t.Run("xfsrt Login Error", func(t *testing.T) {
+		errorMessage := "errorMessage"
+
+		config := cloudFoundryFaasDeployOptions{
+			CfAPIEndpoint:             "https://api.endpoint.com",
+			CfOrg:                     "testOrg",
+			CfSpace:                   "testSpace",
+			Username:                  "testUser",
+			Password:                  "testPassword",
+			XfsRuntimeServiceInstance: "testInstance",
+			XfsRuntimeServiceKeyName:  "testKey",
+		}
+		execRunner := mock.ExecMockRunner{
+			ShouldFailOnCommand: map[string]error{"xfsrt-cli login -s testInstance -b testKey --silent": fmt.Errorf(errorMessage)},
+		}
+		cfUtilsMock := cloudfoundry.CfUtilsMock{}
+		defer cfUtilsMock.Cleanup()
+		npmUtilsMock := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &execRunner}
+
+		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, error, "Failed to log in to xfsrt service instance 'testInstance' with service key 'testKey': "+errorMessage, "Wrong error message")
+	})
+
+	t.Run("xfsrt Deployment Failure", func(t *testing.T) {
+		errorMessage := "errorMessage"
+
+		config := cloudFoundryFaasDeployOptions{
+			CfAPIEndpoint:             "https://api.endpoint.com",
+			CfOrg:                     "testOrg",
+			CfSpace:                   "testSpace",
+			Username:                  "testUser",
+			Password:                  "testPassword",
+			XfsRuntimeServiceInstance: "testInstance",
+			XfsRuntimeServiceKeyName:  "testKey",
+		}
+		execRunner := mock.ExecMockRunner{
+			ShouldFailOnCommand: map[string]error{"xfsrt-cli faas project deploy -y ./deploy/values.yaml": fmt.Errorf(errorMessage)},
+		}
+		cfUtilsMock := cloudfoundry.CfUtilsMock{}
+		defer cfUtilsMock.Cleanup()
+		npmUtilsMock := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &execRunner}
+
+		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, error, "Failed to deploy faas project: "+errorMessage, "Wrong error message")
+	})
 
 }
 
