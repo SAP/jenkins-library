@@ -312,7 +312,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 'tests/**/*.py **/src/test/**/*.java'
+        default: "tests/**/*.py **/src/test/**/*.java"
       - name: productToken
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
