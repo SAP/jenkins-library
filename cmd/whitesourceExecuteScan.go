@@ -320,16 +320,22 @@ func executeMavenScanForPomFile(config *ScanOptions, utils whitesourceUtils, pom
 	}
 
 	var flags []string
-	//	if len(config.BuildDescriptorExcludeList) == 0 {
-	// exclude known test modules by default
-	flags = append(flags, maven.GetTestModulesExcludes()...)
-	//} else {
-	//	// TODO: From the documentation, this would be a file path to a module's pom.xml,
-	//	// but descriptor is used here as the module's name.
-	//	for _, descriptor := range config.BuildDescriptorExcludeList {
-	//		flags = append(flags, "-pl", "!"+descriptor)
-	//	}
-	//}
+	if len(config.BuildDescriptorExcludeList) == 0 {
+		// Exclude known test modules by default
+		flags = append(flags, maven.GetTestModulesExcludes()...)
+	} else {
+		// From the documentation, these are file paths to a module's pom.xml.
+		// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
+		for _, descriptor := range config.BuildDescriptorExcludeList {
+			if !strings.HasPrefix(descriptor, "pom.xml") {
+				continue
+			}
+			moduleName := filepath.Dir(descriptor)
+			if moduleName != "" {
+				flags = append(flags, "-pl", "!"+moduleName)
+			}
+		}
+	}
 
 	_, err := maven.Execute(&maven.ExecuteOptions{
 		PomPath:             pomPath,
