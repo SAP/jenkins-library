@@ -234,13 +234,3 @@ func appendGeneralOptionsToParameters(stepData *config.StepData) {
 	}
 	stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, script, verbose)
 }
-
-// func appendSecretsToParameters(stepData *config.StepData) {
-// 	secrets := stepData.Spec.Inputs.Secrets
-// 	if secrets != nil {
-// 		for _, secret := range secrets {
-// 			item := config.StepParameters{Name: secret.Name, Type: "string", Scope: []string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}, Description: secret.Description, Mandatory: true}
-// 			stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, item)
-// 		}
-// 	}
-// }
