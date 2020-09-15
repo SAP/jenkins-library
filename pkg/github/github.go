@@ -2,8 +2,10 @@ package github
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
 )
 
@@ -15,9 +17,25 @@ func NewClient(token, apiURL, uploadURL string) (context.Context, *github.Client
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	client, err := github.NewEnterpriseClient(apiURL, uploadURL, tc)
+	if !strings.HasSuffix(apiURL, "/") {
+		apiURL += "/"
+	}
+	baseURL, err := url.Parse(apiURL)
 	if err != nil {
 		return ctx, nil, err
 	}
+
+	if !strings.HasSuffix(uploadURL, "/") {
+		uploadURL += "/"
+	}
+	uploadTargetURL, err := url.Parse(uploadURL)
+	if err != nil {
+		return ctx, nil, err
+	}
+
+	client := github.NewClient(tc)
+
+	client.BaseURL = baseURL
+	client.UploadURL = uploadTargetURL
 	return ctx, client, nil
 }

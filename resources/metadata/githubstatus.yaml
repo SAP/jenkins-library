@@ -1,10 +1,17 @@
 metadata:
-  name: githubCreatePullRequest
-  description: Create a pull request on GitHub
+  name: githubSetCommitStatus
+  description: Set a status of a certain commit.
   longDescription: |
-    This step allows you to create a pull request on Github.
+    This step allows you to set a status for a certain commit.
+    Details can be found here: https://developer.github.com/v3/repos/statuses/.
 
-    It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.
+    Typically, following information is set:
+
+    * state (pending, failure, success)
+    * context
+    * target URL (link to details)
+
+    It can for example be used to create additional check indicators for a pull request which can be evaluated and also be enforced by GitHub configuration.
 spec:
   inputs:
     secrets:
@@ -12,33 +19,10 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     params:
-      - name: assignees
-        description: Login names of users to which the PR should be assigned to.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: "[]string"
-      - name: base
-        description: The name of the branch you want the changes pulled into.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        mandatory: true
-      - name: body
-        description: The description text of the pull request in markdown format.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        mandatory: true
       - name: apiUrl
         aliases:
           - name: githubApiUrl
-        description: Set the GitHub API url.
+        description: Set the GitHub API URL.
         scope:
           - GENERAL
           - PARAMETERS
@@ -47,14 +31,32 @@ spec:
         type: string
         default: https://api.github.com
         mandatory: true
-      - name: head
-        description: The name of the branch where your changes are implemented.
+      - name: commitId
+        description: The commitId for which the status should be set.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/commitId
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
         mandatory: true
+      - name: context
+        description: Label for the status which will for example show up in a pull request.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: description
+        description: Short description of the status.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: owner
         aliases:
           - name: githubOrg
@@ -81,30 +83,29 @@ spec:
           - STEPS
         type: string
         mandatory: true
-      - name: serverUrl
-        aliases:
-          - name: githubServerUrl
-        description: GitHub server url for end-user access.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        default: https://github.com
-        mandatory: true
-      - name: title
-        description: Title of the pull request.
+      - name: status
+        description: Status which should be set on the commitId.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
+        possibleValues:
+          - failure
+          - pending
+          - success
         mandatory: true
+      - name: targetUrl
+        description: Target URL to associate the status with.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: token
         aliases:
           - name: githubToken
-        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
+        description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
         scope:
           - GENERAL
           - PARAMETERS
@@ -116,10 +117,3 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
-      - name: labels
-        description: Labels to be added to the pull request.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: "[]string"

@@ -54,7 +54,6 @@ const (
 	javaLibraries       = "sonar.java.libraries="
 	coverageExclusions  = "sonar.coverage.exclusions="
 	pomXMLPattern       = "**/pom.xml"
-	jacocoReportPattern = "**/target/**/jacoco.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
@@ -112,9 +111,6 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
 		addJavaBinaries()
 	}
-	if !isInOptions(config, coverageReportPaths) {
-		addJacocoReportPaths()
-	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
@@ -166,17 +162,6 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 func isInOptions(config sonarExecuteScanOptions, property string) bool {
 	property = strings.TrimSuffix(property, "=")
 	return SliceUtils.ContainsStringPart(config.Options, property)
-}
-
-func addJacocoReportPaths() {
-	matches, err := doublestarGlob(jacocoReportPattern)
-	if err != nil {
-		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
-		return
-	}
-	if len(matches) > 0 {
-		sonar.addOption(coverageReportPaths + strings.Join(matches, ","))
-	}
 }
 
 func addJavaBinaries() {
