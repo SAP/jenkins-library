@@ -32,7 +32,7 @@ type whitesourceExecuteScanOptions struct {
 	UserToken                            string   `json:"userToken,omitempty"`
 	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty"`
 	AgentFileName                        string   `json:"agentFileName,omitempty"`
-	EmailAddressesOfInitialProductAdmins string   `json:"emailAddressesOfInitialProductAdmins,omitempty"`
+	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	ProductVersion                       string   `json:"productVersion,omitempty"`
 	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
 	ProductName                          string   `json:"productName,omitempty"`
@@ -137,7 +137,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying the user executing the scan")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "Whether license compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.AgentFileName, "agentFileName", `wss-unified-agent.jar`, "Locally used name for the Unified Agent jar file after download.")
-	cmd.Flags().StringVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", `[]`, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
+	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{``}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringVar(&stepConfig.ProductVersion, "productVersion", os.Getenv("PIPER_productVersion"), "Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.")
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", os.Getenv("PIPER_jreDownloadUrl"), "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.ProductName, "productName", os.Getenv("PIPER_productName"), "Name of the WhiteSource product to be created and used for results aggregation.")
@@ -363,7 +363,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "emailAddressesOfInitialProductAdmins",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
