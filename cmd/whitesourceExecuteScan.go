@@ -59,7 +59,7 @@ type whitesourceUtils interface {
 
 	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
 
-	FindPackageJSONFiles(config *ScanOptions) []string
+	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
 }
 
@@ -86,8 +86,8 @@ func (w *whitesourceUtilsBundle) getNpmExecutor(config *ScanOptions) npm.Executo
 	return w.npmExecutor
 }
 
-func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) []string {
-	return w.getNpmExecutor(config).FindPackageJSONFiles()
+func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) ([]string, error) {
+	return w.getNpmExecutor(config).FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 }
 
 func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error {
@@ -377,9 +377,13 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 
 // executeNpmScan iterates over all found npm modules and performs a scan in each one.
 func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
-	modules := utils.FindPackageJSONFiles(config)
+	modules, err := utils.FindPackageJSONFiles(config)
+	if err != nil {
+		return fmt.Errorf("failed to find package.json files with excludes: %w", err)
+	}
 	if len(modules) == 0 {
-		log.Entry().Info("Found no NPM modules to scan.")
+		log.Entry().Info("Found no NPM modules to scan. Configured excludes: %v",
+			config.BuildDescriptorExcludeList)
 		return nil
 	}
 	for _, module := range modules {
