@@ -1,4 +1,5 @@
 import com.sap.piper.k8s.ContainerMap
+
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.SidecarUtils
 import org.junit.Before
@@ -139,7 +140,7 @@ class DockerExecuteTest extends BasePiperTest {
         stepRule.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
-        assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
+        assertEquals('maven:3.5-jdk-8-alpine', docker.getImageNames()[0])
         assertTrue(docker.isImagePulled())
         assertEquals('--env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters().trim())
         assertTrue(bodyExecuted)
@@ -174,9 +175,9 @@ class DockerExecuteTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-        // from getting null we derive withRegistry has not been called
+        // from getting an empty list we derive withRegistry has not been called
         // if it would have been called we would have the registry provided above.
-        assertThat(docker.registry, is(null))
+        assertThat(docker.registriesWithCredentials, is([:]))
         assertThat(docker.imagePullCount, is(1))
         assertThat(bodyExecuted, is(true))
     }
@@ -199,8 +200,7 @@ class DockerExecuteTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-        assertThat(docker.registry, is('https://registry.example.org'))
-        assertThat(docker.credentialsId, is('mySecrets'))
+        assertThat(docker.registriesWithCredentials, is([registry: 'https://registry.example.org', credentialsId: 'mySecrets']))
         assertThat(docker.imagePullCount, is(1))
         assertThat(bodyExecuted, is(true))
     }
@@ -373,16 +373,16 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     private class DockerMock {
-        private String imageName
+        private List imageNames = []
         private boolean imagePulled = false
         private int imagePullCount = 0
         private String parameters
         private String sidecarParameters
-        private String registry
+        private Map registriesWithCredentials = [:]
         private String credentialsId
 
         DockerMock image(String imageName) {
-            this.imageName = imageName
+            this.imageNames << imageName
             return this
         }
 
@@ -392,8 +392,7 @@ class DockerExecuteTest extends BasePiperTest {
         }
 
         void withRegistry(String  registry, String credentialsId, Closure c) {
-            this.registry = registry
-            this.credentialsId = credentialsId
+            this.registriesWithCredentials <<  [registry: registry, credentialsId: credentialsId]
             c()
         }
 
@@ -407,8 +406,8 @@ class DockerExecuteTest extends BasePiperTest {
             body([id: 'uniqueId'])
         }
 
-        String getImageName() {
-            return imageName
+        def getImageNames() {
+            return imageNames
         }
 
         boolean isImagePulled() {
