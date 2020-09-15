@@ -41,7 +41,7 @@ func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBran
 		var found bool
 		requiredStatusChecks := ghProtection.GetRequiredStatusChecks()
 		foundContexts := []string{}
-		if requiredStatusChecks != nil {
+		if requiredStatusChecks := ghProtection.GetRequiredStatusChecks(); requiredStatusChecks != nil {
 			foundContexts = requiredStatusChecks.Contexts
 		}
 		for _, context := range foundContexts {
