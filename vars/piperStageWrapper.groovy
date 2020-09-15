@@ -85,6 +85,9 @@ private void stageLocking(Map config, Closure body) {
             body()
         }
     } else {
+        if(config.ordinal) {
+            milestone config.ordinal
+        }
         body()
     }
 }

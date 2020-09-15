@@ -6,14 +6,12 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
-import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
 import static org.hamcrest.CoreMatchers.containsString
-import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
@@ -30,6 +28,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     private String nodeLabel = ''
     private boolean executedOnKubernetes = false
     private List customEnv = []
+    private boolean milestone = false
 
     @Rule
     public RuleChain rules = Rules
@@ -50,6 +49,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('milestone', [Integer.class], {ordinal ->
             assertThat(ordinal, is(10))
+            milestone = true
         })
         helper.registerAllowedMethod('node', [String.class, Closure.class], {s, body ->
             nodeLabel = s
@@ -90,10 +90,11 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(executedOnKubernetes, is(false))
         assertThat(lockMap.size(), is(2))
         assertThat(countNodeUsage, is(1))
+        assertThat(milestone, is(true))
     }
 
     @Test
-    void testNoLocking() {
+    void testNoLockingWithOrdinal() {
         def executed = false
         stepRule.step.piperStageWrapper(
             script: nullScript,
@@ -110,6 +111,27 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(lockMap.size(), is(0))
         assertThat(countNodeUsage, is(1))
         assertThat(nodeLabel, is('testLabel'))
+        assertThat(milestone, is(true))
+    }
+
+    @Test
+    void testNoLockingWithoutOrdinal() {
+        def executed = false
+        stepRule.step.piperStageWrapper(
+            script: nullScript,
+            juStabUtils: utils,
+            nodeLabel: 'testLabel',
+            stageLocking: false,
+            stageName: 'test'
+
+        ) {
+            executed = true
+        }
+        assertThat(executed, is(true))
+        assertThat(lockMap.size(), is(0))
+        assertThat(countNodeUsage, is(1))
+        assertThat(nodeLabel, is('testLabel'))
+        assertThat(milestone, is(false))
     }
 
     @Test

@@ -17,6 +17,8 @@ stages:
     ordinal: 60
   Compliance:
     ordinal: 70
+  Confirm:
+    ordinal: 75
   Promote:
     ordinal: 80
   Release:

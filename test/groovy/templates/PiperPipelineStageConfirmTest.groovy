@@ -16,6 +16,7 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
 
     private Map timeoutSettings
     private Map inputSettings
+    private boolean piperStageWrapperExecuted = false
 
     @Rule
     public RuleChain rules = Rules
@@ -27,6 +28,12 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
     @Before
     void init()  {
         binding.variables.env.STAGE_NAME = 'Confirm'
+
+        helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
+            assertThat(m.stageLocking, is(false))
+            piperStageWrapperExecuted = true
+            return body()
+        })
 
         helper.registerAllowedMethod('timeout', [Map.class, Closure.class], {m, body ->
             timeoutSettings = m
@@ -48,6 +55,7 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
         assertThat(timeoutSettings.unit, is('HOURS'))
         assertThat(timeoutSettings.time, is(720))
         assertThat(inputSettings.message, is('Shall we proceed to Promote & Release?'))
+        assertThat(piperStageWrapperExecuted, is(true))
     }
 
     @Test

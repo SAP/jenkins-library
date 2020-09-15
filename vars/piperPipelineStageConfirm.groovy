@@ -48,38 +48,39 @@ void call(Map parameters = [:]) {
     boolean approval = false
     def userInput
 
-    timeout(
-        unit: 'HOURS',
-        time: config.manualConfirmationTimeout
-    ){
-        if (currentBuild.result == 'UNSTABLE') {
-            def minReasonLength = 10
-            def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
-            def reasonDescription = "Please provide a reason for overruling the failed steps ${unstableStepNames}, with ${minReasonLength} characters or more:".toString()
-            def acknowledgementDescription = "${acknowledgementText}:".toString()
-            while(!approval) {
-                userInput = input(
-                    message: 'Approve continuation of pipeline, although some steps failed.',
-                    ok: 'Approve',
-                    parameters: [
-                        text(
-                            defaultValue: '',
-                            description: reasonDescription,
-                            name: 'reason'
-                        ),
-                        booleanParam(
-                            defaultValue: false,
-                            description: acknowledgementDescription,
-                            name: 'acknowledgement'
-                        )
-                    ]
-                )
-                approval = validateApproval(userInput.reason, minReasonLength, userInput.acknowledgement, acknowledgementText, unstableStepNames)
+    piperStageWrapper (script: script, stageName: stageName, stageLocking: false) {
+        timeout(
+            unit: 'HOURS',
+            time: config.manualConfirmationTimeout
+        ){
+            if (currentBuild.result == 'UNSTABLE') {
+                def minReasonLength = 10
+                def acknowledgementText = 'I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'
+                def reasonDescription = "Please provide a reason for overruling the failed steps ${unstableStepNames}, with ${minReasonLength} characters or more:".toString()
+                def acknowledgementDescription = "${acknowledgementText}:".toString()
+                while(!approval) {
+                    userInput = input(
+                        message: 'Approve continuation of pipeline, although some steps failed.',
+                        ok: 'Approve',
+                        parameters: [
+                            text(
+                                defaultValue: '',
+                                description: reasonDescription,
+                                name: 'reason'
+                            ),
+                            booleanParam(
+                                defaultValue: false,
+                                description: acknowledgementDescription,
+                                name: 'acknowledgement'
+                            )
+                        ]
+                    )
+                    approval = validateApproval(userInput.reason, minReasonLength, userInput.acknowledgement, acknowledgementText, unstableStepNames)
+                }
+            } else {
+                input message: config.manualConfirmationMessage
             }
-        } else {
-            input message: config.manualConfirmationMessage
         }
-
     }
 
 }
