@@ -43,7 +43,7 @@ spec:
         type: string
         description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
         mandatory: true
-        default: .pipeline/addon.yml
+        default: addon.yml
         scope:
           - PARAMETERS
           - STAGES
