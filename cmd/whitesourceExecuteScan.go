@@ -388,7 +388,7 @@ func executeNpmScan(config *ScanOptions, utils whitesourceUtils) error {
 		return fmt.Errorf("failed to find package.json files with excludes: %w", err)
 	}
 	if len(modules) == 0 {
-		log.Entry().Info("Found no NPM modules to scan. Configured excludes: %v",
+		log.Entry().Infof("Found no NPM modules to scan. Configured excludes: %v",
 			config.BuildDescriptorExcludeList)
 		return nil
 	}
