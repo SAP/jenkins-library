@@ -31,8 +31,8 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 	t.Run("CF Deploy Faas: Success case", func(t *testing.T) {
 		defer cfUtilsMock.Cleanup()
 
-		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
-		if assert.NoError(t, error) {
+		gotError := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		if assert.NoError(t, gotError) {
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"login", "-s", "testInstance", "-b", "testKey", "--silent"}, execRunner.Calls[0].Params)
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[1].Exec)
@@ -46,8 +46,8 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 		cfUtilsMock.LoginError = errors.New(errorMessage)
 
-		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
-		assert.EqualError(t, error, "Error while logging in occured: "+errorMessage, "Wrong error message")
+		gotError := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, gotError, "Error while logging in occured: "+errorMessage, "Wrong error message")
 	})
 
 	t.Run("xfsrt Login Error", func(t *testing.T) {
@@ -56,8 +56,8 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 		execRunner.ShouldFailOnCommand = map[string]error{"xfsrt-cli login -s testInstance -b testKey --silent": fmt.Errorf(errorMessage)}
 
-		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
-		assert.EqualError(t, error, "Failed to log in to xfsrt service instance 'testInstance' with service key 'testKey': "+errorMessage, "Wrong error message")
+		gotError := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, gotError, "Failed to log in to xfsrt service instance 'testInstance' with service key 'testKey': "+errorMessage, "Wrong error message")
 	})
 
 	t.Run("xfsrt Deployment Failure", func(t *testing.T) {
@@ -66,8 +66,8 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 		execRunner.ShouldFailOnCommand = map[string]error{"xfsrt-cli faas project deploy -y ./deploy/values.yaml": fmt.Errorf(errorMessage)}
 
-		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
-		assert.EqualError(t, error, "Failed to deploy faas project: "+errorMessage, "Wrong error message")
+		gotError := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
+		assert.EqualError(t, gotError, "Failed to deploy faas project: "+errorMessage, "Wrong error message")
 	})
 
 }
