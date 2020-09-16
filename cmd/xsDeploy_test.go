@@ -53,7 +53,7 @@ func (f *FileUtilsMock) Glob(pattern string) (matches []string, err error) {
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
-		User:                  "me",
+		Username:              "me",
 		Password:              "secretPassword",
 		Org:                   "myOrg",
 		Space:                 "mySpace",

@@ -127,7 +127,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
+                        ./piper xsDeploy --defaultConfig ${configFiles} --username \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
                         """
                     }
 
