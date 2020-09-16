@@ -16,3 +16,5 @@ jobs:
         close-pr-message: 'Pull request got stale and has automatically been closed'
         days-before-stale: 60
         days-before-close: 5
+        stale-issue-label: 'stale'
+        stale-pr-label: 'stale'
