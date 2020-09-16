@@ -133,7 +133,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 }
 
 func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) {
-	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans)
+	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if projectIsScanning {
 		log.Entry().Debugf("Scanning project %v ", project.Name)
 		pollScanStatus(sys, scan)
