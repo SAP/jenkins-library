@@ -32,8 +32,8 @@ type GeneralConfigOptions struct {
 	StepName             string
 	Verbose              bool
 	LogFormat            string
-	VaultApproleID       string
-	VaultApproleSecretID string
+	VaultRoleID          string
+	VaultRoleSecretID    string
 	HookConfig           HookConfiguration
 }
 
@@ -196,13 +196,13 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	var stepConfig config.StepConfig
 
 	// add vault credentials so that configuration can be fetched from vault
-	if GeneralConfig.VaultApproleID == "" {
-		GeneralConfig.VaultApproleID = os.Getenv("PIPER_vaultApproleID")
+	if GeneralConfig.VaultRoleID == "" {
+		GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultRoleID")
 	}
-	if GeneralConfig.VaultApproleSecretID == "" {
-		GeneralConfig.VaultApproleSecretID = os.Getenv("PIPER_vaultApproleSecretID")
+	if GeneralConfig.VaultRoleSecretID == "" {
+		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultRoleSecretID")
 	}
-	myConfig.SetVaultCredentials(GeneralConfig.VaultApproleID, GeneralConfig.VaultApproleSecretID)
+	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
