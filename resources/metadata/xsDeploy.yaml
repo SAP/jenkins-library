@@ -14,18 +14,18 @@ spec:
         type: string
         description: Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
       - name: operationIdLogPattern
         type: string
         description: Regex pattern for retrieving the ID of the operation from the xs log.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: ^.*xs bg-deploy -i (.*) -a.*$
         mandatory: false
         aliases:
@@ -34,9 +34,9 @@ spec:
         type: string
         description: Path to deployable
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -51,9 +51,9 @@ spec:
           - Abort
           - Retry
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
       - name: mode
         type: string
@@ -64,18 +64,18 @@ spec:
           - DEPLOY
           - BG_DEPLOY
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: operationId
         type: string
         description: The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.
         default:
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
@@ -84,9 +84,9 @@ spec:
         type: string
         description: The api url (e.g. https://example.org:12345
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: username
         aliases:
@@ -95,9 +95,9 @@ spec:
         type: string
         description: Username
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         mandatory: true
         resourceRef:
@@ -108,9 +108,9 @@ spec:
         type: string
         description: Password
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         mandatory: true
         resourceRef:
@@ -121,33 +121,33 @@ spec:
         type: string
         description: The org
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: space
         type: string
         description: The space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: loginOpts
         type: string
         description: Additional options appended to the login command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: xsSessionFile
         type: string
         description: The file keeping the xs session.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
   outputs:
     resources:

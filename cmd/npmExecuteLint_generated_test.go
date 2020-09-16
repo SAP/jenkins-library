@@ -10,7 +10,7 @@ func TestNpmExecuteLintCommand(t *testing.T) {
 
 	testCmd := NpmExecuteLintCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "npmExecuteLint", testCmd.Use, "command name incorrect")
 
 }

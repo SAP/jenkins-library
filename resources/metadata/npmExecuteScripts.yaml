@@ -17,7 +17,7 @@ spec:
           - STEPS
         default: false
       - name: runScripts
-        type: '[]string'
+        type: "[]string"
         description: List of additional run scripts to execute from package.json.
         scope:
           - PARAMETERS
@@ -41,14 +41,14 @@ spec:
           - STAGES
           - STEPS
       - name: scriptOptions
-        type: '[]string'
+        type: "[]string"
         description: Options are passed to all runScripts calls separated by a '--'. './piper npmExecuteScripts --runScripts ci-e2e --scriptOptions '--tag1' will correspond to 'npm run ci-e2e -- --tag1'
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: buildDescriptorExcludeList
-        type: '[]string'
+        type: "[]string"
         description: List of build descriptors and therefore modules to exclude from execution of the npm scripts. The elements can either be a path to the build descriptor or a pattern.
         scope:
           - PARAMETERS
