@@ -15,16 +15,17 @@ import (
 func TestCloudFoundryFaasDeploy(t *testing.T) {
 	var telemetryData telemetry.CustomData
 
+	config := cloudFoundryFaasDeployOptions{
+		CfAPIEndpoint:             "https://api.endpoint.com",
+		CfOrg:                     "testOrg",
+		CfSpace:                   "testSpace",
+		Username:                  "testUser",
+		Password:                  "testPassword",
+		XfsRuntimeServiceInstance: "testInstance",
+		XfsRuntimeServiceKeyName:  "testKey",
+	}
+
 	t.Run("CF Deploy Faas: Success case", func(t *testing.T) {
-		config := cloudFoundryFaasDeployOptions{
-			CfAPIEndpoint:             "https://api.endpoint.com",
-			CfOrg:                     "testOrg",
-			CfSpace:                   "testSpace",
-			Username:                  "testUser",
-			Password:                  "testPassword",
-			XfsRuntimeServiceInstance: "testInstance",
-			XfsRuntimeServiceKeyName:  "testKey",
-		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{}
 		defer cfUtilsMock.Cleanup()
@@ -42,15 +43,6 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 	t.Run("CF Login Error", func(t *testing.T) {
 		errorMessage := "errorMessage"
 
-		config := cloudFoundryFaasDeployOptions{
-			CfAPIEndpoint:             "https://api.endpoint.com",
-			CfOrg:                     "testOrg",
-			CfSpace:                   "testSpace",
-			Username:                  "testUser",
-			Password:                  "testPassword",
-			XfsRuntimeServiceInstance: "testInstance",
-			XfsRuntimeServiceKeyName:  "testKey",
-		}
 		execRunner := mock.ExecMockRunner{}
 		cfUtilsMock := cloudfoundry.CfUtilsMock{
 			LoginError: errors.New(errorMessage),
@@ -65,15 +57,6 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 	t.Run("xfsrt Login Error", func(t *testing.T) {
 		errorMessage := "errorMessage"
 
-		config := cloudFoundryFaasDeployOptions{
-			CfAPIEndpoint:             "https://api.endpoint.com",
-			CfOrg:                     "testOrg",
-			CfSpace:                   "testSpace",
-			Username:                  "testUser",
-			Password:                  "testPassword",
-			XfsRuntimeServiceInstance: "testInstance",
-			XfsRuntimeServiceKeyName:  "testKey",
-		}
 		execRunner := mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{"xfsrt-cli login -s testInstance -b testKey --silent": fmt.Errorf(errorMessage)},
 		}
@@ -88,15 +71,6 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 	t.Run("xfsrt Deployment Failure", func(t *testing.T) {
 		errorMessage := "errorMessage"
 
-		config := cloudFoundryFaasDeployOptions{
-			CfAPIEndpoint:             "https://api.endpoint.com",
-			CfOrg:                     "testOrg",
-			CfSpace:                   "testSpace",
-			Username:                  "testUser",
-			Password:                  "testPassword",
-			XfsRuntimeServiceInstance: "testInstance",
-			XfsRuntimeServiceKeyName:  "testKey",
-		}
 		execRunner := mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{"xfsrt-cli faas project deploy -y ./deploy/values.yaml": fmt.Errorf(errorMessage)},
 		}
