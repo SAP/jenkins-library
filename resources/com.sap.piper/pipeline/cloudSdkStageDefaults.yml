@@ -1,12 +1,9 @@
 stages:
-  mavenExecuteStaticCodeChecks:
+  build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
-  lint:
-    extensionExists: true
-    stepConditions:
-      lint:
+      npmExecuteLint:
         filePattern:
           - '**/*.js'
           - '**/*.jsx'
@@ -19,16 +16,23 @@ stages:
           - 'ci-it-backend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  compliance:
+    onlyProductiveBranch: true
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-frontend'
-  frontendUnitTests:
+  additionalUnitTests:
     stepConditions:
-      frontendUnitTests:
+      npmExecuteScripts:
         npmScripts:
-          - 'ci-test'
           - 'ci-frontend-unit-test'
   npmAudit:
     stepConditions:
