@@ -111,7 +111,7 @@ It resolves the dotted version string into version, support package level and pa
 }
 
 func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckCVsOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service System (AAKaaS)")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service System (AAKaaS)")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password the Addon Assembly Kit as a Service System (AAKaaS)")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
