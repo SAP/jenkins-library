@@ -29,7 +29,7 @@ func githubSetCommitStatus(config githubSetCommitStatusOptions, telemetryData *t
 }
 
 func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService gitHubCommitStatusRepositoriesService) error {
-	status := github.RepoStatus{State: &config.Status, TargetURL: &config.TargetURL}
+	status := github.RepoStatus{Context: &config.Context, Description: &config.Description, State: &config.Status, TargetURL: &config.TargetURL}
 	_, _, err := ghRepositoriesService.CreateStatus(ctx, config.Owner, config.Repository, config.CommitID, &status)
 	if err != nil {
 		return errors.Wrapf(err, "failed to set status '%v' on commitId '%v'", config.Status, config.CommitID)

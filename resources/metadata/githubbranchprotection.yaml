@@ -31,11 +31,15 @@ spec:
           - STAGES
           - STEPS
         type: string
+        default: master
         mandatory: true
       - name: owner
         aliases:
           - name: githubOrg
         description: Name of the GitHub organization.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
         scope:
           - PARAMETERS
           - STAGES
@@ -46,6 +50,9 @@ spec:
         aliases:
           - name: githubRepo
         description: Name of the GitHub repository.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
         scope:
           - PARAMETERS
           - STAGES

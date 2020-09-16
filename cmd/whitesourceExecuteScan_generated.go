@@ -288,20 +288,30 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "orgToken",
-						ResourceRef: []config.ResourceReference{{Name: "orgAdminUserTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "orgToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "orgAdminUserTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "userToken",
-						ResourceRef: []config.ResourceReference{{Name: "userTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "userToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "userTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "licensingVulnerabilities",
