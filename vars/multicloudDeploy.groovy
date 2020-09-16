@@ -34,18 +34,18 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'cfCreateServices',
     /** Defines the deployment type.*/
-    'enableZeroDowntimeDeployment'
-])
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** The source file to deploy to SAP Cloud Platform. Only for NEO targets.*/
-    'source',
+    'enableZeroDowntimeDeployment',
     /** Runs all the deployments in the current workspace.
      *  It is recommended to use an isolated workspace while using blue-green deployment with multiple cfTargets,
      *  since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
      *  It is also recommended in case of parallel execution and use of mtaExtensionCredentials, since the
      *  credentials are inserted in the mtaExtensionDescriptor file.*/
     'runInCurrentWorkspace'
+])
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** The source file to deploy to SAP Cloud Platform. Only for NEO targets.*/
+    'source'
 ])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']

@@ -372,7 +372,7 @@ class MulticloudDeployTest extends BasePiperTest {
             enableZeroDowntimeDeployment: true,
             parallelExecution           : true,
             source                      : 'file.mtar',
-            runInCurrentWorkspace       : true,
+            runInCurrentWorkspace       : true
         ])
 
         assertTrue(executedInParallel)
