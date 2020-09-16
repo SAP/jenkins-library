@@ -160,6 +160,77 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testPullSidecarWithDedicatedCredentialsAndRegistry() {
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                dockerExecute: [
+                    dockerRegistry: 'https://registry.example.org',
+                    dockerRegistryCredentials: 'mySecrets',
+                    dockerSidecarRegistry: 'https://sidecarregistry.example.org',
+                    dockerSidecarRegistryCredentials: 'mySidecarRegistryCredentials',
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerRegistryCredentials: 'mySecrets',
+            sidecarImage: 'ubuntu',
+        ) {
+            bodyExecuted = true
+        }
+        // not clear which image has been pulled with which registry, but at least
+        // both registries are involved.
+        assertThat(docker.registriesWithCredentials, is([
+            [
+                registry: 'https://registry.example.org',
+                credentialsId: 'mySecrets',
+            ],
+            [
+                registry: 'https://sidecarregistry.example.org',
+                credentialsId: 'mySidecarRegistryCredentials',
+            ]
+        ]))
+        assertThat(docker.imagePullCount, is(2))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
+    void testPullSidecarWithSameCredentialsAndRegistryLikeBaseImageWhenNothingElseIsSpecified() {
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                dockerExecute: [
+                    dockerRegistry: 'https://registry.example.org',
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerRegistryCredentials: 'mySecrets',
+            sidecarImage: 'ubuntu',
+        ) {
+            bodyExecuted = true
+        }
+        // from getting an empty list we derive withRegistry has not been called
+        // if it would have been called we would have the registry provided above.
+        assertThat(docker.registriesWithCredentials, is([
+            [
+                registry: 'https://registry.example.org',
+                credentialsId: 'mySecrets',
+            ],
+            [
+                registry: 'https://registry.example.org',
+                credentialsId: 'mySecrets',
+            ],
+        ]))
+        assertThat(docker.imagePullCount, is(2))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
     void testPullWithoutCredentialsHappensWithoutRegistryCall() {
         nullScript.commonPipelineEnvironment.configuration =
         [
@@ -177,7 +248,7 @@ class DockerExecuteTest extends BasePiperTest {
         }
         // from getting an empty list we derive withRegistry has not been called
         // if it would have been called we would have the registry provided above.
-        assertThat(docker.registriesWithCredentials, is([:]))
+        assertThat(docker.registriesWithCredentials, is([]))
         assertThat(docker.imagePullCount, is(1))
         assertThat(bodyExecuted, is(true))
     }
@@ -200,7 +271,12 @@ class DockerExecuteTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-        assertThat(docker.registriesWithCredentials, is([registry: 'https://registry.example.org', credentialsId: 'mySecrets']))
+        assertThat(docker.registriesWithCredentials, is([
+            [
+                registry: 'https://registry.example.org',
+                credentialsId: 'mySecrets',
+            ]
+        ]))
         assertThat(docker.imagePullCount, is(1))
         assertThat(bodyExecuted, is(true))
     }
@@ -378,7 +454,7 @@ class DockerExecuteTest extends BasePiperTest {
         private int imagePullCount = 0
         private String parameters
         private String sidecarParameters
-        private Map registriesWithCredentials = [:]
+        private List registriesWithCredentials = []
         private String credentialsId
 
         DockerMock image(String imageName) {
@@ -392,7 +468,7 @@ class DockerExecuteTest extends BasePiperTest {
         }
 
         void withRegistry(String  registry, String credentialsId, Closure c) {
-            this.registriesWithCredentials <<  [registry: registry, credentialsId: credentialsId]
+            this.registriesWithCredentials << [registry: registry, credentialsId: credentialsId]
             c()
         }
 
