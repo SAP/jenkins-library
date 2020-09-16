@@ -42,7 +42,7 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 	t.Run("CF Login Error", func(t *testing.T) {
 		defer cfUtilsMock.Cleanup()
-		errorMessage := "errorMessage"
+		errorMessage := "cf login error"
 
 		cfUtilsMock.LoginError = errors.New(errorMessage)
 
@@ -52,7 +52,7 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 	t.Run("xfsrt Login Error", func(t *testing.T) {
 		defer cfUtilsMock.Cleanup()
-		errorMessage := "errorMessage"
+		errorMessage := "xfsrt login error"
 
 		execRunner.ShouldFailOnCommand = map[string]error{"xfsrt-cli login -s testInstance -b testKey --silent": fmt.Errorf(errorMessage)}
 
@@ -62,7 +62,7 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 
 	t.Run("xfsrt Deployment Failure", func(t *testing.T) {
 		defer cfUtilsMock.Cleanup()
-		errorMessage := "errorMessage"
+		errorMessage := "xfsrt deployment failure"
 
 		execRunner.ShouldFailOnCommand = map[string]error{"xfsrt-cli faas project deploy -y ./deploy/values.yaml": fmt.Errorf(errorMessage)}
 
