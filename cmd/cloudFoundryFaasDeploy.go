@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -77,6 +78,7 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 	if err := c.RunExecutable("xfsrt-cli", xfsrtDeployScript...); err != nil {
 		return fmt.Errorf("Failed to deploy faas project: %w", err)
 	}
+	log.Entry().Info("Faas application is successfully deployed to Extension Factory Serverless Runtime service.")
 
 	return returnedError
 }
