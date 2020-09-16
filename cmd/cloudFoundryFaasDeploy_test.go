@@ -31,7 +31,7 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 		npmUtilsMock := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &execRunner}
 
 		error := runCloudFoundryFaasDeploy(&config, &telemetryData, &execRunner, &cfUtilsMock, &npm.Execute{Utils: &npmUtilsMock})
-		if error == nil {
+		if assert.NoError(t, error) {
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"login", "-s", "testInstance", "-b", "testKey", "--silent"}, execRunner.Calls[0].Params)
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[1].Exec)
