@@ -15,10 +15,6 @@ import (
 func TestCloudFoundryFaasDeploy(t *testing.T) {
 	var telemetryData telemetry.CustomData
 
-	existingFiles := make(map[string]string)
-	existingFiles["package.json"] = "{\"name\": \"myName\", \"version\": \"1.2.3\"}"
-	//fileUtils := mock.FilesMock{files: existingFiles}
-
 	t.Run("CF Deploy Faas: Success case", func(t *testing.T) {
 		config := cloudFoundryFaasDeployOptions{
 			CfAPIEndpoint:             "https://api.endpoint.com",
@@ -112,10 +108,4 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 		assert.EqualError(t, error, "Failed to deploy faas project: "+errorMessage, "Wrong error message")
 	})
 
-}
-
-type FaasTestFileUtilsMock struct {
-	existingFiles map[string]string
-	writtenFiles  map[string]string
-	copiedFiles   map[string]string
 }
