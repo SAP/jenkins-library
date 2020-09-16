@@ -46,13 +46,3 @@ steps:
     abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
     addonDescriptorFileName: 'addon.yml'
 ```
-For Testing Purpose it is also possible to provide user and password directly istead of supplying a credentialsId
-
-```yaml
-steps:
-  abapAddonAssemblyKitCheckCVs:
-    username: 'myUser',
-    password: 'myPassword',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
-    addonDescriptorFileName: 'addon.yml'
-```
