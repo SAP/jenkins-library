@@ -263,10 +263,6 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 		return fmt.Errorf("the file '%s' does not exist: %w", oldPath, os.ErrNotExist)
 	}
 
-	if oldPath == newPath {
-		return nil
-	}
-
 	oldAbsPath := f.toAbsPath(oldPath)
 	props, exists := f.files[oldAbsPath]
 	// If there is no leaf-entry in the map, path may be a directory.
@@ -274,6 +270,10 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 	if !exists {
 		return fmt.Errorf("renaming file '%s' is not supported, since it does not exist, "+
 			"or is not a leaf-entry", oldPath)
+	}
+
+	if oldPath == newPath {
+		return nil
 	}
 
 	newAbsPath := f.toAbsPath(newPath)

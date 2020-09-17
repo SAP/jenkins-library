@@ -230,6 +230,75 @@ func TestFilesMockFileRemove(t *testing.T) {
 	})
 }
 
+func TestFilesMockFileRename(t *testing.T) {
+	t.Parallel()
+	t.Run("fail to rename non-existing file (no init)", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err, "the file '"+oldPath+"' does not exist: file does not exist")
+	})
+	t.Run("fail to rename non-existing file", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("triggers/initialization")
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err,
+			"renaming file '"+oldPath+"' is not supported, since it does not exist, or is not a leaf-entry")
+	})
+	t.Run("fail to rename non-existing file, even no-op", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("triggers/initialization")
+		oldPath := filepath.Join("foo", "bar")
+		newPath := oldPath
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err,
+			"renaming file '"+oldPath+"' is not supported, since it does not exist, or is not a leaf-entry")
+	})
+	t.Run("success to rename dir (no-op)", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddDir(oldPath)
+		newPath := oldPath
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+	})
+	t.Run("success to rename dir", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddDir(oldPath)
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+		assert.False(t, files.HasFile(oldPath))
+	})
+	t.Run("success to rename file", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddFile(oldPath, []byte("dummy contents"))
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+		assert.False(t, files.HasFile(oldPath))
+	})
+	t.Run("fail to rename file, already exists", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		files.AddFile(oldPath, []byte("dummy contents"))
+		files.AddFile(newPath, []byte("dummy contents"))
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err, "cannot rename '"+oldPath+"', target path '"+newPath+"' already exists")
+		assert.True(t, files.HasFile(newPath))
+		assert.True(t, files.HasFile(oldPath))
+	})
+}
+
 func TestFilesMockGetwd(t *testing.T) {
 	t.Parallel()
 	t.Run("test root", func(t *testing.T) {
