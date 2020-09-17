@@ -7,7 +7,7 @@
 * This step needs the Product Version name and the resolved version(version, spslevel and patchlevel).
 * It also needs for each Software Component Version which should be part of the Target Vector, the name and the resolved version(version, splevel and patchlevel) as well as the Delivery Package.
 * The Delivery Packages must exist in the package registry (status "P") or already as physical packages (status "L" or "R")
-* These informations are taken from the addonDescriptor in the commonPipelineEnvironment
+* This information is taken from the addonDescriptor in the commonPipelineEnvironment.
 * If you run prior to this step the steps: [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs), [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV) and [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages) you will get the needed information.
 
 ## ${docGenParameters}
