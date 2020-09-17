@@ -425,11 +425,9 @@ private List getContainerList(config) {
             }
             containerSpec.ports = ports
         }
-        if (config?.jenkinsKubernetes?.resources) {
-            def resources = getResources(containerName, config)
-            if(resources) {
-                containerSpec.resources = resources
-            }
+        def resources = getResources(containerName, config)
+        if(resources) {
+            containerSpec.resources = resources
         }
         result.push(containerSpec)
     }
