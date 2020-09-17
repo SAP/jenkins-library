@@ -9,23 +9,19 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** For Docker builds only (mandatory): name of the image to be built. */
+    /** The name of the docker image to dgoss. */
     'dockerImageName',
-    /** For Docker builds only: Defines the registry url where the image should be located*/
+    /** Defines the registry url where the image should be located*/
     'dockerRegistryUrl',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
 
-    /** For Docker builds only (mandatory): tag of the image to be built. */
+    /** The tag of the image to dgoss. */
     'dockerImageTag',
     /**
-     * gossFile Name of the goss file to use. Default value is 'goss.yaml'.
+     * gossFile The oath to the goss file to use. Default value is 'goss.yaml'.
      */
-    'gossFile',
-    /** For custom build types: Defines the command to be executed within the `dockerImage` in order to execute the build. */
-    'dockerCommand',
-    /** For custom build types: Image to be used for builds in case they should run inside a custom Docker container */
-    'dockerImage',
+    'gossFile'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
