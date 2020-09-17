@@ -33,9 +33,7 @@ spec:
         type: string
         description: Password the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
         mandatory: true
         secret: true
       - name: addonDescriptorFileName
