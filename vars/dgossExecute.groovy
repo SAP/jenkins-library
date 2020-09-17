@@ -92,34 +92,34 @@ def runOnK8S(config, dockerImageNameAndTag){
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dgoss
-  labels:
     name: dgoss
+    labels:
+        name: dgoss
 spec:
-  volumes:
-  - name: dind-storage
-    emptyDir: {}
-  containers:
-  - name: dind
-    image: docker:18.06.3-dind
-    securityContext:
-      privileged: true
-    volumeMounts:
-      - name: dind-storage
-        mountPath: /var/lib/docker
-  - name: goss
-    image: kiwicom/dgoss
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375
-    - name: GOSS_FILES_STRATEGY
-      value: cp
-    command:
-    - cat
-    tty: true
-  - name: jnlp
-    image: docker.wdf.sap.corp:50001/sap-production/jnlp-alpine:3.26.1-sap-02
-    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    volumes:
+    - name: dind-storage
+        emptyDir: {}
+    containers:
+    - name: dind
+        image: docker:18.06.3-dind
+        securityContext:
+        privileged: true
+        volumeMounts:
+        - name: dind-storage
+            mountPath: /var/lib/docker
+    - name: goss
+        image: kiwicom/dgoss
+        env:
+        - name: DOCKER_HOST
+        value: tcp://localhost:2375
+        - name: GOSS_FILES_STRATEGY
+        value: cp
+        command:
+        - cat
+        tty: true
+    - name: jnlp
+        image: docker.wdf.sap.corp:50001/sap-production/jnlp-alpine:3.26.1-sap-02
+        args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
             """
     ){
         node(POD_LABEL){
