@@ -435,7 +435,7 @@ private List getContainerList(config) {
             }
             containerSpec.ports = ports
         }
-        def resources = getResources(containerName, config)
+	def resources = getResources(containerName.toLowerCase(), config)
         if(resources) {
             containerSpec.resources = resources
         }
