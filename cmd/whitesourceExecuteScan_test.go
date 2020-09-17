@@ -338,11 +338,3 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		}
 	})
 }
-
-var slice []string = nil
-
-func TestRangeNil(t *testing.T) {
-	for _, s := range slice {
-		fmt.Printf("%s", s)
-	}
-}
