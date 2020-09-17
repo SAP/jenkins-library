@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -48,6 +49,7 @@ type whitesourceUtils interface {
 	Getwd() (string, error)
 	MkdirAll(path string, perm os.FileMode) error
 	FileExists(path string) (bool, error)
+	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
@@ -243,31 +245,48 @@ func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
 
 const whiteSourceConfig = "whitesource.config.json"
 
-func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, devDependencies bool) error {
+func setValueAndLogChange(config map[string]interface{}, key string, value interface{}) {
+	oldValue, exists := config[key]
+	if exists && oldValue != value {
+		log.Entry().Infof("overwriting '%s' in %s: %v -> %v", key, whiteSourceConfig, oldValue, value)
+	}
+	config[key] = value
+}
+
+func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, devDep, ignoreLsErrors bool) error {
+	var npmConfig = make(map[string]interface{})
+
 	exists, _ := utils.FileExists(whiteSourceConfig)
 	if exists {
-		log.Entry().Errorf(
-			"The file '%s' already exists in the project. "+
-				"Please delete it and only use the file .pipeline/config.yml to configure WhiteSource.",
+		fileContents, err := utils.FileRead(whiteSourceConfig)
+		if err != nil {
+			return fmt.Errorf("file '%s' already exists, but could not be read: %w", whiteSourceConfig, err)
+		}
+		err = json.Unmarshal(fileContents, &npmConfig)
+		if err != nil {
+			return fmt.Errorf("file '%s' already exists, but could not be parsed: %w", whiteSourceConfig, err)
+		}
+		log.Entry().Infof("The file '%s' already exists in the project. Changed config details will be logged.",
 			whiteSourceConfig)
-		return fmt.Errorf("file '%s' already exists", whiteSourceConfig)
 	}
 
-	npmConfig := []byte(fmt.Sprintf(`{
-		"apiKey": "%s",
-		"userKey": "%s",
-		"checkPolicies": true,
-		"productName": "%s",
-		"projectName": "%s",
-		"productVer": "%s",
-		"devDep": %v,
-		"ignoreNpmLsErrors": true
-	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion,
-		devDependencies))
+	npmConfig["apiKey"] = config.OrgToken
+	npmConfig["userKey"] = config.UserToken
+	setValueAndLogChange(npmConfig, "checkPolicies", true)
+	setValueAndLogChange(npmConfig, "productName", config.ProductName)
+	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
+	setValueAndLogChange(npmConfig, "productVer", config.ProductVersion)
+	setValueAndLogChange(npmConfig, "devDep", devDep)
+	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
-	err := utils.FileWrite(whiteSourceConfig, npmConfig, 0644)
+	jsonBuffer, err := json.Marshal(npmConfig)
 	if err != nil {
 		return fmt.Errorf("failed to generate '%s': %w", whiteSourceConfig, err)
+	}
+
+	err = utils.FileWrite(whiteSourceConfig, jsonBuffer, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write '%s': %w", whiteSourceConfig, err)
 	}
 	return nil
 }
@@ -275,7 +294,7 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
 func executeYarnScan(config *ScanOptions, utils whitesourceUtils) error {
-	if err := writeWhitesourceConfigJSON(config, utils, true); err != nil {
+	if err := writeWhitesourceConfigJSON(config, utils, true, false); err != nil {
 		return err
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
