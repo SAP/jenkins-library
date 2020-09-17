@@ -442,14 +442,19 @@ private List getContainerList(config) {
         result.push(containerSpec)
     }
     if (config.sidecarImage) {
+        def sideCarContainerName = config.sidecarName.toLowerCase()
         def containerSpec = [
-            name           : config.sidecarName.toLowerCase(),
+            name           : sideCarContainerName,
             image          : config.sidecarImage,
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
 
+        def resources = getResources(sideCarContainerName, config)
+        if(resources) {
+            containerSpec.resources = resources
+        }
         result.push(containerSpec)
     }
     return result
