@@ -32,6 +32,10 @@ func (m *whitesourceSystemMock) GetProductByName(productName string) (ws.Product
 	return ws.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
 }
 
+func (m *whitesourceSystemMock) CreateProduct(productName string, _ []string) (ws.Product, error) {
+	return m.GetProductByName(productName)
+}
+
 func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]ws.Project, error) {
 	return m.projects, nil
 }
@@ -337,4 +341,12 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 			assert.Equal(t, expected, string(contents))
 		}
 	})
+}
+
+var slice []string = nil
+
+func TestRangeNil(t *testing.T) {
+	for _, s := range slice {
+		fmt.Printf("%s", s)
+	}
 }

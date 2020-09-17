@@ -31,6 +31,7 @@ type ScanOptions = whitesourceExecuteScanOptions
 // be available from the whitesource system.
 type whitesource interface {
 	GetProductByName(productName string) (ws.Product, error)
+	CreateProduct(productName string, emailAddressesOfInitialProductAdmins []string) (ws.Product, error)
 	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectByToken(projectToken string) (ws.Project, error)
@@ -192,6 +193,10 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
 		product, err := sys.GetProductByName(config.ProductName)
 		if err != nil {
+			if !config.CreateProductFromPipeline {
+				return err
+			}
+			// TODO: product, err = sys.CreateProduct(config.ProductName, config.EmailAddressesOfInitialProductAdmins)
 			return err
 		}
 		if product.Token == "" {

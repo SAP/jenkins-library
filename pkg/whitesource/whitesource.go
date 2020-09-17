@@ -70,6 +70,9 @@ type Request struct {
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
 	Format       string `json:"format,omitempty"`
+	// ProductMembership ... (for CreateProduct to set initial admins)
+	// ProductAdmins...
+	// AlertsEmailReceivers...
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -124,6 +127,61 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	}
 
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
+}
+
+// CreateProduct
+func (s *System) CreateProduct(productName string, emailAddressesOfInitialProductAdmins []string) (Product, error) {
+	if productName == "" {
+		return Product{}, errors.New("no productName provided")
+	}
+
+	product := Product{}
+
+	req := Request{
+		RequestType: "createProduct",
+		ProductName: productName,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &product)
+	if err != nil {
+		return Product{}, errors.Wrap(err, "WhiteSource request failed")
+	}
+	/*
+		for _, address := range emailAddressesOfInitialProductAdmins {
+
+		}
+
+		req = Request{
+			RequestType: "setProductAssignments",
+			ProductToken: product.Token,
+			ProductMembership:
+		}
+	*/
+
+	return product, nil
+
+	/*
+		def parsedResponse = issueHttpRequest(requestBody)
+		def metaInfo = parsedResponse
+
+		def groups = []
+		def users = []
+		for(int i = 0; i < config.whitesource.emailAddressesOfInitialProductAdmins.size(); i++) {
+		def email = config.whitesource.emailAddressesOfInitialProductAdmins.get(i)
+		users.add(["email": email])
+		}
+
+		requestBody = [
+		"requestType" : "setProductAssignments",
+		"productToken" : metaInfo.productToken,
+		"productMembership" : ["userAssignments":[], "groupAssignments":groups],
+		"productAdmins" : ["userAssignments":users],
+		"alertsEmailReceivers" : ["userAssignments":[]]
+		]
+		issueHttpRequest(requestBody)
+
+		return metaInfo
+	*/
 }
 
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
