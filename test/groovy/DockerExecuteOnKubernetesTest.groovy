@@ -293,6 +293,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 bodyExecuted = true
             })
 
+        assertEquals(requests: [memory: '1Gi',cpu: '0.25'],limits: [memory: '2Gi',cpu: '1'], resources.jnlp)
         assertEquals(requests: [memory: '1Gi',cpu: '0.25'],limits: [memory: '2Gi',cpu: '1'], resources.mavenexecute)
         assertTrue(bodyExecuted)
     }
@@ -354,22 +355,47 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                         ]
                     ],
                     mavenexecute: [
-                    requests: [
-                        memory: '2Gi',
-                        cpu: '0.75'
+                        requests: [
+                            memory: '2Gi',
+                            cpu: '0.75'
+                        ],
+                        limits: [
+                            memory: '4Gi',
+                            cpu: '2'
+                        ]
                     ],
-                    limits: [
-                        memory: '4Gi',
-                        cpu: '2'
+                    jnlp: [
+                        requests: [
+                            memory: '3Gi',
+                            cpu: '0.33'
+                        ],
+                        limits: [
+                            memory: '6Gi',
+                            cpu: '3'
+                        ]
+                    ],
+                    mysidecar: [
+                        requests: [
+                            memory: '10Gi',
+                            cpu: '5.00'
+                        ],
+                        limits: [
+                            memory: '20Gi',
+                            cpu: '10'
+                        ]
                     ]
                 ]
             ]
-        ]]]
+        ]]
         stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
-            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            sidecarImage: 'ubuntu',
+            sidecarName: 'mysidecar') {
                 bodyExecuted = true
             }
-
+            
+        assertEquals(requests: [memory: '10Gi',cpu: '5.00'],limits: [memory: '20Gi',cpu: '10'], resources.mysidecar)
+        assertEquals(requests: [memory: '3Gi',cpu: '0.33'],limits: [memory: '6Gi',cpu: '3'], resources.jnlp)
         assertEquals(requests: [memory: '2Gi',cpu: '0.75'],limits: [memory: '4Gi',cpu: '2'], resources.mavenexecute)
         assertTrue(bodyExecuted)
     }
