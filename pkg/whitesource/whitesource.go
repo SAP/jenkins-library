@@ -61,7 +61,7 @@ type Project struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
-// Request defines a request object to be sent to the WhiteSource System
+// Request defines a request object to be sent to the WhiteSource system
 type Request struct {
 	RequestType  string `json:"requestType,omitempty"`
 	UserKey      string `json:"userKey,omitempty"`
@@ -70,9 +70,6 @@ type Request struct {
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
 	Format       string `json:"format,omitempty"`
-	// ProductMembership ... (for CreateProduct to set initial admins)
-	// ProductAdmins...
-	// AlertsEmailReceivers...
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
