@@ -15,10 +15,10 @@ spec:
         type: string
         description: Base URL to the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
       - name: username
         type: string
