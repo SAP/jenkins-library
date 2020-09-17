@@ -13,7 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/piper-validation/fortify-client-go/models"
