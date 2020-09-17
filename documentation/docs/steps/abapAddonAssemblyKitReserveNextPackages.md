@@ -7,7 +7,7 @@
 * The step needs information about the Software Component Versions for which packages should be reserved.
 * This information is provided via the addonDescriptor in the commonPipelineEnvironment where the fields 'name' and 'version' in the repositories list need to be filled.
 * The Software Component Versions must be valid.
-* The validation is done and the required informations is written to the CommonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs)
+* The validation is performed and the required information is written to the CommonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs)
 
 ## ${docGenParameters}
 
