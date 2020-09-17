@@ -6,7 +6,7 @@
 
 * This step needs the names of the packages which should be registered. For each package a SAR archive with the data file and metadata XML must be provided.
 * The package names and their status are taken from the addonDescriptor in the commonPipelineEnvironment, as well as the SarXMLFilePath with the path to the SAR file.
-* The informations will be written to the commonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages)
+* The information will be written to the commonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages)
 * The SAR archived is produced if you run the step [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages)
 
 ## ${docGenParameters}
