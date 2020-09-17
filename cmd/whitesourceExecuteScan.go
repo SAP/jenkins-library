@@ -31,7 +31,6 @@ type ScanOptions = whitesourceExecuteScanOptions
 // be available from the whitesource system.
 type whitesource interface {
 	GetProductByName(productName string) (ws.Product, error)
-	CreateProduct(productName string, emailAddressesOfInitialProductAdmins []string) (ws.Product, error)
 	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectByToken(projectToken string) (ws.Project, error)

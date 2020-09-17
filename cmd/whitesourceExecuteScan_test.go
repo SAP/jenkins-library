@@ -32,10 +32,6 @@ func (m *whitesourceSystemMock) GetProductByName(productName string) (ws.Product
 	return ws.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
 }
 
-func (m *whitesourceSystemMock) CreateProduct(productName string, _ []string) (ws.Product, error) {
-	return m.GetProductByName(productName)
-}
-
 func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]ws.Project, error) {
 	return m.projects, nil
 }

@@ -61,7 +61,7 @@ type Project struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
-// Request defines a request object to be sent to the WhiteSource System
+// Request defines a request object to be sent to the WhiteSource system
 type Request struct {
 	RequestType  string `json:"requestType,omitempty"`
 	UserKey      string `json:"userKey,omitempty"`
@@ -70,9 +70,6 @@ type Request struct {
 	ProjectToken string `json:"projectToken,omitempty"`
 	OrgToken     string `json:"orgToken,omitempty"`
 	Format       string `json:"format,omitempty"`
-	// ProductMembership ... (for CreateProduct to set initial admins)
-	// ProductAdmins...
-	// AlertsEmailReceivers...
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -129,66 +126,8 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
 }
 
-// CreateProduct
-func (s *System) CreateProduct(productName string, emailAddressesOfInitialProductAdmins []string) (Product, error) {
-	if productName == "" {
-		return Product{}, errors.New("no productName provided")
-	}
-
-	product := Product{}
-
-	req := Request{
-		RequestType: "createProduct",
-		ProductName: productName,
-	}
-
-	err := s.sendRequestAndDecodeJSON(req, &product)
-	if err != nil {
-		return Product{}, errors.Wrap(err, "WhiteSource request failed")
-	}
-	/*
-		for _, address := range emailAddressesOfInitialProductAdmins {
-
-		}
-
-		req = Request{
-			RequestType: "setProductAssignments",
-			ProductToken: product.Token,
-			ProductMembership:
-		}
-	*/
-
-	return product, nil
-
-	/*
-		def parsedResponse = issueHttpRequest(requestBody)
-		def metaInfo = parsedResponse
-
-		def groups = []
-		def users = []
-		for(int i = 0; i < config.whitesource.emailAddressesOfInitialProductAdmins.size(); i++) {
-		def email = config.whitesource.emailAddressesOfInitialProductAdmins.get(i)
-		users.add(["email": email])
-		}
-
-		requestBody = [
-		"requestType" : "setProductAssignments",
-		"productToken" : metaInfo.productToken,
-		"productMembership" : ["userAssignments":[], "groupAssignments":groups],
-		"productAdmins" : ["userAssignments":users],
-		"alertsEmailReceivers" : ["userAssignments":[]]
-		]
-		issueHttpRequest(requestBody)
-
-		return metaInfo
-	*/
-}
-
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
 func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
-	if productToken == "" {
-		return nil, errors.New("no productToken provided")
-	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -214,15 +153,11 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 	if err != nil {
 		return "", err
 	}
-
 	return project.Token, nil
 }
 
 // GetProjectByToken returns project meta info given a project token
 func (s *System) GetProjectByToken(projectToken string) (Project, error) {
-	if projectToken == "" {
-		return Project{}, errors.New("no projectToken provided")
-	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -263,6 +198,26 @@ func (s *System) GetProjectByName(productToken, projectName string) (Project, er
 	return Project{}, nil
 }
 
+// GetProjectsByIDs retrieves all projects for the given productToken and filters them by the given project ids
+func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
+	projects, err := s.GetProjectsMetaInfo(productToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+	}
+
+	var projectsMatched []Project
+	for _, project := range projects {
+		for _, projectID := range projectIDs {
+			if projectID == project.ID {
+				projectsMatched = append(projectsMatched, project)
+				break
+			}
+		}
+	}
+
+	return projectsMatched, nil
+}
+
 // GetProjectTokens returns the project tokens matching a given a slice of project names
 func (s *System) GetProjectTokens(productToken string, projectNames []string) ([]string, error) {
 	projectTokens := []string{}
@@ -283,9 +238,6 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 
 // GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
-	if productToken == "" {
-		return "", errors.New("no productToken provided")
-	}
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
 	}{
@@ -311,9 +263,6 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 // GetProjectRiskReport
 func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
-	if projectToken == "" {
-		return nil, errors.New("no projectToken provided")
-	}
 	req := Request{
 		RequestType:  "getProjectRiskReport",
 		ProjectToken: projectToken,
@@ -329,9 +278,6 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 
 // GetProjectVulnerabilityReport
 func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-	if projectToken == "" {
-		return nil, errors.New("no projectToken provided")
-	}
 	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
 		ProjectToken: projectToken,
@@ -348,9 +294,6 @@ func (s *System) GetProjectVulnerabilityReport(projectToken string, format strin
 
 // GetProjectAlerts
 func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
-	if projectToken == "" {
-		return nil, errors.New("no projectToken provided")
-	}
 	wsResponse := struct {
 		Alerts []Alert `json:"alerts"`
 	}{
@@ -372,9 +315,6 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 // GetProjectLibraryLocations
 func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
-	if projectToken == "" {
-		return nil, errors.New("no projectToken provided")
-	}
 	wsResponse := struct {
 		Libraries []Library `json:"libraryLocations"`
 	}{
