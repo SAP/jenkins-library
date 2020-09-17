@@ -152,7 +152,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 					{
 						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
