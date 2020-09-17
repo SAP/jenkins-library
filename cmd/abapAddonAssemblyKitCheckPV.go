@@ -32,7 +32,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	var addonDescriptorFromCPE abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
 	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
-	addonDescriptor = combineYAMLProductWithCPERepositories(addonDescriptor, addonDescriptorFromCPE)
+	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
 	if err != nil {
 		return err
 	}
@@ -50,11 +50,6 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	toCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(toCPE)
 	return nil
-}
-
-func combineYAMLProductWithCPERepositories(addonDescriptor abaputils.AddonDescriptor, addonDescriptorFromCPE abaputils.AddonDescriptor) abaputils.AddonDescriptor {
-	addonDescriptor.Repositories = addonDescriptorFromCPE.Repositories
-	return addonDescriptor
 }
 
 func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) {
