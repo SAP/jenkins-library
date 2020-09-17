@@ -4,6 +4,7 @@
 
 ## Prerequisites
 
+* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
 * The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories. The addon.yml should look like this:
 
 ```yaml
@@ -43,5 +44,5 @@ steps:
   abapAddonAssemblyKitCheckPV:
     abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
     abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
-    addonDescriptorFileName: '.pipeline/addon.yml'
+    addonDescriptorFileName: 'addon.yml'
 ```

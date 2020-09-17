@@ -52,7 +52,7 @@ func TestInitPV(t *testing.T) {
 			AddonVersionYAML: "3.2.1",
 		}
 
-		var pv pv
+		var pv productVersion
 		pv.init(prodvers, *conn)
 		assert.Equal(t, "/DRNMSPC/PRD01", pv.Name)
 		assert.Equal(t, "3.2.1", pv.VersionYAML)
@@ -65,7 +65,7 @@ func TestValidatePV(t *testing.T) {
 		conn.Client = &abaputils.ClientMock{
 			Body: responseCheckPV,
 		}
-		pv := pv{
+		pv := productVersion{
 			Connector:   *conn,
 			Name:        "/DRNMSPC/PRD01",
 			VersionYAML: "3.2.1",
@@ -81,7 +81,7 @@ func TestValidatePV(t *testing.T) {
 			Body:  "ErrorBody",
 			Error: errors.New("Validation failed"),
 		}
-		pv := pv{
+		pv := productVersion{
 			Connector:   *conn,
 			Name:        "/DRNMSPC/PRD01",
 			VersionYAML: "3.2.1",
@@ -100,7 +100,7 @@ func TestCopyFieldsPV(t *testing.T) {
 			AddonProduct:     "/DRNMSPC/PRD01",
 			AddonVersionYAML: "1.2.3",
 		}
-		var pv pv
+		var pv productVersion
 		pv.Version = "0003"
 		pv.SpsLevel = "0002"
 		pv.PatchLevel = "0001"

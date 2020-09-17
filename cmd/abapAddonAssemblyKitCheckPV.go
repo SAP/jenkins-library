@@ -39,7 +39,7 @@ func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, 
 	conn := new(abapbuild.Connector)
 	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
-	var p pv
+	var p productVersion
 	p.init(addonDescriptor, *conn)
 	err = p.validate()
 	if err != nil {
@@ -57,40 +57,40 @@ func combineYAMLProductWithCPERepositories(addonDescriptor abaputils.AddonDescri
 	return addonDescriptor
 }
 
-func (p *pv) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) {
+func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) {
 	p.Connector = conn
 	p.Name = desc.AddonProduct
 	p.VersionYAML = desc.AddonVersionYAML
 }
 
-func (p *pv) copyFieldsToRepo(initialAddonDescriptor *abaputils.AddonDescriptor) {
+func (p *productVersion) copyFieldsToRepo(initialAddonDescriptor *abaputils.AddonDescriptor) {
 	initialAddonDescriptor.AddonVersion = p.Version
 	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
 	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
 }
 
-func (p *pv) validate() error {
+func (p *productVersion) validate() error {
 	log.Entry().Infof("Validate product %s version %s and resolve version", p.Name, p.VersionYAML)
 	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
-	var jPV jsonPV
+	var jPV jsonProductVersion
 	json.Unmarshal(body, &jPV)
-	p.Name = jPV.PV.Name
-	p.Version = jPV.PV.Version
-	p.SpsLevel = jPV.PV.SpsLevel
-	p.PatchLevel = jPV.PV.PatchLevel
+	p.Name = jPV.ProductVersion.Name
+	p.Version = jPV.ProductVersion.Version
+	p.SpsLevel = jPV.ProductVersion.SpsLevel
+	p.PatchLevel = jPV.ProductVersion.PatchLevel
 	log.Entry().Infof("Resolved version %s, spslevel %s, patchlevel %s", p.Version, p.SpsLevel, p.PatchLevel)
 	return nil
 }
 
-type jsonPV struct {
-	PV *pv `json:"d"`
+type jsonProductVersion struct {
+	ProductVersion *productVersion `json:"d"`
 }
 
-type pv struct {
+type productVersion struct {
 	abapbuild.Connector
 	Name           string `json:"Name"`
 	VersionYAML    string
