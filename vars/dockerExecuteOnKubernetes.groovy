@@ -447,7 +447,7 @@ private List getContainerList(config) {
     return result
 }
 
-private Map getResources(String imageName, Map config) {
+private Map getResources(String containerName, Map config) {
     Map resources = config.resources
     if(resources == null) {
         resources = config?.jenkinsKubernetes.resources
@@ -456,7 +456,7 @@ private Map getResources(String imageName, Map config) {
         System.err << "No resources found at all.\n"
         return null
     }
-    Map res = resources.get(imageName)
+    Map res = resources.get(containerName)
     if(res == null) {
         res = resources.get('DEFAULT')
     }
