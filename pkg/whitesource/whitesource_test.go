@@ -221,3 +221,49 @@ func TestGetProductName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Test Product", productName)
 }
+
+func TestGetProjectsByIDs(t *testing.T) {
+	responseBody :=
+		`{
+	"projectVitals":[
+		{
+			"id":1,
+			"name":"prj-1"
+		},
+		{
+			"id":2,
+			"name":"prj-2"
+		},
+		{
+			"id":3,
+			"name":"prj-3"
+		},
+		{
+			"id":4,
+			"name":"prj-4"
+		}
+	]
+}`
+
+	t.Parallel()
+
+	t.Run("find projects by ids", func(t *testing.T) {
+		myTestClient := whitesourceMockClient{responseBody: responseBody}
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+
+		projects, err := sys.GetProjectsByIDs("test_product_token", []int64{4, 2})
+
+		assert.NoError(t, err)
+		assert.Equal(t, []Project{{ID: 2, Name: "prj-2"}, {ID: 4, Name: "prj-4"}}, projects)
+	})
+
+	t.Run("find no projects by ids", func(t *testing.T) {
+		myTestClient := whitesourceMockClient{responseBody: responseBody}
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+
+		projects, err := sys.GetProjectsByIDs("test_product_token", []int64{5})
+
+		assert.NoError(t, err)
+		assert.Equal(t, []Project(nil), projects)
+	})
+}

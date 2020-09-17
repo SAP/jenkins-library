@@ -216,6 +216,26 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 	return projectTokens, nil
 }
 
+// GetProjectsByIDs retrieves all projects for the given productToken and filters them by the given project ids
+func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
+	projects, err := s.GetProjectsMetaInfo(productToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+	}
+
+	var projectsMatched []Project
+	for _, project := range projects {
+		for _, projectID := range projectIDs {
+			if projectID == project.ID {
+				projectsMatched = append(projectsMatched, project)
+				break
+			}
+		}
+	}
+
+	return projectsMatched, nil
+}
+
 // GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
 	wsResponse := struct {
