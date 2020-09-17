@@ -33,6 +33,7 @@ none
     previously contains a link to a page explaining how a password helper
     can be configured.
     Having the credentials written to disk is not recommended.
+    In addition, we don't recommend using personalised accounts for CI but rather dedicated "technical" users.
 
 ## Example 1: Run closure inside a docker container
 
