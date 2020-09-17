@@ -123,12 +123,15 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 	log.Entry().Infof("Project Token: %s", config.ProjectToken)
 	log.Entry().Info("-----------------------------------------------------")
 
-	if config.Reporting {
-		// Project was scanned, we need to wait for Whitesource backend to propagate the changes
-		// before downloading any reports.
+	if config.Reporting || config.SecurityVulnerabilities {
+		// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
+		// before downloading any reports or check security vulnerabilities.
 		if err := pollProjectStatus(config, sys); err != nil {
 			return err
 		}
+	}
+
+	if config.Reporting {
 		paths, err := downloadReports(config, utils, sys)
 		if err != nil {
 			return err
@@ -136,8 +139,8 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
 	}
 
-	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	if config.SecurityVulnerabilities {
+		// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 		if err := checkSecurityViolations(config, sys); err != nil {
 			return err
 		}
