@@ -42,7 +42,7 @@ func TestNexus3UploadMta(t *testing.T) {
 	})
 
 	err := container.whenRunningPiperCommand("nexusUpload", "--groupId=mygroup", "--artifactId=mymta",
-		"--user=admin", "--password=admin123", "--mavenRepository=maven-releases", "--url=http://localhost:8081")
+		"--username=admin", "--password=admin123", "--mavenRepository=maven-releases", "--url=http://localhost:8081")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
 	}
@@ -67,7 +67,7 @@ func TestNexus3UploadMaven(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
+	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--mavenRepository=maven-releases", "--url=http://localhost:8081")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
@@ -95,7 +95,7 @@ func TestNexus3UploadNpm(t *testing.T) {
 		},
 	})
 
-	err := container.whenRunningPiperCommand("nexusUpload", "--user=admin", "--password=admin123",
+	err := container.whenRunningPiperCommand("nexusUpload", "--username=admin", "--password=admin123",
 		"--npmRepository=npm-repo", "--url=http://localhost:8081")
 	if err != nil {
 		t.Fatalf("Piper command failed %s", err)
@@ -132,7 +132,7 @@ func TestNexus2Upload(t *testing.T) {
 		"nexusUpload",
 		"--groupId=mygroup",
 		"--artifactId=mymta",
-		"--user=admin",
+		"--username=admin",
 		"--password=admin123",
 		"--mavenRepository=releases",
 		"--version=nexus2",
@@ -147,7 +147,7 @@ func TestNexus2Upload(t *testing.T) {
 
 	piperOptions = []string{
 		"nexusUpload",
-		"--user=admin",
+		"--username=admin",
 		"--password=admin123",
 		"--mavenRepository=releases",
 		"--version=nexus2",
@@ -162,7 +162,7 @@ func TestNexus2Upload(t *testing.T) {
 
 	piperOptions = []string{
 		"nexusUpload",
-		"--user=admin",
+		"--username=admin",
 		"--password=admin123",
 		"--npmRepository=npm-repo",
 		"--version=nexus2",

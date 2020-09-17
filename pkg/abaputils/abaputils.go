@@ -194,6 +194,9 @@ func ConvertTime(logTimeStamp string) time.Time {
 	return t
 }
 
+// ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking
+type ReadAddonDescriptorType func(FileName string) (AddonDescriptor, error)
+
 // ReadAddonDescriptor parses AddonDescriptor YAML file
 func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 
