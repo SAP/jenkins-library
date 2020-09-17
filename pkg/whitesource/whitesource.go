@@ -166,10 +166,6 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	if project.Token == "" {
-		return "", fmt.Errorf("failed to resolve project token for '%s' and product token %s",
-			projectName, productToken)
-	}
 	return project.Token, nil
 }
 

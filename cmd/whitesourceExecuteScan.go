@@ -172,9 +172,6 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		if err != nil {
 			return err
 		}
-		if product.Token == "" {
-			return fmt.Errorf("failed to resolve product token for '%s'", config.ProductName)
-		}
 		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 		config.ProductToken = product.Token
 	}
@@ -186,6 +183,10 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 		if err != nil {
 			return err
+		}
+		if projectToken == "" {
+			return fmt.Errorf("failed to resolve project token for '%s' and product token %s",
+				config.ProjectName, config.ProductToken)
 		}
 		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
 		config.ProjectToken = projectToken

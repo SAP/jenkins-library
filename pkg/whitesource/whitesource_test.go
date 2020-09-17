@@ -161,7 +161,7 @@ func TestGetProjectToken(t *testing.T) {
 		assert.Equal(t, "test_project_token2", projectToken)
 	})
 
-	t.Run("not finding project 3 is no error", func(t *testing.T) {
+	t.Run("not finding project 3 is an error", func(t *testing.T) {
 		projectToken, err := sys.GetProjectToken("test_product_token", "Test Project3")
 		assert.NoError(t, err)
 		assert.Equal(t, "", projectToken)
