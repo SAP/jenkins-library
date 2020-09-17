@@ -129,18 +129,8 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
 }
 
-func validateToken(token string) error {
-	if token == "" {
-		return errors.New("no token provided")
-	}
-	return nil
-}
-
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
 func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
-	if err := validateToken(productToken); err != nil {
-		return nil, err
-	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -171,9 +161,6 @@ func (s *System) GetProjectToken(productToken, projectName string) (string, erro
 
 // GetProjectByToken returns project meta info given a project token
 func (s *System) GetProjectByToken(projectToken string) (Project, error) {
-	if err := validateToken(projectToken); err != nil {
-		return Project{}, err
-	}
 	wsResponse := struct {
 		ProjectVitals []Project `json:"projectVitals"`
 	}{
@@ -234,9 +221,6 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 
 // GetProductName returns the product name for a given product token
 func (s *System) GetProductName(productToken string) (string, error) {
-	if err := validateToken(productToken); err != nil {
-		return "", err
-	}
 	wsResponse := struct {
 		ProductTags []Product `json:"productTags"`
 	}{
@@ -262,9 +246,6 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 // GetProjectRiskReport
 func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
-	if err := validateToken(projectToken); err != nil {
-		return nil, err
-	}
 	req := Request{
 		RequestType:  "getProjectRiskReport",
 		ProjectToken: projectToken,
@@ -280,9 +261,6 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 
 // GetProjectVulnerabilityReport
 func (s *System) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-	if err := validateToken(projectToken); err != nil {
-		return nil, err
-	}
 	req := Request{
 		RequestType:  "getProjectVulnerabilityReport",
 		ProjectToken: projectToken,
@@ -299,9 +277,6 @@ func (s *System) GetProjectVulnerabilityReport(projectToken string, format strin
 
 // GetProjectAlerts
 func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
-	if err := validateToken(projectToken); err != nil {
-		return nil, err
-	}
 	wsResponse := struct {
 		Alerts []Alert `json:"alerts"`
 	}{
@@ -323,9 +298,6 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 // GetProjectLibraryLocations
 func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
-	if err := validateToken(projectToken); err != nil {
-		return nil, err
-	}
 	wsResponse := struct {
 		Libraries []Library `json:"libraryLocations"`
 	}{
