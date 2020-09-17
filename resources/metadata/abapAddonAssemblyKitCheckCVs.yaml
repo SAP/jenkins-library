@@ -9,7 +9,7 @@ spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential stored in Jenkins for Addon Assembly Kit as a Service System (AAKaaS)
+        description: Credential stored in Jenkins for Addon Assembly Kit as a Service (AAKaaS) system
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
@@ -23,7 +23,7 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User for the Addon Assembly Kit as a Service System (AAKaaS)
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
         scope:
           - PARAMETERS
           - STAGES
@@ -32,7 +32,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: Password the Addon Assembly Kit as a Service System (AAKaaS)
+        description: Password the Addon Assembly Kit as a Service (AAKaaS) system
         scope:
           - PARAMETERS
         mandatory: true
