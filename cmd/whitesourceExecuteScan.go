@@ -64,8 +64,12 @@ type whitesourceUtilsBundle struct {
 }
 
 func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error) {
-	opts := &versioning.Options{}
-	artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, w)
+	opts := &versioning.Options{
+		ProjectSettingsFile: config.ProjectSettingsFile,
+		GlobalSettingsFile:  config.GlobalSettingsFile,
+		M2Path:              config.M2Path,
+	}
+	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, opts, w)
 	if err != nil {
 		return nil, err
 	}
@@ -156,14 +160,14 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		}
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, coordinates)
+		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
 		if config.ProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
 			config.ProjectName = name
 		}
 		if config.ProductVersion == "" {
 			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
-				version, config.DefaultVersioningModel)
+				version, config.VersioningModel)
 			config.ProductVersion = version
 		}
 	}
@@ -200,6 +204,10 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 // executeScan executes different types of scans depending on the scanType parameter.
 // The default is to download the Unified Agent and use it to perform the scan.
 func executeScan(config *ScanOptions, utils whitesourceUtils) error {
+	if config.ScanType == "" {
+		config.ScanType = config.BuildTool
+	}
+
 	switch config.ScanType {
 	case "npm":
 		// Execute scan with whitesource yarn plugin
