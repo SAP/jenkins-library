@@ -25,10 +25,9 @@ spec:
         type: string
         description: User for the Addon Assembly Kit as a Service System (AAKaaS)
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: password
         type: string
