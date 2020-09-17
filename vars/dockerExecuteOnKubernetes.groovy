@@ -378,10 +378,20 @@ private List getContainerList(config) {
     def result = []
     //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
     if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
-        result.push([
-            name : 'jnlp',
+
+        def jnlpContainerName = 'jnlp'
+
+        def jnlpSpec = [
+            name : jnlpContainerName,
             image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
-        ])
+        ]
+
+        def resources = getResources(jnlpContainerName, config)
+        if(resources) {
+            jnlpSpec.resources = resources
+        }
+
+        result.push(jnlpSpec)
     }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
