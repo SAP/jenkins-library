@@ -453,7 +453,6 @@ private Map getResources(String containerName, Map config) {
         resources = config?.jenkinsKubernetes.resources
     }
     if(resources == null) {
-        System.err << "No resources found at all.\n"
         return null
     }
     Map res = resources.get(containerName)
