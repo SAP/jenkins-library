@@ -50,6 +50,7 @@ nav:
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckPV.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md

@@ -106,6 +106,7 @@ func Execute() {
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
