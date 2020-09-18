@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -115,7 +116,7 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 	}
 }
 
-type coordinatesMock struct {
+type whitesourceCoordinatesMock struct {
 	GroupID    string
 	ArtifactID string
 	Version    string
@@ -129,7 +130,7 @@ type downloadedFile struct {
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
-	coordinates     coordinatesMock
+	coordinates     whitesourceCoordinatesMock
 	downloadedFiles []downloadedFile
 }
 
@@ -164,7 +165,7 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
 		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
-		coordinates: coordinatesMock{
+		coordinates: whitesourceCoordinatesMock{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
 			Version:    "1.0.42",
@@ -309,40 +310,64 @@ func TestDownloadReports(t *testing.T) {
 }
 
 func TestWriteWhitesourceConfigJSON(t *testing.T) {
-	t.Run("happy path", func(t *testing.T) {
+	config := &ScanOptions{
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProjectName:    "mock-project",
+		ProductVersion: "42",
+	}
+
+	expected := make(map[string]interface{})
+	expected["apiKey"] = "org-token"
+	expected["userKey"] = "user-token"
+	expected["checkPolicies"] = true
+	expected["productName"] = "mock-product"
+	expected["projectName"] = "mock-project"
+	expected["productVer"] = "42"
+	expected["devDep"] = true
+	expected["ignoreNpmLsErrors"] = true
+
+	t.Parallel()
+
+	t.Run("write config from scratch", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "42",
-		}
 		utils := newWhitesourceUtilsMock()
 		// test
-		err := writeWhitesourceConfigJSON(config, utils, true)
+		err := writeWhitesourceConfigJSON(config, utils, true, true)
 		// assert
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
 			contents, _ := utils.FileRead(whiteSourceConfig)
-			expected := `{
-		"apiKey": "org-token",
-		"userKey": "user-token",
-		"checkPolicies": true,
-		"productName": "mock-product",
-		"projectName": "mock-project",
-		"productVer": "42",
-		"devDep": true,
-		"ignoreNpmLsErrors": true
-	}`
-			assert.Equal(t, expected, string(contents))
+			actual := make(map[string]interface{})
+			_ = json.Unmarshal(contents, &actual)
+			assert.Equal(t, expected, actual)
 		}
 	})
-}
 
-var slice []string = nil
+	t.Run("extend and merge config", func(t *testing.T) {
+		// init
+		initial := make(map[string]interface{})
+		initial["checkPolicies"] = false
+		initial["productName"] = "mock-product"
+		initial["productVer"] = "41"
+		initial["unknown"] = "preserved"
+		encoded, _ := json.Marshal(initial)
 
-func TestRangeNil(t *testing.T) {
-	for _, s := range slice {
-		fmt.Printf("%s", s)
-	}
+		utils := newWhitesourceUtilsMock()
+		utils.AddFile(whiteSourceConfig, encoded)
+
+		// test
+		err := writeWhitesourceConfigJSON(config, utils, true, true)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
+			contents, _ := utils.FileRead(whiteSourceConfig)
+			actual := make(map[string]interface{})
+			_ = json.Unmarshal(contents, &actual)
+
+			mergedExpected := expected
+			mergedExpected["unknown"] = "preserved"
+
+			assert.Equal(t, mergedExpected, actual)
+		}
+	})
 }

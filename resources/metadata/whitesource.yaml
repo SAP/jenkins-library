@@ -20,10 +20,21 @@ metadata:
 spec:
   inputs:
     params:
+      - name: buildTool
+        type: string
+        description: "Defines the tool which is used for building the artifact."
+        mandatory: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: buildTool
       - name: buildDescriptorFile
         type: string
         description: "Explicit path to the build descriptor file."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -45,7 +56,6 @@ spec:
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
           configuration."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -54,7 +64,6 @@ spec:
       - name: securityVulnerabilities
         type: bool
         description: "Whether security compliance is considered and reported as part of the assessment."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -63,7 +72,6 @@ spec:
       - name: timeout
         type: string
         description: "Timeout in seconds until a HTTP call is forcefully terminated."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -72,7 +80,6 @@ spec:
       - name: agentDownloadUrl
         type: string
         description: "URL used to download the latest version of the WhiteSource Unified Agent."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -81,7 +88,6 @@ spec:
       - name: configFilePath
         type: string
         description: "Explicit path to the WhiteSource Unified Agent configuration file."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -90,7 +96,6 @@ spec:
       - name: reportDirectoryName
         type: string
         description: "Name of the directory to save vulnerability/risk reports to"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -98,9 +103,8 @@ spec:
         default: "whitesource-reports"
       - name: aggregateVersionWideReport
         type: bool
-        description: 'This does not run a scan, instead just generated a report for all projects with
-          projectVersion = config.ProductVersion'
-        mandatory: false
+        description: "This does not run a scan, instead just generated a report for all projects with
+          projectVersion = config.ProductVersion"
         scope:
           - PARAMETERS
           - STAGES
@@ -109,7 +113,6 @@ spec:
       - name: vulnerabilityReportFormat
         type: string
         description: "Format of the file the vulnerability report is written to."
-        mandatory: false
         possibleValues: [xlsx, json, xml]
         scope:
           - PARAMETERS
@@ -120,7 +123,6 @@ spec:
         type: string
         description: 'Limit of parallel jobs being run at once in case of `scanType:
           ''mta''` based scenarios, defaults to `15`.'
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -129,7 +131,6 @@ spec:
       - name: reporting
         type: bool
         description: "Whether assessment is being done at all, defaults to `true`"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -138,7 +139,6 @@ spec:
       - name: serviceUrl
         type: string
         description: "URL to the WhiteSource server API used for communication."
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
@@ -148,7 +148,6 @@ spec:
       - name: buildDescriptorExcludeList
         type: "[]string"
         description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -182,7 +181,6 @@ spec:
       - name: licensingVulnerabilities
         type: bool
         description: "Whether license compliance is considered and reported as part of the assessment."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -191,7 +189,6 @@ spec:
       - name: agentFileName
         type: string
         description: "Locally used name for the Unified Agent jar file after download."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -200,7 +197,6 @@ spec:
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -209,7 +205,6 @@ spec:
         type: string
         description: "Version of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically."
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
@@ -222,7 +217,6 @@ spec:
         type: string
         description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
           WhiteSource Unified Agent."
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
@@ -249,7 +243,6 @@ spec:
       - name: projectToken
         type: string
         description: Project token to execute scan on
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
@@ -258,7 +251,6 @@ spec:
       - name: vulnerabilityReportTitle
         type: string
         description: "Title of vulnerability report written during the assessment phase."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -267,7 +259,6 @@ spec:
       - name: installCommand
         type: string
         description: "Install command that can be used to populate the default docker image for some scenarios."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -275,21 +266,16 @@ spec:
       - name: scanType
         type: string
         description: "Type of development stack used to implement the solution."
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
         possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: buildTool
       - name: cvssSeverityLimit
         type: string
         description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
           defaults to  `-1`."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -298,7 +284,6 @@ spec:
       - name: includes
         type: string
         description: "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -307,7 +292,6 @@ spec:
       - name: excludes
         type: string
         description: Space separated list of file path patterns to exclude in the scan
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -317,7 +301,6 @@ spec:
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically."
-        mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
@@ -326,7 +309,6 @@ spec:
       - name: agentParameters
         type: string
         description: "Additional parameters passed to the Unified Agent command line."
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
