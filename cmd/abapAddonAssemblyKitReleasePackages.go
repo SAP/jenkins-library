@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -54,14 +55,14 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 	return nil
 }
 
-func sortingBack(packagesWithReposLocked []packageWithRepository, packagesWithReposNotLocked []packageWithRepository) []abaputils.Repository {
+func sortingBack(packagesWithReposLocked []aakaas.PackageWithRepository, packagesWithReposNotLocked []aakaas.PackageWithRepository) []abaputils.Repository {
 	var combinedRepos []abaputils.Repository
 	for i := range packagesWithReposLocked {
-		packagesWithReposLocked[i].p.changeStatus(&packagesWithReposLocked[i].repo)
-		combinedRepos = append(combinedRepos, packagesWithReposLocked[i].repo)
+		packagesWithReposLocked[i].Package.ChangeStatus(&packagesWithReposLocked[i].Repo)
+		combinedRepos = append(combinedRepos, packagesWithReposLocked[i].Repo)
 	}
 	for i := range packagesWithReposNotLocked {
-		combinedRepos = append(combinedRepos, packagesWithReposNotLocked[i].repo)
+		combinedRepos = append(combinedRepos, packagesWithReposNotLocked[i].Repo)
 	}
 	return combinedRepos
 }
@@ -75,27 +76,27 @@ func checkInput(repos []abaputils.Repository) error {
 	return nil
 }
 
-func sortByStatus(repos []abaputils.Repository, conn connector) ([]packageWithRepository, []packageWithRepository) {
-	var packagesWithReposLocked []packageWithRepository
-	var packagesWithReposNotLocked []packageWithRepository
+func sortByStatus(repos []abaputils.Repository, conn abapbuild.Connector) ([]aakaas.PackageWithRepository, []aakaas.PackageWithRepository) {
+	var packagesWithReposLocked []aakaas.PackageWithRepository
+	var packagesWithReposNotLocked []aakaas.PackageWithRepository
 	for i := range repos {
-		var p pckg
-		p.init(repos[i], conn)
-		pWR := packageWithRepository{
-			p:    p,
-			repo: repos[i],
+		var pack aakaas.Package
+		pack.InitPackage(repos[i], conn)
+		pWR := aakaas.PackageWithRepository{
+			Package: pack,
+			Repo:    repos[i],
 		}
-		if p.Status == "L" {
+		if pack.Status == "L" {
 			packagesWithReposLocked = append(packagesWithReposLocked, pWR)
 		} else {
-			log.Entry().Infof("Package %s has status %s, cannot release this package", p.PackageName, p.Status)
+			log.Entry().Infof("Package %s has status %s, cannot release this package", pack.PackageName, pack.Status)
 			packagesWithReposNotLocked = append(packagesWithReposNotLocked, pWR)
 		}
 	}
 	return packagesWithReposLocked, packagesWithReposNotLocked
 }
 
-func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]packageWithRepository, error) {
+func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) ([]aakaas.PackageWithRepository, error) {
 	timeout := time.After(maxRuntimeInMinutes)
 	ticker := time.Tick(pollIntervalsInSeconds)
 
@@ -106,11 +107,11 @@ func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Dur
 		case <-ticker:
 			var allFinished bool = true
 			for i := range pckgWR {
-				if pckgWR[i].p.Status != "R" {
-					err := pckgWR[i].p.release()
+				if pckgWR[i].Package.Status != aakaas.PackageStatusReleased {
+					err := pckgWR[i].Package.Release()
 					// if there is an error, release is not yet finished
 					if err != nil {
-						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].p.PackageName, pollIntervalsInSeconds)
+						log.Entry().Infof("Release of %s is not yet finished, check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					}
 				}
@@ -121,20 +122,4 @@ func releaseAndPoll(pckgWR []packageWithRepository, maxRuntimeInMinutes time.Dur
 			}
 		}
 	}
-}
-
-func (p *pckg) release() error {
-	var body []byte
-	var err error
-	log.Entry().Infof("Release package %s", p.PackageName)
-	p.connector.getToken("/odata/aas_ocs_package")
-	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
-	body, err = p.connector.post(appendum, "")
-	if err != nil {
-		return err
-	}
-	var jPck jsonPackage
-	json.Unmarshal(body, &jPck)
-	p.Status = jPck.Package.Status
-	return nil
 }
