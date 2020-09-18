@@ -2,7 +2,7 @@ metadata:
   name: cloudFoundryCreateSpace
   description: Creates a user defined space in Cloud Foundry
   longDescription: |
-    Creates one or multiple Cloud Foundry spaces in Cloud Foundry
+    Creates a cf space in Cloud Foundry
     Mandatory:
     * Cloud Foundry API endpoint, Organization, name of the Cf space to be created
 
