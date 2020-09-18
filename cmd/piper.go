@@ -107,7 +107,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
-	//	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
 	//	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
 	//	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
