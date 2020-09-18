@@ -104,3 +104,16 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	})
 	conn.Baseurl = aAKaaSEndpoint
 }
+
+// UploadSarFile : upload *.sar file
+func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
+	url := conn.Baseurl + appendum
+	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
+	if err != nil {
+		defer response.Body.Close()
+		errorbody, _ := ioutil.ReadAll(response.Body)
+		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+	}
+	defer response.Body.Close()
+	return nil
+}
