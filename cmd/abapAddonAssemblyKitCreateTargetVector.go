@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -28,8 +29,8 @@ func abapAddonAssemblyKitCreateTargetVector(config abapAddonAssemblyKitCreateTar
 }
 
 func runAbapAddonAssemblyKitCreateTargetVector(config *abapAddonAssemblyKitCreateTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender, cpe *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) error {
-	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	conn := new(abapbuild.Connector)
+	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
@@ -80,14 +81,14 @@ func (tv *targetVector) init(addonDescriptor abaputils.AddonDescriptor) error {
 	return nil
 }
 
-func (tv *targetVector) createTargetVector(conn connector) error {
-	conn.getToken("/odata/aas_ocs_package")
+func (tv *targetVector) createTargetVector(conn abapbuild.Connector) error {
+	conn.GetToken("/odata/aas_ocs_package")
 	tvJSON, err := json.Marshal(tv)
 	if err != nil {
 		return err
 	}
 	appendum := "/odata/aas_ocs_package/TargetVectorSet"
-	body, err := conn.post(appendum, string(tvJSON))
+	body, err := conn.Post(appendum, string(tvJSON))
 	if err != nil {
 		return err
 	}
