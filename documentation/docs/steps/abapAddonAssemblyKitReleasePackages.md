@@ -5,9 +5,9 @@
 ## Prerequisites
 
 * The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
-* This step needs an existing Target Vector as well as the scope where it should be published.
-* The Target Vector ID is taken from the addonDescriptor in the commonPipelineEnvironment.
-* If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector), the Target Vector will be created and its ID will be written to the commonPipelineEnvironment
+* This step needs the names of the packages which should be released. The packages needs to be in status "L"ocked. If they are already in status "R"eleased it is fine, then the release will just not be executed. However this step will end with an error if a package has status "P"lanned.
+* The package names are taken from the addonDescriptor in the commonPipelineEnvironment together with the status of the packages.
+* The step [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages) will set the status of the packages to "L"ocked and writes the needed data to the commonPipelineEnvironment.
 
 ## ${docGenParameters}
 
@@ -19,20 +19,17 @@
 
 ### Configuration in the config.yml
 
-The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile looks:
+The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
 ```groovy
-abapAddonAssemblyKitPublishTargetVector(
-                    targetVectorScope: 'T',
-                    script: this,
-                    )
+abapAddonAssemblyKitReleasePackages script: this
 ```
 
 The config.yml should look like this:
 
 ```yaml
 steps:
-  abapAddonAssemblyKitPublishTargetVector:
+  abapAddonAssemblyKitReleasePackages:
     abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
     abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
 ```
@@ -49,7 +46,7 @@ Mandatory fields:
 "customerID":"",
 "AddonSpsLevel":"",
 "AddonPatchLevel":"",
-"TargetVectorID":"W7Q00207512600000188",
+"TargetVectorID":"",
 "repositories":[
   {
     "name":"",
@@ -57,12 +54,12 @@ Mandatory fields:
     "branch":"",
     "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK001001REPOA",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"L",
     "Namespace":"",
     "SarXMLFilePath":""
   },
@@ -72,12 +69,12 @@ Mandatory fields:
     "branch":"",
     "version":"",
     "versionAAK":"",
-    "PackageName":"",
+    "PackageName":"SAPK002001REPOB",
     "PackageType":"",
     "SpLevel":"",
     "PatchLevel":"",
     "PredecessorCommitID":"",
-    "Status":"",
+    "Status":"R",
     "Namespace":"",
     "SarXMLFilePath":""
   }
