@@ -12,7 +12,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200819183940-29e1ff8eb0bb // indirect
 	github.com/bmatcuk/doublestar v1.3.2
 	github.com/containerd/containerd v1.4.0 // indirect
-	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
+	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b
 	github.com/elliotchance/orderedmap v1.3.0
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/frankban/quicktest v1.10.0 // indirect
