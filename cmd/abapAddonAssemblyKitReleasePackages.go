@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -32,8 +33,8 @@ func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePacka
 
 func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	conn := new(connector)
-	conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+	conn := new(abapbuild.Connector)
+	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 
