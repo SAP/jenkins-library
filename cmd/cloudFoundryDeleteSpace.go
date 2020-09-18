@@ -11,24 +11,21 @@ import (
 
 func cloudFoundryDeleteSpace(config cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData) {
 	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+	c := command.Command{}
 
-	err := runCloudFoundryDeleteSpace(&config, telemetryData, cf)
+	err := runCloudFoundryDeleteSpace(&config, telemetryData, cf, &c)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) (err error) {
+func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, s command.ShellRunner) (err error) {
 	var c = cf.Exec
 
-	cfLogin := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password}
+	cfLogin := s.RunShell("/bin/bash", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
-	//TODO use pipe mechanism to skip the user interference
-
-	err = c.RunExecutable("cf", cfLogin...)
-
-	if err != nil {
+	if cfLogin != nil {
 		return fmt.Errorf("Error while logging in occured: %w", err)
 	}
 
