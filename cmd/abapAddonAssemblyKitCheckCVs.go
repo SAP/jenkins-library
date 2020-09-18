@@ -40,7 +40,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
 	for i := range addonDescriptor.Repositories {
-		var c cv
+		var c componentVersion
 		c.initCV(addonDescriptor.Repositories[i], *conn)
 		err := c.validate()
 		if err != nil {
@@ -60,40 +60,40 @@ func combineYAMLRepositoriesWithCPEProduct(addonDescriptor abaputils.AddonDescri
 	return addonDescriptorFromCPE
 }
 
-func (c *cv) initCV(repo abaputils.Repository, conn abapbuild.Connector) {
+func (c *componentVersion) initCV(repo abaputils.Repository, conn abapbuild.Connector) {
 	c.Connector = conn
 	c.Name = repo.Name
 	c.VersionYAML = repo.VersionYAML
 }
 
-func (c *cv) copyFieldsToRepo(initialRepo *abaputils.Repository) {
+func (c *componentVersion) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.Version = c.Version
 	initialRepo.SpLevel = c.SpLevel
 	initialRepo.PatchLevel = c.PatchLevel
 }
 
-func (c *cv) validate() error {
+func (c *componentVersion) validate() error {
 	log.Entry().Infof("Validate component %s version %s and resolve version", c.Name, c.VersionYAML)
 	appendum := "/odata/aas_ocs_package/ValidateComponentVersion?Name='" + c.Name + "'&Version='" + c.VersionYAML + "'"
 	body, err := c.Connector.Get(appendum)
 	if err != nil {
 		return err
 	}
-	var jCV jsonCV
+	var jCV jsonComponentVersion
 	json.Unmarshal(body, &jCV)
-	c.Name = jCV.CV.Name
-	c.Version = jCV.CV.Version
-	c.SpLevel = jCV.CV.SpLevel
-	c.PatchLevel = jCV.CV.PatchLevel
+	c.Name = jCV.ComponentVersion.Name
+	c.Version = jCV.ComponentVersion.Version
+	c.SpLevel = jCV.ComponentVersion.SpLevel
+	c.PatchLevel = jCV.ComponentVersion.PatchLevel
 	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
 	return nil
 }
 
-type jsonCV struct {
-	CV *cv `json:"d"`
+type jsonComponentVersion struct {
+	ComponentVersion *componentVersion `json:"d"`
 }
 
-type cv struct {
+type componentVersion struct {
 	abapbuild.Connector
 	Name        string `json:"Name"`
 	VersionYAML string

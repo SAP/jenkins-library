@@ -76,7 +76,7 @@ func TestInitCV(t *testing.T) {
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
 		}
-		var c cv
+		var c componentVersion
 		c.initCV(repo, *conn)
 		assert.Equal(t, "/DRNMSPC/COMP01", c.Name)
 		assert.Equal(t, "1.2.3", c.VersionYAML)
@@ -89,7 +89,7 @@ func TestValidateCV(t *testing.T) {
 		conn.Client = &abaputils.ClientMock{
 			Body: responseCheckCVs,
 		}
-		c := cv{
+		c := componentVersion{
 			Connector:   *conn,
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
@@ -108,7 +108,7 @@ func TestValidateCV(t *testing.T) {
 			Body:  "ErrorBody",
 			Error: errors.New("Validation failed"),
 		}
-		c := cv{
+		c := componentVersion{
 			Connector:   *conn,
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
@@ -127,7 +127,7 @@ func TestCopyFieldsCV(t *testing.T) {
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
 		}
-		var c cv
+		var c componentVersion
 		c.Version = "0001"
 		c.SpLevel = "0002"
 		c.PatchLevel = "0003"

@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type abapAddonAssemblyKitCheckCVsOptions struct {
+type abapAddonAssemblyKitCheckPVOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
@@ -23,13 +23,13 @@ type abapAddonAssemblyKitCheckCVsOptions struct {
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
-type abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment struct {
+type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
 	abap struct {
 		addonDescriptor string
 	}
 }
 
-func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -51,20 +51,20 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 	}
 }
 
-// AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of Software Component Versions.
-func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
-	const STEP_NAME = "abapAddonAssemblyKitCheckCVs"
+// AbapAddonAssemblyKitCheckPVCommand This step checks the validity of a Addon Product Version.
+func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
+	const STEP_NAME = "abapAddonAssemblyKitCheckPV"
 
-	metadata := abapAddonAssemblyKitCheckCVsMetadata()
-	var stepConfig abapAddonAssemblyKitCheckCVsOptions
+	metadata := abapAddonAssemblyKitCheckPVMetadata()
+	var stepConfig abapAddonAssemblyKitCheckPVOptions
 	var startTime time.Time
-	var commonPipelineEnvironment abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+	var commonPipelineEnvironment abapAddonAssemblyKitCheckPVCommonPipelineEnvironment
 
-	var createAbapAddonAssemblyKitCheckCVsCmd = &cobra.Command{
+	var createAbapAddonAssemblyKitCheckPVCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step checks the validity of Software Component Versions.",
-		Long: `This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
-It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.`,
+		Short: "This step checks the validity of a Addon Product Version.",
+		Long: `This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
+It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -100,17 +100,17 @@ It resolves the dotted version string into version, support package level and pa
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			abapAddonAssemblyKitCheckCVs(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapAddonAssemblyKitCheckPV(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAbapAddonAssemblyKitCheckCVsFlags(createAbapAddonAssemblyKitCheckCVsCmd, &stepConfig)
-	return createAbapAddonAssemblyKitCheckCVsCmd
+	addAbapAddonAssemblyKitCheckPVFlags(createAbapAddonAssemblyKitCheckPVCmd, &stepConfig)
+	return createAbapAddonAssemblyKitCheckPVCmd
 }
 
-func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckCVsOptions) {
+func addAbapAddonAssemblyKitCheckPVFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckPVOptions) {
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
@@ -124,10 +124,10 @@ func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAd
 }
 
 // retrieve step metadata
-func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
+func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCheckCVs",
+			Name:    "abapAddonAssemblyKitCheckPV",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
@@ -160,7 +160,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 					{
 						Name:        "addonDescriptorFileName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Scope:       []string{},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
