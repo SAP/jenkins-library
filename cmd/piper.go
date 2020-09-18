@@ -110,7 +110,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
-	//	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
 	//	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
 
 	addRootFlags(rootCmd)
