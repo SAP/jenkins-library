@@ -7,17 +7,20 @@ class LegacyConfigurationCheckUtils{
         }
 
         if (configChanges?.removedOrReplacedSteps) {
-            checkForRemovedOrReplacedSteps(script, configChanges.replacedConfigKeys)
+            checkForRemovedOrReplacedSteps(script, configChanges.removedOrReplacedSteps)
         }
 
         if (configChanges?.removedOrReplacedStages) {
-            checkForRemovedOrReplacedStages(script, configChanges.changedConfigKeyType)
+            checkForRemovedOrReplacedStages(script, configChanges.removedOrReplacedStages)
         }
 
         if (configChanges?.parameterTypeChanged) {
             checkForParameterTypeChanged(script, configChanges.parameterTypeChanged)
         }
 
+        if (configChanges?.renamedNpmScript) {
+            checkForRenamedNpmScripts(script, configChanges.renamedNpmScript)
+        }
     }
 
     static void warnAboutUsingSapNpmRegistry(Script script, String stepName) {
