@@ -92,13 +92,13 @@ func (tv *targetVector) createTargetVector(conn abapbuild.Connector) error {
 	if err != nil {
 		return err
 	}
-	var jTV jsontargetVector
+	var jTV jsonTargetVector
 	json.Unmarshal(body, &jTV)
 	tv.ID = jTV.Tv.ID
 	return nil
 }
 
-type jsontargetVector struct {
+type jsonTargetVector struct {
 	Tv *targetVector `json:"d"`
 }
 
