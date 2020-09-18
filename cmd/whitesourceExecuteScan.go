@@ -204,7 +204,7 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 			if !config.CreateProductFromPipeline {
 				return err
 			}
-			// TODO: product, err = sys.CreateProduct(config.ProductName, config.EmailAddressesOfInitialProductAdmins)
+			// product, err = sys.CreateProduct(config.ProductName, config.EmailAddressesOfInitialProductAdmins)
 			return err
 		}
 		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
