@@ -92,8 +92,8 @@ func (p *Package) ReserveNext() error {
 	return nil
 }
 
-// Get : retrieve attributes of the package from AAKaaS
-func (p *Package) Get() error {
+// GetPackageAndNamespace : retrieve attributes of the package from AAKaaS
+func (p *Package) GetPackageAndNamespace() error {
 	appendum := "/odata/aas_ocs_package/OcsPackageSet('" + p.PackageName + "')"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
