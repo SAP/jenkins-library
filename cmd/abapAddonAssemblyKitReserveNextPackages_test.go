@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -81,14 +83,14 @@ func TestReserveNextPackagesStep(t *testing.T) {
 // ********************* Test init *******************
 func TestInitPackage(t *testing.T) {
 	t.Run("test init", func(t *testing.T) {
-		conn := new(connector)
+		conn := new(abapbuild.Connector)
 		conn.Client = &abaputils.ClientMock{}
 		repo := abaputils.Repository{
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.0.0",
 		}
-		var p pckg
-		p.init(repo, *conn)
+		var p aakaas.Package
+		p.InitPackage(repo, *conn)
 		assert.Equal(t, "/DRNMSPC/COMP01", p.ComponentName)
 		assert.Equal(t, "1.0.0", p.VersionYAML)
 	})
@@ -97,17 +99,17 @@ func TestInitPackage(t *testing.T) {
 // ********************* Test copyFieldsToRepositories *******************
 func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 	t.Run("test copyFieldsToRepositories", func(t *testing.T) {
-		pckgWR := []packageWithRepository{
+		pckgWR := []aakaas.PackageWithRepository{
 			{
-				p: pckg{
+				Package: aakaas.Package{
 					ComponentName: "/DRNMSPC/COMP01",
 					VersionYAML:   "1.0.0",
 					PackageName:   "SAPK-001AAINDRNMSPC",
 					Type:          "AOI",
-					Status:        planned,
+					Status:        aakaas.PackageStatusPlanned,
 					Namespace:     "/DRNMSPC/",
 				},
-				repo: abaputils.Repository{
+				Repo: abaputils.Repository{
 					Name:        "/DRNMSPC/COMP01",
 					VersionYAML: "1.0.0",
 				},
@@ -116,7 +118,7 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		repos := copyFieldsToRepositories(pckgWR)
 		assert.Equal(t, "SAPK-001AAINDRNMSPC", repos[0].PackageName)
 		assert.Equal(t, "AOI", repos[0].PackageType)
-		assert.Equal(t, string(planned), repos[0].Status)
+		assert.Equal(t, string(aakaas.PackageStatusPlanned), repos[0].Status)
 		assert.Equal(t, "/DRNMSPC/", repos[0].Namespace)
 	})
 }
@@ -129,20 +131,20 @@ func TestReserveNextPackage(t *testing.T) {
 		}
 		p := testPackageSetup("/DRNMSPC/COMP01", "1.0.0", client)
 
-		err := p.reserveNext()
+		err := p.ReserveNext()
 		assert.NoError(t, err)
 		assert.Equal(t, "SAPK-001AAINDRNMSPC", p.PackageName)
 		assert.Equal(t, "AOI", p.Type)
-		assert.Equal(t, planned, p.Status)
+		assert.Equal(t, aakaas.PackageStatusPlanned, p.Status)
 	})
 	t.Run("test reserveNext - missing versionYAML", func(t *testing.T) {
 		client := abaputils.ClientMock{}
 		p := testPackageSetup("/DRNMSPC/COMP01", "", client)
-		err := p.reserveNext()
+		err := p.ReserveNext()
 		assert.Error(t, err)
 		assert.Equal(t, "", p.PackageName)
 		assert.Equal(t, "", p.Type)
-		assert.Equal(t, packageStatus(""), p.Status)
+		assert.Equal(t, aakaas.PackageStatus(""), p.Status)
 	})
 	t.Run("test reserveNext - error from call", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -150,11 +152,11 @@ func TestReserveNextPackage(t *testing.T) {
 			Error: errors.New("Failure during reserve next"),
 		}
 		p := testPackageSetup("/DRNMSPC/COMP01", "1.0.0", client)
-		err := p.reserveNext()
+		err := p.ReserveNext()
 		assert.Error(t, err)
 		assert.Equal(t, "", p.PackageName)
 		assert.Equal(t, "", p.Type)
-		assert.Equal(t, packageStatus(""), p.Status)
+		assert.Equal(t, aakaas.PackageStatus(""), p.Status)
 	})
 }
 
@@ -168,9 +170,9 @@ func TestReservePackages(t *testing.T) {
 		repositories, conn := testRepositoriesSetup("/DRNMSPC/COMP01", "1.0.0", client)
 		repos, err := reservePackages(repositories, conn)
 		assert.NoError(t, err)
-		assert.Equal(t, "/DRNMSPC/COMP01", repos[0].p.ComponentName)
-		assert.Equal(t, "1.0.0", repos[0].p.VersionYAML)
-		assert.Equal(t, planned, repos[0].p.Status)
+		assert.Equal(t, "/DRNMSPC/COMP01", repos[0].Package.ComponentName)
+		assert.Equal(t, "1.0.0", repos[0].Package.VersionYAML)
+		assert.Equal(t, aakaas.PackageStatusPlanned, repos[0].Package.Status)
 	})
 	t.Run("test reservePackages - error from call", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -195,8 +197,8 @@ func TestPollReserveNextPackages(t *testing.T) {
 		pckgWR := testPollPackagesSetup(client)
 		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
 		assert.NoError(t, err)
-		assert.Equal(t, planned, pckgWR[0].p.Status)
-		assert.Equal(t, "/DRNMSPC/", pckgWR[0].p.Namespace)
+		assert.Equal(t, aakaas.PackageStatusPlanned, pckgWR[0].Package.Status)
+		assert.Equal(t, "/DRNMSPC/", pckgWR[0].Package.Namespace)
 	})
 	t.Run("test pollReserveNextPackages - status locked", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -205,7 +207,7 @@ func TestPollReserveNextPackages(t *testing.T) {
 		pckgWR := testPollPackagesSetup(client)
 		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
 		assert.Error(t, err)
-		assert.Equal(t, locked, pckgWR[0].p.Status)
+		assert.Equal(t, aakaas.PackageStatusLocked, pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - status released", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -214,7 +216,7 @@ func TestPollReserveNextPackages(t *testing.T) {
 		pckgWR := testPollPackagesSetup(client)
 		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
 		assert.NoError(t, err)
-		assert.Equal(t, released, pckgWR[0].p.Status)
+		assert.Equal(t, aakaas.PackageStatusReleased, pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - unknow status", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -223,7 +225,7 @@ func TestPollReserveNextPackages(t *testing.T) {
 		pckgWR := testPollPackagesSetup(client)
 		err := pollReserveNextPackages(pckgWR, timeout, pollInterval)
 		assert.Error(t, err)
-		assert.Equal(t, packageStatus("X"), pckgWR[0].p.Status)
+		assert.Equal(t, aakaas.PackageStatus("X"), pckgWR[0].Package.Status)
 	})
 	t.Run("test pollReserveNextPackages - timeout", func(t *testing.T) {
 		client := abaputils.ClientMock{
@@ -239,27 +241,27 @@ func TestPollReserveNextPackages(t *testing.T) {
 
 // ********************* Setup functions *******************
 
-func testPollPackagesSetup(client abaputils.ClientMock) []packageWithRepository {
-	conn := new(connector)
+func testPollPackagesSetup(client abaputils.ClientMock) []aakaas.PackageWithRepository {
+	conn := new(abapbuild.Connector)
 	conn.Client = &client
 	conn.Header = make(map[string][]string)
-	pckgWR := []packageWithRepository{
+	pckgWR := []aakaas.PackageWithRepository{
 		{
-			p: pckg{
-				connector:     *conn,
+			Package: aakaas.Package{
+				Connector:     *conn,
 				ComponentName: "/DRNMSPC/COMP01",
 				VersionYAML:   "1.0.0",
 				PackageName:   "SAPK-001AAINDRNMSPC",
 				Type:          "AOI",
 			},
-			repo: abaputils.Repository{},
+			Repo: abaputils.Repository{},
 		},
 	}
 	return pckgWR
 }
 
-func testRepositoriesSetup(componentName string, versionYAML string, client abaputils.ClientMock) ([]abaputils.Repository, connector) {
-	conn := new(connector)
+func testRepositoriesSetup(componentName string, versionYAML string, client abaputils.ClientMock) ([]abaputils.Repository, abapbuild.Connector) {
+	conn := new(abapbuild.Connector)
 	conn.Client = &client
 	conn.Header = make(map[string][]string)
 	repositories := []abaputils.Repository{
@@ -271,12 +273,12 @@ func testRepositoriesSetup(componentName string, versionYAML string, client abap
 	return repositories, *conn
 }
 
-func testPackageSetup(componentName string, versionYAML string, client abaputils.ClientMock) pckg {
-	conn := new(connector)
+func testPackageSetup(componentName string, versionYAML string, client abaputils.ClientMock) aakaas.Package {
+	conn := new(abapbuild.Connector)
 	conn.Client = &client
 	conn.Header = make(map[string][]string)
-	p := pckg{
-		connector:     *conn,
+	p := aakaas.Package{
+		Connector:     *conn,
 		ComponentName: componentName,
 		VersionYAML:   versionYAML,
 	}
