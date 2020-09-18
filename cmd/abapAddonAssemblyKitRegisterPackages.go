@@ -65,7 +65,7 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 			}
 			filename := filepath.Base(repos[i].SarXMLFilePath)
 			conn.Header["Content-Filename"] = []string{filename}
-			sarFile, err := readFileFunc(repos[i].SarXMLFilePath) //ioutil.ReadFile(repos[i].SarXMLFilePath)
+			sarFile, err := readFileFunc(repos[i].SarXMLFilePath)
 			if err != nil {
 				return err
 			}
@@ -81,6 +81,7 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 	return nil
 }
 
+// for moocking
 type readFile func(path string) ([]byte, error)
 
 func reader(path string) ([]byte, error) {

@@ -50,7 +50,7 @@ type packageWithRepository struct {
 	repo abaputils.Repository
 }
 
-// InitPackage : Initialize Package
+// InitPackage : initialize package attributes from the repository
 func (p *Package) InitPackage(repo abaputils.Repository, conn abapbuild.Connector) {
 	p.Connector = conn
 	p.ComponentName = repo.Name
@@ -59,7 +59,8 @@ func (p *Package) InitPackage(repo abaputils.Repository, conn abapbuild.Connecto
 	p.Status = PackageStatus(repo.Status)
 }
 
-func (p *Package) copyFieldsToRepo(initialRepo *abaputils.Repository) {
+// CopyFieldsToRepo : copy package attributes to the repository
+func (p *Package) CopyFieldsToRepo(initialRepo *abaputils.Repository) {
 	initialRepo.PackageName = p.PackageName
 	initialRepo.PackageType = p.Type
 	initialRepo.PredecessorCommitID = p.PredecessorCommitID
@@ -68,7 +69,8 @@ func (p *Package) copyFieldsToRepo(initialRepo *abaputils.Repository) {
 	log.Entry().Infof("Package name %s, type %s, status %s, namespace %s, predecessorCommitID %s", p.PackageName, p.Type, p.Status, p.Namespace, p.PredecessorCommitID)
 }
 
-func (p *Package) reserveNext() error {
+// ReserveNext : reserve next delivery package for this software component version
+func (p *Package) ReserveNext() error {
 	if p.ComponentName == "" || p.VersionYAML == "" {
 		return errors.New("Parameters missing. Please provide the name and version of the component")
 	}
@@ -90,7 +92,8 @@ func (p *Package) reserveNext() error {
 	return nil
 }
 
-func (p *Package) get() error {
+// Get : retrieve attributes of the package from AAKaaS
+func (p *Package) Get() error {
 	appendum := "/odata/aas_ocs_package/OcsPackageSet('" + p.PackageName + "')"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
