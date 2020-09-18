@@ -13,6 +13,8 @@ import (
 
 func TestCloudFoundryCreateSpace(t *testing.T) {
 	m := &mock.ExecMockRunner{}
+	s := mock.ShellMockRunner{}
+
 	cf := cloudfoundry.CFUtils{Exec: m}
 	cfUtilsMock := cloudfoundry.CfUtilsMock{}
 	var telemetryData telemetry.CustomData
@@ -25,12 +27,20 @@ func TestCloudFoundryCreateSpace(t *testing.T) {
 		Password:      "testPassword",
 	}
 
-	t.Run("CF Create Space : Success", func(t *testing.T) {
+	t.Run("CF login: Success", func(t *testing.T) {
 
-		err := runCloudFoundryCreateSpace(&config, &telemetryData, cf)
+		err := runCloudFoundryCreateSpace(&config, &telemetryData, cf, &s)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "cf", m.Calls[0].Exec)
-			assert.Equal(t, []string{"create-space", "testSpace", "-o", "testOrg"}, m.Calls[1].Params)
+		}
+	})
+
+	t.Run("CF space creation: Success", func(t *testing.T) {
+
+		err := runCloudFoundryCreateSpace(&config, &telemetryData, cf, &s)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "cf", m.Calls[0].Exec)
+			assert.Equal(t, []string{"create-space", "testSpace", "-o", "testOrg"}, m.Calls[0].Params)
 		}
 	})
 
@@ -43,7 +53,7 @@ func TestCloudFoundryCreateSpace(t *testing.T) {
 
 		cfUtilsMock.LoginError = errors.New(errorMessage)
 
-		gotError := runCloudFoundryCreateSpace(&config, &telemetryData, cf)
+		gotError := runCloudFoundryCreateSpace(&config, &telemetryData, cf, &s)
 		assert.EqualError(t, gotError, "Creating a cf space has failed: "+errorMessage, "Wrong error message")
 	})
 }

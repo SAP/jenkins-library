@@ -12,8 +12,9 @@ import (
 func cloudFoundryCreateSpace(config cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData) {
 
 	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+	c := command.Command{}
 
-	err := runCloudFoundryCreateSpace(&config, telemetryData, cf)
+	err := runCloudFoundryCreateSpace(&config, telemetryData, cf, &c)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -21,19 +22,16 @@ func cloudFoundryCreateSpace(config cloudFoundryCreateSpaceOptions, telemetryDat
 
 }
 
-func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) (err error) {
+func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, s command.ShellRunner) (err error) {
 
 	var c = cf.Exec
 
-	cfLogin := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password}
+	cfLogin := s.RunShell("/bin/bash", "yes '' | cf login -a {{.CfAPIEndpoint}} -u {{.Username}} -p {{.Password}}")
 
-	//TODO use pipe mechanism to skip the user interference
-
-	err = c.RunExecutable("cf", cfLogin...)
-
-	if err != nil {
+	if cfLogin != nil {
 		return fmt.Errorf("Error while logging in occured: %w", err)
 	}
+	log.Entry().Info("Successfully logged into cloud foundry.")
 
 	defer func() {
 		logoutErr := cf.Logout()
