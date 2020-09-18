@@ -23,7 +23,7 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 
 ```groovy
 abapAddonAssemblyKitPublishTargetVector(
-                    targetVectorScope: 'targetVectorScope',
+                    targetVectorScope: 'T',
                     script: this,
                     )
 ```
