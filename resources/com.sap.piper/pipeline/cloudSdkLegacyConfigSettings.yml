@@ -117,4 +117,3 @@ renamedNpmScript:
   ci-test:
     newScriptName: "ci-frontend-unit-test"
     warnInsteadOfError: true
-
