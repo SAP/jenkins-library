@@ -116,7 +116,7 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 	}
 }
 
-type coordinatesMock struct {
+type whitesourceCoordinatesMock struct {
 	GroupID    string
 	ArtifactID string
 	Version    string
@@ -130,7 +130,7 @@ type downloadedFile struct {
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
-	coordinates     coordinatesMock
+	coordinates     whitesourceCoordinatesMock
 	downloadedFiles []downloadedFile
 }
 
@@ -165,7 +165,7 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
 		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
-		coordinates: coordinatesMock{
+		coordinates: whitesourceCoordinatesMock{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
 			Version:    "1.0.42",
