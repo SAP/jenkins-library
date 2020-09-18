@@ -12,7 +12,7 @@ import (
 func TestPublishTargetVectorStep(t *testing.T) {
 	//setup
 	config := abapAddonAssemblyKitPublishTargetVectorOptions{
-		ScopeTV: "P",
+		TargetVectorScope: "P",
 	}
 	addonDescriptor := abaputils.AddonDescriptor{
 		TargetVectorID: "dummy",
@@ -35,7 +35,7 @@ func TestPublishTargetVectorStep(t *testing.T) {
 
 	t.Run("step success test", func(t *testing.T) {
 		//arrange
-		config.ScopeTV = "T"
+		config.TargetVectorScope = "T"
 		//act
 		err := runAbapAddonAssemblyKitPublishTargetVector(&config, nil, client)
 		//assert

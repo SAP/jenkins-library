@@ -36,7 +36,7 @@ spec:
           - PARAMETERS
         mandatory: true
         secret: true
-      - name: scopeTV
+      - name: targetVectorScope
         type: string
         description: Determines whether the Target Vector is published to the public SPC('P') or the test SPC('T')
         possibleValues:

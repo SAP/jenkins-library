@@ -30,7 +30,6 @@ func abapAddonAssemblyKitPublishTargetVector(config abapAddonAssemblyKitPublishT
 
 func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPublishTargetVectorOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender) error {
 	conn := new(abapbuild.Connector)
-	//conn.initAAK(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, &piperhttp.Client{})
 	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
@@ -39,14 +38,14 @@ func runAbapAddonAssemblyKitPublishTargetVector(config *abapAddonAssemblyKitPubl
 		return errors.New("Parameter missing. Please provide the target vector id")
 	}
 
-	if config.ScopeTV == "T" {
+	if config.TargetVectorScope == "T" {
 		log.Entry().Infof("Publish target vector %s to test SPC", addonDescriptor.TargetVectorID)
 	}
-	if config.ScopeTV == "P" {
+	if config.TargetVectorScope == "P" {
 		log.Entry().Infof("Publish target vector %s to SPC", addonDescriptor.TargetVectorID)
 	}
 	conn.GetToken("/odata/aas_ocs_package")
-	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + addonDescriptor.TargetVectorID + "'&Scope='" + config.ScopeTV + "'"
+	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + addonDescriptor.TargetVectorID + "'&Scope='" + config.TargetVectorScope + "'"
 	_, err := conn.Post(appendum, "")
 	if err != nil {
 		return err

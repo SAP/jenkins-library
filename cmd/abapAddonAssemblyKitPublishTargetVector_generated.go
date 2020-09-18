@@ -17,7 +17,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	ScopeTV                      string `json:"scopeTV,omitempty"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
@@ -82,7 +82,7 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
-	cmd.Flags().StringVar(&stepConfig.ScopeTV, "scopeTV", os.Getenv("PIPER_scopeTV"), "Determines whether the Target Vector is published to the public SPC('P') or the test SPC('T')")
+	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the public SPC('P') or the test SPC('T')")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
@@ -126,7 +126,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "scopeTV",
+						Name:        "targetVectorScope",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
