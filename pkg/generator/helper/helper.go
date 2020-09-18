@@ -140,6 +140,22 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
 }
 
+{{ define "resourceRefs"}}
+							{{ "{" }}
+								Name: "{{- .Name }}",
+								{{- if .Param }}
+								Param: "{{ .Param }}",
+								{{- end }}
+								{{- if  gt (len .Paths) 0 }}
+								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
+								{{- end }}
+								{{- if .Type }}
+								Type: "{{ .Type }}",
+								{{- end }}
+							{{ "}" }},
+							{{- nindent 24 ""}}
+{{- end -}}
+
 // retrieve step metadata
 func {{ .StepName }}Metadata() config.StepData {
 	var theMetaData = config.StepData{
@@ -153,7 +169,7 @@ func {{ .StepName }}Metadata() config.StepData {
 					{{- range $key, $value := .StepParameters }}
 					{
 						Name:      "{{ $value.Name }}",
-						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ "{" }}Name: "{{ $ref.Name }}", Param: "{{ $ref.Param }}"{{ "}" }},{{ end }}{{ "}" }},
+						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ template "resourceRefs" $ref }}{{ end }}{{ "}" }},
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
@@ -180,7 +196,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 	testCmd := {{.CobraCmdFuncName}}()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "{{ .StepName }}", testCmd.Use, "command name incorrect")
 
 }

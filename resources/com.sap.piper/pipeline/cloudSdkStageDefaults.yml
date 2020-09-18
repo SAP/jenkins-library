@@ -29,7 +29,7 @@ stages:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-frontend'
-  frontendUnitTests:
+  additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:

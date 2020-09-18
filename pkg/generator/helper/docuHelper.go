@@ -252,6 +252,26 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += "\n\n"
 	}
 
+	for _, secret := range stepData.Spec.Inputs.Secrets {
+		details += fmt.Sprintf("#### %v\n\n", secret.Name)
+
+		if !contains(stepParameterNames, secret.Name) {
+			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
+		}
+
+		details += secret.Description + "\n\n"
+
+		details += "[back to overview](#parameters)\n\n"
+
+		details += "| Scope | Details |\n"
+		details += "| ---- | --------- |\n"
+		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
+		details += fmt.Sprintf("| Type | `%v` |\n", "string")
+		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails([]string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}))
+
+		details += "\n\n"
+	}
+
 	return details
 }
 
@@ -365,7 +385,7 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 				}
 				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;- `%v`%v<br />", alias.Name, ifThenElse(alias.Deprecated, " (**Deprecated**)", ""))
 			}
-			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: `%v`<br />", resource.Name)
+			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: [`%v`](#%v)<br />", resource.Name, strings.ToLower(resource.Name))
 			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
 			continue
 		}
@@ -381,9 +401,6 @@ func handleStepParameters(stepData *config.StepData) {
 	//add general options like script, verbose, etc.
 	//ToDo: add to context.yaml
 	appendGeneralOptionsToParameters(stepData)
-
-	//add secrets to step parameters
-	appendSecretsToParameters(stepData)
 
 	//consolidate conditional parameters:
 	//- remove duplicate parameter entries
