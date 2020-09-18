@@ -112,6 +112,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
+        rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
