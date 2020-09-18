@@ -207,9 +207,8 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 			// TODO: product, err = sys.CreateProduct(config.ProductName, config.EmailAddressesOfInitialProductAdmins)
 			return err
 		}
-		if product.Token == "" {
-			return fmt.Errorf("failed to resolve product token for '%s'", config.ProductName)
-		}
+		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
+		config.ProductToken = product.Token
 	}
 
 	// Get project token  if user did not specify one at runtime
