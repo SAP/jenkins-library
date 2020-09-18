@@ -31,6 +31,7 @@ type checkmarxExecuteScanOptions struct {
 	TeamID                        string `json:"teamId,omitempty"`
 	TeamName                      string `json:"teamName,omitempty"`
 	Username                      string `json:"username,omitempty"`
+	VerifyOnly                    bool   `json:"verifyOnly,omitempty"`
 	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
 	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
 	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
@@ -241,6 +242,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().StringVar(&stepConfig.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&stepConfig.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to teamId")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
+	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
@@ -395,6 +397,14 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:        "verifyOnly",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "vulnerabilityThresholdEnabled",
