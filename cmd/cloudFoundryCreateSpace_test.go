@@ -31,8 +31,23 @@ func TestCloudFoundryCreateSpace(t *testing.T) {
 
 		err := runCloudFoundryCreateSpace(&config, &telemetryData, cf, &s)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "cf", m.Calls[0].Exec)
+			assert.Contains(t, s.Calls[0], "yes '' | cf login -a https://api.endpoint.com -u testUser -p testPassword")
 		}
+	})
+
+	t.Run("CF login: failure case", func(t *testing.T) {
+
+		errorMessage := "cf login failed"
+
+		defer func() {
+			s.Calls = nil
+			s.ShouldFailOnCommand = nil
+		}()
+
+		s.ShouldFailOnCommand = map[string]error{"yes '' | cf login -a https://api.endpoint.com -u testUser -p testPassword ": fmt.Errorf(errorMessage)}
+
+		e := runCloudFoundryCreateSpace(&config, &telemetryData, cf, &s)
+		assert.EqualError(t, e, "Error while logging in occured: "+errorMessage)
 	})
 
 	t.Run("CF space creation: Success", func(t *testing.T) {

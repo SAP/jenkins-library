@@ -11,8 +11,12 @@ import (
 
 func cloudFoundryCreateSpace(config cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData) {
 
-	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
 	c := command.Command{}
+	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	err := runCloudFoundryCreateSpace(&config, telemetryData, cf, &c)
 
@@ -29,7 +33,7 @@ func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetr
 	cfLogin := s.RunShell("/bin/bash", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
 	if cfLogin != nil {
-		return fmt.Errorf("Error while logging in occured: %w", err)
+		return fmt.Errorf("Error while logging in occured: %w", cfLogin)
 	}
 	log.Entry().Info("Successfully logged into cloud foundry.")
 
