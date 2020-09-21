@@ -335,9 +335,11 @@ func executeMavenScanForPomFile(config *ScanOptions, utils whitesourceUtils, pom
 		"-Dorg.whitesource.failOnError=true",
 	}
 
+	// We don't distinguish between "user configured the project name" versus "we store the
+	// evaluated project name here" anymore.
 	if config.ProjectName != "" {
-		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
-		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
+		//		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
+		//		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
 	}
 
 	if config.UserToken != "" {
@@ -418,7 +420,8 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 	npmConfig["userKey"] = config.UserToken
 	setValueAndLogChange(npmConfig, "checkPolicies", true)
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
-	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
+	// Needs to distinguish between "user provided this param" versus "we store the evaluated projectName here"
+	//	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	setValueAndLogChange(npmConfig, "productVer", config.ProductVersion)
 	setValueOmitIfPresent(npmConfig, "productToken", "projectToken", config.ProductToken)
 	setValueAndLogChange(npmConfig, "devDep", devDep)
