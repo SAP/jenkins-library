@@ -136,6 +136,7 @@ type whitesourceUtilsMock struct {
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
 	downloadedFiles         []downloadedFile
+	npmInstalledModules     []string
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -166,6 +167,7 @@ func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, e
 }
 
 func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []string) error {
+	w.npmInstalledModules = append(w.npmInstalledModules, w.CurrentDir)
 	return nil
 }
 
@@ -311,17 +313,19 @@ func TestExecuteScanUA(t *testing.T) {
 }
 
 func TestExecuteScanNPM(t *testing.T) {
+	config := ScanOptions{
+		ScanType:       "npm",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProjectName:    "mock-project",
+		ProductVersion: "product-version",
+	}
+
 	t.Parallel()
+
 	t.Run("happy path NPM", func(t *testing.T) {
 		// init
-		config := ScanOptions{
-			ScanType:       "npm",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "product-version",
-		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("package.json", []byte("dummy"))
 		// test
@@ -345,6 +349,30 @@ func TestExecuteScanNPM(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+	})
+	t.Run("no NPM modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		// test
+		err := executeScan(&config, utilsMock)
+		// assert
+		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
+		assert.Len(t, utilsMock.Calls, 0)
+		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+	})
+	t.Run("npm ls fails", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte("dummy"))
+		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte("dummy"))
+
+		utilsMock.ShouldFailOnCommand = make(map[string]error)
+		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
+		// test
+		err := executeScan(&config, utilsMock)
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
 	})
 }
 
