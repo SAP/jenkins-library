@@ -78,7 +78,6 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/space
-      
   containers:
     - name: cf
       image: ppiper/cf-cli

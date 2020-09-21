@@ -112,7 +112,6 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
-        rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 

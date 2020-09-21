@@ -32,7 +32,7 @@ func CloudFoundryDeleteSpaceCommand() *cobra.Command {
 	var createCloudFoundryDeleteSpaceCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deletes a space in Cloud Foundry",
-		Long: `Deletes Cloud Foundry space in Cloud Foundry
+		Long: `Deletes a space in Cloud Foundry
 Mandatory:
 * Cloud Foundry API endpoint, Organization, Space name`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -112,20 +112,32 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "username"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "password"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cfOrg",

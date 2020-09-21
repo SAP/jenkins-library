@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -30,5 +31,15 @@ func TestCloudFoundryDeleteSpace(t *testing.T) {
 			assert.Equal(t, "cf", m.Calls[0].Exec)
 			assert.Equal(t, []string{"delete-space", "testSpace", "-o", "testOrg", "-f"}, m.Calls[0].Params)
 		}
+	})
+
+	t.Run("CF Delete space: failure case", func(t *testing.T) {
+
+		errorMessage := "cf space creation error"
+
+		m.ShouldFailOnCommand = map[string]error{"cf delete-space testSpace -o testOrg -f": fmt.Errorf(errorMessage)}
+
+		gotError := runCloudFoundryDeleteSpace(&config, &telemetryData, cf, &s)
+		assert.EqualError(t, gotError, "Deletion of cf space has failed: "+errorMessage, "Wrong error message")
 	})
 }
