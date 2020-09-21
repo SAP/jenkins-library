@@ -600,6 +600,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		UserToken:      "user-token",
 		ProductName:    "mock-product",
 		ProjectName:    "mock-project",
+		ProductToken:   "mock-product-token",
 		ProductVersion: "42",
 	}
 
@@ -609,6 +610,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	expected["checkPolicies"] = true
 	expected["productName"] = "mock-product"
 	expected["projectName"] = "mock-project"
+	expected["productToken"] = "mock-product-token"
 	expected["productVer"] = "42"
 	expected["devDep"] = true
 	expected["ignoreNpmLsErrors"] = true
@@ -651,6 +653,36 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 
 			mergedExpected := expected
 			mergedExpected["unknown"] = "preserved"
+
+			assert.Equal(t, mergedExpected, actual)
+		}
+	})
+
+	t.Run("extend and merge config, omit productToken", func(t *testing.T) {
+		// init
+		initial := make(map[string]interface{})
+		initial["checkPolicies"] = false
+		initial["productName"] = "mock-product"
+		initial["productVer"] = "41"
+		initial["unknown"] = "preserved"
+		initial["projectToken"] = "mock-project-token"
+		encoded, _ := json.Marshal(initial)
+
+		utils := newWhitesourceUtilsMock()
+		utils.AddFile(whiteSourceConfig, encoded)
+
+		// test
+		err := writeWhitesourceConfigJSON(config, utils, true, true)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
+			contents, _ := utils.FileRead(whiteSourceConfig)
+			actual := make(map[string]interface{})
+			_ = json.Unmarshal(contents, &actual)
+
+			mergedExpected := expected
+			mergedExpected["unknown"] = "preserved"
+			mergedExpected["projectToken"] = "mock-project-token"
+			delete(mergedExpected, "productToken")
 
 			assert.Equal(t, mergedExpected, actual)
 		}

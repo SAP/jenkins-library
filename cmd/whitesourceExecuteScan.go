@@ -387,6 +387,14 @@ func setValueAndLogChange(config map[string]interface{}, key string, value inter
 	config[key] = value
 }
 
+func setValueOmitIfPresent(config map[string]interface{}, key, omitIfPresent string, value interface{}) {
+	_, exists := config[omitIfPresent]
+	if exists {
+		return
+	}
+	setValueAndLogChange(config, key, value)
+}
+
 func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, devDep, ignoreLsErrors bool) error {
 	var npmConfig = make(map[string]interface{})
 
@@ -410,7 +418,7 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
 	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	setValueAndLogChange(npmConfig, "productVer", config.ProductVersion)
-	setValueAndLogChange(npmConfig, "productToken", config.ProductToken)
+	setValueOmitIfPresent(npmConfig, "productToken", "projectToken", config.ProductToken)
 	setValueAndLogChange(npmConfig, "devDep", devDep)
 	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
