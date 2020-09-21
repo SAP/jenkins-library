@@ -71,6 +71,10 @@ type whitesourceUtils interface {
 
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
+
+	// Move elsewhere:
+	SetLastScannedProjectName(projectName string)
+	LastScannedProjectName() string
 }
 
 type whitesourceUtilsBundle struct {
@@ -78,6 +82,8 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
+
+	lastScannedProject string
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
@@ -106,6 +112,14 @@ func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) ([]st
 
 func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error {
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
+}
+
+func (w *whitesourceUtilsBundle) SetLastScannedProjectName(projectName string) {
+	w.lastScannedProject = projectName
+}
+
+func (w *whitesourceUtilsBundle) LastScannedProjectName() string {
+	return w.lastScannedProject
 }
 
 func newWhitesourceUtils() *whitesourceUtilsBundle {
@@ -149,6 +163,7 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 	}
 
 	// Scan finished: we need to resolve project token again if the project was just created.
+	config.ProjectName = utils.LastScannedProjectName()
 	if err := resolveProjectIdentifiers(config, utils, sys); err != nil {
 		return err
 	}
@@ -484,11 +499,41 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, utils white
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
+	projectName, err := getNpmProjectName(modulePath, config, utils)
+	if err != nil {
+		return err
+	}
+
 	if err := reinstallNodeModulesIfLsFails(modulePath, config, utils); err != nil {
 		return err
 	}
 
+	utils.SetLastScannedProjectName(projectName)
+
 	return utils.RunExecutable("npx", "whitesource", "run")
+}
+
+func getNpmProjectName(modulePath string, config *ScanOptions, utils whitesourceUtils) (string, error) {
+	fileContents, err := utils.FileRead("package.json")
+	if err != nil {
+		return "", fmt.Errorf("could not read package.json: %w", err)
+	}
+	var packageJson = make(map[string]interface{})
+	err = json.Unmarshal(fileContents, &packageJson)
+
+	projectNameEntry, exists := packageJson["name"]
+	if !exists {
+		return "", fmt.Errorf("the file '%s' must configure a name",
+			filepath.Join(modulePath, "package.json"))
+	}
+
+	projectName, isString := projectNameEntry.(string)
+	if !isString {
+		return "", fmt.Errorf("the file '%s' must configure a name",
+			filepath.Join(modulePath, "package.json"))
+	}
+
+	return projectName + " - " + config.ProductVersion, nil
 }
 
 func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
