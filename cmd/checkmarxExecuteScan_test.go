@@ -137,10 +137,11 @@ func (sys *systemMock) GetTeams() []checkmarx.Team {
 }
 
 type systemMockForExistingProject struct {
-	response      interface{}
-	isIncremental bool
-	isPublic      bool
-	forceScan     bool
+	response          interface{}
+	isIncremental     bool
+	isPublic          bool
+	forceScan         bool
+	scanProjectCalled bool
 }
 
 func (sys *systemMockForExistingProject) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -183,6 +184,7 @@ func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (str
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
 func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+	sys.scanProjectCalled = true
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
@@ -315,6 +317,23 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+}
+
+func TestVerifyOnly(t *testing.T) {
+	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	runScan(options, sys, workspace, &influx)
+	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {

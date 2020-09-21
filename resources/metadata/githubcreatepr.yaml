@@ -58,7 +58,10 @@ spec:
       - name: owner
         aliases:
           - name: githubOrg
-        description: Set the GitHub organization.
+        description: Name of the GitHub organization.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/owner
         scope:
           - PARAMETERS
           - STAGES
@@ -68,7 +71,10 @@ spec:
       - name: repository
         aliases:
           - name: githubRepo
-        description: Set the GitHub repository.
+        description: Name of the GitHub repository.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: github/repository
         scope:
           - PARAMETERS
           - STAGES
