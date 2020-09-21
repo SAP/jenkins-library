@@ -45,9 +45,10 @@ type Package struct {
 	Namespace           string        `json:"Namespace"`
 }
 
-type packageWithRepository struct {
-	p    Package
-	repo abaputils.Repository
+// PackageWithRepository : pack'n repo
+type PackageWithRepository struct {
+	Package Package
+	Repo    abaputils.Repository
 }
 
 // InitPackage : initialize package attributes from the repository
@@ -128,5 +129,22 @@ func (p *Package) Register() error {
 	json.Unmarshal(body, &jPck)
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)
+	return nil
+}
+
+// Release : release package in AAKaaS
+func (p *Package) Release() error {
+	var body []byte
+	var err error
+	log.Entry().Infof("Release package %s", p.PackageName)
+	p.Connector.GetToken("/odata/aas_ocs_package")
+	appendum := "/odata/aas_ocs_package/ReleasePackage?Name='" + p.PackageName + "'"
+	body, err = p.Connector.Post(appendum, "")
+	if err != nil {
+		return err
+	}
+	var jPck jsonPackage
+	json.Unmarshal(body, &jPck)
+	p.Status = jPck.Package.Status
 	return nil
 }
