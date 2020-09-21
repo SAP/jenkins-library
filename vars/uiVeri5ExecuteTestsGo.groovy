@@ -131,8 +131,9 @@ void call(Map parameters = [:]) {
                 npm --version
             """
             try {
-                sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
-                sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
+                //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
+                //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
+                sh "./piper uiVeri5ExecuteTests"
             } catch (err) {
                 echo "[${STEP_NAME}] Test execution failed"
                 script.currentBuild.result = 'UNSTABLE'
