@@ -110,8 +110,8 @@ void call(Map parameters = [:]) {
         ], config)
 
         config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, config)] : utils.unstashAll(config.stashContent)
-        config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
-        config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
+        //config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
+        //config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
         config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
 
         seleniumExecuteTests(
