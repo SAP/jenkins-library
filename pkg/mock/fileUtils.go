@@ -256,11 +256,43 @@ func (f *FilesMock) FileRemove(path string) error {
 	return nil
 }
 
+// FileRename changes the path under which content is associated in the virtual file system.
+// Only leaf-entries are supported as of yet.
+func (f *FilesMock) FileRename(oldPath, newPath string) error {
+	if f.files == nil {
+		return fmt.Errorf("the file '%s' does not exist: %w", oldPath, os.ErrNotExist)
+	}
+
+	oldAbsPath := f.toAbsPath(oldPath)
+	props, exists := f.files[oldAbsPath]
+	// If there is no leaf-entry in the map, path may be a directory.
+	// We only support renaming leaf-entries for now.
+	if !exists {
+		return fmt.Errorf("renaming file '%s' is not supported, since it does not exist, "+
+			"or is not a leaf-entry", oldPath)
+	}
+
+	if oldPath == newPath {
+		return nil
+	}
+
+	newAbsPath := f.toAbsPath(newPath)
+	_, exists = f.files[newAbsPath]
+	// Fail if the target path already exists
+	if exists {
+		return fmt.Errorf("cannot rename '%s', target path '%s' already exists", oldPath, newPath)
+	}
+
+	delete(f.files, oldAbsPath)
+	f.files[newAbsPath] = props
+	return nil
+}
+
 // MkdirAll creates a directory in the in-memory file system, so that this path is established to exist.
 func (f *FilesMock) MkdirAll(path string, mode os.FileMode) error {
 	// NOTE: FilesMock could be extended to have a set of paths for which MkdirAll should fail.
-	// This is why AddDir() exists separately, to differentiate the notion of setting up the mocking
-	// versus implementing the methods from Files.
+	// This is why AddDirWithMode() exists separately, to differentiate the notion of setting up
+	// the mocking versus implementing the methods from Files.
 	f.AddDirWithMode(path, mode)
 	return nil
 }

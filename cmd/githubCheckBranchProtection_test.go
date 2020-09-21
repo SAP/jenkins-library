@@ -69,6 +69,15 @@ func TestRunGithubCheckBranchProtection(t *testing.T) {
 		assert.Equal(t, config.Repository, ghRepo.repo)
 	})
 
+	t.Run("no status checks", func(t *testing.T) {
+		config := githubCheckBranchProtectionOptions{
+			RequiredChecks: []string{"check1", "check2"},
+		}
+		ghRepo := ghCheckBranchRepoService{protection: github.Protection{}}
+		err := runGithubCheckBranchProtection(ctx, &config, &telemetryData, &ghRepo)
+		assert.Contains(t, fmt.Sprint(err), "required status check 'check1' not found")
+	})
+
 	t.Run("status check missing", func(t *testing.T) {
 		config := githubCheckBranchProtectionOptions{
 			RequiredChecks: []string{"check1", "check2"},
