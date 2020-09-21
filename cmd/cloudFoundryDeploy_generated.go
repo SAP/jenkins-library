@@ -401,6 +401,12 @@ func cloudFoundryDeployMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(space)"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -438,6 +444,12 @@ func cloudFoundryDeployMetadata() config.StepData {
 								Name:  "cfCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(space)"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

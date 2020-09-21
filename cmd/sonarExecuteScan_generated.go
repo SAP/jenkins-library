@@ -194,6 +194,12 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/sonar", "$(vaultBasePath)/__group/sonar"},
+								Type:  "vaultSecret",
+							},
+
+							{
 								Name: "sonarTokenCredentialsId",
 								Type: "secret",
 							},

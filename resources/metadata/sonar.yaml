@@ -40,6 +40,10 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
+          - type: vaultSecret
+            paths:
+            - $(vaultBasePath)/$(vaultPipelineName)/sonar
+            - $(vaultBasePath)/__group/sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:
