@@ -404,21 +404,29 @@ func (f *FilesMock) Abs(path string) (string, error) {
 	return f.toAbsPath(path), nil
 }
 
+// FileMock can be used in places where a io.Closer, io.StringWriter or io.Writer is expected.
+// It is the concrete type returned from FilesMock.Open()
 type FileMock struct {
 	absPath string
 	files   *FilesMock
 	content []byte
 }
 
+// Close mocks freeing the associated OS resources.
 func (f *FileMock) Close() error {
 	f.files = nil
 	return nil
 }
 
+// WriteString converts the passed string to a byte array and forwards to Write().
 func (f *FileMock) WriteString(s string) (n int, err error) {
 	return f.Write([]byte(s))
 }
 
+// Write appends the provided byte array to the end of the current virtual file contents.
+// It fails if the FileMock has been closed already, but it does not fail in case the path
+// has already been removed from the FilesMock instance that created this FileMock.
+// In this situation, the written contents will not become visible in the FilesMock.
 func (f *FileMock) Write(p []byte) (n int, err error) {
 	if f.files == nil {
 		return 0, fmt.Errorf("file is closed")
@@ -437,6 +445,9 @@ func (f *FileMock) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// Open mimics the behavior os.Open(), but it cannot return an instance of the os.File struct.
+// Instead, it returns a pointer to a FileMock instance, which implements a number of the same methods as os.File.
+// The flag parameter is checked for os.O_CREATE and os.O_APPEND and behaves accordingly.
 func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, error) {
 	if f.files == nil && flag&os.O_CREATE == 0 {
 		return nil, fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
