@@ -232,12 +232,14 @@ func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys 
 		if err != nil {
 			return err
 		}
-		if projectToken == "" {
-			return fmt.Errorf("failed to resolve project token for '%s' and product token %s",
-				fullProjName, config.ProductToken)
+		// A project may not yet exist for this project name-version combo
+		// It will be created by the scan, we retrieve the token again after scanning.
+		if projectToken != "" {
+			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
+			config.ProjectToken = projectToken
+		} else {
+			log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
 		}
-		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
-		config.ProjectToken = projectToken
 	}
 	return nil
 }
