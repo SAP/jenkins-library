@@ -23,24 +23,6 @@ class LegacyConfigurationCheckUtils{
         }
     }
 
-    static void warnAboutUsingSapNpmRegistry(Script script, String stepName) {
-        //WarningsUtils.addPipelineWarning(
-        script.error(
-            script,
-            "Deprecated configuration parameter sapNpmRegistry",
-            "Your pipeline configuration contains the obsolete configuration parameter sapNpmRegistry in the ${stepName} step configuration. " +
-                "The parameter will be ignored during execution. \n" +
-                "This configuration option was removed in version v41, since the packages of the public SAP NPM Registry were migrated to the default public registry at npmjs.org. \n" +
-                "Please configure the defaultNpmRegistry parameter instead, in case a custom NPM registry configuration is required."
-        )
-    }
-    // Map configChanges layout:
-    // [oldConfigKey:
-    //   newConfigKey: "newKey"  --> Leave empty if oldConfigKey was removed
-    //   steps: [step1, ...]
-    //   stages: [stage1, ...]
-    //   general: True || False
-    //   customMessage: "my message"
     static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges) {
         configChanges.each {oldConfigKey, changes ->
             List steps = changes?.steps ?: []
@@ -96,9 +78,9 @@ class LegacyConfigurationCheckUtils{
             }
 
             if (postAction) {
-                Map config = ConfigurationLoader.postActionConfiguration(script, oldConfigKey)
-                if (config) {
-                    String errorMessage = "Your pipeline configuration contains the configuration key ${oldConfigKey} in the postAction section. " +
+                Map config = loadEffectivePostActionConfig(script)
+                if (config.containsKey(oldConfigKey)) {
+                    String errorMessage = "Your pipeline configuration contains the configuration key ${oldConfigKey} in the postActions section. " +
                         "This configuration option was removed. " + customMessage
                     if (warnInsteadOfError) {
                         addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
@@ -159,6 +141,12 @@ class LegacyConfigurationCheckUtils{
             Boolean general = changes?.general ?: false
             String customMessage = changes?.customMessage ?: ""
 
+            if (oldType != "String") {
+                script.echo ("Your legacy config settings contain an entry for parameterTypeChanged with the key ${oldConfigKey} with the unsupported type ${oldType}. " +
+                    "Currently only the type 'String' is supported.")
+                return
+            }
+
             for (int i = 0; i < steps.size(); i++) {
                 Map config = loadEffectiveStepConfig(script, steps[i])
                 if (config.containsKey(oldConfigKey)) {
@@ -192,26 +180,27 @@ class LegacyConfigurationCheckUtils{
     }
 
     static void checkForRenamedNpmScripts(Script script, Map configChanges) {
-        List packages = script.findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
         configChanges.each { oldScriptName, changes ->
             String newScriptName = changes?.newScriptName ?: ""
             Boolean warnInsteadOfError = changes?.warnInsteadOfError ?: false
             String customMessage = changes?.customMessage ?: ""
 
-            String packageJsonWithScript = checkForNpmScriptsInPackages(script, packages, oldScriptName)
+            String packageJsonWithScript = findPackageWithScript(script, oldScriptName)
             if (packageJsonWithScript) {
+                String errorMessage = "Your package.json file ${packageJsonWithScript} contains an npm script using the deprecated name ${oldScriptName}. " +
+                    "Please rename the script to ${newScriptName}, since the script ${oldScriptName} will not be executed by the pipeline anymore. " + customMessage
                 if (warnInsteadOfError) {
-                    addPipelineWarning(script, "Deprecated npm script ${oldScriptName}", "Your package.json file ${packageJsonWithScript} contains an npm script using the deprecated name ${oldScriptName}. " +
-                        "Please rename the script to ${newScriptName}, since the script ${oldScriptName} will not be executed by the pipeline anymore. " + customMessage)
+                    addPipelineWarning(script, "Deprecated npm script ${oldScriptName}", errorMessage)
                 } else {
-                    script.error("Your package.json file ${packageJsonWithScript} contains an npm script using the deprecated name ${oldScriptName}. " +
-                        "Please rename the script to ${newScriptName}, since the script ${oldScriptName} will not be executed by the pipeline anymore. " + customMessage)
+                    script.error(errorMessage)
                 }
             }
         }
     }
 
-    private static String checkForNpmScriptsInPackages (Script script, List packages, String scriptName) {
+    private static String findPackageWithScript(Script script, String scriptName) {
+        List packages = script.findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+
         for (int i = 0; i < packages.size(); i++) {
             String packageJsonPath = packages[i].path
             Map packageJson = script.readJSON file: packageJsonPath
@@ -233,6 +222,12 @@ class LegacyConfigurationCheckUtils{
 
     private static Map loadEffectiveGeneralConfig(Script script) {
         return MapUtils.merge(ConfigurationLoader.defaultGeneralConfiguration(script), ConfigurationLoader.generalConfiguration(script))
+    }
+
+    private static Map loadEffectivePostActionConfig(Script script) {
+        Map defaultPostActionConfig = DefaultValueCache.getInstance()?.getDefaultValues()?.get("postActions") ?: [:]
+        Map projectPostActionConfig = script?.commonPipelineEnvironment?.configuration?.postActions ?: [:]
+        return MapUtils.merge(defaultPostActionConfig, projectPostActionConfig)
     }
 
     static void addPipelineWarning(Script script, String heading, String message) {

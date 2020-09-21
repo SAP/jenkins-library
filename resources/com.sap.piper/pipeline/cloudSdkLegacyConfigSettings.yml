@@ -1,13 +1,3 @@
-####### Map Layout #######
-# removedOrReplacedConfigKeys:
-#   oldConfigKey:
-#     newConfigKey: "newKey"    # Do not use this key if the oldConfigKey has been removed
-#     steps: ["step1", "step2"]
-#     stages: ["stage1", "stage2"]
-#     general: true
-#     postAction: false
-#     customMessage: "Please display this with the generic error message"
-
 removedOrReplacedConfigKeys:
   extensionRepository:
     newConfigKey: "globalExtensionsRepository"
@@ -48,12 +38,6 @@ removedOrReplacedConfigKeys:
       This configuration option was removed in version v41, since the packages of the public SAP NPM Registry were migrated to the default public registry at npmjs.org.
       Please configure the defaultNpmRegistry parameter instead, in case a custom NPM registry configuration is required."
 
-####### Map Layout #######
-# removedOrReplacedSteps:
-#   oldStepName:
-#     newStepName: "newName"           # Do not use this key if the step has been removed
-#     customMessage: "Please display this with the generic error message"
-#     onlyCheckProjectConfig: true     # Do not take defaults into account, e.g., artifactSetVersion
 removedOrReplacedSteps:
   executeMaven:
     newStepName: "mavenExecute"
@@ -74,11 +58,6 @@ removedOrReplacedSteps:
       For the time being, the step createHdiContainer is still available in the Pipeline and can be called from an extension.
       The extension must pass all required options to the step via parameters, it cannot be configured in your .pipeline/config.yml."
 
-####### Map Layout #######
-# removedOrReplacedStages:
-#   oldStageName:
-#     newStageName: "newName"           # Do not use this key if the stage has been removed
-#     customMessage: "Please display this with the generic error message"
 removedOrReplacedStages:
   integrationTests:
     newStageName: "backendIntegrationTests"
@@ -96,15 +75,6 @@ removedOrReplacedStages:
   sonarQubeScan:
     newStageName: "compliance"
 
-####### Map Layout #######
-# parameterTypeChanged:
-#   configKey:
-#     oldType: "String"
-#     newType: "List"
-#     stages: ["stage1", "stage2"]
-#     steps: ["step1", "step2"]
-#     general: true
-#     postAction: true
 parameterTypeChanged:
   appUrls:
     oldType: "String"
