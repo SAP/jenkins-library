@@ -340,7 +340,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 			log.SetErrorCategory(log.ErrorConfiguration)
 		case strings.Contains(errText, "authentication required"):
 			log.SetErrorCategory(log.ErrorConfiguration)
-			case strings.Contains(errText, "knownhosts:"):
+		case strings.Contains(errText, "knownhosts:"):
 			err = errors.Wrap(err, "known_hosts file seems invalid")
 			log.SetErrorCategory(log.ErrorConfiguration)
 		case strings.Contains(errText, "unable to find any valid known_hosts file"):
