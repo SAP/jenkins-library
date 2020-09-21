@@ -24,6 +24,8 @@ import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertNull
 
 class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
@@ -64,6 +66,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def securityContext
     def inheritFrom
     def yamlMergeStrategy
+    def podSpec
     List stashList = []
 
     @Before
@@ -74,6 +77,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         portList = []
         containerCommands = []
         bodyExecuted = false
+        podSpec = null
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         helper.registerAllowedMethod('sh', [Map.class], { return whichDockerReturnValue })
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
@@ -91,7 +95,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             inheritFrom = options.inheritFrom
             yamlMergeStrategy = options.yamlMergeStrategy
             podNodeSelector = options.nodeSelector
-            def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
+            podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
             securityContext = podSpec.spec.securityContext
 
@@ -416,6 +420,87 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(namespace, is(equalTo(expectedNamespace)))
+    }
+
+    @Test
+    void testDockerExecuteWithAdditionalPodProperties() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+            additionalPodProperties: [
+                tolerations:[
+                    [
+                        key: "key1",
+                        operator: "Equal",
+                        value: "value1",
+                        effect: "NoSchedule",
+                    ],
+                    [
+                        key: "key2",
+                        operator: "Equal",
+                        value: "value2",
+                        effect: "NoExecute",
+                    ],
+                ],
+                subdomain: 'foo',
+                shareProcessNamespace: false
+            ]
+        ]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertEquals(
+            [
+                [
+                    "key": "key1",
+                    "operator": "Equal",
+                    "value": "value1",
+                    "effect": "NoSchedule"
+                ],
+                [
+                    "key": "key2",
+                    "operator": "Equal",
+                    "value": "value2",
+                    "effect": "NoExecute"
+                ]
+            ], podSpec.spec.tolerations)
+        assertEquals('foo', podSpec.spec.subdomain)
+        assertFalse(podSpec.spec.shareProcessNamespace)
+    }
+
+    @Test
+    void testDockerExecuteWithAdditionalPodPropertiesContainerPropertyIsNotOverwritten() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+            additionalPodProperties: [
+                containers:[
+                    [
+                        some: "stupid",
+                        stuff: "here",
+                    ]
+                ],
+                subdomain: 'foo',
+                shareProcessNamespace: false,
+            ]
+        ]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        // This is not contained in the configuration above.
+        assertNotNull(podSpec.spec.containers[0].name)
+
+        // This is contained in the config above.
+        assertNull(podSpec.spec.some)
+        assertNull(podSpec.spec.stuff)
+
+        assertEquals('foo', podSpec.spec.subdomain)
+        assertFalse(podSpec.spec.shareProcessNamespace)
     }
 
     @Test
