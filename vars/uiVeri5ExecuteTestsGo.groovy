@@ -100,7 +100,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('seleniumHost', isKubernetes()?'localhost':'selenium')
+            .addIfEmpty('seleniumHost', getHost())
             .use()
 
         utils.pushToSWA([
@@ -142,6 +142,9 @@ void call(Map parameters = [:]) {
     }
 }
 
-boolean isKubernetes() {
-    return Boolean.valueOf(env.ON_K8S)
+String getHost() {
+    if (Boolean.valueOf(env.ON_K8S)) {
+        return 'localhost'
+    }
+    return 'selenium'
 }
