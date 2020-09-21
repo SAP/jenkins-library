@@ -326,7 +326,7 @@ func TestExecuteScanNPM(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("dummy"))
 		// test
 		err := executeScan(&config, utilsMock)
-		// many assert
+		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
 			{
@@ -345,6 +345,124 @@ func TestExecuteScanNPM(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+	})
+}
+
+func TestExecuteScanMaven(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path Maven", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:       "maven",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProjectName:    "mock-project",
+			ProductVersion: "product-version",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		// test
+		err := executeScan(&config, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "mvn",
+				Params: []string{
+					"--file",
+					"pom.xml",
+					"-Dorg.whitesource.orgToken=org-token",
+					"-Dorg.whitesource.product=mock-product",
+					"-Dorg.whitesource.checkPolicies=true",
+					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.aggregateProjectName=mock-project",
+					"-Dorg.whitesource.aggregateModules=true",
+					"-Dorg.whitesource.userKey=user-token",
+					"-Dorg.whitesource.productVersion=product-version",
+					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+					"--batch-mode",
+					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("pom.xml does not exist", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:       "maven",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProjectName:    "mock-project",
+			ProductVersion: "product-version",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		// test
+		err := executeScan(&config, utilsMock)
+		// assert
+		assert.EqualError(t, err,
+			"for scanning with type 'maven', the file 'pom.xml' must exist in the project root")
+		assert.Len(t, utilsMock.Calls, 0)
+	})
+}
+
+func TestExecuteScanMTA(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path MTA", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:       "mta",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProjectName:    "mock-project",
+			ProductVersion: "product-version",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		utilsMock.AddFile("package.json", []byte("dummy"))
+		// test
+		err := executeScan(&config, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "mvn",
+				Params: []string{
+					"--file",
+					"pom.xml",
+					"-Dorg.whitesource.orgToken=org-token",
+					"-Dorg.whitesource.product=mock-product",
+					"-Dorg.whitesource.checkPolicies=true",
+					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.aggregateProjectName=mock-project",
+					"-Dorg.whitesource.aggregateModules=true",
+					"-Dorg.whitesource.userKey=user-token",
+					"-Dorg.whitesource.productVersion=product-version",
+					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+					"--batch-mode",
+					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
+				},
+			},
+			{
+				Exec: "npm",
+				Params: []string{
+					"ls",
+				},
+			},
+			{
+				Exec: "npx",
+				Params: []string{
+					"whitesource",
+					"run",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
 	})
 }
 
