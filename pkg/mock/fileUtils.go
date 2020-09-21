@@ -403,3 +403,63 @@ func (f *FilesMock) Abs(path string) (string, error) {
 	f.init()
 	return f.toAbsPath(path), nil
 }
+
+type FileMock struct {
+	absPath string
+	files   *FilesMock
+	content []byte
+}
+
+func (f *FileMock) Close() error {
+	f.files = nil
+	return nil
+}
+
+func (f *FileMock) WriteString(s string) (n int, err error) {
+	return f.Write([]byte(s))
+}
+
+func (f *FileMock) Write(p []byte) (n int, err error) {
+	if f.files == nil {
+		return 0, fmt.Errorf("file is closed")
+	}
+
+	f.content = append(f.content, p...)
+
+	// It is not an error to write to a file that has been removed.
+	// The kernel does reference counting, as long as someone has the file still opened,
+	// it can be written to (and that entity can also still read it).
+	properties, exists := f.files.files[f.absPath]
+	if exists && properties.content != &dirContent {
+		properties.content = &f.content
+	}
+
+	return len(p), nil
+}
+
+func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, error) {
+	if f.files == nil && flag&os.O_CREATE == 0 {
+		return nil, fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
+	}
+	f.init()
+	absPath := f.toAbsPath(path)
+	properties, exists := f.files[absPath]
+	if exists && properties.content == &dirContent {
+		return nil, fmt.Errorf("opening directory not supported")
+	}
+	if !exists && flag&os.O_CREATE != 0 {
+		f.associateContentAbs(absPath, &[]byte{}, perm)
+	}
+
+	file := FileMock{
+		absPath: absPath,
+		files:   f,
+		content: []byte{},
+	}
+
+	if flag&os.O_APPEND != 0 {
+		file.content = *properties.content
+	}
+
+	return &file, nil
+}
