@@ -1,4 +1,5 @@
 import com.sap.piper.DescriptorUtils
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
@@ -11,6 +12,7 @@ import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
+import static com.sap.piper.DownloadCacheUtils.*
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
@@ -239,69 +241,85 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def utils = parameters.juStabUtils ?: new Utils()
-        String stageName = parameters.stageName ?: env.STAGE_NAME
-        def descriptorUtils = parameters.descriptorUtilsStub ?: new DescriptorUtils()
-        def statusCode = 1
 
-        //initialize CPE for passing whiteSourceProjects
-        if(script.commonPipelineEnvironment.getValue('whitesourceProjectNames') == null) {
-            script.commonPipelineEnvironment.setValue('whitesourceProjectNames', [])
-        }
+        //fixme feature flag
+        if (false) {
+            def utils = parameters.juStabUtils ?: new Utils()
+            String stageName = parameters.stageName ?: env.STAGE_NAME
+            def descriptorUtils = parameters.descriptorUtilsStub ?: new DescriptorUtils()
+            def statusCode = 1
 
-        // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults(CONFIG_KEY_COMPATIBILITY, stageName)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixin([
-                style : libraryResource('piper-os.css')
-            ])
-            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .dependingOn('scanType').mixin('buildDescriptorFile')
-            .dependingOn('scanType').mixin('dockerImage')
-            .dependingOn('scanType').mixin('dockerWorkspace')
-            .dependingOn('scanType').mixin('dockerOptions')
-            .dependingOn('scanType').mixin('dockerEnvVars')
-            .dependingOn('scanType').mixin('stashContent')
-            .dependingOn('scanType').mixin('whitesource/configFilePath')
-            .dependingOn('scanType').mixin('whitesource/installCommand')
-            .withMandatoryProperty('whitesource/serviceUrl')
-            .withMandatoryProperty('whitesource/orgToken')
-            .withMandatoryProperty('whitesource/userTokenCredentialsId')
-            .withMandatoryProperty('whitesource/productName')
-            .addIfEmpty('whitesource/scanImage', script.commonPipelineEnvironment.containerProperties?.imageNameTag)
-            .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
-            .use()
+            //initialize CPE for passing whiteSourceProjects
+            if (script.commonPipelineEnvironment.getValue('whitesourceProjectNames') == null) {
+                script.commonPipelineEnvironment.setValue('whitesourceProjectNames', [])
+            }
 
-        config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
-        config.stashContent = utils.unstashAll(config.stashContent)
-        config.whitesource['projectNames'] = (config.whitesource['projectNames'] instanceof List) ? config.whitesource['projectNames'] : config.whitesource['projectNames']?.tokenize(',')
-        parameters.whitesource = parameters.whitesource ?: [:]
-        parameters.whitesource['projectNames'] = config.whitesource['projectNames']
+            // load default & individual configuration
+            Map config = ConfigurationHelper.newInstance(this)
+                .loadStepDefaults(CONFIG_KEY_COMPATIBILITY, stageName)
+                .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+                .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+                .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+                .mixin([
+                    style: libraryResource('piper-os.css')
+                ])
+                .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+                .dependingOn('scanType').mixin('buildDescriptorFile')
+                .dependingOn('scanType').mixin('dockerImage')
+                .dependingOn('scanType').mixin('dockerWorkspace')
+                .dependingOn('scanType').mixin('dockerOptions')
+                .dependingOn('scanType').mixin('dockerEnvVars')
+                .dependingOn('scanType').mixin('stashContent')
+                .dependingOn('scanType').mixin('whitesource/configFilePath')
+                .dependingOn('scanType').mixin('whitesource/installCommand')
+                .withMandatoryProperty('whitesource/serviceUrl')
+                .withMandatoryProperty('whitesource/orgToken')
+                .withMandatoryProperty('whitesource/userTokenCredentialsId')
+                .withMandatoryProperty('whitesource/productName')
+                .addIfEmpty('whitesource/scanImage', script.commonPipelineEnvironment.containerProperties?.imageNameTag)
+                .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
+                .use()
 
-        script.commonPipelineEnvironment.setInfluxStepData('whitesource', false)
+            config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
+            config.stashContent = utils.unstashAll(config.stashContent)
+            config.whitesource['projectNames'] = (config.whitesource['projectNames'] instanceof List) ? config.whitesource['projectNames'] : config.whitesource['projectNames']?.tokenize(',')
+            parameters.whitesource = parameters.whitesource ?: [:]
+            parameters.whitesource['projectNames'] = config.whitesource['projectNames']
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scanType',
-            stepParam1: config.scanType
-        ], config)
+            script.commonPipelineEnvironment.setInfluxStepData('whitesource', false)
 
-        echo "Parameters: scanType: ${config.scanType}"
+            utils.pushToSWA([
+                step         : STEP_NAME,
+                stepParamKey1: 'scanType',
+                stepParam1   : config.scanType
+            ], config)
 
-        def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
-        def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
+            echo "Parameters: scanType: ${config.scanType}"
 
-        if(config.whitesource.orgAdminUserTokenCredentialsId) {
-            statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+            def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
+            def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
+
+            if (config.whitesource.orgAdminUserTokenCredentialsId) {
+                statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+            } else {
+                statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+            }
+            checkStatus(statusCode, config)
+
+            script.commonPipelineEnvironment.setInfluxStepData('whitesource', true)
         } else {
-            statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
-        }
-        checkStatus(statusCode, config)
+            parameters = injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
-        script.commonPipelineEnvironment.setInfluxStepData('whitesource', true)
+            List credentials = [
+                [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
+                [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
+            ]
+            piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
+
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: true,
+                         reportDir   : "application/target/site/whitesource",
+                         reportFiles : 'index.html', reportName: "Whitesource Policy Check"])
+        }
     }
 }
 
