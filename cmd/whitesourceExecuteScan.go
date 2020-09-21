@@ -501,7 +501,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, utils white
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
-	projectName, err := getNpmProjectName(modulePath, config, utils)
+	projectName, err := getNpmProjectName(modulePath, utils)
 	if err != nil {
 		return err
 	}
@@ -515,7 +515,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, utils white
 	return utils.RunExecutable("npx", "whitesource", "run")
 }
 
-func getNpmProjectName(modulePath string, config *ScanOptions, utils whitesourceUtils) (string, error) {
+func getNpmProjectName(modulePath string, utils whitesourceUtils) (string, error) {
 	fileContents, err := utils.FileRead("package.json")
 	if err != nil {
 		return "", fmt.Errorf("could not read package.json: %w", err)
@@ -535,7 +535,7 @@ func getNpmProjectName(modulePath string, config *ScanOptions, utils whitesource
 			filepath.Join(modulePath, "package.json"))
 	}
 
-	return projectName + " - " + config.ProductVersion, nil
+	return projectName, nil
 }
 
 func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
