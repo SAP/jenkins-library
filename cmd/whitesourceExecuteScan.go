@@ -165,7 +165,7 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 
 	// Scan finished: we need to resolve project token again if the project was just created.
 	config.ProjectName = utils.LastScannedProjectName()
-	config.ProductToken = ""
+	config.ProjectToken = ""
 	if err := resolveProjectIdentifiers(config, utils, sys); err != nil {
 		return err
 	}
