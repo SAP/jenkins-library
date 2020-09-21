@@ -410,6 +410,7 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
 	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	setValueAndLogChange(npmConfig, "productVer", config.ProductVersion)
+	setValueAndLogChange(npmConfig, "productToken", config.ProductToken)
 	setValueAndLogChange(npmConfig, "devDep", devDep)
 	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
