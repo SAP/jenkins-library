@@ -59,7 +59,8 @@ type whitesourceUtils interface {
 	RemoveAll(path string) error
 	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
 
-	GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error)
+	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
+		options *versioning.Options) (versioning.Coordinates, error)
 
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
@@ -72,13 +73,9 @@ type whitesourceUtilsBundle struct {
 	npmExecutor npm.Executor
 }
 
-func (w *whitesourceUtilsBundle) GetArtifactCoordinates(config *ScanOptions) (versioning.Coordinates, error) {
-	opts := &versioning.Options{
-		ProjectSettingsFile: config.ProjectSettingsFile,
-		GlobalSettingsFile:  config.GlobalSettingsFile,
-		M2Path:              config.M2Path,
-	}
-	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, opts, w)
+func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
+	options *versioning.Options) (versioning.Coordinates, error) {
+	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +175,12 @@ func runWhitesourceScan(config *ScanOptions, utils whitesourceUtils, sys whiteso
 
 func resolveProjectIdentifiers(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	if config.ProjectName == "" || config.ProductVersion == "" {
-		coordinates, err := utils.GetArtifactCoordinates(config)
+		options := &versioning.Options{
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+			M2Path:              config.M2Path,
+		}
+		coordinates, err := utils.GetArtifactCoordinates(config.BuildTool, config.BuildDescriptorFile, options)
 		if err != nil {
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}

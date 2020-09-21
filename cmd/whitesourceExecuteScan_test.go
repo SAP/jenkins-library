@@ -130,8 +130,11 @@ type downloadedFile struct {
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
-	coordinates     whitesourceCoordinatesMock
-	downloadedFiles []downloadedFile
+	coordinates             whitesourceCoordinatesMock
+	usedBuildTool           string
+	usedBuildDescriptorFile string
+	usedOptions             versioning.Options
+	downloadedFiles         []downloadedFile
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -148,7 +151,11 @@ func (w *whitesourceUtilsMock) RemoveAll(path string) error {
 	return nil
 }
 
-func (w *whitesourceUtilsMock) GetArtifactCoordinates(_ *ScanOptions) (versioning.Coordinates, error) {
+func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
+	options *versioning.Options) (versioning.Coordinates, error) {
+	w.usedBuildTool = buildTool
+	w.usedBuildDescriptorFile = buildDescriptorFile
+	w.usedOptions = *options
 	return w.coordinates, nil
 }
 
@@ -177,9 +184,13 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:        "mta",
-			VersioningModel: "major",
-			ProductName:     "mock-product",
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			M2Path:              "m2/path",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
@@ -191,12 +202,16 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			assert.Equal(t, "1", config.ProductVersion)
 			assert.Equal(t, "mock-project-token", config.ProjectToken)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
+			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
 		}
 	})
 	t.Run("product not found", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:        "mta",
+			BuildTool:       "mta",
 			VersioningModel: "major",
 			ProductName:     "does-not-exist",
 		}
