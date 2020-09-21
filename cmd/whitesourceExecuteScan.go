@@ -41,6 +41,13 @@ type whitesource interface {
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
 }
 
+// wsFile defines the method subset we use from os.File
+type wsFile interface {
+	io.Writer
+	io.StringWriter
+	io.Closer
+}
+
 type whitesourceUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
@@ -57,7 +64,7 @@ type whitesourceUtils interface {
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
 	RemoveAll(path string) error
-	FileOpen(name string, flag int, perm os.FileMode) (*os.File, error)
+	FileOpen(name string, flag int, perm os.FileMode) (wsFile, error)
 
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
@@ -71,6 +78,10 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
+}
+
+func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
+	return os.OpenFile(name, flag, perm)
 }
 
 func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
@@ -660,7 +671,11 @@ func downloadRiskReport(config *ScanOptions, utils whitesourceUtils, sys whiteso
 // downloadAgent downloads the unified agent jar file if one does not exist
 func downloadAgent(config *ScanOptions, utils whitesourceUtils) error {
 	agentFile := config.AgentFileName
-	if !fileExists(agentFile) {
+	exists, err := utils.FileExists(agentFile)
+	if err != nil {
+		return fmt.Errorf("could not check whether the file '%s' exists: %w", agentFile, err)
+	}
+	if !exists {
 		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w",
@@ -692,7 +707,13 @@ func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) 
 	defer func() { _ = f.Close() }()
 
 	// Append additional config parameters to prevent multiple projects being generated
-	cfg := fmt.Sprintf("gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\nexcludes=%s", config.Excludes)
+	m2Path := config.M2Path
+	if m2Path == "" {
+		m2Path = ".m2"
+	}
+	cfg := fmt.Sprintf("\ngradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=%s\nexcludes=%s",
+		m2Path,
+		config.Excludes)
 	if _, err = f.WriteString(cfg); err != nil {
 		return err
 	}
