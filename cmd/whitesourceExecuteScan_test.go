@@ -225,7 +225,8 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	})
 }
 
-func TestExecute(t *testing.T) {
+func TestExecuteScanUA(t *testing.T) {
+	t.Parallel()
 	t.Run("happy path UA", func(t *testing.T) {
 		// init
 		config := ScanOptions{
@@ -306,6 +307,44 @@ func TestExecute(t *testing.T) {
 		// many assert
 		require.NoError(t, err)
 		assert.Len(t, utilsMock.downloadedFiles, 0)
+	})
+}
+
+func TestExecuteScanNPM(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path NPM", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:       "npm",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProjectName:    "mock-project",
+			ProductVersion: "product-version",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte("dummy"))
+		// test
+		err := executeScan(&config, utilsMock)
+		// many assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "npm",
+				Params: []string{
+					"ls",
+				},
+			},
+			{
+				Exec: "npx",
+				Params: []string{
+					"whitesource",
+					"run",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
 	})
 }
 
