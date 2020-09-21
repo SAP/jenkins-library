@@ -115,6 +115,7 @@ func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, 
 }
 
 func (w *whitesourceUtilsBundle) SetLastScannedProjectName(projectName string) {
+	log.Entry().Infof("last scanned project: '%s'", projectName)
 	w.lastScannedProject = projectName
 }
 
