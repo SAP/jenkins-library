@@ -15,11 +15,10 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerRegistryUrl',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-
-    /** The tag of the image to dgoss. */
+    /** The tag of the image to test. */
     'dockerImageTag',
     /**
-     * gossFile The path to the goss file to use. Default value is 'goss.yaml'.
+     * The path to the goss file to use. Default value is 'goss.yaml'.
      */
     'gossFile'
 ])
@@ -33,7 +32,6 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         final script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
-        // handle deprecated parameters
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
