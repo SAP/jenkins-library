@@ -156,7 +156,7 @@ spec:
               - name: buildTool
                 value: pip
         description:
-          "Path to the build descriptor file addressing the module/folder
+          "Path to the build descriptor file addressing the module/folder to be scanned."
           to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`:
           `./setup.py`."
         scope:
