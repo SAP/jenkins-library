@@ -103,7 +103,7 @@ void call(Map parameters = [:]) {
             LegacyConfigurationCheckUtils.checkConfiguration(script, legacyConfigSettings)
         }
 
-        String buildTool = checkBuildTool(config)
+        String buildTool = checkBuildTool(script, config)
 
         if (Boolean.valueOf(env.ON_K8S) && config.containerMap) {
             ContainerMap.instance.initFromResource(script, config.containerMap, buildTool)
