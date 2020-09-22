@@ -199,7 +199,7 @@ private String checkBuildTool(script, config) {
     return buildTool
 }
 
-private void initStashConfiguration (Script script, String stashSettings, Boolean verbose) {
+private void initStashConfiguration (Script script, String stashSettings, Boolean verbose = false) {
     Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
