@@ -172,7 +172,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-private String checkBuildTool(Script script, Map config) {
+private String checkBuildTool(script, config) {
     def buildDescriptorPattern = ''
     String buildTool
 
