@@ -11,7 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     /** The name of the docker image to dgoss. */
     'dockerImageName',
-    /** Defines the registry url where the image should be located*/
+    /** Defines the registry url where the image should be located. */
     'dockerRegistryUrl',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -19,14 +19,14 @@ import static com.sap.piper.Prerequisites.checkScript
     /** The tag of the image to dgoss. */
     'dockerImageTag',
     /**
-     * gossFile The oath to the goss file to use. Default value is 'goss.yaml'.
+     * gossFile The path to the goss file to use. Default value is 'goss.yaml'.
      */
     'gossFile'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * This step execute goss validation agains your container
+ * This step execute goss validation agains your container.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -50,8 +50,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('gossFile')
 
         def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
-
-
         if (config.dockerRegistryUrl) {
             dockerImageNameAndTag = config.dockerRegistryUrl + "/" + dockerImageNameAndTag
         }
@@ -73,7 +71,7 @@ def runOnNode(dockerImageNameAndTag){
         sh "while ! docker exec mydind docker stats --no-stream; do sleep 1; done"
         docker.image('kiwicom/dgoss').inside(""" --link ${c.id}:docker -v "${pwd()}":/src
         -e "GOSS_FILES_STRATEGY=cp"
-        -e "DOCKER_HOST=tcp://docker:2375" """){
+        -e "DOCKER_HOST=tcp://docker:2375" """) {
             sh """
                 cd /src
                 dgoss run ${dockerImageNameAndTag}
@@ -82,8 +80,8 @@ def runOnNode(dockerImageNameAndTag){
     }
 }
 
-def runOnK8S(config, dockerImageNameAndTag){
-    stash name: '_gossfile',includes: config.gossFile
+void runOnK8S(config, dockerImageNameAndTag) {
+    stash name: '_gossfile', includes: config.gossFile
     podTemplate(yaml:"""
 apiVersion: v1
 kind: Pod
@@ -121,7 +119,7 @@ spec:
         node(POD_LABEL){
             container('goss') {
                 unstash '_gossfile'
-                if (config.gossFile != "goss.yaml"){
+                if (config.gossFile != "goss.yaml") {
                     sh "cp ${config.gossFile} goss.yaml"
                 }
                 sh "dgoss run ${dockerImageNameAndTag}"
