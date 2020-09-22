@@ -113,17 +113,17 @@ void call(Map parameters = [:]) {
         if (config.initCloudSdkStashSettings) {
             switch (buildTool) {
                 case 'maven':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavaStashSettings.yml", config.verbose)
+                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavaStashSettings.yml", config.verbose?: false)
                     break
                 case 'npm':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavascriptStashSettings.yml", config.verbose)
+                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavascriptStashSettings.yml", config.verbose?: false)
                     break
                 case 'mta':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkMtaStashSettings.yml", config.verbose)
+                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkMtaStashSettings.yml", config.verbose?: false)
                     break
             }
         } else {
-            initStashConfiguration(script, config.stashSettings, config.verbose)
+            initStashConfiguration(script, config.stashSettings, config.verbose?: false)
         }
 
         setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
@@ -199,7 +199,7 @@ private String checkBuildTool(script, config) {
     return buildTool
 }
 
-private void initStashConfiguration (Script script, String stashSettings, Boolean verbose = false) {
+private void initStashConfiguration (Script script, String stashSettings, Boolean verbose) {
     Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
