@@ -115,6 +115,7 @@ func Execute() {
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
