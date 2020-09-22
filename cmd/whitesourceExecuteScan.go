@@ -848,7 +848,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 		}
 	}
 
-	if err := ioutil.WriteFile("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
+	if err := utils.FileWrite("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
 		return err
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -906,7 +906,11 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	}
 
 	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
-	if err := file.SaveAs(fileName); err != nil {
+	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	if err := file.Write(stream); err != nil {
 		return err
 	}
 	return nil
@@ -929,7 +933,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
-	if err := ioutil.WriteFile(fileName, []byte(output), 0777); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output), 0777); err != nil {
 		return err
 	}
 	return nil
