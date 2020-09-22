@@ -1,34 +1,50 @@
 package config
 
 import (
-	"path"
-
+	"github.com/SAP/jenkins-library/pkg/config/interpolation"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 )
+
+var vaultFilter = []string{
+	"vaultApproleID",
+	"vaultApproleSecreId",
+	"vaultAddress",
+	"vaultNamespace",
+	"vaultBasePath",
+	"vaultPipelineName",
+}
+
+// VaultCredentials hold all the auth information needed to fetch configuration from vault
+type VaultCredentials struct {
+	AppRoleID       string
+	AppRoleSecretID string
+}
 
 // vaultClient interface for mocking
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
 }
 
-func getVaultClientFromConfig(config StepConfig) (vaultClient, error) {
+func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultAddress"].(string)
-	token, tokenOk := config.Config["vaultToken"].(string)
-
+	log.Entry().Infof("config received %#v", config.Config)
 	// if vault isn't used it's not an error
-	if !addressOk || !tokenOk {
+	if !addressOk || creds.AppRoleID == "" || creds.AppRoleSecretID == "" {
+		log.Entry().Info("Skipping fetching secrets from vault since it is not configured")
 		return nil, nil
 	}
 
 	// namespaces are only available in vault enterprise so using them should be optional
 	namespace := config.Config["vaultNamespace"].(string)
 
-	client, err := vault.NewClient(&api.Config{Address: address}, token, namespace)
+	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Entry().Infof("Fetching secrets from vault at %s", address)
 	return &client, nil
 }
 
@@ -45,14 +61,13 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 		}
 		for _, vaultPath := range ref.Paths {
 			// it should be possible to configure the root path were the secret is stored
-			basePath := ""
-			var ok bool
-			p, ok := config.Config["vaultBasePath"].(string)
-			if ok {
-				basePath = p
+			var err error
+			vaultPath, err = interpolation.ResolveString(vaultPath, config.Config)
+			if err != nil {
+				return err
 			}
 
-			secret, err := client.GetKvSecret(path.Join(basePath, vaultPath))
+			secret, err := client.GetKvSecret(vaultPath)
 			if err != nil {
 				return err
 			}
@@ -62,6 +77,7 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 
 			field := secret[param.Name]
 			if field != "" {
+				log.RegisterSecret(field)
 				config.Config[param.Name] = field
 				break
 			}
