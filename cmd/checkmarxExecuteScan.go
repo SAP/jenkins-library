@@ -81,6 +81,9 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 				}
 				project = branchProject
 			}
+		} else {
+			project = projects[0]
+			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	} else {
 		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
