@@ -140,8 +140,7 @@ spec:
             params:
               - name: buildTool
                 value: maven
-        description:
-          "Path to the build descriptor file addressing the module/folder to be scanned."
+        description: "Path to the build descriptor file addressing the module/folder to be scanned."
         scope:
           - PARAMETERS
           - STAGES
@@ -154,8 +153,7 @@ spec:
             params:
               - name: buildTool
                 value: pip
-        description:
-          "Path to the build descriptor file addressing the module/folder to be scanned."
+        description: "Path to the build descriptor file addressing the module/folder to be scanned."
         scope:
           - PARAMETERS
           - STAGES

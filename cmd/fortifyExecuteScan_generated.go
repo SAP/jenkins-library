@@ -199,7 +199,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `buildTool: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", `./pom.xml`, "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`: `./setup.py`.")
+	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", `./pom.xml`, "Path to the build descriptor file addressing the module/folder to be scanned.")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifying artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifying pull request merges throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
