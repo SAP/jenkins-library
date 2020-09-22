@@ -2,6 +2,7 @@ package mock
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
@@ -568,6 +569,20 @@ func TestOpen(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, []byte("hello"), content)
 			}
+		}
+	})
+	t.Run("content is truncated with O_TRUNC an nothing written", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile(filePath, []byte("initial-content"))
+		// test
+		file, err := files.Open(filePath, os.O_CREATE|os.O_TRUNC, 0644)
+		require.NoError(t, err)
+		err = file.Close()
+		assert.NoError(t, err)
+		content, err := files.FileRead(filePath)
+		if assert.NoError(t, err) {
+			assert.Len(t, content, 0)
 		}
 	})
 	t.Run("content is appended", func(t *testing.T) {

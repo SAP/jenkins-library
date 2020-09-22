@@ -470,6 +470,8 @@ func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, er
 
 	if flag&os.O_APPEND != 0 {
 		file.content = *properties.content
+	} else if flag&os.O_TRUNC != 0 {
+		properties.content = &file.content
 	}
 
 	return &file, nil
