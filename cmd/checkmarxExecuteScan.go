@@ -36,9 +36,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) {
 
 	team := loadTeam(sys, config.TeamName, config.TeamID)
-	projectName := config.ProjectName
-
-	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	project, projectName := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
@@ -68,7 +66,7 @@ func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
 	return team
 }
 
-func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) checkmarx.Project {
+func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string) {
 	var project checkmarx.Project
 	projectName := initialProjectName
 	if len(pullRequestName) > 0 {
@@ -83,6 +81,9 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 				}
 				project = branchProject
 			}
+		} else {
+			project = projects[0]
+			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	} else {
 		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
@@ -91,7 +92,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	}
-	return project
+	return project, projectName
 }
 
 func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
