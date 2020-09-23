@@ -70,10 +70,6 @@ type whitesourceUtils interface {
 
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
-
-	// Move elsewhere:
-	SetLastScannedProjectName(projectName string)
-	LastScannedProjectName() string
 }
 
 type whitesourceUtilsBundle struct {
@@ -81,8 +77,6 @@ type whitesourceUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	npmExecutor npm.Executor
-
-	lastScannedProject string
 }
 
 func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
@@ -111,15 +105,6 @@ func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) ([]st
 
 func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error {
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
-}
-
-func (w *whitesourceUtilsBundle) SetLastScannedProjectName(projectName string) {
-	log.Entry().Infof("last scanned project: '%s'", projectName)
-	w.lastScannedProject = projectName
-}
-
-func (w *whitesourceUtilsBundle) LastScannedProjectName() string {
-	return w.lastScannedProject
 }
 
 func newWhitesourceUtils() *whitesourceUtilsBundle {
