@@ -64,6 +64,65 @@ func TestGetVaultSecret(t *testing.T) {
 
 }
 
+func TestVaultAppRoleLogin(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	const testToken = "vault-token"
+
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			AlwaysPullImage: true,
+			Image:           "vault:1.4.3",
+			ExposedPorts:    []string{"8200/tcp"},
+			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
+			WaitingFor:      wait.ForLog("Vault server started!").WithStartupTimeout(20 * time.Second)},
+
+		Started: true,
+	}
+
+	vaultContainer, err := testcontainers.GenericContainer(ctx, req)
+	assert.NoError(t, err)
+	defer vaultContainer.Terminate(ctx)
+
+	ip, err := vaultContainer.Host(ctx)
+	assert.NoError(t, err)
+	port, err := vaultContainer.MappedPort(ctx, "8200")
+	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	config := &api.Config{Address: host}
+
+	roleID, secretID := setupVaultAppRole(t, config, testToken)
+	client, err := vault.NewClientWithAppRole(config, roleID, secretID, "")
+	assert.NoError(t, err)
+	_, err = client.GetSecret("auth/token/lookup-self")
+	assert.NoError(t, err)
+}
+
+func setupVaultAppRole(t *testing.T, config *api.Config, token string) (string, string) {
+	t.Helper()
+	client, err := api.NewClient(config)
+	assert.NoError(t, err)
+	client.SetToken(token)
+	lClient := client.Logical()
+
+	_, err = lClient.Write("sys/auth/approle", SecretData{
+		"type": "approle",
+	})
+	assert.NoError(t, err)
+
+	_, err = lClient.Write("auth/approle/role/test", SecretData{})
+	assert.NoError(t, err)
+
+	res, err := lClient.Write("auth/approle/role/test/secret-id", SecretData{})
+	assert.NoError(t, err)
+	secretID := res.Data["secret_id"]
+
+	res, err = lClient.Read("auth/approle/role/test/role-id")
+	assert.NoError(t, err)
+	roleID := res.Data["role_id"]
+
+	return roleID.(string), secretID.(string)
+}
+
 func setupVault(t *testing.T, config *api.Config, token string, secret SecretData) {
 	t.Helper()
 	client, err := api.NewClient(config)

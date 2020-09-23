@@ -199,7 +199,7 @@ class XsDeployTest extends BasePiperTest {
                 new CommandLineMatcher()
                     .hasProlog('./piper getConfig --stepMetadata \'.pipeline/metadata/xsDeploy.yaml\''),
                 new CommandLineMatcher()
-                    .hasProlog('#!/bin/bash ./piper xsDeploy --defaultConfig ".pipeline/additionalConfigs/default_pipeline_environment.yml" --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
+                    .hasProlog('#!/bin/bash ./piper xsDeploy --defaultConfig ".pipeline/additionalConfigs/default_pipeline_environment.yml" --username \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
                 not(new CommandLineMatcher()
                     .hasProlog('#!/bin/bash ./piper xsDeploy')
                     .hasOption('operationId', '1234'))

@@ -10,8 +10,14 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
+import static org.hamcrest.Matchers.anyOf
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 class PiperPipelineStageBuildTest extends BasePiperTest {
@@ -31,7 +37,7 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
     @Before
     void init()  {
 
-        binding.variables.env.STAGE_NAME = 'Build'
+        nullScript.env.STAGE_NAME = 'Build'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Build'))
@@ -54,6 +60,14 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
             stepsCalled.add('testsPublishResults')
             stepParameters.testsPublishResults = m
         })
+
+        helper.registerAllowedMethod('mavenExecuteStaticCodeChecks', [Map.class], {m ->
+            stepsCalled.add('mavenExecuteStaticCodeChecks')
+        })
+
+        helper.registerAllowedMethod('npmExecuteLint', [Map.class], {m ->
+            stepsCalled.add('npmExecuteLint')
+        })
     }
 
     @Test
@@ -63,5 +77,26 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults'))
         assertThat(stepParameters.testsPublishResults.junit.updateResults, is(true))
+        assertThat(stepsCalled, not(anyOf(hasItem('mavenExecuteStaticCodeChecks'), hasItem('npmExecuteLint'))))
+    }
+
+    @Test
+    void testBuildWithLinting() {
+
+        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Build': [npmExecuteLint: true]]]
+
+        jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
+
+        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults', 'npmExecuteLint'))
+    }
+
+    @Test
+    void testBuildWithMavenStaticCodeChecks() {
+
+        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Build': [mavenExecuteStaticCodeChecks: true]]]
+
+        jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
+
+        assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'pipelineStashFilesAfterBuild', 'testsPublishResults', 'mavenExecuteStaticCodeChecks'))
     }
 }
