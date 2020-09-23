@@ -46,4 +46,20 @@ func TestParsePOM(t *testing.T) {
 		assert.Equal(t, project.Modules[1], "sub2")
 	})
 
+	t.Run("artifact coordinates", func(t *testing.T) {
+		project, err := ParsePOM([]byte(aggregatorPomXML))
+		require.NoError(t, err)
+		require.NotNil(t, project)
+		assert.Equal(t, project.ArtifactId, "project-aggregator")
+		assert.Equal(t, project.Packaging, "pom")
+	})
+
+	t.Run("parent coordinates", func(t *testing.T) {
+		project, err := ParsePOM([]byte(aggregatorPomXML))
+		require.NoError(t, err)
+		require.NotNil(t, project)
+		assert.Equal(t, project.Parent.Version, "1.0-SNAPSHOT")
+		assert.Equal(t, project.Parent.GroupId, "group")
+		assert.Equal(t, project.Parent.ArtifactId, "artifact")
+	})
 }

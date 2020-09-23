@@ -428,7 +428,20 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 		}
 	}
 
-	err := appendMavenModuleNames(scan, utils, ".", excludes)
+	err := maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
+		project := info.Project
+		if project.Packaging != "pom" {
+			if project.ArtifactId == "" {
+				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
+			}
+
+			err := scan.appendScannedProject(project.ArtifactId + " - " + scan.projectVersion)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -444,54 +457,6 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 	}, utils)
 
 	return err
-}
-
-// appendMavenModuleNames extracts the artifactId from the pom.xml file in the given path, appends it
-// to the scanned projects in "scan", and recursively adds the project names from any sub-modules.
-func appendMavenModuleNames(scan *whitesourceScan, utils whitesourceUtils, path string, excludes []string) error {
-	pomXMLPath := filepath.Join(path, "pom.xml")
-	if piperutils.ContainsString(excludes, pomXMLPath) {
-		return nil
-	}
-
-	exists, _ := utils.FileExists(pomXMLPath)
-	if !exists {
-		return nil
-	}
-
-	pomXMLContents, err := utils.FileRead(pomXMLPath)
-	if err != nil {
-		return fmt.Errorf("failed to read file contents of '%s': %w", pomXMLPath, err)
-	}
-
-	project, err := maven.ParsePOM(pomXMLContents)
-	if err != nil {
-		return fmt.Errorf("failed to parse file contents of '%s': %w", pomXMLPath, err)
-	}
-
-	if project.Packaging != "pom" {
-		if project.ArtifactId == "" {
-			return fmt.Errorf("artifactId missing from '%s'", pomXMLPath)
-		}
-
-		err = scan.appendScannedProject(project.ArtifactId + " - " + scan.projectVersion)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(project.Modules) == 0 {
-		return nil
-	}
-
-	for _, module := range project.Modules {
-		subPomPath := filepath.Join(path, module)
-		err = appendMavenModuleNames(scan, utils, subPomPath, excludes)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 const whiteSourceConfig = "whitesource.config.json"
