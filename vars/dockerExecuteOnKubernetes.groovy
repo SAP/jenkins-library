@@ -46,9 +46,9 @@ import hudson.AbortException
      * Additional pod specific configuration. Map with the properties names
      * as key and the corresponding value as value. The value can also be
      * a nested structure.
-     * The properties be added to the pod spec inside node `spec` at the
+     * The properties will be added to the pod spec inside node `spec` at the
      * same level like e.g. `containers`.
-     * This property provides some  kind of an expert mode. Any property
+     * This property provides some kind of an expert mode. Any property
      * which is not handled otherwise by the step can be set. It is not
      * possible to overwrite e.g. the `containers` property or to
      * overwrite the `securityContext` property.
@@ -56,7 +56,7 @@ import hudson.AbortException
      * `general/jenkinsKubernetes/resources` in the project configuration.
      * Providing the resources map as parameter to the step call takes
      * precedence.
-     * This freedom some with great responsibility. The property
+     * This freedom comes with great responsibility. The property
      * `additionalPodProperties` should only be used in case you
      * really know what you are doing.
      */
