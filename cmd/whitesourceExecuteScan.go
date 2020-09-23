@@ -242,9 +242,26 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 
 	if config.SecurityVulnerabilities {
 		// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
-		if err := checkSecurityViolations(config, sys); err != nil {
-			return err
+		// convert config.CvssSeverityLimit to float64
+		cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+				"as floating point number: %w", config.CvssSeverityLimit, err)
 		}
+		if config.ProjectToken != "" {
+			project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
+			if err := checkSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				return err
+			}
+		} else {
+			for _, project := range scan.scannedProjects {
+				if err := checkSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+					return err
+				}
+			}
+		}
+
 	}
 	return nil
 }
@@ -668,17 +685,9 @@ func executeYarnScan(config *ScanOptions, utils whitesourceUtils) error {
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
-	// convert config.CvssSeverityLimit to float64
-	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
-			"as floating point number: %w", config.CvssSeverityLimit, err)
-	}
-
+func checkSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) error {
 	// get project alerts (vulnerabilities)
-	alerts, err := sys.GetProjectAlerts(config.ProjectToken)
+	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
 	}
@@ -701,18 +710,18 @@ func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
 	nonSevereVulnerabilities := len(alerts) - severeVulnerabilities
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
-			"CVSS score below threshold %s detected in project %s.", nonSevereVulnerabilities,
-			config.CvssSeverityLimit, config.ProjectName)
+			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
+			cvssSeverityLimit, project.Name)
 	} else if len(alerts) == 0 {
 		log.Entry().Infof("No Open Source Software Security vulnerabilities detected in project %s",
-			config.ProjectName)
+			project.Name)
 	}
 
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
 		return fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
-			"or equal to %s detected in project %s",
-			severeVulnerabilities, config.CvssSeverityLimit, config.ProjectName)
+			"or equal to %.1f detected in project %s",
+			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
 	return nil
 }
