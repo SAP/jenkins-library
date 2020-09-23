@@ -132,6 +132,9 @@ func (s *whitesourceScan) init() {
 	if s.scannedProjects == nil {
 		s.scannedProjects = make(map[string]ws.Project)
 	}
+	if s.scanTimes == nil {
+		s.scanTimes = make(map[string]time.Time)
+	}
 }
 
 // appendScannedProject checks that no whitesource.Project is already contained in the list of scanned projects,
