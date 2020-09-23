@@ -1331,4 +1331,56 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ],
         ])
     }
+
+    @Test
+    void testGoStepFeatureToggleOn() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            useGoStep: true,
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
+        ])
+
+        assertEquals('cloudFoundryDeploy', calledStep)
+        assertEquals('metadata/cloudFoundryDeploy.yaml', usedMetadataFile)
+    }
+
+    @Test
+    void testGoStepFeatureToggleOff() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            useGoStep: 'false',
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
+        ])
+
+        assertEquals('', calledStep)
+        assertEquals('', usedMetadataFile)
+    }
 }

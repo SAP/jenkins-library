@@ -1,6 +1,5 @@
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.allOf
 
 import org.junit.Before
@@ -45,12 +44,12 @@ class SonarExecuteScanTest extends BasePiperTest {
             sonarInstance = string
             return closure()
         })
-        helper.registerAllowedMethod("unstash", [String.class], { stashInput -> return []})
+        helper.registerAllowedMethod("unstash", [String.class], { stashInput -> return [] })
         helper.registerAllowedMethod("fileExists", [String.class], { file -> return file })
         helper.registerAllowedMethod('string', [Map], { m -> m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             try {
-                binding.setProperty(l[0].variable, 'TOKEN_'+l[0].credentialsId)
+                binding.setProperty(l[0].variable, 'TOKEN_' + l[0].credentialsId)
                 c()
             } finally {
                 binding.setProperty(l[0].variable, null)

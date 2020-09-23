@@ -10,9 +10,9 @@ spec:
         type: string
         description: "mtaBuildTool 'classic' only: The target platform to which the mtar can be deployed. Valid values: 'CF', 'NEO', 'XSA'."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: NEO
         possibleValues:
@@ -23,9 +23,9 @@ spec:
         type: string
         description: "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: cloudMbt
         possibleValues:
@@ -35,27 +35,27 @@ spec:
         type: string
         description: "The name of the generated mtar file including its extension."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
       - name: mtaJarLocation
         type: string
         description: "mtaBuildTool 'classic' only: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If you run on Docker, this must match the location of the jar file in the container as well."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: /opt/sap/mta/lib/mta.jar
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
         aliases:
@@ -64,9 +64,9 @@ spec:
         type: string
         description: "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: CF
         possibleValues:
@@ -77,9 +77,9 @@ spec:
         type: string
         description: "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
       - name: defaultNpmRegistry
@@ -98,10 +98,10 @@ spec:
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."
         scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         aliases:
           - name: maven/projectSettingsFile
@@ -109,10 +109,10 @@ spec:
         type: string
         description: "Path or url to the mvn settings file that should be used as global settings file"
         scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         aliases:
           - name: maven/globalSettingsFile

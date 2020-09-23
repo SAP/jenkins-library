@@ -71,76 +71,86 @@ metadata:
     Define `buildTool: custom`, `filePath: <path to your *.yml/*.yaml file` as well as parameter `versionSource` to point to the parameter containing the version.
 spec:
   inputs:
+    secrets:
+      - name: gitHttpsCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
+        type: jenkins
+      - name: gitSshKeyCredentialsId
+        description: Jenkins 'SSH Username with private key' credentials ID ssh key for accessing your git repository. You can find details about how to generate an ssh key in the [GitHub documentation](https://docs.github.com/en/enterprise/2.15/user/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
+        type: jenkins
+        aliases:
+          - name: gitCredentialsId
+            deprecated: true
     params:
       - name: buildTool
         type: string
         description: Defines the tool which is used for building the artifact. Supports `custom`, `dub`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`.
         mandatory: true
         scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
         possibleValues:
-        - custom
-        - docker
-        - dub
-        - golang
-        - maven
-        - mta
-        - npm
-        - pip
-        - sbt
+          - custom
+          - docker
+          - dub
+          - golang
+          - maven
+          - mta
+          - npm
+          - pip
+          - sbt
       - name: commitUserName
         aliases:
           - name: gitUserName
         type: string
         description: "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`)."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: Project Piper
       - name: customVersionField
         type: string
         description: "For `buildTool: custom`: Defines the field which contains the version in the descriptor file."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: customVersionSection
         type: string
         description: "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: customVersioningScheme
         type: string
         description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: dockerVersionSource
         type: string
         description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: filePath
         type: string
         description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`)."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: globalSettingsFile
         aliases:
           - name: maven/globalSettingsFile
         type: string
-        description:  Maven only - Path to the mvn settings file that should be used as global settings file.
+        description: Maven only - Path to the mvn settings file that should be used as global settings file.
         scope:
           - GENERAL
           - STEPS
@@ -150,9 +160,9 @@ spec:
         type: bool
         description: "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: true
       - name: m2Path
         aliases:
@@ -168,9 +178,9 @@ spec:
         type: string
         description: Password/token for git authentication.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
@@ -197,9 +207,9 @@ spec:
         type: string
         description: "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`)."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: build_
       - name: unixTimestamp
         type: bool
@@ -212,9 +222,9 @@ spec:
         type: string
         description: User name for git authentication
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
@@ -225,31 +235,24 @@ spec:
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
         mandatory: false
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: versioningType
         type: string
-        description: "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
+        description:
+          "Defines the type of versioning (`cloud`: fully automatic, `cloud_noTag`: automatic but no
           tag created, `library`: manual, i.e. the pipeline will pick up the version from the build descriptor,
           but not generate a new version)"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: cloud
         possibleValues:
           - cloud
           - cloud_noTag
           - library
-    secrets:
-    - name: gitHttpsCredentialsId
-      type: jenkins
-    - name: gitSshKeyCredentialsId
-      type: jenkins
-      aliases:
-        - name: gitCredentialsId
-          deprecated: true
   outputs:
     resources:
       - name: commonPipelineEnvironment

@@ -42,25 +42,25 @@ func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, e
 	meta1 := `# ${docGenStepName}
 
 	## ${docGenDescription}
-	
+
 	## Prerequisites
-	
+
 	none
 
 	## ${docJenkinsPluginDependencies}
-	
+
 	## ${docGenParameters}
-	
+
 	## ${docGenConfiguration}
-	
+
 	## Side effects
-	
+
 	none
-	
+
 	## Exceptions
-	
+
 	none
-	
+
 	## Example
 
 	none
@@ -365,7 +365,7 @@ func TestResourceReferenceDetails(t *testing.T) {
 			resourceRef: []config.ResourceReference{
 				{Name: "testCredentialId", Aliases: []config.Alias{}, Type: "secret", Param: "password"},
 			},
-			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: `testCredentialId`<br />&nbsp;&nbsp;reference to: `password`<br />",
+			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: [`testCredentialId`](#testcredentialid)<br />&nbsp;&nbsp;reference to: `password`<br />",
 		},
 		{
 			resourceRef: []config.ResourceReference{

@@ -1014,6 +1014,87 @@ func TestCfDeployment(t *testing.T) {
 	})
 }
 
+func TestValidateDeployTool(t *testing.T) {
+	testCases := []struct {
+		runName            string
+		deployToolGiven    string
+		buildTool          string
+		deployToolExpected string
+	}{
+		{"no params", "", "", ""},
+		{"build tool MTA", "", "mta", "mtaDeployPlugin"},
+		{"build tool other", "", "other", "cf_native"},
+		{"deploy and build tool given", "given", "unknown", "given"},
+		{"only deploy tool given", "given", "", "given"},
+	}
+
+	t.Parallel()
+
+	for _, test := range testCases {
+		t.Run(test.runName, func(t *testing.T) {
+			config := cloudFoundryDeployOptions{BuildTool: test.buildTool, DeployTool: test.deployToolGiven}
+			validateDeployTool(&config)
+			assert.Equal(t, test.deployToolExpected, config.DeployTool,
+				"expected different deployTool result")
+		})
+	}
+}
+
+func TestManifestVariableFiles(t *testing.T) {
+
+	defer func() {
+		fileUtils = &piperutils.Files{}
+	}()
+
+	filesMock := mock.FilesMock{}
+	fileUtils = &filesMock
+
+	filesMock.AddFile("a/varsA.txt", []byte("content does not matter"))
+	filesMock.AddFile("varsB.txt", []byte("content does not matter"))
+
+	t.Run("straight forward", func(t *testing.T) {
+		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "varsB.txt"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"--vars-file", "a/varsA.txt", "--vars-file", "varsB.txt"}, varOpts)
+		}
+	})
+
+	t.Run("no var filesprovided", func(t *testing.T) {
+		varOpts, err := getVarFileOptions([]string{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{}, varOpts)
+		}
+	})
+
+	t.Run("one var file does not exist", func(t *testing.T) {
+		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "doesNotExist.txt"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"--vars-file", "a/varsA.txt"}, varOpts)
+		}
+	})
+}
+
+func TestManifestVariables(t *testing.T) {
+	t.Run("straight forward", func(t *testing.T) {
+		varOpts, err := getVarOptions([]string{"a=b", "c=d"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"--var", "a=b", "--var", "c=d"}, varOpts)
+		}
+	})
+
+	t.Run("empty variabls list", func(t *testing.T) {
+		varOpts, err := getVarOptions([]string{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{}, varOpts)
+		}
+	})
+
+	t.Run("no equal sign in variable", func(t *testing.T) {
+		_, err := getVarOptions([]string{"ab"})
+		assert.EqualError(t, err, "Invalid parameter provided (expected format <key>=<val>: 'ab'")
+	})
+}
+
 func TestMtarLookup(t *testing.T) {
 
 	defer func() {

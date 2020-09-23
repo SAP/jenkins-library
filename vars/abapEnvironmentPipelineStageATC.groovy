@@ -20,8 +20,6 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        echo "Sleeping for 1 hour - this is a workaround required for ATC until release 2008"
-        sleep(time: 1, unit: "HOURS")
         abapEnvironmentRunATCCheck script: parameters.script
     }
 }
