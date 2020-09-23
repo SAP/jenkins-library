@@ -1,0 +1,58 @@
+metadata:
+    name: abapAddonAssemblyKitRegisterPackages
+    description: This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
+    longDescription: |
+      This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+      For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
+      and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
+      The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.
+
+spec:
+  inputs:
+    secrets:
+      - name: abapAddonAssemblyKitCredentialsId
+        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
+    params:
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: username
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/addonDescriptor

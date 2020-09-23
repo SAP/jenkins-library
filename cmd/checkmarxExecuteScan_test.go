@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,12 +44,12 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response         interface{}
-	isIncremental    bool
-	isPublic         bool
-	forceScan        bool
-	createProject    bool
-	projectLoadCount int
+	response      interface{}
+	isIncremental bool
+	isPublic      bool
+	forceScan     bool
+	createProject bool
+	previousPName string
 }
 
 func (sys *systemMock) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -58,16 +59,26 @@ func (sys *systemMock) FilterPresetByID(presets []checkmarx.Preset, presetID int
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
 func (sys *systemMock) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
-	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: false}
+	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: true}
 }
 func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
-	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: false}
-}
-func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
-	sys.projectLoadCount++
-	if !sys.createProject || sys.projectLoadCount%2 == 0 {
-		return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
+	if projectID == 17 {
+		return true, checkmarx.Project{ID: 17, Name: "Test_PR-17", TeamID: "16", IsPublic: true}
 	}
+	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: true}
+}
+
+func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
+	if !sys.createProject || sys.previousPName == projectName {
+		if strings.Contains(projectName, "PR-17") {
+			return []checkmarx.Project{checkmarx.Project{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}
+		}
+		return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
+	}
+	if projectName == "Test" {
+		return []checkmarx.Project{checkmarx.Project{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}
+	}
+	sys.previousPName = projectName
 	return []checkmarx.Project{}
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
@@ -122,15 +133,15 @@ func (sys *systemMock) GetProjects() []checkmarx.Project {
 	return []checkmarx.Project{checkmarx.Project{ID: 15, Name: "OtherTest", TeamID: "16"}, checkmarx.Project{ID: 1, Name: "Test", TeamID: "16"}}
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
-	sys.projectLoadCount = 0
 	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
 }
 
 type systemMockForExistingProject struct {
-	response      interface{}
-	isIncremental bool
-	isPublic      bool
-	forceScan     bool
+	response          interface{}
+	isIncremental     bool
+	isPublic          bool
+	forceScan         bool
+	scanProjectCalled bool
 }
 
 func (sys *systemMockForExistingProject) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -140,13 +151,13 @@ func (sys *systemMockForExistingProject) FilterPresetByID(presets []checkmarx.Pr
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
 func (sys *systemMockForExistingProject) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
-	return checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16", IsPublic: false}
+	return checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16", IsPublic: true}
 }
 func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return false, checkmarx.Project{}
 }
 func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
+	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -173,6 +184,7 @@ func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (str
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
 func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+	sys.scanProjectCalled = true
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
@@ -305,6 +317,23 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+}
+
+func TestVerifyOnly(t *testing.T) {
+	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	runScan(options, sys, workspace, &influx)
+	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {
@@ -327,7 +356,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 func TestRunScanForPullRequest(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace3")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -345,7 +374,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")

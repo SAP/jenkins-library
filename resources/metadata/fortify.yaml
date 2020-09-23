@@ -135,14 +135,30 @@ spec:
         default: true
       - name: buildDescriptorFile
         type: string
-        description:
-          "Path to the build descriptor file addressing the module/folder
-          to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`:
-          `./setup.py`."
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: buildTool
+                value: maven
+        description: "Path to the build descriptor file addressing the module/folder to be scanned."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: ./pom.xml
+      - name: buildDescriptorFile
+        type: string
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: buildTool
+                value: pip
+        description: "Path to the build descriptor file addressing the module/folder to be scanned."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ./setup.py
       - name: commitId
         description: "Set the Git commit ID for identifying artifacts throughout the scan."
         resourceRef:
@@ -502,8 +518,16 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
+      - name: verifyOnly
+        type: bool
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
-    - image: "ppiper/fortify"
+    - image: "<<please bring your own fortify image>>"
       workingDir: "/home/piper"
   outputs:
     resources:
