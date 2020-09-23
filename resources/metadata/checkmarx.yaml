@@ -16,7 +16,7 @@ spec:
   inputs:
     secrets:
       - name: checkmarxCredentialsId
-        description: The technical user/password credential used to communicate with the Checkmarx backend
+        description: Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.
         type: jenkins
     resources:
       - name: checkmarx
