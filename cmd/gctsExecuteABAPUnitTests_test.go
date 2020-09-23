@@ -17,7 +17,7 @@ func TestDiscoverySuccess(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("discovery successfull", func(t *testing.T) {
+	t.Run("discovery successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{
 			StatusCode: 200,
@@ -234,7 +234,7 @@ func TestGetPackageListFailure(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("http error occured", func(t *testing.T) {
+	t.Run("http error occurred", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `
 		{
