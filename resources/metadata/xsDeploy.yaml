@@ -7,7 +7,7 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins username/password credential for accessing xs endpoint.
+        description: Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.
         type: jenkins
     params:
       - name: deployOpts
