@@ -459,7 +459,7 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 	// From the documentation, these are file paths to a module's pom.xml.
 	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
 	for _, exclude := range config.BuildDescriptorExcludeList {
-		if !strings.HasPrefix(exclude, "pom.xml") {
+		if !strings.HasSuffix(exclude, "pom.xml") {
 			continue
 		}
 		moduleName := filepath.Dir(exclude)
