@@ -1,6 +1,6 @@
 # This stage names are used for stashing and un-stashing of files
 
-initS4sdkPipeline:
+init:
   unstash: []
   stashes:
     - name: "SOURCE"

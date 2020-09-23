@@ -23,7 +23,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Defines the library resource containing the container map.
      */
-    'containerMap',
+    'containerMapResource',
     /**
      * Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
      * If this is set to true, it is not required to set the build tool by hand for those cases.
@@ -105,8 +105,8 @@ void call(Map parameters = [:]) {
 
         String buildTool = checkBuildTool(script, config)
 
-        if (Boolean.valueOf(env.ON_K8S) && config.containerMap) {
-            ContainerMap.instance.initFromResource(script, config.containerMap, buildTool)
+        if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
+            ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
         //perform stashing based on library resource piper-stash-settings.yml if not configured otherwise or Cloud SDK Pipeline is initialized
