@@ -538,10 +538,16 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 	npmConfig["userKey"] = config.UserToken
 	setValueAndLogChange(npmConfig, "checkPolicies", true)
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
-	// TODO: Needs to distinguish between "user provided this param" versus "we store the evaluated projectName here"
-	//	setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	setValueAndLogChange(npmConfig, "productVer", config.ProductVersion)
 	setValueOmitIfPresent(npmConfig, "productToken", "projectToken", config.ProductToken)
+	if config.ProjectName != "" {
+		// In case there are other modules (i.e. maven modules in MTA projects),
+		// or more than one NPM module, setting the project name will lead to
+		// overwriting any previous scan results with the one from this module!
+		// If this is not provided, the WhiteSource project name will be generated
+		// from "name" in package.json plus " - " plus productVersion.
+		setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
+	}
 	setValueAndLogChange(npmConfig, "devDep", devDep)
 	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
