@@ -164,7 +164,7 @@ import hudson.AbortException
      * A map containing the resources per container. The key is the
      * container name. The value is a map defining valid resources.
      * An entry with key `DEFAULT` can be used for defining resources
-     * for all contains which does not have resources specified otherwise.
+     * for all containers which does not have resources specified otherwise.
      * Alternate way for providing resources is via `general/jenkinsKubernetes/resources`
      * in the project configuration. Providing the resources map as parameter
      * to the step call takes precedence.
