@@ -97,7 +97,7 @@ func stepParam(name string, refType string, refPaths ...string) StepParameters {
 	return StepParameters{
 		Name: name,
 		ResourceRef: []ResourceReference{
-			ResourceReference{
+			{
 				Type:  refType,
 				Paths: refPaths,
 			},

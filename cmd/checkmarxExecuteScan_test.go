@@ -71,12 +71,12 @@ func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
 	if !sys.createProject || sys.previousPName == projectName {
 		if strings.Contains(projectName, "PR-17") {
-			return []checkmarx.Project{checkmarx.Project{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}
+			return []checkmarx.Project{{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}
 		}
-		return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
+		return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
 	}
 	if projectName == "Test" {
-		return []checkmarx.Project{checkmarx.Project{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}
+		return []checkmarx.Project{{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}
 	}
 	sys.previousPName = projectName
 	return []checkmarx.Project{}
@@ -100,7 +100,7 @@ func (sys *systemMock) GetResults(scanID int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
 func (sys *systemMock) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
-	return true, []checkmarx.ScanStatus{checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: false}}
+	return true, []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}
 }
 func (sys *systemMock) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "Step 1 of 25", Step: "Scan something"}
@@ -127,13 +127,13 @@ func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
 	return 18
 }
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
-	return []checkmarx.Preset{checkmarx.Preset{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, checkmarx.Preset{ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
+	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
 func (sys *systemMock) GetProjects() []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 15, Name: "OtherTest", TeamID: "16"}, checkmarx.Project{ID: 1, Name: "Test", TeamID: "16"}}
+	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
 }
 
 type systemMockForExistingProject struct {
@@ -157,7 +157,7 @@ func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (bool, ch
 	return false, checkmarx.Project{}
 }
 func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
+	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -178,7 +178,7 @@ func (sys *systemMockForExistingProject) GetResults(scanID int) checkmarx.Result
 	return checkmarx.ResultsStatistics{}
 }
 func (sys *systemMockForExistingProject) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
-	return true, []checkmarx.ScanStatus{checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: false}}
+	return true, []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}
 }
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
@@ -206,13 +206,13 @@ func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName 
 	return 0
 }
 func (sys *systemMockForExistingProject) GetPresets() []checkmarx.Preset {
-	return []checkmarx.Preset{checkmarx.Preset{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, checkmarx.Preset{ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
+	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
 func (sys *systemMockForExistingProject) GetProjects() []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16"}}
+	return []checkmarx.Project{{ID: 1, Name: "TestExisting", TeamID: "16"}}
 }
 func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
 }
 
 func TestFilterFileGlob(t *testing.T) {

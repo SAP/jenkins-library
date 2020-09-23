@@ -325,12 +325,12 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
@@ -357,8 +357,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
 		}
@@ -386,8 +386,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
@@ -414,12 +414,12 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"TestConfiguration",
 			ATCObjects{
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
 		}
