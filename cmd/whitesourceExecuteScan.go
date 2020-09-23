@@ -458,6 +458,10 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 		if !strings.HasSuffix(exclude, "pom.xml") {
 			continue
 		}
+		exists, _ := utils.FileExists(exclude)
+		if !exists {
+			continue
+		}
 		moduleName := filepath.Dir(exclude)
 		if moduleName != "" {
 			flags = append(flags, "-pl", "!"+moduleName)
