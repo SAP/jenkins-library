@@ -30,7 +30,7 @@ func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetr
 
 	var c = cf.Exec
 
-	cfLoginError := s.RunShell("/bin/bash", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
+	cfLoginError := s.RunShell("/bin/sh", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
 	if cfLoginError != nil {
 		return fmt.Errorf("Error while logging in occured: %w", cfLoginError)

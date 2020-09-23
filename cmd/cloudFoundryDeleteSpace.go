@@ -31,7 +31,7 @@ func cloudFoundryDeleteSpace(config cloudFoundryDeleteSpaceOptions, telemetryDat
 func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, s command.ShellRunner) (err error) {
 	var c = cf.Exec
 
-	cfLoginError := s.RunShell("/bin/bash", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
+	cfLoginError := s.RunShell("/bin/sh", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
 	if cfLoginError != nil {
 		return fmt.Errorf("Error while logging in occured: %w", cfLoginError)
