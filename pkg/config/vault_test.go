@@ -20,8 +20,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
-		assert.NoError(t, err)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -34,9 +33,8 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 
-		assert.NoError(t, err)
 		assert.Equal(t, "preset value", stepConfig.Config[secretName])
 	})
 
@@ -47,9 +45,8 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, fmt.Errorf("test"))
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
-		assert.EqualError(t, err, "test")
 	})
 
 	t.Run("Secret doesn't exist", func(t *testing.T) {
@@ -59,8 +56,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
-		assert.NoError(t, err)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
 	})
 
@@ -75,8 +71,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
 		vaultMock.On("GetKvSecret", "team1/pipelineB").Return(vaultData, nil)
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
-		assert.NoError(t, err)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -86,11 +81,9 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "/pipelineA").Return(vaultData, nil)
-		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
-		assert.NoError(t, err)
+		addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
-
 }
 
 func stepParam(name string, refType string, refPaths ...string) StepParameters {

@@ -47,9 +47,8 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 	return &client, nil
 }
 
-func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) error {
+func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) {
 	for _, param := range params {
-
 		// we don't overwrite secrets that have already been set in any way
 		if _, ok := config.Config[param.Name].(string); ok {
 			continue
@@ -63,23 +62,42 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 			var err error
 			vaultPath, err = interpolation.ResolveString(vaultPath, config.Config)
 			if err != nil {
-				return err
-			}
-
-			secret, err := client.GetKvSecret(vaultPath)
-			if err != nil {
-				return err
-			}
-			if secret == nil {
 				continue
 			}
 
-			field := secret[param.Name]
-			if field != "" {
-				log.RegisterSecret(field)
-				config.Config[param.Name] = field
-				break
+			val := lookupPath(client, vaultPath, &param)
+			if val != nil {
+				config.Config[param.Name] = *val
 			}
+		}
+	}
+}
+
+func lookupPath(client vaultClient, path string, param *StepParameters) *string {
+	secret, err := client.GetKvSecret(path)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("Couldn't fetch secret at %s", path)
+		return nil
+	}
+	if secret == nil {
+		return nil
+	}
+
+	field := secret[param.Name]
+	if field != "" {
+		log.RegisterSecret(field)
+		return &field
+	}
+
+	// try parameter aliases
+	for _, alias := range param.Aliases {
+		field := secret[param.Name]
+		if field != "" {
+			log.RegisterSecret(field)
+			if alias.Deprecated {
+				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%s' used in vault. Please switch to '%s'!", alias.Name, param.Name)
+			}
+			return &field
 		}
 	}
 	return nil
