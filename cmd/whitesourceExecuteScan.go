@@ -125,6 +125,7 @@ type whitesourceScan struct {
 	aggregateProjectName string
 	projectVersion       string
 	scannedProjects      map[string]ws.Project
+	scanTimes            map[string]time.Time
 }
 
 func (s *whitesourceScan) init() {
@@ -144,6 +145,7 @@ func (s *whitesourceScan) appendScannedProject(projectName string) error {
 		return fmt.Errorf("project with name '%s' was already scanned", projectName)
 	}
 	s.scannedProjects[projectName] = ws.Project{Name: projectName}
+	s.scanTimes[projectName] = time.Now()
 	return nil
 }
 
@@ -219,13 +221,13 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 		// before downloading any reports or check security vulnerabilities.
 		if config.ProjectToken != "" {
 			// Poll status of aggregated project
-			if err := pollProjectStatus(config.ProjectToken, sys); err != nil {
+			if err := pollProjectStatus(config.ProjectToken, time.Now(), sys); err != nil {
 				return err
 			}
 		} else {
 			// Poll status of all scanned projects
-			for _, project := range scan.scannedProjects {
-				if err := pollProjectStatus(project.Token, sys); err != nil {
+			for key, project := range scan.scannedProjects {
+				if err := pollProjectStatus(project.Token, scan.scanTimes[key], sys); err != nil {
 					return err
 				}
 			}
@@ -727,8 +729,8 @@ func checkSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys 
 }
 
 // pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
-func pollProjectStatus(projectToken string, sys whitesource) error {
-	return blockUntilProjectIsUpdated(projectToken, sys, time.Now(), 20*time.Second, 20*time.Second, 15*time.Minute)
+func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesource) error {
+	return blockUntilProjectIsUpdated(projectToken, sys, scanTime, 20*time.Second, 20*time.Second, 15*time.Minute)
 }
 
 const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
