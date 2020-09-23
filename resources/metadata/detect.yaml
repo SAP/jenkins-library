@@ -90,6 +90,7 @@ spec:
           - --blackduck.trust.cert=true
           - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
+          - --detect.maven.excluded.scopes=TEST
         scope:
           - PARAMETERS
           - STAGES

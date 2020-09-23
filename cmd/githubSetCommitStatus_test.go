@@ -33,10 +33,10 @@ func TestRunGithubSetCommitStatus(t *testing.T) {
 	telemetryData := telemetry.CustomData{}
 
 	t.Run("success case", func(t *testing.T) {
-		config := githubSetCommitStatusOptions{CommitID: "testSha", Owner: "testOrg", Repository: "testRepo", Status: "success", TargetURL: "https://test.url"}
+		config := githubSetCommitStatusOptions{CommitID: "testSha", Context: "test /context", Description: "testDescription", Owner: "testOrg", Repository: "testRepo", Status: "success", TargetURL: "https://test.url"}
 		ghRepo := ghSetCommitRepoService{}
 		err := runGithubSetCommitStatus(ctx, &config, &telemetryData, &ghRepo)
-		expectedStatus := github.RepoStatus{State: &config.Status, TargetURL: &config.TargetURL}
+		expectedStatus := github.RepoStatus{Context: &config.Context, Description: &config.Description, State: &config.Status, TargetURL: &config.TargetURL}
 		assert.NoError(t, err)
 		assert.Equal(t, config.CommitID, ghRepo.ref)
 		assert.Equal(t, config.Owner, ghRepo.owner)

@@ -71,6 +71,16 @@ metadata:
     Define `buildTool: custom`, `filePath: <path to your *.yml/*.yaml file` as well as parameter `versionSource` to point to the parameter containing the version.
 spec:
   inputs:
+    secrets:
+      - name: gitHttpsCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
+        type: jenkins
+      - name: gitSshKeyCredentialsId
+        description: Jenkins 'SSH Username with private key' credentials ID ssh key for accessing your git repository. You can find details about how to generate an ssh key in the [GitHub documentation](https://docs.github.com/en/enterprise/2.15/user/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
+        type: jenkins
+        aliases:
+          - name: gitCredentialsId
+            deprecated: true
     params:
       - name: buildTool
         type: string
@@ -243,14 +253,6 @@ spec:
           - cloud
           - cloud_noTag
           - library
-    secrets:
-      - name: gitHttpsCredentialsId
-        type: jenkins
-      - name: gitSshKeyCredentialsId
-        type: jenkins
-        aliases:
-          - name: gitCredentialsId
-            deprecated: true
   outputs:
     resources:
       - name: commonPipelineEnvironment
