@@ -234,7 +234,7 @@ func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *tel
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
 
 	for key := range metadataFiles {
 
@@ -254,33 +254,26 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
 		//Switch Docu or Step Files
-		if !docuHelperData.IsGenerateDocu {
-			osImport := false
-			osImport, err = setDefaultParameters(&stepData)
-			checkError(err)
+		osImport := false
+		osImport, err = setDefaultParameters(&stepData)
+		checkError(err)
 
-			myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
-			checkError(err)
+		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
+		checkError(err)
 
-			step := stepTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
-			checkError(err)
+		step := stepTemplate(myStepInfo)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
+		checkError(err)
 
-			test := stepTestTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
-			checkError(err)
+		test := stepTestTemplate(myStepInfo)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
+		checkError(err)
 
-			exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
-			if !exists {
-				impl := stepImplementation(myStepInfo)
-				err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
-				checkError(err)
-			}
-		} else {
-			err = generateStepDocumentation(stepData, docuHelperData)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-			}
+		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
+		if !exists {
+			impl := stepImplementation(myStepInfo)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
+			checkError(err)
 		}
 	}
 	return nil
