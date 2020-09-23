@@ -1,3 +1,4 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.DescriptorUtils
 import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateDocumentation
