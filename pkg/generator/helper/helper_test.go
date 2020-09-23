@@ -159,7 +159,7 @@ func TestSetDefaultParameters(t *testing.T) {
 
 		osImport, err := setDefaultParameters(&stepData)
 
-		assert.NoError(t, err, "error occured but none expected")
+		assert.NoError(t, err, "error occurred but none expected")
 
 		assert.Equal(t, true, osImport, "import of os package required")
 
@@ -193,7 +193,7 @@ func TestSetDefaultParameters(t *testing.T) {
 
 		for k, v := range stepData {
 			_, err := setDefaultParameters(&v)
-			assert.Error(t, err, fmt.Sprintf("error expected but none occured for parameter %v", k))
+			assert.Error(t, err, fmt.Sprintf("error expected but none occurred for parameter %v", k))
 		}
 	})
 }

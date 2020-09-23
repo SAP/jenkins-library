@@ -153,7 +153,7 @@ func TestGetPackageListSuccess(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("return multiple objects sucessfully", func(t *testing.T) {
+	t.Run("return multiple objects successfully", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `
 		{
@@ -263,7 +263,7 @@ func TestExecuteTestsForPackageSuccess(t *testing.T) {
 	header.Add("x-csrf-token", "ZegUEgfa50R7ZfGGxOtx2A==")
 	header.Add("saml2", "disabled")
 
-	t.Run("all unit tests were successfull", func(t *testing.T) {
+	t.Run("all unit tests were successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `
 		<?xml version="1.0" encoding="utf-8"?>

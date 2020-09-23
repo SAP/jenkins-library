@@ -109,7 +109,7 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Info("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	cloneConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
