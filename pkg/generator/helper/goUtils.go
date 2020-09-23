@@ -10,14 +10,6 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-// DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
-type DocuHelperData struct {
-	IsGenerateDocu      bool
-	DocTemplatePath     string
-	OpenDocTemplateFile func(d string) (io.ReadCloser, error)
-	DocFileWriter       func(f string, d []byte, p os.FileMode) error
-}
-
 // StepHelperData is used to transport the needed parameters and functions from the step generator to the step generation.
 type StepHelperData struct {
 	OpenFile     func(s string) (io.ReadCloser, error)
