@@ -11,8 +11,8 @@ import (
 type Project struct {
 	XMLName      xml.Name     `xml:"project"`
 	Parent       Parent       `xml:"parent"`
-	GroupId      string       `xml:"groupId"`
-	ArtifactId   string       `xml:"artifactId"`
+	GroupID      string       `xml:"groupId"`
+	ArtifactID   string       `xml:"artifactId"`
 	Version      string       `xml:"version"`
 	Packaging    string       `xml:"packaging"`
 	Name         string       `xml:"name"`
@@ -23,16 +23,16 @@ type Project struct {
 // Parent describes the coordinates a module's parent POM.
 type Parent struct {
 	XMLName    xml.Name `xml:"parent"`
-	GroupId    string   `xml:"groupId"`
-	ArtifactId string   `xml:"artifactId"`
+	GroupID    string   `xml:"groupId"`
+	ArtifactID string   `xml:"artifactId"`
 	Version    string   `xml:"version"`
 }
 
 // Dependency describes a dependency of the module.
 type Dependency struct {
 	XMLName    xml.Name    `xml:"dependency"`
-	GroupId    string      `xml:"groupId"`
-	ArtifactId string      `xml:"artifactId"`
+	GroupID    string      `xml:"groupId"`
+	ArtifactID string      `xml:"artifactId"`
 	Version    string      `xml:"version"`
 	Classifier string      `xml:"classifier"`
 	Type       string      `xml:"type"`
@@ -43,8 +43,8 @@ type Dependency struct {
 // Exclusion describes an exclusion within a dependency.
 type Exclusion struct {
 	XMLName    xml.Name `xml:"exclusion"`
-	GroupId    string   `xml:"groupId"`
-	ArtifactId string   `xml:"artifactId"`
+	GroupID    string   `xml:"groupId"`
+	ArtifactID string   `xml:"artifactId"`
 }
 
 // ParsePOM parses the provided XML raw data into a Project.

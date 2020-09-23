@@ -471,11 +471,11 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 	err := maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
 		project := info.Project
 		if project.Packaging != "pom" {
-			if project.ArtifactId == "" {
+			if project.ArtifactID == "" {
 				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
 			}
 
-			err := scan.appendScannedProject(project.ArtifactId + " - " + scan.projectVersion)
+			err := scan.appendScannedProject(project.ArtifactID + " - " + scan.projectVersion)
 			if err != nil {
 				return err
 			}

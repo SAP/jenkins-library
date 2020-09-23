@@ -50,7 +50,7 @@ func TestParsePOM(t *testing.T) {
 		project, err := ParsePOM([]byte(aggregatorPomXML))
 		require.NoError(t, err)
 		require.NotNil(t, project)
-		assert.Equal(t, project.ArtifactId, "project-aggregator")
+		assert.Equal(t, project.ArtifactID, "project-aggregator")
 		assert.Equal(t, project.Packaging, "pom")
 	})
 
@@ -59,7 +59,7 @@ func TestParsePOM(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, project)
 		assert.Equal(t, project.Parent.Version, "1.0-SNAPSHOT")
-		assert.Equal(t, project.Parent.GroupId, "group")
-		assert.Equal(t, project.Parent.ArtifactId, "artifact")
+		assert.Equal(t, project.Parent.GroupID, "group")
+		assert.Equal(t, project.Parent.ArtifactID, "artifact")
 	})
 }
