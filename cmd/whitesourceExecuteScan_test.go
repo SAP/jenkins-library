@@ -197,8 +197,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
+		scan := whitesourceScan{}
 		// test
-		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", config.ProjectName)
@@ -220,8 +221,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
+		scan := whitesourceScan{}
 		// test
-		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
@@ -245,8 +247,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 
@@ -286,8 +289,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		require.Len(t, utilsMock.downloadedFiles, 1)
@@ -304,8 +308,9 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		assert.Len(t, utilsMock.downloadedFiles, 0)
@@ -328,8 +333,9 @@ func TestExecuteScanNPM(t *testing.T) {
 		// init
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("package.json", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -353,8 +359,9 @@ func TestExecuteScanNPM(t *testing.T) {
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
 		utilsMock := newWhitesourceUtilsMock()
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
 		assert.Len(t, utilsMock.Calls, 0)
@@ -368,8 +375,9 @@ func TestExecuteScanNPM(t *testing.T) {
 
 		utilsMock.ShouldFailOnCommand = make(map[string]error)
 		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
@@ -390,8 +398,9 @@ func TestExecuteScanMaven(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -427,8 +436,9 @@ func TestExecuteScanMaven(t *testing.T) {
 			ProductVersion: "product-version",
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		assert.EqualError(t, err,
 			"for scanning with type 'maven', the file 'pom.xml' must exist in the project root")
@@ -451,8 +461,9 @@ func TestExecuteScanMTA(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte("dummy"))
 		utilsMock.AddFile("package.json", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
