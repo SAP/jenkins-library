@@ -306,10 +306,6 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
 		product, err := sys.GetProductByName(config.ProductName)
 		if err != nil {
-			if !config.CreateProductFromPipeline {
-				return err
-			}
-			// product, err = sys.CreateProduct(config.ProductName, config.EmailAddressesOfInitialProductAdmins)
 			return err
 		}
 		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
