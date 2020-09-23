@@ -57,7 +57,7 @@ func ParsePOM(xmlData []byte) (*Project, error) {
 	return &project, nil
 }
 
-// ModuleInfo describes a location and Project model of a maven module.
+// ModuleInfo describes a location and Project of a maven module.
 type ModuleInfo struct {
 	PomXMLPath string
 	Project    *Project

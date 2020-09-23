@@ -127,9 +127,16 @@ type whitesourceScan struct {
 	scannedProjects      map[string]ws.Project
 }
 
+func (s *whitesourceScan) init() {
+	if s.scannedProjects == nil {
+		s.scannedProjects = make(map[string]ws.Project)
+	}
+}
+
 // appendScannedProject checks that no whitesource.Project is already contained in the list of scanned projects,
 // and appends a new whitesource.Project with the given name.
 func (s *whitesourceScan) appendScannedProject(projectName string) error {
+	s.init()
 	_, exists := s.scannedProjects[projectName]
 	if exists {
 		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
@@ -141,6 +148,7 @@ func (s *whitesourceScan) appendScannedProject(projectName string) error {
 }
 
 func (s *whitesourceScan) updateProjects(sys whitesource) error {
+	s.init()
 	projects, err := sys.GetProjectsMetaInfo(s.productToken)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve WhiteSource projects meta info: %w", err)
