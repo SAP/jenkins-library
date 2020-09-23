@@ -15,7 +15,7 @@
 
 ## Example
 
-* ### Single Space deletion in Cloud Foundry with a simple example
+### Space deletion in Cloud Foundry with a simple example
 
 The following example deletes an existing space in a Cloud Foundry.
 

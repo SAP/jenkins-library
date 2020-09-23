@@ -15,7 +15,7 @@
 
 ## Example
 
-* ### Single Space Creation in Cloud Foundry with a simple example
+### Space Creation in Cloud Foundry with a simple example
 
 The following example creates an user defined space in a Cloud Foundry.
 
