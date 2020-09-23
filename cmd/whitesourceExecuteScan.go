@@ -160,15 +160,15 @@ func (s *whitesourceScan) updateProjects(sys whitesource) error {
 	}
 
 	var projectsToUpdate []string
-	for key, _ := range s.scannedProjects {
-		projectsToUpdate = append(projectsToUpdate, key)
+	for projectName := range s.scannedProjects {
+		projectsToUpdate = append(projectsToUpdate, projectName)
 	}
 
-	for _, srcProject := range projects {
-		_, exists := s.scannedProjects[srcProject.Name]
+	for _, project := range projects {
+		_, exists := s.scannedProjects[project.Name]
 		if exists {
-			s.scannedProjects[srcProject.Name] = srcProject
-			projectsToUpdate, _ = piperutils.RemoveAll(projectsToUpdate, srcProject.Name)
+			s.scannedProjects[project.Name] = project
+			projectsToUpdate, _ = piperutils.RemoveAll(projectsToUpdate, project.Name)
 		}
 	}
 	if len(projectsToUpdate) != 0 {
