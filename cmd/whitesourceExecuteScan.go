@@ -209,16 +209,26 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 	log.Entry().Info("-----------------------------------------------------")
 	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
 	log.Entry().Info("Scanned projects:")
-	for i, project := range scan.scannedProjects {
-		log.Entry().Infof("[%03d]Project name: '%s', token: %s", i, project.Name, project.Token)
+	for _, project := range scan.scannedProjects {
+		log.Entry().Infof("  Name: '%s', token: %s", project.Name, project.Token)
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
 	if config.Reporting || config.SecurityVulnerabilities {
 		// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
 		// before downloading any reports or check security vulnerabilities.
-		if err := pollProjectStatus(config, sys); err != nil {
-			return err
+		if config.ProjectToken != "" {
+			// Poll status of aggregated project
+			if err := pollProjectStatus(config.ProjectToken, sys); err != nil {
+				return err
+			}
+		} else {
+			// Poll status of all scanned projects
+			for _, project := range scan.scannedProjects {
+				if err := pollProjectStatus(project.Token, sys); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -286,7 +296,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 	scan.productToken = config.ProductToken
 
 	// Get project token if user did not specify one at runtime
-	if config.ProjectToken == "" {
+	if config.ProjectToken == "" && config.ProjectName != "" {
 		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
 		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
 		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
@@ -708,18 +718,18 @@ func checkSecurityViolations(config *ScanOptions, sys whitesource) error {
 }
 
 // pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
-func pollProjectStatus(config *ScanOptions, sys whitesource) error {
-	return blockUntilProjectIsUpdated(config, sys, time.Now(), 20*time.Second, 20*time.Second, 15*time.Minute)
+func pollProjectStatus(projectToken string, sys whitesource) error {
+	return blockUntilProjectIsUpdated(projectToken, sys, time.Now(), 20*time.Second, 20*time.Second, 15*time.Minute)
 }
 
 const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
 
 // blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
 // or no older than maxAge relative to the given time stamp.
-func blockUntilProjectIsUpdated(config *ScanOptions, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
+func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
 	startTime := time.Now()
 	for {
-		project, err := sys.GetProjectByToken(config.ProjectToken)
+		project, err := sys.GetProjectByToken(projectToken)
 		if err != nil {
 			return err
 		}

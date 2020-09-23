@@ -516,11 +516,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -533,11 +530,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
@@ -551,11 +545,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 		systemMock := newWhitesourceSystemMock("")
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
