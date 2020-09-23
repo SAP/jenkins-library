@@ -27,7 +27,7 @@ spec:
   inputs:
     secrets:
       - name: nexusCredentialsId
-        description: The technical username/password credential for accessing the nexus endpoint.
+        description: Jenkins 'Username with password' credentials ID containing the technical username/password credential for accessing the nexus endpoint.
         type: jenkins
         aliases:
           - name: nexus/credentialsId
@@ -110,7 +110,7 @@ spec:
           - STEPS
         aliases:
           - name: maven/m2Path
-      - name: user
+      - name: username
         type: string
         description: Username for accessing the Nexus endpoint.
         scope:
