@@ -162,7 +162,9 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
-            if (config.inferBuildTool) {
+            if (config.inferBuildTool && env.ON_K8S) {
+                artifactPrepareVersion script: script, buildTool: buildTool, dockerImage: ""
+            } else if (config.inferBuildTool) {
                 artifactPrepareVersion script: script, buildTool: buildTool
             } else {
                 artifactSetVersion script: script
