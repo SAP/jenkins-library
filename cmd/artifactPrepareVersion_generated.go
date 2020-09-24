@@ -90,7 +90,7 @@ There are two common patterns found:
 ### 1. Continuous Deployment pattern with automatic versioning
 
 The team has full authority on ` + "`" + `<major>.<minor>.<patch>` + "`" + ` and can increase any part whenever required.
-Nonetheless, the automatic versioning makes sure that every build will create a unique version by appending ` + "`" + `<major>.<minor>.<patch>` + "`" + ` with a buildversion (we use a timestamp) and optinally the commitId.
+Nonetheless, the automatic versioning makes sure that every build will create a unique version by appending ` + "`" + `<major>.<minor>.<patch>` + "`" + ` with a buildversion (we use a timestamp) and optionally the commitId.
 
 In order to represent this version also in the version control system the new unique version will be pushed with a dedicated tag (` + "`" + `<tagPrefix><major>.<minor>.<patch><unique extension>` + "`" + `).
 
@@ -104,7 +104,7 @@ Depending on the build tool used and thus the allowed versioning format the ` + 
 
 **This pattern is the default** behavior (` + "`" + `versioningType: cloud` + "`" + `) since this is suitable for most cloud deliveries.
 
-It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which has a slighly different behavior than described above:
+It is possible to use ` + "`" + `versioningType: cloud_noTag` + "`" + ` which has a slightly different behavior than described above:
 
 * The new version will NOT be written as tag into the SCM but it is only available in the corresponding CI/CD workspace
 * IMPORTANT NOTICE: Using the option ` + "`" + `cloud_noTag` + "`" + ` should not be picked in case you need to ensure a fully traceable path from SCM commit to your build artifact.
@@ -116,7 +116,7 @@ Another typical use-case is development of a library with regular releases where
 
 The version is then either manually set by the team in the course of the development process or automatically pushed to master after a successful release.
 
-Unlike for the _Continuous Deloyment_ pattern descibed above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
+Unlike for the _Continuous Deloyment_ pattern described above, in this case there is no dedicated tagging required for the build process since the version is already available in the repository.
 
 Configuration of this pattern is done via ` + "`" + `versioningType: library` + "`" + `.
 
@@ -145,7 +145,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 #### ` + "`" + `yaml` + "`" + ` file containing the version
 
 Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -156,6 +156,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			log.RegisterSecret(stepConfig.Password)
@@ -168,7 +169,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -303,12 +304,18 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "gitHttpsCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -343,12 +350,18 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "gitHttpsCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "versioningTemplate",

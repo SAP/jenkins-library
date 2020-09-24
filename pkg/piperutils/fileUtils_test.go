@@ -9,7 +9,6 @@ import (
 )
 
 func TestFileExists(t *testing.T) {
-	t.Parallel()
 	runInTempDir(t, "testing dir returns false", "dir", func(t *testing.T) {
 		err := os.Mkdir("test", 0777)
 		if err != nil {
@@ -28,8 +27,29 @@ func TestFileExists(t *testing.T) {
 	})
 }
 
+func TestDirExists(t *testing.T) {
+	runInTempDir(t, "testing dir exists", "dir-exists", func(t *testing.T) {
+		err := os.Mkdir("test", 0777)
+		if err != nil {
+			t.Fatal("failed to create test dir in temporary dir")
+		}
+		files := Files{}
+
+		result, err := files.DirExists("test")
+		assert.NoError(t, err)
+		assert.True(t, result, "created folder should exist")
+
+		result, err = files.DirExists(".")
+		assert.NoError(t, err)
+		assert.True(t, result, "current directory should exist")
+
+		result, err = files.DirExists(string(os.PathSeparator))
+		assert.NoError(t, err)
+		assert.True(t, result, "root directory should exist")
+	})
+}
+
 func TestCopy(t *testing.T) {
-	t.Parallel()
 	runInTempDir(t, "copying file succeeds", "dir2", func(t *testing.T) {
 		file := "testFile"
 		err := ioutil.WriteFile(file, []byte{byte(1), byte(2), byte(3)}, 0700)

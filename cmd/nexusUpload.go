@@ -34,7 +34,7 @@ type nexusUploadUtils interface {
 	UsesNpm() bool
 
 	getEnvParameter(path, name string) string
-	getExecRunner() execRunner
+	getExecRunner() command.ExecRunner
 	evaluate(options *maven.EvaluateOptions, expression string) (string, error)
 }
 
@@ -66,7 +66,7 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-func (u *utilsBundle) getExecRunner() execRunner {
+func (u *utilsBundle) getExecRunner() command.ExecRunner {
 	if u.execRunner == nil {
 		u.execRunner = &command.Command{}
 		u.execRunner.Stdout(log.Writer())
@@ -125,8 +125,8 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	execRunner := utils.getExecRunner()
 	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
-	if options.User != "" && options.Password != "" {
-		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
+	if options.Username != "" && options.Password != "" {
+		auth := b64.StdEncoding.EncodeToString([]byte(options.Username + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
 	} else {
 		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
@@ -226,7 +226,7 @@ const settingsPath = ".pipeline/nexusMavenSettings.xml"
 
 func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUploadOptions,
 	mavenOptions *maven.ExecuteOptions) (string, error) {
-	if options.User == "" || options.Password == "" {
+	if options.Username == "" || options.Password == "" {
 		return "", nil
 	}
 
@@ -236,7 +236,7 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
-	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.Username, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = settingsPath
 	mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
@@ -317,7 +317,7 @@ func appendItemToString(list, item string, first bool) string {
 }
 
 func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions maven.ExecuteOptions,
-	execRunner execRunner) error {
+	execRunner command.ExecRunner) error {
 	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}

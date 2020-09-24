@@ -35,6 +35,10 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 	defer os.RemoveAll(dir) // clean up
 	assert.NoError(t, err, "Error when creating temp dir")
 
+	testAsset := filepath.Join(dir, "test.txt")
+	err = ioutil.WriteFile(testAsset, []byte("Test"), 0644)
+	assert.NoError(t, err, "Error when writing temporary file")
+
 	//prepare pipeline environment
 	now := time.Now()
 	piperenv.SetResourceParameter(filepath.Join(dir, ".pipeline"), "commonPipelineEnvironment", "artifactVersion", now.Format("20060102150405"))
@@ -50,6 +54,8 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 		repository,
 		"--token",
 		token,
+		"--assetPath",
+		testAsset,
 		"--noTelemetry",
 	}
 

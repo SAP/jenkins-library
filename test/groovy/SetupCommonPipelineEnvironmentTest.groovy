@@ -1,4 +1,6 @@
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.Utils
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +17,7 @@ import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertNull
 
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
@@ -65,6 +68,14 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -206,5 +217,43 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertEquals("custom: 'myRemoteConfig'", writeFileRule.files['.pipeline/custom_default_from_url_0.yml'])
         assertEquals('myRemoteConfig', DefaultValueCache.instance.defaultValues['custom'])
     }
+
+
+    @Test
+    void inferBuildToolMaven() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "pom.xml"
+        })
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('maven', nullScript.commonPipelineEnvironment.buildTool)
+    }
+
+    @Test
+    void inferBuildToolMTA() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "mta.yaml"
+        })
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('mta', nullScript.commonPipelineEnvironment.buildTool)
+    }
+
+    @Test
+    void inferBuildToolNpm() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return s == "package.json"
+        })
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertEquals('npm', nullScript.commonPipelineEnvironment.buildTool)
+    }
+
+    @Test
+    void inferBuildToolNone() {
+        helper.registerAllowedMethod('fileExists', [String.class], { s ->
+            return false
+        })
+        setupCommonPipelineEnvironment.inferBuildTool(nullScript, [inferBuildTool: true])
+        assertNull(nullScript.commonPipelineEnvironment.buildTool)
+    }
+
 }
 

@@ -43,7 +43,7 @@ steps:
     cfOrg: 'cfOrg'
     cfSpace: 'cfSpace'
     cfServiceInstance: 'cfServiceInstance'
-    cfServiceKey: 'cfServiceKey'
+    cfServiceKeyName: 'cfServiceKeyName'
 ```
 
 ## Example: Configuration in the Jenkinsfile
@@ -71,6 +71,6 @@ abapEnvironmentPullGitRepo (
   cfOrg: 'cfOrg',
   cfSpace: 'cfSpace',
   cfServiceInstance: 'cfServiceInstance',
-  cfServiceKey: 'cfServiceKey'
+  cfServiceKeyName: 'cfServiceKeyName'
 )
 ```

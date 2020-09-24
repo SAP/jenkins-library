@@ -86,7 +86,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
@@ -97,6 +97,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 			{{- range $key, $value := .StepSecrets }}
@@ -109,7 +110,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -139,6 +140,22 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
 }
 
+{{ define "resourceRefs"}}
+							{{ "{" }}
+								Name: "{{- .Name }}",
+								{{- if .Param }}
+								Param: "{{ .Param }}",
+								{{- end }}
+								{{- if  gt (len .Paths) 0 }}
+								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
+								{{- end }}
+								{{- if .Type }}
+								Type: "{{ .Type }}",
+								{{- end }}
+							{{ "}" }},
+							{{- nindent 24 ""}}
+{{- end -}}
+
 // retrieve step metadata
 func {{ .StepName }}Metadata() config.StepData {
 	var theMetaData = config.StepData{
@@ -152,7 +169,7 @@ func {{ .StepName }}Metadata() config.StepData {
 					{{- range $key, $value := .StepParameters }}
 					{
 						Name:      "{{ $value.Name }}",
-						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ "{" }}Name: "{{ $ref.Name }}", Param: "{{ $ref.Param }}"{{ "}" }},{{ end }}{{ "}" }},
+						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ template "resourceRefs" $ref }}{{ end }}{{ "}" }},
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
@@ -179,7 +196,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 	testCmd := {{.CobraCmdFuncName}}()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "{{ .StepName }}", testCmd.Use, "command name incorrect")
 
 }
@@ -217,7 +234,8 @@ func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *tel
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
+
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -236,33 +254,26 @@ func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, doc
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
 		//Switch Docu or Step Files
-		if !docuHelperData.IsGenerateDocu {
-			osImport := false
-			osImport, err = setDefaultParameters(&stepData)
-			checkError(err)
+		osImport := false
+		osImport, err = setDefaultParameters(&stepData)
+		checkError(err)
 
-			myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
-			checkError(err)
+		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
+		checkError(err)
 
-			step := stepTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
-			checkError(err)
+		step := stepTemplate(myStepInfo)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
+		checkError(err)
 
-			test := stepTestTemplate(myStepInfo)
-			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
-			checkError(err)
+		test := stepTestTemplate(myStepInfo)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
+		checkError(err)
 
-			exists, _ := piperutils.FileExists(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name))
-			if !exists {
-				impl := stepImplementation(myStepInfo)
-				err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v.go", stepData.Metadata.Name), impl, 0644)
-				checkError(err)
-			}
-		} else {
-			err = generateStepDocumentation(stepData, docuHelperData)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-			}
+		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
+		if !exists {
+			impl := stepImplementation(myStepInfo)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
+			checkError(err)
 		}
 	}
 	return nil

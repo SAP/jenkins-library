@@ -49,7 +49,7 @@ func TestFilesMockFileExists(t *testing.T) {
 		err := files.Chdir("some")
 		assert.NoError(t, err)
 		exists, err := files.FileExists(path)
-		assert.EqualError(t, err, "'"+path+"': file does not exist")
+		assert.NoError(t, err)
 		assert.False(t, exists)
 	})
 }
@@ -60,6 +60,12 @@ func TestFilesMockDirExists(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "path")
 		exists, err := files.DirExists(path)
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+	t.Run("root folder always exists", func(t *testing.T) {
+		files := FilesMock{}
+		exists, err := files.DirExists(string(os.PathSeparator))
 		assert.NoError(t, err)
 		assert.False(t, exists)
 	})
@@ -112,6 +118,17 @@ func TestFilesMockDirExists(t *testing.T) {
 			assert.False(t, exists, "Should not exist: '%s'", dir)
 		}
 	})
+	t.Run("dir still exists after removing last file", func(t *testing.T) {
+		files := FilesMock{}
+		dir := filepath.Join("path", "to")
+		file := filepath.Join(dir, "file")
+		files.AddFile(file, []byte("dummy content"))
+		err := files.FileRemove(file)
+		assert.NoError(t, err)
+		exists, err := files.DirExists(dir)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
 }
 
 func TestFilesMockCopy(t *testing.T) {
@@ -154,6 +171,53 @@ func TestFilesMockFileRemove(t *testing.T) {
 		assert.EqualError(t, err, "the file '"+path+"' does not exist: file does not exist")
 		assert.False(t, files.HasRemovedFile(path))
 	})
+	t.Run("fail to remove non-empty directory", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("fail to remove non-empty directory also when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("dir", "file")
+		files.AddFile(path, []byte("dummy content"))
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.Error(t, err)
+	})
+	t.Run("succeed to remove empty directory when it was explicitly added", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("dir")
+		err := files.FileRemove("dir")
+		assert.NoError(t, err)
+	})
+	t.Run("removing chain of entries works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path", "to")))
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
+	})
+	t.Run("removing entry from current dir works", func(t *testing.T) {
+		files := FilesMock{}
+		path := filepath.Join("path", "to", "file")
+		files.AddFile(path, []byte("dummy content"))
+
+		err := files.Chdir("path")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("to", "file")))
+		assert.NoError(t, files.FileRemove(filepath.Join("to")))
+
+		err = files.Chdir("/")
+		assert.NoError(t, err)
+
+		assert.NoError(t, files.FileRemove(filepath.Join("path")))
+		assert.Len(t, files.files, 0)
+	})
 	t.Run("track removing a file", func(t *testing.T) {
 		files := FilesMock{}
 		path := filepath.Join("some", "file")
@@ -163,6 +227,75 @@ func TestFilesMockFileRemove(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, files.HasFile(path))
 		assert.True(t, files.HasRemovedFile(path))
+	})
+}
+
+func TestFilesMockFileRename(t *testing.T) {
+	t.Parallel()
+	t.Run("fail to rename non-existing file (no init)", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err, "the file '"+oldPath+"' does not exist: file does not exist")
+	})
+	t.Run("fail to rename non-existing file", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("triggers/initialization")
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err,
+			"renaming file '"+oldPath+"' is not supported, since it does not exist, or is not a leaf-entry")
+	})
+	t.Run("fail to rename non-existing file, even no-op", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddDir("triggers/initialization")
+		oldPath := filepath.Join("foo", "bar")
+		newPath := oldPath
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err,
+			"renaming file '"+oldPath+"' is not supported, since it does not exist, or is not a leaf-entry")
+	})
+	t.Run("success to rename dir (no-op)", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddDir(oldPath)
+		newPath := oldPath
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+	})
+	t.Run("success to rename dir", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddDir(oldPath)
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+		assert.False(t, files.HasFile(oldPath))
+	})
+	t.Run("success to rename file", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		files.AddFile(oldPath, []byte("dummy contents"))
+		newPath := filepath.Join("foo", "baz")
+		err := files.FileRename(oldPath, newPath)
+		assert.NoError(t, err)
+		assert.True(t, files.HasFile(newPath))
+		assert.False(t, files.HasFile(oldPath))
+	})
+	t.Run("fail to rename file, already exists", func(t *testing.T) {
+		files := FilesMock{}
+		oldPath := filepath.Join("foo", "bar")
+		newPath := filepath.Join("foo", "baz")
+		files.AddFile(oldPath, []byte("dummy contents"))
+		files.AddFile(newPath, []byte("dummy contents"))
+		err := files.FileRename(oldPath, newPath)
+		assert.EqualError(t, err, "cannot rename '"+oldPath+"', target path '"+newPath+"' already exists")
+		assert.True(t, files.HasFile(newPath))
+		assert.True(t, files.HasFile(oldPath))
 	})
 }
 
@@ -240,5 +373,136 @@ func TestFilesMockGlob(t *testing.T) {
 		matches, err := files.Glob("**/*bar*")
 		assert.NoError(t, err)
 		assert.Len(t, matches, 0)
+	})
+}
+
+func TestStat(t *testing.T) {
+	files := FilesMock{}
+	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+	explicitMode := os.FileMode(0700)
+	files.AddDirWithMode("bin", explicitMode)
+
+	t.Run("non existing file", func(t *testing.T) {
+		_, err := files.Stat("doesNotExist.txt")
+		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
+	})
+	t.Run("check file info", func(t *testing.T) {
+		info, err := files.Stat("tmp/dummy.txt")
+
+		if assert.NoError(t, err) {
+			// only the base name is returned.
+			assert.Equal(t, "dummy.txt", info.Name())
+			assert.False(t, info.IsDir())
+			// if not specified otherwise the 644 file mode is used.
+			assert.Equal(t, defaultFileMode, info.Mode())
+		}
+	})
+	t.Run("check implicit dir", func(t *testing.T) {
+		info, err := files.Stat("tmp")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, defaultDirMode, info.Mode())
+		}
+	})
+	t.Run("check explicit dir", func(t *testing.T) {
+		info, err := files.Stat("bin")
+		if assert.NoError(t, err) {
+			assert.True(t, info.IsDir())
+			assert.Equal(t, explicitMode, info.Mode())
+		}
+	})
+}
+
+func TestChmod(t *testing.T) {
+	files := FilesMock{}
+	files.AddFileWithMode("tmp/log.txt", []byte("build failed"), 0777)
+
+	t.Run("non existing file", func(t *testing.T) {
+		err := files.Chmod("does/not/exist", 0400)
+		assert.EqualError(t, err, "chmod: does/not/exist: No such file or directory")
+	})
+	t.Run("chmod for file", func(t *testing.T) {
+		err := files.Chmod("tmp/log.txt", 0645)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp/log.txt")
+			if assert.NoError(t, e) {
+				assert.Equal(t, os.FileMode(0645), info.Mode())
+			}
+		}
+	})
+	t.Run("chmod for directory", func(t *testing.T) {
+		err := files.Chmod("tmp", 0766)
+		if assert.NoError(t, err) {
+			info, e := files.Stat("tmp")
+			if assert.NoError(t, e) {
+				assert.Equal(t, os.FileMode(0766), info.Mode())
+			}
+		}
+	})
+}
+
+func TestRelativePaths(t *testing.T) {
+	t.Parallel()
+	t.Run("files are not mixed up", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+		files.AddFile("file", []byte("root-content"))
+
+		err := files.Chdir("path")
+		if assert.NoError(t, err) {
+			exists, _ := files.FileExists("file")
+			assert.False(t, exists)
+
+			err := files.Chdir("to")
+			if assert.NoError(t, err) {
+				content, err := files.FileRead("file")
+				if assert.NoError(t, err) {
+					assert.Equal(t, []byte("content"), content, "should not read root file")
+				}
+			}
+		}
+	})
+	t.Run("root folder exists after change dir", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		errChdirInto := files.Chdir("path")
+		assert.NoError(t, errChdirInto)
+
+		exists, err := files.DirExists("/")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the root folder should exist no matter the current dir")
+	})
+	t.Run("current folder always exists", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		exists, err := files.DirExists(".")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the current folder should exist")
+
+		errChdirInto := files.Chdir("path")
+		assert.NoError(t, errChdirInto)
+
+		exists, err = files.DirExists("./")
+		assert.NoError(t, err)
+		assert.True(t, exists, "the current folder should exist after changing into it")
+	})
+	t.Run("chmod works on implicit, relative dir", func(t *testing.T) {
+		files := FilesMock{}
+		files.AddFile("path/to/file", []byte("content"))
+
+		errChdirInto := files.Chdir("path")
+		errChmod := files.Chmod("to", 0700)
+		errChdirBack := files.Chdir("/")
+
+		assert.NoError(t, errChdirInto)
+		assert.NoError(t, errChmod)
+		assert.NoError(t, errChdirBack)
+
+		fileInfo, err := files.Stat("path/to")
+		if assert.NoError(t, err) {
+			assert.Equal(t, os.FileMode(0700), fileInfo.Mode())
+		}
 	})
 }

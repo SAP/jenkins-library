@@ -34,7 +34,7 @@ func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *tel
 	}
 }
 
-func createRepository(config *gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData, command execRunner, httpClient piperhttp.Sender) error {
+func createRepository(config *gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
@@ -117,7 +117,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 				return nil
 			}
 		}
-		log.Entry().Errorf("a HTTP error occured! Response body: %v", response)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
 		return errors.Wrapf(httpErr, "creating repository on the ABAP system %v failed", config.Host)
 	}
 

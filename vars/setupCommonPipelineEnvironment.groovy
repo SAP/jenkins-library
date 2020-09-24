@@ -11,7 +11,15 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** */
-    'collectTelemetryData'
+    'collectTelemetryData',
+
+    /** Credentials (username and password) used to download custom defaults if access is secured.*/
+    'customDefaultsCredentialsId',
+
+    /** Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
+     * If this is set to true, it is not required to set the build tool by hand for those cases.
+     */
+    'inferBuildTool'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -69,12 +77,15 @@ void call(Map parameters = [:]) {
             customDefaultsFiles = Utils.appendParameterToStringList(
                 customDefaultsFiles, script.commonPipelineEnvironment.configuration as Map, 'customDefaults')
         }
-        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles)
+        String customDefaultsCredentialsId = script.commonPipelineEnvironment.configuration.general?.customDefaultsCredentialsId
+        customDefaultsFiles = copyOrDownloadCustomDefaultsIntoPipelineEnv(script, customDefaultsFiles, customDefaultsCredentialsId)
 
         prepareDefaultValues([
             script: script,
             customDefaults: parameters.customDefaults,
             customDefaultsFromFiles: customDefaultsFiles ])
+
+        piperLoadGlobalExtensions script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultsFiles
 
         stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
 
@@ -82,6 +93,8 @@ void call(Map parameters = [:]) {
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
+
+        inferBuildTool(script, config)
 
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
@@ -91,6 +104,27 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
+    }
+}
+
+
+// Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
+private static void inferBuildTool(script, config) {
+    // For backwards compatibility, build tool inference must be enabled via inferBuildTool setting
+    boolean inferBuildTool = config?.inferBuildTool
+
+    if (inferBuildTool) {
+        boolean isMtaProject = script.fileExists('mta.yaml')
+        def isMavenProject = script.fileExists('pom.xml')
+        def isNpmProject = script.fileExists('package.json')
+
+        if (isMtaProject) {
+            script.commonPipelineEnvironment.buildTool = 'mta'
+        } else if (isMavenProject) {
+            script.commonPipelineEnvironment.buildTool = 'maven'
+        } else if (isNpmProject) {
+            script.commonPipelineEnvironment.buildTool = 'npm'
+        }
     }
 }
 
@@ -112,7 +146,7 @@ private static loadConfigurationFromFile(script, String configFile) {
     }
 }
 
-private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults) {
+private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List customDefaults, String credentialsId) {
     List fileList = []
     int urlCount = 0
     for (int i = 0; i < customDefaults.size(); i++) {
@@ -125,10 +159,14 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
         if (customDefaults[i].startsWith('http://') || customDefaults[i].startsWith('https://')) {
             fileName = "custom_default_from_url_${urlCount}.yml"
 
-            def response = script.httpRequest(
+            Map httpRequestParameters = [
                 url: customDefaults[i],
                 validResponseCodes: '100:399,404' // Allow a more specific error message for 404 case
-            )
+            ]
+            if (credentialsId) {
+                httpRequestParameters.authentication = credentialsId
+            }
+            def response = script.httpRequest(httpRequestParameters)
             if (response.status == 404) {
                 error "URL for remote custom defaults (${customDefaults[i]}) appears to be incorrect. " +
                     "Server returned HTTP status code 404. " +

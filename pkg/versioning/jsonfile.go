@@ -9,6 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// JSONDescriptor holds the unique identifier combination for json artifacts
+type JSONDescriptor struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+	Packaging  string
+}
+
 // JSONfile defines an artifact using a json file for versioning
 type JSONfile struct {
 	path         string
@@ -79,5 +87,15 @@ func (j *JSONfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (j *JSONfile) GetCoordinates() (Coordinates, error) {
-	return nil, nil
+	projectVersion, err := j.GetVersion()
+	if err != nil {
+		return nil, err
+	}
+	projectName := j.content["name"].(string)
+
+	artifact := &JSONDescriptor{
+		ArtifactID: projectName,
+		Version:    projectVersion,
+	}
+	return artifact, nil
 }

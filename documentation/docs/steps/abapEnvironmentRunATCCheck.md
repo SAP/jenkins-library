@@ -52,7 +52,7 @@ abapEnvironmentRunATCCheck(
     cfOrg : 'cfOrg',
     cfSpace: 'cfSpace',
     cfServiceInstance: 'myServiceInstance',
-    cfSserviceKeyName: 'myServiceKey',
+    cfServiceKeyName: 'myServiceKey',
     abapCredentialsId: 'cfCredentialsId',
     atcConfig: 'atcconfig.yml',
     script: this,
@@ -118,6 +118,17 @@ atcobjects:
 The following example of an `atcconfig.yml` file that only contains software components to be checked:
 
 ```yaml
+atcobjects:
+  softwarecomponent:
+    - name: "TestComponent"
+    - name: "TestComponent2"
+```
+
+The following is an example of an `atcconfig.yml` file that supports the check variant and configuration ATC options:
+
+```yaml
+checkvariant: "TestCheckVariant"
+configuration: "TestConfiguration"
 atcobjects:
   softwarecomponent:
     - name: "TestComponent"

@@ -43,7 +43,7 @@ func (p *Pip) init() error {
 		p.writeFile = ioutil.WriteFile
 	}
 
-	if len(p.buildDescriptorContent) > 0 {
+	if len(p.buildDescriptorContent) == 0 {
 		content, err := p.readFile(p.path)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file '%v'", p.path)

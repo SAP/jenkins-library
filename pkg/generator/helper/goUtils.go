@@ -6,16 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/ghodss/yaml"
 )
-
-// DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
-type DocuHelperData struct {
-	IsGenerateDocu      bool
-	DocTemplatePath     string
-	OpenDocTemplateFile func(d string) (io.ReadCloser, error)
-	DocFileWriter       func(f string, d []byte, p os.FileMode) error
-}
 
 // StepHelperData is used to transport the needed parameters and functions from the step generator to the step generation.
 type StepHelperData struct {
@@ -64,21 +57,18 @@ func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
 	return m
 }
 
-func readContextDefaultDescription(contextDefaultPath string) map[string]interface{} {
-	//read context default description
-	var ContextDefaultData ContextDefaultData
-
-	contextDefaultFile, err := os.Open(contextDefaultPath)
+func readContextInformation(contextDetailsPath string, contextDetails *config.StepData) {
+	contextDetailsFile, err := os.Open(contextDetailsPath)
 	checkError(err)
-	defer contextDefaultFile.Close()
+	defer contextDetailsFile.Close()
 
-	ContextDefaultData.readPipelineContextDefaultData(contextDefaultFile)
-	return ContextDefaultData.readContextDefaultMap()
+	err = contextDetails.ReadPipelineStepData(contextDetailsFile)
+	checkError(err)
 }
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Printf("Error occured: %v\n", err)
+		fmt.Printf("Error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }

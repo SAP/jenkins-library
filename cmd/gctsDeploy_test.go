@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGctsDeploySuccess(t *testing.T) {
@@ -34,7 +35,7 @@ func TestGctsDeploySuccess(t *testing.T) {
 			]
 		}`}
 
-		err := deployCommit(&config, nil, nil, &httpClient)
+		err := deployCommit(&config, nil, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -101,7 +102,7 @@ func TestGctsDeployFailure(t *testing.T) {
 			}
 		}`}
 
-		err := deployCommit(&config, nil, nil, &httpClient)
+		err := deployCommit(&config, nil, &httpClient)
 
 		assert.EqualError(t, err, "a http error occurred")
 

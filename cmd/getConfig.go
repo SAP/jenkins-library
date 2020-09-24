@@ -33,11 +33,13 @@ func ConfigCommand() *cobra.Command {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+			initStageName(false)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
 			if err != nil {
-				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+				log.SetErrorCategory(log.ErrorConfiguration)
+				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
 			}
 		},
 	}
@@ -143,32 +145,11 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 	//consider conditions for context configuration
 
 	//containers
-	applyContainerConditions(metadata.Spec.Containers, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Containers, stepConfig)
 
 	//sidecars
-	applyContainerConditions(metadata.Spec.Sidecars, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Sidecars, stepConfig)
 
 	//ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
-}
-
-func applyContainerConditions(containers []config.Container, stepConfig *config.StepConfig) {
-	for _, container := range containers {
-		if len(container.Conditions) > 0 {
-			for _, param := range container.Conditions[0].Params {
-				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
-					var containerConf map[string]interface{}
-					if stepConfig.Config[param.Value] != nil {
-						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-						for key, value := range containerConf {
-							if stepConfig.Config[key] == nil {
-								stepConfig.Config[key] = value
-							}
-						}
-						delete(stepConfig.Config, param.Value)
-					}
-				}
-			}
-		}
-	}
 }
