@@ -1,7 +1,10 @@
 import static org.hamcrest.Matchers.*
 
+import com.sap.piper.Utils
+
 import hudson.AbortException
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -72,6 +75,12 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
             seleniumMap = m
             return body()
         })
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

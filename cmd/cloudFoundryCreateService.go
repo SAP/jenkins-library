@@ -74,24 +74,22 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 		cfCreateServiceScript = append(cfCreateServiceScript, "-t", config.CfServiceTags)
 	}
 	if config.ServiceManifest != "" && fileExists(config.ServiceManifest) {
-		var varPart []string
 
 		cfCreateServiceScript = []string{"create-service-push", "--no-push", "--service-manifest", config.ServiceManifest}
 
 		if len(config.ManifestVariablesFiles) >= 0 {
-			for _, v := range config.ManifestVariablesFiles {
-				if fileExists(v) {
-					cfCreateServiceScript = append(cfCreateServiceScript, "--vars-file", v)
-				} else {
-					return fmt.Errorf("Failed to append Manifest Variables File: %w", errors.New(v+" is not a file"))
-				}
+			varFileOpts, err := cloudfoundry.GetVarsFileOptions(config.ManifestVariablesFiles)
+			if err != nil {
+				return errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
 			}
+			cfCreateServiceScript = append(cfCreateServiceScript, varFileOpts...)
 		}
 		if len(config.ManifestVariables) >= 0 {
-			varPart, err = varOptions(config.ManifestVariables)
-		}
-		for _, s := range varPart {
-			cfCreateServiceScript = append(cfCreateServiceScript, s)
+			varOptions, err := cloudfoundry.GetVarsOptions(config.ManifestVariables)
+			if err != nil {
+				return errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
+			}
+			cfCreateServiceScript = append(cfCreateServiceScript, varOptions...)
 		}
 	}
 	err = c.RunExecutable("cf", cfCreateServiceScript...)
@@ -100,12 +98,4 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 		return fmt.Errorf("Failed to Create Service: %w", err)
 	}
 	return nil
-}
-
-func varOptions(options []string) ([]string, error) {
-	var varOptionsString []string
-	for _, s := range options {
-		varOptionsString = append(varOptionsString, "--var", s)
-	}
-	return varOptionsString, nil
 }
