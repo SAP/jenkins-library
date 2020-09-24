@@ -65,6 +65,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switch on. The `repositoriesFilesNames` flag makes use of such a configuration file and helps executing a Pull and checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
 
 ```yml
+repositories:
 - name: '/DMO/GIT_REPOSITORY'
   branch: 'master'
 - name: '/DMO/GIT_REPO'
@@ -104,7 +105,7 @@ stages:
     cfServiceManifest: 'manifest.yml'
     cfServiceKeyConfig: 'sap_com_0510.json'
   Clone Repositories:
-    repositoryNamesFiles: ['repositories.yml']
+    repositories: 'repositories.yml'
   ATC:
     atcConfig: 'atcConfig.yml'
 steps:
