@@ -981,7 +981,7 @@ func TestCfDeployment(t *testing.T) {
 			// AddFile() adds the file absolute, prefix with the current working directory
 			// Glob() returns the absolute path - but without leading slash - , whereas
 			// the real Glob returns the path relative to the current workdir.
-			// In order to mimic the behavour in the free wild we add the mtar at the root dir.
+			// In order to mimic the behavior in the free wild we add the mtar at the root dir.
 			filesMock.AddDir("/")
 			assert.NoError(t, filesMock.Chdir("/"))
 			filesMock.AddFile("xyz.mtar", []byte("content does not matter"))

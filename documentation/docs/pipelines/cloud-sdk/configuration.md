@@ -499,7 +499,7 @@ Also, the stage (and thus an extension) is only executed if a stage configuratio
 
 ## Step configuration
 
-This section describes the steps that are avialable only in SAP Cloud SDK Pipeline.
+This section describes the steps that are available only in SAP Cloud SDK Pipeline.
 For common project "Piper" steps, please see the _Library steps_ section of the documentation.
 
 ### checkGatling

@@ -42,7 +42,7 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 	defer func() {
 		logoutErr := cf.Logout()
 		if logoutErr != nil {
-			err = fmt.Errorf("Error while logging out occured: %w", logoutErr)
+			err = fmt.Errorf("Error while logging out occurred: %w", logoutErr)
 		}
 	}()
 

@@ -63,7 +63,7 @@ spec:
         - STAGES
         - STEPS
     - name: dockerPullImage
-      description: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+      description: Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
       type: bool
       scope:
         - PARAMETERS
