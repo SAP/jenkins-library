@@ -13,7 +13,7 @@ void call(parameters) {
             }
 
             stage('Initial Checks') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
+                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Build")}}
                 steps {
                     abapEnvironmentPipelineStageInitialChecks script: parameters.script
                 }
