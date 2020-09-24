@@ -52,7 +52,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
       - name: branchName
         type: string
         description: Specifies a Branch of a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
@@ -77,10 +76,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: abap/repositories
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint

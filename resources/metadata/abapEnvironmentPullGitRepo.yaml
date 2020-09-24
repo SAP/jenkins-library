@@ -52,7 +52,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
       - name: repositories
         type: string
         description: Specifies a YAML file containing the repositories configuration
@@ -61,10 +60,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: abap/repositories
       - name: host
         type: string
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
