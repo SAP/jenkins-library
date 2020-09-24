@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -267,8 +268,12 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 				}
 			}
 		}
-
 	}
+
+	if err := persistScannedProjects(config, scan, utils); err != nil {
+		return fmt.Errorf("failed to persist scanned WhiteSource project names: %w", err)
+	}
+
 	return nil
 }
 
@@ -1043,6 +1048,32 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
 	if err := utils.FileWrite(fileName, []byte(output), 0777); err != nil {
+		return err
+	}
+	return nil
+}
+
+// persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
+// string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
+func persistScannedProjects(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+	var projectNames []string
+	if config.ProjectName != "" {
+		projectNames = []string{config.ProjectName}
+	} else {
+		for projectName := range scan.scannedProjects {
+			projectNames = append(projectNames, projectName)
+		}
+		// Sorting helps the list become stable across pipeline runs (and in the unit tests),
+		// as the order in which we travers map keys is not deterministic.
+		sort.Strings(projectNames)
+	}
+	resourceDir := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom")
+	if err := utils.MkdirAll(resourceDir, 0755); err != nil {
+		return err
+	}
+	fileContents := strings.Join(projectNames, ",")
+	resource := filepath.Join(resourceDir, "whitesourceProjectNames")
+	if err := utils.FileWrite(resource, []byte(fileContents), 0644); err != nil {
 		return err
 	}
 	return nil

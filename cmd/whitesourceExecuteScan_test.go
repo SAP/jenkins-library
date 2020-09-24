@@ -770,3 +770,64 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		}
 	})
 }
+
+func TestPersisScannedProjects(t *testing.T) {
+	resource := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom", "whitesourceProjectNames")
+
+	t.Parallel()
+	t.Run("write 1 scanned projects", func(t *testing.T) {
+		// init
+		config := &ScanOptions{}
+		utils := newWhitesourceUtilsMock()
+		scan := &whitesourceScan{projectVersion: "1"}
+		_ = scan.appendScannedProject("project")
+		// test
+		err := persistScannedProjects(config, scan, utils)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			assert.Equal(t, "project - 1", string(contents))
+		}
+	})
+	t.Run("write 2 scanned projects", func(t *testing.T) {
+		// init
+		config := &ScanOptions{}
+		utils := newWhitesourceUtilsMock()
+		scan := &whitesourceScan{projectVersion: "1"}
+		_ = scan.appendScannedProject("project-app")
+		_ = scan.appendScannedProject("project-db")
+		// test
+		err := persistScannedProjects(config, scan, utils)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			assert.Equal(t, "project-app - 1,project-db - 1", string(contents))
+		}
+	})
+	t.Run("write no projects", func(t *testing.T) {
+		// init
+		config := &ScanOptions{}
+		utils := newWhitesourceUtilsMock()
+		scan := &whitesourceScan{projectVersion: "1"}
+		// test
+		err := persistScannedProjects(config, scan, utils)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			assert.Equal(t, "", string(contents))
+		}
+	})
+	t.Run("write aggregated project", func(t *testing.T) {
+		// init
+		config := &ScanOptions{ProjectName: "project - 1"}
+		utils := newWhitesourceUtilsMock()
+		scan := &whitesourceScan{}
+		// test
+		err := persistScannedProjects(config, scan, utils)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			assert.Equal(t, "project - 1", string(contents))
+		}
+	})
+}
