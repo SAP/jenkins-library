@@ -88,7 +88,7 @@ func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeIn
 						log.Entry().Infof("Reservation of %s is still running with status 'creation triggered', check again in %s", pckgWR[i].Package.PackageName, pollIntervalsInSeconds)
 						allFinished = false
 					case aakaas.PackageStatusPlanned:
-						log.Entry().Infof("Reservation of %s was succesful with status 'planned'", pckgWR[i].Package.PackageName)
+						log.Entry().Infof("Reservation of %s was successful with status 'planned'", pckgWR[i].Package.PackageName)
 					case aakaas.PackageStatusReleased:
 						log.Entry().Infof("Reservation of %s not needed, package is already in status 'released'", pckgWR[i].Package.PackageName)
 					default:
@@ -97,7 +97,7 @@ func pollReserveNextPackages(pckgWR []aakaas.PackageWithRepository, maxRuntimeIn
 				}
 			}
 			if allFinished {
-				log.Entry().Infof("Reservation of package(s) was succesful")
+				log.Entry().Infof("Reservation of package(s) was successful")
 				return nil
 			}
 		}
