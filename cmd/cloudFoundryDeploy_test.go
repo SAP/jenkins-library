@@ -263,8 +263,8 @@ func TestCfDeployment(t *testing.T) {
 
 				withLoginAndLogout(t, func(t *testing.T) {
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
 					}, s.Calls)
 				})
 			})
@@ -341,8 +341,8 @@ func TestCfDeployment(t *testing.T) {
 
 			withLoginAndLogout(t, func(t *testing.T) {
 				assert.Equal(t, []mock.ExecCall{
-					mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-					mock.ExecCall{Exec: "cf", Params: []string{"push",
+					{Exec: "cf", Params: []string{"plugins"}},
+					{Exec: "cf", Params: []string{"push",
 						"testAppName",
 						"--docker-image",
 						"repo/image:tag",
@@ -380,8 +380,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"push",
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"push",
 							"testAppName",
 							"--docker-image",
 							"repo/image:tag",
@@ -427,8 +427,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
 							"testAppName",
 							"--delete-old-apps",
@@ -469,8 +469,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"-f",
 							"test-manifest.yml",
@@ -528,14 +528,14 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
 							"myTestApp",
 							"-f",
 							"test-manifest.yml",
 						}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{
 							"stop",
 							"myTestApp-old",
 							// MIGRATE FFROM GROOVY: in contrast to groovy there is not redirect of everything &> to a file since we
@@ -589,7 +589,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name":     "app1",
 							"no-route": true,
 						},
@@ -609,8 +609,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"myTestApp",
 							"-f",
@@ -711,8 +711,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"myTestApp",
 							"-f",
@@ -748,7 +748,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"there-is": "no-app-name",
 						},
 					},
@@ -795,8 +795,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"bg-deploy",
 							"target/test.mtar",
 							"-f",
@@ -844,7 +844,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name": "myApp",
 						},
 					},
@@ -865,8 +865,8 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"testAppName",
 							"--var",
@@ -905,7 +905,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name": "myApp",
 						},
 					},
@@ -945,8 +945,8 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"testAppName",
 							"--vars-file",
@@ -995,8 +995,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, s.Calls, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
 
 				})
 			}

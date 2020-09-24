@@ -19,7 +19,7 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 	// for command execution use Command
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
-			log.ErrorConfiguration.String(): []string{
+			log.ErrorConfiguration.String(): {
 				"unsupported status code 401",
 			},
 		},

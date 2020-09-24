@@ -21,7 +21,7 @@ func TestDiscoverySuccess(t *testing.T) {
 
 		httpClient := httpMockGcts{
 			StatusCode: 200,
-			Header:     map[string][]string{"x-csrf-token": []string{"ZegUEgfa50R7ZfGGxOtx2A=="}},
+			Header:     map[string][]string{"x-csrf-token": {"ZegUEgfa50R7ZfGGxOtx2A=="}},
 			ResponseBody: `
 				<?xml version="1.0" encoding="utf-8"?>
 				<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>

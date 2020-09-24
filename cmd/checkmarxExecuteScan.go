@@ -171,7 +171,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
 	results := getDetailedResults(sys, xmlReportName, scanID)
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
-	links := []piperutils.Path{piperutils.Path{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
+	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
 
 	reportToInflux(results, influx)
