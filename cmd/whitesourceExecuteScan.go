@@ -374,7 +374,7 @@ func executeScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUt
 		}
 	default:
 		// Execute scan with Unified Agent jar file
-		if err := executeUAScan(config, utils); err != nil {
+		if err := executeUAScan(config, scan, utils); err != nil {
 			return err
 		}
 	}
@@ -382,7 +382,7 @@ func executeScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUt
 }
 
 // executeUAScan executes a scan with the Whitesource Unified Agent.
-func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
+func executeUAScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
 	// Download the unified agent jar file if one does not exist
 	if err := downloadAgent(config, utils); err != nil {
 		return err
@@ -395,7 +395,7 @@ func executeUAScan(config *ScanOptions, utils whitesourceUtils) error {
 	}
 
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
-		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
+		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", scan.aggregateProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
 }
 
