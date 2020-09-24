@@ -301,10 +301,42 @@ repositories:
 		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpLevel)
 		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpLevel)
 	})
-
 	t.Run("Test: file does not exist", func(t *testing.T) {
 		_, err := ReadAddonDescriptor("filename.yaml")
 		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", "filename.yaml"))
+	})
+	t.Run("Test: empty config - failure case", func(t *testing.T) {
+		_, err := ReadAddonDescriptor("")
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", ""))
+	})
+	t.Run("Read empty addon descriptor from wrong config - failure case", func(t *testing.T) {
+		expectedErrorMessage := "Could not parse config file repositories.yml, please check that you have configured the file correctly"
+		expectedRepositoryList := AddonDescriptor{Repositories: []Repository{{}, {}}}
+
+		dir, err := ioutil.TempDir("", "test abap utils")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+repositories:
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+
+		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")
+
+		assert.Equal(t, expectedRepositoryList, addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
 

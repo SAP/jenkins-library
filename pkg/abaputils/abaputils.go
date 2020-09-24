@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -221,12 +222,23 @@ func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 	if err != nil {
 		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse %v", FileName))
 	}
-
 	err = json.Unmarshal(jsonBytes, &addonDescriptor)
 	if err != nil {
 		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
-
+	if len(addonDescriptor.Repositories) == 0 {
+		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse config file %v, please check that you have configured the file correctly", FileName))
+	}
+	//checking if parsing went wrong
+	emptyRepositoryCounter := 0
+	for counter, repo := range addonDescriptor.Repositories {
+		if reflect.DeepEqual(Repository{}, repo) {
+			emptyRepositoryCounter++
+		}
+		if counter+1 == len(addonDescriptor.Repositories) && emptyRepositoryCounter == len(addonDescriptor.Repositories) {
+			return addonDescriptor, errors.New(fmt.Sprintf("Could not parse config file %v, please check that you have configured the file correctly", FileName))
+		}
+	}
 	return addonDescriptor, nil
 }
 
@@ -332,7 +344,7 @@ type AddonDescriptor struct {
 	AddonSpsLevel    string
 	AddonPatchLevel  string
 	TargetVectorID   string
-	Repositories     []Repository `json:"repositories"`
+	Repositories     []Repository `json:"repositories,omitempty"`
 }
 
 // Repository contains fields for the repository/component version
