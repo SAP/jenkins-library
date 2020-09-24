@@ -174,13 +174,7 @@ void call(Map parameters = [:]) {
 
 private String checkBuildTool(script, config) {
     def buildDescriptorPattern = ''
-    String buildTool
-
-    if (config.inferBuildTool) {
-        buildTool = script.commonPipelineEnvironment.buildTool
-    } else {
-        buildTool = config.buildTool
-    }
+    String buildTool = config.buildTool
 
     switch (buildTool) {
         case 'maven':
