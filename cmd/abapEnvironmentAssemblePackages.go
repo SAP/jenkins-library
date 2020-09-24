@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"path"
 	"path/filepath"
 	"sort"
@@ -9,10 +8,8 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/cookiejar"
 
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -43,18 +40,22 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 // ********************************************************** Step logic *********************************************************
 // *******************************************************************************************************************************
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
-	conn := new(connector)
-	err := conn.init(config, com, client)
+	conn := new(abapbuild.Connector)
+	var connConfig abapbuild.ConnectorConfiguration
+	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor
 	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+
 	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn)
 	if err != nil {
 		return err
 	}
-	err = polling(builds, time.Duration(config.MaxRuntimeInMinutes), 60)
+	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
+	pollIntervalsInSeconds := time.Duration(60 * time.Second)
+	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		return err
 	}
@@ -101,13 +102,12 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	var buildFailed bool = false
-	for _, bR := range builds {
-		b := bR.build
-		if b.RunState == failed {
-			log.Entry().Errorf("Assembly of %s failed", b.BuildID)
+	for i := range builds {
+		if builds[i].build.RunState == failed {
+			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
-		b.printLogs()
+		builds[i].build.printLogs()
 	}
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
@@ -115,7 +115,7 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	return nil
 }
 
-func starting(repos []abaputils.Repository, conn connector) ([]buildWithRepository, []buildWithRepository, error) {
+func starting(repos []abaputils.Repository, conn abapbuild.Connector) ([]buildWithRepository, []buildWithRepository, error) {
 	var builds []buildWithRepository
 	var buildsAlreadyReleased []buildWithRepository
 	for _, repo := range repos {
@@ -133,7 +133,7 @@ func starting(repos []abaputils.Repository, conn connector) ([]buildWithReposito
 			}
 			builds = append(builds, buildRepo)
 		} else {
-			log.Entry().Infof("Packages %s is already released. No need to run the assembly", repo.PackageName)
+			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
 			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
 	}
@@ -141,8 +141,8 @@ func starting(repos []abaputils.Repository, conn connector) ([]buildWithReposito
 }
 
 func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
-	timeout := time.After(maxRuntimeInMinutes * time.Minute)
-	ticker := time.Tick(pollIntervalsInSeconds * time.Second)
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
 	for {
 		select {
 		case <-timeout:
@@ -150,12 +150,10 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 		case <-ticker:
 			var allFinished bool = true
 			for i := range builds {
+				builds[i].build.get()
 				if !builds[i].build.IsFinished() {
-					builds[i].build.get()
-					if !builds[i].build.IsFinished() {
-						log.Entry().Infof("Assembly of %s is not yet finished, check again in %02d seconds", builds[i].repo.PackageName, pollIntervalsInSeconds)
-						allFinished = false
-					}
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					allFinished = false
 				}
 			}
 			if allFinished {
@@ -212,117 +210,10 @@ type buildWithRepository struct {
 // ******************************* Funcs *******************************
 // *********************************************************************
 
-// ******** technical communication settings ********
-
-func (conn *connector) init(config *abapEnvironmentAssemblePackagesOptions, com abaputils.Communication, inputclient piperhttp.Sender) error {
-	conn.Client = inputclient
-	conn.Header = make(map[string][]string)
-	conn.Header["Accept"] = []string{"application/json"}
-	conn.Header["Content-Type"] = []string{"application/json"}
-	conn.DownloadClient = &piperhttp.Client{}
-	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
-	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
-	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
-	subOptions.CfServiceInstance = config.CfServiceInstance
-	subOptions.CfServiceKeyName = config.CfServiceKeyName
-	subOptions.CfOrg = config.CfOrg
-	subOptions.CfSpace = config.CfSpace
-	subOptions.Host = config.Host
-	subOptions.Password = config.Password
-	subOptions.Username = config.Username
-
-	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
-	if err != nil {
-		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
-	}
-
-	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{
-		Username: connectionDetails.User,
-		Password: connectionDetails.Password,
-	})
-	cookieJar, _ := cookiejar.New(nil)
-	conn.Client.SetOptions(piperhttp.ClientOptions{
-		Username:  connectionDetails.User,
-		Password:  connectionDetails.Password,
-		CookieJar: cookieJar,
-	})
-	conn.Baseurl = connectionDetails.URL
-	return nil
-}
-
-// ******** technical communication calls ********
-
-func (conn *connector) getToken(appendum string) error {
-	url := conn.Baseurl + appendum
-	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
-	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
-	if err != nil {
-		if response == nil {
-			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
-		}
-		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
-
-	}
-	defer response.Body.Close()
-	token := response.Header.Get("X-CSRF-Token")
-	conn.Header["X-CSRF-Token"] = []string{token}
-	return nil
-}
-
-func (conn connector) get(appendum string) ([]byte, error) {
-	url := conn.Baseurl + appendum
-	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
-	if err != nil {
-		if response == nil {
-			return nil, errors.Wrap(err, "Get failed")
-		}
-		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
-
-	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	return body, err
-}
-
-func (conn connector) post(appendum string, importBody string) ([]byte, error) {
-	url := conn.Baseurl + appendum
-	var response *http.Response
-	var err error
-	if importBody == "" {
-		response, err = conn.Client.SendRequest("POST", url, nil, conn.Header, nil)
-	} else {
-		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
-	}
-	if err != nil {
-		if response == nil {
-			return nil, errors.Wrap(err, "Post failed")
-		}
-		defer response.Body.Close()
-		errorbody, _ := ioutil.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
-
-	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	return body, err
-}
-
-func (conn connector) download(appendum string, downloadPath string) error {
-	url := conn.Baseurl + appendum
-	err := conn.DownloadClient.DownloadFile(url, downloadPath, nil, nil)
-	return err
-}
-
 // ******** BUILD logic ********
 
 func (b *build) start(phase string, inputValues values) error {
-	if err := b.getToken(""); err != nil {
+	if err := b.connector.GetToken(""); err != nil {
 		return err
 	}
 	importBody := inputForPost{
@@ -330,7 +221,7 @@ func (b *build) start(phase string, inputValues values) error {
 		values: inputValues,
 	}.String()
 
-	body, err := b.connector.post("/builds", importBody)
+	body, err := b.connector.Post("/builds", importBody)
 	if err != nil {
 		return err
 	}
@@ -350,7 +241,7 @@ func (b *build) start(phase string, inputValues values) error {
 
 func (b *build) get() error {
 	appendum := "/builds('" + b.BuildID + "')"
-	body, err := b.connector.get(appendum)
+	body, err := b.connector.Get(appendum)
 	if err != nil {
 		return err
 	}
@@ -369,7 +260,7 @@ func (b *build) get() error {
 func (b *build) getTasks() error {
 	if len(b.Tasks) == 0 {
 		appendum := "/builds('" + b.BuildID + "')/tasks"
-		body, err := b.connector.get(appendum)
+		body, err := b.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
@@ -389,7 +280,7 @@ func (b *build) getTasks() error {
 func (b *build) getValues() error {
 	if len(b.Values) == 0 {
 		appendum := "/builds('" + b.BuildID + "')/values"
-		body, err := b.connector.get(appendum)
+		body, err := b.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
@@ -482,7 +373,7 @@ func (b *build) IsFinished() bool {
 func (t *task) getLogs() error {
 	if len(t.Logs) == 0 {
 		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/logs")
-		body, err := t.connector.get(appendum)
+		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
@@ -496,7 +387,7 @@ func (t *task) getLogs() error {
 func (t *task) getResults() error {
 	if len(t.Results) == 0 {
 		appendum := fmt.Sprint("/tasks(build_id='", t.BuildID, "',task_id=", t.TaskID, ")/results")
-		body, err := t.connector.get(appendum)
+		body, err := t.connector.Get(appendum)
 		if err != nil {
 			return err
 		}
@@ -512,7 +403,7 @@ func (t *task) getResults() error {
 
 func (result *result) download(downloadPath string) error {
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
-	err := result.connector.download(appendum, downloadPath)
+	err := result.connector.Download(appendum, downloadPath)
 	return err
 }
 
@@ -575,13 +466,6 @@ const (
 	logaborted   msgty       = "A"
 )
 
-type connector struct {
-	Client         piperhttp.Sender
-	DownloadClient piperhttp.Downloader
-	Header         map[string][]string
-	Baseurl        string
-}
-
 //******** structs needed for json convertion ********
 
 type jsonBuild struct {
@@ -615,7 +499,7 @@ type jsonValues struct {
 // ******** resembling data model in backend ********
 
 type build struct {
-	connector
+	connector   abapbuild.Connector
 	BuildID     string      `json:"build_id"`
 	RunState    runState    `json:"run_state"`
 	ResultState resultState `json:"result_state"`
@@ -629,7 +513,7 @@ type build struct {
 }
 
 type task struct {
-	connector
+	connector   abapbuild.Connector
 	BuildID     string      `json:"build_id"`
 	TaskID      int         `json:"task_id"`
 	LogID       string      `json:"log_id"`
@@ -652,7 +536,7 @@ type logStruct struct {
 }
 
 type result struct {
-	connector
+	connector      abapbuild.Connector
 	BuildID        string `json:"build_id"`
 	TaskID         int    `json:"task_id"`
 	Name           string `json:"name"`
@@ -661,10 +545,10 @@ type result struct {
 }
 
 type value struct {
-	connector
-	BuildID string `json:"build_id"`
-	ValueID string `json:"value_id"`
-	Value   string `json:"value"`
+	connector abapbuild.Connector
+	BuildID   string `json:"build_id"`
+	ValueID   string `json:"value_id"`
+	Value     string `json:"value"`
 }
 
 // ******** import structure to post call ********

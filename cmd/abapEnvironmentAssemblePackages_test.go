@@ -7,16 +7,18 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"io/ioutil"
+
+	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
-
-	"io/ioutil"
 )
 
 func testSetup(client piperhttp.Sender, buildID string) build {
-	conn := new(connector)
+	conn := new(abapbuild.Connector)
 	conn.Client = client
 	conn.DownloadClient = &downloadClientMock{}
 	conn.Header = make(map[string][]string)
@@ -64,7 +66,7 @@ func TestStarting(t *testing.T) {
 		client := &clMock{
 			Token: "MyToken",
 		}
-		conn := new(connector)
+		conn := new(abapbuild.Connector)
 		conn.Client = client
 		conn.Header = make(map[string][]string)
 		var repos []abaputils.Repository
@@ -96,7 +98,7 @@ func TestStartingInvalidInput(t *testing.T) {
 		client := &clMock{
 			Token: "MyToken",
 		}
-		conn := new(connector)
+		conn := new(abapbuild.Connector)
 		conn.Client = client
 		conn.Header = make(map[string][]string)
 		var repos []abaputils.Repository
@@ -120,7 +122,9 @@ func TestPolling(t *testing.T) {
 			repo:  repo,
 		}
 		buildsWithRepo = append(buildsWithRepo, bWR)
-		err := polling(buildsWithRepo, 600, 1)
+		timeout := time.Duration(600 * time.Second)
+		pollInterval := time.Duration(1 * time.Second)
+		err := polling(buildsWithRepo, timeout, pollInterval)
 		assert.NoError(t, err)
 		assert.Equal(t, finished, buildsWithRepo[0].build.RunState)
 	})
