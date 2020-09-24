@@ -141,6 +141,7 @@ func (s *whitesourceScan) init() {
 // and appends a new whitesource.Project with the given name.
 func (s *whitesourceScan) appendScannedProject(projectName string) error {
 	s.init()
+	projectName = projectName + " - " + s.projectVersion
 	_, exists := s.scannedProjects[projectName]
 	if exists {
 		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
@@ -502,7 +503,7 @@ func appendModulesThatWillBeScanned(scan *whitesourceScan, utils whitesourceUtil
 				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
 			}
 
-			err := scan.appendScannedProject(project.ArtifactID + " - " + scan.projectVersion)
+			err := scan.appendScannedProject(project.ArtifactID)
 			if err != nil {
 				return err
 			}
@@ -629,7 +630,6 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *white
 		return err
 	}
 
-	projectName = projectName + " - " + config.ProductVersion
 	if err := scan.appendScannedProject(projectName); err != nil {
 		return err
 	}
