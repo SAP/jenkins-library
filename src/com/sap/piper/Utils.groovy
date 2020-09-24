@@ -118,7 +118,7 @@ void pushToSWA(Map parameters, Map config) {
 
         Telemetry.notify(this, config, parameters)
     } catch (ignore) {
-        // some error occured in telemetry reporting. This should not break anything though.
+        // some error occurred in telemetry reporting. This should not break anything though.
     }
 }
 

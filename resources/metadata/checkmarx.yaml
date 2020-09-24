@@ -230,28 +230,28 @@ spec:
           - name: checkmarx_data
             fields:
               - name: high_issues
-              - name: high_not_false_postive
+              - name: high_not_false_positive
               - name: high_not_exploitable
               - name: high_confirmed
               - name: high_urgent
               - name: high_proposed_not_exploitable
               - name: high_to_verify
               - name: medium_issues
-              - name: medium_not_false_postive
+              - name: medium_not_false_positive
               - name: medium_not_exploitable
               - name: medium_confirmed
               - name: medium_urgent
               - name: medium_proposed_not_exploitable
               - name: medium_to_verify
               - name: low_issues
-              - name: low_not_false_postive
+              - name: low_not_false_positive
               - name: low_not_exploitable
               - name: low_confirmed
               - name: low_urgent
               - name: low_proposed_not_exploitable
               - name: low_to_verify
               - name: information_issues
-              - name: information_not_false_postive
+              - name: information_not_false_positive
               - name: information_not_exploitable
               - name: information_confirmed
               - name: information_urgent

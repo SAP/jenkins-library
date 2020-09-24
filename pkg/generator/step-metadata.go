@@ -46,7 +46,7 @@ func fileWriter(filename string, data []byte, perm os.FileMode) error {
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Printf("Error occured: %v\n", err)
+		fmt.Printf("Error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }
