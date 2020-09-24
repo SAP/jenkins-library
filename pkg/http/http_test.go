@@ -48,7 +48,7 @@ func TestSendRequest(t *testing.T) {
 		expected string
 	}{
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", expected: "OK"},
-		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": []string{"Test1", "Test2"}}, expected: "OK"},
+		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "GET", expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), username: "TestUser", password: "TestPwd"}, method: "GET", expected: "OK"},
 	}
@@ -166,7 +166,7 @@ func TestUploadRequest(t *testing.T) {
 	}{
 		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": []string{"Test1", "Test2"}}, expected: "OK"},
+		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
 	}

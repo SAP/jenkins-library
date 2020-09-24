@@ -76,7 +76,7 @@ func TestFilesRelated(t *testing.T) {
 
 		setupFileMock(map[string][]byte{
 			"manifest.yml":     []byte("a: dummy"),
-			"replacements.yml": []byte{},
+			"replacements.yml": {},
 		})
 
 		updated, err := Substitute("manifest.yml", map[string]interface{}{}, []string{"replacements.yml"})
@@ -95,7 +95,7 @@ func TestFilesRelated(t *testing.T) {
 
 		setupFileMock(map[string][]byte{
 			"manifest.yml":     []byte("a: dummy"),
-			"replacements.yml": []byte{},
+			"replacements.yml": {},
 		})
 
 		_traverse = func(interface{}, map[string]interface{}) (interface{}, bool, error) {
