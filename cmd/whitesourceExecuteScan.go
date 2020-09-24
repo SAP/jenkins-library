@@ -422,51 +422,8 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 			config.ScanType, pomPath)
 	}
 
-	defines := []string{
-		"-Dorg.whitesource.orgToken=" + config.OrgToken,
-		"-Dorg.whitesource.product=" + config.ProductName,
-		"-Dorg.whitesource.checkPolicies=true",
-		"-Dorg.whitesource.failOnError=true",
-	}
-
-	// Aggregate all modules into one WhiteSource project, if user specified the 'projectName' parameter.
-	if config.ProjectName != "" {
-		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
-		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
-	}
-
-	if config.UserToken != "" {
-		defines = append(defines, "-Dorg.whitesource.userKey="+config.UserToken)
-	}
-
-	if config.ProductVersion != "" {
-		defines = append(defines, "-Dorg.whitesource.productVersion="+config.ProductVersion)
-	}
-
-	var flags []string
-	excludes := config.BuildDescriptorExcludeList
-	if len(excludes) == 0 {
-		excludes = []string{
-			filepath.Join("unit-tests", "pom.xml"),
-			filepath.Join("integration-tests", "pom.xml"),
-			filepath.Join("performance-tests", "pom.xml"),
-		}
-	}
-	// From the documentation, these are file paths to a module's pom.xml.
-	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
-	for _, exclude := range excludes {
-		if !strings.HasSuffix(exclude, "pom.xml") {
-			continue
-		}
-		exists, _ := utils.FileExists(exclude)
-		if !exists {
-			continue
-		}
-		moduleName := filepath.Dir(exclude)
-		if moduleName != "" {
-			flags = append(flags, "-pl", "!"+moduleName)
-		}
-	}
+	defines := generateMavenWhitesourceDefines(config)
+	flags, excludes := generateMavenWhitesourceFlags(config, utils)
 
 	err := maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
 		project := info.Project
@@ -497,6 +454,58 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 	}, utils)
 
 	return err
+}
+
+func generateMavenWhitesourceDefines(config *ScanOptions) []string {
+	defines := []string{
+		"-Dorg.whitesource.orgToken=" + config.OrgToken,
+		"-Dorg.whitesource.product=" + config.ProductName,
+		"-Dorg.whitesource.checkPolicies=true",
+		"-Dorg.whitesource.failOnError=true",
+	}
+
+	// Aggregate all modules into one WhiteSource project, if user specified the 'projectName' parameter.
+	if config.ProjectName != "" {
+		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
+		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
+	}
+
+	if config.UserToken != "" {
+		defines = append(defines, "-Dorg.whitesource.userKey="+config.UserToken)
+	}
+
+	if config.ProductVersion != "" {
+		defines = append(defines, "-Dorg.whitesource.productVersion="+config.ProductVersion)
+	}
+
+	return defines
+}
+
+func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) (flags []string, excludes []string) {
+	excludes = config.BuildDescriptorExcludeList
+	if len(excludes) == 0 {
+		excludes = []string{
+			filepath.Join("unit-tests", "pom.xml"),
+			filepath.Join("integration-tests", "pom.xml"),
+			filepath.Join("performance-tests", "pom.xml"),
+		}
+	}
+	// From the documentation, these are file paths to a module's pom.xml.
+	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
+	for _, exclude := range excludes {
+		if !strings.HasSuffix(exclude, "pom.xml") {
+			continue
+		}
+		exists, _ := utils.FileExists(exclude)
+		if !exists {
+			continue
+		}
+		moduleName := filepath.Dir(exclude)
+		if moduleName != "" {
+			flags = append(flags, "-pl", "!"+moduleName)
+		}
+	}
+	return flags, excludes
 }
 
 const whiteSourceConfig = "whitesource.config.json"
