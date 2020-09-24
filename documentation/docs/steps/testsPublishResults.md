@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-## Prerequsites
+## Prerequisites
 
 * **test result files** - To use this step, there must be test result files available.
 * installed plugins:

@@ -81,15 +81,15 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
-
-        def utils = parameters?.juStabUtils ?: new Utils()
+        def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('testDriver', Boolean.valueOf(script.env.ON_K8S) ? 'tar' : 'docker')
             .addIfNull('pullImage', !Boolean.valueOf(script.env.ON_K8S))
@@ -133,7 +133,7 @@ container-structure-test test ${testConfigArgs} --driver ${config.testDriver} --
         } catch (err) {
             echo "[${STEP_NAME}] Test execution failed"
             script.currentBuild.result = 'UNSTABLE'
-            if (config.failOnError) throw err
+            if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the container structure tests failed, see the log for details."
         } finally {
             echo "${readFile(config.testReportFilePath)}"
             archiveArtifacts artifacts: config.testReportFilePath, allowEmptyArchive: true

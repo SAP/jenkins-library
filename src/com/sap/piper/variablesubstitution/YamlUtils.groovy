@@ -96,7 +96,7 @@ class YamlUtils implements Serializable {
                 context.variablesReplaced = true // remember that variables were found in the YAML file that have been replaced.
             }
 
-            return complexResult ?: stringNode
+            return (complexResult != null) ? complexResult : stringNode
         }
         else if (manifestNode instanceof List) {
             List<Object> listNode = manifestNode as List<Object>

@@ -22,8 +22,10 @@ type PiperEnvironmentParameter struct {
 }
 
 const piperEnvStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
-	{{ range $notused, $param := .Parameters }}
-	{{- if not $param.Category}}{{ $param.Name | golangName }} string{{ end }}
+	{{- range $notused, $param := .Parameters }}
+	{{- if not $param.Category}}
+	{{ $param.Name | golangName }} string
+	{{- end }}
 	{{- end }}
 	{{- range $notused, $category := .Categories }}
 	{{ $category }} struct {
@@ -60,7 +62,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Piper environment")
 	}
 }`
 
@@ -160,7 +162,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }`
 

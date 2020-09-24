@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -15,11 +16,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
+	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
+	workingDir  string
 	binary      string
 	environment []string
 	options     []string
@@ -29,104 +33,197 @@ func (s *sonarSettings) addEnvironment(element string) {
 	s.environment = append(s.environment, element)
 }
 
-func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
+func (s *sonarSettings) addOption(element string) {
+	s.options = append(s.options, element)
+}
 
-var sonar sonarSettings
+var (
+	sonar sonarSettings
 
-var execLookPath = exec.LookPath
-var fileUtilsExists = FileUtils.FileExists
-var fileUtilsUnzip = FileUtils.Unzip
-var osRename = os.Rename
+	execLookPath    = exec.LookPath
+	fileUtilsExists = FileUtils.FileExists
+	fileUtilsUnzip  = FileUtils.Unzip
+	osRename        = os.Rename
+	osStat          = os.Stat
+	doublestarGlob  = doublestar.Glob
+)
 
-func sonarExecuteScan(options sonarExecuteScanOptions, _ *telemetry.CustomData) {
-	runner := command.Command{}
+const (
+	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
+	javaBinaries        = "sonar.java.binaries="
+	javaLibraries       = "sonar.java.libraries="
+	coverageExclusions  = "sonar.coverage.exclusions="
+	pomXMLPattern       = "**/pom.xml"
+)
+
+func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
+	runner := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			"infrastructure": {
+				"Caused by: java.net.SocketTimeoutException: timeout",
+			},
+		},
+	}
 	// reroute command output to logging framework
-	runner.Stdout(log.Entry().Writer())
-	runner.Stderr(log.Entry().Writer())
+	runner.Stdout(log.Writer())
+	runner.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 
 	sonar = sonarSettings{
+		workingDir:  "./",
 		binary:      "sonar-scanner",
 		environment: []string{},
 		options:     []string{},
 	}
 
-	if err := runSonar(options, &client, &runner); err != nil {
+	influx.step_data.fields.sonar = "false"
+	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
+	influx.step_data.fields.sonar = "true"
 }
 
-func runSonar(options sonarExecuteScanOptions, client piperhttp.Downloader, runner execRunner) error {
-	if len(options.Host) > 0 {
-		sonar.addEnvironment("SONAR_HOST_URL=" + options.Host)
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
+	if len(config.Host) > 0 {
+		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
 	}
-	if len(options.Token) > 0 {
-		sonar.addEnvironment("SONAR_TOKEN=" + options.Token)
+	if len(config.Token) > 0 {
+		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
 	}
-	if len(options.Organization) > 0 {
-		sonar.addOption("sonar.organization=" + options.Organization)
+	if len(config.Organization) > 0 {
+		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(options.ProjectVersion) > 0 {
-		sonar.addOption("sonar.projectVersion=" + options.ProjectVersion)
+	if len(config.ProjectVersion) > 0 {
+		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
+		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
 	}
-	if err := handlePullRequest(options); err != nil {
+	if len(config.ProjectKey) > 0 {
+		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
+	}
+	if len(config.M2Path) > 0 && config.InferJavaLibraries {
+		sonar.addOption(javaLibraries + filepath.Join(config.M2Path, "**"))
+	}
+	if len(config.CoverageExclusions) > 0 && !isInOptions(config, coverageExclusions) {
+		sonar.addOption(coverageExclusions + strings.Join(config.CoverageExclusions, ","))
+	}
+	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
+		addJavaBinaries()
+	}
+	if err := handlePullRequest(config); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
-	if err := loadSonarScanner(options.SonarScannerDownloadURL, client); err != nil {
+	if err := loadSonarScanner(config.SonarScannerDownloadURL, client); err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
-	if err := loadCertificates(options.CustomTLSCertificateLinks, client, runner); err != nil {
+	if err := loadCertificates(config.CustomTLSCertificateLinks, client, runner); err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return err
 	}
+
+	if len(config.Options) > 0 {
+		sonar.options = append(sonar.options, config.Options...)
+	}
+
+	sonar.options = SliceUtils.PrefixIfNeeded(SliceUtils.Trim(sonar.options), "-D")
 
 	log.Entry().
 		WithField("command", sonar.binary).
 		WithField("options", sonar.options).
 		WithField("environment", sonar.environment).
 		Debug("Executing sonar scan command")
-
-	sonar.options = SliceUtils.Prefix(SliceUtils.Trim(sonar.options), "-D")
-
-	if len(options.Options) > 0 {
-		sonar.addOption(options.Options)
-	}
+	// execute scan
 	runner.SetEnv(sonar.environment)
-	return runner.RunExecutable(sonar.binary, sonar.options...)
+	err := runner.RunExecutable(sonar.binary, sonar.options...)
+	if err != nil {
+		return err
+	}
+	// load task results
+	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
+	if err != nil {
+		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
+	} else {
+		// write links JSON
+		links := []StepResults.Path{
+			{
+				Target: taskReport.DashboardURL,
+				Name:   "Sonar Web UI",
+			},
+		}
+		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	}
+	return nil
 }
 
-func handlePullRequest(options sonarExecuteScanOptions) error {
-	if len(options.ChangeID) > 0 {
-		if options.LegacyPRHandling {
+// isInOptions returns true, if the given property is already provided in config.Options.
+func isInOptions(config sonarExecuteScanOptions, property string) bool {
+	property = strings.TrimSuffix(property, "=")
+	return SliceUtils.ContainsStringPart(config.Options, property)
+}
+
+func addJavaBinaries() {
+	pomFiles, err := doublestarGlob(pomXMLPattern)
+	if err != nil {
+		log.Entry().Warnf("failed to glob for pom modules: %v", err)
+		return
+	}
+	var binaries []string
+
+	var classesDirs = []string{"classes", "test-classes"}
+
+	for _, pomFile := range pomFiles {
+		module := filepath.Dir(pomFile)
+		for _, classDir := range classesDirs {
+			classesPath := filepath.Join(module, "target", classDir)
+			_, err := osStat(classesPath)
+			if err == nil {
+				binaries = append(binaries, classesPath)
+			}
+		}
+	}
+	if len(binaries) > 0 {
+		sonar.addOption(javaBinaries + strings.Join(binaries, ","))
+	}
+}
+
+func handlePullRequest(config sonarExecuteScanOptions) error {
+	if len(config.ChangeID) > 0 {
+		if config.LegacyPRHandling {
 			// see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
 			sonar.addOption("sonar.analysis.mode=preview")
-			sonar.addOption("sonar.github.pullRequest=" + options.ChangeID)
-			if len(options.GithubAPIURL) > 0 {
-				sonar.addOption("sonar.github.endpoint=" + options.GithubAPIURL)
+			sonar.addOption("sonar.github.pullRequest=" + config.ChangeID)
+			if len(config.GithubAPIURL) > 0 {
+				sonar.addOption("sonar.github.endpoint=" + config.GithubAPIURL)
 			}
-			if len(options.GithubToken) > 0 {
-				sonar.addOption("sonar.github.oauth=" + options.GithubToken)
+			if len(config.GithubToken) > 0 {
+				sonar.addOption("sonar.github.oauth=" + config.GithubToken)
 			}
-			if len(options.Owner) > 0 && len(options.Repository) > 0 {
-				sonar.addOption("sonar.github.repository=" + options.Owner + "/" + options.Repository)
+			if len(config.Owner) > 0 && len(config.Repository) > 0 {
+				sonar.addOption("sonar.github.repository=" + config.Owner + "/" + config.Repository)
 			}
-			if options.DisableInlineComments {
-				sonar.addOption("sonar.github.disableInlineComments=" + strconv.FormatBool(options.DisableInlineComments))
+			if config.DisableInlineComments {
+				sonar.addOption("sonar.github.disableInlineComments=" + strconv.FormatBool(config.DisableInlineComments))
 			}
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
-			provider := strings.ToLower(options.PullRequestProvider)
+			provider := strings.ToLower(config.PullRequestProvider)
 			if provider == "github" {
-				sonar.addOption("sonar.pullrequest.github.repository=" + options.Owner + "/" + options.Repository)
+				if len(config.Owner) > 0 && len(config.Repository) > 0 {
+					sonar.addOption("sonar.pullrequest.github.repository=" + config.Owner + "/" + config.Repository)
+				}
 			} else {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
-			sonar.addOption("sonar.pullrequest.key=" + options.ChangeID)
-			sonar.addOption("sonar.pullrequest.base=" + options.ChangeTarget)
-			sonar.addOption("sonar.pullrequest.branch=" + options.ChangeBranch)
+			sonar.addOption("sonar.pullrequest.key=" + config.ChangeID)
+			sonar.addOption("sonar.pullrequest.base=" + config.ChangeTarget)
+			sonar.addOption("sonar.pullrequest.branch=" + config.ChangeBranch)
 			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
+	} else if len(config.BranchName) > 0 {
+		sonar.addOption("sonar.branch.name=" + config.BranchName)
 	}
 	return nil
 }
@@ -163,17 +260,17 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
-func loadCertificates(certificateString string, client piperhttp.Downloader, runner execRunner) error {
+func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else
 	//TODO: certificate loading is deactivated due to the missing JAVA keytool
 	// see https://github.com/SAP/jenkins-library/issues/1072
-	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateString) > 0 {
+	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateList) > 0 {
 		// use local created trust store with downloaded certificates
 		keytoolOptions := []string{
 			"-import",
@@ -183,7 +280,6 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 		}
 		tmpFolder := getTempDir()
 		defer os.RemoveAll(tmpFolder) // clean up
-		certificateList := strings.Split(certificateString, ",")
 
 		for _, certificate := range certificateList {
 			filename := path.Base(certificate) // decode?
@@ -201,7 +297,7 @@ func loadCertificates(certificateString string, client piperhttp.Downloader, run
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")

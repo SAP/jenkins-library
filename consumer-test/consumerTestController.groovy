@@ -9,6 +9,8 @@ START_TIME_MS = System.currentTimeMillis()
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
+REPOSITORY_UNDER_TEST = System.getenv('REPOSITORY_UNDER_TEST') ?: System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+BRANCH_NAME = System.getenv('TRAVIS_BRANCH') ?: System.getenv('BRANCH_NAME')
 
 EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^documentation\/.*$/,
@@ -16,11 +18,12 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^test\/.*$/
 ]
 
+println "Running tests for repository: ${REPOSITORY_UNDER_TEST}, branch: ${BRANCH_NAME}, commit: ${LIBRARY_VERSION_UNDER_TEST}"
 
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
 TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
-TestRunnerThread.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+TestRunnerThread.repositoryUnderTest = REPOSITORY_UNDER_TEST
 
 def testCaseThreads
 def cli = new CliBuilder(
@@ -57,7 +60,7 @@ if (!RUNNING_LOCALLY) {
     The commit which we need for notifying about a build status is in this case simply
     TRAVIS_COMMIT itself.
     */
-    COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
+    COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT') ?: LIBRARY_VERSION_UNDER_TEST
 
     if (changeDoesNotNeedConsumerTesting()) {
         println 'No consumer tests necessary.'
@@ -171,7 +174,7 @@ def notifyGithub(state, description) {
 
     def postBody = [
         state      : state,
-        target_url : System.getenv('TRAVIS_BUILD_WEB_URL'),
+        target_url : System.getenv('TRAVIS_BUILD_WEB_URL') ?: System.getenv('BUILD_WEB_URL'),
         description: description,
         context    : "integration-tests"
     ]
@@ -191,7 +194,7 @@ def notifyGithub(state, description) {
 }
 
 def changeDoesNotNeedConsumerTesting() {
-    if (System.getenv('TRAVIS_BRANCH') == 'master') {
+    if (BRANCH_NAME == 'master') {
         return false
     }
 

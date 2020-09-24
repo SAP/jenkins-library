@@ -26,21 +26,41 @@ type cloudFoundryCreateServiceKeyOptions struct {
 
 // CloudFoundryCreateServiceKeyCommand cloudFoundryCreateServiceKey
 func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
+	const STEP_NAME = "cloudFoundryCreateServiceKey"
+
 	metadata := cloudFoundryCreateServiceKeyMetadata()
 	var stepConfig cloudFoundryCreateServiceKeyOptions
 	var startTime time.Time
 
 	var createCloudFoundryCreateServiceKeyCmd = &cobra.Command{
-		Use:   "cloudFoundryCreateServiceKey",
+		Use:   STEP_NAME,
 		Short: "cloudFoundryCreateServiceKey",
 		Long:  `Create CloudFoundryServiceKey`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
-			log.SetStepName("cloudFoundryCreateServiceKey")
+			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "cloudFoundryCreateServiceKey", &stepConfig, config.OpenPiperFile)
+
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+
+			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
+
+			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
+				log.RegisterHook(&sentryHook)
+			}
+
+			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -49,9 +69,10 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "cloudFoundryCreateServiceKey")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			cloudFoundryCreateServiceKey(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -65,9 +86,9 @@ func addCloudFoundryCreateServiceKeyFlags(cmd *cobra.Command, stepConfig *cloudF
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKeyConfig, "cfServiceKeyConfig", os.Getenv("PIPER_cfServiceKeyConfig"), "Configuration for Service Key Creation")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter for CloudFoundry Service Instance Name")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter for Service Key name for CloudFoundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyConfig, "cfServiceKeyConfig", os.Getenv("PIPER_cfServiceKeyConfig"), "Path to JSON config file path or JSON in-line string for Cloud Foundry Service Key creation")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -97,20 +118,32 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cfOrg",
@@ -123,7 +156,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 					{
 						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
@@ -131,7 +164,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 					{
 						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
@@ -139,10 +172,10 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 					{
 						Name:        "cfServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyName"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 					{
 						Name:        "cfServiceKeyConfig",

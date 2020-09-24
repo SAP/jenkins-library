@@ -1,0 +1,25 @@
+Init:
+  unstash: []
+  stashes:
+  - name: "source"
+    includes: "**/*"
+
+'Prepare System':
+  unstash:
+  - source
+  stashes: []
+
+ATC:
+  unstash:
+  - source
+  stashes: []
+
+'Clone Repositories':
+  unstash:
+  - source
+  stashes: []
+
+Post:
+  unstash:
+  - source
+  stashes: []

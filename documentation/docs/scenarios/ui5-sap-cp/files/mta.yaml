@@ -10,6 +10,7 @@ modules:
     type: html5
     path: .
     parameters:
+      name: "<Name of your Fiori application>"
       version: <version number of your application>-${timestamp}
     build-parameters:
       builder: grunt

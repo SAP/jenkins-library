@@ -62,11 +62,13 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
+        String stageName = parameters.stageName ?: env.STAGE_NAME
+
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -97,7 +99,7 @@ void call(Map parameters = [:]) {
                 InfluxData.addField('step_data', 'bats', true)
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
-                if (config.failOnError) throw err
+                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the bats tests failed, see the log for details."
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {

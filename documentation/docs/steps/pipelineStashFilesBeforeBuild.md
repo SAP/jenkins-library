@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-## Prerequsites
+## Prerequisites
 
 none
 

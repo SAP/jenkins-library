@@ -1,5 +1,5 @@
 .idea/
-/bin
+bin
 .settings
 logs
 reports
@@ -24,5 +24,11 @@ consumer-test/**/workspace
 /piper
 /piper.exe
 .factorypath
+/piper_master
 
+debug.test
 /cache/protecode
+
+*errorDetails.json
+*_links.json
+*_reports.json

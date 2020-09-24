@@ -18,6 +18,13 @@ type Path struct {
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
 func PersistReportsAndLinks(stepName, workspace string, reports, links []Path) {
+	if reports == nil {
+		reports = []Path{}
+	}
+	if links == nil {
+		links = []Path{}
+	}
+
 	hasMandatoryReport := false
 	for _, report := range reports {
 		if report.Mandatory {

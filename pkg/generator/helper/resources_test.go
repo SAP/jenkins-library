@@ -2,8 +2,9 @@ package helper
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStructString(t *testing.T) {
@@ -77,7 +78,7 @@ func (i *TestStepTestInflux) persist(path, resourceName string) {
 		}
 	}
 	if errCount > 0 {
-		os.Exit(1)
+		log.Entry().Fatal("failed to persist Influx environment")
 	}
 }`,
 		},

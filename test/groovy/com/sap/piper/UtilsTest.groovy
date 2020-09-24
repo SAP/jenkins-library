@@ -2,23 +2,19 @@ package com.sap.piper
 
 import org.junit.Rule
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.not
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.BasePiperTest
 import util.Rules
-
-import com.sap.piper.Utils
 
 class UtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -36,9 +32,7 @@ class UtilsTest extends BasePiperTest {
 
     @Before
     void setup() {
-
         parameters = [:]
-
     }
 
     @Test
@@ -51,8 +45,35 @@ class UtilsTest extends BasePiperTest {
 
     @Test
     void testUnstashAllSkipNull() {
-
         def stashResult = utils.unstashAll(['a', null, 'b'])
         assert stashResult == ['a', 'b']
+    }
+
+    @Test
+    void testAppendNonExistingParameterToStringList() {
+        Map parameters = [:]
+        List result = Utils.appendParameterToStringList([], parameters, 'non-existing')
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    void testAppendStringParameterToStringList() {
+        Map parameters = ['param': 'string']
+        List result = Utils.appendParameterToStringList([], parameters, 'param')
+        assertEquals(1, result.size())
+    }
+
+    @Test
+    void testAppendListParameterToStringList() {
+        Map parameters = ['param': ['string2', 'string3']]
+        List result = Utils.appendParameterToStringList(['string1'], parameters, 'param')
+        assertEquals(['string1', 'string2', 'string3'], result)
+    }
+
+    @Test
+    void testAppendEmptyListParameterToStringList() {
+        Map parameters = ['param': []]
+        List result = Utils.appendParameterToStringList(['string'], parameters, 'param')
+        assertEquals(['string'], result)
     }
 }

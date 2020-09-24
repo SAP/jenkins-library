@@ -7,25 +7,25 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins username/password credential for accessing xs endpoint.
+        description: Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.
         type: jenkins
     params:
       - name: deployOpts
         type: string
         description: Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default:
       - name: operationIdLogPattern
         type: string
         description: Regex pattern for retrieving the ID of the operation from the xs log.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         default: ^.*xs bg-deploy -i (.*) -a.*$
         mandatory: false
         aliases:
@@ -34,9 +34,9 @@ spec:
         type: string
         description: Path to deployable
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -45,28 +45,37 @@ spec:
         type: string
         description: Used for finalizing the blue-green deployment.
         default: NONE
+        possibleValues:
+          - NONE
+          - Resume
+          - Abort
+          - Retry
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
       - name: mode
         type: string
         description: "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'"
         default: DEPLOY
+        possibleValues:
+          - NONE
+          - DEPLOY
+          - BG_DEPLOY
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: operationId
         type: string
         description: The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.
         default:
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
@@ -75,57 +84,70 @@ spec:
         type: string
         description: The api url (e.g. https://example.org:12345
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
-      - name: user
+      - name: username
+        aliases:
+          - name: user
+            deprecated: true
         type: string
-        description: User
+        description: Username
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
         mandatory: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
         mandatory: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: password
       - name: org
         type: string
         description: The org
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: space
         type: string
         description: The space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: loginOpts
         type: string
         description: Additional options appended to the login command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
       - name: xsSessionFile
         type: string
         description: The file keeping the xs session.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
   outputs:
     resources:

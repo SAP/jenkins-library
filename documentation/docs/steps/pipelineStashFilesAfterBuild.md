@@ -1,6 +1,6 @@
 # ${docGenStepName}
 
-## Prerequsites
+## Prerequisites
 
 none
 

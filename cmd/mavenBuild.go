@@ -11,8 +11,8 @@ import (
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	utils := piperutils.Files{}
 
@@ -22,7 +22,7 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command execRunner, utils piperutils.FileUtils) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, utils piperutils.FileUtils) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")

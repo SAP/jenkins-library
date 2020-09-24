@@ -31,7 +31,7 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Promote'
+        nullScript.env.STAGE_NAME = 'Promote'
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Promote'))
 
@@ -51,7 +51,7 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(hasItems('containerPushToRegistry')))
+        assertThat(stepsCalled, not(hasItem('containerPushToRegistry')))
 
     }
 

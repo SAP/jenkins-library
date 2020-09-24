@@ -1,0 +1,10 @@
+app/target
+app/.pipeline
+mtaBuild_errorDetails.json
+foo.mtar
+.flattened-pom.xml
+.pipeline/commonPipelineEnvironment
+mym2
+app/node_modules
+app/package-lock.json
+integration-tests/target

@@ -16,10 +16,24 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Define settings used by the Jenkins Kuberenetes plugin.
-     */
     'jenkinsKubernetes',
+        /**
+         * Jnlp agent Docker images which should be used to create new pods.
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'jnlpAgent',
+        /**
+         * Namespace that should be used to create a new pod
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'namespace',
+        /**
+         * Name of the pod template that should be inherited from.
+         * The pod template can be defined in the Jenkins UI
+         * @parentConfigKey jenkinsKubernetes
+         */
+        'inheritFrom',
+        'resources',
     /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
@@ -41,7 +55,7 @@ import hudson.AbortException
      */
     'containerEnvVars',
     /**
-     * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
+     * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labelled based on the value field of each map entry.
      * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli': 'cloudfoundry']`
      */
     'containerMap',
@@ -70,12 +84,12 @@ import hudson.AbortException
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used.
+     * Optional name of the docker image that should be used. If no docker image is provided, the closure will be executed in the jnlp agent container.
      */
     'dockerImage',
     /**
      * Set this to 'false' to bypass a docker image pull.
-     * Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'dockerPullImage',
     /**
@@ -93,7 +107,7 @@ import hudson.AbortException
     'sidecarName',
     /**
      * Set this to 'false' to bypass a docker image pull.
-     * Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'sidecarPullImage',
     /**
@@ -138,7 +152,24 @@ import hudson.AbortException
      * * `workspace`: Pattern for stashing towards container
      * * `stashBack`: Pattern for bringing data from container back to Jenkins workspace. If not set: defaults to setting for `workspace`.
      */
-    'stashIncludes'
+    'stashIncludes',
+    /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This configuration defines include pattern for stashing from Jenkins workspace to working directory in container and back.
+     * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * @possibleValues `true`, `false`
+     */
+    'stashNoDefaultExcludes',
+    /**
+     * A map containing the resources per container. The key is the
+     * container name. The value is a map defining valid resources.
+     * An entry with key `DEFAULT` can be used for defining resources
+     * for all containers which does not have resources specified otherwise.
+     * Alternate way for providing resources is via `general/jenkinsKubernetes/resources`
+     * in the project configuration. Providing the resources map as parameter
+     * to the step call takes precedence.
+     */
+    'resources',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -149,7 +180,7 @@ import hudson.AbortException
  * Executes a closure inside a container in a kubernetes pod.
  * Proxy environment variables defined on the Jenkins machine are also available in the container.
  *
- * By default jnlp agent defined for kubernetes-plugin will be used (see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support).
+ * By default jnlp agent defined for kubernetes-plugin will be used (see [https://github.com/jenkinsci/kubernetes-plugin#pipeline-support](https://github.com/jenkinsci/kubernetes-plugin#pipeline-support)).
  *
  * It is possible to define a custom jnlp agent image by
  *
@@ -163,30 +194,29 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
+        def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         if (!JenkinsUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
 
-        def utils = parameters?.juStabUtils ?: new Utils()
-
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
-        Map config = configHelper.use()
+            .use()
 
-        new Utils().pushToSWA([
+        utils.pushToSWA([
             step         : STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1   : parameters?.script == null
         ], config)
 
-        if (!config.containerMap) {
-            configHelper.withMandatoryProperty('dockerImage')
+        if (!config.containerMap && config.dockerImage) {
             config.containerName = 'container-exec'
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
@@ -210,6 +240,11 @@ def getOptions(config) {
     }
     if (!config.verbose) {
         options.showRawYaml = false
+    }
+
+    if(config.jenkinsKubernetes.inheritFrom){
+        options.inheritFrom = config.jenkinsKubernetes.inheritFrom
+        options.yamlMergeStrategy  = merge()
     }
     return options
 }
@@ -305,10 +340,11 @@ chown -R ${runAsUser}:${fsGroup} ."""
         stash(
             name: stashName,
             includes: includes,
-            excludes: excludes
+            excludes: excludes,
+            // 'true' by default due to negative side-effects, but can be overwritten via parameters
+            // (as done by artifactPrepareVersion to preserve the .git folder)
+            useDefaultExcludes: !config.stashNoDefaultExcludes,
         )
-        //inactive due to negative side-effects, we may require a dedicated git stash to be used
-        //useDefaultExcludes: false)
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
@@ -342,10 +378,20 @@ private List getContainerList(config) {
     def result = []
     //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
     if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
-        result.push([
-            name : 'jnlp',
+
+        def jnlpContainerName = 'jnlp'
+
+        def jnlpSpec = [
+            name : jnlpContainerName,
             image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
-        ])
+        ]
+
+        def resources = getResources(jnlpContainerName, config)
+        if(resources) {
+            jnlpSpec.resources = resources
+        }
+
+        result.push(jnlpSpec)
     }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
@@ -389,20 +435,44 @@ private List getContainerList(config) {
             }
             containerSpec.ports = ports
         }
+        def resources = getResources(containerName.toLowerCase(), config)
+        if(resources) {
+            containerSpec.resources = resources
+        }
         result.push(containerSpec)
     }
     if (config.sidecarImage) {
+        def sideCarContainerName = config.sidecarName.toLowerCase()
         def containerSpec = [
-            name           : config.sidecarName.toLowerCase(),
+            name           : sideCarContainerName,
             image          : config.sidecarImage,
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
 
+        def resources = getResources(sideCarContainerName, config)
+        if(resources) {
+            containerSpec.resources = resources
+        }
         result.push(containerSpec)
     }
     return result
+}
+
+private Map getResources(String containerName, Map config) {
+    Map resources = config.resources
+    if(resources == null) {
+        resources = config?.jenkinsKubernetes.resources
+    }
+    if(resources == null) {
+        return null
+    }
+    Map res = resources.get(containerName)
+    if(res == null) {
+        res = resources.get('DEFAULT')
+    }
+    return res
 }
 
 /*

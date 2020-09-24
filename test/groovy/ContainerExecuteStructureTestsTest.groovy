@@ -117,7 +117,7 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             }
             return null
         })
-        thrown.expectMessage('shell call failed')
+        thrown.expectMessage('ERROR: The execution of the container structure tests failed, see the log for details.')
 
         jsr.step.containerExecuteStructureTests(
             script: nullScript,

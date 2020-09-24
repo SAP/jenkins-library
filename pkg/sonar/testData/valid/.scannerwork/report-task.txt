@@ -1,0 +1,6 @@
+projectKey=piper-test
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.12345
+dashboardUrl=https://sonarcloud.io/dashboard/index/piper-test
+ceTaskId=AXERR2JBbm9IiM5TEST
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AXERR2JBbm9IiMTEST

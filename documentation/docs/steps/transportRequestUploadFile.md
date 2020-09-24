@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+CTS upload is currently not supported. We are working on a new way to handle CTS uploads.
+
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central. **Note:** This is only required if you don't use a Docker-based environment.
@@ -45,7 +47,7 @@ general:
       format: '%b'
 ```
 
-The properties configured in section `'general/changeManagement'` are shared between all change managment related steps.
+The properties configured in section `'general/changeManagement'` are shared between all change management related steps.
 
 The properties can also be configured on a per-step basis:
 
@@ -88,6 +90,9 @@ transportRequestUploadFile(
   ]
 )
 // CTS
+
+// NOTE: CTS upload currently not supported!
+
 transportRequestUploadFile(
   script: this,
   transportRequestId: '001', // typically provided via git commit history

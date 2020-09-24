@@ -10,20 +10,21 @@ import (
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 	err := runMavenStaticCodeChecks(&config, telemetryData, &c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command command.ExecRunner) error {
 	var defines []string
 	var goals []string
 
 	if !config.SpotBugs && !config.Pmd {
-		log.Entry().Fatal("Neither SpotBugs nor Pmd are configured. At least one of those tools have to be enabled")
+		log.Entry().Warnf("Neither SpotBugs nor Pmd are configured. Skipping step execution")
+		return nil
 	}
 
 	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
@@ -72,7 +73,7 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes spotbugs goal first and fails the build if any bugs were found
-		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"},
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"},
 		Defines: defines,
 	}
 

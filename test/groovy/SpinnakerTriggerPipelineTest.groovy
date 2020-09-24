@@ -48,7 +48,6 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         Map credentialFileNames = [
             'spinnaker-client-certificate': 'clientCert.file',
             'spinnaker-client-key': 'clientKey.file'
-
         ]
 
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
@@ -182,7 +181,8 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [
                 spinnakerGateUrl: 'https://spinnakerTest.url',
-                spinnakerApplication: 'spinnakerTestApp'
+                spinnakerApplication: 'spinnakerTestApp',
+                verbose: true
             ],
             stages: [
                 testStage: [
@@ -193,10 +193,14 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         ]
 
         shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
+        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
 
+        exception.expect(hudson.AbortException)
         exception.expectMessage('Spinnaker pipeline failed with FAILED')
-        stepRule.step.spinnakerTriggerPipeline(
-            script: nullScript,
-        )
+        try {
+            stepRule.step.spinnakerTriggerPipeline(script: nullScript)
+        } finally {
+            assertThat(logginRule.log, containsString('Full Spinnaker response = '))
+        }
     }
 }

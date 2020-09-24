@@ -41,6 +41,22 @@ import groovy.transform.Field
      */
     'dockerImage',
     /**
+      * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
+      */
+    'dockerRegistry',
+    /**
+      * The credentials for the docker registry. If left empty, images are pulled anonymously.
+      */
+    'dockerRegistryCredentials',
+    /**
+      * Same as `dockerRegistry`, but for the sidecar. If left empty, `dockerRegistry` is used instead.
+      */
+    'dockerSidecarRegistry',
+    /**
+      * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
+      */
+    'dockerSidecarRegistryCredentials',
+    /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
      * SideCar only:
@@ -58,7 +74,7 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'dockerPullImage',
     /**
@@ -87,7 +103,7 @@ import groovy.transform.Field
      */
     'sidecarVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'sidecarPullImage',
     /**
@@ -103,7 +119,14 @@ import groovy.transform.Field
      */
     'stashContent'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This flag controls whether the stashing does *not* use the default exclude patterns in addition to the patterns provided in `stashExcludes`.
+     * @possibleValues `true`, `false`
+     */
+    'stashNoDefaultExcludes',
+])
 
 /**
  * Executes a closure inside a docker container with the specified docker image.
@@ -115,15 +138,20 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
-
-        def utils = parameters?.juStabUtils ?: new Utils()
+        def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            .use()
+
+        config = ConfigurationHelper.newInstance(this, config)
+            .addIfEmpty('dockerSidecarRegistry', config.dockerRegistry)
+            .addIfEmpty('dockerSidecarRegistryCredentials', config.dockerRegistryCredentials)
             .use()
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
@@ -163,7 +191,8 @@ void call(Map parameters = [:], body) {
                         dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent
+                        stashContent: config.stashContent,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
@@ -179,6 +208,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent,
+                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
@@ -206,7 +236,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerPullImage) image.pull()
+                if (config.dockerPullImage) pull(image, config.dockerRegistry, config.dockerRegistryCredentials)
                 else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
@@ -217,7 +247,7 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try {
                         def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarPullImage) sidecarImage.pull()
+                        if (config.sidecarPullImage) pull(sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials)
                         else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
                         config.sidecarOptions = config.sidecarOptions ?: []
                         if (config.sidecarName)
@@ -245,6 +275,20 @@ void call(Map parameters = [:], body) {
                 body()
             }
         }
+    }
+}
+
+void pull(def dockerImage, String dockerRegistry, String dockerCredentialsId) {
+
+    // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
+    dockerRegistry = dockerRegistry ?: ''
+
+    if (dockerCredentialsId) {
+        docker.withRegistry(dockerRegistry, dockerCredentialsId) {
+            dockerImage.pull()
+        }
+    } else {
+        dockerImage.pull()
     }
 }
 
@@ -304,6 +348,14 @@ boolean isContainerDefined(config) {
     Map containerMap = ContainerMap.instance.getMap()
 
     if (!containerMap.containsKey(env.POD_NAME)) {
+        return false
+    }
+
+    if (env.SIDECAR_IMAGE != config.sidecarImage) {
+        // If a sidecar image has been configured for the current stage,
+        // then piperStageWrapper will have set the env.SIDECAR_IMAGE variable.
+        // If the current step overrides the stage's sidecar image,
+        // then a new Pod needs to be spawned.
         return false
     }
 

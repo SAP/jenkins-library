@@ -18,7 +18,7 @@ do
 done
 
 export CLASSPATH_FILE='target/cp.txt'
-mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE}
+mvn --batch-mode --show-version clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE}
 
 if [ "$?" != "0" ];then
     echo "[ERROR] maven test / build-classpath failed"
