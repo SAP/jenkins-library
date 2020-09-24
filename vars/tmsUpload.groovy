@@ -23,7 +23,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'stashContent',
     /**
-     * Defines the path to *.mtar for the upload to the Transport Management Service. If not specified, it will use the mtar file created in mtaBuild.
+     * Defines the relative path to *.mtar for the upload to the Transport Management Service. If not specified, it will use the mtar file created in mtaBuild.
      */
     'mtaPath',
     /**
@@ -70,13 +70,14 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('mtaPath', script.commonPipelineEnvironment.mtarFilePath)
             //mandatory parameters
@@ -153,10 +154,10 @@ void call(Map parameters = [:]) {
                         Map mtaExtDescriptor = tms.getMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
                         if(mtaExtDescriptor) {
                             def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."
+                            echo "[TransportManagementService] MTA Extension Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."
                         } else {
                             def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${uploadMtaExtDescriptorToNodeResponse.mtaExtId}' successfully uploaded to Node '${value.get(0)}'."
+                            echo "[TransportManagementService] MTA Extension Descriptor with ID '${uploadMtaExtDescriptorToNodeResponse.mtaExtId}' successfully uploaded to Node '${value.get(0)}'."
                         }
                     }
                 }

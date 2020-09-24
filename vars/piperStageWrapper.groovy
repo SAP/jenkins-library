@@ -31,17 +31,41 @@ void call(Map parameters = [:], body) {
 
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
+        List environment = []
+        if (stageName && stageName != env.STAGE_NAME) {
+            // Avoid two sources of truth with regards to stageName.
+            // env.STAGE_NAME is filled from stage('Display name') {, it only serves the purpose of
+            // easily getting to the stage name from steps.
+            environment.add("STAGE_NAME=${stageName}")
+        }
+        if (config.sidecarImage) {
+            echo "sidecarImage configured for stage '${stageName}': '${config.sidecarImage}'"
+            environment.add("SIDECAR_IMAGE=${config.sidecarImage}")
+        }
         if (Boolean.valueOf(env.ON_K8S) && (containerMap.size() > 0 || config.runStageInPod)) {
-            withEnv(["POD_NAME=${stageName}"]) {
+            environment.add("POD_NAME=${stageName}")
+            withEnv(environment) {
                 dockerExecuteOnKubernetes(script: script, containerMap: containerMap, stageName: stageName) {
                     executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
                 }
             }
         } else {
-            node(config.nodeLabel) {
-                executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+            withEnvWrapper(environment) {
+                node(config.nodeLabel) {
+                    executeStage(script, body, stageName, config, utils, parameters.telemetryDisabled)
+                }
             }
         }
+    }
+}
+
+private void withEnvWrapper(List environment, Closure body) {
+    if (environment) {
+        withEnv(environment) {
+            body()
+        }
+    } else {
+        body()
     }
 }
 
@@ -85,7 +109,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         def body = originalStage
 
         // First, check if a global extension exists via a dedicated repository
-        if (globalExtensions && allowExtensions()) {
+        if (globalExtensions && allowExtensions(script)) {
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
             DebugReport.instance.globalExtensions.put(stageName, "Overwrites")
@@ -100,7 +124,7 @@ private void executeStage(script, originalStage, stageName, config, utils, telem
         }
 
         // Second, check if a project extension (within the same repository) exists
-        if (projectExtensions && allowExtensions()) {
+        if (projectExtensions && allowExtensions(script)) {
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
             if (projectExtensions && globalExtensions) {
@@ -201,6 +225,6 @@ private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
     return method != null
 }
 
-private boolean allowExtensions() {
-    return env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(env.PIPER_DISABLE_EXTENSIONS) == false
+private static boolean allowExtensions(Script script) {
+    return script.env.PIPER_DISABLE_EXTENSIONS == null || Boolean.valueOf(script.env.PIPER_DISABLE_EXTENSIONS) == false
 }

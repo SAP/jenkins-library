@@ -27,7 +27,7 @@ spec:
   inputs:
     secrets:
       - name: nexusCredentialsId
-        description: The technical username/password credential for accessing the nexus endpoint.
+        description: Jenkins 'Username with password' credentials ID containing the technical username/password credential for accessing the nexus endpoint.
         type: jenkins
         aliases:
           - name: nexus/credentialsId
@@ -36,9 +36,9 @@ spec:
         type: string
         description: The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         default: nexus3
         possibleValues:
@@ -50,9 +50,9 @@ spec:
         type: string
         description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         aliases:
           - name: nexus/url
@@ -80,16 +80,16 @@ spec:
         type: string
         description: Group ID of the artifacts. Only used in MTA projects, ignored for Maven.
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         aliases:
           - name: nexus/groupId
       - name: artifactId
         type: string
         description: The artifact ID used for both the .mtar and mta.yaml files deployed for MTA projects, ignored for Maven.
         scope:
-        - PARAMETERS
+          - PARAMETERS
       - name: globalSettingsFile
         type: string
         description: Path to the mvn settings file that should be used as global settings file.
@@ -110,18 +110,26 @@ spec:
           - STEPS
         aliases:
           - name: maven/m2Path
-      - name: user
+      - name: username
         type: string
         description: Username for accessing the Nexus endpoint.
         scope:
-        - PARAMETERS
+          - PARAMETERS
         secret: true
+        resourceRef:
+          - name: nexusCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         description: Password for accessing the Nexus endpoint.
         scope:
-        - PARAMETERS
+          - PARAMETERS
         secret: true
+        resourceRef:
+          - name: nexusCredentialsId
+            type: secret
+            param: password
   containers:
     # To allow both maven and mta we require an image that contains both tools. If the user configures an image for mavenExecute that also needs to contain both.
     - name: mvn-npm

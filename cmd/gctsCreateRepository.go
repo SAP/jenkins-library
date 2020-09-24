@@ -117,7 +117,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 				return nil
 			}
 		}
-		log.Entry().Errorf("a HTTP error occured! Response body: %v", response)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
 		return errors.Wrapf(httpErr, "creating repository on the ABAP system %v failed", config.Host)
 	}
 

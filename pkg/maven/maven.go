@@ -43,11 +43,8 @@ type mavenExecRunner interface {
 }
 
 type mavenUtils interface {
-	FileExists(path string) (bool, error)
+	piperutils.FileUtils
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	Glob(pattern string) (matches []string, err error)
-	Getwd() (dir string, err error)
-	Chdir(dir string) error
 }
 
 type utilsBundle struct {
@@ -226,12 +223,20 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 	jarExists, _ := utils.FileExists(jarFile(dir, finalName))
 	warExists, _ := utils.FileExists(warFile(dir, finalName))
 	classesJarExists, _ := utils.FileExists(classesJarFile(dir, finalName))
+	originalJarExists, _ := utils.FileExists(originalJarFile(dir, finalName))
 
 	log.Entry().Infof("JAR file with name %s does exist: %t", jarFile(dir, finalName), jarExists)
-	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 	log.Entry().Infof("Classes-JAR file with name %s does exist: %t", classesJarFile(dir, finalName), classesJarExists)
+	log.Entry().Infof("Original-JAR file with name %s does exist: %t", originalJarFile(dir, finalName), originalJarExists)
+	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 
-	if jarExists {
+	// Due to spring's jar repackaging we need to check for an "original" jar file because the repackaged one is no suitable source for dependent maven modules
+	if originalJarExists {
+		err = InstallFile(originalJarFile(dir, finalName), pomFile, options.M2Path, command)
+		if err != nil {
+			return err
+		}
+	} else if jarExists {
 		err = InstallFile(jarFile(dir, finalName), pomFile, options.M2Path, command)
 		if err != nil {
 			return err
@@ -262,6 +267,10 @@ func classesJarFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+"-classes.jar")
 }
 
+func originalJarFile(dir, finalName string) string {
+	return filepath.Join(dir, "target", finalName+".jar.original")
+}
+
 func warFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+".war")
 }
@@ -290,20 +299,9 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]string, error) {
 	var parameters []string
 
-	if options.GlobalSettingsFile != "" {
-		globalSettingsFileName, err := downloadSettingsIfURL(options.GlobalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--global-settings", globalSettingsFileName)
-	}
-
-	if options.ProjectSettingsFile != "" {
-		projectSettingsFileName, err := downloadSettingsIfURL(options.ProjectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--settings", projectSettingsFileName)
+	parameters, err := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils, utils)
+	if err != nil {
+		return nil, err
 	}
 
 	if options.M2Path != "" {
@@ -331,33 +329,6 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	parameters = append(parameters, options.Goals...)
 
 	return parameters, nil
-}
-
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {
-	result := settingsFileOption
-	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils)
-		if err != nil {
-			return "", err
-		}
-		result = settingsFile
-	}
-	return result, nil
-}
-
-// ToDo replace with pkg/maven/settings GetSettingsFile
-func downloadSettingsFromURL(url, filename string, utils mavenUtils) error {
-	exists, _ := utils.FileExists(filename)
-	if exists {
-		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
-		return nil
-	}
-	err := utils.DownloadFile(url, filename, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
-			url, filename, err)
-	}
-	return nil
 }
 
 func GetTestModulesExcludes() []string {

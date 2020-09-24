@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -27,6 +29,56 @@ func TestAddRootFlags(t *testing.T) {
 	assert.NotNil(t, testRootCmd.Flag("stepConfigJSON"), "expected flag not available")
 	assert.NotNil(t, testRootCmd.Flag("verbose"), "expected flag not available")
 
+}
+
+func TestAdoptStageNameFromParametersJSON(t *testing.T) {
+	tt := []struct {
+		name          string
+		stageNameArg  string
+		stageNameEnv  string
+		stageNameJSON string
+	}{
+		{name: "no stage name", stageNameArg: "", stageNameEnv: "", stageNameJSON: ""},
+		{name: "stage name arg+env", stageNameArg: "arg", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name env", stageNameArg: "", stageNameEnv: "env", stageNameJSON: "json"},
+		{name: "stage name json", stageNameArg: "", stageNameEnv: "", stageNameJSON: "json"},
+		{name: "stage name arg", stageNameArg: "arg", stageNameEnv: "", stageNameJSON: "json"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			// init
+			GeneralConfig.StageName = test.stageNameArg
+
+			resetValue := os.Getenv(stageNameEnvKey)
+			defer func() { _ = os.Setenv(stageNameEnvKey, resetValue) }()
+
+			err := os.Setenv(stageNameEnvKey, test.stageNameEnv)
+			if err != nil {
+				t.Fatalf("could not set env var %s", stageNameEnvKey)
+			}
+
+			if test.stageNameJSON != "" {
+				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageNameJSON)
+			} else {
+				GeneralConfig.ParametersJSON = "{}"
+			}
+			// test
+			initStageName(false)
+
+			// assert
+			// Order of if-clauses reflects wanted precedence.
+			if test.stageNameArg != "" {
+				assert.Equal(t, test.stageNameArg, GeneralConfig.StageName)
+			} else if test.stageNameJSON != "" {
+				assert.Equal(t, test.stageNameJSON, GeneralConfig.StageName)
+			} else if test.stageNameEnv != "" {
+				assert.Equal(t, test.stageNameEnv, GeneralConfig.StageName)
+			} else {
+				assert.Equal(t, "", GeneralConfig.StageName)
+			}
+		})
+	}
 }
 
 func TestPrepareConfig(t *testing.T) {
@@ -71,7 +123,7 @@ func TestPrepareConfig(t *testing.T) {
 			}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.NoError(t, err, "no error expected but error occured")
+			assert.NoError(t, err, "no error expected but error occurred")
 
 			//assert config
 			assert.Equal(t, "testValue", testOptions.TestParam, "wrong value retrieved from config")
@@ -91,9 +143,30 @@ func TestPrepareConfig(t *testing.T) {
 			metadata := config.StepData{}
 
 			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
-			assert.Error(t, err, "error expected but none occured")
+			assert.Error(t, err, "error expected but none occurred")
 		})
 	})
+}
+
+func TestRetrieveHookConfig(t *testing.T) {
+	tt := []struct {
+		hookJSON           []byte
+		expectedHookConfig HookConfiguration
+	}{
+		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+	}
+
+	for _, test := range tt {
+		var target HookConfiguration
+		var hookJSONRaw json.RawMessage
+		if len(test.hookJSON) > 0 {
+			err := json.Unmarshal(test.hookJSON, &hookJSONRaw)
+			assert.NoError(t, err)
+		}
+		retrieveHookConfig(&hookJSONRaw, &target)
+		assert.Equal(t, test.expectedHookConfig, target)
+	}
 }
 
 func TestGetProjectConfigFile(t *testing.T) {
@@ -134,6 +207,14 @@ func TestGetProjectConfigFile(t *testing.T) {
 func TestConvertTypes(t *testing.T) {
 	t.Run("Converts strings to booleans", func(t *testing.T) {
 		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
 		options := struct {
 			Foo bool `json:"foo,omitempty"`
 			Bar bool `json:"bar,omitempty"`
@@ -156,8 +237,78 @@ func TestConvertTypes(t *testing.T) {
 		assert.Equal(t, true, stepConfig["bar"])
 		assert.Equal(t, false, options.Foo)
 		assert.Equal(t, true, options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
-	t.Run("Exits on unsupported type mismatch", func(t *testing.T) {
+	t.Run("Converts numbers to strings", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo string `json:"foo,omitempty"`
+			Bar string `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = 1.5
+		stepConfig["bar"] = 42
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, "1.5", stepConfig["foo"])
+		assert.Equal(t, "42", stepConfig["bar"])
+		assert.Equal(t, "1.5", options.Foo)
+		assert.Equal(t, "42", options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+	t.Run("Keeps numbers", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo int     `json:"foo,omitempty"`
+			Bar float32 `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+
+		content := []byte(`
+foo: 1
+bar: 42
+`)
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, 1, stepConfig["foo"])
+		assert.Equal(t, float32(42.0), stepConfig["bar"])
+		assert.Equal(t, 1, options.Foo)
+		assert.Equal(t, float32(42.0), options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+	t.Run("Exits because string found, slice expected", func(t *testing.T) {
 		// Init
 		hasFailed := false
 
@@ -179,5 +330,97 @@ func TestConvertTypes(t *testing.T) {
 
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Exits because float found, int expected", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo int `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+
+		content := []byte("foo: 1.1")
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
+		assert.Equal(t, 1.1, stepConfig["foo"])
+		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Ignores nil values", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo []string `json:"foo,omitempty"`
+			Bar string   `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = nil
+		stepConfig["bar"] = nil
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Nil(t, stepConfig["foo"])
+		assert.Nil(t, stepConfig["bar"])
+		assert.Equal(t, []string(nil), options.Foo)
+		assert.Equal(t, "", options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+	t.Run("Logs warning for unknown type-mismatches", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		logBuffer := new(bytes.Buffer)
+
+		logOutput := log.Entry().Logger.Out
+		log.Entry().Logger.Out = logBuffer
+		defer func() { log.Entry().Logger.Out = logOutput }()
+
+		options := struct {
+			Foo string `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = true
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, true, stepConfig["foo"])
+		assert.Equal(t, "", options.Foo)
+		assert.Contains(t, logBuffer.String(), "The value may be ignored as a result")
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
 }

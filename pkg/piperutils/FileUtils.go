@@ -14,12 +14,14 @@ import (
 
 // FileUtils ...
 type FileUtils interface {
+	Abs(path string) (string, error)
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
 }
 
 // Files ...
@@ -76,18 +78,18 @@ func (f Files) Copy(src, dst string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer source.Close()
+	defer func() { _ = source.Close() }()
 
 	destination, err := os.Create(dst)
 	if err != nil {
 		return 0, err
 	}
-	defer destination.Close()
+	defer func() { _ = destination.Close() }()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
 }
 
-//Chmod ...
+//Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
 }
@@ -124,7 +126,7 @@ func Unzip(src, dest string) ([]string, error) {
 	if err != nil {
 		return filenames, err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	for _, f := range r.File {
 
@@ -140,7 +142,10 @@ func Unzip(src, dest string) ([]string, error) {
 
 		if f.FileInfo().IsDir() {
 			// Make Folder
-			os.MkdirAll(fpath, os.ModePerm)
+			err := os.MkdirAll(fpath, os.ModePerm)
+			if err != nil {
+				return filenames, fmt.Errorf("failed to create directory: %w", err)
+			}
 			continue
 		}
 
@@ -162,8 +167,8 @@ func Unzip(src, dest string) ([]string, error) {
 		_, err = io.Copy(outFile, rc)
 
 		// Close the file without defer to close before next iteration of loop
-		outFile.Close()
-		rc.Close()
+		_ = outFile.Close()
+		_ = rc.Close()
 
 		if err != nil {
 			return filenames, err
@@ -187,14 +192,29 @@ func (f Files) FileWrite(path string, content []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(path, content, perm)
 }
 
-// FileRemove is a wrapper for os.FileRemove().
+// FileRemove is a wrapper for os.Remove().
 func (f Files) FileRemove(path string) error {
 	return os.Remove(path)
+}
+
+// FileRename is a wrapper for os.Rename().
+func (f Files) FileRename(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
+}
+
+// FileOpen is a wrapper for os.OpenFile().
+func (f *Files) FileOpen(name string, flag int, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(name, flag, perm)
 }
 
 // MkdirAll is a wrapper for os.MkdirAll().
 func (f Files) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
+}
+
+// RemoveAll is a wrapper for os.RemoveAll().
+func (f Files) RemoveAll(path string) error {
+	return os.RemoveAll(path)
 }
 
 // Glob is a wrapper for doublestar.Glob().
@@ -215,4 +235,9 @@ func (f Files) Chdir(path string) error {
 // Stat is a wrapper for os.Stat()
 func (f Files) Stat(path string) (os.FileInfo, error) {
 	return os.Stat(path)
+}
+
+// Abs is a wrapper for filepath.Abs()
+func (f Files) Abs(path string) (string, error) {
+	return filepath.Abs(path)
 }

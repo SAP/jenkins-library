@@ -59,6 +59,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 		Image:         bundle.Image,
 		User:          bundle.User,
 		Mounts:        bundle.Mounts,
+		Environment:   bundle.Environment,
 		Setup:         bundle.Setup,
 		ContainerName: containerName,
 	}
@@ -90,7 +91,7 @@ func givenThisContainer(t *testing.T, bundle IntegrationTestDockerExecRunnerBund
 	}
 	if len(testRunner.Environment) > 0 {
 		for envVarName, envVarValue := range testRunner.Environment {
-			params = append(params, "--env", fmt.Sprintf("%s='%s'", envVarName, envVarValue))
+			params = append(params, "--env", fmt.Sprintf("%s=%s", envVarName, envVarValue))
 		}
 	}
 	params = append(params, testRunner.Image, "sleep", "2000")
@@ -151,8 +152,13 @@ func setupPiperBinary(t *testing.T, testRunner IntegrationTestDockerExecRunner, 
 }
 
 func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string, parameters ...string) error {
-	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "/piper-wrapper", "/piper", command}
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "/piper-wrapper", "/piper", command}
 	args = append(args, parameters...)
+	return d.Runner.RunExecutable("docker", args...)
+}
+
+func (d *IntegrationTestDockerExecRunner) runScriptInsideContainer(script string) error {
+	args := []string{"exec", "--workdir", "/project", d.ContainerName, "/bin/bash", "--login", "-c", script}
 	return d.Runner.RunExecutable("docker", args...)
 }
 

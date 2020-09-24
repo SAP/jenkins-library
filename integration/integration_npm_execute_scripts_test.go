@@ -87,7 +87,7 @@ func TestRegistrySetInFlags(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --sapNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -189,7 +189,7 @@ func TestRegistryWithTwoModules(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --sapNpmRegistry=https://foo.bar >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build,ci-backend-unit-test --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
 `
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 

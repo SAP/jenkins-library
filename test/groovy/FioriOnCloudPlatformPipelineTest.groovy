@@ -36,7 +36,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         turn makes use of the 'sap/grunt-sapui5-bestpractice-build' plugin.
         The dependencies are resolved via npm.
 
-        In order to run the scenario the project needs to fullfill these
+        In order to run the scenario the project needs to fulfill these
         prerequisites:
 
         Build tools:

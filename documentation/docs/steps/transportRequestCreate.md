@@ -46,7 +46,7 @@ general:
 ```
 
 The properties configured in section `'general/changeManagement'` are shared between
-all change managment related steps.
+all change management related steps.
 
 The properties can also be configured on a per-step basis:
 
