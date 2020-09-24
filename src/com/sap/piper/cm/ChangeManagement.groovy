@@ -179,6 +179,7 @@ public class ChangeManagement implements Serializable {
         String abapPackage, // "package" would be better, but this is a keyword
         String osDeployUser,
         def deployToolDependencies,
+        def npmInstallOpts,
         String deployConfigFile,
         String credentialsId) {
 
@@ -231,6 +232,10 @@ public class ChangeManagement implements Serializable {
             deployToolDependencies = deployToolDependencies.join(' ')
         }
 
+        if (npmInstallOpts in List) {
+            npmInstallOpts = npmInstallOpts.join(' ')
+        }
+
         deployToolDependencies = deployToolDependencies.trim()
 
         /*
@@ -245,7 +250,7 @@ public class ChangeManagement implements Serializable {
         Iterable cmd = ['#!/bin/bash -e']
 
         if (! noInstall) {
-            cmd << "npm install --global ${deployToolDependencies}"
+            cmd << "npm install --global ${npmInstallOpts} ${deployToolDependencies}"
             cmd << "su ${osDeployUser}"
         } else {
             script.echo "[INFO] no deploy dependencies provided. Skipping npm install call. Assuning docker image '${docker?.image}' contains already the dependencies for performing the deployment."

@@ -310,6 +310,7 @@ public void testGetCommandLineWithCMClientOpts() {
             'aPackage',
             'node2',
             ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            ['--verbose'],
             'ui5-deploy.yaml',
             'me',
         )
@@ -340,7 +341,7 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert writeFileRule.files['ui5-deploy.yaml'].equals(configFileExpected)
 
-        assert script.shell[0].contains('npm install --global @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs @dummy/foo')
+        assert script.shell[0].contains('npm install --global --verbose @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs @dummy/foo')
 
         assert script.shell[0].contains("fiori deploy -c \"ui5-deploy.yaml\" -t 002 -u https://example.org/cm")
 
@@ -367,6 +368,7 @@ public void testGetCommandLineWithCMClientOpts() {
             'aPackage',
             'the description',
             'node2',
+            [],
             [],
             'ui5-deploy.yaml',
             'me',
@@ -406,6 +408,7 @@ public void testGetCommandLineWithCMClientOpts() {
             'the description',
             'node',
             '@ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs',
+            [],
             'ui5-deploy.yaml',
             'me',
         )

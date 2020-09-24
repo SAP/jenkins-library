@@ -170,6 +170,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String abapPackage,
                                               String osDeployUser,
                                               def deployToolsDependencies,
+                                              def npmInstallArgs,
                                               String deployConfigFile,
                                               String credentialsId) {
 
@@ -182,6 +183,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 cmUtilReceivedParams.abapPackage = abapPackage
                 cmUtilReceivedParams.osDeployUser = osDeployUser
                 cmUtilReceivedParams.deployToolDependencies = deployToolsDependencies
+                cmUtilReceivedParams.npmInstallOpts = npmInstallArgs
                 cmUtilReceivedParams.deployConfigFile = deployConfigFile
                 cmUtilReceivedParams.credentialsId = credentialsId
             }
@@ -194,6 +196,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                           cts: [
                               osDeployUser: 'node2',
                               deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                              npmInstallOpts: ['--verbose'],
                           ]
                       ],
                       applicationName: 'myApp',
@@ -218,6 +221,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 abapPackage: 'myPackage',
                 osDeployUser: 'node2',
                 deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                npmInstallOpts: ['--verbose'],
                 deployConfigFile: 'ui5-deploy.yaml',
                 credentialsId: 'CM',
             ]

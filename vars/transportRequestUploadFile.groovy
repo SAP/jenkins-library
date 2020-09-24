@@ -104,6 +104,13 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          */
          'cts/deployToolDependencies',
         /**
+         * A list containing additional options for the npm install call. `-g`, `--global` is always assumed.
+         * Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or
+         * for providing the verbose flag (`--verbose`) for troubleshooting.
+         * @parentConfigKey changeManagement
+         */
+         'cts/npmInstallOpts',
+        /**
          * The file handed over to `fiori deploy` with flag `-c --config`.
          * @parentConfigKey changeManagement
          */
@@ -258,6 +265,7 @@ void call(Map parameters = [:]) {
                             configuration.abapPackage,
                             configuration.changeManagement.cts.osDeployUser,
                             configuration.changeManagement.cts.deployToolDependencies,
+                            configuration.changeManagement.cts.npmInstallOpts,
                             configuration.changeManagement.cts.deployConfigFile,
                             configuration.changeManagement.credentialsId)
 
