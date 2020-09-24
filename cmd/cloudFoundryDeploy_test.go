@@ -827,9 +827,17 @@ func TestCfDeployment(t *testing.T) {
 
 		defer func() {
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			return []string{"--var", "appName=testApplicationFromVarsList"}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
+
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
@@ -887,10 +895,11 @@ func TestCfDeployment(t *testing.T) {
 			filesMock.FileRemove("test-manifest.yml")
 			filesMock.FileRemove("vars.yaml")
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
 			return manifestMock{
@@ -906,9 +915,29 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
+		var receivedVarOptions []string
+		var receivedVarsFileOptions []string
+
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			receivedVarOptions = vars
+			return []string{}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			receivedVarsFileOptions = varFiles
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
+
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
 		if assert.NoError(t, err) {
+
+			t.Run("check received vars options", func(t *testing.T) {
+				assert.Empty(t, receivedVarOptions)
+			})
+
+			t.Run("check received vars file options", func(t *testing.T) {
+				assert.Equal(t, []string{"vars.yaml", "vars-does-not-exist.yaml"}, receivedVarsFileOptions)
+			})
 
 			t.Run("check shell calls", func(t *testing.T) {
 
@@ -1009,61 +1038,6 @@ func TestValidateDeployTool(t *testing.T) {
 				"expected different deployTool result")
 		})
 	}
-}
-
-func TestManifestVariableFiles(t *testing.T) {
-
-	defer func() {
-		fileUtils = &piperutils.Files{}
-	}()
-
-	filesMock := mock.FilesMock{}
-	fileUtils = &filesMock
-
-	filesMock.AddFile("a/varsA.txt", []byte("content does not matter"))
-	filesMock.AddFile("varsB.txt", []byte("content does not matter"))
-
-	t.Run("straight forward", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "varsB.txt"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--vars-file", "a/varsA.txt", "--vars-file", "varsB.txt"}, varOpts)
-		}
-	})
-
-	t.Run("no var filesprovided", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{}, varOpts)
-		}
-	})
-
-	t.Run("one var file does not exist", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "doesNotExist.txt"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--vars-file", "a/varsA.txt"}, varOpts)
-		}
-	})
-}
-
-func TestManifestVariables(t *testing.T) {
-	t.Run("straight forward", func(t *testing.T) {
-		varOpts, err := getVarOptions([]string{"a=b", "c=d"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--var", "a=b", "--var", "c=d"}, varOpts)
-		}
-	})
-
-	t.Run("empty variabls list", func(t *testing.T) {
-		varOpts, err := getVarOptions([]string{})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{}, varOpts)
-		}
-	})
-
-	t.Run("no equal sign in variable", func(t *testing.T) {
-		_, err := getVarOptions([]string{"ab"})
-		assert.EqualError(t, err, "Invalid parameter provided (expected format <key>=<val>: 'ab'")
-	})
 }
 
 func TestMtarLookup(t *testing.T) {

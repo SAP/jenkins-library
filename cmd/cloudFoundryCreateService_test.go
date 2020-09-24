@@ -215,11 +215,12 @@ func TestCloudFoundryCreateService(t *testing.T) {
 			Password:               "testPassword",
 			ServiceManifest:        "manifestTest.yml",
 			ManifestVariablesFiles: manifestVariablesFiles,
+			ManifestVariables:      []string{"a=b", "x=y"},
 		}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--vars-file", "varsTest.yml", "--vars-file", "varsTest2.yml"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "manifestTest.yml", "--vars-file", "varsTest.yml", "--vars-file", "varsTest2.yml", "--var", "a=b", "--var", "x=y"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
