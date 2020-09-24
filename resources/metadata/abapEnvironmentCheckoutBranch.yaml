@@ -53,15 +53,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-      - name: repositoryNamesFiles
-        type: "[]string"
-        description: Optional parameter to specify a list of .yml files that each must contain a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
       - name: branchName
         type: string
         description: Specifies a Branch of a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
@@ -78,6 +69,18 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: repositories
+        type: string
+        description: Specifies a YAML file containing the repositories configuration
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/repositories
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint

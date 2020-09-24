@@ -49,6 +49,7 @@ spec:
         type: string
         description: Specifies a YAML file containing the repositories configuration
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

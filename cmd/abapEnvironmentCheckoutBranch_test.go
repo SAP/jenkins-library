@@ -45,6 +45,31 @@ func TestCheckoutBranchStep(t *testing.T) {
 		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
+	t.Run("Run Step Failure", func(t *testing.T) {
+		expectedErrorMessage := "Checking out branches failed : Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCheckoutBranchOptions{}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "S" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
+	})
 }
 
 func TestTriggerCheckout(t *testing.T) {
@@ -156,26 +181,18 @@ func TestCheckoutBranchConfig(t *testing.T) {
   branch: 'testBranch2'
 - name: 'testRepo3'
   branch: 'testBranch3'`
-		manifestFile2String := `
-- name: 'testRepo4'
-  branch: 'testBranch4'
-- name: 'testRepo5'
-  branch: 'testBranch5'
-- name: 'testRepo6'
-  branch: 'testBranch6'`
 
 		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
-		err = ioutil.WriteFile("repositoriesTest2.yml", []byte(manifestFile2String), 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
-			RepositoryNamesFiles: []string{"repositoriesTest.yml", "repositoriesTest2.yml"},
+			Repositories: "repositoriesTest.yml",
 		}
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Branches",
 		}
-		err = checkoutBranchesFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
@@ -208,21 +225,21 @@ func TestCheckoutBranchConfig(t *testing.T) {
 		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
-			RepositoryNamesFiles: []string{"repositoriesTest.yml"},
+			Repositories: "repositoriesTest.yml",
 		}
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Branches",
 		}
-		err = checkoutBranchesFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 	t.Run("Failure case: checkout Branches from wrong file config", func(t *testing.T) {
 		pollIntervall := abaputils.AUtilsMock{}
 		defer pollIntervall.Cleanup()
 
-		expectedErrorMessage := "Failed to read repository configuration file: Eror in configuration file, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"
+		expectedErrorMessage := "Failed to checkout branch: Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"
 		receivedURI := "example.com/Branches"
 		client := &abaputils.ClientMock{
 			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
@@ -250,14 +267,14 @@ func TestCheckoutBranchConfig(t *testing.T) {
 		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
 
 		config := abapEnvironmentCheckoutBranchOptions{
-			RepositoryNamesFiles: []string{"repositoriesTest.yml"},
+			Repositories: "repositoriesTest.yml",
 		}
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Branches",
 		}
-		err = checkoutBranchesFromFileConfig(config.RepositoryNamesFiles, con, client, pollIntervall.GetPollIntervall())
+		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 	t.Run("Success case: checkout Branch from config", func(t *testing.T) {
@@ -280,11 +297,11 @@ func TestCheckoutBranchConfig(t *testing.T) {
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Branches",
 		}
-		err := checkoutBranchFromConfig(&config, con, client, pollIntervall.GetPollIntervall())
+		err := handleCheckout(abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName}, con, client, pollIntervall.GetPollIntervall())
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: checkout Branch with non-existent config", func(t *testing.T) {
-		expectedErrorMessage := "Checkout of  for software component  failed on the ABAP System: Failed to trigger checkout: Repository and Branch Configuration is empty. Please make sure that you have specified the correct values"
+		expectedErrorMessage := "Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"
 		pollIntervall := abaputils.AUtilsMock{}
 		defer pollIntervall.Cleanup()
 
@@ -295,13 +312,12 @@ func TestCheckoutBranchConfig(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		config := abapEnvironmentCheckoutBranchOptions{}
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Branches",
 		}
-		err := checkoutBranchFromConfig(&config, con, client, pollIntervall.GetPollIntervall())
+		err := handleCheckout(abaputils.Repository{}, con, client, pollIntervall.GetPollIntervall())
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 }
@@ -316,8 +332,8 @@ func TestCheckoutConfigChecker(t *testing.T) {
 	})
 	t.Run("Success case: check file config", func(t *testing.T) {
 		config := abapEnvironmentCheckoutBranchOptions{
-			RepositoryNamesFiles: []string{"test.file", "test2.file"},
-			BranchName:           "feature-unit-test",
+			Repositories: "test.file",
+			BranchName:   "feature-unit-test",
 		}
 		err := checkCheckoutBranchRepositoryConfiguration(config)
 		assert.NoError(t, err)

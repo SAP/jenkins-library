@@ -35,12 +35,12 @@ steps:
 
 Please note that the branchName parameter specifies the target branch you want to switch on. Also keep in mind that the repositoryName parameter must define a single repository.
 
-Also you can specify a list of dedicated files containing the branches in separate repositories you want to switch on:
+Also you can specify a dedicated file, e.g. `repositories.yml` containing the branches in separate repositories you want to switch on:
 
 ```yaml
 steps:
   abapEnvironmentCheckoutBranch:
-    repositoryNamesFiles: ['repositories.yml']
+    repositories: 'repositories.yml'
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```

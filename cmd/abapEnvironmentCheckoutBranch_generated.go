@@ -14,17 +14,17 @@ import (
 )
 
 type abapEnvironmentCheckoutBranchOptions struct {
-	Username             string   `json:"username,omitempty"`
-	Password             string   `json:"password,omitempty"`
-	RepositoryName       string   `json:"repositoryName,omitempty"`
-	RepositoryNamesFiles []string `json:"repositoryNamesFiles,omitempty"`
-	BranchName           string   `json:"branchName,omitempty"`
-	Host                 string   `json:"host,omitempty"`
-	CfAPIEndpoint        string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg                string   `json:"cfOrg,omitempty"`
-	CfSpace              string   `json:"cfSpace,omitempty"`
-	CfServiceInstance    string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName     string   `json:"cfServiceKeyName,omitempty"`
+	Username          string `json:"username,omitempty"`
+	Password          string `json:"password,omitempty"`
+	RepositoryName    string `json:"repositoryName,omitempty"`
+	BranchName        string `json:"branchName,omitempty"`
+	Host              string `json:"host,omitempty"`
+	Repositories      string `json:"repositories,omitempty"`
+	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
+	CfOrg             string `json:"cfOrg,omitempty"`
+	CfSpace           string `json:"cfSpace,omitempty"`
+	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
 }
 
 // AbapEnvironmentCheckoutBranchCommand Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system
@@ -92,9 +92,9 @@ func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapE
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringSliceVar(&stepConfig.RepositoryNamesFiles, "repositoryNamesFiles", []string{}, "Optional parameter to specify a list of .yml files that each must contain a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Specifies a Branch of a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
@@ -141,14 +141,6 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repositoryNamesFiles",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "branchName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -160,6 +152,14 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "abap/repositories"}},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

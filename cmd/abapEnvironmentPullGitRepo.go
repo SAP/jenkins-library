@@ -43,8 +43,6 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 }
 
 func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
-
-	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
 	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
@@ -62,8 +60,6 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
 	}
 
-	// Configuring the HTTP Client and CookieJar
-
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
 		return errors.Wrap(err, "Could not create a Cookie Jar")
@@ -76,15 +72,19 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	}
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
+	err = checkPullRepositoryConfiguration(*options)
 
-	checkPullRepositoryConfiguration(*options)
-
-	if len(options.RepositoryNamesFiles) > 0 {
-		err = pullReposFromFileConfig(options.RepositoryNamesFiles, connectionDetails, client, pollIntervall)
+	if options.Repositories != "" && err == nil {
+		err = pullReposFromConfigFile(options.Repositories, connectionDetails, client, pollIntervall)
 	}
 
 	if len(options.RepositoryNames) > 0 && err == nil {
-		err = pullReposFromConfig(options.RepositoryNames, connectionDetails, client, pollIntervall)
+		for _, repositoryName := range options.RepositoryNames {
+			err = handlePull(abaputils.Repository{Name: repositoryName}, connectionDetails, client, pollIntervall)
+			if err != nil {
+				break
+			}
+		}
 	}
 
 	if err != nil {
@@ -93,7 +93,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were pulled successfully")
-	return nil
+	return err
 }
 
 func triggerPull(repositoryName string, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
@@ -147,93 +147,65 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 }
 
 func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
-	if len(options.RepositoryNames) > 0 && len(options.RepositoryNamesFiles) > 0 {
+	if len(options.RepositoryNames) > 0 && len(options.Repositories) > 0 {
 		log.Entry().Info("It seems like you have specified both the repositories to be pulled as an in-line configuration as well as in the dedicated repositories configuration file.")
 		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled with priority.")
 	}
-	if len(options.RepositoryNames) == 0 && len(options.RepositoryNamesFiles) == 0 {
+	if len(options.RepositoryNames) == 0 && len(options.Repositories) == 0 {
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
 	}
 	return nil
 }
 
-func pullReposFromFileConfig(repositoriesFilesConfig []string, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	for _, v := range repositoriesFilesConfig {
-		if fileExists(v) {
-			fileContent, err := ioutil.ReadFile(v)
+func pullReposFromConfigFile(repositoriesFile string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	if fileExists(repositoriesFile) {
+		fileContent, err := ioutil.ReadFile(repositoriesFile)
+		if err != nil {
+			return fmt.Errorf("Failed to read repository configuration file: %w", err)
+		}
+		var repositoriesFileConfig []abaputils.Repository
+		var result []byte
+		result, err = yaml.YAMLToJSON(fileContent)
+		if err == nil {
+			err = json.Unmarshal(result, &repositoriesFileConfig)
+		}
+		if err != nil {
+			return fmt.Errorf("Failed to parse repository configuration file: %w", err)
+		}
+		if len(repositoriesFileConfig) == 0 {
+			return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
+		}
+		for _, repositoryFileConfig := range repositoriesFileConfig {
+			err = handlePull(repositoryFileConfig, checkoutConnectionDetails, client, pollIntervall)
 			if err != nil {
-				return fmt.Errorf("Failed to read repository configuration file : %w", err)
+				return fmt.Errorf("Failed to pull repository: %w", err)
 			}
-			var repositoriesFileConfig []abaputils.Repository
-			var result []byte
-			result, err = yaml.YAMLToJSON(fileContent)
-			if err == nil {
-				err = json.Unmarshal(result, &repositoriesFileConfig)
-			}
-			if err != nil {
-				return fmt.Errorf("Failed to parse repository configuration file : %w", err)
-			}
-			if len(repositoriesFileConfig) == 0 {
-				return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
-			}
-
-			//Iterating through each Repository to be pulled into the ABAP Environment system
-			log.Entry().Infof("Start pulling %v repositories", len(repositoriesFileConfig))
-			for _, repositoryFileConfig := range repositoriesFileConfig {
-				if reflect.DeepEqual(abaputils.Repository{}, repositoryFileConfig) {
-					return fmt.Errorf("Failed to read repository configuration file: %w", errors.New("Eror in configuration file, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
-				}
-				startPullLogs(repositoryFileConfig.Name)
-				// Triggering the Pull of the repository into the ABAP Environment system
-				uriConnectionDetails, errorTriggerPull := triggerPull(repositoryFileConfig.Name, pullConnectionDetails, client)
-				if errorTriggerPull != nil {
-					return errors.Wrapf(errorTriggerPull, "Pull of '%s' failed on the ABAP System", repositoryFileConfig.Name)
-				}
-
-				// Polling the status of the repository import on the ABAP Environment system
-				status, errorPollEntity := abaputils.PollEntity(repositoryFileConfig.Name, uriConnectionDetails, client, pollIntervall)
-				if errorPollEntity != nil {
-					return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repositoryFileConfig.Name)
-				}
-				if status == "E" {
-					return errors.New("Pull of " + repositoryFileConfig.Name + " failed on the ABAP System")
-				}
-				log.Entry().Info(repositoryFileConfig.Name + " was pulled successfully")
-			}
-			finishPullLogs()
-		} else {
-			return fmt.Errorf("Failed to read repository configuration file : %w", errors.New(v+" is not a file or doesn't exist"))
 		}
 	}
+	finishPullLogs()
 	return err
 }
 
-func pullReposFromConfig(repositoriesConfig []string, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	if len(repositoriesConfig) == 0 {
-		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
+func handlePull(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	if reflect.DeepEqual(abaputils.Repository{}, repo) {
+		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
 	}
-	log.Entry().Infof("Start pulling %v repositories", len(repositoriesConfig))
-	for _, repositoryName := range repositoriesConfig {
-		startPullLogs(repositoryName)
+	startPullLogs(repo.Branch)
 
-		// Triggering the Pull of the repository into the ABAP Environment system
-		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, pullConnectionDetails, client)
-		if errorTriggerPull != nil {
-			return errors.Wrapf(errorTriggerPull, "Pull of '%s' failed on the ABAP System", repositoryName)
-
-		}
-
-		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := abaputils.PollEntity(repositoryName, uriConnectionDetails, client, pollIntervall)
-		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repositoryName)
-		}
-		if status == "E" {
-			return errors.New("Pull of " + repositoryName + " failed on the ABAP System")
-		}
-		log.Entry().Info(repositoryName + " was pulled successfully")
+	uriConnectionDetails, err := triggerPull(repo.Name, checkoutConnectionDetails, client)
+	if err != nil {
+		return errors.Wrapf(err, "Pull of '%s' failed on the ABAP System", repo.Name)
 	}
-	finishPullLogs()
+
+	// Polling the status of the repository import on the ABAP Environment system
+	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+	if errorPollEntity != nil {
+		return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repo.Name)
+	}
+	if status == "E" {
+		return errors.New("Pull of " + repo.Name + " failed on the ABAP System")
+	}
+	log.Entry().Info(repo.Name + " was pulled successfully")
 	return err
 }
 

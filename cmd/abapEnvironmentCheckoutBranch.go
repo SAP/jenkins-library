@@ -76,13 +76,13 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
 
-	checkCheckoutBranchRepositoryConfiguration(*options)
+	err = checkCheckoutBranchRepositoryConfiguration(*options)
 
-	if len(options.RepositoryNamesFiles) > 0 {
-		err = checkoutBranchesFromFileConfig(options.RepositoryNamesFiles, connectionDetails, client, pollIntervall)
+	if options.Repositories != "" && err == nil {
+		err = checkoutBranchesFromConfigFile(options.Repositories, connectionDetails, client, pollIntervall)
 	}
-	if err == nil {
-		err = checkoutBranchFromConfig(options, connectionDetails, client, pollIntervall)
+	if err == nil && (options.BranchName != "" && options.RepositoryName != "") {
+		err = handleCheckout(abaputils.Repository{Name: options.RepositoryName, Branch: options.BranchName}, connectionDetails, client, pollIntervall)
 	}
 	if err != nil {
 		return fmt.Errorf("Checking out branches failed : %w", err)
@@ -148,88 +148,70 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 }
 
 func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutBranchOptions) error {
-	if len(options.RepositoryNamesFiles) == 0 && options.RepositoryName == "" && options.BranchName == "" {
+	if options.Repositories == "" && options.RepositoryName == "" && options.BranchName == "" {
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
 	}
-	if len(options.RepositoryNamesFiles) > 0 && options.RepositoryName != "" && options.BranchName != "" {
+	if options.Repositories != "" && options.RepositoryName != "" && options.BranchName != "" {
 		log.Entry().Info("It seems like you have specified both the repositories with their branches to be pulled as an in-line configuration as well as in the dedicated repositories configuration file.")
 		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled with priority.")
 	}
-	if len(options.RepositoryNamesFiles) > 0 && ((options.RepositoryName == "") != (options.BranchName == "")) {
+	if options.Repositories != "" && ((options.RepositoryName == "") != (options.BranchName == "")) {
 		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also an in-line configuration for the repository or branch to be pulled.")
 		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled only.")
 	}
 	return nil
 }
 
-func checkoutBranchesFromFileConfig(repositoriesFilesConfig []string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	for _, v := range repositoriesFilesConfig {
-		if fileExists(v) {
-			fileContent, err := ioutil.ReadFile(v)
-			if err != nil {
-				return fmt.Errorf("Failed to read repository configuration file: %w", err)
-			}
-			var repositoriesFileConfig []abaputils.Repository
-			var result []byte
-			result, err = yaml.YAMLToJSON(fileContent)
-			if err == nil {
-				err = json.Unmarshal(result, &repositoriesFileConfig)
-			}
-			if err != nil {
-				return fmt.Errorf("Failed to parse repository configuration file: %w", err)
-			}
-			if len(repositoriesFileConfig) == 0 {
-				return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
-			}
-
-			log.Entry().Infof("Start switch of branches in %v repositories", len(repositoriesFileConfig))
-			for _, repositoryFileConfig := range repositoriesFileConfig {
-				if reflect.DeepEqual(abaputils.Repository{}, repositoryFileConfig) {
-					return fmt.Errorf("Failed to read repository configuration file: %w", errors.New("Eror in configuration file, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
-				}
-				startCheckoutLogs(repositoryFileConfig.Branch, repositoryFileConfig.Name)
-
-				// Triggering the Checkout of the repository into the ABAP Environment system
-				uriConnectionDetails, err := triggerCheckout(repositoryFileConfig.Name, repositoryFileConfig.Branch, checkoutConnectionDetails, client)
-				if err != nil {
-					log.Entry().WithError(err).Fatal("Checkout of " + repositoryFileConfig.Branch + " for software component " + repositoryFileConfig.Name + " failed on the ABAP System")
-				}
-
-				// Polling the status of the repository import on the ABAP Environment system
-				status, err := abaputils.PollEntity(repositoryFileConfig.Name, uriConnectionDetails, client, pollIntervall)
-				if err != nil {
-					log.Entry().WithError(err).Fatal("Status of checkout action on repository" + repositoryFileConfig.Name + " failed on the ABAP System")
-				}
-				if status == "E" {
-					log.Entry().Fatal("Checkout of branch " + repositoryFileConfig.Branch + " failed on the ABAP System")
-				}
-				finishCheckoutLogs(repositoryFileConfig.Branch, repositoryFileConfig.Name)
-			}
-		} else {
-			return fmt.Errorf("Failed to read repository configuration file: %w", errors.New(v+" is not a file or doesn't exist"))
+func checkoutBranchesFromConfigFile(repositoriesFile string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	if fileExists(repositoriesFile) {
+		fileContent, err := ioutil.ReadFile(repositoriesFile)
+		if err != nil {
+			return fmt.Errorf("Failed to read repository configuration file: %w", err)
 		}
+		var repositoriesFileConfig []abaputils.Repository
+		var result []byte
+		result, err = yaml.YAMLToJSON(fileContent)
+		if err == nil {
+			err = json.Unmarshal(result, &repositoriesFileConfig)
+		}
+		if err != nil {
+			return fmt.Errorf("Failed to parse repository configuration file: %w", err)
+		}
+		if len(repositoriesFileConfig) == 0 {
+			return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
+		}
+		for _, repositoryFileConfig := range repositoriesFileConfig {
+			err = handleCheckout(repositoryFileConfig, checkoutConnectionDetails, client, pollIntervall)
+			if err != nil {
+				return fmt.Errorf("Failed to checkout branch: %w", err)
+			}
+		}
+	} else {
+		return fmt.Errorf("Failed to read repository configuration file: %w", errors.New(repositoriesFile+" is not a file or doesn't exist"))
 	}
 	return err
 }
 
-func checkoutBranchFromConfig(options *abapEnvironmentCheckoutBranchOptions, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	startCheckoutLogs(options.BranchName, options.RepositoryName)
+func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	if reflect.DeepEqual(abaputils.Repository{}, repo) {
+		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
+	}
+	startCheckoutLogs(repo.Branch, repo.Name)
 
-	// Triggering the Checkout of the repository into the ABAP Environment system
-	uriConnectionDetails, err := triggerCheckout(options.RepositoryName, options.BranchName, checkoutConnectionDetails, client)
+	uriConnectionDetails, err := triggerCheckout(repo.Name, repo.Branch, checkoutConnectionDetails, client)
 	if err != nil {
-		return fmt.Errorf("Checkout of "+options.BranchName+" for software component "+options.RepositoryName+" failed on the ABAP System: %w", err)
+		return fmt.Errorf("Failed to trigger Checkout: %w", errors.New("Checkout of "+repo.Branch+" for software component "+repo.Name+" failed on the ABAP System"))
 	}
 
 	// Polling the status of the repository import on the ABAP Environment system
-	status, err := abaputils.PollEntity(options.RepositoryName, uriConnectionDetails, client, pollIntervall)
+	status, err := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
 	if err != nil {
-		return fmt.Errorf("Status of checkout action on repository"+options.RepositoryName+" failed on the ABAP System: %w", err)
+		return fmt.Errorf("Failed to poll Checkout: %w", errors.New("Status of checkout action on repository"+repo.Name+" failed on the ABAP System"))
 	}
 	if status == "E" {
-		return fmt.Errorf("Checkout of branch "+options.BranchName+" failed on the ABAP System: %w", err)
+		return fmt.Errorf("Checkout failed: %w", errors.New("Checkout of branch "+repo.Branch+" failed on the ABAP System"))
 	}
-	finishCheckoutLogs(options.BranchName, options.RepositoryName)
+	finishCheckoutLogs(repo.Branch, repo.Name)
 
 	return err
 }

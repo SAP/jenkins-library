@@ -31,12 +31,12 @@ steps:
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
 
-Also you can specify a list of dedicated files containing the repositories to be pulled:
+Also you can specify a dedicated file, e.g. `repositories.yml` containing the repositories to be pulled:
 
 ```yaml
 steps:
   abapEnvironmentPullGitRepo:
-    repositoryNamesFiles: ['repositories.yml']
+    repositories: 'repositories.yml'
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
