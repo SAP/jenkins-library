@@ -291,7 +291,7 @@ func TestParseATCResult(t *testing.T) {
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
 		err = parseATCResult(body, "ATCResults.xml")
-		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned succesfully on the system")
+		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
 

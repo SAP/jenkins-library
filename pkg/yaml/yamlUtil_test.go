@@ -1,14 +1,15 @@
 package yaml
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/ghodss/yaml"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/ghodss/yaml"
+	"github.com/stretchr/testify/assert"
 )
 
 type fileInfoMock struct {
@@ -176,7 +177,7 @@ func TestFilesRelated(t *testing.T) {
 		if assert.NoError(t, err) {
 			content, err := fileMock.FileRead("manifest.yml")
 			if assert.NoError(t, err) {
-				// we have a single yaml document (no '---' inbetween)
+				// we have a single yaml document (no '---' in between)
 				assert.Equal(t, "called: true\n", string(content))
 			}
 		}

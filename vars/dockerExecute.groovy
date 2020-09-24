@@ -74,7 +74,7 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'dockerPullImage',
     /**
@@ -103,7 +103,7 @@ import groovy.transform.Field
      */
     'sidecarVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'sidecarPullImage',
     /**

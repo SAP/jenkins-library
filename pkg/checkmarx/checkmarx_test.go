@@ -71,7 +71,7 @@ func TestSendRequest(t *testing.T) {
 
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -81,7 +81,7 @@ func TestSendRequest(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -91,7 +91,7 @@ func TestSendRequest(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "error", "/test", nil, nil)
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 	})
 }
 
@@ -105,7 +105,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		token, err := sys.getOAuth2Token()
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "Bearer abcd12345", token, "Token incorrect")
 		assert.Equal(t, "client_id=resource_owner_client&client_secret=014DF517-39D1-4453-B7B3-9930C563627C&grant_type=password&password=user&scope=sast_rest_api&username=test", myTestClient.requestBody, "Request body incorrect")
@@ -118,7 +118,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		_, err := sys.getOAuth2Token()
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -126,7 +126,7 @@ func TestGetOAuthToken(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
 		_, err := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user")
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "Bearer abcd12345", myTestClient.token, "Token incorrect")
 	})
@@ -139,7 +139,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		_, err := sys.getOAuth2Token()
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 	})
 }
 
@@ -185,7 +185,7 @@ func TestGetTeams(t *testing.T) {
 
 		teams := sys.GetTeams()
 
-		assert.Equal(t, 0, len(teams), "Error expected but none occured")
+		assert.Equal(t, 0, len(teams), "Error expected but none occurred")
 	})
 }
 
@@ -224,7 +224,7 @@ func TestGetProjects(t *testing.T) {
 
 		projects := sys.GetProjects()
 
-		assert.Equal(t, 0, len(projects), "Error expected but none occured")
+		assert.Equal(t, 0, len(projects), "Error expected but none occurred")
 	})
 }
 
@@ -254,7 +254,7 @@ func TestCreateProject(t *testing.T) {
 
 		result, _ := sys.CreateProject("Test", "13")
 
-		assert.Equal(t, false, result, "Error expected but none occured")
+		assert.Equal(t, false, result, "Error expected but none occurred")
 	})
 }
 

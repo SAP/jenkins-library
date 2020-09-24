@@ -19,7 +19,7 @@ func TestSetResourceParameter(t *testing.T) {
 
 	err = SetResourceParameter(dir, "testRes", "testParam", "testVal")
 
-	assert.NoError(t, err, "Error occured but none expected")
+	assert.NoError(t, err, "Error occurred but none expected")
 	assert.Equal(t, "testVal", GetResourceParameter(dir, "testRes", "testParam"))
 }
 
@@ -34,7 +34,7 @@ func TestSetParameter(t *testing.T) {
 
 	err = SetParameter(dir, "testParam", "testVal")
 
-	assert.NoError(t, err, "Error occured but none expected")
+	assert.NoError(t, err, "Error occurred but none expected")
 	assert.Equal(t, "testVal", GetParameter(dir, "testParam"))
 }
 
