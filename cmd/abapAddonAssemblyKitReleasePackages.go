@@ -117,7 +117,7 @@ func releaseAndPoll(pckgWR []aakaas.PackageWithRepository, maxRuntimeInMinutes t
 				}
 			}
 			if allFinished {
-				log.Entry().Infof("Release of package(s) was succesful")
+				log.Entry().Infof("Release of package(s) was successful")
 				return pckgWR, nil
 			}
 		}

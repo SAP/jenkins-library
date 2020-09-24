@@ -51,7 +51,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 			config.AddDeltaToLastRelease = false
 			log.Entry().Debug("This is the first release.")
 		} else {
-			return errors.Wrapf(err, "Error occured when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
+			return errors.Wrapf(err, "Error occurred when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
 		}
 	}
 	publishedAt = lastRelease.GetPublishedAt()

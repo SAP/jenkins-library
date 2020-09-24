@@ -582,7 +582,7 @@ type connector struct {
 	Baseurl        string
 }
 
-//******** structs needed for json convertion ********
+//******** structs needed for json conversion ********
 
 type jsonBuild struct {
 	Build *build `json:"d"`
