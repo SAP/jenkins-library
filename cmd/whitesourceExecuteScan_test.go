@@ -246,7 +246,7 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		scan := whitesourceScan{}
+		scan := whitesourceScan{aggregateProjectName: config.ProjectName}
 		// test
 		err := executeScan(&config, &scan, utilsMock)
 		// many assert
