@@ -48,6 +48,7 @@ steps:
 The associated config file, e.g. `repositories.yml` could look as follows:
 
 ```yaml
+repositories:
 - name: '/DMO/GIT_REPOSITORY'
   branch: 'master'
 - name: '/DMO/GIT_REPO'
