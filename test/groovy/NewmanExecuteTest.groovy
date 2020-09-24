@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Rule
@@ -21,6 +22,8 @@ import util.JenkinsDockerExecuteRule
 import util.Rules
 import org.junit.rules.ExpectedException
 import util.JenkinsCredentialsRule
+
+import com.sap.piper.Utils
 
 class NewmanExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
@@ -62,6 +65,12 @@ class NewmanExecuteTest extends BasePiperTest {
                 files = [new File(map.glob)]
             return files.toArray()
         })
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

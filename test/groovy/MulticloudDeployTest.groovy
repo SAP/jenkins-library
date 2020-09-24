@@ -1,10 +1,12 @@
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import com.sap.piper.Utils
 
 import util.*
 
@@ -126,7 +128,14 @@ class MulticloudDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('echo', [CharSequence.class], {})
 
+        Utils.metaClass.echo = { def m -> }
     }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
+
 
     @Test
     void errorNoTargetsDefined() {
