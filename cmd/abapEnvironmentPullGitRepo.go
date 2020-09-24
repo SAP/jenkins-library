@@ -13,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -72,19 +71,16 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	}
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
+
+	repositories := []abaputils.Repository{}
 	err = checkPullRepositoryConfiguration(*options)
 
-	if options.Repositories != "" && err == nil {
-		err = pullReposFromConfigFile(options.Repositories, connectionDetails, client, pollIntervall)
+	if err == nil {
+		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
 	}
 
-	if len(options.RepositoryNames) > 0 && err == nil {
-		for _, repositoryName := range options.RepositoryNames {
-			err = handlePull(abaputils.Repository{Name: repositoryName}, connectionDetails, client, pollIntervall)
-			if err != nil {
-				break
-			}
-		}
+	if err == nil {
+		err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
 	}
 
 	if err != nil {
@@ -93,6 +89,18 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were pulled successfully")
+	return err
+}
+
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	log.Entry().Infof("Start cloning %v repositories", len(repositories))
+	for _, repo := range repositories {
+		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
+		if err != nil {
+			break
+		}
+		finishPullLogs()
+	}
 	return err
 }
 
@@ -157,42 +165,10 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 	return nil
 }
 
-func pullReposFromConfigFile(repositoriesFile string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	if fileExists(repositoriesFile) {
-		fileContent, err := ioutil.ReadFile(repositoriesFile)
-		if err != nil {
-			return fmt.Errorf("Failed to read repository configuration file: %w", err)
-		}
-		var repositoriesFileConfig []abaputils.Repository
-		var result []byte
-		result, err = yaml.YAMLToJSON(fileContent)
-		if err == nil {
-			err = json.Unmarshal(result, &repositoriesFileConfig)
-		}
-		if err != nil {
-			return fmt.Errorf("Failed to parse repository configuration file: %w", err)
-		}
-		if len(repositoriesFileConfig) == 0 {
-			return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
-		}
-		for _, repositoryFileConfig := range repositoriesFileConfig {
-			err = handlePull(repositoryFileConfig, checkoutConnectionDetails, client, pollIntervall)
-			if err != nil {
-				return fmt.Errorf("Failed to pull repository: %w", err)
-			}
-		}
-	}
-	finishPullLogs()
-	return err
-}
-
-func handlePull(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	if reflect.DeepEqual(abaputils.Repository{}, repo) {
-		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"))
-	}
+func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 	startPullLogs(repo.Branch)
 
-	uriConnectionDetails, err := triggerPull(repo.Name, checkoutConnectionDetails, client)
+	uriConnectionDetails, err := triggerPull(repo.Name, pullConnectionDetails, client)
 	if err != nil {
 		return errors.Wrapf(err, "Pull of '%s' failed on the ABAP System", repo.Name)
 	}

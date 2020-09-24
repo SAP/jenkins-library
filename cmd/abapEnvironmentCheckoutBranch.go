@@ -13,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
@@ -76,21 +75,33 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	client.SetOptions(clientOptions)
 	pollIntervall := com.GetPollIntervall()
 
+	repositories := []abaputils.Repository{}
 	err = checkCheckoutBranchRepositoryConfiguration(*options)
 
-	if options.Repositories != "" && err == nil {
-		err = checkoutBranchesFromConfigFile(options.Repositories, connectionDetails, client, pollIntervall)
+	if err == nil {
+		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories})
 	}
-	if err == nil && (options.BranchName != "" && options.RepositoryName != "") {
-		err = handleCheckout(abaputils.Repository{Name: options.RepositoryName, Branch: options.BranchName}, connectionDetails, client, pollIntervall)
+	if err == nil {
+		err = checkoutBranches(repositories, connectionDetails, client, pollIntervall)
 	}
 	if err != nil {
-		return fmt.Errorf("Checking out branches failed : %w", err)
+		return fmt.Errorf("Something failed during the checkout: %w", err)
 	}
-
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All branches were checked out successfully")
 	return nil
+}
+
+func checkoutBranches(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	log.Entry().Infof("Start switching of %v branches", len(repositories))
+	for _, repo := range repositories {
+		err = handleCheckout(repo, pullConnectionDetails, client, pollIntervall)
+		if err != nil {
+			break
+		}
+		finishPullLogs()
+	}
+	return err
 }
 
 func triggerCheckout(repositoryName string, branchName string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
@@ -99,7 +110,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	checkoutConnectionDetails.XCsrfToken = "fetch"
 
 	if repositoryName == "" || branchName == "" {
-		return uriConnectionDetails, fmt.Errorf("Failed to trigger checkout: %w", errors.New("Repository and Branch Configuration is empty. Please make sure that you have specified the correct values"))
+		return uriConnectionDetails, fmt.Errorf("Failed to trigger checkout: %w", errors.New("Repository and/or Branch Configuration is empty. Please make sure that you have specified the correct values"))
 	}
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
@@ -162,36 +173,6 @@ func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutB
 	return nil
 }
 
-func checkoutBranchesFromConfigFile(repositoriesFile string, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	if fileExists(repositoriesFile) {
-		fileContent, err := ioutil.ReadFile(repositoriesFile)
-		if err != nil {
-			return fmt.Errorf("Failed to read repository configuration file: %w", err)
-		}
-		var repositoriesFileConfig []abaputils.Repository
-		var result []byte
-		result, err = yaml.YAMLToJSON(fileContent)
-		if err == nil {
-			err = json.Unmarshal(result, &repositoriesFileConfig)
-		}
-		if err != nil {
-			return fmt.Errorf("Failed to parse repository configuration file: %w", err)
-		}
-		if len(repositoriesFileConfig) == 0 {
-			return fmt.Errorf("Failed to parse repository configuration file: %w", errors.New("Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
-		}
-		for _, repositoryFileConfig := range repositoriesFileConfig {
-			err = handleCheckout(repositoryFileConfig, checkoutConnectionDetails, client, pollIntervall)
-			if err != nil {
-				return fmt.Errorf("Failed to checkout branch: %w", err)
-			}
-		}
-	} else {
-		return fmt.Errorf("Failed to read repository configuration file: %w", errors.New(repositoriesFile+" is not a file or doesn't exist"))
-	}
-	return err
-}
-
 func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 	if reflect.DeepEqual(abaputils.Repository{}, repo) {
 		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
@@ -208,7 +189,8 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 	if err != nil {
 		return fmt.Errorf("Failed to poll Checkout: %w", errors.New("Status of checkout action on repository"+repo.Name+" failed on the ABAP System"))
 	}
-	if status == "E" {
+	const statusCheckoutFail = "E"
+	if status == statusCheckoutFail {
 		return fmt.Errorf("Checkout failed: %w", errors.New("Checkout of branch "+repo.Branch+" failed on the ABAP System"))
 	}
 	finishCheckoutLogs(repo.Branch, repo.Name)
