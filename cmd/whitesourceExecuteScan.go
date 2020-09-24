@@ -369,7 +369,7 @@ func executeScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUt
 		}
 	case "yarn":
 		// Execute scan with whitesource yarn plugin
-		if err := executeYarnScan(config, utils); err != nil {
+		if err := executeYarnScan(config, scan, utils); err != nil {
 			return err
 		}
 	default:
@@ -695,7 +695,8 @@ func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
-func executeYarnScan(config *ScanOptions, utils whitesourceUtils) error {
+func executeYarnScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+	config.ProjectName = scan.aggregateProjectName
 	if err := writeWhitesourceConfigJSON(config, utils, true, false); err != nil {
 		return err
 	}
