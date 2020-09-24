@@ -10,7 +10,7 @@ func TestAbapEnvironmentCloneGitRepoCommand(t *testing.T) {
 
 	testCmd := AbapEnvironmentCloneGitRepoCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "abapEnvironmentCloneGitRepo", testCmd.Use, "command name incorrect")
 
 }

@@ -36,9 +36,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) {
 
 	team := loadTeam(sys, config.TeamName, config.TeamID)
-	projectName := config.ProjectName
-
-	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	project, projectName := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
@@ -68,7 +66,7 @@ func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
 	return team
 }
 
-func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) checkmarx.Project {
+func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string) {
 	var project checkmarx.Project
 	projectName := initialProjectName
 	if len(pullRequestName) > 0 {
@@ -83,6 +81,9 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 				}
 				project = branchProject
 			}
+		} else {
+			project = projects[0]
+			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	} else {
 		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
@@ -91,7 +92,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	}
-	return project
+	return project, projectName
 }
 
 func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
@@ -108,72 +109,85 @@ func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
 }
 
 func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) {
-	zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
-	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
-	if sourceCodeUploaded {
-		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
-		err := os.Remove(zipFile.Name())
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
-		}
-
-		incremental := config.Incremental
-		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
-		}
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, project.ID)+1)%fullScanCycle == 0 {
-			incremental = false
-		}
-
-		triggerScan(config, sys, project, workspace, incremental, influx)
+	ok, previousScans := sys.GetScans(project.ID)
+	if !ok && config.VerifyOnly {
+		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
+	}
+	if len(previousScans) > 0 && config.VerifyOnly {
+		verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx)
 	} else {
-		log.Entry().Fatalf("Cannot upload source code for project %v", project.Name)
+		zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
+		sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
+		if sourceCodeUploaded {
+			log.Entry().Debugf("Source code uploaded for project %v", project.Name)
+			err := os.Remove(zipFile.Name())
+			if err != nil {
+				log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
+			}
+
+			incremental := config.Incremental
+			fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
+			if err != nil {
+				log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
+			}
+
+			if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, previousScans)+1)%fullScanCycle == 0 {
+				incremental = false
+			}
+
+			triggerScan(config, sys, project, workspace, incremental, influx)
+		} else {
+			log.Entry().Fatalf("Cannot upload source code for project %v", project.Name)
+		}
 	}
 }
 
 func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) {
-	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans)
+	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if projectIsScanning {
 		log.Entry().Debugf("Scanning project %v ", project.Name)
 		pollScanStatus(sys, scan)
 
 		log.Entry().Debugln("Scan finished")
 
-		var reports []piperutils.Path
-		if config.GeneratePdfReport {
-			pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
-			ok := downloadAndSaveReport(sys, pdfReportName, scan)
-			if ok {
-				reports = append(reports, piperutils.Path{Target: pdfReportName, Mandatory: true})
-			}
-		} else {
-			log.Entry().Debug("Report generation is disabled via configuration")
-		}
-
-		xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
-		results := getDetailedResults(sys, xmlReportName, scan.ID)
-		reports = append(reports, piperutils.Path{Target: xmlReportName})
-		links := []piperutils.Path{piperutils.Path{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-		piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
-
-		reportToInflux(results, influx)
-
-		insecure := false
-		if config.VulnerabilityThresholdEnabled {
-			insecure = enforceThresholds(config, results)
-		}
-
-		if insecure {
-			if config.VulnerabilityThresholdResult == "FAILURE" {
-				log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
-			}
-			log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
-		} else {
-			log.Entry().Infoln("Checkmarx scan finished")
-		}
+		verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx)
 	} else {
 		log.Entry().Fatalf("Cannot scan project %v", project.Name)
+	}
+}
+
+func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux) {
+	var reports []piperutils.Path
+	if config.GeneratePdfReport {
+		pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
+		ok := downloadAndSaveReport(sys, pdfReportName, scanID)
+		if ok {
+			reports = append(reports, piperutils.Path{Target: pdfReportName, Mandatory: true})
+		}
+	} else {
+		log.Entry().Debug("Report generation is disabled via configuration")
+	}
+
+	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
+	results := getDetailedResults(sys, xmlReportName, scanID)
+	reports = append(reports, piperutils.Path{Target: xmlReportName})
+	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
+
+	reportToInflux(results, influx)
+
+	insecure := false
+	if config.VulnerabilityThresholdEnabled {
+		insecure = enforceThresholds(config, results)
+	}
+
+	if insecure {
+		if config.VulnerabilityThresholdResult == "FAILURE" {
+			log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
+		}
+		log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
+	} else {
+		log.Entry().Infoln("Checkmarx scan finished")
 	}
 }
 
@@ -220,28 +234,28 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 
 func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScanInflux) {
 	influx.checkmarx_data.fields.high_issues = strconv.Itoa(results["High"].(map[string]int)["Issues"])
-	influx.checkmarx_data.fields.high_not_false_postive = strconv.Itoa(results["High"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.high_not_false_positive = strconv.Itoa(results["High"].(map[string]int)["NotFalsePositive"])
 	influx.checkmarx_data.fields.high_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["NotExploitable"])
 	influx.checkmarx_data.fields.high_confirmed = strconv.Itoa(results["High"].(map[string]int)["Confirmed"])
 	influx.checkmarx_data.fields.high_urgent = strconv.Itoa(results["High"].(map[string]int)["Urgent"])
 	influx.checkmarx_data.fields.high_proposed_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["ProposedNotExploitable"])
 	influx.checkmarx_data.fields.high_to_verify = strconv.Itoa(results["High"].(map[string]int)["ToVerify"])
 	influx.checkmarx_data.fields.medium_issues = strconv.Itoa(results["Medium"].(map[string]int)["Issues"])
-	influx.checkmarx_data.fields.medium_not_false_postive = strconv.Itoa(results["Medium"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.medium_not_false_positive = strconv.Itoa(results["Medium"].(map[string]int)["NotFalsePositive"])
 	influx.checkmarx_data.fields.medium_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["NotExploitable"])
 	influx.checkmarx_data.fields.medium_confirmed = strconv.Itoa(results["Medium"].(map[string]int)["Confirmed"])
 	influx.checkmarx_data.fields.medium_urgent = strconv.Itoa(results["Medium"].(map[string]int)["Urgent"])
 	influx.checkmarx_data.fields.medium_proposed_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["ProposedNotExploitable"])
 	influx.checkmarx_data.fields.medium_to_verify = strconv.Itoa(results["Medium"].(map[string]int)["ToVerify"])
 	influx.checkmarx_data.fields.low_issues = strconv.Itoa(results["Low"].(map[string]int)["Issues"])
-	influx.checkmarx_data.fields.low_not_false_postive = strconv.Itoa(results["Low"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.low_not_false_positive = strconv.Itoa(results["Low"].(map[string]int)["NotFalsePositive"])
 	influx.checkmarx_data.fields.low_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["NotExploitable"])
 	influx.checkmarx_data.fields.low_confirmed = strconv.Itoa(results["Low"].(map[string]int)["Confirmed"])
 	influx.checkmarx_data.fields.low_urgent = strconv.Itoa(results["Low"].(map[string]int)["Urgent"])
 	influx.checkmarx_data.fields.low_proposed_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["ProposedNotExploitable"])
 	influx.checkmarx_data.fields.low_to_verify = strconv.Itoa(results["Low"].(map[string]int)["ToVerify"])
 	influx.checkmarx_data.fields.information_issues = strconv.Itoa(results["Information"].(map[string]int)["Issues"])
-	influx.checkmarx_data.fields.information_not_false_postive = strconv.Itoa(results["Information"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.information_not_false_positive = strconv.Itoa(results["Information"].(map[string]int)["NotFalsePositive"])
 	influx.checkmarx_data.fields.information_not_exploitable = strconv.Itoa(results["Information"].(map[string]int)["NotExploitable"])
 	influx.checkmarx_data.fields.information_confirmed = strconv.Itoa(results["Information"].(map[string]int)["Confirmed"])
 	influx.checkmarx_data.fields.information_urgent = strconv.Itoa(results["Information"].(map[string]int)["Urgent"])
@@ -265,8 +279,8 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 
-func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scan checkmarx.Scan) bool {
-	ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
+func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int) bool {
+	ok, report := generateAndDownloadReport(sys, scanID, "PDF")
 	if ok {
 		log.Entry().Debugf("Saving report to file %v...", reportFileName)
 		ioutil.WriteFile(reportFileName, report, 0700)
@@ -431,16 +445,13 @@ func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType stri
 	return false, []byte{}
 }
 
-func getNumCoherentIncrementalScans(sys checkmarx.System, projectID int) int {
-	ok, scans := sys.GetScans(projectID)
+func getNumCoherentIncrementalScans(sys checkmarx.System, scans []checkmarx.ScanStatus) int {
 	count := 0
-	if ok {
-		for _, scan := range scans {
-			if !scan.IsIncremental {
-				break
-			}
-			count++
+	for _, scan := range scans {
+		if !scan.IsIncremental {
+			break
 		}
+		count++
 	}
 	return count
 }

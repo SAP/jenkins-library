@@ -138,13 +138,12 @@ If you have multiple npm packages with unit tests the names of the report files 
 
 #### Lint
 
-For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed in this stage.
+For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed as part of the `build` stage.
 The required format of the linting results is the checkstyle format as an `xml` file.
 The linting results have to be stored in a file named `*cilint.xml`, which may reside in any directory of the project.
 The linting results will then be published in Jenkins.
 
-If no script `ci-lint` is defined, the pipeline will check SAPUI5 components, if present, for the SAPUI5 recommended best practices.
-If none of the scenarios described apply and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
+If no script `ci-lint` is defined and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
 
 If no ESLint configuration files are present in the project directory, a general purpose configuration is used to lint all Javascript and/or Typescript files of the project.
 If, on the other hand, ESLint configuration files exist in the project, they will be used to lint Javascript files in the project.
@@ -239,7 +238,7 @@ This directory has to be defined as path in the `manifest.yml`.
 The project structure follows the standard structure for projects created via the _SAP Cloud Platform Business Application_ SAP Web IDE Template with some constraints.
 Please leave the basic structure of the generated project intact.
 
-Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continous delivery in your project.
+Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continuous delivery in your project.
 
 If you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 
