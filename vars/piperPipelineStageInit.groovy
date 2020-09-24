@@ -7,7 +7,6 @@ import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
-import sun.font.Script
 
 import static com.sap.piper.Prerequisites.checkScript
 
