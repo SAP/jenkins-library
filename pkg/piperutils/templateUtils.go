@@ -19,12 +19,12 @@ func ExecuteTemplateFunctions(txtTemplate string, functionMap template.FuncMap, 
 	}
 	template, err := template.Parse(txtTemplate)
 	if err != nil {
-		return "<nil>", fmt.Errorf("Failed to parse template defintion %v: %w", txtTemplate, err)
+		return "<nil>", fmt.Errorf("Failed to parse template definition %v: %w", txtTemplate, err)
 	}
 	var output bytes.Buffer
 	err = template.Execute(&output, context)
 	if err != nil {
-		return "<nil>", fmt.Errorf("Failed to transform template defintion %v: %w", txtTemplate, err)
+		return "<nil>", fmt.Errorf("Failed to transform template definition %v: %w", txtTemplate, err)
 	}
 	return output.String(), nil
 }

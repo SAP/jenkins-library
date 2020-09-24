@@ -48,7 +48,7 @@ func resolveString(str string, lookupMap map[string]interface{}, n int) (string,
 	return resolveString(str, lookupMap, n+1)
 }
 
-// ResolveString takes a string and replaces all references inside of it whith values from the given lookupMap.
+// ResolveString takes a string and replaces all references inside of it with values from the given lookupMap.
 // This is being done recursively until the maxLookupDepth is reached.
 func ResolveString(str string, lookupMap map[string]interface{}) (string, error) {
 	return resolveString(str, lookupMap, 0)

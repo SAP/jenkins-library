@@ -352,7 +352,7 @@ func (c *Client) applyDefaults() {
 	}
 }
 
-// ParseHTTPResponseBodyXML parses a XML http respone into a given interface
+// ParseHTTPResponseBodyXML parses a XML http response into a given interface
 func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	if resp == nil {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")
@@ -371,7 +371,7 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	return nil
 }
 
-// ParseHTTPResponseBodyJSON parses a JSON http respone into a given interface
+// ParseHTTPResponseBodyJSON parses a JSON http response into a given interface
 func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
 	if resp == nil {
 		return errors.Errorf("cannot parse HTTP response with value <nil>")

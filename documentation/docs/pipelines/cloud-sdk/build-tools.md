@@ -238,7 +238,7 @@ This directory has to be defined as path in the `manifest.yml`.
 The project structure follows the standard structure for projects created via the _SAP Cloud Platform Business Application_ SAP Web IDE Template with some constraints.
 Please leave the basic structure of the generated project intact.
 
-Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continous delivery in your project.
+Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continuous delivery in your project.
 
 If you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 
