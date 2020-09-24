@@ -270,9 +270,9 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 		}
 	}
 
-	if err := persistScannedProjects(config, scan, utils); err != nil {
+	/*	if err := persistScannedProjects(config, scan, utils); err != nil {
 		return fmt.Errorf("failed to persist scanned WhiteSource project names: %w", err)
-	}
+	}*/
 
 	return nil
 }
