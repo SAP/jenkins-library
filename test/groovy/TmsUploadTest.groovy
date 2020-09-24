@@ -1,4 +1,5 @@
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import com.sap.piper.integration.TransportManagementService
 
 import hudson.AbortException
@@ -74,10 +75,12 @@ public class TmsUploadTest extends BasePiperTest {
                     .registerYaml("dummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy.mtaext")))
                     .registerYaml("dummy2.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy2.mtaext")))
                     .registerYaml("invalidDummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/invalidDummy.mtaext")))
+        Utils.metaClass.echo = { def m -> }
     }
 
     @After
     void tearDown() {
+        Utils.metaClass = null
         calledTmsMethodsWithArgs.clear()
     }
 
