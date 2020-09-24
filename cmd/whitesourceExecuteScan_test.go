@@ -646,8 +646,9 @@ func TestDownloadReports(t *testing.T) {
 		}
 		utils := newWhitesourceUtilsMock()
 		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		scan := &whitesourceScan{}
 		// test
-		paths, err := downloadReports(config, utils, system)
+		paths, err := downloadReports(config, scan, utils, system)
 		// assert
 		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
 			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
@@ -665,14 +666,45 @@ func TestDownloadReports(t *testing.T) {
 		// init
 		config := &ScanOptions{
 			ProjectToken: "<invalid>",
+			ProjectName:  "mock-project",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		scan := &whitesourceScan{}
 		// test
-		path, err := downloadReports(config, utils, system)
+		paths, err := downloadReports(config, scan, utils, system)
 		// assert
 		assert.EqualError(t, err, "no project with token '<invalid>' found in Whitesource")
-		assert.Nil(t, path)
+		assert.Nil(t, paths)
+	})
+	t.Run("multiple scanned projects", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ReportDirectoryName:       "report-dir",
+			VulnerabilityReportFormat: "txt",
+		}
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		scan := &whitesourceScan{}
+		scan.init()
+		scan.scannedProjects["mock-project"] = ws.Project{
+			Name:  "mock-project",
+			Token: "mock-project-token",
+		}
+		// test
+		paths, err := downloadReports(config, scan, utils, system)
+		// assert
+		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
+			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
+			assert.True(t, utils.HasWrittenFile(vPath))
+			vContent, _ := utils.FileRead(vPath)
+			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
+
+			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
+			assert.True(t, utils.HasWrittenFile(rPath))
+			rContent, _ := utils.FileRead(rPath)
+			assert.Equal(t, []byte("mock-risk-report"), rContent)
+		}
 	})
 }
 
