@@ -16,7 +16,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
@@ -31,7 +31,7 @@ func TestVaultConfigLoad(t *testing.T) {
 			"vaultBasePath": "team1",
 			secretName:      "preset value",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
 		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
@@ -45,7 +45,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, fmt.Errorf("test"))
 		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
@@ -57,7 +57,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultBasePath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
 		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestVaultConfigLoad(t *testing.T) {
 			"vaultBasePath": "team1",
 		}}
 		stepParams := []StepParameters{
-			stepParam(secretName, "vaultSecret", "pipelineA", "pipelineB"),
+			stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA", "$(vaultBasePath)/pipelineB"),
 		}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
@@ -83,9 +83,9 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("No BasePath is stepConfig.Configured", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", "/pipelineA").Return(vaultData, nil)
 		err := addVaultCredentials(&stepConfig, vaultMock, stepParams)
 		assert.NoError(t, err)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
@@ -97,7 +97,7 @@ func stepParam(name string, refType string, refPaths ...string) StepParameters {
 	return StepParameters{
 		Name: name,
 		ResourceRef: []ResourceReference{
-			ResourceReference{
+			{
 				Type:  refType,
 				Paths: refPaths,
 			},

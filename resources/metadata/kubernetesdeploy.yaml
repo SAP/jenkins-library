@@ -27,11 +27,13 @@ spec:
   inputs:
     secrets:
       - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
         aliases:
           - name: kubeCredentialsId
             deprecated: true
         type: jenkins
       - name: kubeTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
         aliases:
           - name: k8sTokenCredentialsId
             deprecated: true

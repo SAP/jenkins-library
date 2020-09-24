@@ -51,13 +51,13 @@ cd /test
 			tempDir: "/test",
 		},
 		Networks:       []string{networkName},
-		NetworkAliases: map[string][]string{networkName: []string{"karma"}},
+		NetworkAliases: map[string][]string{networkName: {"karma"}},
 	}
 
 	reqSel := testcontainers.ContainerRequest{
 		Image:          "selenium/standalone-chrome",
 		Networks:       []string{networkName},
-		NetworkAliases: map[string][]string{networkName: []string{"selenium"}},
+		NetworkAliases: map[string][]string{networkName: {"selenium"}},
 	}
 
 	provider, err := testcontainers.ProviderDocker.GetProvider()

@@ -53,9 +53,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: abap/repositories
       - name: repositoryName
         type: string
         description: Specifies a repository (Software Components) on the SAP Cloud Platform ABAP Environment system

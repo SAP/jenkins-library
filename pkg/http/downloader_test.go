@@ -35,9 +35,9 @@ func TestDownloadRequest(t *testing.T) {
 	// function under test
 	err = client.DownloadFile(server.URL, targetFile, nil, nil)
 	// asserts
-	assert.NoError(t, err, "Error occured but none expected")
+	assert.NoError(t, err, "Error occurred but none expected")
 	assert.FileExists(t, targetFile, "File not found")
 	bytes, err := ioutil.ReadFile(targetFile)
-	assert.NoError(t, err, "Error occured but none expected")
+	assert.NoError(t, err, "Error occurred but none expected")
 	assert.Equal(t, "my fancy file content", string(bytes))
 }

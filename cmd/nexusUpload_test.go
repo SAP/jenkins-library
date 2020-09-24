@@ -361,7 +361,7 @@ func TestUploadNpmProjects(t *testing.T) {
 		utils.AddFile("package.json", testPackageJson)
 		uploader := mockUploader{}
 		options := createOptions()
-		options.User = "admin"
+		options.Username = "admin"
 		options.Password = "admin123"
 
 		err := runNexusUpload(&utils, &uploader, &options)
@@ -627,7 +627,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		utils.AddFile("pom.xml", testPomXml)
 		uploader := mockUploader{}
 		options := createOptions()
-		options.User = "admin"
+		options.Username = "admin"
 		options.Password = "admin123"
 
 		err := runNexusUpload(&utils, &uploader, &options)
@@ -661,7 +661,7 @@ func TestUploadMavenProjects(t *testing.T) {
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
 	utils := newMockUtilsBundle(false, true, false)
-	options := nexusUploadOptions{User: "admin", Password: "admin123"}
+	options := nexusUploadOptions{Username: "admin", Password: "admin123"}
 	mavenOptions := maven.ExecuteOptions{}
 	settingsPath, err := setupNexusCredentialsSettingsFile(&utils, &options, &mavenOptions)
 

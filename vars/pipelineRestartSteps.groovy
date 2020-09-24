@@ -59,7 +59,7 @@ void call(Map parameters = [:], body) {
                 body()
                 restart = false
             } catch (Throwable err) {
-                echo "ERROR occured: ${err}"
+                echo "ERROR occurred: ${err}"
                 if (config.sendMail)
                     if (jenkinsUtils.nodeAvailable()) {
                         mailSendNotification script: script, buildResult: 'UNSTABLE'

@@ -109,7 +109,7 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 

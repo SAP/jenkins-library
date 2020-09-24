@@ -134,7 +134,7 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 //
 // The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
 // Further error details may be present in the response body of the HTTP response.
-// If the response body is parseable, the included details are wrapped arround the original error from the HTTP repsponse.
+// If the response body is parseable, the included details are wrapped around the original error from the HTTP repsponse.
 // If this is not possible, the original error is returned.
 func HandleHTTPError(resp *http.Response, err error, message string, connectionDetails ConnectionDetailsHTTP) error {
 	if resp == nil {
@@ -193,6 +193,9 @@ func ConvertTime(logTimeStamp string) time.Time {
 	t := time.Unix(n, 0).UTC()
 	return t
 }
+
+// ReadAddonDescriptorType is the type for ReadAddonDescriptor for mocking
+type ReadAddonDescriptorType func(FileName string) (AddonDescriptor, error)
 
 // ReadAddonDescriptor parses AddonDescriptor YAML file
 func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
