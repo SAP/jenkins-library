@@ -224,7 +224,7 @@ void call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
-            .withMandatoryProperty('cloudFoundry/credentialsId')
+            .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleCredentialId') || !c.containsKey('vaultAppRoleSecretCredentialId')})
             .use()
 
         if (config.useGoStep == true) {
