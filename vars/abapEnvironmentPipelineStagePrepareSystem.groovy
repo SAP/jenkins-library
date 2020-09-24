@@ -26,7 +26,6 @@ void call(Map parameters = [:]) {
         cloudFoundryCreateService script: parameters.script
         input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
         cloudFoundryCreateServiceKey script: parameters.script
-        abapEnvironmentCloneGitRepo script: parameters.script
     }
 
 }
