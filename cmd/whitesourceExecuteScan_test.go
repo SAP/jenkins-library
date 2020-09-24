@@ -136,6 +136,7 @@ type whitesourceUtilsMock struct {
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
 	downloadedFiles         []downloadedFile
+	npmInstalledModules     []string
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -166,6 +167,7 @@ func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, e
 }
 
 func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []string) error {
+	w.npmInstalledModules = append(w.npmInstalledModules, w.CurrentDir)
 	return nil
 }
 
@@ -195,13 +197,13 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
+		scan := whitesourceScan{}
 		// test
-		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-group-id-mock-artifact-id", config.ProjectName)
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.aggregateProjectName)
 			assert.Equal(t, "1", config.ProductVersion)
-			assert.Equal(t, "mock-project-token", config.ProjectToken)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
@@ -218,8 +220,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
+		scan := whitesourceScan{}
 		// test
-		err := resolveProjectIdentifiers(&config, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
@@ -243,8 +246,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 
@@ -284,8 +288,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		require.Len(t, utilsMock.downloadedFiles, 1)
@@ -302,8 +307,9 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		assert.Len(t, utilsMock.downloadedFiles, 0)
@@ -311,21 +317,24 @@ func TestExecuteScanUA(t *testing.T) {
 }
 
 func TestExecuteScanNPM(t *testing.T) {
+	config := ScanOptions{
+		ScanType:       "npm",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProjectName:    "mock-project",
+		ProductVersion: "product-version",
+	}
+
 	t.Parallel()
+
 	t.Run("happy path NPM", func(t *testing.T) {
 		// init
-		config := ScanOptions{
-			ScanType:       "npm",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "product-version",
-		}
 		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte("dummy"))
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -346,12 +355,47 @@ func TestExecuteScanNPM(t *testing.T) {
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
 	})
+	t.Run("no NPM modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		scan := whitesourceScan{}
+		// test
+		err := executeScan(&config, &scan, utilsMock)
+		// assert
+		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
+		assert.Len(t, utilsMock.Calls, 0)
+		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+	})
+	t.Run("npm ls fails", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
+
+		utilsMock.ShouldFailOnCommand = make(map[string]error)
+		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
+		scan := whitesourceScan{}
+		// test
+		err := executeScan(&config, &scan, utilsMock)
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
+	})
 }
 
 func TestExecuteScanMaven(t *testing.T) {
 	t.Parallel()
-	t.Run("happy path Maven", func(t *testing.T) {
+	t.Run("maven modules are aggregated", func(t *testing.T) {
 		// init
+		const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>my-artifact-id</artifactId>
+    <packaging>jar</packaging>
+</project>
+`
 		config := ScanOptions{
 			ScanType:       "maven",
 			OrgToken:       "org-token",
@@ -361,9 +405,10 @@ func TestExecuteScanMaven(t *testing.T) {
 			ProductVersion: "product-version",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		utilsMock.AddFile("pom.xml", []byte(pomXML))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -388,6 +433,69 @@ func TestExecuteScanMaven(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 	})
+	t.Run("maven modules are separate projects", func(t *testing.T) {
+		// init
+		const rootPomXML = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>my-artifact-id</artifactId>
+    <packaging>jar</packaging>
+	<modules>
+		<module>sub</module>
+	</modules>
+</project>
+`
+		const modulePomXML = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>my-artifact-id-sub</artifactId>
+    <packaging>jar</packaging>
+</project>
+`
+		config := ScanOptions{
+			ScanType:       "maven",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProductVersion: "product-version",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
+		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
+		scan := whitesourceScan{projectVersion: config.ProductVersion}
+		// test
+		err := executeScan(&config, &scan, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "mvn",
+				Params: []string{
+					"--file",
+					"pom.xml",
+					"-Dorg.whitesource.orgToken=org-token",
+					"-Dorg.whitesource.product=mock-product",
+					"-Dorg.whitesource.checkPolicies=true",
+					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.userKey=user-token",
+					"-Dorg.whitesource.productVersion=product-version",
+					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+					"--batch-mode",
+					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		require.Len(t, scan.scannedProjects, 2)
+		_, existsRoot := scan.scannedProjects["my-artifact-id - product-version"]
+		_, existsModule := scan.scannedProjects["my-artifact-id-sub - product-version"]
+		assert.True(t, existsRoot)
+		assert.True(t, existsModule)
+	})
 	t.Run("pom.xml does not exist", func(t *testing.T) {
 		// init
 		config := ScanOptions{
@@ -399,8 +507,9 @@ func TestExecuteScanMaven(t *testing.T) {
 			ProductVersion: "product-version",
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		assert.EqualError(t, err,
 			"for scanning with type 'maven', the file 'pom.xml' must exist in the project root")
@@ -412,6 +521,15 @@ func TestExecuteScanMTA(t *testing.T) {
 	t.Parallel()
 	t.Run("happy path MTA", func(t *testing.T) {
 		// init
+		const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>my-artifact-id</artifactId>
+    <packaging>jar</packaging>
+</project>
+`
 		config := ScanOptions{
 			ScanType:       "mta",
 			OrgToken:       "org-token",
@@ -421,10 +539,11 @@ func TestExecuteScanMTA(t *testing.T) {
 			ProductVersion: "product-version",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte("dummy"))
-		utilsMock.AddFile("package.json", []byte("dummy"))
+		utilsMock.AddFile("pom.xml", []byte(pomXML))
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		scan := whitesourceScan{}
 		// test
-		err := executeScan(&config, utilsMock)
+		err := executeScan(&config, &scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -477,11 +596,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -494,11 +610,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		}
 		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
 		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
@@ -512,11 +625,8 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 		systemMock := newWhitesourceSystemMock("")
-		config := &ScanOptions{
-			ProjectToken: systemMock.projects[0].Token,
-		}
 		// test
-		err = blockUntilProjectIsUpdated(config, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
@@ -572,6 +682,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		UserToken:      "user-token",
 		ProductName:    "mock-product",
 		ProjectName:    "mock-project",
+		ProductToken:   "mock-product-token",
 		ProductVersion: "42",
 	}
 
@@ -581,6 +692,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	expected["checkPolicies"] = true
 	expected["productName"] = "mock-product"
 	expected["projectName"] = "mock-project"
+	expected["productToken"] = "mock-product-token"
 	expected["productVer"] = "42"
 	expected["devDep"] = true
 	expected["ignoreNpmLsErrors"] = true
@@ -623,6 +735,36 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 
 			mergedExpected := expected
 			mergedExpected["unknown"] = "preserved"
+
+			assert.Equal(t, mergedExpected, actual)
+		}
+	})
+
+	t.Run("extend and merge config, omit productToken", func(t *testing.T) {
+		// init
+		initial := make(map[string]interface{})
+		initial["checkPolicies"] = false
+		initial["productName"] = "mock-product"
+		initial["productVer"] = "41"
+		initial["unknown"] = "preserved"
+		initial["projectToken"] = "mock-project-token"
+		encoded, _ := json.Marshal(initial)
+
+		utils := newWhitesourceUtilsMock()
+		utils.AddFile(whiteSourceConfig, encoded)
+
+		// test
+		err := writeWhitesourceConfigJSON(config, utils, true, true)
+		// assert
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
+			contents, _ := utils.FileRead(whiteSourceConfig)
+			actual := make(map[string]interface{})
+			_ = json.Unmarshal(contents, &actual)
+
+			mergedExpected := expected
+			mergedExpected["unknown"] = "preserved"
+			mergedExpected["projectToken"] = "mock-project-token"
+			delete(mergedExpected, "productToken")
 
 			assert.Equal(t, mergedExpected, actual)
 		}
