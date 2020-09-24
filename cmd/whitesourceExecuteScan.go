@@ -424,23 +424,9 @@ func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, util
 
 	defines := generateMavenWhitesourceDefines(config)
 	flags, excludes := generateMavenWhitesourceFlags(config, utils)
-
-	err := maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
-		project := info.Project
-		if project.Packaging != "pom" {
-			if project.ArtifactID == "" {
-				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
-			}
-
-			err := scan.appendScannedProject(project.ArtifactID + " - " + scan.projectVersion)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	err := appendModulesThatWillBeScanned(scan, utils, excludes)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to determine maven modules which will be scanned: %w", err)
 	}
 
 	_, err = maven.Execute(&maven.ExecuteOptions{
@@ -506,6 +492,23 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) 
 		}
 	}
 	return flags, excludes
+}
+
+func appendModulesThatWillBeScanned(scan *whitesourceScan, utils whitesourceUtils, excludes []string) error {
+	return maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
+		project := info.Project
+		if project.Packaging != "pom" {
+			if project.ArtifactID == "" {
+				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
+			}
+
+			err := scan.appendScannedProject(project.ArtifactID + " - " + scan.projectVersion)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 const whiteSourceConfig = "whitesource.config.json"
