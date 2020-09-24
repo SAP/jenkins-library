@@ -46,7 +46,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 		assert.NoError(t, err, "Did not expect error")
 	})
 	t.Run("Run Step Failure", func(t *testing.T) {
-		expectedErrorMessage := "Checking out branches failed : Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+		expectedErrorMessage := "Something failed during the checkout: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -68,12 +68,162 @@ func TestCheckoutBranchStep(t *testing.T) {
 		}
 
 		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Success case: checkout Branches from file config", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test checkout branches")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+repositories:
+- name: 'testRepo'
+  branch: 'testBranch'
+- name: 'testRepo2'
+  branch: 'testBranch2'
+- name: 'testRepo3'
+  branch: 'testBranch3'`
+
+		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+
+		config := abapEnvironmentCheckoutBranchOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.NoError(t, err)
+	})
+	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
+		expectedErrorMessage := "Something failed during the checkout: Could not parse config file repositoriesTest.yml, please check that you have configured the file correctly"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test checkout branches")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := ``
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentCheckoutBranchOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Failure case: checkout Branches from wrong file config", func(t *testing.T) {
+		expectedErrorMessage := "Something failed during the checkout: Could not unmarshal repositoriesTest.yml"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test checkout branches")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentCheckoutBranchOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
 
 func TestTriggerCheckout(t *testing.T) {
-
 	t.Run("Test trigger checkout: success case", func(t *testing.T) {
 
 		// given
@@ -149,178 +299,7 @@ func TestTriggerCheckout(t *testing.T) {
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
 }
-func TestCheckoutBranchConfig(t *testing.T) {
-	t.Run("Success case: checkout Branches from file config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
 
-		receivedURI := "example.com/Branches"
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test checkout branches")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := `
-- name: 'testRepo'
-  branch: 'testBranch'
-- name: 'testRepo2'
-  branch: 'testBranch2'
-- name: 'testRepo3'
-  branch: 'testBranch3'`
-
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
-
-		config := abapEnvironmentCheckoutBranchOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.NoError(t, err)
-	})
-	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		expectedErrorMessage := "Failed to parse repository configuration file: Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be checked out"
-		receivedURI := "example.com/Branches"
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test checkout branches")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := ``
-
-		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
-
-		config := abapEnvironmentCheckoutBranchOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
-	})
-	t.Run("Failure case: checkout Branches from wrong file config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		expectedErrorMessage := "Failed to checkout branch: Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"
-		receivedURI := "example.com/Branches"
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test checkout branches")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := `
-- repo: 'testRepo'
-- repo: 'testRepo2'`
-
-		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
-
-		config := abapEnvironmentCheckoutBranchOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = checkoutBranchesFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
-	})
-	t.Run("Success case: checkout Branch from config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Branches"
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		config := abapEnvironmentCheckoutBranchOptions{
-			RepositoryName: "testRepo1",
-			BranchName:     "feature-unit-test",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err := handleCheckout(abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName}, con, client, pollIntervall.GetPollIntervall())
-		assert.NoError(t, err)
-	})
-	t.Run("Failure case: checkout Branch with non-existent config", func(t *testing.T) {
-		expectedErrorMessage := "Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Branches"
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      "myToken",
-			StatusCode: 200,
-		}
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err := handleCheckout(abaputils.Repository{}, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
-	})
-}
 func TestCheckoutConfigChecker(t *testing.T) {
 	t.Run("Success case: check config", func(t *testing.T) {
 		config := abapEnvironmentCheckoutBranchOptions{

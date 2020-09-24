@@ -69,6 +69,157 @@ func TestPullStep(t *testing.T) {
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
+	t.Run("Success case: pull repos from file config", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pull repos")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+repositories:
+- name: 'testRepo'
+  branch: 'testBranch'
+- name: 'testRepo2'
+  branch: 'testBranch2'
+- name: 'testRepo3'
+  branch: 'testBranch3'`
+
+		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		assert.NoError(t, err)
+	})
+	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
+		expectedErrorMessage := "Something failed during the pull of the repositories: Could not parse config file repositoriesTest.yml, please check that you have configured the file correctly"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pull repos")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := ``
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Failure case: pull repos from wrong file config", func(t *testing.T) {
+		expectedErrorMessage := "Something failed during the pull of the repositories: Could not unmarshal repositoriesTest.yml"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		pollIntervall := abaputils.AUtilsMock{}
+		defer pollIntervall.Cleanup()
+
+		receivedURI := "example.com/Branches"
+		client := &abaputils.ClientMock{
+			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		dir, err := ioutil.TempDir("", "test pull repos")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "repositoriesTest.yml",
+		}
+		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
 }
 
 func TestTriggerPull(t *testing.T) {
@@ -137,196 +288,6 @@ func TestTriggerPull(t *testing.T) {
 		}
 		_, err := triggerPull(config.RepositoryNames[0], con, client)
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
-	})
-}
-
-func TestPullRepoConfig(t *testing.T) {
-	t.Run("Success case: pullGitRepo from file config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Entity"
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test pullGitRepo")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := `
-- name: 'testRepo'
-  branch: 'testBranch'
-- name: 'testRepo2'
-  branch: 'testBranch2'
-- name: 'testRepo3'
-  branch: 'testBranch3'`
-
-		err = ioutil.WriteFile("repositoriesTest.yml", []byte(manifestFileString), 0644)
-
-		config := abapEnvironmentPullGitRepoOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = pullReposFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.NoError(t, err)
-	})
-	t.Run("Failure case: pullGitRepo from wrong file config", func(t *testing.T) {
-		expectedErrorMessage := "Failed to pull repository: Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Entity"
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test pullGitRepo")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := `
-- repo: 'testRepo'
-- repo: 'testRepo2'`
-
-		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
-
-		config := abapEnvironmentPullGitRepoOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = pullReposFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
-	})
-	t.Run("Failure case: pullGitRepo from empty file config", func(t *testing.T) {
-		expectedErrorMessage := "Failed to parse repository configuration file: Empty or wrong configuration file. Please make sure that you have correctly specified the branches in the repositories to be pulled"
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Entity"
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		dir, err := ioutil.TempDir("", "test pullGitRepo")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := ``
-
-		manifestFileStringBody := []byte(manifestFileString)
-		err = ioutil.WriteFile("repositoriesTest.yml", manifestFileStringBody, 0644)
-
-		config := abapEnvironmentPullGitRepoOptions{
-			Repositories: "repositoriesTest.yml",
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err = pullReposFromConfigFile(config.Repositories, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
-	})
-	t.Run("Success case: pullGitRepo from config", func(t *testing.T) {
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Entity"
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		config := abapEnvironmentPullGitRepoOptions{
-			RepositoryNames: []string{"testRepo1", "testRepo2"},
-		}
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		var err error
-		for _, repositoryName := range config.RepositoryNames {
-			err = handlePull(abaputils.Repository{Name: repositoryName}, con, client, pollIntervall.GetPollIntervall())
-			if err != nil {
-				break
-			}
-		}
-		assert.NoError(t, err)
-	})
-	t.Run("Failure case: pullGitRepo with non-existent config", func(t *testing.T) {
-		expectedErrorMessage := "Failed to read repository configuration: Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be pulled"
-		pollIntervall := abaputils.AUtilsMock{}
-		defer pollIntervall.Cleanup()
-
-		receivedURI := "example.com/Entity"
-		tokenExpected := "myToken"
-
-		client := &abaputils.ClientMock{
-			Body:       `{"d" : { "__metadata" : { "uri" : "` + receivedURI + `" } } }`,
-			Token:      tokenExpected,
-			StatusCode: 200,
-		}
-
-		con := abaputils.ConnectionDetailsHTTP{
-			User:     "MY_USER",
-			Password: "MY_PW",
-			URL:      "https://api.endpoint.com/Branches",
-		}
-		err := handlePull(abaputils.Repository{Name: ""}, con, client, pollIntervall.GetPollIntervall())
-		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 }
 
