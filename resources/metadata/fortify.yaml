@@ -12,10 +12,10 @@ spec:
   inputs:
     secrets:
       - name: fortifyCredentialsId
-        description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC."
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.
         type: jenkins
       - name: githubTokenCredentialsId
-        description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub."
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
     resources:
       - name: commonPipelineEnvironment

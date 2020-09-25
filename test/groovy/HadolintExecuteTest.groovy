@@ -1,5 +1,6 @@
 import hudson.AbortException
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +16,8 @@ import util.Rules
 
 import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
+
+import com.sap.piper.Utils
 
 class HadolintExecuteTest extends BasePiperTest {
 
@@ -42,6 +45,12 @@ class HadolintExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod 'checkStyle', [Map], { m -> assertThat(m.pattern, is('hadolint.xml')); return 'checkstyle' }
         helper.registerAllowedMethod 'recordIssues', [Map], { m -> assertThat(m.tools, hasItem('checkstyle')) }
         helper.registerAllowedMethod 'archiveArtifacts', [String], { String p -> assertThat('hadolint.xml', is(p)) }
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

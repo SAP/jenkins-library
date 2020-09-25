@@ -14,22 +14,20 @@ import (
 func main() {
 	var metadataPath string
 	var targetDir string
-	var docTemplatePath string
-	var isGenerateDocu bool
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&targetDir, "targetDir", "./cmd", "The target directory for the generated commands.")
-	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
-	flag.BoolVar(&isGenerateDocu, "docuGen", false, "Boolean to generate Documentation or Step-MetaData. Default is false.")
 	flag.Parse()
 
-	fmt.Printf("metadataDir: %v\n, targetDir: %v\n, docuDir: %v\n, genDocu: %v\n", metadataPath, targetDir, docTemplatePath, isGenerateDocu)
+	fmt.Printf("metadataDir: %v\n, targetDir: %v\n", metadataPath, targetDir)
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)
-	docuHelperData := helper.DocuHelperData{isGenerateDocu, docTemplatePath, openDocTemplate, docFileWriter}
-	stepHelperData := helper.StepHelperData{openMetaFile, fileWriter, ""}
-	err = helper.ProcessMetaFiles(metadataFiles, targetDir, stepHelperData, docuHelperData)
+	err = helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
+		OpenFile:     openMetaFile,
+		WriteFile:    fileWriter,
+		ExportPrefix: "",
+	})
 	checkError(err)
 
 	fmt.Printf("Running go fmt %v\n", targetDir)
@@ -48,7 +46,7 @@ func fileWriter(filename string, data []byte, perm os.FileMode) error {
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Printf("Error occured: %v\n", err)
+		fmt.Printf("Error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }

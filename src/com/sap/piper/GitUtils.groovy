@@ -42,7 +42,7 @@ String[] extractLogLines(
 
     // Checks below: there was an value provided from outside, but the value was null.
     // Throwing an exception is more transparent than making a fallback to the defaults
-    // used in case the paramter is omitted in the signature.
+    // used in case the parameter is omitted in the signature.
     if(filter == null) throw new IllegalArgumentException('Parameter \'filter\' not provided.')
     if(! from?.trim()) throw new IllegalArgumentException('Parameter \'from\' not provided.')
     if(! to?.trim()) throw new IllegalArgumentException('Parameter \'to\' not provided.')

@@ -1,7 +1,9 @@
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.analytics.InfluxData
+import com.sap.piper.Utils
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -67,8 +69,15 @@ class InfluxWriteDataTest extends BasePiperTest {
         helper.registerAllowedMethod('step', [Map.class],{m -> stepMap = m})
 
         helper.registerAllowedMethod('influxDbPublisher', [Map.class],{m -> stepMap = m})
+
+        Utils.metaClass.echo = { def m -> }
+
     }
 
+    @After
+    void teadDown() {
+        Utils.metaClass = null
+    }
 
     @Test
     void testInfluxWriteDataWithDefault() throws Exception {
