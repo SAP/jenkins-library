@@ -357,11 +357,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 		}
 	}
 
-	if err := scan.updateProjects(sys); err != nil {
-		return err
-	}
-
-	return nil
+	return scan.updateProjects(sys)
 }
 
 // executeScan executes different types of scans depending on the scanType parameter.
