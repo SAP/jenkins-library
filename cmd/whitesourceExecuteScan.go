@@ -271,25 +271,8 @@ func checkAndReportScanResults(config *ScanOptions, scan *whitesourceScan, utils
 		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
 	}
 	if config.SecurityVulnerabilities {
-		// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
-		// convert config.CvssSeverityLimit to float64
-		cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
-				"as floating point number: %w", config.CvssSeverityLimit, err)
-		}
-		if config.ProjectToken != "" {
-			project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
-			if err := checkSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-				return err
-			}
-		} else {
-			for _, project := range scan.scannedProjects {
-				if err := checkSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-					return err
-				}
-			}
+		if err := checkSecurityViolations(config, scan, sys); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -726,8 +709,32 @@ func executeYarnScan(config *ScanOptions, scan *whitesourceScan, utils whitesour
 	return nil
 }
 
+func checkSecurityViolations(config *ScanOptions, scan *whitesourceScan, sys whitesource) error {
+	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
+	// convert config.CvssSeverityLimit to float64
+	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+			"as floating point number: %w", config.CvssSeverityLimit, err)
+	}
+	if config.ProjectToken != "" {
+		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
+		if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			return err
+		}
+	} else {
+		for _, project := range scan.scannedProjects {
+			if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) error {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) error {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
