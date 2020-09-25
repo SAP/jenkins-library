@@ -55,7 +55,7 @@ type jsonLogs struct {
 
 type jsonResults struct {
 	ResultResults struct {
-		Results []result `json:"results"`
+		Results []Result `json:"results"`
 	} `json:"d"`
 }
 
@@ -92,7 +92,7 @@ type task struct {
 	FinishedAt  string      `json:"finished_at"`
 	ResultState resultState `json:"result_state"`
 	Logs        []logStruct
-	Results     []result
+	Results     []Result
 }
 
 type logStruct struct {
@@ -105,7 +105,8 @@ type logStruct struct {
 	Timestamp string `json:"TIME_STMP"`
 }
 
-type result struct {
+// Result : Artefact from Build Framework step
+type Result struct {
 	connector      Connector
 	BuildID        string `json:"build_id"`
 	TaskID         int    `json:"task_id"`
@@ -268,9 +269,9 @@ func (t *task) printLogs() error {
 }
 
 // GetResult : Returns the last Build artefact created from build step
-func (b *Build) GetResult(name string) (result, error) {
-	var Results []result
-	var returnResult result
+func (b *Build) GetResult(name string) (Result, error) {
+	var Results []Result
+	var returnResult Result
 	if err := b.getResults(); err != nil {
 		return returnResult, err
 	}
@@ -331,7 +332,7 @@ func (t *task) getResults() error {
 }
 
 // Download : Provides the atrefact of build step
-func (result *result) Download(downloadPath string) error {
+func (result *Result) Download(downloadPath string) error {
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
 	err := result.connector.Download(appendum, downloadPath)
 	return err
