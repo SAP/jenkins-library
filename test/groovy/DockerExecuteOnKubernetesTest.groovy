@@ -634,6 +634,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             ], podSpec.spec.tolerations)
         assertEquals('foo', podSpec.spec.subdomain)
         assertFalse(podSpec.spec.shareProcessNamespace)
+        assertThat(loggingRule.log, containsString('Additional pod properties found ([tolerations, subdomain, shareProcessNamespace]). Providing additional pod properties is some kind of expert mode. In case of any problems caused by these additional properties only limited support can be provided.'))
+
     }
 
     @Test

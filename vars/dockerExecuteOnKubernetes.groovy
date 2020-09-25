@@ -377,7 +377,13 @@ chown -R ${runAsUser}:${fsGroup} ."""
 }
 
 private Map getAdditionalPodProperties(Map config) {
-    return config.additionalPodProperties ?: config.jenkinsKubernetes.additionalPodProperties ?: [:]
+    Map podProperties = config.additionalPodProperties ?: config.jenkinsKubernetes.additionalPodProperties ?: [:]
+    if(podProperties) {
+        echo "Additional pod properties found (${podProperties.keySet()})." +
+        ' Providing additional pod properties is some kind of expert mode. In case of any problems caused by these' +
+        ' additional properties only limited support can be provided.'
+    }
+    return podProperties
 }
 
 private Map getSecurityContext(Map config) {
