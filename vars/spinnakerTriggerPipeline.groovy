@@ -77,7 +77,7 @@ import groovy.transform.Field
 
 /**
  * Triggers a [Spinnaker](https://spinnaker.io) pipeline from a Jenkins pipeline.
- * Spinnaker is for example used for Continuos Deployment scenarios to various Clouds.
+ * Spinnaker is for example used for Continuous Deployment scenarios to various Clouds.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {

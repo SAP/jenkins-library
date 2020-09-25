@@ -79,7 +79,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: wrong password or account does not exist") {
 			assert.False(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{
+				{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
@@ -109,7 +109,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{
+				{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
@@ -142,7 +142,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.True(t, cf.loggedIn)
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{
+				{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
@@ -205,7 +205,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 		//then
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
-				mock.ExecCall{Exec: "cf", Params: []string{
+				{Exec: "cf", Params: []string{
 					"login",
 					"-a", "https://api.endpoint.com",
 					"-o", "testOrg",
@@ -213,8 +213,8 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 					"-u", "testUser",
 					"-p", "testPassword",
 				}},
-				mock.ExecCall{Exec: "cf", Params: []string{"service-key", "testInstance", "testServiceKeyName"}},
-				mock.ExecCall{Exec: "cf", Params: []string{"logout"}},
+				{Exec: "cf", Params: []string{"service-key", "testInstance", "testServiceKeyName"}},
+				{Exec: "cf", Params: []string{"logout"}},
 			}, m.Calls)
 		}
 		assert.Equal(t, `		{"sap.cloud.service":"com.sap.cloud.abap","url": "`+testURL+`" ,"systemid":"H01","abap":{"username":"`+username+`","password":"`+password+`","communication_scenario_id": "SAP_COM_0510","communication_arrangement_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_system_id": "SK_I6CBIRFZPPJDKYNATQA32W","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "0.0.1.1","type": "basic","id": "i6cBiRfZppJdKynaTqa32W"},"preserve_host_header": true}`, abapServiceKey)

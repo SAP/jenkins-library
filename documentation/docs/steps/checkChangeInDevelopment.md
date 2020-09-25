@@ -53,7 +53,7 @@ general:
       format: '%b'
 ```
 
-The properties configured in section `'general/changeManagement'` are shared between all change managment related steps.
+The properties configured in section `'general/changeManagement'` are shared between all change management related steps.
 
 The properties can also be configured on a per-step basis:
 
@@ -77,7 +77,7 @@ The parameters can also be provided when the step is invoked:
 ```
 
 ```groovy
-    // explict endpoint provided, we search for changeDocumentId
+    // explicit endpoint provided, we search for changeDocumentId
     // starting at the previous commit (HEAD~1) rather than on
     // 'origin/master' (the default).
     checkChangeInDevelopment(

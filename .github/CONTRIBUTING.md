@@ -159,7 +159,7 @@ e.g. `echo "[INFO] ${name} version ${version.version} is installed."`
 
 #### Use """triple double quotes""" for multiline GStrings
 
-#### Use /slash/ for regular expresions
+#### Use /slash/ for regular expressions
 
 This notation avoids to double escape backslashes, making easier working with regex.
 
