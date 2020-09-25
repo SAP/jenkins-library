@@ -41,11 +41,12 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        DockerUtils dockerUtils = new DockerUtils(script)
         ConfigurationHelper.newInstance(this, config)
             .withMandatoryProperty('dockerImageName')
             .withMandatoryProperty('dockerImageTag')
             .withMandatoryProperty('gossFile')
+
+        DockerUtils dockerUtils = new DockerUtils(script)
 
         def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
         if (config.dockerRegistryUrl) {
@@ -63,7 +64,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-def runOnNode(dockerImageNameAndTag){
+void runOnNode(dockerImageNameAndTag){
     def targetImage = docker.image(dockerImageNameAndTag)
     docker.image('docker:18.06.3-dind').withRun('--privileged -it --name mydind') { c ->
         sh "while ! docker exec mydind docker stats --no-stream; do sleep 1; done"
@@ -109,10 +110,7 @@ spec:
         command:
         - cat
         tty: true
-    - name: jnlp
-        image: docker.wdf.sap.corp:50001/sap-production/jnlp-alpine:3.26.1-sap-02
-        args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
-            """
+"""
     ){
         node(POD_LABEL){
             container('goss') {
