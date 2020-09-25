@@ -191,6 +191,7 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 }
 
 func TestResolveProjectIdentifiers(t *testing.T) {
+	t.Parallel()
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := ScanOptions{
@@ -216,6 +217,31 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
 			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
 			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
+			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
+		}
+	})
+	t.Run("retrieves token for configured project name", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			ProjectName:         "mock-project - 1",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := newWhitesourceSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-project - 1", scan.aggregateProjectName)
+			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "mock-project-token", config.ProjectToken)
 		}
 	})
 	t.Run("product not found", func(t *testing.T) {
@@ -373,11 +399,22 @@ func TestExecuteScanNPM(t *testing.T) {
 		assert.Len(t, utilsMock.Calls, 0)
 		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
 	})
+	t.Run("package.json needs name", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte(`{"key":"value"}`))
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json/package.json' must configure a name")
+	})
 	t.Run("npm ls fails", func(t *testing.T) {
 		// init
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
+		utilsMock.AddFile("package-lock.json", []byte("dummy"))
 
 		utilsMock.ShouldFailOnCommand = make(map[string]error)
 		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
@@ -387,6 +424,7 @@ func TestExecuteScanNPM(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
+		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
 	})
 }
 
@@ -537,7 +575,7 @@ func TestExecuteScanMTA(t *testing.T) {
 </project>
 `
 		config := ScanOptions{
-			ScanType:       "mta",
+			BuildTool:      "mta",
 			OrgToken:       "org-token",
 			UserToken:      "user-token",
 			ProductName:    "mock-product",

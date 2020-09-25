@@ -1027,20 +1027,21 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Severity"}}); err != nil {
-		return err
+	rows := []struct {
+		axis  string
+		title string
+	}{
+		{"A1", "Severity"},
+		{"B1", "Library"},
+		{"C1", "Vulnerability ID"},
+		{"D1", "Project"},
+		{"E1", "Resolution"},
 	}
-	if err := streamWriter.SetRow("B1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Library"}}); err != nil {
-		return err
-	}
-	if err := streamWriter.SetRow("C1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Vulnerability ID"}}); err != nil {
-		return err
-	}
-	if err := streamWriter.SetRow("D1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Project"}}); err != nil {
-		return err
-	}
-	if err := streamWriter.SetRow("E1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Resolution"}}); err != nil {
-		return err
+	for _, row := range rows {
+		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
+		if err != nil {
+			return err
+		}
 	}
 
 	for i, alert := range alerts {
@@ -1053,7 +1054,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		row[4] = vuln.FixResolutionText
 		cell, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := streamWriter.SetRow(cell, row); err != nil {
-			fmt.Println(err)
+			log.Entry().Error(err)
 		}
 	}
 	if err := streamWriter.Flush(); err != nil {
