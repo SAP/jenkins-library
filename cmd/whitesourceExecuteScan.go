@@ -667,10 +667,10 @@ func getNpmProjectName(modulePath string, utils whitesourceUtils) (string, error
 	if err != nil {
 		return "", fmt.Errorf("could not read package.json: %w", err)
 	}
-	var packageJson = make(map[string]interface{})
-	err = json.Unmarshal(fileContents, &packageJson)
+	var packageJSON = make(map[string]interface{})
+	err = json.Unmarshal(fileContents, &packageJSON)
 
-	projectNameEntry, exists := packageJson["name"]
+	projectNameEntry, exists := packageJSON["name"]
 	if !exists {
 		return "", fmt.Errorf("the file '%s' must configure a name",
 			filepath.Join(modulePath, "package.json"))
