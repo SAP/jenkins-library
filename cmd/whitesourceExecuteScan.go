@@ -245,24 +245,24 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
-	if config.Reporting || config.SecurityVulnerabilities {
-		// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
-		// before downloading any reports or check security vulnerabilities.
-		if config.ProjectToken != "" {
-			// Poll status of aggregated project
-			if err := pollProjectStatus(config.ProjectToken, time.Now(), sys); err != nil {
-				return err
-			}
-		} else {
-			// Poll status of all scanned projects
-			for key, project := range scan.scannedProjects {
-				if err := pollProjectStatus(project.Token, scan.scanTimes[key], sys); err != nil {
-					return err
-				}
-			}
-		}
+	if err := checkAndReportScanResults(config, scan, utils, sys); err != nil {
+		return err
 	}
 
+	if err := persistScannedProjects(config, scan, utils); err != nil {
+		return fmt.Errorf("failed to persist scanned WhiteSource project names: %w", err)
+	}
+
+	return nil
+}
+
+func checkAndReportScanResults(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
+	if !config.Reporting && !config.SecurityVulnerabilities {
+		return nil
+	}
+	if err := blockUntilReportsAreaReady(config, scan, sys); err != nil {
+		return err
+	}
 	if config.Reporting {
 		paths, err := downloadReports(config, scan, utils, sys)
 		if err != nil {
@@ -270,7 +270,6 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 		}
 		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
 	}
-
 	if config.SecurityVulnerabilities {
 		// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 		// convert config.CvssSeverityLimit to float64
@@ -293,11 +292,6 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 			}
 		}
 	}
-
-	if err := persistScannedProjects(config, scan, utils); err != nil {
-		return fmt.Errorf("failed to persist scanned WhiteSource project names: %w", err)
-	}
-
 	return nil
 }
 
@@ -774,6 +768,25 @@ func checkSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys 
 	return nil
 }
 
+func blockUntilReportsAreaReady(config *ScanOptions, scan *whitesourceScan, sys whitesource) error {
+	// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
+	// before downloading any reports or check security vulnerabilities.
+	if config.ProjectToken != "" {
+		// Poll status of aggregated project
+		if err := pollProjectStatus(config.ProjectToken, time.Now(), sys); err != nil {
+			return err
+		}
+	} else {
+		// Poll status of all scanned projects
+		for key, project := range scan.scannedProjects {
+			if err := pollProjectStatus(project.Token, scan.scanTimes[key], sys); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
 func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesource) error {
 	return blockUntilProjectIsUpdated(projectToken, sys, scanTime, 20*time.Second, 20*time.Second, 15*time.Minute)
@@ -1023,6 +1036,30 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err != nil {
 		return err
 	}
+	if err := fillVulnerabilityExcelReport(alerts, streamWriter, styleID); err != nil {
+		return err
+	}
+	if err := streamWriter.Flush(); err != nil {
+		return err
+	}
+
+	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+		return err
+	}
+
+	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName,
+		utils.Now().Format(wsReportTimeStampLayout))
+	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	if err := file.Write(stream); err != nil {
+		return err
+	}
+	return nil
+}
+
+func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.StreamWriter, styleID int) error {
 	rows := []struct {
 		axis  string
 		title string
@@ -1052,23 +1089,6 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		if err := streamWriter.SetRow(cell, row); err != nil {
 			log.Entry().Errorf("failed to write alert row: %v", err)
 		}
-	}
-	if err := streamWriter.Flush(); err != nil {
-		return err
-	}
-
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
-		return err
-	}
-
-	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName,
-		utils.Now().Format(wsReportTimeStampLayout))
-	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	if err := file.Write(stream); err != nil {
-		return err
 	}
 	return nil
 }
