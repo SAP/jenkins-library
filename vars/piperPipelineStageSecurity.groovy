@@ -41,9 +41,11 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('checkmarxExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.checkmarxExecuteScan)
+        .addIfEmpty('detectExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.detectExecuteScan)
         .addIfEmpty('fortifyExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.fortifyExecuteScan)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
+    
     piperStageWrapper (script: script, stageName: stageName) {
         if (config.checkmarxExecuteScan) {
             securityScanMap['Checkmarx'] = {
