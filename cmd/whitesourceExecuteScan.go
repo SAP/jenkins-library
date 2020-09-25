@@ -1050,7 +1050,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		row[4] = vuln.FixResolutionText
 		cell, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := streamWriter.SetRow(cell, row); err != nil {
-			log.Entry().Error(err)
+			log.Entry().Errorf("failed to write alert row: %v", err)
 		}
 	}
 	if err := streamWriter.Flush(); err != nil {
