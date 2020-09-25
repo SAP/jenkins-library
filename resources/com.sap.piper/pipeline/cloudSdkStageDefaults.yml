@@ -24,6 +24,12 @@ stages:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
+  security:
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          #todo incomplete
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
