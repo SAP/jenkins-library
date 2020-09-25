@@ -83,7 +83,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 		successCommit, err := getLastSuccessfullCommit(config, telemetryData, httpClient, parsedURL, commitList)
 		if err != nil {
-			return errors.Wrap(err, "could not determine successfull commit")
+			return errors.Wrap(err, "could not determine successful commit")
 		}
 
 		deployOptions = gctsDeployOptions{
@@ -125,7 +125,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 	log.Entry().
 		WithField("repository", config.Repository).
-		Infof("rollback was successfull")
+		Infof("rollback was successful")
 	return nil
 }
 
@@ -180,7 +180,7 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		if status, ok := response.Path("state").Data().(string); ok && status == "success" {
 			log.Entry().
 				WithField("repository", config.Repository).
-				Infof("last successfull commit was determined to be %v", commit)
+				Infof("last successful commit was determined to be %v", commit)
 			return commit, nil
 		}
 	}

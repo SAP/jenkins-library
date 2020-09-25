@@ -262,7 +262,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 		Spec: StepSpec{
 			Inputs: StepInputs{
 				Parameters: []StepParameters{
-					StepParameters{ResourceRef: []ResourceReference{ResourceReference{Type: "vaultSecret"}}},
+					{ResourceRef: []ResourceReference{{Type: "vaultSecret"}}},
 				},
 			},
 		},

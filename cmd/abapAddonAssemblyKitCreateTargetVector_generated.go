@@ -50,7 +50,7 @@ func (p *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) persis
 	}
 }
 
-// AbapAddonAssemblyKitCreateTargetVectorCommand This step creates a Target Vector for SPC
+// AbapAddonAssemblyKitCreateTargetVectorCommand This step creates a Target Vector for software lifecycle operations
 func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCreateTargetVector"
 
@@ -61,10 +61,10 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitCreateTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step creates a Target Vector for SPC",
+		Short: "This step creates a Target Vector for software lifecycle operations",
 		Long: `This step takes the Product Version and the corresponding list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-With these it creates a Target Vector, which is necessary for executing the software change in ABAP Cloud Platform systems with help of the Software Provider Cockpit (SPC).
-It describes the software state, which shall be reached in the managed ABAP Cloud Platform system.`,
+With these it creates a Target Vector, which is necessary for executing software lifecylce operations in ABAP Cloud Platform systems.
+The Target Vector describes the software state, which shall be reached in the managed ABAP Cloud Platform system.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
