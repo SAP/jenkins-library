@@ -71,6 +71,8 @@ type whitesourceUtils interface {
 
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
+
+	Now() time.Time
 }
 
 type whitesourceUtilsBundle struct {
@@ -106,6 +108,10 @@ func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ScanOptions) ([]st
 
 func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error {
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
+}
+
+func (w *whitesourceUtilsBundle) Now() time.Time {
+	return time.Now()
 }
 
 func newWhitesourceUtils() *whitesourceUtilsBundle {
@@ -179,27 +185,45 @@ func (s *whitesourceScan) updateProjects(sys whitesource) error {
 	return nil
 }
 
+func newWhitesourceScan(config *ScanOptions) *whitesourceScan {
+	return &whitesourceScan{
+		aggregateProjectName: config.ProjectName,
+		projectVersion:       config.ProductVersion,
+	}
+}
+
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
 	utils := newWhitesourceUtils()
-	scan := whitesourceScan{}
+	scan := newWhitesourceScan(&config)
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
-	if err := resolveProjectIdentifiers(&config, &scan, utils, sys); err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runWhitesourceExecuteScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
+	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
+		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
 
-	// Generate a vulnerability report for all projects with version = config.ProjectVersion
 	if config.AggregateVersionWideReport {
-		if err := aggregateVersionWideLibraries(&config, utils, sys); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide libraries")
+		// Generate a vulnerability report for all projects with version = config.ProjectVersion
+		// Note that this is not guaranteed that all projects are from the same scan.
+		// For example, if a module was removed from the source code, the project may still
+		// exist in the WhiteSource system.
+		if err := aggregateVersionWideLibraries(config, utils, sys); err != nil {
+			return fmt.Errorf("failed to aggregate version wide libraries: %w", err)
 		}
-		if err := aggregateVersionWideVulnerabilities(&config, utils, sys); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide vulnerabilities")
+		if err := aggregateVersionWideVulnerabilities(config, utils, sys); err != nil {
+			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
-		if err := runWhitesourceScan(&config, &scan, utils, sys); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on executing whitesource scan")
+		if err := runWhitesourceScan(config, scan, utils, sys); err != nil {
+			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
+	return nil
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
@@ -278,10 +302,6 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 }
 
 func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
-	if scan.aggregateProjectName == "" {
-		scan.aggregateProjectName = config.ProjectName
-	}
-
 	if scan.aggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -984,7 +1004,8 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 		}
 	}
 
-	if err := utils.FileWrite("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
+	reportPath := filepath.Join(config.ReportDirectoryName, "project-names-aggregated.txt")
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0644); err != nil {
 		return err
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -992,6 +1013,8 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 	return nil
 }
+
+const wsReportTimeStampLayout = "2006-01-02 15:04:05"
 
 // outputs an slice of alerts to an excel file
 func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
@@ -1041,7 +1064,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
+	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName,
+		utils.Now().Format(wsReportTimeStampLayout))
 	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -1068,7 +1092,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	}
 
 	// Write result to file
-	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
+	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName,
+		utils.Now().Format(wsReportTimeStampLayout))
 	if err := utils.FileWrite(fileName, []byte(output), 0777); err != nil {
 		return err
 	}

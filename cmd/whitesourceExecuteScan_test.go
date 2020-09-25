@@ -78,7 +78,7 @@ var mockLibrary = ws.Library{
 	Name:     "mock-library",
 	Filename: "mock-library-file",
 	Version:  "mock-library-version",
-	Project:  "mock-project",
+	Project:  "mock-project - 1",
 }
 
 func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
@@ -95,7 +95,7 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 		projects: []ws.Project{
 			{
 				ID:             42,
-				Name:           "mock-project",
+				Name:           "mock-project - 1",
 				PluginName:     "mock-plugin-name",
 				Token:          "mock-project-token",
 				UploadedBy:     "MrBean",
@@ -107,7 +107,7 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 			{
 				Vulnerability: ws.Vulnerability{},
 				Library:       mockLibrary,
-				Project:       "mock-project",
+				Project:       "mock-project - 1",
 				CreationDate:  "last-thursday",
 			},
 		},
@@ -171,6 +171,13 @@ func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []str
 	return nil
 }
 
+const wsTimeNow = "2010-05-10 00:15:42"
+
+func (w *whitesourceUtilsMock) Now() time.Time {
+	now, _ := time.Parse("2006-01-02 15:04:05", wsTimeNow)
+	return now
+}
+
 func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
 		FilesMock:      &mock.FilesMock{},
@@ -197,9 +204,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.aggregateProjectName)
@@ -220,9 +227,9 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		systemMock := newWhitesourceSystemMock("ignored")
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := resolveProjectIdentifiers(&config, &scan, utilsMock, systemMock)
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
@@ -246,9 +253,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		scan := whitesourceScan{aggregateProjectName: config.ProjectName}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 
@@ -288,9 +295,9 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		require.Len(t, utilsMock.downloadedFiles, 1)
@@ -307,9 +314,9 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// many assert
 		require.NoError(t, err)
 		assert.Len(t, utilsMock.downloadedFiles, 0)
@@ -332,9 +339,9 @@ func TestExecuteScanNPM(t *testing.T) {
 		// init
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -358,9 +365,9 @@ func TestExecuteScanNPM(t *testing.T) {
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
 		utilsMock := newWhitesourceUtilsMock()
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
 		assert.Len(t, utilsMock.Calls, 0)
@@ -374,9 +381,9 @@ func TestExecuteScanNPM(t *testing.T) {
 
 		utilsMock.ShouldFailOnCommand = make(map[string]error)
 		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
@@ -406,9 +413,9 @@ func TestExecuteScanMaven(t *testing.T) {
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -466,9 +473,9 @@ func TestExecuteScanMaven(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
 		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
-		scan := whitesourceScan{projectVersion: config.ProductVersion}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -503,13 +510,12 @@ func TestExecuteScanMaven(t *testing.T) {
 			OrgToken:       "org-token",
 			UserToken:      "user-token",
 			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
 			ProductVersion: "product-version",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.EqualError(t, err,
 			"for scanning with type 'maven', the file 'pom.xml' must exist in the project root")
@@ -541,9 +547,9 @@ func TestExecuteScanMTA(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := whitesourceScan{}
+		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, &scan, utilsMock)
+		err := executeScan(&config, scan, utilsMock)
 		// assert
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
@@ -646,7 +652,7 @@ func TestDownloadReports(t *testing.T) {
 		}
 		utils := newWhitesourceUtilsMock()
 		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := &whitesourceScan{}
+		scan := newWhitesourceScan(config)
 		// test
 		paths, err := downloadReports(config, scan, utils, system)
 		// assert
@@ -670,7 +676,7 @@ func TestDownloadReports(t *testing.T) {
 		}
 		utils := newWhitesourceUtilsMock()
 		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := &whitesourceScan{}
+		scan := newWhitesourceScan(config)
 		// test
 		paths, err := downloadReports(config, scan, utils, system)
 		// assert
@@ -685,7 +691,7 @@ func TestDownloadReports(t *testing.T) {
 		}
 		utils := newWhitesourceUtilsMock()
 		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := &whitesourceScan{}
+		scan := newWhitesourceScan(config)
 		scan.init()
 		scan.scannedProjects["mock-project"] = ws.Project{
 			Name:  "mock-project",
@@ -809,9 +815,9 @@ func TestPersisScannedProjects(t *testing.T) {
 	t.Parallel()
 	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{}
+		config := &ScanOptions{ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
-		scan := &whitesourceScan{projectVersion: "1"}
+		scan := newWhitesourceScan(config)
 		_ = scan.appendScannedProject("project")
 		// test
 		err := persistScannedProjects(config, scan, utils)
@@ -823,9 +829,9 @@ func TestPersisScannedProjects(t *testing.T) {
 	})
 	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{}
+		config := &ScanOptions{ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
-		scan := &whitesourceScan{projectVersion: "1"}
+		scan := newWhitesourceScan(config)
 		_ = scan.appendScannedProject("project-app")
 		_ = scan.appendScannedProject("project-db")
 		// test
@@ -838,9 +844,9 @@ func TestPersisScannedProjects(t *testing.T) {
 	})
 	t.Run("write no projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{}
+		config := &ScanOptions{ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
-		scan := &whitesourceScan{projectVersion: "1"}
+		scan := newWhitesourceScan(config)
 		// test
 		err := persistScannedProjects(config, scan, utils)
 		// assert
@@ -853,13 +859,59 @@ func TestPersisScannedProjects(t *testing.T) {
 		// init
 		config := &ScanOptions{ProjectName: "project - 1"}
 		utils := newWhitesourceUtilsMock()
-		scan := &whitesourceScan{}
+		scan := newWhitesourceScan(config)
 		// test
 		err := persistScannedProjects(config, scan, utils)
 		// assert
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			assert.Equal(t, "project - 1", string(contents))
+		}
+	})
+}
+
+func TestAggregateVersionWideLibraries(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:        "mock-product-token",
+			ProductVersion:      "1",
+			ReportDirectoryName: "mock-reports",
+		}
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		// test
+		err := aggregateVersionWideLibraries(config, utils, system)
+		// assert
+		resource := fmt.Sprintf("mock-reports/libraries-%s.csv", wsTimeNow)
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			asString := string(contents)
+			assert.Equal(t, "Library Name, Project Name\nmock-library, mock-project\n", asString)
+		}
+	})
+}
+
+func TestAggregateVersionWideVulnerabilities(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:        "mock-product-token",
+			ProductVersion:      "1",
+			ReportDirectoryName: "mock-reports",
+		}
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		// test
+		err := aggregateVersionWideVulnerabilities(config, utils, system)
+		// assert
+		resource := fmt.Sprintf("mock-reports/project-names-aggregated.txt")
+		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+			contents, _ := utils.FileRead(resource)
+			asString := string(contents)
+			assert.Equal(t, "mock-project - 1\n", asString)
 		}
 	})
 }

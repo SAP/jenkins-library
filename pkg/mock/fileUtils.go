@@ -460,6 +460,7 @@ func (f *FilesMock) Open(path string, flag int, perm os.FileMode) (*FileMock, er
 	}
 	if !exists && flag&os.O_CREATE != 0 {
 		f.associateContentAbs(absPath, &[]byte{}, perm)
+		properties, _ = f.files[absPath]
 	}
 
 	file := FileMock{
