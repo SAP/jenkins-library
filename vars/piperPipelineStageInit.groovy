@@ -25,16 +25,16 @@ import static com.sap.piper.Prerequisites.checkScript
     'containerMapResource',
     /**
      * Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
-     * If this is set to true, it is not required to set the build tool by hand for those cases.
+     * If this is set to true, it is not required to provide the `buildTool` parameter in the `general` section of the pipeline configuration.
      */
     'inferBuildTool',
     /**
      * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
-     * If this is set to true, the stashSettings parameter is **not** configurable'.
+     * If this is set to true, the stashSettings parameter is **not** configurable.
      */
     'initCloudSdkStashSettings',
     /**
-     * Defines the library resource containing the legacy configuration mapping.
+     * Defines the library resource containing the legacy configuration definition.
      */
     'legacyConfigSettings',
     /**
@@ -120,6 +120,9 @@ void call(Map parameters = [:]) {
                 case 'mta':
                     initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkMtaStashSettings.yml", config.verbose?: false)
                     break
+                default:
+                    error "[${STEP_NAME}] No stash settings for build tool ${buildTool} can be found. With `initCloudSdkStashSettings` active, only Maven, MTA or NPM projects are supported."
+                    break
             }
         } else {
             initStashConfiguration(script, config.stashSettings, config.verbose?: false)
@@ -162,6 +165,8 @@ void call(Map parameters = [:]) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
             if (config.inferBuildTool && env.ON_K8S) {
+                // We set dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
+                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
                 artifactPrepareVersion script: script, buildTool: buildTool, dockerImage: ""
             } else if (config.inferBuildTool) {
                 artifactPrepareVersion script: script, buildTool: buildTool
