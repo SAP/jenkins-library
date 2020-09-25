@@ -105,10 +105,13 @@ func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
 		},
 		alerts: []ws.Alert{
 			{
-				Vulnerability: ws.Vulnerability{},
-				Library:       mockLibrary,
-				Project:       "mock-project - 1",
-				CreationDate:  "last-thursday",
+				Vulnerability: ws.Vulnerability{
+					Name:  "something severe",
+					Score: 5,
+				},
+				Library:      mockLibrary,
+				Project:      "mock-project - 1",
+				CreationDate: "last-thursday",
 			},
 		},
 		libraries:           []ws.Library{mockLibrary},
@@ -922,7 +925,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
-		resource := fmt.Sprintf("mock-reports/libraries-%s.csv", wsTimeNow)
+		resource := filepath.Join("mock-reports", fmt.Sprintf("libraries-%s.csv", wsTimeNow))
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
@@ -945,11 +948,86 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		// test
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
-		resource := fmt.Sprintf("mock-reports/project-names-aggregated.txt")
+		resource := filepath.Join("mock-reports", "project-names-aggregated.txt")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "mock-project - 1\n", asString)
 		}
+	})
+}
+
+func TestCheckAndReportScanResults(t *testing.T) {
+	t.Parallel()
+	t.Run("no reports requested", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:        "mock-product-token",
+			ProjectToken:        "mock-project-token",
+			ProductVersion:      "1",
+			ReportDirectoryName: "mock-reports",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		// test
+		err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+		vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
+		assert.False(t, utils.HasWrittenFile(vPath))
+		rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
+		assert.False(t, utils.HasWrittenFile(rPath))
+	})
+	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "invalid",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		// test
+		err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
+	})
+	t.Run("check vulnerabilities - limit not hit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectToken:            "mock-project-token",
+			ProductVersion:          "1",
+			ReportDirectoryName:     "mock-reports",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "6.0",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		// test
+		err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+	})
+	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectName:             "mock-project - 1",
+			ProjectToken:            "mock-project-token",
+			ProductVersion:          "1",
+			ReportDirectoryName:     "mock-reports",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "4",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		// test
+		err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
 	})
 }
