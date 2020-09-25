@@ -13,6 +13,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     /** Executes a Checkmarx scan */
     'checkmarxExecuteScan',
+    /** Executes Synopsys Detect scans */
+    'detectExecuteScan',
     /** Executes a Fortify scan */
     'fortifyExecuteScan',
     /** Executes a WhiteSource scan */
@@ -49,6 +51,20 @@ void call(Map parameters = [:]) {
                     try{
                         durationMeasure(script: script, measurementName: 'checkmarx_duration') {
                             checkmarxExecuteScan script: script
+                        }
+                    }finally{
+                        deleteDir()
+                    }
+                }
+            }
+        }
+
+        if (config.detectExecuteScan) {
+            securityScanMap['Detect'] = {
+                node(config.nodeLabel) {
+                    try{
+                        durationMeasure(script: script, measurementName: 'detect_duration') {
+                            detectExecuteScan script: script
                         }
                     }finally{
                         deleteDir()
