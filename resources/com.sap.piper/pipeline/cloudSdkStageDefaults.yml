@@ -86,10 +86,10 @@ stages:
   whitesourceScan:
     onlyProductiveBranch: true
     stepConditions:
-      whitesourceScan:
+      whitesourceExecuteScan:
         configKeys:
           - 'product'
-          - 'credentialsId'
+          - 'orgAdminUserTokenCredentialsId'
   fortifyScan:
     onlyProductiveBranch: true
     stepConditions:
