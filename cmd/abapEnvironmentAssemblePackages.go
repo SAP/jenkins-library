@@ -46,8 +46,10 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
-
+	err = json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
+	if err != nil {
+		return err
+	}
 	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn)
 	if err != nil {
 		return err

@@ -153,7 +153,10 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	}
 
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	err = json.Unmarshal(body, &jBuild)
+	if err != nil {
+		return err
+	}
 	b.BuildID = jBuild.Build.BuildID
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
@@ -173,7 +176,10 @@ func (b *Build) Get() error {
 		return err
 	}
 	var jBuild jsonBuild
-	json.Unmarshal(body, &jBuild)
+	err = json.Unmarshal(body, &jBuild)
+	if err != nil {
+		return err
+	}
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
 	b.Phase = jBuild.Build.Phase
@@ -192,7 +198,10 @@ func (b *Build) getTasks() error {
 			return err
 		}
 		var jTasks jsonTasks
-		json.Unmarshal(body, &jTasks)
+		err = json.Unmarshal(body, &jTasks)
+		if err != nil {
+			return err
+		}
 		b.Tasks = jTasks.ResultTasks.Tasks
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
@@ -212,7 +221,10 @@ func (b *Build) getValues() error {
 			return err
 		}
 		var jValues jsonValues
-		json.Unmarshal(body, &jValues)
+		err = json.Unmarshal(body, &jValues)
+		if err != nil {
+			return err
+		}
 		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
 			b.Values[i].connector = b.Connector
@@ -308,7 +320,10 @@ func (t *task) getLogs() error {
 			return err
 		}
 		var jLogs jsonLogs
-		json.Unmarshal(body, &jLogs)
+		err = json.Unmarshal(body, &jLogs)
+		if err != nil {
+			return err
+		}
 		t.Logs = jLogs.ResultLogs.Logs
 	}
 	return nil
@@ -322,7 +337,10 @@ func (t *task) getResults() error {
 			return err
 		}
 		var jResults jsonResults
-		json.Unmarshal(body, &jResults)
+		err = json.Unmarshal(body, &jResults)
+		if err != nil {
+			return err
+		}
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
