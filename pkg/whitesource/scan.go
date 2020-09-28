@@ -52,7 +52,13 @@ func (s *Scan) AppendScannedProjectVersion(projectName string) error {
 	return nil
 }
 
-// ScannedProjects returns the WhiteSource projects that have been added via AppendScannedProject() as a slice
+// ProjectByName returns a WhiteSource Project previously established via AppendScannedProject().
+func (s *Scan) ProjectByName(projectName string) (Project, bool) {
+	project, exists := s.scannedProjects[projectName]
+	return project, exists
+}
+
+// ScannedProjects returns the WhiteSource projects that have been added via AppendScannedProject() as a slice.
 func (s *Scan) ScannedProjects() []Project {
 	var projects []Project
 	for _, project := range s.scannedProjects {
