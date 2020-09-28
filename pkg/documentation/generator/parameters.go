@@ -121,7 +121,7 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += fmt.Sprintf("#### %v\n\n", secret.Name)
 
 		if !contains(stepParameterNames, secret.Name) {
-			details += "**Jenkins-specific:** Used for proper environment setup. See *[Using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
+			details += "**Jenkins-specific:** Used for proper environment setup. See *[using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
 		}
 
 		details += secret.Description + "\n\n"
