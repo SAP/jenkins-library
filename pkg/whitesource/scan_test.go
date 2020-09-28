@@ -5,26 +5,11 @@ import (
 	"testing"
 )
 
-func TestNewScan(t *testing.T) {
-	t.Parallel()
-	t.Run("options are transferred", func(t *testing.T) {
-		// init
-		options := ScanOptions{
-			AggregateProjectName: "project",
-			ProductVersion:       "1",
-		}
-		// test
-		scan := NewScan(options)
-		// assert
-		assert.Equal(t, &Scan{aggregateProjectName: "project", productVersion: "1"}, scan)
-	})
-}
-
 func TestAppendScannedProjectVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("single module", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		// test
 		err := scan.AppendScannedProjectVersion("module-a - 1")
 		// assert
@@ -37,7 +22,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 	})
 	t.Run("two modules", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		// test
 		err1 := scan.AppendScannedProjectVersion("module-a - 1")
 		err2 := scan.AppendScannedProjectVersion("module-b - 1")
@@ -53,7 +38,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 	})
 	t.Run("module without version", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		// test
 		err := scan.AppendScannedProjectVersion("module-a")
 		// assert
@@ -62,7 +47,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 	})
 	t.Run("duplicate module", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		// test
 		err1 := scan.AppendScannedProjectVersion("module-a - 1")
 		err2 := scan.AppendScannedProjectVersion("module-a - 1")
@@ -80,7 +65,7 @@ func TestAppendScannedProject(t *testing.T) {
 	t.Parallel()
 	t.Run("product version is appended", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		// test
 		err := scan.AppendScannedProject("module-a")
 		// assert
@@ -95,7 +80,7 @@ func TestScanUpdateProjects(t *testing.T) {
 	t.Parallel()
 	t.Run("update single project which exist", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		_ = scan.AppendScannedProject("mock-project")
 		mockSystem := NewSystemMock("just-now")
 		// test
@@ -116,7 +101,7 @@ func TestScanUpdateProjects(t *testing.T) {
 	})
 	t.Run("update two projects, one of which exist", func(t *testing.T) {
 		// init
-		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		scan := &Scan{ProductVersion: "1"}
 		_ = scan.AppendScannedProject("mock-project")
 		_ = scan.AppendScannedProject("unknown-project")
 		mockSystem := NewSystemMock("just-now")
