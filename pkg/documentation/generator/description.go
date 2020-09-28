@@ -19,10 +19,10 @@ func createDescriptionSection(stepData *config.StepData) string {
 
 	description += "## Usage\n\n"
 	description += "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the [command line](../cli/index.md).\n\n"
-	description += "### Jenkins pipelines\n\n```groovy\n"
-	description += fmt.Sprintf("%v script: this\n```\n", stepData.Metadata.Name)
-	description += "### Command line\n\n```\n"
-	description += fmt.Sprintf("piper %v\n```\n\n", stepData.Metadata.Name)
+	description += "### Jenkins pipelines\n\n"
+	description += fmt.Sprintf("```groovy\n%v script: this\n```\n", stepData.Metadata.Name)
+	description += "### Command line\n\n"
+	description += fmt.Sprintf("```sh\npiper %v\n```\n\n", stepData.Metadata.Name)
 	description += stepOutputs(stepData)
 	return description
 }
