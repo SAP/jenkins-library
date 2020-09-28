@@ -108,7 +108,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.aggregateProjectName)
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
 			assert.Equal(t, "1", config.ProductVersion)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
@@ -134,7 +134,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-project", scan.aggregateProjectName)
+			assert.Equal(t, "mock-project", scan.AggregateProjectName)
 			assert.Equal(t, "1", config.ProductVersion)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
@@ -433,9 +433,9 @@ func TestExecuteScanMaven(t *testing.T) {
 			},
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		require.Len(t, scan.scannedProjects, 2)
-		_, existsRoot := scan.scannedProjects["my-artifact-id - product-version"]
-		_, existsModule := scan.scannedProjects["my-artifact-id-sub - product-version"]
+		require.Len(t, scan.ScannedProjects(), 2)
+		_, existsRoot := scan.ProjectByName("my-artifact-id - product-version")
+		_, existsModule := scan.ProjectByName("my-artifact-id-sub - product-version")
 		assert.True(t, existsRoot)
 		assert.True(t, existsModule)
 	})
@@ -624,25 +624,24 @@ func TestDownloadReports(t *testing.T) {
 		config := &ScanOptions{
 			ReportDirectoryName:       "report-dir",
 			VulnerabilityReportFormat: "txt",
+			ProductVersion:            "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := newWhitesourceScan(config)
-		scan.init()
-		scan.scannedProjects["mock-project"] = ws.Project{
-			Name:  "mock-project",
-			Token: "mock-project-token",
-		}
+		err := scan.AppendScannedProjectVersion("mock-project - 1")
+		require.NoError(t, err)
+		_ = scan.UpdateProjects("mock-product-token", system)
 		// test
 		paths, err := downloadReports(config, scan, utils, system)
 		// assert
 		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
-			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
+			vPath := filepath.Join("report-dir", "mock-project - 1-vulnerability-report.txt")
 			assert.True(t, utils.HasWrittenFile(vPath))
 			vContent, _ := utils.FileRead(vPath)
 			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
 
-			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
+			rPath := filepath.Join("report-dir", "mock-project - 1-risk-report.pdf")
 			assert.True(t, utils.HasWrittenFile(rPath))
 			rContent, _ := utils.FileRead(rPath)
 			assert.Equal(t, []byte("mock-risk-report"), rContent)
@@ -754,7 +753,7 @@ func TestPersisScannedProjects(t *testing.T) {
 		config := &ScanOptions{ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
-		_ = scan.appendScannedProject("project")
+		_ = scan.AppendScannedProject("project")
 		// test
 		err := persistScannedProjects(config, scan, utils)
 		// assert
@@ -768,8 +767,8 @@ func TestPersisScannedProjects(t *testing.T) {
 		config := &ScanOptions{ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
-		_ = scan.appendScannedProject("project-app")
-		_ = scan.appendScannedProject("project-db")
+		_ = scan.AppendScannedProject("project-app")
+		_ = scan.AppendScannedProject("project-db")
 		// test
 		err := persistScannedProjects(config, scan, utils)
 		// assert

@@ -126,69 +126,10 @@ func newWhitesourceUtils() *whitesourceUtilsBundle {
 	return &utils
 }
 
-// whitesourceScan stores information about scanned projects
-type whitesourceScan struct {
-	productToken         string
-	aggregateProjectName string
-	projectVersion       string
-	scannedProjects      map[string]ws.Project
-	scanTimes            map[string]time.Time
-}
-
-func (s *whitesourceScan) init() {
-	if s.scannedProjects == nil {
-		s.scannedProjects = make(map[string]ws.Project)
-	}
-	if s.scanTimes == nil {
-		s.scanTimes = make(map[string]time.Time)
-	}
-}
-
-// appendScannedProject checks that no whitesource.Project is already contained in the list of scanned projects,
-// and appends a new whitesource.Project with the given name.
-func (s *whitesourceScan) appendScannedProject(projectName string) error {
-	s.init()
-	projectName = projectName + " - " + s.projectVersion
-	_, exists := s.scannedProjects[projectName]
-	if exists {
-		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
-			"Your project's modules must have unique names.", projectName)
-		return fmt.Errorf("project with name '%s' was already scanned", projectName)
-	}
-	s.scannedProjects[projectName] = ws.Project{Name: projectName}
-	s.scanTimes[projectName] = time.Now()
-	return nil
-}
-
-func (s *whitesourceScan) updateProjects(sys whitesource) error {
-	s.init()
-	projects, err := sys.GetProjectsMetaInfo(s.productToken)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve WhiteSource projects meta info: %w", err)
-	}
-
-	var projectsToUpdate []string
-	for projectName := range s.scannedProjects {
-		projectsToUpdate = append(projectsToUpdate, projectName)
-	}
-
-	for _, project := range projects {
-		_, exists := s.scannedProjects[project.Name]
-		if exists {
-			s.scannedProjects[project.Name] = project
-			projectsToUpdate, _ = piperutils.RemoveAll(projectsToUpdate, project.Name)
-		}
-	}
-	if len(projectsToUpdate) != 0 {
-		log.Entry().Warnf("Could not fetch metadata for projects %v", projectsToUpdate)
-	}
-	return nil
-}
-
-func newWhitesourceScan(config *ScanOptions) *whitesourceScan {
-	return &whitesourceScan{
-		aggregateProjectName: config.ProjectName,
-		projectVersion:       config.ProductVersion,
+func newWhitesourceScan(config *ScanOptions) *ws.Scan {
+	return &ws.Scan{
+		AggregateProjectName: config.ProjectName,
+		ProductVersion:       config.ProductVersion,
 	}
 }
 
@@ -202,7 +143,7 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
 	}
 }
 
-func runWhitesourceExecuteScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
@@ -226,7 +167,7 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *whitesourceScan, utils
 	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	// Start the scan
 	if err := executeScan(config, scan, utils); err != nil {
 		return err
@@ -240,7 +181,7 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 	log.Entry().Info("-----------------------------------------------------")
 	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
 	log.Entry().Info("Scanned projects:")
-	for _, project := range scan.scannedProjects {
+	for _, project := range scan.ScannedProjects() {
 		log.Entry().Infof("  Name: '%s', token: %s", project.Name, project.Token)
 	}
 	log.Entry().Info("-----------------------------------------------------")
@@ -256,7 +197,7 @@ func runWhitesourceScan(config *ScanOptions, scan *whitesourceScan, utils whites
 	return nil
 }
 
-func checkAndReportScanResults(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return nil
 	}
@@ -278,8 +219,8 @@ func checkAndReportScanResults(config *ScanOptions, scan *whitesourceScan, utils
 	return nil
 }
 
-func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) error {
-	if scan.aggregateProjectName == "" || config.ProductVersion == "" {
+func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
@@ -292,9 +233,9 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
-		if scan.aggregateProjectName == "" {
+		if scan.AggregateProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
-			scan.aggregateProjectName = name
+			scan.AggregateProjectName = name
 		}
 		if config.ProductVersion == "" {
 			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
@@ -302,7 +243,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 			config.ProductVersion = version
 		}
 	}
-	scan.projectVersion = config.ProductVersion
+	scan.ProductVersion = config.ProductVersion
 
 	// Get product token if user did not specify one at runtime
 	if config.ProductToken == "" {
@@ -314,7 +255,6 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 		config.ProductToken = product.Token
 	}
-	scan.productToken = config.ProductToken
 
 	// Get project token if user did not specify one at runtime
 	if config.ProjectToken == "" && config.ProjectName != "" {
@@ -334,12 +274,12 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 		}
 	}
 
-	return scan.updateProjects(sys)
+	return scan.UpdateProjects(config.ProductToken, sys)
 }
 
 // executeScan executes different types of scans depending on the scanType parameter.
 // The default is to download the Unified Agent and use it to perform the scan.
-func executeScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	if config.ScanType == "" {
 		config.ScanType = config.BuildTool
 	}
@@ -375,7 +315,7 @@ func executeScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUt
 }
 
 // executeUAScan executes a scan with the Whitesource Unified Agent.
-func executeUAScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeUAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	// Download the unified agent jar file if one does not exist
 	if err := downloadAgent(config, utils); err != nil {
 		return err
@@ -388,12 +328,12 @@ func executeUAScan(config *ScanOptions, scan *whitesourceScan, utils whitesource
 	}
 
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
-		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", scan.aggregateProjectName,
+		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", scan.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
 }
 
 // executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
-func executeMTAScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeMTAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for MTA project")
 	err := executeMavenScanForPomFile(config, scan, utils, "pom.xml")
 	if err != nil {
@@ -405,7 +345,7 @@ func executeMTAScan(config *ScanOptions, scan *whitesourceScan, utils whitesourc
 
 // executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
-func executeMavenScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeMavenScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.BuildDescriptorFile
 	if pomPath == "" {
@@ -414,7 +354,7 @@ func executeMavenScan(config *ScanOptions, scan *whitesourceScan, utils whitesou
 	return executeMavenScanForPomFile(config, scan, utils, pomPath)
 }
 
-func executeMavenScanForPomFile(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, pomPath string) error {
+func executeMavenScanForPomFile(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, pomPath string) error {
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
 		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
@@ -493,7 +433,7 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) 
 	return flags, excludes
 }
 
-func appendModulesThatWillBeScanned(scan *whitesourceScan, utils whitesourceUtils, excludes []string) error {
+func appendModulesThatWillBeScanned(scan *ws.Scan, utils whitesourceUtils, excludes []string) error {
 	return maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
 		project := info.Project
 		if project.Packaging != "pom" {
@@ -501,7 +441,7 @@ func appendModulesThatWillBeScanned(scan *whitesourceScan, utils whitesourceUtil
 				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
 			}
 
-			err := scan.appendScannedProject(project.ArtifactID)
+			err := scan.AppendScannedProject(project.ArtifactID)
 			if err != nil {
 				return err
 			}
@@ -575,7 +515,7 @@ func writeWhitesourceConfigJSON(config *ScanOptions, utils whitesourceUtils, dev
 }
 
 // executeNpmScan iterates over all found npm modules and performs a scan in each one.
-func executeNpmScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeNpmScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return fmt.Errorf("failed to find package.json files with excludes: %w", err)
@@ -595,7 +535,7 @@ func executeNpmScan(config *ScanOptions, scan *whitesourceScan, utils whitesourc
 
 // executeNpmScanForModule generates a configuration file whitesource.config.json with appropriate values from config,
 // installs all dependencies if necessary, and executes the scan via "npx whitesource run".
-func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", modulePath)
 
 	resetDir, err := utils.Getwd()
@@ -628,7 +568,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *white
 		return err
 	}
 
-	if err := scan.appendScannedProject(projectName); err != nil {
+	if err := scan.AppendScannedProject(projectName); err != nil {
 		return err
 	}
 
@@ -688,11 +628,11 @@ func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
-func executeYarnScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func executeYarnScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	// To stay compatible with what the step was doing before, trigger aggregation, although
 	// there is a great chance that it doesn't work with yarn the same way it doesn't with npm.
 	// Maybe the yarn code-path should be removed, and only npm stays.
-	config.ProjectName = scan.aggregateProjectName
+	config.ProjectName = scan.AggregateProjectName
 	if err := writeWhitesourceConfigJSON(config, utils, true, false); err != nil {
 		return err
 	}
@@ -709,7 +649,7 @@ func executeYarnScan(config *ScanOptions, scan *whitesourceScan, utils whitesour
 	return nil
 }
 
-func checkSecurityViolations(config *ScanOptions, scan *whitesourceScan, sys whitesource) error {
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
@@ -724,7 +664,7 @@ func checkSecurityViolations(config *ScanOptions, scan *whitesourceScan, sys whi
 			return err
 		}
 	} else {
-		for _, project := range scan.scannedProjects {
+		for _, project := range scan.ScannedProjects() {
 			if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
 				return err
 			}
@@ -775,7 +715,7 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	return nil
 }
 
-func blockUntilReportsAreaReady(config *ScanOptions, scan *whitesourceScan, sys whitesource) error {
+func blockUntilReportsAreaReady(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
 	// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
 	// before downloading any reports or check security vulnerabilities.
 	if config.ProjectToken != "" {
@@ -785,8 +725,8 @@ func blockUntilReportsAreaReady(config *ScanOptions, scan *whitesourceScan, sys 
 		}
 	} else {
 		// Poll status of all scanned projects
-		for key, project := range scan.scannedProjects {
-			if err := pollProjectStatus(project.Token, scan.scanTimes[key], sys); err != nil {
+		for _, project := range scan.ScannedProjects() {
+			if err := pollProjectStatus(project.Token, scan.ScanTime(project.Name), sys); err != nil {
 				return err
 			}
 		}
@@ -837,7 +777,7 @@ func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTim
 }
 
 // downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
+func downloadReports(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
 	if err := utils.MkdirAll(config.ReportDirectoryName, os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -855,7 +795,7 @@ func downloadReports(config *ScanOptions, scan *whitesourceScan, utils whitesour
 		}
 		paths = append(paths, *vulnPath, *riskPath)
 	} else {
-		for _, project := range scan.scannedProjects {
+		for _, project := range scan.ScannedProjects() {
 			vulnPath, err := downloadVulnerabilityReport(config, project, utils, sys)
 			if err != nil {
 				return nil, err
@@ -1126,13 +1066,13 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 
 // persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
 // string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
-func persistScannedProjects(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
+func persistScannedProjects(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	var projectNames []string
 	if config.ProjectName != "" {
 		projectNames = []string{config.ProjectName}
 	} else {
-		for projectName := range scan.scannedProjects {
-			projectNames = append(projectNames, projectName)
+		for _, project := range scan.ScannedProjects() {
+			projectNames = append(projectNames, project.Name)
 		}
 		// Sorting helps the list become stable across pipeline runs (and in the unit tests),
 		// as the order in which we travers map keys is not deterministic.
