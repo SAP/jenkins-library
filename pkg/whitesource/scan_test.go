@@ -2,6 +2,7 @@ package whitesource
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -74,6 +75,41 @@ func TestAppendScannedProject(t *testing.T) {
 		expected := make(map[string]Project)
 		expected["module-a - 1"] = Project{Name: "module-a - 1"}
 		assert.Equal(t, expected, scan.scannedProjects)
+	})
+}
+
+func TestProjectByName(t *testing.T) {
+	t.Parallel()
+	t.Run("no init", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		project, exists := scan.ProjectByName("not there")
+		// assert
+		assert.False(t, exists)
+		assert.Equal(t, Project{}, project)
+	})
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		err := scan.AppendScannedProject("module-a")
+		require.NoError(t, err)
+		// test
+		project, exists := scan.ProjectByName("module-a - 1")
+		// assert
+		assert.True(t, exists)
+		assert.Equal(t, Project{Name: "module-a - 1"}, project)
+	})
+	t.Run("no such project", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		err := scan.AppendScannedProject("module-a")
+		require.NoError(t, err)
+		// test
+		project, exists := scan.ProjectByName("not there")
+		// assert
+		assert.False(t, exists)
+		assert.Equal(t, Project{}, project)
 	})
 }
 
@@ -188,5 +224,15 @@ func TestScanUpdateProjects(t *testing.T) {
 			Name: "unknown-project - 1",
 		}
 		assert.Equal(t, expected, scan.scannedProjects)
+	})
+	t.Run("update single project which exist", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		_ = scan.AppendScannedProject("mock-project")
+		mockSystem := &SystemMock{}
+		// test
+		err := scan.UpdateProjects("mock-product-token", mockSystem)
+		// assert
+		assert.EqualError(t, err, "failed to retrieve WhiteSource projects meta info: no product with that token")
 	})
 }

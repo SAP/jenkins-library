@@ -25,9 +25,14 @@ func (m *SystemMock) GetProductByName(productName string) (Product, error) {
 	return Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
 }
 
-// GetProjectsMetaInfo returns the list of Projects stored in the mock.
+// GetProjectsMetaInfo returns the list of Projects stored in the mock or an error if token is unknown.
 func (m *SystemMock) GetProjectsMetaInfo(productToken string) ([]Project, error) {
-	return m.Projects, nil
+	for _, product := range m.Products {
+		if product.Token == productToken {
+			return m.Projects, nil
+		}
+	}
+	return nil, fmt.Errorf("no product with that token")
 }
 
 // GetProjectToken checks the Projects stored in the mock and returns a valid token, or an empty token and no error.
