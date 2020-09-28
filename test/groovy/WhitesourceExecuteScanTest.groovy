@@ -16,7 +16,9 @@ import util.*
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNotEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class WhitesourceExecuteScanTest extends BasePiperTest {
 
@@ -1245,7 +1247,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     }
 
     @Test
-    void testGoStepFeatureToggleOff() {
+    void testGoStepFeatureToggleImplicitOff() {
         String calledStep = ''
         String usedMetadataFile = ''
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
@@ -1253,9 +1255,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             String metadataFile, List credentialInfo ->
                 calledStep = stepName
                 usedMetadataFile = metadataFile
-        })
-        helper.registerAllowedMethod('httpRequest', [Map], {
-            return ['content': '{"group": "abc"}']
         })
 
         helper.registerAllowedMethod("readProperties", [Map], {
@@ -1270,9 +1269,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             return result
         })
 
-        def publishHtmlMap = [:]
         helper.registerAllowedMethod("publishHTML", [Map.class], { m ->
-            publishHtmlMap = m
             return null
         })
 
@@ -1285,8 +1282,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             juStabUtils                      : utils,
             orgToken                         : 'testOrgToken',
             whitesourceProductName           : 'testProduct',
-            useGoStep                        : false,
-
         ])
 
         assertEquals('', calledStep)
