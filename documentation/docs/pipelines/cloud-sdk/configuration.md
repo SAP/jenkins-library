@@ -498,19 +498,7 @@ Please use the step [npmExecuteScripts](https://sap.github.io/jenkins-library/st
 
 ### debugReportArchive
 
-The `debugReportArchive` step can be used to create confidential (instead of redacted) debug reports.
-The difference between the redacted and the confidential debug report is, that potentially confidential information, such as the GitHub repository and branch, global extension repository and shared libraries, are included in the confidential debug report. It is the user's responsibility to make sure that the debug report does not contain any confidential information.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-|`shareConfidentialInformation`| |`false`| If set to `true`, a confidential debug report is being generated with each build.
-
-Example:
-
-```yaml
-debugReportArchive:
-  shareConfidentialInformation: true
-```
+The documentation for the `debugReportArchive` step has been moved [here](https://sap.github.io/jenkins-library/steps/debugReportArchive/).
 
 ## Post action configuration
 
