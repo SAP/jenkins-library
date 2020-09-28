@@ -3,9 +3,9 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"io"
 	"os"
+	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 )
