@@ -289,35 +289,36 @@ void call(Map parameters = [:]) {
                 [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
             ]
             piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
-        } else {
-            config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
-            config.stashContent = utils.unstashAll(config.stashContent)
-            config.whitesource['projectNames'] = (config.whitesource['projectNames'] instanceof List) ? config.whitesource['projectNames'] : config.whitesource['projectNames']?.tokenize(',')
-            parameters.whitesource = parameters.whitesource ?: [:]
-            parameters.whitesource['projectNames'] = config.whitesource['projectNames']
-
-            script.commonPipelineEnvironment.setInfluxStepData('whitesource', false)
-
-            utils.pushToSWA([
-                step         : STEP_NAME,
-                stepParamKey1: 'scanType',
-                stepParam1   : config.scanType
-            ], config)
-
-            echo "Parameters: scanType: ${config.scanType}"
-
-            def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
-            def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
-
-            if (config.whitesource.orgAdminUserTokenCredentialsId) {
-                statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
-            } else {
-                statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
-            }
-            checkStatus(statusCode, config)
-
-            script.commonPipelineEnvironment.setInfluxStepData('whitesource', true)
+            return
         }
+
+        config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
+        config.stashContent = utils.unstashAll(config.stashContent)
+        config.whitesource['projectNames'] = (config.whitesource['projectNames'] instanceof List) ? config.whitesource['projectNames'] : config.whitesource['projectNames']?.tokenize(',')
+        parameters.whitesource = parameters.whitesource ?: [:]
+        parameters.whitesource['projectNames'] = config.whitesource['projectNames']
+
+        script.commonPipelineEnvironment.setInfluxStepData('whitesource', false)
+
+        utils.pushToSWA([
+            step         : STEP_NAME,
+            stepParamKey1: 'scanType',
+            stepParam1   : config.scanType
+        ], config)
+
+        echo "Parameters: scanType: ${config.scanType}"
+
+        def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
+        def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
+
+        if (config.whitesource.orgAdminUserTokenCredentialsId) {
+            statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+        } else {
+            statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+        }
+        checkStatus(statusCode, config)
+
+        script.commonPipelineEnvironment.setInfluxStepData('whitesource', true)
     }
 }
 
