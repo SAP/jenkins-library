@@ -121,7 +121,7 @@ func createParameterDetails(stepData *config.StepData) string {
 		details += fmt.Sprintf("#### %v\n\n", secret.Name)
 
 		if !contains(stepParameterNames, secret.Name) {
-			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
+			details += "**Jenkins-specific:** Used for proper environment setup. See *[Using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
 		}
 
 		details += secret.Description + "\n\n"
@@ -138,6 +138,9 @@ func createParameterDetails(stepData *config.StepData) string {
 	}
 
 	return details
+
+	return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
+
 }
 
 func formatDefault(param config.StepParameters, stepParameterNames []string) string {
