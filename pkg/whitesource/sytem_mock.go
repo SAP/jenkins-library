@@ -1,3 +1,5 @@
+// +build !release
+
 package whitesource
 
 import "fmt"
