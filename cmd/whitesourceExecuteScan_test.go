@@ -15,111 +15,6 @@ import (
 	"time"
 )
 
-type whitesourceSystemMock struct {
-	productName         string
-	products            []ws.Product
-	projects            []ws.Project
-	alerts              []ws.Alert
-	libraries           []ws.Library
-	riskReport          []byte
-	vulnerabilityReport []byte
-}
-
-func (m *whitesourceSystemMock) GetProductByName(productName string) (ws.Product, error) {
-	for _, product := range m.products {
-		if product.Name == productName {
-			return product, nil
-		}
-	}
-	return ws.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
-}
-
-func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]ws.Project, error) {
-	return m.projects, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectToken(productToken, projectName string) (string, error) {
-	return "mock-project-token", nil
-}
-
-func (m *whitesourceSystemMock) GetProjectByToken(projectToken string) (ws.Project, error) {
-	for _, project := range m.projects {
-		if project.Token == projectToken {
-			return project, nil
-		}
-	}
-	return ws.Project{}, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
-}
-
-func (m *whitesourceSystemMock) GetProjectRiskReport(projectToken string) ([]byte, error) {
-	return m.riskReport, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-	_, err := m.GetProjectByToken(projectToken)
-	if err != nil {
-		return nil, err
-	}
-	if m.vulnerabilityReport == nil {
-		return nil, fmt.Errorf("no report available")
-	}
-	return m.vulnerabilityReport, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectAlerts(projectToken string) ([]ws.Alert, error) {
-	return m.alerts, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectLibraryLocations(projectToken string) ([]ws.Library, error) {
-	return m.libraries, nil
-}
-
-var mockLibrary = ws.Library{
-	Name:     "mock-library",
-	Filename: "mock-library-file",
-	Version:  "mock-library-version",
-	Project:  "mock-project - 1",
-}
-
-func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
-	return &whitesourceSystemMock{
-		productName: "mock-product",
-		products: []ws.Product{
-			{
-				Name:           "mock-product",
-				Token:          "mock-product-token",
-				CreationDate:   "last-thursday",
-				LastUpdateDate: lastUpdateDate,
-			},
-		},
-		projects: []ws.Project{
-			{
-				ID:             42,
-				Name:           "mock-project - 1",
-				PluginName:     "mock-plugin-name",
-				Token:          "mock-project-token",
-				UploadedBy:     "MrBean",
-				CreationDate:   "last-thursday",
-				LastUpdateDate: lastUpdateDate,
-			},
-		},
-		alerts: []ws.Alert{
-			{
-				Vulnerability: ws.Vulnerability{
-					Name:  "something severe",
-					Score: 5,
-				},
-				Library:      mockLibrary,
-				Project:      "mock-project - 1",
-				CreationDate: "last-thursday",
-			},
-		},
-		libraries:           []ws.Library{mockLibrary},
-		riskReport:          []byte("mock-risk-report"),
-		vulnerabilityReport: []byte("mock-vulnerability-report"),
-	}
-}
-
 type whitesourceCoordinatesMock struct {
 	GroupID    string
 	ArtifactID string
@@ -207,7 +102,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			GlobalSettingsFile:  "global-settings.xml",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
@@ -230,16 +125,16 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
-			ProjectName:         "mock-project - 1",
+			ProjectName:         "mock-project",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-project - 1", scan.aggregateProjectName)
+			assert.Equal(t, "mock-project", scan.aggregateProjectName)
 			assert.Equal(t, "1", config.ProductVersion)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
@@ -255,7 +150,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			ProductName:     "does-not-exist",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
@@ -642,9 +537,9 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
-		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
+		systemMock := ws.NewSystemMock(lastUpdatedDate)
 		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.Projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -656,9 +551,9 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
-		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
+		systemMock := ws.NewSystemMock(lastUpdatedDate)
 		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.Projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
@@ -671,9 +566,9 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
-		systemMock := newWhitesourceSystemMock("")
+		systemMock := ws.NewSystemMock("")
 		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
+		err = blockUntilProjectIsUpdated(systemMock.Projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
@@ -692,7 +587,7 @@ func TestDownloadReports(t *testing.T) {
 			VulnerabilityReportFormat: "txt",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := newWhitesourceScan(config)
 		// test
 		paths, err := downloadReports(config, scan, utils, system)
@@ -716,7 +611,7 @@ func TestDownloadReports(t *testing.T) {
 			ProjectName:  "mock-project",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := newWhitesourceScan(config)
 		// test
 		paths, err := downloadReports(config, scan, utils, system)
@@ -731,7 +626,7 @@ func TestDownloadReports(t *testing.T) {
 			VulnerabilityReportFormat: "txt",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		scan := newWhitesourceScan(config)
 		scan.init()
 		scan.scannedProjects["mock-project"] = ws.Project{
@@ -921,7 +816,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 			ReportDirectoryName: "mock-reports",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
@@ -944,7 +839,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 			ReportDirectoryName: "mock-reports",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
@@ -969,7 +864,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
@@ -987,7 +882,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
@@ -1005,7 +900,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
@@ -1024,7 +919,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
