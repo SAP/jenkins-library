@@ -138,9 +138,6 @@ func createParameterDetails(stepData *config.StepData) string {
 	}
 
 	return details
-
-	return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
-
 }
 
 func formatDefault(param config.StepParameters, stepParameterNames []string) string {
