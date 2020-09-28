@@ -26,7 +26,7 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Printf("Error occured: %v\n", err)
+		fmt.Printf("Error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }

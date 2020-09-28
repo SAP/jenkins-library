@@ -3,9 +3,9 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"io"
 	"os"
+	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 )
@@ -86,12 +86,12 @@ func generateStepDocumentation(stepData config.StepData, stepConfiguration confi
 	}
 	// check if there is an error during opening the template (true : skip docu generation for this meta data file)
 	if err != nil {
-		return fmt.Errorf("error occured: %v", err)
+		return fmt.Errorf("error occurred: %v", err)
 	}
 
 	content := readAndAdjustTemplate(docTemplate)
 	if len(content) <= 0 {
-		return fmt.Errorf("error occured: no content inside of the template")
+		return fmt.Errorf("error occurred: no content inside of the template")
 	}
 
 	// binding of functions and placeholder

@@ -214,7 +214,7 @@ func TestCmdPipes(t *testing.T) {
 		o, e, err := cmdPipes(cmd)
 		t.Run("no error", func(t *testing.T) {
 			if err != nil {
-				t.Errorf("error occured but no error expected")
+				t.Errorf("error occurred but no error expected")
 			}
 		})
 
