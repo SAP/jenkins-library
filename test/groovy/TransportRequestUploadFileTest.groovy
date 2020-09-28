@@ -106,7 +106,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history")
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
