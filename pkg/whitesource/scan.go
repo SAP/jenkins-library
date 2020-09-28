@@ -52,6 +52,24 @@ func (s *Scan) AppendScannedProjectVersion(projectName string) error {
 	return nil
 }
 
+// ScannedProjects returns the WhiteSource projects that have been added via AppendScannedProject() as a slice
+func (s *Scan) ScannedProjects() []Project {
+	var projects []Project
+	for _, project := range s.scannedProjects {
+		projects = append(projects, project)
+	}
+	return projects
+}
+
+// ScanTime returns the time at which the respective WhiteSource Project was scanned, or the the
+// zero value of time.Time, if AppendScannedProject() was not called with that name.
+func (s *Scan) ScanTime(projectName string) time.Time {
+	if s.scanTimes == nil {
+		return time.Time{}
+	}
+	return s.scanTimes[projectName]
+}
+
 type whitesource interface {
 	GetProjectsMetaInfo(productToken string) ([]Project, error)
 }

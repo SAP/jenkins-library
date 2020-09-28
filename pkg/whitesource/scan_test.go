@@ -3,6 +3,7 @@ package whitesource
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestAppendScannedProjectVersion(t *testing.T) {
@@ -73,6 +74,70 @@ func TestAppendScannedProject(t *testing.T) {
 		expected := make(map[string]Project)
 		expected["module-a - 1"] = Project{Name: "module-a - 1"}
 		assert.Equal(t, expected, scan.scannedProjects)
+	})
+}
+
+func TestScannedProjects(t *testing.T) {
+	t.Parallel()
+	t.Run("no init", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		projects := scan.ScannedProjects()
+		// assert
+		assert.Len(t, projects, 0)
+	})
+	t.Run("single module", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		_ = scan.AppendScannedProject("module-a")
+		// test
+		projects := scan.ScannedProjects()
+		// assert
+		assert.Len(t, projects, 1)
+		assert.Contains(t, projects, Project{Name: "module-a - 1"})
+	})
+	t.Run("two modules", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		_ = scan.AppendScannedProject("module-a")
+		_ = scan.AppendScannedProject("module-b")
+		// test
+		projects := scan.ScannedProjects()
+		// assert
+		assert.Len(t, projects, 2)
+		assert.Contains(t, projects, Project{Name: "module-a - 1"})
+		assert.Contains(t, projects, Project{Name: "module-b - 1"})
+	})
+}
+
+func TestScanTime(t *testing.T) {
+	t.Parallel()
+	t.Run("no init", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		timeStamp := scan.ScanTime("module-b - 1")
+		// assert
+		assert.Equal(t, time.Time{}, timeStamp)
+	})
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		_ = scan.AppendScannedProject("module-a")
+		// test
+		timeStamp := scan.ScanTime("module-a - 1")
+		// assert
+		assert.NotEqual(t, time.Time{}, timeStamp)
+	})
+	t.Run("project not scanned", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		_ = scan.AppendScannedProject("module-a")
+		// test
+		timeStamp := scan.ScanTime("module-b - 1")
+		// assert
+		assert.Equal(t, time.Time{}, timeStamp)
 	})
 }
 
