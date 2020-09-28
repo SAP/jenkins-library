@@ -280,7 +280,8 @@ void call(Map parameters = [:]) {
             .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
             .use()
 
-        if (config.useGoStep == true) {
+
+        if (config.useGoStep == true && config.scanType != "unified-agent") {
             parameters = com.sap.piper.DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
             List credentials = [
@@ -288,10 +289,6 @@ void call(Map parameters = [:]) {
                 [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
             ]
             piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
-
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: true,
-                         reportDir   : "application/target/site/whitesource",
-                         reportFiles : 'index.html', reportName: "Whitesource Policy Check"])
         } else {
             config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
             config.stashContent = utils.unstashAll(config.stashContent)
