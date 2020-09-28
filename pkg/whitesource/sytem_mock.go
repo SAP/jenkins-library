@@ -4,18 +4,18 @@ import "fmt"
 
 // SystemMock stores a number of WhiteSource objects and, based on that, mocks the behavior of System.
 type SystemMock struct {
-	productName         string
-	products            []Product
-	projects            []Project
-	alerts              []Alert
-	libraries           []Library
-	riskReport          []byte
-	vulnerabilityReport []byte
+	ProductName         string
+	Products            []Product
+	Projects            []Project
+	Alerts              []Alert
+	Libraries           []Library
+	RiskReport          []byte
+	VulnerabilityReport []byte
 }
 
 // GetProductByName mimics retrieving a Product by name. It returns an error of no Product is stored in the mock.
 func (m *SystemMock) GetProductByName(productName string) (Product, error) {
-	for _, product := range m.products {
+	for _, product := range m.Products {
 		if product.Name == productName {
 			return product, nil
 		}
@@ -25,12 +25,12 @@ func (m *SystemMock) GetProductByName(productName string) (Product, error) {
 
 // GetProjectsMetaInfo returns the list of Projects stored in the mock.
 func (m *SystemMock) GetProjectsMetaInfo(productToken string) ([]Project, error) {
-	return m.projects, nil
+	return m.Projects, nil
 }
 
 // GetProjectToken checks the Projects stored in the mock and returns a valid token, or an empty token and no error.
 func (m *SystemMock) GetProjectToken(productToken, projectName string) (string, error) {
-	for _, project := range m.projects {
+	for _, project := range m.Projects {
 		if project.Name == projectName {
 			return project.Token, nil
 		}
@@ -40,7 +40,7 @@ func (m *SystemMock) GetProjectToken(productToken, projectName string) (string, 
 
 // GetProjectByToken checks the Projects stored in the mock and returns the one with the given token or an error.
 func (m *SystemMock) GetProjectByToken(projectToken string) (Project, error) {
-	for _, project := range m.projects {
+	for _, project := range m.Projects {
 		if project.Token == projectToken {
 			return project, nil
 		}
@@ -50,7 +50,7 @@ func (m *SystemMock) GetProjectByToken(projectToken string) (Project, error) {
 
 // GetProjectRiskReport mocks retrieving a risc report.
 func (m *SystemMock) GetProjectRiskReport(projectToken string) ([]byte, error) {
-	return m.riskReport, nil
+	return m.RiskReport, nil
 }
 
 // GetProjectVulnerabilityReport mocks retrieving a vulnerability report.
@@ -60,20 +60,20 @@ func (m *SystemMock) GetProjectVulnerabilityReport(projectToken string, format s
 	if err != nil {
 		return nil, err
 	}
-	if m.vulnerabilityReport == nil {
+	if m.VulnerabilityReport == nil {
 		return nil, fmt.Errorf("no report available")
 	}
-	return m.vulnerabilityReport, nil
+	return m.VulnerabilityReport, nil
 }
 
 // GetProjectLibraryLocations returns the alerts stored in the SystemMock.
 func (m *SystemMock) GetProjectAlerts(projectToken string) ([]Alert, error) {
-	return m.alerts, nil
+	return m.Alerts, nil
 }
 
 // GetProjectLibraryLocations returns the libraries stored in the SystemMock.
 func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
-	return m.libraries, nil
+	return m.Libraries, nil
 }
 
 // NewSystemMock returns a pointer to a new instance of SystemMock.1
@@ -86,8 +86,8 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 		Project:  projectName,
 	}
 	return &SystemMock{
-		productName: "mock-product",
-		products: []Product{
+		ProductName: "mock-product",
+		Products: []Product{
 			{
 				Name:           "mock-product",
 				Token:          "mock-product-token",
@@ -95,7 +95,7 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 				LastUpdateDate: lastUpdateDate,
 			},
 		},
-		projects: []Project{
+		Projects: []Project{
 			{
 				ID:             42,
 				Name:           projectName,
@@ -106,7 +106,7 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 				LastUpdateDate: lastUpdateDate,
 			},
 		},
-		alerts: []Alert{
+		Alerts: []Alert{
 			{
 				Vulnerability: Vulnerability{
 					Name:  "something severe",
@@ -117,8 +117,8 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 				CreationDate: "last-thursday",
 			},
 		},
-		libraries:           []Library{mockLibrary},
-		riskReport:          []byte("mock-risk-report"),
-		vulnerabilityReport: []byte("mock-vulnerability-report"),
+		Libraries:           []Library{mockLibrary},
+		RiskReport:          []byte("mock-risk-report"),
+		VulnerabilityReport: []byte("mock-vulnerability-report"),
 	}
 }
