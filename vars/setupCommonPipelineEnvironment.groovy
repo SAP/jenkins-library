@@ -38,7 +38,7 @@ import groovy.transform.Field
      * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
      * take precedence over `customDefaults`.*/
     'customDefaultsFromFiles',
-    /** Information object returned from the Jenkins git checkout step to set the git information in the
+    /** The map returned from a Jenkins git checkout. Used to set the git information in the
      * common pipeline environment */
     'scmInfo'
 ]
