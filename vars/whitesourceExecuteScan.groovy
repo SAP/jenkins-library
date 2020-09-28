@@ -1,6 +1,5 @@
 import com.sap.piper.BuildTool
 import com.sap.piper.DescriptorUtils
-import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
@@ -9,11 +8,9 @@ import com.sap.piper.integration.WhitesourceRepository
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.WhitesourceConfigurationHelper
 import com.sap.piper.mta.MtaMultiplexer
-import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
-import static com.sap.piper.DownloadCacheUtils.*
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
