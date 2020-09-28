@@ -5,6 +5,21 @@ import (
 	"testing"
 )
 
+func TestNewScan(t *testing.T) {
+	t.Parallel()
+	t.Run("options are transferred", func(t *testing.T) {
+		// init
+		options := ScanOptions{
+			AggregateProjectName: "project",
+			ProductVersion:       "1",
+		}
+		// test
+		scan := NewScan(options)
+		// assert
+		assert.Equal(t, &Scan{aggregateProjectName: "project", productVersion: "1"}, scan)
+	})
+}
+
 func TestAppendScannedProjectVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("single module", func(t *testing.T) {
@@ -76,17 +91,52 @@ func TestAppendScannedProject(t *testing.T) {
 	})
 }
 
-func TestNewScan(t *testing.T) {
+func TestScanUpdateProjects(t *testing.T) {
 	t.Parallel()
-	t.Run("options are transferred", func(t *testing.T) {
+	t.Run("update single project which exist", func(t *testing.T) {
 		// init
-		options := ScanOptions{
-			AggregateProjectName: "project",
-			ProductVersion:       "1",
-		}
+		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		_ = scan.AppendScannedProject("mock-project")
+		mockSystem := NewSystemMock("just-now")
 		// test
-		scan := NewScan(options)
+		err := scan.UpdateProjects("mock-product-token", mockSystem)
 		// assert
-		assert.Equal(t, &Scan{aggregateProjectName: "project", productVersion: "1"}, scan)
+		assert.NoError(t, err)
+		expected := make(map[string]Project)
+		expected["mock-project - 1"] = Project{
+			Name:           "mock-project - 1",
+			ID:             42,
+			PluginName:     "mock-plugin-name",
+			Token:          "mock-project-token",
+			UploadedBy:     "MrBean",
+			CreationDate:   "last-thursday",
+			LastUpdateDate: "just-now",
+		}
+		assert.Equal(t, expected, scan.scannedProjects)
+	})
+	t.Run("update two projects, one of which exist", func(t *testing.T) {
+		// init
+		scan := NewScan(ScanOptions{ProductVersion: "1"})
+		_ = scan.AppendScannedProject("mock-project")
+		_ = scan.AppendScannedProject("unknown-project")
+		mockSystem := NewSystemMock("just-now")
+		// test
+		err := scan.UpdateProjects("mock-product-token", mockSystem)
+		// assert
+		assert.NoError(t, err, "no error expected if not all projects exist (yet)")
+		expected := make(map[string]Project)
+		expected["mock-project - 1"] = Project{
+			Name:           "mock-project - 1",
+			ID:             42,
+			PluginName:     "mock-plugin-name",
+			Token:          "mock-project-token",
+			UploadedBy:     "MrBean",
+			CreationDate:   "last-thursday",
+			LastUpdateDate: "just-now",
+		}
+		expected["unknown-project - 1"] = Project{
+			Name: "unknown-project - 1",
+		}
+		assert.Equal(t, expected, scan.scannedProjects)
 	})
 }

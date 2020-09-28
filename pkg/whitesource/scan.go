@@ -25,6 +25,23 @@ func (s *Scan) init() {
 	}
 }
 
+// ScanOptions describes configuration option for a WhiteSource Scan.
+type ScanOptions struct {
+	// AggregateProjectName controls whether the scan results for all modules are aggregated into the
+	// same WhiteSource Project, or (if left empty) are each stored in their individual Project.
+	AggregateProjectName string
+	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
+	ProductVersion string
+}
+
+// NewScan returns a new Scan instance, configured from the provided ScanOptions.
+func NewScan(config ScanOptions) *Scan {
+	return &Scan{
+		aggregateProjectName: config.AggregateProjectName,
+		productVersion:       config.ProductVersion,
+	}
+}
+
 // AppendScannedProject checks that no Project with the same name is already contained in the list of scanned projects,
 // and appends a new Project with the given name. The global product version is appended to the name.
 func (s *Scan) AppendScannedProject(projectName string) error {
@@ -78,21 +95,4 @@ func (s *Scan) UpdateProjects(productToken string, sys whitesource) error {
 		log.Entry().Warnf("Could not fetch metadata for projects %v", projectsToUpdate)
 	}
 	return nil
-}
-
-// ScanOptions describes configuration option for a WhiteSource Scan.
-type ScanOptions struct {
-	// AggregateProjectName controls whether the scan results for all modules are aggregated into the
-	// same WhiteSource Project, or (if left empty) are each stored in their individual Project.
-	AggregateProjectName string
-	// ProductVersion is the global version that is used across all Projects (modules) during the scan.
-	ProductVersion string
-}
-
-// NewScan returns a new Scan instance, configured from the provided ScanOptions.
-func NewScan(config ScanOptions) *Scan {
-	return &Scan{
-		aggregateProjectName: config.AggregateProjectName,
-		productVersion:       config.ProductVersion,
-	}
 }
