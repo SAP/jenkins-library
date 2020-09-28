@@ -29,7 +29,8 @@ stages:
       whitesourceExecuteScan:
         configKeys:
           - 'productName'
-          #todo incomplete
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
