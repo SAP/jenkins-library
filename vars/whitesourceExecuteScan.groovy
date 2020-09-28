@@ -125,7 +125,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * Docker workspace to be used for scanning.
      */
     'dockerWorkspace',
-    /** @see dockerExecute */
+    /** @see dockerExecute*/
     'dockerEnvVars',
     /** @see dockerExecute */
     'dockerOptions',
@@ -182,43 +182,43 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
-    productName           : 'whitesourceProductName',
-    productToken          : 'whitesourceProductToken',
-    projectName           : 'whitesourceProjectName',
-    projectNames          : 'whitesourceProjectNames',
-    productVersion        : 'whitesourceProductVersion',
-    userTokenCredentialsId: 'whitesourceUserTokenCredentialsId',
-    serviceUrl            : 'whitesourceServiceUrl',
-    agentDownloadUrl      : 'fileAgentDownloadUrl',
-    agentParameters       : 'fileAgentParameters',
-    whitesource           : [
-        orgAdminUserTokenCredentialsId      : 'orgAdminUserTokenCredentialsId',
-        orgToken                            : 'orgToken',
-        productName                         : 'productName',
-        productToken                        : 'productToken',
-        projectName                         : 'projectName',
-        projectNames                        : 'projectNames',
-        productVersion                      : 'productVersion',
-        serviceUrl                          : 'serviceUrl',
-        configFilePath                      : 'configFilePath',
-        userTokenCredentialsId              : 'userTokenCredentialsId',
-        agentDownloadUrl                    : 'agentDownloadUrl',
-        agentFileName                       : 'agentFileName',
-        agentParameters                     : 'agentParameters',
-        buildDescriptorExcludeList          : 'buildDescriptorExcludeList',
-        buildDescriptorFile                 : 'buildDescriptorFile',
-        createProductFromPipeline           : 'createProductFromPipeline',
-        emailAddressesOfInitialProductAdmins: 'emailAddressesOfInitialProductAdmins',
-        jreDownloadUrl                      : 'jreDownloadUrl',
-        licensingVulnerabilities            : 'licensingVulnerabilities',
-        parallelLimit                       : 'parallelLimit',
-        reporting                           : 'reporting',
-        securityVulnerabilities             : 'securityVulnerabilities',
-        cvssSeverityLimit                   : 'cvssSeverityLimit',
-        timeout                             : 'timeout',
-        vulnerabilityReportFileName         : 'vulnerabilityReportFileName',
-        vulnerabilityReportTitle            : 'vulnerabilityReportTitle',
-        installCommand                      : 'installCommand'
+    productName                        : 'whitesourceProductName',
+    productToken                       : 'whitesourceProductToken',
+    projectName                        : 'whitesourceProjectName',
+    projectNames                       : 'whitesourceProjectNames',
+    productVersion                     : 'whitesourceProductVersion',
+    userTokenCredentialsId             : 'whitesourceUserTokenCredentialsId',
+    serviceUrl                         : 'whitesourceServiceUrl',
+    agentDownloadUrl                   : 'fileAgentDownloadUrl',
+    agentParameters                    : 'fileAgentParameters',
+    whitesource                        : [
+        orgAdminUserTokenCredentialsId          : 'orgAdminUserTokenCredentialsId',
+        orgToken                                : 'orgToken',
+        productName                             : 'productName',
+        productToken                            : 'productToken',
+        projectName                             : 'projectName',
+        projectNames                            : 'projectNames',
+        productVersion                          : 'productVersion',
+        serviceUrl                              : 'serviceUrl',
+        configFilePath                          : 'configFilePath',
+        userTokenCredentialsId                  : 'userTokenCredentialsId',
+        agentDownloadUrl                        : 'agentDownloadUrl',
+        agentFileName                           : 'agentFileName',
+        agentParameters                         : 'agentParameters',
+        buildDescriptorExcludeList              : 'buildDescriptorExcludeList',
+        buildDescriptorFile                     : 'buildDescriptorFile',
+        createProductFromPipeline               : 'createProductFromPipeline',
+        emailAddressesOfInitialProductAdmins    : 'emailAddressesOfInitialProductAdmins',
+        jreDownloadUrl                          : 'jreDownloadUrl',
+        licensingVulnerabilities                : 'licensingVulnerabilities',
+        parallelLimit                           : 'parallelLimit',
+        reporting                               : 'reporting',
+        securityVulnerabilities                 : 'securityVulnerabilities',
+        cvssSeverityLimit                       : 'cvssSeverityLimit',
+        timeout                                 : 'timeout',
+        vulnerabilityReportFileName             : 'vulnerabilityReportFileName',
+        vulnerabilityReportTitle                : 'vulnerabilityReportTitle',
+        installCommand                          : 'installCommand'
     ]
 ]
 
@@ -328,7 +328,7 @@ void call(Map parameters = [:]) {
 }
 
 private def triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, repository, orgAdminRepository) {
-    withCredentials([script.string(
+    withCredentials ([script.string(
         credentialsId: config.whitesource.orgAdminUserTokenCredentialsId,
         variable: 'orgAdminUserKey'
     )]) {
@@ -338,7 +338,7 @@ private def triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, des
 }
 
 private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, repository, orgAdminRepository) {
-    withCredentials([string(
+    withCredentials ([string(
         credentialsId: config.whitesource.userTokenCredentialsId,
         variable: 'userKey'
     )]) {
@@ -349,10 +349,10 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         if (!config.whitesource.productToken) {
             def metaInfo = orgAdminRepository.fetchProductMetaInfo()
             def key = "token"
-            if ((null == metaInfo || !metaInfo[key]) && config.whitesource.createProductFromPipeline) {
+            if((null == metaInfo || !metaInfo[key]) && config.whitesource.createProductFromPipeline) {
                 metaInfo = orgAdminRepository.createProduct()
                 key = "productToken"
-            } else if (null == metaInfo || !metaInfo[key]) {
+            } else if(null == metaInfo || !metaInfo[key]) {
                 error "[WhiteSource] Could not fetch/find requested product '${config.whitesource.productName}' and automatic creation has been disabled"
             }
             echo "Meta Info: ${metaInfo}"
@@ -402,12 +402,12 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 def path = config.buildDescriptorFile ? config.buildDescriptorFile.substring(0, config.buildDescriptorFile.lastIndexOf('/') + 1) : './'
                 resolveProjectIdentifiers(script, descriptorUtils, config)
 
-                def projectName = "${config.whitesource.projectName}${config.whitesource.productVersion ? ' - ' : ''}${config.whitesource.productVersion ?: ''}".toString()
-                if (!config.whitesource['projectNames'].contains(projectName))
+                def projectName = "${config.whitesource.projectName}${config.whitesource.productVersion?' - ':''}${config.whitesource.productVersion?:''}".toString()
+                if(!config.whitesource['projectNames'].contains(projectName))
                     config.whitesource['projectNames'].add(projectName)
 
                 //share projectNames with other steps
-                if (!script.commonPipelineEnvironment.getValue('whitesourceProjectNames').contains(projectName))
+                if(!script.commonPipelineEnvironment.getValue('whitesourceProjectNames').contains(projectName))
                     script.commonPipelineEnvironment.getValue('whitesourceProjectNames').add(projectName)
 
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
@@ -435,7 +435,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         javaCmd = './bin/java'
                     }
 
-                    if (config.whitesource.installCommand)
+                    if(config.whitesource.installCommand)
                         sh new GStringTemplateEngine().createTemplate(config.whitesource.installCommand).make([config: config]).toString()
 
                     def options = ["-jar ${config.whitesource.agentFileName} -c \'${config.whitesource.configFilePath}\'"]
@@ -503,12 +503,12 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
                 break
         }
 
-        if (!config.whitesource.projectName)
-            config.whitesource.projectName = "${gav.group ?: ''}${gav.group ? '.' : ''}${gav.artifact}"
+        if(!config.whitesource.projectName)
+            config.whitesource.projectName = "${gav.group?:''}${gav.group?'.':''}${gav.artifact}"
 
         def versionFragments = gav.version?.tokenize('.')
         def version = versionFragments?.size() > 0 ? versionFragments?.head() : null
-        if (version && !config.whitesource.productVersion)
+        if(version && !config.whitesource.productVersion)
             config.whitesource.productVersion = version
     }
 }
@@ -523,7 +523,7 @@ void analyseWhitesourceResults(Map config, WhitesourceRepository repository) {
         echo "[${STEP_NAME}][WARNING] Failed to fetch and archive report ${pdfName}"
     }
 
-    if (config.whitesource.licensingVulnerabilities) {
+    if(config.whitesource.licensingVulnerabilities) {
         def violationCount = fetchViolationCount(config, repository)
         checkViolationStatus(violationCount)
     }
@@ -560,7 +560,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
     def projectsMetaInformation = repository.fetchProjectsMetaInfo()
     def vulnerabilities = repository.fetchVulnerabilities(projectsMetaInformation)
     def severeVulnerabilities = 0
-    for (int i = 0; i < vulnerabilities.size(); i++) {
+    for(int i = 0; i < vulnerabilities.size(); i++) {
         def item = vulnerabilities.get(i)
         if ((item.vulnerability.score >= config.whitesource.cvssSeverityLimit || item.vulnerability.cvss3_score >= config.whitesource.cvssSeverityLimit) && config.whitesource.cvssSeverityLimit >= 0)
             severeVulnerabilities++
@@ -581,7 +581,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
 // ExitCodes: https://whitesource.atlassian.net/wiki/spaces/WD/pages/34209870/NPM+Plugin#NPMPlugin-ExitCode
 void checkStatus(int statusCode, config) {
     def errorMessage = ""
-    if (config.whitesource.securityVulnerabilities && config.whitesource.severeVulnerabilities > 0)
+    if(config.whitesource.securityVulnerabilities && config.whitesource.severeVulnerabilities > 0)
         errorMessage += "${config.whitesource.severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score greater or equal ${config.whitesource.cvssSeverityLimit} detected. - "
     if (config.whitesource.licensingVulnerabilities)
         switch (statusCode) {
@@ -646,14 +646,14 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
 
     return GStringTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
         [
-            now                       : now,
-            reportTitle               : config.whitesource.vulnerabilityReportTitle,
-            style                     : config.style,
-            cvssSeverityLimit         : config.whitesource.cvssSeverityLimit,
-            totalSevereVulnerabilities: numSevereVulns,
-            totalVulnerabilities      : vulnerabilityList.size(),
-            vulnerabilityTable        : vulnerabilityTable,
-            whitesourceProductName    : config.whitesource.productName,
-            whitesourceProjectNames   : config.whitesource.projectNames
+            now                         : now,
+            reportTitle                 : config.whitesource.vulnerabilityReportTitle,
+            style                       : config.style,
+            cvssSeverityLimit           : config.whitesource.cvssSeverityLimit,
+            totalSevereVulnerabilities  : numSevereVulns,
+            totalVulnerabilities        : vulnerabilityList.size(),
+            vulnerabilityTable          : vulnerabilityTable,
+            whitesourceProductName      : config.whitesource.productName,
+            whitesourceProjectNames     : config.whitesource.projectNames
         ]).toString()
 }
