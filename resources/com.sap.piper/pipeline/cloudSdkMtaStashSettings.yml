@@ -50,14 +50,6 @@ frontendIntegrationTests:
       merge: true
       includes: "s4hana_pipeline/reports/**, **/target/site/**/jacoco.xml"
 
-checkmarxScan:
-  unstash: ["SOURCE", "TARGET"]
-  stashes: []
-
-whitesourceScan:
-  unstash: ["SOURCE", "M2", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
 additionalTools:
   unstash: ["SOURCE", "M2", "NODE_MODULES"]
   stashes: []
@@ -66,12 +58,8 @@ compliance:
   unstash: ['SOURCE', 'M2', 'NODE_MODULES', 'REPORTS', 'TARGET']
   stashes: []
 
-fortifyScan:
-  unstash: ["SOURCE", "M2", "TARGET"]
-  stashes: []
-
-detect:
-  unstash: ["SOURCE", "M2", "TARGET"]
+security:
+  unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "PACKAGE_LOCK"]
   stashes: []
 
 npmAudit:
