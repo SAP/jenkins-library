@@ -55,7 +55,7 @@ For Java, the default is still (as of August 2020) version 8.
 For more details, please check the [documentation of the SAP Cloud SDK for Java](https://sap.github.io/cloud-sdk/docs/java/getting-started/).
 
 In case you need to use a specific Java version to build your application, you may do so by setting another Docker image in your `.pipeline/config.yml` file.
-See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
+See [documentation of the pipeline configuration](../configuration.md) and look for the `dockerImage` key on where this option applies.
 
 In most cases, it should be suffcient to configure an image for the `mavenExecute` step like so:
 
@@ -70,7 +70,7 @@ steps:
 Each variant of the pipeline has different requirements regarding the project structure, location of reports and tooling.
 
 Stages not listed here do not have a special requirement.
-In any case, please also consult the [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md), as some stages have to be activated by providing configuration values.
+In any case, please also consult the [documentation of the pipeline configuration](../configuration.md), as some stages have to be activated by providing configuration values.
 
 ### Build Tool Independent Requirements
 
